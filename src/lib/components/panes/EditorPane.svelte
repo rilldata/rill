@@ -14,7 +14,8 @@ async function getTableInfo(query) {
     body: JSON.stringify({ query }),
   });
   const jsonString = await response.json();
-  return JSON.parse(jsonString);
+  //return JSON.parse(jsonString);
+  return jsonString
 }
 
 export let queryInfo;

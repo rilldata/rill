@@ -2,8 +2,8 @@
 import express from 'express';
 import cors from 'cors';
 
-import { connect, justRunIt } from './db.mjs';
-import { getInputTableInformation, validQuery, cheapFirstN } from './table-info.mjs';
+import { connect, justRunIt } from './sqlite3.mjs';
+import { getInputTableInformation, validQuery, cheapFirstN } from './sqlite3-info.mjs';
 
 const app = express();
 app.use(express.json());

@@ -1,4 +1,4 @@
-import { justRunIt, testConnection } from './db.mjs';
+import { justRunIt, testConnection } from './sqlite3.mjs';
 
 let testDB;
 
