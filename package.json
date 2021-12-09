@@ -1,0 +1,45 @@
+{
+  "name": "sql-better",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "svelte-kit dev",
+    "build": "svelte-kit build",
+    "package": "svelte-kit package",
+    "preview": "svelte-kit preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
+    "lint": "prettier --ignore-path .gitignore --check --plugin-search-dir=. . && eslint --ignore-path .gitignore .",
+    "format": "prettier --ignore-path .gitignore --write --plugin-search-dir=. ."
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "next",
+    "@sveltejs/kit": "next",
+    "@typescript-eslint/eslint-plugin": "^4.31.1",
+    "@typescript-eslint/parser": "^4.31.1",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-svelte3": "^3.2.1",
+    "prettier": "^2.4.1",
+    "prettier-plugin-svelte": "^2.4.0",
+    "svelte": "^3.44.0",
+    "svelte-check": "^2.2.6",
+    "svelte-preprocess": "^4.9.4",
+    "tslib": "^2.3.1",
+    "typescript": "^4.4.3"
+  },
+  "type": "module",
+  "dependencies": {
+    "@codemirror/basic-setup": "^0.19.0",
+    "@codemirror/lang-sql": "^0.19.4",
+    "@codemirror/state": "^0.19.6",
+    "@codemirror/view": "^0.19.25",
+    "@duckdb/duckdb-wasm": "^1.11.1-dev54.0",
+    "better-sqlite3": "^7.4.5",
+    "cors": "^2.8.5",
+    "duckdb": "^0.3.1",
+    "express": "^4.17.1",
+    "highlight.js": "^11.3.1",
+    "immer": "^9.0.7",
+    "sqlite3": "^5.0.2"
+  }
+}
