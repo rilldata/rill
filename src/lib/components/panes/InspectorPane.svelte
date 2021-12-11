@@ -16,11 +16,54 @@ let whichTable = {
   json: RawJSON
 }
 
-$: console.log(query)
+let innerWidth;
+
+function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-sidebar-width` }) {
+    let minSize_ = params?.minSize || 400;
+    let maxSize_ = params?.maxSize || 800;
+    let property_ = params?.property || '--right-sidebar-width';
+    let moving = false;
+    let xSpace = minSize_;
+
+    node.style.cursor = "move";
+    node.style.userSelect = "none";
+
+    function mousedown() {
+      moving = true;
+    }
+
+    function mousemove(e) {
+      if (moving) {
+        const size = innerWidth - e.pageX;
+        if (size > minSize_ && size < maxSize_) {
+          xSpace = size;
+        }
+
+        document.body.style.setProperty(property_, `${xSpace}px`)
+      }
+    }
+
+    function mouseup() {
+      moving = false;
+    }
+
+    node.addEventListener("mousedown", mousedown);
+    window.addEventListener("mousemove", mousemove);
+    window.addEventListener("mouseup", mouseup);
+    return {
+      update() {
+        moving = false;
+      },
+    };
+  }
+
 </script>
 
+<svelte:window bind:innerWidth />
 
-
+<div class='drawer-container'>
+  <div class='drawer-handler' use:drag />
+  <div class='inspector'>
     <div class='source-tables pad-1rem'>
       {#if queryInfo}
       <h3>sources</h3>
@@ -31,18 +74,15 @@ $: console.log(query)
           {#each source.info as column}
             <tr>
               <td>
-                <div>{column.type.slice(0,1)}</div>
+                <div>{column.Type.slice(0,1)}</div>
               </td>
               <td>
-              <div style="font-weight: semibold;">{column.name} <span style="font-weight: 300; color: #666;">
+              <div style="font-weight: semibold;">{column.Field} <span style="font-weight: 300; color: #666;">
                   {#if column.pk === 1} (primary){:else}{/if}
-                </span></div>
-
-                
+                </span></div> 
               </td>
               <td>
-
-                {`${source.head[0][column.name]}`.slice(0,25)}
+                {`${source.head[0][column.Field]}`.slice(0,25)}
               </td>
             </tr>
           {/each}
@@ -53,7 +93,6 @@ $: console.log(query)
     </div>
 
     {#if resultset}
-
 
     <div class='results-container stack-list'>
       <div class="inspector-header pad-1rem">
@@ -81,8 +120,35 @@ $: console.log(query)
     {/if}
     <div>
     </div>
-
+  </div>
+</div>
 <style>
+
+/* eslint-disable-next-line css-unused-selector */
+
+.drawer-container {
+  display: grid;
+  grid-template-columns: max-content auto;
+  align-content: stretch;
+  align-items: stretch;
+}
+
+.drawer-handler {
+  min-width: 1rem;
+  position:absolute;
+  height: 100%;
+  height: calc(100vh - var(--header-height));
+  /* background-color: lightgray; */
+  transform: translateX(-.5rem);
+}
+
+.inspector {
+  width: var(--right-sidebar-width, 450px);
+}
+
+.drawer-handler:hover {
+  cursor:col-resize;
+}
 
 .pad-1rem {
   padding: 1rem;
@@ -158,6 +224,6 @@ table tr td:last-child {
 
 .results {
   overflow: auto;
-  max-width: 600px;
+  max-width: var(--right-sidebar-width);
 }
 </style>

@@ -7,13 +7,17 @@ import { sql } from "@codemirror/lang-sql";
 
 import EditIcon from "$lib/components/EditIcon.svelte"
 
-let container;
-let titleInput;
+const dispatch = createEventDispatcher();
 export let content;
 export let name;
 let oldContent = content;
-const dispatch = createEventDispatcher();
+
 let editor;
+let editorContainer;
+let editorContainerComponent;
+let titleInput;
+let titleInputValue;
+let editingTitle = false;
 
 function formatModelName(str) {
     let output = str.trim().replaceAll(' ', '_');
@@ -45,7 +49,7 @@ onMount(() => {
                 }
             })
         ]}),
-        parent: container
+        parent: editorContainerComponent
     });
 })
 
@@ -59,16 +63,25 @@ onMount(() => {
         <button class=small-action-button on:click={() => dispatch('up')}>↑</button>
         <button class=small-action-button on:click={() => dispatch('down')}>↓</button>
         <div class='edit-text'>
-            <button class='small-action-button' on:click={() => {
-                titleInput.focus();
-            }}>
-                <EditIcon size={12} />
-            </button>
-            <input bind:this={titleInput} value={name} on:change={(e) => {dispatch('rename', formatModelName(e.target.value))} } />
+            <input 
+                bind:this={titleInput} 
+                on:input={(evt) => {
+                    titleInputValue = evt.target.value;
+                    editingTitle = true;
+                }} 
+                on:blur={()  => { editingTitle = false; }}
+                value={name} 
+                size={Math.max((editingTitle ? titleInputValue : name)?.length || 0, 5) + 2} 
+                on:change={(e) => {dispatch('rename', formatModelName(e.target.value))} } />
+                <button class='small-action-button edit-button' on:click={() => {
+                    titleInput.focus();
+                }}>
+                    <EditIcon size={12} />
+                </button>
         </div>
     </div>
-    <div class='editor-container'>
-        <div bind:this={container} />
+    <div class='editor-container' bind:this={editorContainer}>
+        <div bind:this={editorContainerComponent} />
     </div>
 </div>
 
@@ -91,13 +104,25 @@ onMount(() => {
     margin-bottom: .25rem;
 }
 
+.edit-button {
+    opacity: 0;
+    transition: opacity 150ms;
+}
+
+.edit-text:hover .edit-button {
+    opacity: 1;
+}
+
 .edit-text {
+    max-width: 100%;
     display: grid;
-    grid-template-columns: max-content auto 0px;
+    grid-template-columns: auto max-content;
     align-items: center;
     justify-content: stretch;
     color: hsl(217,20%, 20%);
+    padding-left: .5rem;
 }
+
 
 .edit-text input {
     width: 100%;
@@ -108,18 +133,7 @@ onMount(() => {
     color: hsl(217,20%, 50%);
     text-overflow: ellipsis;
     padding: 0;
-}
-
-.edit-text:after {
-    --size: 40px;
-    content: '';
-    display: block;
-    background-color: green;
-    background: linear-gradient(to left, hsl(var(--hue), var(--sat), var(--lgt)) 20%, transparent);
-    width: var(--size);
-    height: 20px;
-    transform: translateX(calc(var(--size) * -1));
-    right: 0;
+    box-sizing: border-box;
 }
 
 .edit-text input:focus {

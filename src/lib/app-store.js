@@ -32,8 +32,8 @@ const generateInitialState = () => ({
 export function initialize() {
 	const initialState = generateInitialState();
 	const store = createStore(
-		initialState,
-		//initializeFromLocalStorage('app')(generateInitialState()),
+		//initialState,
+		initializeFromLocalStorage('app')(initialState),
 		saveToLocalStorage('app'),
 		addProduce(),
 		//loggable,

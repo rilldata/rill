@@ -5,8 +5,8 @@ import { flip } from "svelte/animate";
 import Editor from "$lib/components/Editor.svelte";
 const store = getContext("rill:app:store");
 
-async function getTableInfo(query) {
-  const response = await fetch("http://localhost:8081/table-definitions", {
+async function getResultset(query) {
+  const response = await fetch("http://localhost:8081/results", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -20,6 +20,7 @@ async function getTableInfo(query) {
 export let queryInfo;
 export let resultset;
 export let query;
+
 </script>
 
 {#if store}
@@ -33,7 +34,7 @@ export let query;
     on:up={() => { store.moveQueryUp(q.id); }}
     on:delete={() => { store.deleteQuery(q.id) }}
     on:receive-focus={() => {
-        getTableInfo(q.query).then((returned) => {
+        getResultset(q.query).then((returned) => {
           if (returned.queryInfo) {
             queryInfo = returned.queryInfo;
           }
@@ -43,12 +44,11 @@ export let query;
         })
     }}
     on:rename={(evt) => {
-      console.log(evt.detail)
       store.changeQueryName(q.id, evt.detail);
     }}
     on:write={async (evt)=> {
         store.editQuery(q.id, evt.detail.content);
-        getTableInfo(evt.detail.content).then((returned) => {
+        getResultset(evt.detail.content).then((returned) => {
           if (returned.queryInfo) {
             queryInfo = returned.queryInfo;
           }

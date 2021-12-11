@@ -7,6 +7,34 @@ import Logo from "$lib/components/Logo.svelte";
 import EditorPane from "$lib/components/panes/EditorPane.svelte";
 import InspectorPane from "$lib/components/panes/InspectorPane.svelte";
 
+// const duckdbq = `WITH 
+// events_count AS (
+//   SELECT 
+//     COUNT(*) as count, 
+//   strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
+//   FROM events 
+//   JOIN pages ON events.pageId = pages.pageId 
+//   GROUP BY dt),
+// page_visit_count AS (
+//   SELECT COUNT(*) as count, 
+//   strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
+//   FROM pages 
+//   GROUP BY dt),
+// article_count AS (
+//   SELECT 
+//     COUNT(*) as count, 
+//     strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
+// FROM articles JOIN pages ON pages.pageId = articles.pageId GROUP BY dt)
+// SELECT 
+//   page_visit_count.count AS page_count,
+//   events_count.count AS event_count,
+//   COALESCE(article_count.count, 0) AS article_count,
+//   events_count.dt
+// FROM events_count
+// LEFT OUTER JOIN page_visit_count ON events_count.dt = page_visit_count.dt
+// LEFT OUTER JOIN article_count ON events_count.dt = article_count.dt;
+// `
+
 `
 --SELECT events.pageId from events
 --JOIN pages ON pages.pageId = events.pageId
@@ -107,7 +135,7 @@ if (browser) {
 .body {
   width: calc(100vw);
   display: grid;
-  grid-template-columns: minmax(600px, auto) 450px;
+  grid-template-columns: calc(100vw - var(--right-sidebar-width, 450px)) auto;
   align-content: stretch;
   min-height: calc(100vh - var(--header-height));
 }

@@ -8,8 +8,6 @@ onMount(() => {
     hljs.highlightElement(ref);
 })
 
-$: console.log(data)
-
 </script>
 
 <pre>
