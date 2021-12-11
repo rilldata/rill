@@ -82,6 +82,7 @@ body {
     hyphens: none;
     word-break: keep-all;
     min-width: 100%;
+    max-width: max-content;
 }
 
 .table-container td {
