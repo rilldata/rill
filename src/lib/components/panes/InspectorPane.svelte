@@ -2,9 +2,9 @@
 import RowTable from "$lib/components/RowTable.svelte";
 import ColumnTable from "$lib/components/ColumnTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
-import RowIcon from "$lib/components/RowIcon.svelte";
-import ColumnIcon from "$lib/components/ColumnIcon.svelte";
-import JSONIcon from "$lib/components/JsonIcon.svelte";
+import RowIcon from "$lib/components/icons/RowIcon.svelte";
+import ColumnIcon from "$lib/components/icons/ColumnIcon.svelte";
+import JSONIcon from "$lib/components/icons/JsonIcon.svelte";
 export let queryInfo;
 export let resultset;
 export let query;

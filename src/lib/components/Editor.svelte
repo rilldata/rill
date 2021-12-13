@@ -7,10 +7,10 @@ import {gutter, GutterMarker} from "@codemirror/gutter"
 import { basicSetup } from "@codemirror/basic-setup";
 import { sql } from "@codemirror/lang-sql";
 
-import RemoveCircleDark from "./RemoveCircleDark.svelte";
+import RemoveCircleDark from "./icons/RemoveCircleDark.svelte";
 
 
-import EditIcon from "$lib/components/EditIcon.svelte"
+import EditIcon from "$lib/components/icons/EditIcon.svelte"
 
 const dispatch = createEventDispatcher();
 export let content;
