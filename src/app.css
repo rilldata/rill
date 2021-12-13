@@ -10,6 +10,12 @@ body {
     --hue: 217;
     --sat: 20%;
     --lgt: 95%;
+
+    --info-bg: hsl(var(--hue), var(--sat), 80%);
+    --info-text: hsl(var(--hue), var(--sat), 20%);
+
+    --error-bg: hsl(1, 60%, 90%);
+    --error-text: hsl(1, 60%, 30%);
 }
 
 .ͼ1 .cm-scroller {
@@ -76,13 +82,16 @@ body {
     background-color: hsl(217,15%, 90%);
 }
 
+.table-container {
+    width: max-content;
+}
+
 .table-container table {
     font-size: 13px;
     text-align: right;
     hyphens: none;
     word-break: keep-all;
     min-width: 100%;
-    max-width: max-content;
 }
 
 .table-container td {
@@ -104,4 +113,11 @@ body {
 
 .hljs-string, .hljs-number {
     color:  hsl(217, 1%, 50%);
+}
+
+.gutter-indicator {
+    width: 18px;
+    display: grid;
+    place-items: center;
+    height: 18px;
 }

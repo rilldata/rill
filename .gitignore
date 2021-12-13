@@ -6,3 +6,8 @@ node_modules
 .env
 .env.*
 *.db
+server/__pycache__/*
+*.duckdb
+server/duckdb
+server/scratch/
+server/venv/

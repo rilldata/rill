@@ -2,13 +2,17 @@ import duckdb from 'duckdb';
 
 export function dbAll(db, query) {
 	return new Promise((resolve, reject) => {
-		db.prepare(query).all((err, res) => {
-			if (err !== null) {
-				reject(err);
-			} else {
-				resolve(res);
-			}
-		});
+		try {
+			db.prepare(query).all((err, res) => {
+				if (err !== null) {
+					reject(err);
+				} else {
+					resolve(res);
+				}
+			});
+		} catch (err) {
+			reject(err);
+		}
 	});
 }
 
@@ -24,7 +28,7 @@ export async function validQuery(db, query) {
 	return new Promise((resolve) => {
 		db.prepare(query).run((err) => {
 			if (err !== null) {
-				resolve(false);
+				resolve(err);
 			} else {
 				resolve(true);
 			}

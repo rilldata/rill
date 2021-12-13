@@ -1,15 +1,24 @@
 <script>
 import { onMount, createEventDispatcher } from 'svelte';
 import {EditorView} from "@codemirror/view";
-import {EditorState} from "@codemirror/state";
+import {RangeSet} from "@codemirror/rangeset"
+import {EditorState, StateField, StateEffect} from "@codemirror/state";
+import {gutter, GutterMarker} from "@codemirror/gutter"
 import { basicSetup } from "@codemirror/basic-setup";
 import { sql } from "@codemirror/lang-sql";
+
+import RemoveCircleDark from "./RemoveCircleDark.svelte";
+
 
 import EditIcon from "$lib/components/EditIcon.svelte"
 
 const dispatch = createEventDispatcher();
 export let content;
 export let name;
+
+export let errorLineNumber;
+export let errorLineMessage;
+
 let oldContent = content;
 
 let editor;
@@ -18,6 +27,7 @@ let editorContainerComponent;
 let titleInput;
 let titleInputValue;
 let editingTitle = false;
+
 
 function formatModelName(str) {
     let output = str.trim().replaceAll(' ', '_');
@@ -31,16 +41,101 @@ export function refreshContent(newContent) {
     editor.update({changes: {from: 0, to: editor?.doc?.length || 0, insert: newContent}});
 }
 
+
+function getPos(text, lineNumber) {
+    if (lineNumber === 1) return 0;
+	return text.slice(0, lineNumber - 1).join(' ').length + 1;
+}
+
+const breakpointEffect = StateEffect.define({
+  map: (val, mapping) => ({pos: mapping.mapPos(val.pos), on: val.on})
+})
+
+const breakpointState = StateField.define({
+  create() { return RangeSet.empty },
+  update(set, transaction) {
+    set = set.map(transaction.changes)
+    for (let e of transaction.effects) {
+      if (e.is(breakpointEffect)) {
+        if (e.value.on)
+          set = set.update({add: [breakpointMarker.range(e.value.pos)]})
+        else
+          set = set.update({filter: from => from != e.value.pos})
+      }
+    }
+    return set
+  }
+})
+
+function toggleBreakpoint(view, pos) {
+  let breakpoints = view.state.field(breakpointState)
+  let hasBreakpoint = false
+  breakpoints.between(pos, pos, () => {hasBreakpoint = true})
+  view.dispatch({
+    effects: breakpointEffect.of({pos, on: !hasBreakpoint})
+  })
+}
+
+const breakpointGutter = [
+  breakpointState,
+  gutter({
+    class: "cm-breakpoint-gutter",
+    markers: v => v.state.field(breakpointState),
+    initialSpacer: () => breakpointMarker,
+    domEventHandlers: {
+      mousedown(view, line) {
+        console.log(line)
+        toggleBreakpoint(view, line.from);
+        return true
+      }
+    }
+  }),
+  EditorView.baseTheme({
+    ".cm-breakpoint-gutter .cm-gutterElement": {
+      color: "red",
+      paddingLeft: "5px",
+      cursor: "default"
+    }
+  })
+]
+
+let prevError = undefined;
+$: if (editor && errorLineNumber) {
+    toggleBreakpoint(editor, getPos(editor.state.doc.text, errorLineNumber));
+    prevError = errorLineNumber;
+} else if (editor && !errorLineNumber && prevError) {
+    toggleBreakpoint(editor, getPos(editor.state.doc.text, prevError));
+    prevError = undefined;
+}
+
+const breakpointMarker = new class extends GutterMarker {
+  toDOM() { 
+      const element = document.createElement('div');
+      element.className='gutter-indicator'
+      const marker = new RemoveCircleDark({
+          target: element,
+          props: { size: 13 }
+      })
+    //   element.textContent = '!!';
+      return element;
+    // const element = document.createElement('div');
+    // element.className = 'gutter-indicator';
+    // element.textContent = "⚠️";
+    // return element;
+    }
+}
+
 onMount(() => {
     editor = new EditorView({
         state: EditorState.create({doc: oldContent, extensions: [
             basicSetup,
             sql(),
+            breakpointGutter,
             EditorView.updateListener.of((v)=> {
                 if (v.focusChanged) {
                     if (v.view.hasFocus) {
                         dispatch('receive-focus');
-                    }
+                    } 
                 }
                 if(v.docChanged) {
                     dispatch('write', {
@@ -54,7 +149,6 @@ onMount(() => {
 })
 
 </script>
-
 <div>
     <div class=controls>
         <div class="close-container">
