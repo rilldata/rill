@@ -3,6 +3,8 @@ import { setContext } from "svelte";
 import { initialize } from '$lib/app-store';
 import { browser } from "$app/env";
 
+import AddIcon from "$lib/components/icons/AddIcon.svelte";
+import RefreshIcon from "$lib/components/icons/RefreshIcon.svelte";
 import Logo from "$lib/components/Logo.svelte";
 import EditorPane from "$lib/components/panes/EditorPane.svelte";
 import InspectorPane from "$lib/components/panes/InspectorPane.svelte";
@@ -142,11 +144,9 @@ if (browser) {
 
 <header class="header">
   <h1><Logo /></h1>
-  <button style="padding-bottom: 6px;" on:click={store.createQuery}>+</button>
-  <button   style="font-size: 1rem;" on:click={store.reset}>
-    <div style="padding-bottom:4px;">
-      ⟳
-    </div>
+  <button  on:click={store.createQuery}><AddIcon size={18} /></button>
+  <button on:click={store.reset}>
+      <RefreshIcon size={18} />
   </button>
 </header>
 <div class='body'>
