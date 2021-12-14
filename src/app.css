@@ -94,6 +94,10 @@ body {
     min-width: 100%;
 }
 
+.table-container td, .table-container th {
+    padding: 0px .5rem;
+}
+
 .table-container td {
     vertical-align: top;
     white-space: nowrap;

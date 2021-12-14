@@ -5,6 +5,8 @@ import RawJSON from "$lib/components/rawJson.svelte";
 import RowIcon from "$lib/components/icons/RowIcon.svelte";
 import ColumnIcon from "$lib/components/icons/ColumnIcon.svelte";
 import JSONIcon from "$lib/components/icons/JsonIcon.svelte";
+
+import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte"
 export let queryInfo;
 export let resultset;
 export let query;
@@ -57,6 +59,8 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
     };
   }
 
+let showSources;
+let showOutputs;
 </script>
 
 <svelte:window bind:innerWidth />
@@ -66,29 +70,33 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
   <div class='inspector'>
     <div class='source-tables pad-1rem'>
       {#if queryInfo}
-      <h3>sources</h3>
-      {#each queryInfo as source, i (source.table)}
+        <CollapsibleTitle bind:active={showSources}>Sources</CollapsibleTitle>
+        {#if showSources}
         <div>
-          <h4>{source.table}</h4>
-          <table>
-          {#each source.info as column}
-            <tr>
-              <td>
-                <div>{column.Type.slice(0,1)}</div>
-              </td>
-              <td>
-              <div style="font-weight: semibold;">{column.Field} <span style="font-weight: 300; color: #666;">
-                  {#if column.pk === 1} (primary){:else}{/if}
-                </span></div> 
-              </td>
-              <td>
-                {`${source.head[0][column.Field]}`.slice(0,25)}
-              </td>
-            </tr>
+          {#each queryInfo as source, i (source.table)}
+            <div>
+              <h4>{source.table}</h4>
+              <table>
+              {#each source.info as column}
+                <tr>
+                  <td>
+                    <div>{column.Type.slice(0,1)}</div>
+                  </td>
+                  <td>
+                  <div style="font-weight: semibold;">{column.Field} <span style="font-weight: 300; color: #666;">
+                      {#if column.pk === 1} (primary){:else}{/if}
+                    </span></div> 
+                  </td>
+                  <td>
+                    {`${source.head[0][column.Field]}`.slice(0,25)}
+                  </td>
+                </tr>
+              {/each}
+              </table>
+            </div>
           {/each}
-          </table>
         </div>
-      {/each}
+        {/if}
       {/if}
     </div>
 
@@ -96,7 +104,8 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
 
     <div class='results-container stack-list'>
       <div class="inspector-header pad-1rem">
-        <h3>outputs</h3>
+        <CollapsibleTitle bind:active={showOutputs}>Outputs</CollapsibleTitle>
+        {#if showOutputs}
         <div class="inspector-button-row">
           <button class='inspector-button' class:selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
             <RowIcon size={16} />
@@ -108,7 +117,11 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
             <JSONIcon size={16}  />
           </button>
         </div>
+        {/if}
       </div>
+
+
+      {#if showOutputs}
       <div class="results pad-1rem" style="padding-top:0px;">
         {#if resultset}
           {#key query}
@@ -116,6 +129,8 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
           {/key}
         {/if}
       </div>
+      {/if}
+
     </div>
     {/if}
     <div>
@@ -123,9 +138,6 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
   </div>
 </div>
 <style>
-
-/* eslint-disable-next-line css-unused-selector */
-
 .drawer-container {
   display: grid;
   grid-template-columns: max-content auto;
@@ -173,7 +185,6 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
   display: grid;
   grid-auto-flow: rows;
   grid-gap: 1.25rem;
-  padding-bottom: 2rem;
 }
 
 .source-tables h4 {

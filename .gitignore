@@ -8,6 +8,7 @@ node_modules
 *.db
 server/__pycache__/*
 *.duckdb
+*.duckdb.wal
 server/duckdb
 server/scratch/
 server/venv/
