@@ -17,9 +17,11 @@ async function getResultset(query) {
   return JSON.parse(jsonString);
 }
 
+// FIXME: this should NOT be props bound elsewhere!
 export let queryInfo;
 export let resultset;
 export let query;
+export let destinationInfo;
 // let's display the error here.
 let error;
 
@@ -58,6 +60,9 @@ function runAndUpdateInspector(q) {
     }
     if (returned.queryInfo) {
       queryInfo = returned.queryInfo;
+    }
+    if (returned.destinationInfo) {
+      destinationInfo = returned.destinationInfo;
     }
     if (returned.results) {
       resultset = returned.results;

@@ -62,10 +62,12 @@ export async function getInputTables(db, parentNode) {
 		tables.map(async (tableName) => {
 			const info = await getTableInfo(db, tableName);
 			const head = await dbAll(db, `SELECT * from ${tableName} LIMIT 1;`);
+			const [cardinality] = await dbAll(db, `select count(*) as count FROM ${tableName};`);
 			return {
 				info,
 				table: tableName,
-				head
+				head,
+				cardinality: cardinality.count
 			};
 		})
 	);

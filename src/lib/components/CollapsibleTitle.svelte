@@ -25,6 +25,6 @@ button {
 }
 
 button:hover {
-    border: 1px solid gray;
+    border: 1px solid hsl(217,15%, 90%);
 }
 </style>

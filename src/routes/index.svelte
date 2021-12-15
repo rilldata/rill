@@ -103,6 +103,7 @@ LEFT OUTER JOIN article_count ON events_count.dt = article_count.dt;
 let resultset;
 let queryInfo;
 let query;
+let destinationInfo;
 
 let store;
 
@@ -124,11 +125,11 @@ if (browser) {
 </header>
 <div class='body'>
   <div class="pane inputs">
-    <EditorPane bind:queryInfo bind:resultset bind:query />
+    <EditorPane bind:queryInfo bind:resultset bind:query bind:destinationInfo />
   </div>
 
   <div class='pane outputs'>
-    <InspectorPane {queryInfo} {resultset} {query} />
+    <InspectorPane {queryInfo} {resultset} {query} {destinationInfo} />
     </div>
   </div>
 

@@ -1,20 +1,25 @@
 <script>
+import { slide } from "svelte/transition";
 import RowTable from "$lib/components/RowTable.svelte";
-import ColumnTable from "$lib/components/ColumnTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
 import RowIcon from "$lib/components/icons/RowIcon.svelte";
-import ColumnIcon from "$lib/components/icons/ColumnIcon.svelte";
 import JSONIcon from "$lib/components/icons/JsonIcon.svelte";
 
-import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte"
+import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
+
+import {format} from "d3-format";
+
+const formatCardinality = format(',');
+const formatRollupFactor = format(',r')
+// FIXME: these shoudl NOT be passed in as props right?
 export let queryInfo;
+export let destinationInfo;
 export let resultset;
 export let query;
 
 let outputView = 'row';
 let whichTable = {
   row: RowTable,
-  column: ColumnTable,
   json: RawJSON
 }
 
@@ -61,6 +66,7 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
 
 let showSources;
 let showOutputs;
+let showDestination;
 </script>
 
 <svelte:window bind:innerWidth />
@@ -68,27 +74,47 @@ let showOutputs;
 <div class='drawer-container'>
   <div class='drawer-handler' use:drag />
   <div class='inspector'>
+    {#if destinationInfo && queryInfo}
+      <div class='source-tables pad-1rem cost'>
+        <div style="font-weight: bold;">
+          {formatRollupFactor(queryInfo.reduce((acc,v) => acc + v.cardinality, 0) / destinationInfo.size)}x reduction
+        </div>
+        <div style="color: #666;">
+          {formatCardinality(queryInfo.reduce((acc,v) => acc + v.cardinality, 0))} ⭢
+          {formatCardinality(destinationInfo.size)} rows
+        </div>
+      </div>
+    {/if}
+    <hr />
     <div class='source-tables pad-1rem'>
       {#if queryInfo}
         <CollapsibleTitle bind:active={showSources}>Sources</CollapsibleTitle>
         {#if showSources}
-        <div>
+        <div transition:slide={{duration: 120 }}>
           {#each queryInfo as source, i (source.table)}
             <div>
-              <h4>{source.table}</h4>
+              <h4>
+                <span>
+                  {source.table}
+                </span>
+                <span>
+                  {formatCardinality(source.cardinality)} row{#if source.cardinality !== 1}s{/if}
+                </span>
+              </h4>
               <table>
               {#each source.info as column}
                 <tr>
                   <td>
-                    <div>{column.Type.slice(0,1)}</div>
-                  </td>
-                  <td>
-                  <div style="font-weight: semibold;">{column.Field} <span style="font-weight: 300; color: #666;">
+                  <div style="font-weight: semibold;">{column.Field} 
+                      <span style="font-weight: 300; font-size:11px; color: #666;">
+                        {column.Type}
+                      </span>
+                      <span style="font-weight: 300; color: #666;">
                       {#if column.pk === 1} (primary){:else}{/if}
                     </span></div> 
                   </td>
                   <td>
-                    {`${source.head[0][column.Field]}`.slice(0,25)}
+                    {(source.head[0][column.Field] !== '' ? `${source.head[0][column.Field]}` : '<empty>').slice(0,25)}
                   </td>
                 </tr>
               {/each}
@@ -99,19 +125,48 @@ let showOutputs;
         {/if}
       {/if}
     </div>
+    <hr />
+    <div class='source-tables pad-1rem'>
+      {#if queryInfo}
+        <CollapsibleTitle bind:active={showDestination}>Destination</CollapsibleTitle>
+        {#if showDestination}
+        <div transition:slide={{duration: 120 }}>
+              <table>
+              {#each destinationInfo.info as column}
+                <tr>
+                  <!-- <td>
+                    <div>{column.Type.slice(0,1)}</div>
+                  </td> -->
+                  <td>
+                  <div style="font-weight: semibold;">{column.Field} 
+                    <span style="font-weight: 300; font-size:11px; color: #666;">
+                      {column.Type}
+                    </span>
+                    <span style="font-weight: 300; color: #666;">
+                      {#if column.pk === 1} (primary){:else}{/if}
+                    </span></div> 
+                  </td>
+                  <td>
+                    {(resultset[0][column.Field] !== '' ? `${resultset[0][column.Field]}` : '<empty>').slice(0,25)}
+                  </td>
+                </tr>
+              {/each}
+              </table>
+        </div>
+        {/if}
+      {/if}
+    </div>
 
     {#if resultset}
+    <hr />
 
     <div class='results-container stack-list'>
       <div class="inspector-header pad-1rem">
-        <CollapsibleTitle bind:active={showOutputs}>Outputs</CollapsibleTitle>
+        <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
         {#if showOutputs}
         <div class="inspector-button-row">
           <button class='inspector-button' class:selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
             <RowIcon size={16} />
-          </button>
-          <button  class='inspector-button'  class:selected={outputView === 'column'} on:click={() => { outputView = 'column' }}>
-            <ColumnIcon size={16}  />
           </button>
           <button  class='inspector-button'  class:selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
             <JSONIcon size={16}  />
@@ -138,11 +193,22 @@ let showOutputs;
   </div>
 </div>
 <style>
+
+hr {
+  border: none;
+  border-bottom: 1px solid #ddd;
+}
 .drawer-container {
   display: grid;
   grid-template-columns: max-content auto;
   align-content: stretch;
   align-items: stretch;
+}
+
+.cost {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
 }
 
 .drawer-handler {
@@ -156,6 +222,8 @@ let showOutputs;
 
 .inspector {
   width: var(--right-sidebar-width, 450px);
+  font-size: 13px;
+
 }
 
 .drawer-handler:hover {
@@ -195,6 +263,13 @@ let showOutputs;
   margin:0;
   font-weight: 600;
   margin-bottom:.5rem;
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: space-between;
+}
+
+.source-tables h4 span:nth-child(2) {
+  font-weight: normal;
 }
 
 h3 {
@@ -214,16 +289,16 @@ table tr td {
   vertical-align: top;
 }
 
-table tr td:first-child {
+/* table tr td:first-child {
   width: 16px;
   color: #aaa;
   border: 2px solid #ccc;
   text-align: center;
   border-radius: .25rem;
   font-size: 10px;
-}
+} */
 
-table tr td:nth-child(2) {
+table tr td:first-child {
   padding-left: .5rem;
 }
 
