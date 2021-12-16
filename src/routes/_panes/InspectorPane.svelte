@@ -17,6 +17,9 @@ export let destinationInfo;
 export let resultset;
 export let query;
 
+// FIXME
+export let destinationSize;
+
 let outputView = 'row';
 let whichTable = {
   row: RowTable,
@@ -67,6 +70,29 @@ function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-si
 let showSources;
 let showOutputs;
 let showDestination;
+
+function computeCardinality(info) {
+
+}
+
+function sourceDestinationCompute(key, source, destination) {
+  return source.reduce((acc,v) => acc + v[key], 0) / destination[key];
+
+}
+
+function computeRollup(source, destination) {
+  return sourceDestinationCompute('cardinality', source, destination);
+}
+
+function computeCompression(source, destination) {
+  return sourceDestinationCompute('size', source, destination);
+}
+
+
+let rollup;
+let compression;
+$: if (queryInfo && destinationInfo) rollup = computeRollup(queryInfo, destinationInfo);
+$: if (queryInfo && destinationSize) compression = computeCompression(queryInfo, { size: destinationSize })
 </script>
 
 <svelte:window bind:innerWidth />
@@ -74,21 +100,35 @@ let showDestination;
 <div class='drawer-container'>
   <div class='drawer-handler' use:drag />
   <div class='inspector'>
-    {#if destinationInfo && queryInfo}
+    {#if destinationInfo && queryInfo && rollup}
       <div class='source-tables pad-1rem cost'>
         <div style="font-weight: bold;">
-          {formatRollupFactor(queryInfo.reduce((acc,v) => acc + v.cardinality, 0) / destinationInfo.size)}x reduction
+          {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
         </div>
-        <div style="color: #666;">
+        <div style="color: #666; text-align:right;">
           {formatCardinality(queryInfo.reduce((acc,v) => acc + v.cardinality, 0))} ⭢
-          {formatCardinality(destinationInfo.size)} rows
+          {formatCardinality(destinationInfo.cardinality)} rows
+        </div>
+        <div>
+          {#if destinationSize}
+          {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
+          {:else}...{/if}
+        </div>
+        <div style="color: #666; text-align: right;">
+          {formatCardinality(queryInfo.reduce((acc,v) => acc + v.size, 0))} ⭢
+          {#if destinationSize}{formatCardinality(destinationSize)} bytes{:else}...{/if}
         </div>
       </div>
     {/if}
     <hr />
     <div class='source-tables pad-1rem'>
       {#if queryInfo}
-        <CollapsibleTitle bind:active={showSources}>Sources</CollapsibleTitle>
+        <CollapsibleTitle bind:active={showSources}>
+          Sources
+          <svelte:fragment slot="contextual-information">
+            {formatCardinality(queryInfo.reduce((acc,v) => acc + v.cardinality, 0))} rows
+          </svelte:fragment>
+        </CollapsibleTitle>
         {#if showSources}
         <div transition:slide={{duration: 120 }}>
           {#each queryInfo as source, i (source.table)}
@@ -101,7 +141,7 @@ let showDestination;
                   {formatCardinality(source.cardinality)} row{#if source.cardinality !== 1}s{/if}
                 </span>
               </h4>
-              <table>
+              <table cellpadding="0" cellspacing="0">
               {#each source.info as column}
                 <tr>
                   <td>
@@ -127,11 +167,16 @@ let showDestination;
     </div>
     <hr />
     <div class='source-tables pad-1rem'>
-      {#if queryInfo}
-        <CollapsibleTitle bind:active={showDestination}>Destination</CollapsibleTitle>
+      {#if destinationInfo}
+          <CollapsibleTitle bind:active={showDestination}>
+            Destination
+            <svelte:fragment slot='contextual-information'>
+              {formatCardinality(destinationInfo.cardinality)} row{#if destinationInfo.cardinality !== 1}s{/if}
+            </svelte:fragment>
+          </CollapsibleTitle>
         {#if showDestination}
         <div transition:slide={{duration: 120 }}>
-              <table>
+              <table cellpadding="0" cellspacing="0">
               {#each destinationInfo.info as column}
                 <tr>
                   <!-- <td>
@@ -161,7 +206,7 @@ let showDestination;
     <hr />
 
     <div class='results-container stack-list'>
-      <div class="inspector-header pad-1rem">
+      <div class="inspector-header pad-1rem"  style="transform: translateY({showOutputs ? '-8px' : '0px'})">
         <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
         {#if showOutputs}
         <div class="inspector-button-row">
@@ -195,6 +240,7 @@ let showDestination;
 <style>
 
 hr {
+  margin: 0;
   border: none;
   border-bottom: 1px solid #ddd;
 }
@@ -240,7 +286,6 @@ hr {
   align-items: baseline;
   position: sticky;
   top: 0px;
-  background-color: white;
 }
 
 .inspector-button-row {
@@ -252,7 +297,7 @@ hr {
 .source-tables {
   display: grid;
   grid-auto-flow: rows;
-  grid-gap: 1.25rem;
+  grid-gap: .5rem;
 }
 
 .source-tables h4 {
@@ -283,6 +328,7 @@ table {
   width: 100%;
   font-size:13px;
   text-align: left;
+  /* padding-right: .25rem; */
 }
 
 table tr td {

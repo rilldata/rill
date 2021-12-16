@@ -105,6 +105,9 @@ let queryInfo;
 let query;
 let destinationInfo;
 
+// FIXME: this is out of control :(
+let destinationSize;
+
 let store;
 
 if (browser) {
@@ -125,11 +128,11 @@ if (browser) {
 </header>
 <div class='body'>
   <div class="pane inputs">
-    <EditorPane bind:queryInfo bind:resultset bind:query bind:destinationInfo />
+    <EditorPane bind:destinationSize bind:queryInfo bind:resultset bind:query bind:destinationInfo />
   </div>
 
   <div class='pane outputs'>
-    <InspectorPane {queryInfo} {resultset} {query} {destinationInfo} />
+    <InspectorPane {queryInfo} {resultset} {query} {destinationInfo} {destinationSize} />
     </div>
   </div>
 

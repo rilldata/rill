@@ -11,7 +11,7 @@ $: intermediate = data.reduce((columns, row) => {
 </script>
 
 <div class='table-container'>
-    <table>
+    <table cellpadding="0" cellspacing="0">
         {#each header as key}
             <tr>
                 <th>{key}</th>

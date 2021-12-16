@@ -14,7 +14,19 @@ async function getResultset(query) {
     body: JSON.stringify({ query }),
   });
   const jsonString = await response.json();
-  return JSON.parse(jsonString);
+  return jsonString;
+}
+
+async function getDestinationSize(query) {
+  const response = await fetch("http://localhost:8081/destination-size", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+  });
+  const jsonString = await response.json();
+  return jsonString;
 }
 
 // FIXME: this should NOT be props bound elsewhere!
@@ -22,6 +34,8 @@ export let queryInfo;
 export let resultset;
 export let query;
 export let destinationInfo;
+
+export let destinationSize;
 // let's display the error here.
 let error;
 
@@ -41,7 +55,28 @@ function setActiveQuery(qid) {
   activeQuery = qid;
 }
 
+function debounce(func, timeout = 300) {
+	let timer;
+	return (...args) => {
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			func.apply(this, args);
+		}, timeout);
+	};
+}
+
+const debounceDestinationSize = debounce((q) => {
+    getDestinationSize(q).then(returned => {
+      destinationSize = returned.size;
+  })
+}, 1000)
+
 function runAndUpdateInspector(q) {
+  destinationSize = undefined;
+  debounceDestinationSize(q);
+  // getDestinationSize(q).then(returned => {
+  //   destinationSize = returned.size;
+  // })
   getResultset(q).then((returned) => {
     if (returned.error) {
       error = returned.error;

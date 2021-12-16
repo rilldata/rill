@@ -18,6 +18,10 @@ body {
     --error-text: hsl(1, 60%, 30%);
 }
 
+button {
+    font-family: "MD IO 0.4";
+}
+
 .ͼ1 .cm-scroller {
     font-family: "MD IO 0.4";
     font-size: 13px;
