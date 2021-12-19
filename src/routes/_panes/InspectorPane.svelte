@@ -1,4 +1,5 @@
 <script>
+import { getContext } from "svelte";
 import { slide } from "svelte/transition";
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
@@ -9,17 +10,12 @@ import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 
 import {format} from "d3-format";
 
+const store = getContext('rill:app:store');
+
 const formatCardinality = format(',');
 const formatRollupFactor = format(',r')
-// FIXME: these shoudl NOT be passed in as props right?
-export let queryInfo;
-export let destinationInfo;
-export let resultset;
-export let query;
 
 // FIXME
-export let destinationSize;
-
 let outputView = 'row';
 let whichTable = {
   row: RowTable,
@@ -91,8 +87,12 @@ function computeCompression(source, destination) {
 
 let rollup;
 let compression;
-$: if (queryInfo && destinationInfo) rollup = computeRollup(queryInfo, destinationInfo);
-$: if (queryInfo && destinationSize) compression = computeCompression(queryInfo, { size: destinationSize })
+
+
+let currentQuery = {};
+$: if (currentQuery?.cardinality && currentQuery?.profile) rollup = computeRollup(currentQuery.profile, {cardinality: currentQuery.cardinality });
+$: if (currentQuery?.sizeInBytes && currentQuery?.profile) compression = computeCompression(currentQuery.profile, { size: currentQuery.sizeInBytes })
+$: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.activeQuery);
 </script>
 
 <svelte:window bind:innerWidth />
@@ -100,38 +100,38 @@ $: if (queryInfo && destinationSize) compression = computeCompression(queryInfo,
 <div class='drawer-container'>
   <div class='drawer-handler' use:drag />
   <div class='inspector'>
-    {#if destinationInfo && queryInfo && rollup}
+    {#if currentQuery && currentQuery.profile}
       <div class='source-tables pad-1rem cost'>
         <div style="font-weight: bold;">
           {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
         </div>
         <div style="color: #666; text-align:right;">
-          {formatCardinality(queryInfo.reduce((acc,v) => acc + v.cardinality, 0))} ⭢
-          {formatCardinality(destinationInfo.cardinality)} rows
+          {formatCardinality(currentQuery.profile.reduce((acc,v) => acc + v.cardinality, 0))} ⭢
+          {formatCardinality(currentQuery.cardinality)} rows
         </div>
         <div>
-          {#if destinationSize}
+          {#if currentQuery.sizeInBytes}
           {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
           {:else}...{/if}
         </div>
         <div style="color: #666; text-align: right;">
-          {formatCardinality(queryInfo.reduce((acc,v) => acc + v.size, 0))} ⭢
-          {#if destinationSize}{formatCardinality(destinationSize)} bytes{:else}...{/if}
+          {formatCardinality(currentQuery.profile.reduce((acc,v) => acc + v.size, 0))} ⭢
+          {#if currentQuery.sizeInBytes}{formatCardinality(currentQuery.sizeInBytes)} bytes{:else}...{/if}
         </div>
       </div>
     {/if}
     <hr />
     <div class='source-tables pad-1rem'>
-      {#if queryInfo}
+      {#if currentQuery && currentQuery.profile}
         <CollapsibleTitle bind:active={showSources}>
           Sources
           <svelte:fragment slot="contextual-information">
-            {formatCardinality(queryInfo.reduce((acc,v) => acc + v.cardinality, 0))} rows
+            {formatCardinality(currentQuery.profile.reduce((acc,v) => acc + v.cardinality, 0))} rows
           </svelte:fragment>
         </CollapsibleTitle>
         {#if showSources}
-        <div transition:slide={{duration: 120 }}>
-          {#each queryInfo as source, i (source.table)}
+        <div transition:slide|local={{duration: 120 }}>
+          {#each currentQuery.profile as source, i (source.table)}
             <div>
               <h4>
                 <span>
@@ -167,21 +167,18 @@ $: if (queryInfo && destinationSize) compression = computeCompression(queryInfo,
     </div>
     <hr />
     <div class='source-tables pad-1rem'>
-      {#if destinationInfo}
+      {#if currentQuery?.destinationProfile}
           <CollapsibleTitle bind:active={showDestination}>
             Destination
             <svelte:fragment slot='contextual-information'>
-              {formatCardinality(destinationInfo.cardinality)} row{#if destinationInfo.cardinality !== 1}s{/if}
+              <!-- {formatCardinality(destinationInfo.cardinality)} row{#if destinationInfo.cardinality !== 1}s{/if} -->
             </svelte:fragment>
           </CollapsibleTitle>
         {#if showDestination}
-        <div transition:slide={{duration: 120 }}>
+        <div transition:slide|local={{duration: 120 }}>
               <table cellpadding="0" cellspacing="0">
-              {#each destinationInfo.info as column}
+              {#each currentQuery.destinationProfile as column}
                 <tr>
-                  <!-- <td>
-                    <div>{column.Type.slice(0,1)}</div>
-                  </td> -->
                   <td>
                   <div style="font-weight: semibold;">{column.Field} 
                     <span style="font-weight: 300; font-size:11px; color: #666;">
@@ -192,7 +189,7 @@ $: if (queryInfo && destinationSize) compression = computeCompression(queryInfo,
                     </span></div> 
                   </td>
                   <td>
-                    {(resultset[0][column.Field] !== '' ? `${resultset[0][column.Field]}` : '<empty>').slice(0,25)}
+                    {(currentQuery.preview[0][column.Field] !== '' ? `${currentQuery.preview[0][column.Field]}` : '<empty>').slice(0,25)}
                   </td>
                 </tr>
               {/each}
@@ -202,7 +199,7 @@ $: if (queryInfo && destinationSize) compression = computeCompression(queryInfo,
       {/if}
     </div>
 
-    {#if resultset}
+    {#if currentQuery?.preview}
     <hr />
 
     <div class='results-container stack-list'>
@@ -223,9 +220,9 @@ $: if (queryInfo && destinationSize) compression = computeCompression(queryInfo,
 
       {#if showOutputs}
       <div class="results pad-1rem" style="padding-top:0px;">
-        {#if resultset}
-          {#key query}
-            <svelte:component this={whichTable[outputView]} data={resultset} />
+        {#if currentQuery.preview}
+          {#key currentQuery.query}
+            <svelte:component this={whichTable[outputView]} data={currentQuery.preview} />
           {/key}
         {/if}
       </div>
@@ -334,15 +331,6 @@ table {
 table tr td {
   vertical-align: top;
 }
-
-/* table tr td:first-child {
-  width: 16px;
-  color: #aaa;
-  border: 2px solid #ccc;
-  text-align: center;
-  border-radius: .25rem;
-  font-size: 10px;
-} */
 
 table tr td:first-child {
   padding-left: .5rem;

@@ -45,25 +45,6 @@ function wrapQueryAsTemporaryView(query) {
 
 // intercept CREATE queries and return an error.
 
-function hasCreateStatement(query) {
-	return query.toLowerCase().startsWith('create')
-		? `Query has a CREATE statement. 
-	Let us handle that for you!
-	Just use SELECT and we'll do the rest.
-	`
-		: false;
-}
-
-function containsMultipleQueries(query) {
-	return query.split().filter((character) => character == ';').length > 1
-		? 'Keep it to a single query please!'
-		: false;
-}
-
-function validateQuery(query, ...validators) {
-	return validators.map((validator) => validator(query)).filter((validation) => validation);
-}
-
 function debounce(func, timeout = 300) {
 	let timer;
 	return (...args) => {

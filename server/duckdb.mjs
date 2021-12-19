@@ -20,7 +20,7 @@ export function dbAll(db, query) {
 }
 
 export function connect() {
-	return new duckdb.Database('./microfiche.duckdb', { read_only: true });
+	return new duckdb.Database('./scripts/nyc311-reduced.duckdb', { read_only: true });
 }
 
 export function testConnection() {
@@ -59,7 +59,7 @@ export async function getTableInfo(db, table) {
 	});
 }
 
-export async function getInputTables(db, parentNode, tableSizes) {
+export async function getInputTables(db, parentNode, tableSizes = {}) {
 	const tables = getTableScans(parentNode);
 	return Promise.all(
 		tables.map(async (tableName) => {
@@ -70,7 +70,7 @@ export async function getInputTables(db, parentNode, tableSizes) {
 				info,
 				table: tableName,
 				head,
-				size: tableSizes[tableName].size,
+				size: tableSizes[tableName]?.size || 0,
 				cardinality: cardinality.count
 			};
 		})
@@ -82,7 +82,7 @@ export async function getInputTables(db, parentNode, tableSizes) {
  * Let's make sure to download the duckdb cli via an npm command.
  */
 
-export function runQueryWithDuckDBCLI(query, db = './microfiche-copy.duckdb') {
+export function runQueryWithDuckDBCLI(query, db = './scripts/nyc311-reduced-copy.duckdb') {
 	execSync(`echo "${query}" | ./server/duckdb ${db}`);
 }
 
@@ -113,11 +113,30 @@ export function getSourceTableSizes() {
 	return files;
 }
 
-export function getQuerySizeInBytes(query, location = './tmp.parquet') {
+export async function getQuerySizeInBytes(query, location = './tmp.parquet') {
 	query = query.replace(';', '');
 	runQueryWithDuckDBCLI(`COPY (${query}) TO '${location}' WITH (FORMAT PARQUET)`);
 	const stats = fs.statSync(location);
 	/** delete the temporary file */
-	fs.unlinkSync(location, console.log);
+	fs.unlinkSync(location);
 	return stats.size;
+}
+
+export function hasCreateStatement(query) {
+	return query.toLowerCase().startsWith('create')
+		? `Query has a CREATE statement. 
+	Let us handle that for you!
+	Just use SELECT and we'll do the rest.
+	`
+		: false;
+}
+
+export function containsMultipleQueries(query) {
+	return query.split().filter((character) => character == ';').length > 1
+		? 'Keep it to a single query please!'
+		: false;
+}
+
+export function validateQuery(query, ...validators) {
+	return validators.map((validator) => validator(query)).filter((validation) => validation);
 }

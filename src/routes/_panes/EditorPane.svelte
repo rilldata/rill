@@ -29,30 +29,16 @@ async function getDestinationSize(query) {
   return jsonString;
 }
 
-// FIXME: this should NOT be props bound elsewhere!
-export let queryInfo;
-export let resultset;
-export let query;
-export let destinationInfo;
-
-export let destinationSize;
-// let's display the error here.
 let error;
 
 let errorLineNumber;
 let errorMessage;
-
-let activeQuery;
 
 function getErrorLineNumber(errorString) {
   if (!errorString.includes('LINE')) return { message: errorString };
   const [message, linePortion] = errorString.split('LINE ');
   const lineNumber = parseInt(linePortion.split(':')[0]);
   return { message, lineNumber };
-}
-
-function setActiveQuery(qid) {
-  activeQuery = qid;
 }
 
 function debounce(func, timeout = 300) {
@@ -111,31 +97,32 @@ function runAndUpdateInspector(q) {
 </script>
 
 <div class=editor-pane>
-  {#if store}
-  <div class="input-body">
-  {#each $store.queries as q (q.id)}
-  <div class="stack" transition:fly={{duration: 100, y: -5}} animate:flip={{duration: 100}}>
-    <Editor 
-      content={q.query}
-      name={q.name}
-      errorLineNumber={q.id === activeQuery ? errorLineNumber : undefined}
-      on:down={() => { store.moveQueryDown(q.id); }}
-      on:up={() => { store.moveQueryUp(q.id); }}
-      on:delete={() => { store.deleteQuery(q.id) }}
-      on:receive-focus={() => {
-          setActiveQuery(q.id);
-          runAndUpdateInspector(q.query);
-      }}
-      on:rename={(evt) => {
-        store.changeQueryName(q.id, evt.detail);
-      }}
-      on:write={(evt)=> {
-          setActiveQuery(q.id);
-          store.editQuery(q.id, evt.detail.content);
-          runAndUpdateInspector(evt.detail.content);
-      }}
-  />
-  </div>
+  {#if store && $store.queries}
+    <div class="input-body">
+    {#each $store.queries as q (q.id)}
+    <div class="stack" transition:fly={{duration: 100, y: -5}} animate:flip={{duration: 100}}>
+      <Editor 
+        content={q.query}
+        name={q.name}
+        errorLineNumber={q.id === $store.activeQuery ? errorLineNumber : undefined}
+        on:down={() => { store.action('moveQueryDown', {id: q.id}); }}
+        on:up={() => { store.action('moveQueryUp', {id: q.id}); }}
+        on:delete={() => { store.action('deleteQuery', {id: q.id}); }}
+        on:receive-focus={() => {
+            store.action('setActiveQuery', { id: q.id });
+            store.action("updateQueryInformation", {id: q.id});
+        }}
+        on:rename={(evt) => {
+          store.action('changeQueryName', {id: q.id, name: evt.detail});
+        }}
+        on:write={(evt)=> {
+            store.action('setActiveQuery', { id: q.id })
+            store.action("updateQuery", {id: q.id, query: evt.detail.content});
+            store.action("updateQueryInformation", {id: q.id});
+            //runAndUpdateInspector(evt.detail.content);
+        }}
+    />
+    </div>
   {/each}
   </div>
   {#if error}

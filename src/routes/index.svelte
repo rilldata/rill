@@ -1,6 +1,6 @@
 <script>
 import { setContext } from "svelte";
-import { initialize } from '$lib/app-store';
+import { createStore } from '$lib/app-store';
 import { browser } from "$app/env";
 
 import AddIcon from "$lib/components/icons/AddIcon.svelte";
@@ -111,7 +111,7 @@ let destinationSize;
 let store;
 
 if (browser) {
-  store = initialize();
+  store = createStore();
   setContext('rill:app:store', store);
 }
 
@@ -121,8 +121,8 @@ if (browser) {
 
 <header class="header">
   <h1><Logo /></h1>
-  <button  on:click={store.createQuery}><AddIcon size={18} /></button>
-  <button on:click={store.reset}>
+  <button  on:click={() => store.action("addQuery")}><AddIcon size={18} /></button>
+  <button on:click={() => store.action('reset')}>
       <RefreshIcon size={18} />
   </button>
 </header>
@@ -132,7 +132,7 @@ if (browser) {
   </div>
 
   <div class='pane outputs'>
-    <InspectorPane {queryInfo} {resultset} {query} {destinationInfo} {destinationSize} />
+    <InspectorPane />
     </div>
   </div>
 
