@@ -12,3 +12,7 @@ server/__pycache__/*
 server/duckdb
 server/scratch/
 server/venv/
+
+# generated content
+saved-state.json
+last-query-output.json

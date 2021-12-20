@@ -20,7 +20,7 @@ const db = connect();
 // const SOURCE_TABLES = getSourceTableSizes();
 
 await dbAll(db, 'PRAGMA enable_profiling="json";');
-await dbAll(db, "PRAGMA profile_output='./server/output.json';");
+await dbAll(db, "PRAGMA profile_output='./last-query-output.json';");
 
 function wrapQueryAsTemporaryView(query) {
 	return `CREATE OR REPLACE TEMPORARY VIEW tmp AS (
@@ -82,7 +82,7 @@ export async function createPreview(query) {
 
 export async function createSourceProfile(query) {
 	await new Promise((resolve) => db.run(query, resolve));
-	const file = JSON.parse(fs.readFileSync('./server/output.json').toString());
+	const file = JSON.parse(fs.readFileSync('./last-query-output.json').toString());
 	return await getInputTables(db, file, {});
 }
 

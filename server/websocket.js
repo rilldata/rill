@@ -17,7 +17,6 @@ const io = new Server({   cors: {
     methods: ["GET", "POST"]
   } });
 
-
 const initialState = {
     queries: [emptyQuery()]
 }
