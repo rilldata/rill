@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
-//import { produce } from "immer/dist/immer.cjs.production.min.js";
-import { produce } from 'immer';
+import { produce } from "immer";
+import fs from 'fs';
 
 /*
 My state approach.
@@ -10,32 +10,46 @@ a plugin must return an object w/ the key nextStore
 The main premise
 */
 
-export function initializeFromLocalStorage(key) {
+export function initializeFromSavedState(key) {
 	return (initialState) => {
-		const value = localStorage.getItem(key);
-		if (value !== null) return JSON.parse(value);
+		if (fs.existsSync(`${key}.json`)) {
+			try {
+				return JSON.parse(fs.readFileSync(`${key}.json`).toString());
+			} catch (err) {
+				console.log(err);
+				console.log("going with clean initial state");
+			}	
+		}
 		return initialState;
 	};
 }
 
-export function saveToLocalStorage(key) {
+export function saveToLocalFile(key) {
 	return (store) => {
 		setInterval(() => {
-			localStorage.setItem(key, JSON.stringify(get(store)));
+			fs.writeFileSync(`${key}.json`, JSON.stringify(get(store)));
 		}, 500);
 		return { nextStore: store };
 	};
 }
 
 export function addProduce() {
-	return (store) => ({
+	return (store, _, others) => ({
 		nextStore: store,
 		produce(fcn) {
-			store.update(
-				produce((draft) => {
-					fcn(draft);
-				})
-			);
+			// this works very similar to what you'd expect in a redux setting.
+			// eg. dispatch(changeChannel('beta')) should take the changeChannel
+			// action, which returns a draft-mutating function to be fed into
+			// immer's produce function.
+			if (fcn.constructor.name === 'AsyncFunction') {
+				// I thought about using func.length (if it has two args, then we are go)
+    			// but you may only have one. For now, I think marking a function a async
+    			// works.
+				fcn(this.produce, () => get(store));
+			} else {
+				// atomic update (singular state change).
+				store.update(draft => produce(draft, fcn));
+			}
 		},
 		setField(key, value) {
 			this.produce((draft) => {
@@ -43,6 +57,22 @@ export function addProduce() {
 			});
 		}
 	});
+}
+
+export function addActions(actionsObject) {
+	return (store, _, storeFunctions) => {
+		const actionFunctions = actionsObject();
+		const actions = Object.keys(actionFunctions).reduce((obj, actionName) => {
+			obj[actionName] = (...args) => {
+				storeFunctions.produce(actionFunctions[actionName](...args));
+			} 
+			return obj;
+		}, {});
+		return {
+			nextStore: store,
+			...actions
+		}
+	}
 }
 
 export function timeTravel(length = 100) {
@@ -100,10 +130,47 @@ export function resettable(initialState) {
 		return {
 			nextStore,
 			reset() {
+				console.log(initialState)
 				nextStore.set(initialState);
 			}
 		};
 	};
+}
+
+export function listenForSocketMessages() {
+	return (nextStore, _, options) => {
+		return {
+			nextStore,
+			listenForSocketMessages(socket) {
+				Object.keys(options).forEach(action => {
+					socket.on(action, options[action]);
+				})
+			}
+		}
+	}
+}
+
+export function connectStateToSocket() {
+	return (nextStore, _, options) => {
+		return {
+			nextStore,
+			connectStateToSocket(socket) {
+				nextStore.subscribe(state => {
+					if (socket) {
+						socket.emit('app-state', state);
+					} else {
+						console.log('socket not initialized yet')
+					}
+				});
+				Object.keys(options).forEach(action => {
+					if (action !== 'nextStore') {
+						socket.on(action, options[action]);
+					}
+					
+				})
+			}
+		}
+	}
 }
 
 export function withPlugins(...pluginSet) {
@@ -112,7 +179,7 @@ export function withPlugins(...pluginSet) {
 			([nextStore, options], plugin) => {
 				let nextOptions = options;
 				if (plugin) {
-					nextOptions = plugin(nextStore, initialState);
+					nextOptions = plugin(nextStore, initialState, options);
 					// continuously appends new key value pairs to the store.
 					options = { ...options, ...nextOptions };
 				}
@@ -128,6 +195,7 @@ export function createStore(initialState, ...plugins) {
 	const [store, etc] = withPlugins(...plugins)(initialStore, initialState);
 	return {
 		subscribe: store.subscribe,
+		get: () => get(store),
 		...etc
 	};
 }

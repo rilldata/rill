@@ -1,41 +1,14 @@
 <script>
 import { setContext } from "svelte";
-import { initialize } from '$lib/app-store';
+import { createStore } from '$lib/app-store';
 import { browser } from "$app/env";
 
 import AddIcon from "$lib/components/icons/AddIcon.svelte";
 import RefreshIcon from "$lib/components/icons/RefreshIcon.svelte";
 import Logo from "$lib/components/Logo.svelte";
-import EditorPane from "$lib/components/panes/EditorPane.svelte";
-import InspectorPane from "$lib/components/panes/InspectorPane.svelte";
 
-// const duckdbq = `WITH 
-// events_count AS (
-//   SELECT 
-//     COUNT(*) as count, 
-//   strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
-//   FROM events 
-//   JOIN pages ON events.pageId = pages.pageId 
-//   GROUP BY dt),
-// page_visit_count AS (
-//   SELECT COUNT(*) as count, 
-//   strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
-//   FROM pages 
-//   GROUP BY dt),
-// article_count AS (
-//   SELECT 
-//     COUNT(*) as count, 
-//     strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
-// FROM articles JOIN pages ON pages.pageId = articles.pageId GROUP BY dt)
-// SELECT 
-//   page_visit_count.count AS page_count,
-//   events_count.count AS event_count,
-//   COALESCE(article_count.count, 0) AS article_count,
-//   events_count.dt
-// FROM events_count
-// LEFT OUTER JOIN page_visit_count ON events_count.dt = page_visit_count.dt
-// LEFT OUTER JOIN article_count ON events_count.dt = article_count.dt;
-// `
+import EditorPane from "./_panes/EditorPane.svelte";
+import InspectorPane from "./_panes/InspectorPane.svelte";
 
 `
 --SELECT events.pageId from events
@@ -130,11 +103,15 @@ LEFT OUTER JOIN article_count ON events_count.dt = article_count.dt;
 let resultset;
 let queryInfo;
 let query;
+let destinationInfo;
+
+// FIXME: this is out of control :(
+let destinationSize;
 
 let store;
 
 if (browser) {
-  store = initialize();
+  store = createStore();
   setContext('rill:app:store', store);
 }
 
@@ -144,18 +121,18 @@ if (browser) {
 
 <header class="header">
   <h1><Logo /></h1>
-  <button  on:click={store.createQuery}><AddIcon size={18} /></button>
-  <button on:click={store.reset}>
+  <button  on:click={() => store.action("addQuery")}><AddIcon size={18} /></button>
+  <button on:click={() => store.action('reset')}>
       <RefreshIcon size={18} />
   </button>
 </header>
 <div class='body'>
   <div class="pane inputs">
-    <EditorPane bind:queryInfo bind:resultset bind:query />
+    <EditorPane bind:destinationSize bind:queryInfo bind:resultset bind:query bind:destinationInfo />
   </div>
 
   <div class='pane outputs'>
-    <InspectorPane {queryInfo} {resultset} {query} />
+    <InspectorPane />
     </div>
   </div>
 

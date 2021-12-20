@@ -1,49 +1,40 @@
-// create server function
-import express from 'express';
-import cors from 'cors';
+import { spawn } from "child_process";
+import chokidar from "chokidar";
+// spin up server
 
-import { connect, justRunIt } from './sqlite3.mjs';
-import { getInputTableInformation, validQuery, cheapFirstN } from './sqlite3-info.mjs';
+function spinUpServer() {
+    console.log('spinning up server');
+    const c = spawn("node", ["./server/websocket.js"]);
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+    c.stdout.on('data', data => {
+        console.log(`stdout: ${data}`);
+      });
 
-const db = connect();
+      c.stderr.on('data', data => {
+        console.error(`stderr: ${data}`);
+      });
+    
+    // listen for file changes
+    c.on('error', (error) => {
+        console.error(`error: ${error.message}`);
+      });
+      
+      c.on('close', (code, other) => {
+        console.log(`child process exited with code ${code}`, other);
+      });
 
-app.options('/query', cors());
+    return c;
+}
 
-app.post('/query', cors(), (req, res) => {
-	const query = req.body.query;
-	try {
-		const results = justRunIt(db, query);
-		const queryInfo = getInputTableInformation(db, query); //console.log('ok!', queryInfo); //justRunIt(`EXPLAIN QUERY PLAN ${query}`);
-		res.json(JSON.stringify({ results, queryInfo }));
-	} catch (err) {
-		console.log(err);
-	}
-});
+let child = spinUpServer();
 
-app.post('/table-definitions', (req, res) => {
-	const query = req.body.query;
-	let output = { status: 'QUERY_RUNNING' };
-	if (!validQuery(db, query)) {
-		output.status = 'QUERY_INVALID';
-		res.json(JSON.stringify(output));
-		return;
-	}
-	try {
-		output.queryInfo = getInputTableInformation(db, query);
-		output.query = query;
-	} catch (err) {
-		console.log('--- ', err);
-	}
-	try {
-		output.results = cheapFirstN(db, query);
-	} catch (err) {
-		console.log('hmm', err);
-	}
-	res.json(JSON.stringify(output));
-});
-
-app.listen(8081);
+const watcher = chokidar.watch('./server/*', {
+    ignored: /(^|[\/\\])\../, // ignore dotfiles]
+    persistent: true
+  });
+watcher
+    .on('change', (file) => {
+        console.log('change', file);
+        child.kill();
+        child = spinUpServer();
+    })

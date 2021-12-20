@@ -1,3 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1, h2, h3, h4 {
+    @apply font-bold;
+  }
+}
+
 body {
     /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; */
     font-family: "MD IO 0.4";
@@ -16,6 +26,10 @@ body {
 
     --error-bg: hsl(1, 60%, 90%);
     --error-text: hsl(1, 60%, 30%);
+}
+
+button {
+    font-family: "MD IO 0.4";
 }
 
 .ͼ1 .cm-scroller {
@@ -92,6 +106,10 @@ body {
     hyphens: none;
     word-break: keep-all;
     min-width: 100%;
+}
+
+.table-container td, .table-container th {
+    padding: 0px .5rem;
 }
 
 .table-container td {
