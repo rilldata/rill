@@ -13,7 +13,7 @@ $: header = Object.keys(data[0]);
         {#each data as record}
             <tr>
                 {#each header as key}
-                    <td>{`${record[key]}`.slice(0,20)}</td>
+                    <td>{`${record[key]}`.slice(0,50)}</td>
                 {/each}
             </tr>
         {/each}

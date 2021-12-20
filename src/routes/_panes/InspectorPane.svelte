@@ -98,10 +98,14 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 <svelte:window bind:innerWidth />
 
 <div class='drawer-container'>
-  <div class='drawer-handler' use:drag />
-  <div class='inspector'>
+  <!-- Drawer Handler -->
+  <div class='drawer-handler w-4 absolute hover:cursor-col-resize'
+    style="height: calc(100vh - var(--header-height));
+    transform: translateX(-.5rem);"
+  use:drag />
+  <div class='inspector divide-y divide-gray-200'>
     {#if currentQuery && currentQuery.profile}
-      <div class='source-tables pad-1rem cost'>
+      <div class='cost p-4 grid grid-cols-2 justify-between'>
         <div style="font-weight: bold;">
           {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
         </div>
@@ -120,8 +124,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
         </div>
       </div>
     {/if}
-    <hr />
-    <div class='source-tables pad-1rem'>
+    <div class='source-tables p-4'>
       {#if currentQuery && currentQuery.profile}
         <CollapsibleTitle bind:active={showSources}>
           Sources
@@ -145,16 +148,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
               {#each source.info as column}
                 <tr>
                   <td>
-                  <div style="font-weight: semibold;">{column.Field} 
-                      <span style="font-weight: 300; font-size:11px; color: #666;">
+                  <div class="font-medium">{column.Field} 
+                      <span class="column-type">
                         {column.Type}
                       </span>
-                      <span style="font-weight: 300; color: #666;">
+                      <span class="font-light text-gray-500">
                       {#if column.pk === 1} (primary){:else}{/if}
                     </span></div> 
                   </td>
-                  <td>
-                    {(source.head[0][column.Field] !== '' ? `${source.head[0][column.Field]}` : '<empty>').slice(0,25)}
+                  <td class='column-example'>
+                    {(source.head[0][column.Field] !== '' ? `${source.head[0][column.Field]}` : '<empty>').slice(0,50)}
                   </td>
                 </tr>
               {/each}
@@ -165,13 +168,12 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
         {/if}
       {/if}
     </div>
-    <hr />
-    <div class='source-tables pad-1rem'>
+    <div class='source-tables p-4'>
       {#if currentQuery?.destinationProfile}
           <CollapsibleTitle bind:active={showDestination}>
             Destination
             <svelte:fragment slot='contextual-information'>
-              <!-- {formatCardinality(destinationInfo.cardinality)} row{#if destinationInfo.cardinality !== 1}s{/if} -->
+              {formatCardinality(currentQuery?.cardinality || 0)} row{#if currentQuery?.cardinality !== 1}s{/if}
             </svelte:fragment>
           </CollapsibleTitle>
         {#if showDestination}
@@ -180,16 +182,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
               {#each currentQuery.destinationProfile as column}
                 <tr>
                   <td>
-                  <div style="font-weight: semibold;">{column.Field} 
-                    <span style="font-weight: 300; font-size:11px; color: #666;">
+                  <div class="font-medium">{column.Field} 
+                    <span class="column-type">
                       {column.Type}
                     </span>
-                    <span style="font-weight: 300; color: #666;">
+                    <span class="font-light text-gray-500">
                       {#if column.pk === 1} (primary){:else}{/if}
                     </span></div> 
                   </td>
-                  <td>
-                    {(currentQuery.preview[0][column.Field] !== '' ? `${currentQuery.preview[0][column.Field]}` : '<empty>').slice(0,25)}
+                  <td class='column-example'>
+                    {(currentQuery.preview[0][column.Field] !== '' ? `${currentQuery.preview[0][column.Field]}` : '<empty>').slice(0,50)}
                   </td>
                 </tr>
               {/each}
@@ -200,13 +202,15 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
     </div>
 
     {#if currentQuery?.preview}
-    <hr />
 
-    <div class='results-container stack-list'>
-      <div class="inspector-header pad-1rem"  style="transform: translateY({showOutputs ? '-8px' : '0px'})">
+    <div class='results-container'>
+      <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
+        transform: translateY({showOutputs ? '-8px' : '0px'});
+        grid-template-columns: auto max-content;
+      ">
         <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
         {#if showOutputs}
-        <div class="inspector-button-row">
+        <div class="inspector-button-row grid grid-flow-col justify-start">
           <button class='inspector-button' class:selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
             <RowIcon size={16} />
           </button>
@@ -219,7 +223,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 
 
       {#if showOutputs}
-      <div class="results pad-1rem" style="padding-top:0px;">
+      <div class="results p-4 pt-0 mt-0">
         {#if currentQuery.preview}
           {#key currentQuery.query}
             <svelte:component this={whichTable[outputView]} data={currentQuery.preview} />
@@ -234,33 +238,13 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
     </div>
   </div>
 </div>
-<style>
+<style lang="postcss">
 
-hr {
-  margin: 0;
-  border: none;
-  border-bottom: 1px solid #ddd;
-}
 .drawer-container {
   display: grid;
   grid-template-columns: max-content auto;
   align-content: stretch;
   align-items: stretch;
-}
-
-.cost {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-content: space-between;
-}
-
-.drawer-handler {
-  min-width: 1rem;
-  position:absolute;
-  height: 100%;
-  height: calc(100vh - var(--header-height));
-  /* background-color: lightgray; */
-  transform: translateX(-.5rem);
 }
 
 .inspector {
@@ -269,56 +253,22 @@ hr {
 
 }
 
-.drawer-handler:hover {
-  cursor:col-resize;
-}
-
-.pad-1rem {
-  padding: 1rem;
-}
-
-.inspector-header {
-  display: grid;
-  grid-template-columns: auto max-content;
-  align-items: baseline;
-  position: sticky;
-  top: 0px;
-}
-
-.inspector-button-row {
-  display: grid;
-  grid-auto-flow: column;
-  justify-content: start;
-}
-
 .source-tables {
-  display: grid;
-  grid-auto-flow: rows;
-  grid-gap: .5rem;
+  @apply grid grid-flow-row gap-2;
 }
 
 .source-tables h4 {
-  font-weight: black;
-  /* border-top: 1px solid #ccc; */
-  padding-top: .5rem;
+  @apply m-0 mb-2 pt-2 font-black font-semibold grid grid-flow-col justify-between;
   font-size: 13px;
-  margin:0;
-  font-weight: 600;
-  margin-bottom:.5rem;
-  display: grid;
-  grid-auto-flow: column;
-  justify-content: space-between;
 }
 
-.source-tables h4 span:nth-child(2) {
-  font-weight: normal;
+.column-type {
+  @apply font-light text-gray-500;
+  font-size: 11px;
 }
 
-h3 {
-  margin: 0;
-  padding: 0;
-  font-size: 13px;
-  font-weight: normal;
+.column-example {
+  @apply font-light text-gray-500 font-normal;
 }
 
 table {
