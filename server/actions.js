@@ -1,14 +1,3 @@
-import { 
-    createPreview, 
-    createSourceProfile, 
-    wrapQueryAsView, 
-    checkQuery, 
-    calculateDestinationCardinality,
-    createDestinationProfile
- } from "./inspector.mjs";
- import {
-    getQuerySizeInBytes
- } from './duckdb.mjs';
 let queryNumber = 0;
 
 function guidGenerator() {
@@ -55,8 +44,8 @@ export function initialState() {
  * }
  * @returns {object}
  */
-export const createServerActions = () => {
-    return {
+export const createServerActions = (api) => {
+    return () => ({
         addQuery() {
             return draft => { 
                     draft.queries.push(emptyQuery()); 
@@ -114,7 +103,7 @@ export const createServerActions = () => {
                 const state = getState();
                 const queryInfo = state.queries.find(query => query.id === id);
                 // check to see if it is valid.
-                const checked = await checkQuery(queryInfo.query);
+                const checked = await api.checkQuery(queryInfo.query);
                 if (checked.status === 'ERROR') {
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
@@ -125,10 +114,10 @@ export const createServerActions = () => {
                 }
 
                 // if valid, wrap query as temp view.
-                wrapQueryAsView(queryInfo.query);
+                api.wrapQueryAsView(queryInfo.query);
 
                 // get the preview dataset.
-                createPreview(queryInfo.query).then((preview) => {
+                api.createPreview(queryInfo.query).then((preview) => {
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         if (preview.error) {
@@ -139,14 +128,14 @@ export const createServerActions = () => {
                     });
                 })
                 /** The source profile */
-                createSourceProfile(queryInfo.query).then((profile) => {
+                api.createSourceProfile(queryInfo.query).then((profile) => {
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.profile = profile;
                     });
                 })
 
-                calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
+                api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.cardinality = cardinality;
@@ -160,7 +149,7 @@ export const createServerActions = () => {
                 //     })
                 // })
 
-                createDestinationProfile(queryInfo.query).then((tableInfo) => {
+                api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.destinationProfile = tableInfo;
@@ -175,7 +164,7 @@ export const createServerActions = () => {
                 // });
             }
         }
-    }
+    })
 }
 
 export const getActions = () => {
