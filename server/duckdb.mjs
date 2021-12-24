@@ -21,7 +21,8 @@ export function dbAll(db, query) {
 }
 
 export function connect() {
-	return new duckdb.Database('./scripts/nyc311-reduced.duckdb', { read_only: true });
+	//return new duckdb.Database('./scripts/nyc311-reduced.duckdb', { read_only: true });
+	return new duckdb.Database(':memory:');
 }
 
 export function testConnection() {
@@ -154,7 +155,6 @@ await dbAll(db, 'PRAGMA enable_profiling="json";');
 await dbAll(db, "PRAGMA profile_output='./last-query-output.json';");
 
 
-
 function wrapQueryAsTemporaryView(query) {
 	return `CREATE OR REPLACE TEMPORARY VIEW tmp AS (
 	${query.replace(';', '')}
@@ -169,7 +169,7 @@ export async function checkQuery(query) {
 		if (isValid.message !== 'No statement to prepare!') {
 			output.error = isValid.message;
 		}
-		console.log('error', output.error);
+		console.log('"check query" error', isValid.message);
         output.status = 'ERROR';
 		return output;
 	}
@@ -185,12 +185,13 @@ export async function checkQuery(query) {
 }
 
 export async function wrapQueryAsView(query) {
-	try {
-		db.exec(wrapQueryAsTemporaryView(query));
-	} catch (err) {
-		return err.message;
-	}
-	return true;
+	console.log('running the wrap query here')
+	return new Promise((resolve, reject) => {
+		db.run(wrapQueryAsTemporaryView(query), (err) => {
+			if (err !== null) reject(false);
+			resolve(true);
+		})
+	})
 }
 
 export async function createPreview(query) {
@@ -199,6 +200,7 @@ export async function createPreview(query) {
     try {
 		try {
 			// get the preview.
+			console.log('trying to wrap query');
 			preview.results = await dbAll(db, 'SELECT * from tmp LIMIT 25;');
 		} catch (err) {
 			console.log('error');
@@ -210,6 +212,7 @@ export async function createPreview(query) {
         preview.error = err.message;
 		console.error('hmm', err);
 	}
+	console.log('successfully created preview')
     return preview;
 }
 
@@ -218,6 +221,36 @@ export async function createSourceProfile(query) {
 	const file = JSON.parse(fs.readFileSync('./last-query-output.json').toString());
 	return await getInputTables(db, file, {});
 }
+
+export async function createSourceProfileFromParquet(query) {
+	// capture output from parquet query?
+	let re = /'.*\.parquet'/g;
+	const matches = query.match(re);
+	console.log(matches);
+	const tables = await Promise.all(matches.map(async (match) => {
+		const info = await new Promise((resolve, reject) => db.all(`select * from parquet_schema(${match});`, (err, res) => {
+			if (err !== null) reject(err);
+			const output = res.map((r) => {
+				return {
+					Type: r.type,
+					Field: r.name
+				}
+			})
+			resolve(output);
+		}));
+		const head = await dbAll(db, `SELECT * from ${match} LIMIT 1;`);
+		const [cardinality] = await dbAll(db, `select count(*) as count FROM ${match};`);
+		
+		return {
+			info: info.filter(i => i.Field !== 'duckdb_schema'),
+			head, 
+			cardinality: cardinality.count,
+			table: match
+		}
+	}))
+	return tables;
+}
+
 
 export async function calculateDestinationCardinality(query) {
 	const [outputSize] = await dbAll(db, 'SELECT count(*) AS cardinality from tmp;');

@@ -16,3 +16,4 @@ server/venv/
 # generated content
 saved-state.json
 last-query-output.json
+staging-databases

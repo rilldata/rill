@@ -113,11 +113,21 @@ export const createServerActions = (api) => {
                     return;
                 }
 
+                console.log('ok!');
+
+                
                 // if valid, wrap query as temp view.
-                api.wrapQueryAsView(queryInfo.query);
+                try {
+                    await api.wrapQueryAsView(queryInfo.query);
+                } catch (err) {
+                    console.log('reached an error', err);
+                }
+                
+                console.log('wrapping query as view')
 
                 // get the preview dataset.
                 api.createPreview(queryInfo.query).then((preview) => {
+                    console.log('created preview');
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         if (preview.error) {
@@ -128,7 +138,17 @@ export const createServerActions = (api) => {
                     });
                 })
                 /** The source profile */
-                api.createSourceProfile(queryInfo.query).then((profile) => {
+                // FIXME: work with parquet files only?
+                // api.createSourceProfile(queryInfo.query).then((profile) => {
+                //     console.log('created source profile', profile);
+                //     dispatch((draft) => {
+                //         let q = draft.queries.find(query => query.id === id);
+                //         q.profile = profile;
+                //     });
+                // })
+                api.createSourceProfileFromParquet(queryInfo.query).then((profile) => {
+                    console.log(profile);
+                    console.log('created source profile', profile);
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.profile = profile;
@@ -136,6 +156,7 @@ export const createServerActions = (api) => {
                 })
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
+                    console.log('calculated destination cardinality');
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.cardinality = cardinality;
@@ -149,19 +170,14 @@ export const createServerActions = (api) => {
                 //     })
                 // })
 
-                api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
-                    dispatch((draft) => {
-                        let q = draft.queries.find(query => query.id === id);
-                        q.destinationProfile = tableInfo;
-                    })
-                })
+                // api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
+                //     console.log('calculated destination profile');
+                //     dispatch((draft) => {
+                //         let q = draft.queries.find(query => query.id === id);
+                //         q.destinationProfile = tableInfo;
+                //     })
+                // })
 
-                // const output = await setPreview(query.query);
-                // dispatch((draft) => {
-                //     let q = draft.queries.find(query => query.id === id);
-                //     q.status = "DONE";
-                //     q.preview = output;
-                // });
             }
         }
     })

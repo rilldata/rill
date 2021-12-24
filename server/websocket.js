@@ -24,6 +24,7 @@ const initialState = {
 }
 
 const store = createStore(
+    //initialState,
     initializeFromSavedState('saved-state')(initialState),
     addProduce(),
     addActions(createServerActions(api)),
