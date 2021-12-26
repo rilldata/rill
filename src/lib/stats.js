@@ -1,7 +1,6 @@
 export function columnize(rowObjects) {
 	// get keys
 	const keys = Object.keys(rowObjects[0]);
-	console.log(keys);
 	const columns = keys.reduce((obj, key) => {
 		obj[key] = [];
 		return obj;

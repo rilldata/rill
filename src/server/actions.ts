@@ -1,3 +1,5 @@
+import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
+
 let queryNumber = 0;
 
 function guidGenerator() {
@@ -14,6 +16,7 @@ interface DataModellerState {
 
 interface Query {
     query: string;
+    sanitizedQuery: string;
     name: string;
     id: string;
     cardinality?: number;
@@ -29,6 +32,7 @@ export function emptyQuery(): Query {
 	queryNumber += 1;
 	return {
 		query: '',
+        sanitizedQuery: '',
 		name: `query_${queryNumber}.sql`,
 		id,
         profile: undefined,
@@ -41,6 +45,41 @@ export function initialState() : DataModellerState {
     return {
         queries: [emptyQuery()]
     }
+}
+
+function getQuery(queries, id) {
+    return queries.find(q=>q.id === id);
+}
+
+function addError(dispatch:Function, id:string, message:string) {
+    dispatch((draft:DataModellerState) => {
+        let q = getQuery(draft.queries, id);
+        q.error = message;
+    });
+}
+
+function clearQuery(dispatch:Function, id:string) {
+    dispatch((draft:DataModellerState) => {
+        let q = getQuery(draft.queries, id);
+        q.sizeInBytes = undefined;
+        q.destinationProfile = undefined;
+        q.preview = undefined;
+        q.profile = undefined;
+    });
+}
+
+function clearError(dispatch:Function, id:string) {
+    dispatch((draft:DataModellerState) => {
+        let q =  getQuery(draft.queries, id);
+        q.error = undefined;
+    });
+}
+
+function sanitizeQuery(dispatch:Function, id:string) {
+    dispatch((draft:DataModellerState) => {
+        let q =  getQuery(draft.queries, id);
+        q.sanitizedQuery = _sanitizeQuery(q.query);
+    });
 }
 
 /**
@@ -140,72 +179,67 @@ export const createServerActions = (api, notifyUser) => {
                 const state = getState();
                 const queryInfo = state.queries.find(query => query.id === id);
                 // check to see if it is valid.
-                const checked = await api.checkQuery(queryInfo.query);
-                if (checked.status === 'ERROR') {
-                    dispatch((draft:DataModellerState) => {
-                        let q = draft.queries.find(query => query.id === id);
-                        q.error = checked.error;
-                    });
-                    // return early.
+                try {
+                    await api.checkQuery(queryInfo.query);
+                } catch (error) {
+                    if (error.message !== 'No statement to prepare!') {
+                        console.error(error);
+                        addError(dispatch, id, error.message);
+                    }   
+                    clearQuery(dispatch, id);
                     return;
                 }
+                // reset 
+                clearError(dispatch, id);
+                sanitizeQuery(dispatch, id);
 
                 // if valid, wrap query as temp view.
                 try {
                     await api.wrapQueryAsView(queryInfo.query);
                 } catch (err) {
-                    console.log('reached an error', err);
+                    console.error('reached an error', err);
                 }
                 
+                let anyRemainingErrors = false;
                 // get the preview dataset.
                 api.createPreview(queryInfo.query).then((preview) => {
                     dispatch((draft:DataModellerState) => {
-                        let q = draft.queries.find(query => query.id === id);
-                        if (preview.error) {
-                            //
-                        } else {
-                            q.preview = preview.results;
-                        }
+                        let q = getQuery(draft.queries, id);
+                        q.preview = preview;
                     });
-                })
-                /** The source profile */
-                // FIXME: work with parquet files only?
-                // api.createSourceProfile(queryInfo.query).then((profile) => {
-                //     console.log('created source profile', profile);
-                //     dispatch((draft) => {
-                //         let q = draft.queries.find(query => query.id === id);
-                //         q.profile = profile;
-                //     });
-                // })
-                api.createSourceProfileFromParquet(queryInfo.query).then((profile) => {
+                }).catch(console.error);
+
+                api.createSourceProfile(queryInfo.query).then((profile) => {
                     dispatch((draft:DataModellerState) => {
-                        let q = draft.queries.find(query => query.id === id);
+                        let q = getQuery(draft.queries, id);
                         q.profile = profile;
                     });
                 })
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
                     dispatch((draft:DataModellerState) => {
-                        let q = draft.queries.find(query => query.id === id);
+                        let q = getQuery(draft.queries, id);
                         q.cardinality = cardinality;
                     });
                 })
 
-                api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`).then((size) => {
-                    if (size !== undefined) {
-                        dispatch((draft:DataModellerState)=> {
-                            let q = draft.queries.find(query => query.id === id);
-                            q.sizeInBytes = size;
-                        })
-                    }
-                })
+                api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`)
+                    .then((size) => {
+                        if (size !== undefined) {
+                            dispatch((draft:DataModellerState)=> {
+                                let q = getQuery(draft.queries, id);
+                                q.sizeInBytes = size;
+                            })
+                        }
+                    })
 
                 api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
                     dispatch((draft:DataModellerState) => {
-                        let q = draft.queries.find(query => query.id === id);
+                        let q = getQuery(draft.queries, id);
                         q.destinationProfile = tableInfo;
                     })
-                })
+                });
+                // guess we've removed all errors?
 
             }
         }

@@ -158,16 +158,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
               {#each source.info as column}
                 <tr>
                   <td>
-                  <div class="font-medium">{column.Field} 
+                  <div class="font-medium">{column.name} 
                       <span class="column-type">
-                        {column.Type}
+                        {column.type}
                       </span>
                       <span class="font-light text-gray-500">
                       {#if column.pk === 1} (primary){:else}{/if}
                     </span></div> 
                   </td>
                   <td class='column-example'>
-                    {(source.head[0][column.Field] !== '' ? `${source.head[0][column.Field]}` : '<empty>').slice(0,50)}
+                    {(source.head[0][column.name] !== '' ? `${source.head[0][column.name]}` : '<empty>').slice(0,50)}
                   </td>
                 </tr>
               {/each}
@@ -193,16 +193,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
               {#each currentQuery.destinationProfile as column}
                 <tr>
                   <td>
-                  <div class="font-medium">{column.Field} 
+                  <div class="font-medium">{column.name} 
                     <span class="column-type">
-                      {column.Type}
+                      {column.type}
                     </span>
                     <span class="font-light text-gray-500">
                       {#if column.pk === 1} (primary){:else}{/if}
                     </span></div> 
                   </td>
                   <td class='column-example'>
-                    {(currentQuery.preview[0][column.Field] !== '' ? `${currentQuery.preview[0][column.Field]}` : '<empty>').slice(0,50)}
+                    {(currentQuery.preview[0][column.name] !== '' ? `${currentQuery.preview[0][column.name]}` : '<empty>').slice(0,50)}
                   </td>
                 </tr>
               {/each}
@@ -216,7 +216,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 
     <div class='results-container'>
       <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
-        transform: translateY({showOutputs ? '-8px' : '0px'});
+        transform: translateY({showOutputs ? '-9px' : '0px'});
         grid-template-columns: auto max-content;
       ">
         <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
