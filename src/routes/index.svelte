@@ -1,7 +1,5 @@
 <script>
-import { setContext } from "svelte";
-import { createStore } from '$lib/app-store';
-import { browser } from "$app/env";
+import { getContext } from "svelte";
 
 import AddIcon from "$lib/components/icons/AddIcon.svelte";
 import RefreshIcon from "$lib/components/icons/RefreshIcon.svelte";
@@ -108,14 +106,7 @@ let destinationInfo;
 // FIXME: this is out of control :(
 let destinationSize;
 
-let store;
-
-if (browser) {
-  store = createStore();
-  setContext('rill:app:store', store);
-}
-
-
+const store = getContext("rill:app:store");
 
 </script>
 

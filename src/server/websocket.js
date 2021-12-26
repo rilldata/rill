@@ -6,7 +6,7 @@ import {
 	resettable,
     addProduce,
     connectStateToSocket,
-    addActions } from "../src/lib/create-store.js";
+    addActions } from "../lib/create-store.js";
 
 import * as api from "./duckdb.mjs";
 
@@ -27,13 +27,12 @@ const store = createStore(
     //initialState,
     initializeFromSavedState('saved-state')(initialState),
     addProduce(),
-    addActions(createServerActions(api)),
+    addActions(createServerActions(api, ({ message, type }) => socket.emit("notification", { message, type }))),
     resettable(initialState),
     connectStateToSocket(), // emit to socket any state changes via store.subscribe
     saveToLocalFile('saved-state') // let's save to our local file
 )
 
-const actions = createServerActions();
 console.log('initialized the store.');
 
 io.on("connection", thisSocket => {
@@ -42,5 +41,7 @@ io.on("connection", thisSocket => {
     socket.emit("app-state", store.get());
     store.connectStateToSocket(socket);
   });
+
+
 
 io.listen(3001);

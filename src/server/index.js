@@ -4,7 +4,7 @@ import chokidar from "chokidar";
 
 function spinUpServer() {
     console.log('spinning up server');
-    const c = spawn("node", ["./server/websocket.js"]);
+    const c = spawn("node", ["./src/server/websocket.js"]);
 
     c.stdout.on('data', data => {
         console.log(`stdout: ${data}`);
@@ -28,7 +28,7 @@ function spinUpServer() {
 
 let child = spinUpServer();
 
-const watcher = chokidar.watch('./server/*', {
+const watcher = chokidar.watch('./src/server/*', {
     ignored: /(^|[\/\\])\../, // ignore dotfiles]
     persistent: true
   });

@@ -20,6 +20,16 @@ export function dbAll(db, query) {
 	});
 }
 
+export function dbRun(query) { 
+	return new Promise((resolve, reject) => {
+		db.run(query, (err) => {
+				if (err !== null) reject(false);
+				resolve(true);
+			}
+		)
+	})
+}
+
 export function connect() {
 	//return new duckdb.Database('./scripts/nyc311-reduced.duckdb', { read_only: true });
 	return new duckdb.Database(':memory:');
@@ -223,11 +233,10 @@ export async function createSourceProfile(query) {
 }
 
 export async function createSourceProfileFromParquet(query) {
-	// capture output from parquet query?
+	// capture output from parquet query.
 	let re = /'.*\.parquet'/g;
 	const matches = query.match(re);
-	console.log(matches);
-	const tables = await Promise.all(matches.map(async (match) => {
+	const tables = matches === null ? [] : await Promise.all(matches.map(async (match) => {
 		const info = await new Promise((resolve, reject) => db.all(`select * from parquet_schema(${match});`, (err, res) => {
 			if (err !== null) reject(err);
 			const output = res.map((r) => {
@@ -240,17 +249,25 @@ export async function createSourceProfileFromParquet(query) {
 		}));
 		const head = await dbAll(db, `SELECT * from ${match} LIMIT 1;`);
 		const [cardinality] = await dbAll(db, `select count(*) as count FROM ${match};`);
-		
+		const output = await dbAll(db, `SELECT total_compressed_size from parquet_metadata(${match})`);
 		return {
 			info: info.filter(i => i.Field !== 'duckdb_schema'),
 			head, 
 			cardinality: cardinality.count,
-			table: match
+			table: match,
+			size: output.reduce((acc,v) => acc + v.total_compressed_size, 0)
 		}
 	}))
 	return tables;
 }
 
+export async function getDestinationSize(path) {
+	if (fs.existsSync(path)) {
+		const size = await dbAll(db, `SELECT total_compressed_size from parquet_metadata('${path}')`);
+		return size.reduce((acc,v) => acc + v.total_compressed_size, 0)
+	}
+	return undefined;
+}
 
 export async function calculateDestinationCardinality(query) {
 	const [outputSize] = await dbAll(db, 'SELECT count(*) AS cardinality from tmp;');
@@ -259,4 +276,13 @@ export async function calculateDestinationCardinality(query) {
 
 export async function createDestinationProfile(query) {
 	return await dbAll(db, `PRAGMA show(tmp);`);
+}
+
+export async function exportToParquet(query, output) {
+	// generate export just in case.
+	if (!fs.existsSync('./export')) {
+		fs.mkdirSync('./export');
+	}
+	const exportQuery = `COPY (${query.replace(';', '')}) TO '${output}' (FORMAT 'parquet')`;
+	return dbRun(exportQuery);
 }

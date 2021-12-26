@@ -105,6 +105,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
   use:drag />
   <div class='inspector divide-y divide-gray-200'>
     {#if currentQuery && currentQuery.profile}
+      <div class="w-full flex align-items-stretch flex-col">
+        <button class="p-3 pt-2 pb-2 bg-transparent border border-black m-3 rounded-md" on:click={() => {
+          const query = currentQuery.query;
+          const exportFilename = currentQuery.name.replace('.sql', '.parquet');
+          const path = `./export/${exportFilename}`
+          store.action('exportToParquet', {query, path, id: currentQuery.id });
+        }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
+      </div>
+    {/if}
+    {#if currentQuery && currentQuery.profile}
       <div class='cost p-4 grid grid-cols-2 justify-between'>
         <div style="font-weight: bold;">
           {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
@@ -168,6 +178,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
         {/if}
       {/if}
     </div>
+    
     <div class='source-tables p-4'>
       {#if currentQuery?.destinationProfile}
           <CollapsibleTitle bind:active={showDestination}>

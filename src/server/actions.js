@@ -44,8 +44,8 @@ export function initialState() {
  * }
  * @returns {object}
  */
-export const createServerActions = (api) => {
-    return () => ({
+export const createServerActions = (api, notifyUser) => {
+    return (store, options) => ({
         addQuery() {
             return draft => { 
                     draft.queries.push(emptyQuery()); 
@@ -98,8 +98,27 @@ export const createServerActions = (api) => {
             }
         },
 
+        exportToParquet({query, id, path}) {
+            return async (dispatch) => {
+                await api.exportToParquet(query, path);
+
+                api.getDestinationSize(path).then((size) => {
+                    if (size !== undefined) {
+                        dispatch((draft) => {
+                            let q = draft.queries.find(query => query.id === id);
+                            q.sizeInBytes = size;
+                        })
+                    }
+                })
+                notifyUser({ message: `exported ${path}`, type: "info"})
+
+                return true;
+            }
+        },
+
         updateQueryInformation({id}) {
             return async (dispatch, getState) => {
+                
                 const state = getState();
                 const queryInfo = state.queries.find(query => query.id === id);
                 // check to see if it is valid.
@@ -113,9 +132,6 @@ export const createServerActions = (api) => {
                     return;
                 }
 
-                console.log('ok!');
-
-                
                 // if valid, wrap query as temp view.
                 try {
                     await api.wrapQueryAsView(queryInfo.query);
@@ -123,11 +139,8 @@ export const createServerActions = (api) => {
                     console.log('reached an error', err);
                 }
                 
-                console.log('wrapping query as view')
-
                 // get the preview dataset.
                 api.createPreview(queryInfo.query).then((preview) => {
-                    console.log('created preview');
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         if (preview.error) {
@@ -147,8 +160,6 @@ export const createServerActions = (api) => {
                 //     });
                 // })
                 api.createSourceProfileFromParquet(queryInfo.query).then((profile) => {
-                    console.log(profile);
-                    console.log('created source profile', profile);
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.profile = profile;
@@ -156,33 +167,29 @@ export const createServerActions = (api) => {
                 })
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
-                    console.log('calculated destination cardinality');
                     dispatch((draft) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.cardinality = cardinality;
                     });
                 })
 
-                // getQuerySizeInBytes(queryInfo.query).then((size) => {
-                //     dispatch((draft) => {
-                //         let q = draft.queries.find(query => query.id === id);
-                //         q.sizeInBytes = size;
-                //     })
-                // })
+                api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`).then((size) => {
+                    if (size !== undefined) {
+                        dispatch((draft) => {
+                            let q = draft.queries.find(query => query.id === id);
+                            q.sizeInBytes = size;
+                        })
+                    }
+                })
 
-                // api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
-                //     console.log('calculated destination profile');
-                //     dispatch((draft) => {
-                //         let q = draft.queries.find(query => query.id === id);
-                //         q.destinationProfile = tableInfo;
-                //     })
-                // })
+                api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
+                    dispatch((draft) => {
+                        let q = draft.queries.find(query => query.id === id);
+                        q.destinationProfile = tableInfo;
+                    })
+                })
 
             }
         }
     })
-}
-
-export const getActions = () => {
-    return Object.keys(createServerActions());
 }

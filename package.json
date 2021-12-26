@@ -11,7 +11,10 @@
 		"lint": "prettier --ignore-path .gitignore --check --plugin-search-dir=. . && eslint --ignore-path .gitignore .",
 		"format": "prettier --ignore-path .gitignore --write --plugin-search-dir=. .",
 		"start": "electron ./electron.cjs",
-		"duckdb": "node ./server/server.duckdb.js"
+		"duckdb": "node ./server/server.duckdb.js",
+		"server": "node src/server",
+		"test": "NODE_OPTIONS=--experimental-vm-modules jest src --config jest.config.json",
+		"test:watch": "npm run test -- --watch"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "next",
@@ -32,7 +35,17 @@
 		"svelte-preprocess": "^4.9.4",
 		"tailwindcss": "^3.0.7",
 		"tslib": "^2.3.1",
-		"typescript": "^4.4.3"
+		"typescript": "^4.4.3",
+		"@babel/core": "^7.14.0",
+		"@babel/preset-env": "^7.14.0",
+		"jest": "^27.0.0",
+		"babel-jest": "^27.0.0",
+		"svelte-jester": "^2.0.1",
+		"@testing-library/svelte": "^3.0.0",
+		"@testing-library/jest-dom": "^5.14.0",
+		"ts-jest": "^27.0.0",
+		"@types/jest": "^27.0.0",
+		"@types/testing-library__jest-dom": "^5.14.0"
 	},
 	"type": "module",
 	"dependencies": {
