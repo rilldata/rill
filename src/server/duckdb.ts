@@ -1,3 +1,4 @@
+// @ts-nocheck
 import fs from "fs";
 import duckdb from 'duckdb';
 import { execSync } from 'child_process';

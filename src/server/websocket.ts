@@ -8,8 +8,8 @@ import {
     connectStateToSocket,
     addActions } from "../lib/create-store.js";
 
-import * as api from "./duckdb.mjs";
-
+import * as api from "./duckdb.js";
+console.log('did this work?')
 import { createServerActions, emptyQuery } from "./actions.js"
 
 let socket;

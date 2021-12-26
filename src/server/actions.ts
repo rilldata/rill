@@ -7,7 +7,24 @@ function guidGenerator() {
 	return S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4();
 }
 
-export function emptyQuery() {
+interface DataModellerState {
+    queries: Query[];
+    activeQuery?: string;
+}
+
+interface Query {
+    query: string;
+    name: string;
+    id: string;
+    cardinality?: number;
+    sizeInBytes?: number;
+    error?: string;
+    profile?: any;
+    preview?: any;
+    destinationProfile?: any;
+}
+
+export function emptyQuery(): Query {
 	const id = guidGenerator();
 	queryNumber += 1;
 	return {
@@ -15,11 +32,12 @@ export function emptyQuery() {
 		name: `query_${queryNumber}.sql`,
 		id,
         profile: undefined,
-        preview: undefined
+        preview: undefined,
+        sizeInBytes: undefined
 	};
 }
 
-export function initialState() {
+export function initialState() : DataModellerState {
     return {
         queries: [emptyQuery()]
     }
@@ -58,24 +76,24 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         setActiveQuery({id}) {
-            return (draft) => {
+            return (draft:DataModellerState) => {
                 draft.activeQuery = id;
             }
         },
 
         changeQueryName({id, name}) {
-            return (draft) => {
+            return (draft:DataModellerState) => {
                 draft.queries.find((q) => q.id === id).name = name;
             }
         },
         deleteQuery({id}) {
-            return (draft) => {
+            return (draft:DataModellerState) => {
                 draft.queries = draft.queries.filter(q => q.id !== id);
             }
         },
 
         moveQueryDown({id}) { 
-            return (draft) => {
+            return (draft:DataModellerState) => {
                 const idx = draft.queries.findIndex((q) => q.id === id);
                 if (idx < draft.queries.length - 1) {
                     const thisQuery = { ...draft.queries[idx] };
@@ -87,7 +105,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         moveQueryUp({id}) {
-            return (draft) => {
+            return (draft:DataModellerState) => {
                 const idx = draft.queries.findIndex((q) => q.id === id);
                 if (idx > 0) {
                     const thisQuery = { ...draft.queries[idx] };
@@ -104,7 +122,7 @@ export const createServerActions = (api, notifyUser) => {
 
                 api.getDestinationSize(path).then((size) => {
                     if (size !== undefined) {
-                        dispatch((draft) => {
+                        dispatch((draft:DataModellerState) => {
                             let q = draft.queries.find(query => query.id === id);
                             q.sizeInBytes = size;
                         })
@@ -124,7 +142,7 @@ export const createServerActions = (api, notifyUser) => {
                 // check to see if it is valid.
                 const checked = await api.checkQuery(queryInfo.query);
                 if (checked.status === 'ERROR') {
-                    dispatch((draft) => {
+                    dispatch((draft:DataModellerState) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.error = checked.error;
                     });
@@ -141,7 +159,7 @@ export const createServerActions = (api, notifyUser) => {
                 
                 // get the preview dataset.
                 api.createPreview(queryInfo.query).then((preview) => {
-                    dispatch((draft) => {
+                    dispatch((draft:DataModellerState) => {
                         let q = draft.queries.find(query => query.id === id);
                         if (preview.error) {
                             //
@@ -160,14 +178,14 @@ export const createServerActions = (api, notifyUser) => {
                 //     });
                 // })
                 api.createSourceProfileFromParquet(queryInfo.query).then((profile) => {
-                    dispatch((draft) => {
+                    dispatch((draft:DataModellerState) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.profile = profile;
                     });
                 })
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
-                    dispatch((draft) => {
+                    dispatch((draft:DataModellerState) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.cardinality = cardinality;
                     });
@@ -175,7 +193,7 @@ export const createServerActions = (api, notifyUser) => {
 
                 api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`).then((size) => {
                     if (size !== undefined) {
-                        dispatch((draft) => {
+                        dispatch((draft:DataModellerState)=> {
                             let q = draft.queries.find(query => query.id === id);
                             q.sizeInBytes = size;
                         })
@@ -183,7 +201,7 @@ export const createServerActions = (api, notifyUser) => {
                 })
 
                 api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
-                    dispatch((draft) => {
+                    dispatch((draft:DataModellerState) => {
                         let q = draft.queries.find(query => query.id === id);
                         q.destinationProfile = tableInfo;
                     })
