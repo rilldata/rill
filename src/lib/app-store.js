@@ -8,6 +8,7 @@ export function createStore() {
 	socket.on("app-state", (state) => set(state));
 	return {
 		subscribe,
+		socket,
 		reset() {
 			socket.emit('reset');
 		},

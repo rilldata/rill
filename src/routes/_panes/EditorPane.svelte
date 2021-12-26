@@ -17,6 +17,7 @@ function getErrorLineNumber(errorString) {
   return { message, lineNumber };
 }
 
+
 </script>
 
 <div class="editor-pane">
@@ -48,10 +49,10 @@ function getErrorLineNumber(errorString) {
     </div>
   {/each}
   </div>
-  {#if error}
+  {#if $store.activeQuery && $store.queries.find(q => q.id === $store.activeQuery).error}
     <div transition:slide={{ duration: 100 }} 
       class="error"
-    >{error}</div>
+    >{$store.queries.find(q => q.id === $store.activeQuery).error}</div>
     {/if}
   {/if}
 </div>

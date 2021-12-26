@@ -105,6 +105,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
   use:drag />
   <div class='inspector divide-y divide-gray-200'>
     {#if currentQuery && currentQuery.profile}
+      <div class="w-full flex align-items-stretch flex-col">
+        <button class="p-3 pt-2 pb-2 bg-transparent border border-black m-3 rounded-md" on:click={() => {
+          const query = currentQuery.query;
+          const exportFilename = currentQuery.name.replace('.sql', '.parquet');
+          const path = `./export/${exportFilename}`
+          store.action('exportToParquet', {query, path, id: currentQuery.id });
+        }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
+      </div>
+    {/if}
+    {#if currentQuery && currentQuery.profile}
       <div class='cost p-4 grid grid-cols-2 justify-between'>
         <div style="font-weight: bold;">
           {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
@@ -148,16 +158,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
               {#each source.info as column}
                 <tr>
                   <td>
-                  <div class="font-medium">{column.Field} 
+                  <div class="font-medium">{column.name} 
                       <span class="column-type">
-                        {column.Type}
+                        {column.type}
                       </span>
                       <span class="font-light text-gray-500">
                       {#if column.pk === 1} (primary){:else}{/if}
                     </span></div> 
                   </td>
                   <td class='column-example'>
-                    {(source.head[0][column.Field] !== '' ? `${source.head[0][column.Field]}` : '<empty>').slice(0,50)}
+                    {(source.head[0][column.name] !== '' ? `${source.head[0][column.name]}` : '<empty>').slice(0,50)}
                   </td>
                 </tr>
               {/each}
@@ -168,6 +178,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
         {/if}
       {/if}
     </div>
+    
     <div class='source-tables p-4'>
       {#if currentQuery?.destinationProfile}
           <CollapsibleTitle bind:active={showDestination}>
@@ -182,16 +193,16 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
               {#each currentQuery.destinationProfile as column}
                 <tr>
                   <td>
-                  <div class="font-medium">{column.Field} 
+                  <div class="font-medium">{column.name} 
                     <span class="column-type">
-                      {column.Type}
+                      {column.type}
                     </span>
                     <span class="font-light text-gray-500">
                       {#if column.pk === 1} (primary){:else}{/if}
                     </span></div> 
                   </td>
                   <td class='column-example'>
-                    {(currentQuery.preview[0][column.Field] !== '' ? `${currentQuery.preview[0][column.Field]}` : '<empty>').slice(0,50)}
+                    {(currentQuery.preview[0][column.name] !== '' ? `${currentQuery.preview[0][column.name]}` : '<empty>').slice(0,50)}
                   </td>
                 </tr>
               {/each}
@@ -205,7 +216,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 
     <div class='results-container'>
       <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
-        transform: translateY({showOutputs ? '-8px' : '0px'});
+        transform: translateY({showOutputs ? '-9px' : '0px'});
         grid-template-columns: auto max-content;
       ">
         <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>

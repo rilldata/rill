@@ -25,7 +25,13 @@
 		"paths": {
 			"$lib": ["src/lib"],
 			"$lib/*": ["src/lib/*"]
-		}
+		},
+		"outDir": "tsc-tmp"
 	},
-	"include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts", "src/**/*.svelte", "server/actions.js"]
+	"include": [
+		"src/**/*.d.ts", 
+		"src/**/*.ts", 
+		"src/**/*.svelte",
+		"src/util/sanitize-query.mjs",
+		"tsc-tmp/**/*.js"]
 }

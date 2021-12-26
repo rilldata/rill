@@ -1,10 +1,12 @@
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import chokidar from "chokidar";
 // spin up server
 
 function spinUpServer() {
     console.log('spinning up server');
-    const c = spawn("node", ["./server/websocket.js"]);
+    // first transpile!
+    execSync("npx tsc");
+    const c = spawn("node", ["tsc-tmp/server/websocket.js"]);
 
     c.stdout.on('data', data => {
         console.log(`stdout: ${data}`);
@@ -28,7 +30,7 @@ function spinUpServer() {
 
 let child = spinUpServer();
 
-const watcher = chokidar.watch('./server/*', {
+const watcher = chokidar.watch('./src/server/*', {
     ignored: /(^|[\/\\])\../, // ignore dotfiles]
     persistent: true
   });

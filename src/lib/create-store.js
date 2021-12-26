@@ -163,11 +163,11 @@ export function connectStateToSocket() {
 					}
 				});
 				Object.keys(options).forEach(action => {
-					if (action !== 'nextStore') {
+					if (action !== 'nextStore' && action !== 'socket') {
 						socket.on(action, options[action]);
 					}
-					
 				})
+				options.socket = socket;
 			}
 		}
 	}
