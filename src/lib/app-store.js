@@ -5,7 +5,9 @@ export function createStore() {
 	const socket = io("http://localhost:3001");
 	socket.on("connect", () => {});
 	const { set, subscribe } = writable({});
-	socket.on("app-state", (state) => set(state));
+	socket.on("app-state", (state) => {
+		set(state)
+	});
 	return {
 		subscribe,
 		socket,

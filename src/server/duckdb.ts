@@ -1,6 +1,7 @@
 // @ts-nocheck
 import fs from "fs";
 import duckdb from 'duckdb';
+import {default as glob} from 'glob';
 
 interface DB {
 	all: Function;
@@ -117,22 +118,35 @@ export async function createPreview(query:string) {
     return preview;
 }
 
-export async function createSourceProfile(query:string) {
+export async function createSourceProfile(parquetFile:string) {
+	return await dbAll(db, `select * from parquet_schema('${parquetFile}');`) as any[];
+}
+
+export async function getCardinality(parquetFile:string) {
+	const [cardinality] =  await dbAll(db, `select count(*) as count FROM '${parquetFile}';`);
+	return cardinality.count;
+}
+
+export async function getFirstN(table, n=1) {
+	return  dbAll(db, `SELECT * from ${table} LIMIT ${n};`);
+}
+
+export async function createSourceProfileFromQuery(query:string) {
 	// capture output from parquet query.
-	let re = /'.*\.parquet'/g;
+	let re = /'[^']*\.parquet'/g;
 	const matches = query.match(re);
 	const tables = (matches === null) ? [] : await Promise.all(matches.map(async (match) => {
-		const info = await dbAll(db, `select * from parquet_schema(${match});`) as any[];
-		const head = await dbAll(db, `SELECT * from ${match} LIMIT 1;`);
-		// @ts-ignore
+		let strippedMatch = match.replace(/'/g, '');
+		const info = await createSourceProfile(strippedMatch);
+		const head = await getFirstN(match);
 		const [cardinality] = await dbAll(db, `select count(*) as count FROM ${match};`);
-		const output = await dbAll(db, `SELECT total_compressed_size from parquet_metadata(${match})`) as any[];
+		const size = await getCardinality(strippedMatch);
 		return {
 			info: info.filter(i => i.name !== 'duckdb_schema'),
 			head, 
 			cardinality: cardinality.count,
-			table: match,
-			size: output.reduce((acc:number,v) => acc + v.total_compressed_size, 0)
+			table: strippedMatch,
+			size
 		}
 	}))
 	return tables;
@@ -163,4 +177,15 @@ export async function exportToParquet(query:string, output:string) {
 	}
 	const exportQuery = `COPY (${query.replace(';', '')}) TO '${output}' (FORMAT 'parquet')`;
 	return dbRun(exportQuery);
+}
+
+export async function getParquetFilesInRoot() {
+	return new Promise((resolve, reject) => {
+		glob.glob('./**/*.parquet', {ignore: ['./node_modules/', './.svelte-kit/', './build/', './src/', './tsc-tmp']},
+			(err, output) => {
+				if (err!==null) reject(err);
+				resolve(output);
+			}
+		)
+	});
 }

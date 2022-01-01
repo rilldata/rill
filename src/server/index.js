@@ -6,7 +6,7 @@ function spinUpServer() {
     console.log('spinning up server');
     // first transpile!
     execSync("npx tsc");
-    const c = spawn("node", ["tsc-tmp/server/websocket.js"]);
+    const c = spawn("node", ["tsc-tmp/server/local-mode.js"]);
 
     c.stdout.on('data', data => {
         console.log(`stdout: ${data}`);

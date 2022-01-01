@@ -15,9 +15,10 @@ import EditIcon from "$lib/components/icons/EditIcon.svelte"
 const dispatch = createEventDispatcher();
 export let content;
 export let name;
+export let editable = true;
 
-export let errorLineNumber;
-export let errorLineMessage;
+// export let errorLineNumber;
+// export let errorLineMessage;
 
 let oldContent = content;
 
@@ -47,45 +48,45 @@ function getPos(text, lineNumber) {
 	return text.slice(0, lineNumber - 1).join(' ').length + 1;
 }
 
-const breakpointEffect = StateEffect.define({
-  map: (val, mapping) => ({pos: mapping.mapPos(val.pos), on: val.on})
-})
+// const breakpointEffect = StateEffect.define({
+//   map: (val, mapping) => ({pos: mapping.mapPos(val.pos), on: val.on})
+// })
 
-const breakpointState = StateField.define({
-  create() { return RangeSet.empty },
-  update(set, transaction) {
-    set = set.map(transaction.changes)
-    for (let e of transaction.effects) {
-      if (e.is(breakpointEffect)) {
-        if (e.value.on)
-          set = set.update({add: [breakpointMarker.range(e.value.pos)]})
-        else
-          set = set.update({filter: from => from != e.value.pos})
-      }
-    }
-    return set
-  }
-})
+// const breakpointState = StateField.define({
+//   create() { return RangeSet.empty },
+//   update(set, transaction) {
+//     set = set.map(transaction.changes)
+//     for (let e of transaction.effects) {
+//       if (e.is(breakpointEffect)) {
+//         if (e.value.on)
+//           set = set.update({add: [breakpointMarker.range(e.value.pos)]})
+//         else
+//           set = set.update({filter: from => from != e.value.pos})
+//       }
+//     }
+//     return set
+//   }
+// })
 
-function toggleBreakpoint(view, pos) {
-  let breakpoints = view.state.field(breakpointState)
-  let hasBreakpoint = false
-  breakpoints.between(pos, pos, () => {hasBreakpoint = true})
-  view.dispatch({
-    effects: breakpointEffect.of({pos, on: !hasBreakpoint})
-  })
-}
+// function toggleBreakpoint(view, pos) {
+//   let breakpoints = view.state.field(breakpointState)
+//   let hasBreakpoint = false
+//   breakpoints.between(pos, pos, () => {hasBreakpoint = true})
+//   view.dispatch({
+//     effects: breakpointEffect.of({pos, on: !hasBreakpoint})
+//   })
+// }
 
 const breakpointGutter = [
-  breakpointState,
+  ///breakpointState,
   gutter({
     class: "cm-breakpoint-gutter",
-    markers: v => v.state.field(breakpointState),
+    // markers: v => v.state.field(breakpointState),
     initialSpacer: () => breakpointMarker,
     domEventHandlers: {
       mousedown(view, line) {
-        console.log(line)
-        toggleBreakpoint(view, line.from);
+        //console.log(line)
+        //toggleBreakpoint(view, line.from);
         return true
       }
     }
@@ -99,14 +100,14 @@ const breakpointGutter = [
   })
 ]
 
-let prevError = undefined;
-$: if (editor && errorLineNumber) {
-    toggleBreakpoint(editor, getPos(editor.state.doc.text, errorLineNumber));
-    prevError = errorLineNumber;
-} else if (editor && !errorLineNumber && prevError) {
-    toggleBreakpoint(editor, getPos(editor.state.doc.text, prevError));
-    prevError = undefined;
-}
+// let prevError = undefined;
+// $: if (editor && errorLineNumber) {
+//     toggleBreakpoint(editor, getPos(editor.state.doc.text, errorLineNumber));
+//     prevError = errorLineNumber;
+// } else if (editor && !errorLineNumber && prevError) {
+//     toggleBreakpoint(editor, getPos(editor.state.doc.text, prevError));
+//     prevError = undefined;
+// }
 
 const breakpointMarker = new class extends GutterMarker {
   toDOM() { 

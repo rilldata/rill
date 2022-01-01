@@ -1,3 +1,8 @@
+/**
+ * NOTE: only pure JS functions are allowed here. Anything that requires implementations
+ * should be assumed to exist in the api object passed to createServerActions.
+ * This enables us to swap out different APIs & backends as needed.
+ */
 import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
 
 let queryNumber = 0;
@@ -10,8 +15,14 @@ function guidGenerator() {
 }
 
 interface DataModellerState {
-    queries: Query[];
     activeQuery?: string;
+    queries: Query[];
+    sources: Source[];
+}
+
+interface NewQueryArguments {
+    query?: string;
+    name?: string;
 }
 
 interface Query {
@@ -20,30 +31,67 @@ interface Query {
     name: string;
     id: string;
     cardinality?: number;
-    sizeInBytes?: number;
+    sizeInBytes?: number; // TODO: make sure this is just size
     error?: string;
-    profile?: any;
+    profile?: ProfileColumn[]; // TODO: create Profile interface
     preview?: any;
     destinationProfile?: any;
 }
 
-export function emptyQuery(): Query {
-	const id = guidGenerator();
-	queryNumber += 1;
-	return {
-		query: '',
-        sanitizedQuery: '',
-		name: `query_${queryNumber}.sql`,
-		id,
+interface Source {
+    id: string;
+    path: string;
+    name: string;
+    profile: ProfileColumn[]; // TODO: create Profile interface
+    head: any[];
+    cardinality?: number;
+    sizeInBytes?: number;
+}
+
+/**
+ * The type definition for a "profile column"
+ */
+interface ProfileColumn {
+    name: string;
+    type: string;
+}
+
+export function newSource(): Source {
+    return {
+        id: guidGenerator(),
+        path: '',
+        name: '',
+        profile: [],
+        cardinality: undefined,
+        sizeInBytes: undefined,
+        head: []
+    }
+}
+
+export function newQuery(params:NewQueryArguments = {}): Query {
+    const query = params.query || '';
+    const sanitizedQuery = _sanitizeQuery(query);
+    const name = `${params.name || `query_${queryNumber}`}.sql`;
+    queryNumber += 1;
+    return {
+		query,
+        sanitizedQuery,
+		name,
+		id: guidGenerator(),
         profile: undefined,
         preview: undefined,
         sizeInBytes: undefined
 	};
 }
 
+export function emptyQuery(): Query {
+	return newQuery({});
+}
+
 export function initialState() : DataModellerState {
     return {
-        queries: [emptyQuery()]
+        queries: [emptyQuery()],
+        sources: []
     }
 }
 
@@ -82,6 +130,13 @@ function sanitizeQuery(dispatch:Function, id:string) {
     });
 }
 
+function updateQueryField(dispatch:Function, id:string, field:string, value:any) {
+    dispatch((draft:DataModellerState) => {
+        let q = getQuery(draft.queries, id);
+        q[field] = value;
+    });
+}
+
 /**
  * These actions will be threaded into the server storage.
  * Each action function in the object can take one of two forms:
@@ -103,14 +158,61 @@ function sanitizeQuery(dispatch:Function, id:string) {
  */
 export const createServerActions = (api, notifyUser) => {
     return (store, options) => ({
-        addQuery() {
-            return draft => { 
-                    draft.queries.push(emptyQuery()); 
+        // sources
+        addSource(path) {
+            return async (dispatch:Function) => {
+                dispatch((draft:DataModellerState) => {
+                    draft.sources = [];
+                })
+                const source = newSource();
+                source.path = path;
+                source.name = path.split('/').slice(-1)[0];
+                try {
+                    source.profile = await api.createSourceProfile(source.path);
+                    source.profile = source.profile.filter(row => row.name !== 'duckdb_schema');
+                    source.sizeInBytes = await api.getDestinationSize(source.path);
+                    source.cardinality = await api.getCardinality(source.path);
+                    source.head = await api.getFirstN(`'${source.path}'`);
+                    dispatch((draft:DataModellerState) => {
+                        draft.sources.push(source);
+                    })
+                } catch (err) {
+                    console.log("addSource", err);
+                    //throw Error(err);
+                }
+            }
+        },
+
+        scanRootForSources() {
+            return async (dispatch, getState) => {
+                const files = await api.getParquetFilesInRoot();
+                files.forEach(path => {
+                    try {
+                        dispatch(this.addSource(path))
+                    } catch (err) {
+                        console.log(err);
+                    }
+                    
+                })
+            }
+        },
+
+        // queries
+        addQuery(params) {
+            const query = params.query || undefined;
+            const name = params.name || undefined;
+            const at = params.at;
+            return (draft:DataModellerState) => {
+                if (at !== undefined) {
+                    draft.queries = [...draft.queries.slice(0, at), newQuery({ query, name }), ...draft.queries.slice(at)];
+                } else {
+                    draft.queries.push(newQuery({ query, name })); 
+                }
             };
         },
         updateQuery({id, query}) {
-            return (draft) => {
-                draft.queries.find((q) => q.id === id).query = query;
+            return (draft:DataModellerState) => {
+                getQuery(draft.queries, id).query = query;
             };
         },
 
@@ -175,7 +277,6 @@ export const createServerActions = (api, notifyUser) => {
 
         updateQueryInformation({id}) {
             return async (dispatch, getState) => {
-                
                 const state = getState();
                 const queryInfo = state.queries.find(query => query.id === id);
                 // check to see if it is valid.
@@ -183,10 +284,11 @@ export const createServerActions = (api, notifyUser) => {
                     await api.checkQuery(queryInfo.query);
                 } catch (error) {
                     if (error.message !== 'No statement to prepare!') {
-                        console.error(error);
+                        console.log(id);
                         addError(dispatch, id, error.message);
-                    }   
-                    clearQuery(dispatch, id);
+                    }  else {
+                        clearQuery(dispatch, id);
+                    } 
                     return;
                 }
                 // reset 
@@ -203,43 +305,38 @@ export const createServerActions = (api, notifyUser) => {
                 let anyRemainingErrors = false;
                 // get the preview dataset.
                 api.createPreview(queryInfo.query).then((preview) => {
-                    dispatch((draft:DataModellerState) => {
-                        let q = getQuery(draft.queries, id);
-                        q.preview = preview;
-                    });
-                }).catch(console.error);
+                    updateQueryField(dispatch, id, 'preview', preview);
+                }).catch(error => {
+                    console.error('createPreview', error);
+                });
 
-                api.createSourceProfile(queryInfo.query).then((profile) => {
-                    dispatch((draft:DataModellerState) => {
-                        let q = getQuery(draft.queries, id);
-                        q.profile = profile;
-                    });
-                })
+                api.createSourceProfileFromQuery(queryInfo.query).then((profile) => {
+                    updateQueryField(dispatch, id, 'profile', profile);
+                }).catch(error => {
+                    console.error('createSourceProfile', error);
+                    addError(dispatch, id, error.message);
+                });
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
-                    dispatch((draft:DataModellerState) => {
-                        let q = getQuery(draft.queries, id);
-                        q.cardinality = cardinality;
-                    });
-                })
+                    updateQueryField(dispatch, id, 'cardinality', cardinality);
+                }).catch(error => {
+                    console.error('calculateDestinationCardinality', error);
+                });
 
                 api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`)
                     .then((size) => {
                         if (size !== undefined) {
-                            dispatch((draft:DataModellerState)=> {
-                                let q = getQuery(draft.queries, id);
-                                q.sizeInBytes = size;
-                            })
+                            updateQueryField(dispatch, id, 'sizeInBytes', size);
                         }
-                    })
+                    }).catch(error => {
+                        console.error('getDestinationSize', error);
+                    });
 
-                api.createDestinationProfile(queryInfo.query).then((tableInfo) => {
-                    dispatch((draft:DataModellerState) => {
-                        let q = getQuery(draft.queries, id);
-                        q.destinationProfile = tableInfo;
-                    })
+                api.createDestinationProfile(queryInfo.query).then((destinationProfile) => {
+                    updateQueryField(dispatch, id, 'destinationProfile', destinationProfile);
+                }).catch(error => {
+                    console.error('createDestinationProfile', error);
                 });
-                // guess we've removed all errors?
 
             }
         }

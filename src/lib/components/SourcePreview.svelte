@@ -1,0 +1,172 @@
+<script lang="ts">
+import { onMount } from "svelte";
+import { slide } from "svelte/transition";
+import {format} from "d3-format";
+
+import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
+
+import { dropStore } from '$lib/drop-store';
+
+export let name:string;
+export let path:string;
+export let cardinality:number;
+export let profile:any;
+export let head:any;
+export let sizeInBytes:number;
+export let emphasizeTitle:boolean = false;
+
+let colSizer;
+
+const formatCardinality = format(".3s");
+let container;
+
+let containerWidth = 0;
+let firstColWidth = 0;
+let show = false;
+
+function humanFileSize(size:number) {
+    var i = Math.floor( Math.log(size) / Math.log(1024) );
+    return ( size / Math.pow(1024, i) ).toFixed(2) + ['B', 'K', 'M', 'G'][i];
+};
+
+onMount(() => {
+    const observer = new ResizeObserver(entries => {
+        entries.forEach((entry) => {
+            containerWidth = entry.target.clientWidth;
+        });
+        firstColWidth = colSizer.offsetWidth;
+    });
+    observer.observe(container);
+});
+
+//let collapseGrid = false;
+//$: collapseGrid = containerWidth - 120 - 16 / firstColWidth < 1;
+$: collapseGrid = containerWidth < 200 + 120 + 16;
+
+let draggingEditor;
+</script>
+
+<div bind:this={container}>
+    <div draggable={true} 
+        class="drag-interface"
+        on:dragstart={(evt) => {
+            var elem = document.createElement("div");
+            elem.id = "drag-ghost";
+            elem.textContent = `${name}`;
+            elem.style.position = "absolute";
+            elem.style.top = "-1000px";
+            elem.style.fontSize = '12px';
+            elem.style.transform = 'translateY(-5em)';
+            elem.classList.add('draggable');
+            // draggingEditor = new Editor({
+            //     target: elem,
+            //     props: {
+            //         content: `SELECT * from '${path}';`,
+            //         name: ''
+            //     }
+            // })
+            document.body.appendChild(elem);
+            evt.dataTransfer.setDragImage(elem, 0, 0);
+            // set the drag store to be consumed elsewhere.
+            dropStore.set({
+                type: "source-to-query",
+                props: {
+                    content: `SELECT * from '${path}';`,
+                    name: 'whatever.sql'
+                }
+            });
+        }}
+        on:dragend={() => {
+            var ghost = document.getElementById("drag-ghost");
+            if (ghost.parentNode) {
+                ghost.parentNode.removeChild(ghost);
+            }
+            dropStore.set(undefined);
+        }}>
+    <CollapsibleTitle caret=left bind:active={show}>
+        <span class:font-bold={emphasizeTitle}>
+            {name}
+        </span>
+            <svelte:fragment slot='contextual-information'>
+                    <div class='italic'>
+                        {formatCardinality(cardinality)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid}, {humanFileSize(sizeInBytes)}{/if}
+                    </div>
+
+            </svelte:fragment>
+      </CollapsibleTitle>
+    </div>
+    {#if show}
+        <div class="pt-1 pl-accordion" transition:slide|local={{duration: 120 }}>
+            {#if path}
+                <div class='pb-2 pt-2 italic'>{path}</div>
+            {/if}
+            <!-- {#if collapseGrid}
+            <div class=" pb-1 italic">
+                {formatCardinality(cardinality)} row{#if cardinality !== 1}s{/if}
+                {humanFileSize(sizeInBytes)}
+            </div>
+            {/if} -->
+            <div class="rows" class:break-grid={collapseGrid}>
+                {#each profile as column}
+                <div class="font-medium break-word">
+                    <span class='break-all'>
+                        {column.name} 
+                    </span>
+                    <span 
+                        class="text-gray-500"
+                    >
+                        {column.type}
+                    </span>
+                    <span class="font-light text-gray-500">
+                    {#if column.pk === 1} (primary){:else}{/if}
+                </span>
+                </div>
+                <div class='justify-self-end text-right text-gray-500 italic break-all' class:remove={collapseGrid}>
+                    {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)}
+                </div>
+                {/each}
+            </div>
+        </div>
+    {/if}
+
+    <!-- <table cellpadding="0" cellspacing="0">
+    {#each profile as column}
+      <tr>
+        <td>
+        <div class="font-medium">{column.name} 
+            <span class="column-type">
+              {column.type}
+            </span>
+            <span class="font-light text-gray-500">
+            {#if column.pk === 1} (primary){:else}{/if}
+          </span></div> 
+        </td>
+        <td class='column-example'>
+          {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,50)}
+        </td>
+      </tr>
+    {/each}
+    </table> -->
+  </div>
+
+<style lang="postcss">
+.rows {
+    display: grid;
+    grid-template-columns: auto minmax(120px, auto);
+    column-gap: 1rem;
+    width: 100%;
+}
+
+.break-grid {
+    display: block;
+}
+
+.remove {
+    display: none;
+}
+
+.drag-interface:active {
+    cursor: grabbing;
+}
+
+</style> 

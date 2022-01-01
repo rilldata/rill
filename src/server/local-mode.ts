@@ -10,24 +10,24 @@ import {
 
 import * as api from "./duckdb.js";
 
-import { createServerActions, emptyQuery } from "./actions.js"
+import { createServerActions, emptyQuery, initialState as createInitialState } from "./actions.js"
 
 let socket;
 
-const io = new Server({   cors: {
+const io = new Server({ cors: {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"]
   } });
 
-const initialState = {
-    queries: [emptyQuery()]
-}
+const initialState = createInitialState();
+
+const serverActions = createServerActions(api, ({ message, type }) => socket.emit("notification", { message, type }));
 
 const store = createStore(
-    //initialState,
-    initializeFromSavedState('saved-state')(initialState),
+    initialState,
+    //initializeFromSavedState('saved-state')(initialState),
     addProduce(),
-    addActions(createServerActions(api, ({ message, type }) => socket.emit("notification", { message, type }))),
+    addActions(serverActions),
     resettable(initialState),
     connectStateToSocket(), // emit to socket any state changes via store.subscribe
     saveToLocalFile('saved-state') // let's save to our local file
@@ -39,6 +39,10 @@ io.on("connection", thisSocket => {
     console.log('connected', thisSocket.id);
     socket = thisSocket;
     socket.emit("app-state", store.get());
+    //console.log(Object.keys(store))
+    store.scanRootForSources();
+    //store.produce(serverActions(undefined, undefined).scanRootForSources());
+    //store.produce(store.scanForRootSources());
     store.connectStateToSocket(socket);
   });
 

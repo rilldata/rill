@@ -7,6 +7,7 @@ import Logo from "$lib/components/Logo.svelte";
 
 import EditorPane from "./_panes/EditorPane.svelte";
 import InspectorPane from "./_panes/InspectorPane.svelte";
+import AssetsPane from "./_panes/AssetsPane.svelte";
 
 `
 --SELECT events.pageId from events
@@ -112,12 +113,15 @@ const store = getContext("rill:app:store");
 
 <header class="header">
   <h1><Logo /></h1>
-  <button  on:click={() => store.action("addQuery")}><AddIcon size={18} /></button>
+  <button  on:click={() => store.action("addQuery", {})}><AddIcon size={18} /></button>
   <button on:click={() => store.action('reset')}>
       <RefreshIcon size={18} />
   </button>
 </header>
 <div class='body'>
+  <div class="pane assets">
+    <AssetsPane />
+  </div>
   <div class="pane inputs">
     <EditorPane bind:destinationSize bind:queryInfo bind:resultset bind:query bind:destinationInfo />
   </div>
@@ -131,7 +135,7 @@ const store = getContext("rill:app:store");
 .body {
   width: calc(100vw);
   display: grid;
-  grid-template-columns: calc(100vw - var(--right-sidebar-width, 450px)) auto;
+  grid-template-columns: max-content auto max-content;
   align-content: stretch;
   min-height: calc(100vh - var(--header-height));
 }

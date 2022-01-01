@@ -33,30 +33,34 @@ export function saveToLocalFile(key) {
 	};
 }
 
-export function addProduce() {
-	return (store, _, others) => ({
-		nextStore: store,
-		produce(fcn) {
-			// this works very similar to what you'd expect in a redux setting.
-			// eg. dispatch(changeChannel('beta')) should take the changeChannel
-			// action, which returns a draft-mutating function to be fed into
-			// immer's produce function.
-			if (fcn.constructor.name === 'AsyncFunction') {
-				// I thought about using func.length (if it has two args, then we are go)
-    			// but you may only have one. For now, I think marking a function a async
-    			// works.
-				fcn(this.produce, () => get(store));
-			} else {
-				// atomic update (singular state change).
-				store.update(draft => produce(draft, fcn));
+export function addProduce(verbose = false) {
+	return (store, _, others) => {
+			function thunkProduce(fcn) {
+				if (verbose) console.info('running', fcn.toString());
+				// this works very similar to what you'd expect in a redux setting.
+				// eg. dispatch(changeChannel('beta')) should take the changeChannel
+				// action, which returns a draft-mutating function to be fed into
+				// immer's produce function.
+				if (fcn.constructor.name === 'AsyncFunction') {
+					// I thought about using func.length (if it has two args, then we are go)
+					// but you may only have one. For now, I think marking a function a async
+					// works.
+					fcn(thunkProduce, () => get(store));
+				} else {
+					// atomic update (singular state change).
+					store.update(draft => produce(draft, fcn));
+				}
 			}
-		},
-		setField(key, value) {
-			this.produce((draft) => {
-				draft[key] = value;
-			});
-		}
-	});
+			return {
+				nextStore: store,
+				produce: thunkProduce,
+				setField(key, value) {
+					this.produce((draft) => {
+						draft[key] = value;
+					});
+				}
+			}
+		};
 }
 
 export function addActions(actionsObject) {

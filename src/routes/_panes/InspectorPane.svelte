@@ -8,6 +8,8 @@ import JSONIcon from "$lib/components/icons/JsonIcon.svelte";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 
+import { drag } from "$lib/drag";
+
 import {format} from "d3-format";
 
 const store = getContext('rill:app:store');
@@ -24,46 +26,9 @@ let whichTable = {
 
 let innerWidth;
 
-function drag(node, params = { minSize: 400, maxSize: 800, property: `--right-sidebar-width` }) {
-    let minSize_ = params?.minSize || 400;
-    let maxSize_ = params?.maxSize || 800;
-    let property_ = params?.property || '--right-sidebar-width';
-    let moving = false;
-    let xSpace = minSize_;
 
-    node.style.cursor = "move";
-    node.style.userSelect = "none";
 
-    function mousedown() {
-      moving = true;
-    }
-
-    function mousemove(e) {
-      if (moving) {
-        const size = innerWidth - e.pageX;
-        if (size > minSize_ && size < maxSize_) {
-          xSpace = size;
-        }
-
-        document.body.style.setProperty(property_, `${xSpace}px`)
-      }
-    }
-
-    function mouseup() {
-      moving = false;
-    }
-
-    node.addEventListener("mousedown", mousedown);
-    window.addEventListener("mousemove", mousemove);
-    window.addEventListener("mouseup", mouseup);
-    return {
-      update() {
-        moving = false;
-      },
-    };
-  }
-
-let showSources;
+let showSources = false;
 let showOutputs;
 let showDestination;
 
@@ -88,7 +53,6 @@ function computeCompression(source, destination) {
 let rollup;
 let compression;
 
-
 let currentQuery = {};
 $: if (currentQuery?.cardinality && currentQuery?.profile) rollup = computeRollup(currentQuery.profile, {cardinality: currentQuery.cardinality });
 $: if (currentQuery?.sizeInBytes && currentQuery?.profile) compression = computeCompression(currentQuery.profile, { size: currentQuery.sizeInBytes })
@@ -97,12 +61,12 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 
 <svelte:window bind:innerWidth />
 
-<div class='drawer-container'>
+<div class='drawer-container flex'>
   <!-- Drawer Handler -->
-  <div class='drawer-handler w-4 absolute hover:cursor-col-resize'
-    style="height: calc(100vh - var(--header-height));
-    transform: translateX(-.5rem);"
-  use:drag />
+
+  <div class='drawer-handler w-4 absolute hover:cursor-col-resize -translate-x-2 body-height'
+  use:drag={{ minSize: 400 }} />
+
   <div class='inspector divide-y divide-gray-200'>
     {#if currentQuery && currentQuery.profile}
       <div class="w-full flex align-items-stretch flex-col">
@@ -115,7 +79,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
       </div>
     {/if}
     {#if currentQuery && currentQuery.profile}
-      <div class='cost p-4 grid grid-cols-2 justify-between'>
+      <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
         <div style="font-weight: bold;">
           {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
         </div>
@@ -202,7 +166,9 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
                     </span></div> 
                   </td>
                   <td class='column-example'>
-                    {(currentQuery.preview[0][column.name] !== '' ? `${currentQuery.preview[0][column.name]}` : '<empty>').slice(0,50)}
+                    {#if currentQuery?.preview && currentQuery.preview.length}
+                      {(currentQuery.preview[0][column.name] !== '' ? `${currentQuery.preview[0][column.name]}` : '<empty>').slice(0,50)}
+                    {/if}
                   </td>
                 </tr>
               {/each}
@@ -212,8 +178,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
       {/if}
     </div>
 
-    {#if currentQuery?.preview}
-
+    {#if currentQuery?.preview && currentQuery.preview.length}
     <div class='results-container'>
       <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
         transform: translateY({showOutputs ? '-9px' : '0px'});
@@ -252,16 +217,12 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 <style lang="postcss">
 
 .drawer-container {
-  display: grid;
-  grid-template-columns: max-content auto;
-  align-content: stretch;
-  align-items: stretch;
+  height: calc(100vh - var(--header-height));
 }
 
 .inspector {
-  width: var(--right-sidebar-width, 450px);
-  font-size: 13px;
-
+  width: var(--right-sidebar-width, 400px);
+  font-size: 12px;
 }
 
 .source-tables {
@@ -270,12 +231,12 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 
 .source-tables h4 {
   @apply m-0 mb-2 pt-2 font-black font-semibold grid grid-flow-col justify-between;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .column-type {
   @apply font-light text-gray-500;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .column-example {
@@ -284,7 +245,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 
 table {
   width: 100%;
-  font-size:13px;
+  font-size:12px;
   text-align: left;
   /* padding-right: .25rem; */
 }

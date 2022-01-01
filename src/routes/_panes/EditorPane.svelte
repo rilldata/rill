@@ -1,8 +1,10 @@
 <script>
 import { getContext } from "svelte";
 import { fly, slide } from "svelte/transition";
+import { cubicOut as easing } from 'svelte/easing';
 import { flip } from "svelte/animate";
 import Editor from "$lib/components/Editor.svelte";
+import DropZone from "$lib/components/DropZone.svelte";
 const store = getContext("rill:app:store");
 
 let error;
@@ -16,15 +18,22 @@ function getErrorLineNumber(errorString) {
   const lineNumber = parseInt(linePortion.split(':')[0]);
   return { message, lineNumber };
 }
-
-
+$: console.log($store?.queries?.length)
 </script>
 
 <div class="editor-pane">
-  {#if store && $store.queries}
+  {#if $store && $store.queries}
     <div class="input-body p-4 overflow-auto">
-    {#each $store.queries as q (q.id)}
-    <div class="stack" transition:fly={{duration: 100, y: -5}} animate:flip={{duration: 100}}>
+    {#each $store.queries as q, i (q.id)}
+    <div class="stack" 
+    animate:flip={{duration: 100}}>
+
+      <DropZone 
+        padTop={$store.queries.length}
+        on:source-drop={(evt) => { 
+          store.action('addQuery', { query: evt.detail.props.content, at: i } ); 
+        }} />
+        
       <Editor 
         content={q.query}
         name={q.name}
@@ -43,15 +52,23 @@ function getErrorLineNumber(errorString) {
             store.action('setActiveQuery', { id: q.id })
             store.action("updateQuery", {id: q.id, query: evt.detail.content});
             store.action("updateQueryInformation", {id: q.id});
-            //runAndUpdateInspector(evt.detail.content);
         }}
     />
+
     </div>
+
   {/each}
-  </div>
-  {#if $store.activeQuery && $store.queries.find(q => q.id === $store.activeQuery).error}
-    <div transition:slide={{ duration: 100 }} 
-      class="error"
+
+  <DropZone end         padTop={$store.queries.length}
+  on:source-drop={(evt) => {
+    store.action('addQuery', { query: evt.detail.props.content } );
+  }} />
+
+</div>
+
+  {#if $store.activeQuery && $store.queries.find(q => q.id === $store.activeQuery)?.error}
+    <div transition:slide={{ duration: 200, easing }} 
+      class="error p-4 m-4 rounded-lg shadow-md"
     >{$store.queries.find(q => q.id === $store.activeQuery).error}</div>
     {/if}
   {/if}
@@ -69,7 +86,6 @@ function getErrorLineNumber(errorString) {
   background-color: var(--error-bg);
   color: var(--error-text);
   font-size: 13px;
-  padding: 1rem;
   align-self: bottom;
 }
 </style>

@@ -30,6 +30,10 @@ body {
     overscroll-behavior: none;
 }
 
+.body-height {
+    height: calc(100vh - var(--header-height));
+}
+
 button {
     font-family: "MD IO 0.4";
 }
@@ -140,4 +144,12 @@ button {
     display: grid;
     place-items: center;
     height: 18px;
+}
+
+.pl-accordion {
+    padding-left: calc(14px + .25rem);
+}
+
+.draggable:active {
+    cursor: dragging;
 }
