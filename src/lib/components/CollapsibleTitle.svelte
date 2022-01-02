@@ -1,6 +1,7 @@
 <script>
 import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
 export let active = true;
+export let icon;
 </script>
 
 <div 
@@ -19,7 +20,7 @@ export let active = true;
             hover:border-slate-200"
             style="
                 max-width: 100%;
-                grid-template-columns: max-content auto max-content
+                grid-template-columns: max-content {icon ? 'max-content' : ''} auto max-content
             "
         on:click={() => { active = !active; }}>
             <div style="
@@ -27,6 +28,11 @@ export let active = true;
                 transform: translateY(-1px) rotate({active ? 0 : -90}deg);
             "><CaretDownIcon size={14} />
         </div>
+        {#if icon}
+            <div class="text-gray-400">
+                <svelte:component this={icon} size=1em />
+            </div>
+        {/if}
         <div class="text-ellipsis overflow-hidden whitespace-nowrap">
             <slot />
         </div>

@@ -139,14 +139,16 @@ export async function createSourceProfileFromQuery(query:string) {
 		let strippedMatch = match.replace(/'/g, '');
 		const info = await createSourceProfile(strippedMatch);
 		const head = await getFirstN(match);
-		const [cardinality] = await dbAll(db, `select count(*) as count FROM ${match};`);
-		const size = await getDestinationSize(strippedMatch);
+		const cardinality = await getCardinality(strippedMatch);
+		const sizeInBytes = await getDestinationSize(strippedMatch);
 		return {
-			info: info.filter(i => i.name !== 'duckdb_schema'),
+			profile: info.filter(i => i.name !== 'duckdb_schema'),
 			head, 
-			cardinality: cardinality.count,
+			cardinality,
 			table: strippedMatch,
-			size
+			sizeInBytes,
+			path: strippedMatch,
+			name: strippedMatch.split('/').slice(-1)[0]
 		}
 	}))
 	return tables;

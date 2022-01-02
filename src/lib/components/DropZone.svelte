@@ -1,6 +1,6 @@
 <script>
 import { createEventDispatcher } from "svelte";
-import { fly, scale, slide } from "svelte/transition";
+import { fade, slide } from "svelte/transition";
 import { dropStore } from "$lib/drop-store";
 import Editor from '$lib/components/Editor.svelte';
 
@@ -46,8 +46,8 @@ $: height = !active ? '1rem' : `calc(1rem + ${editorHeight}px)`;''
         }}
         >
             {#if active}
-            <div class='{padTop ? "pt-3" : ''} pb-3' style='pointer-events: none;'>
-                <div transition:slide|local={{duration: 100 }} style="filter: grayscale(100%); opacity: .5;">
+            <div class='{padTop ? "pt-3" : ''} pb-3' style='pointer-events: none;' in:slide|local={{duration: 100 }} >
+                <div in:fade={{duration: 200}} style="filter: grayscale(100%); opacity: .5;">
                     <Editor bind:editorHeight content={$dropStore.props.content} name="+ new query" />
                 </div>
             </div>

@@ -1,5 +1,6 @@
 <script>
 import { getContext } from "svelte";
+import { flip } from "svelte/animate";
 import { tweened } from "svelte/motion";
 import { cubicOut as easing } from "svelte/easing";
 import { slide } from "svelte/transition";
@@ -8,7 +9,10 @@ import RawJSON from "$lib/components/rawJson.svelte";
 import RowIcon from "$lib/components/icons/RowIcon.svelte";
 import JSONIcon from "$lib/components/icons/JsonIcon.svelte";
 
+import ParquetIcon from "$lib/components/icons/Parquet.svelte";
+
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
+import SourcePreview from "$lib/components/SourcePreview.svelte";
 
 import { drag } from "$lib/drag";
 
@@ -110,34 +114,19 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
         </CollapsibleTitle>
         {#if showSources}
         <div transition:slide|local={{duration: 120 }}>
-          {#each currentQuery.profile as source, i (source.table)}
-            <div>
-              <h4>
-                <span>
-                  {source.table}
-                </span>
-                <span>
-                  {formatCardinality(source.cardinality)} row{#if source.cardinality !== 1}s{/if}
-                </span>
-              </h4>
-              <table cellpadding="0" cellspacing="0">
-              {#each source.info as column}
-                <tr>
-                  <td>
-                  <div class="font-medium">{column.name} 
-                      <span class="column-type">
-                        {column.type}
-                      </span>
-                      <span class="font-light text-gray-500">
-                      {#if column.pk === 1} (primary){:else}{/if}
-                    </span></div> 
-                  </td>
-                  <td class='column-example'>
-                    {(source.head[0][column.name] !== '' ? `${source.head[0][column.name]}` : '<empty>').slice(0,50)}
-                  </td>
-                </tr>
-              {/each}
-              </table>
+          {#each currentQuery.profile as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
+            <div class='pt-1 pb-1' animate:flip transition:slide|local>
+              <SourcePreview
+                icon={ParquetIcon}
+                collapseWidth={240 + 120 + 16}
+                emphasizeTitle={true}
+                {name}
+                {cardinality}
+                {profile}
+                {head}
+                {path}
+                {sizeInBytes}
+              />
             </div>
           {/each}
         </div>
@@ -183,7 +172,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
     {#if currentQuery?.preview && currentQuery.preview.length}
     <div class='results-container'>
       <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
-        transform: translateY({showOutputs ? '-9px' : '0px'});
+        transform: translateY({showOutputs ? '-6px' : '0px'});
         grid-template-columns: auto max-content;
       ">
         <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>

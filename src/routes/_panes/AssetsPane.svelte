@@ -4,7 +4,8 @@ import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
-
+import DatabaseIcon from "$lib/components/icons/Database.svelte";
+import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import SourcePreview from  "$lib/components/SourcePreview.svelte";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
@@ -58,7 +59,8 @@ let innerWidth;
         {#if $store && $store.sources}
           {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
           <div class='pl-3 pr-3 pt-1 pb-1' animate:flip transition:slide|local>
-            <SourcePreview 
+            <SourcePreview
+              icon={ParquetIcon}
               emphasizeTitle={activeQuery?.profile?.map(source => source.table).includes(path)}
               {name}
               {cardinality}
