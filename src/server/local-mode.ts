@@ -55,12 +55,13 @@ io.on("connection", thisSocket => {
 
 let timeoutId:any;
 function watch() {
-  store.scanRootForSources();
-  // if (timeoutId) clearTimeout(timeoutId);
-  // timeoutId = setTimeout(() => store.scanRootForSources(), 100);
+  //store.scanRootForSources();
+  if (timeoutId) clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => store.scanRootForSources(), 100);
 }
 watcher
     .on('change', watch)
+    .on('add', watch)
     .on('unlink', watch)
 
 

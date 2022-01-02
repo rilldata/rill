@@ -199,9 +199,12 @@ export const createServerActions = (api, notifyUser) => {
                 const files = await api.getParquetFilesInRoot();
                 files.sort();
                 const filePaths = new Set(files);
-                // prune
+                // prune & dedup
                 dispatch((draft:DataModellerState) => {
                     draft.sources = draft.sources.filter(s => filePaths.has(s.path));
+                    draft.sources = draft.sources.filter((value, index, self) =>
+                        index === self.findIndex((t) => (t.path === value.path))
+                    );
                 })
                 files.forEach(path => {
                     try {
