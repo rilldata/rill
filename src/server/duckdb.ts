@@ -140,7 +140,7 @@ export async function createSourceProfileFromQuery(query:string) {
 		const info = await createSourceProfile(strippedMatch);
 		const head = await getFirstN(match);
 		const [cardinality] = await dbAll(db, `select count(*) as count FROM ${match};`);
-		const size = await getCardinality(strippedMatch);
+		const size = await getDestinationSize(strippedMatch);
 		return {
 			info: info.filter(i => i.name !== 'duckdb_schema'),
 			head, 

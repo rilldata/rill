@@ -16,7 +16,10 @@ const dispatch = createEventDispatcher();
 export let content;
 export let name;
 export let editable = true;
+export let componentContainer;
+export let editorHeight = 0;
 
+$: editorHeight = componentContainer?.offsetHeight || 0;
 // export let errorLineNumber;
 // export let errorLineMessage;
 
@@ -147,10 +150,15 @@ onMount(() => {
         ]}),
         parent: editorContainerComponent
     });
+    const obs = new ResizeObserver(() => {
+        editorHeight = componentContainer.offsetHeight;
+    })
+    obs.observe(componentContainer);
 })
 
 </script>
-<div>
+
+<div bind:this={componentContainer}>
     <div class=controls>
         <div class="close-container">
             <button class="small-action-button really-small-round" on:click={() => dispatch('delete')}>✕</button>

@@ -1,5 +1,7 @@
 <script>
 import { getContext } from "svelte";
+import { tweened } from "svelte/motion";
+import { cubicOut as easing } from "svelte/easing";
 import { slide } from "svelte/transition";
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";

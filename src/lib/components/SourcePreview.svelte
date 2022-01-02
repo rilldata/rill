@@ -61,6 +61,9 @@ $: cardinalityTween.set(cardinality);
 $: sizeTween.set(sizeInBytes);
 
 let draggingEditor;
+
+let selectingColumns = false;
+let selectedColumns = [];
 </script>
 
 <div bind:this={container}>
@@ -81,7 +84,7 @@ let draggingEditor;
             dropStore.set({
                 type: "source-to-query",
                 props: {
-                    content: `SELECT * from '${path}';`,
+                    content: `SELECT \n  ${selectingColumns && selectedColumns.length ? selectedColumns.join(',\n  ') : '*' }\nFROM '${path}';`,
                     name: 'whatever.sql'
                 }
             });
@@ -93,13 +96,20 @@ let draggingEditor;
             }
             dropStore.set(undefined);
         }}>
-    <CollapsibleTitle caret=left bind:active={show}>
-        <span class:font-bold={emphasizeTitle}>
-            {name}
+    <CollapsibleTitle bind:active={show}>
+        <span class:font-bold={emphasizeTitle} class:italic={selectingColumns}>
+            {name}{#if selectingColumns}&nbsp;<span class="font-bold"> *</span>{/if}
         </span>
             <svelte:fragment slot='contextual-information'>
                     <div class='italic'>
-                        {formatCardinality($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid}, {humanFileSize($sizeTween)}{/if}
+                        {#if selectingColumns}
+                            select columns
+                        {:else}
+                            {formatCardinality($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid}, {humanFileSize($sizeTween)}{/if}
+                        {/if}
+                        <button class:font-bold={selectingColumns} on:click={() => {
+                            selectingColumns = !selectingColumns;
+                        }}>*</button>
                     </div>
 
             </svelte:fragment>
@@ -107,21 +117,36 @@ let draggingEditor;
     </div>
     {#if show}
         <div class="pt-1 pl-accordion" transition:slide|local={{duration: 120 }}>
-            {#if path}
+            <!-- {#if path}
                 <div class='pb-2 pt-2 italic'>{path}</div>
-            {/if}
+            {/if} -->
             <!-- {#if collapseGrid}
             <div class=" pb-1 italic">
                 {formatCardinality(cardinality)} row{#if cardinality !== 1}s{/if}
                 {humanFileSize(sizeInBytes)}
             </div>
             {/if} -->
+            <!-- {#if selectingColumns}
+                {selectedColumns.join(',')}
+            {/if} -->
             <div class="rows" class:break-grid={collapseGrid}>
                 {#each profile as column}
                 <div class="font-medium break-word">
-                    <span class='break-all'>
+                    <button class='break-all {selectingColumns ? 'hover:underline' : ''}' class:font-bold={selectingColumns && selectedColumns.includes(column.name)} 
+                        on:click={() => {
+                        if (selectingColumns) {
+                            if (selectedColumns.includes(column.name)) {
+                                console.log('removing', column.name)
+                                selectedColumns = selectedColumns.filter(c => c !== column.name)
+                            } else {
+
+                                console.log('adding', column.name)
+                                selectedColumns = [...selectedColumns, column.name];
+                            }
+                        }
+                    }}>
                         {column.name} 
-                    </span>
+                    </button>
                     <span 
                         class="text-gray-500"
                     >

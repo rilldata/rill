@@ -26,11 +26,19 @@ interface NewQueryArguments {
 }
 
 interface Query {
+    /**  */
     query: string;
+    /** sanitizedQuery is always a 1:1 function of the query itself */
     sanitizedQuery: string;
+    /** name is used for the filename and exported file */
     name: string;
+    /** the id is a unique identifier used in the interface */
     id: string;
+    /** cardinality is the total number of rows of the previewed dataset */
     cardinality?: number;
+    /** sizeInBytes is the total size of the previewed dataset. 
+     * It is not generated until the user exports the query.
+     * */
     sizeInBytes?: number; // TODO: make sure this is just size
     error?: string;
     profile?: ProfileColumn[]; // TODO: create Profile interface
@@ -96,7 +104,7 @@ export function initialState() : DataModellerState {
 }
 
 function getQuery(queries, id) {
-    return queries.find(q=>q.id === id);
+    return queries.find(q => q.id === id);
 }
 
 function addError(dispatch:Function, id:string, message:string) {
@@ -338,6 +346,9 @@ export const createServerActions = (api, notifyUser) => {
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
                     updateQueryField(dispatch, id, 'cardinality', cardinality);
+                    /** if the cardinality is small enough, should we export to parquet and 
+                     * get the file size?
+                     */
                 }).catch(error => {
                     console.error('calculateDestinationCardinality', error);
                 });

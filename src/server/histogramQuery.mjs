@@ -31,7 +31,7 @@ WITH minCTE as (
     SELECT 
         -- add 1 to largest bin
         CASE WHEN (histogram_bin = (SELECT max(histogram_bin) FROM partitionedCTE)) THEN c+1 ELSE c END AS c, 
-        epoch_ms(histogram_bin)
+        histogram_bin
     from removeLastBinCTE
     GROUP BY histogram_bin, c;    
     `;

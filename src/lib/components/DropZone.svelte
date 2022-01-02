@@ -1,6 +1,6 @@
 <script>
 import { createEventDispatcher } from "svelte";
-import { fly, scale } from "svelte/transition";
+import { fly, scale, slide } from "svelte/transition";
 import { dropStore } from "$lib/drop-store";
 import Editor from '$lib/components/Editor.svelte';
 
@@ -10,8 +10,11 @@ export let padTop = true;
 let active = false;
 const dispatch = createEventDispatcher();
 $: dragging = $dropStore !== undefined;
-$: dropzoneHeight = !active ? ('0px') : ('5rem');
-$: height = !active? (!end? '1rem': '24rem') : (!end? '5rem' : '24rem')
+// bind editorHeight, which is calculated
+// in the Editor component with a ResizeObserver.
+let editorHeight;
+$: dropzoneHeight = !active ? '0px' : `calc(1rem + ${editorHeight}px)`;
+$: height = !active ? '1rem' : `calc(1rem + ${editorHeight}px)`;''
 </script>
 
 <div style="height: {dropzoneHeight}; transition: height 200ms;">
@@ -25,8 +28,9 @@ $: height = !active? (!end? '1rem': '24rem') : (!end? '5rem' : '24rem')
             w-full ease-in {active?'':''}'
         style="
             font-size: 12px;
+            height: {height};
             transition: height 150ms;
-            height: calc({height}); transform: translateY({end ? '0' : '-1rem'});"
+            transform: translateY({end ? '0' : '-1rem'});"
         on:dragenter|preventDefault={(evt) => {
             active = true;
         }}
@@ -42,9 +46,9 @@ $: height = !active? (!end? '1rem': '24rem') : (!end? '5rem' : '24rem')
         }}
         >
             {#if active}
-            <div class='{padTop ? "pt-3" : ''}' style='pointer-events: none;'>
-                <div in:fly={{duration: 200, y: -10}} style="filter: grayscale(100%); opacity: .5;">
-                    <Editor content={$dropStore.props.content} name="+ new query" />
+            <div class='{padTop ? "pt-3" : ''} pb-3' style='pointer-events: none;'>
+                <div transition:slide|local={{duration: 100 }} style="filter: grayscale(100%); opacity: .5;">
+                    <Editor bind:editorHeight content={$dropStore.props.content} name="+ new query" />
                 </div>
             </div>
             {/if}
