@@ -204,7 +204,7 @@ header button:hover {
   border-right: 1px solid #ddd;
 }
 
-.pane.outputs {
+.pane.outputs, .pane.assets {
   height: calc(100vh - var(--header-height));
   overflow-y: auto;
   overflow-x: hidden;

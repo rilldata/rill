@@ -1,7 +1,9 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { slide } from "svelte/transition";
-import {format} from "d3-format";
+import { tweened } from "svelte/motion";
+import { cubicInOut as easing } from "svelte/easing";
+import { format } from "d3-format";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 
@@ -17,7 +19,17 @@ export let emphasizeTitle:boolean = false;
 
 let colSizer;
 
-const formatCardinality = format(".3s");
+const formatCardinalityFcn = format(".3s");
+function formatCardinality(n) {
+    let fmt:Function;
+    if (n <= 1000) {
+        fmt = format(',');
+        return fmt(~~n);
+    } else {
+        fmt = format('.3s');
+        return fmt(n);
+    }
+}
 let container;
 
 let containerWidth = 0;
@@ -43,6 +55,11 @@ onMount(() => {
 //$: collapseGrid = containerWidth - 120 - 16 / firstColWidth < 1;
 $: collapseGrid = containerWidth < 200 + 120 + 16;
 
+let cardinalityTween = tweened(cardinality, { duration: 1500, easing });
+let sizeTween = tweened(sizeInBytes, { duration: 1600, easing, delay: 150 });
+$: cardinalityTween.set(cardinality);
+$: sizeTween.set(sizeInBytes);
+
 let draggingEditor;
 </script>
 
@@ -58,13 +75,6 @@ let draggingEditor;
             elem.style.fontSize = '12px';
             elem.style.transform = 'translateY(-5em)';
             elem.classList.add('draggable');
-            // draggingEditor = new Editor({
-            //     target: elem,
-            //     props: {
-            //         content: `SELECT * from '${path}';`,
-            //         name: ''
-            //     }
-            // })
             document.body.appendChild(elem);
             evt.dataTransfer.setDragImage(elem, 0, 0);
             // set the drag store to be consumed elsewhere.
@@ -89,7 +99,7 @@ let draggingEditor;
         </span>
             <svelte:fragment slot='contextual-information'>
                     <div class='italic'>
-                        {formatCardinality(cardinality)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid}, {humanFileSize(sizeInBytes)}{/if}
+                        {formatCardinality($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid}, {humanFileSize($sizeTween)}{/if}
                     </div>
 
             </svelte:fragment>

@@ -159,12 +159,16 @@ function updateQueryField(dispatch:Function, id:string, field:string, value:any)
 export const createServerActions = (api, notifyUser) => {
     return (store, options) => ({
         // sources
-        addSource(path) {
-            return async (dispatch:Function) => {
-                dispatch((draft:DataModellerState) => {
-                    draft.sources = [];
-                })
-                const source = newSource();
+        clearSources() {
+            return (draft:DataModellerState) => {
+                draft.sources = [];
+            }
+        },
+        addOrUpdateSource(path) {
+            return async (dispatch:Function, getState:Function) => {
+                const sources = getState().sources;
+                const sourceExists = sources.find(s => s.path === path);
+                const source = {...(sourceExists || newSource())};
                 source.path = path;
                 source.name = path.split('/').slice(-1)[0];
                 try {
@@ -174,10 +178,17 @@ export const createServerActions = (api, notifyUser) => {
                     source.cardinality = await api.getCardinality(source.path);
                     source.head = await api.getFirstN(`'${source.path}'`);
                     dispatch((draft:DataModellerState) => {
-                        draft.sources.push(source);
+                        if (!!sourceExists) {
+                            const sourceToUpdate = getQuery(draft.sources, source.id);
+                            Object.keys(source).forEach((k) => {
+                                sourceToUpdate[k] = source[k];
+                            })
+                        } else {
+                            draft.sources.push(source);
+                        }
                     })
                 } catch (err) {
-                    console.log("addSource", err);
+                    console.log("addSource", err, path);
                     //throw Error(err);
                 }
             }
@@ -186,14 +197,19 @@ export const createServerActions = (api, notifyUser) => {
         scanRootForSources() {
             return async (dispatch, getState) => {
                 const files = await api.getParquetFilesInRoot();
+                files.sort();
+                const filePaths = new Set(files);
+                // prune
+                dispatch((draft:DataModellerState) => {
+                    draft.sources = draft.sources.filter(s => filePaths.has(s.path));
+                })
                 files.forEach(path => {
                     try {
-                        dispatch(this.addSource(path))
+                        dispatch(this.addOrUpdateSource(path))
                     } catch (err) {
-                        console.log(err);
+                        console.log(err, path);
                     }
-                    
-                })
+                });
             }
         },
 
@@ -268,9 +284,9 @@ export const createServerActions = (api, notifyUser) => {
                             q.sizeInBytes = size;
                         })
                     }
-                })
-                notifyUser({ message: `exported ${path}`, type: "info"})
-
+                });
+                notifyUser({ message: `exported ${path}`, type: "info"});
+                //dispatch(this.scanRootForSources());
                 return true;
             }
         },

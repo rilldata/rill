@@ -1,7 +1,6 @@
 <script>
 import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
 export let active = true;
-export let caret = 'right';
 </script>
 
 <div 
@@ -10,30 +9,33 @@ export let caret = 'right';
     <button 
         class="
             bg-transparent 
-            w-max grid 
+            grid 
             grid-flow-col 
             gap-2
             items-center
             p-0 
             pr-1 
             border-transparent 
-            hover:border-slate-200" 
+            hover:border-slate-200"
+            style="
+                max-width: 100%;
+                grid-template-columns: max-content auto max-content
+            "
         on:click={() => { active = !active; }}>
-        {#if caret === 'left'}
             <div style="
                 transition: transform 100ms;
                 transform: translateY(-1px) rotate({active ? 0 : -90}deg);
-            "><CaretDownIcon size={14} /></div>
-        {/if}
-        <div class="text-ellipsis">
+            "><CaretDownIcon size={14} />
+        </div>
+        <div class="text-ellipsis overflow-hidden whitespace-nowrap">
             <slot />
         </div>
-        {#if caret === 'right'}
+        <!-- {#if caret === 'right'}
             <div style="
                 transition: transform 100ms;
                 transform: translateY(-1px) rotate({active ? 0 : -90}deg);
-            "><CaretDownIcon size={14} /></div>
-        {/if}
+            "><CaretDownIcon size={14} /></div> 
+        {/if} -->
     </button>
 
     <div class="contextual-information justify-self-stretch text-right">

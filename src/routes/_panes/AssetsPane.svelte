@@ -1,6 +1,7 @@
 <script>
 import { getContext } from "svelte";
 import { slide } from "svelte/transition";
+import { flip } from "svelte/animate";
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
 
@@ -34,7 +35,7 @@ let innerWidth;
 <div class='drawer-container flex flex-row-reverse'>
     <!-- Drawer Handler -->
     <div class='drawer-handler w-4 absolute hover:cursor-col-resize translate-x-2 body-height'
-    use:drag={{ side: 'left', minSize: 200, maxSize: 500 }} />
+    use:drag={{ side: 'left', minSize: 300, maxSize: 500 }} />
     <div class='assets'>
         <!-- <button on:click={async () => {
           let fileHandle;
@@ -55,8 +56,8 @@ let innerWidth;
 
         <h3 class='pl-8 pb-3 pt-3'>Sources</h3>
         {#if $store && $store.sources}
-          {#each ($store?.sources || []) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-          <div class='pl-3 pr-3 pt-1 pb-1'>
+          {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
+          <div class='pl-3 pr-3 pt-1 pb-1' animate:flip transition:slide|local>
             <SourcePreview 
               emphasizeTitle={activeQuery?.profile?.map(source => source.table).includes(path)}
               {name}
@@ -81,7 +82,7 @@ let innerWidth;
 }
 
 .assets {
-  width: var(--left-sidebar-width, 200px);
+  width: var(--left-sidebar-width, 300px);
   font-size: 12px;
 }
 </style>
