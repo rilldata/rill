@@ -1,7 +1,7 @@
 // @ts-nocheck
 import fs from "fs";
 import duckdb from 'duckdb';
-import {default as glob} from 'glob';
+import { default as glob } from 'glob';
 
 interface DB {
 	all: Function;
@@ -15,13 +15,26 @@ export function connect() : DB {
 
 const db:DB = connect();
 
-export function dbAll(db:DB, query:string) {
+let onCallback;
+let offCallback;
+
+/** utilize these for setting the "running" and "not running" state in the frontend */
+export function registerDBRunCallbacks(onCall:Function, offCall:Function) {
+	onCallback = onCall;
+	offCallback = offCall;
+}
+
+function dbAll(db:DB, query:string) {
+	if (onCallback) {
+		onCallback();
+	}
 	return new Promise((resolve, reject) => {
 		try {
 			db.all(query, (err, res) => {
 				if (err !== null) {
 					reject(err);
 				} else {
+					if (offCallback) offCallback();
 					resolve(res);
 				}
 			});
@@ -29,7 +42,7 @@ export function dbAll(db:DB, query:string) {
 			reject(err);
 		}
 	});
-}
+};
 
 export function dbRun(query:string) { 
 	return new Promise((resolve, reject) => {
@@ -131,12 +144,18 @@ export async function getFirstN(table, n=1) {
 	return  dbAll(db, `SELECT * from ${table} LIMIT ${n};`);
 }
 
+export function extractParquetFilesFromQuery(query:string) {
+	let re = /'[^']*\.parquet'/g;
+	const matches = query.match(re).map(match => match.replace(/'/g, ''));
+	return matches;
+}
+
 export async function createSourceProfileFromQuery(query:string) {
 	// capture output from parquet query.
-	let re = /'[^']*\.parquet'/g;
-	const matches = query.match(re);
-	const tables = (matches === null) ? [] : await Promise.all(matches.map(async (match) => {
-		let strippedMatch = match.replace(/'/g, '');
+	const matches = extractParquetFilesFromQuery(query);
+	const tables = (matches === null) ? [] : await Promise.all(matches.map(async (strippedMatch) => {
+		//let strippedMatch = match.replace(/'/g, '');
+		let match = `'${strippedMatch}'`;
 		const info = await createSourceProfile(strippedMatch);
 		const head = await getFirstN(match);
 		const cardinality = await getCardinality(strippedMatch);
@@ -190,4 +209,36 @@ export async function getParquetFilesInRoot() {
 			}
 		)
 	});
+}
+/**
+ * getSummary
+ * number: five number summary + mean
+ * date: max, min, total time between the two
+ * categorical: cardinality
+ */
+
+ export function toDistributionSummary(column:string) {
+	return [
+		`min(${column}) as min_${column}`,
+		`approx_quantile(${column}, 0.25) as q25_${column}`,
+		`approx_quantile(${column}, 0.5)  as q50_${column}`,
+		`approx_quantile(${column}, 0.75) as q75_${column}`,
+		`max(${column}) as max_${column}`,
+		`avg(${column}) as mean_${column}`,
+		`stddev_pop(${column}) as sd_${column}`,
+	]
+}
+
+export async function getDistributionSummary(parquetFilePath:string, column:string) {
+	const [point] = await dbAll(db, `
+SELECT 
+	min(${column}) as min, 
+	approx_quantile(${column}, 0.25) as q25, 
+	approx_quantile(${column}, 0.5)  as q50,
+	approx_quantile(${column}, 0.75) as q75,
+	max(${column}) as max,
+	avg(${column}) as mean,
+	stddev_pop(${column}) as sd
+	FROM '${parquetFilePath}';`);
+	return point;
 }

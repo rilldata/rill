@@ -68,6 +68,10 @@ let innerWidth;
               {head}
               {path}
               {sizeInBytes}
+              on:updateFieldSummary={(evt) => {
+                console.log('got em', evt.detail);
+                store.action('updateFieldSummary', evt.detail);
+              }}
             />
           </div>
           {/each}

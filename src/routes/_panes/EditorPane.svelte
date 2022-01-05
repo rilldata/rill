@@ -18,7 +18,6 @@ function getErrorLineNumber(errorString) {
   const lineNumber = parseInt(linePortion.split(':')[0]);
   return { message, lineNumber };
 }
-$: console.log($store?.queries?.length)
 </script>
 
 <div class="editor-pane">

@@ -4,6 +4,7 @@ import { getContext } from "svelte";
 import AddIcon from "$lib/components/icons/AddIcon.svelte";
 import RefreshIcon from "$lib/components/icons/RefreshIcon.svelte";
 import Logo from "$lib/components/Logo.svelte";
+import Spinner from "$lib/components/Spinner.svelte";
 
 import EditorPane from "./_panes/EditorPane.svelte";
 import InspectorPane from "./_panes/InspectorPane.svelte";
@@ -111,12 +112,18 @@ const store = getContext("rill:app:store");
 
 </script>
 
-<header class="header">
+<header class="header pr-3">
   <h1><Logo /></h1>
   <button  on:click={() => store.action("addQuery", {})}><AddIcon size={18} /></button>
   <button on:click={() => store.action('reset')}>
       <RefreshIcon size={18} />
   </button>
+  <div></div>
+  <div class="self-center">
+    {#if $store?.status === 'running'}
+      <Spinner />
+    {/if}
+  </div>
 </header>
 <div class='body'>
   <div class="pane assets">
@@ -148,10 +155,10 @@ header {
   height: var(--header-height);
   display: grid;
   justify-items: left;
-  justify-content: start;
+  justify-content: stretch;
   align-items: stretch;
   align-content: stretch;
-  grid-auto-flow: column;
+  grid-template-columns: max-content max-content max-content auto max-content;
 }
 
 header h1 {

@@ -23,7 +23,10 @@ const io = new Server({ cors: {
 
 const initialState = createInitialState();
 
-const serverActions = createServerActions(api, ({ message, type }) => socket.emit("notification", { message, type }));
+const serverActions = createServerActions(api, 
+  // hook for user function
+  ({ message, type }) => socket.emit("notification", { message, type })
+);
 
 const store = createStore(
     //initialState,
@@ -35,16 +38,19 @@ const store = createStore(
     saveToLocalFile('saved-state') // let's save to our local file
 )
 
+/** Set the frontend db status state. */
+api.registerDBRunCallbacks(
+  () => { store.setDBStatus("running"); },
+  () => { store.setDBStatus("idle"); }
+)
+
 console.log('initialized the store.');
 
 io.on("connection", thisSocket => {
     console.log('connected', thisSocket.id);
     socket = thisSocket;
     socket.emit("app-state", store.get());
-    //console.log(Object.keys(store))
     store.scanRootForSources();
-    //store.produce(serverActions(undefined, undefined).scanRootForSources());
-    //store.produce(store.scanForRootSources());
     store.connectStateToSocket(socket);
   });
 
@@ -55,7 +61,6 @@ io.on("connection", thisSocket => {
 
 let timeoutId:any;
 function watch() {
-  //store.scanRootForSources();
   if (timeoutId) clearTimeout(timeoutId);
   timeoutId = setTimeout(() => store.scanRootForSources(), 100);
 }

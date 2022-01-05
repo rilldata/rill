@@ -5,7 +5,8 @@ export let icon;
 </script>
 
 <div 
-    class='collapsible-title align grid grid-cols-max grid-flow-col justify-between'
+    class='collapsible-title align grid grid-cols-max justify-between'
+    style="grid-template-columns: auto max-content;"
 >
     <button 
         class="

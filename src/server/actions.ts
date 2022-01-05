@@ -18,6 +18,7 @@ interface DataModellerState {
     activeQuery?: string;
     queries: Query[];
     sources: Source[];
+    status: string;
 }
 
 interface NewQueryArguments {
@@ -41,6 +42,7 @@ interface Query {
      * */
     sizeInBytes?: number; // TODO: make sure this is just size
     error?: string;
+    sources?: string[];
     profile?: ProfileColumn[]; // TODO: create Profile interface
     preview?: any;
     destinationProfile?: any;
@@ -62,6 +64,7 @@ interface Source {
 interface ProfileColumn {
     name: string;
     type: string;
+    summary?: any; // FIXME
 }
 
 export function newSource(): Source {
@@ -86,7 +89,6 @@ export function newQuery(params:NewQueryArguments = {}): Query {
         sanitizedQuery,
 		name,
 		id: guidGenerator(),
-        profile: undefined,
         preview: undefined,
         sizeInBytes: undefined
 	};
@@ -99,7 +101,8 @@ export function emptyQuery(): Query {
 export function initialState() : DataModellerState {
     return {
         queries: [emptyQuery()],
-        sources: []
+        sources: [],
+        status: 'disconnected'
     }
 }
 
@@ -167,6 +170,11 @@ function updateQueryField(dispatch:Function, id:string, field:string, value:any)
 export const createServerActions = (api, notifyUser) => {
     return (store, options) => ({
         // sources
+        setDBStatus(state:string) {
+            return (draft:DataModellerState) => {
+                draft.status = state;
+            }
+        },
         clearSources() {
             return (draft:DataModellerState) => {
                 draft.sources = [];
@@ -302,6 +310,19 @@ export const createServerActions = (api, notifyUser) => {
             }
         },
 
+        updateFieldSummary({ path, field }) {
+            return async (dispatch:Function) => {
+                // find the field
+                const summary = await api.getDistributionSummary(path, field);
+                console.log(summary);
+                dispatch((draft:DataModellerState) => {
+                    const source = draft.sources.find(source => source.path === path);
+                    const fieldInfo = source.profile.find((p) => p.name === field);
+                    fieldInfo.summary = {...summary};
+                })
+            }
+        },
+
         updateQueryInformation({id}) {
             return async (dispatch, getState) => {
                 const state = getState();
@@ -337,12 +358,12 @@ export const createServerActions = (api, notifyUser) => {
                     console.error('createPreview', error);
                 });
 
-                api.createSourceProfileFromQuery(queryInfo.query).then((profile) => {
-                    updateQueryField(dispatch, id, 'profile', profile);
-                }).catch(error => {
-                    console.error('createSourceProfile', error);
-                    addError(dispatch, id, error.message);
+                // attach the source name here.
+                const sources = api.extractParquetFilesFromQuery(queryInfo.query);
+                dispatch((draft:DataModellerState) => {
+                    updateQueryField(dispatch, id, 'sources', sources);
                 });
+
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
                     updateQueryField(dispatch, id, 'cardinality', cardinality);

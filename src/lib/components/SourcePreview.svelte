@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from "svelte";
+import { onMount, createEventDispatcher } from "svelte";
 import { slide } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { cubicInOut as easing } from "svelte/easing";
@@ -19,7 +19,11 @@ export let head:any;
 export let sizeInBytes:number;
 export let collapseWidth = 200 + 120 + 16;
 export let emphasizeTitle:boolean = false;
+export let draggable = true;
+
 let colSizer;
+
+const dispatch = createEventDispatcher();
 
 function formatCardinality(n) {
     let fmt:Function;
@@ -34,7 +38,6 @@ function formatCardinality(n) {
 let container;
 
 let containerWidth = 0;
-let firstColWidth = 0;
 let show = false;
 
 function humanFileSize(size:number) {
@@ -45,7 +48,7 @@ function humanFileSize(size:number) {
 onMount(() => {
     const observer = new ResizeObserver(entries => {
         entries.forEach((entry) => {
-            containerWidth = entry.target.clientWidth;
+            containerWidth = container.clientWidth;
         });
         firstColWidth = colSizer.offsetWidth;
     });
@@ -53,20 +56,18 @@ onMount(() => {
 });
 
 $: collapseGrid = containerWidth < collapseWidth;
-$: console.log(containerWidth)
-let cardinalityTween = tweened(cardinality, { duration: 1500, easing });
-let sizeTween = tweened(sizeInBytes, { duration: 1600, easing, delay: 150 });
+let cardinalityTween = tweened(cardinality, { duration: 600, easing });
+let sizeTween = tweened(sizeInBytes, { duration: 650, easing, delay: 150 });
 $: cardinalityTween.set(cardinality);
 $: sizeTween.set(sizeInBytes);
 
-let draggingEditor;
-
 let selectingColumns = false;
 let selectedColumns = [];
+
 </script>
 
 <div bind:this={container}>
-    <div draggable={true} 
+    <div {draggable} 
         class="drag-interface"
         on:dragstart={(evt) => {
             var elem = document.createElement("div");
@@ -110,9 +111,11 @@ let selectedColumns = [];
                         {:else}
                             {formatCardinality($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid && sizeInBytes !== undefined}, {humanFileSize($sizeTween)}{/if}
                         {/if}
+                        {#if draggable}
                         <button class:font-bold={selectingColumns} on:click={() => {
                             selectingColumns = !selectingColumns;
                         }}>*</button>
+                        {/if}
                     </div>
 
             </svelte:fragment>
@@ -132,6 +135,11 @@ let selectedColumns = [];
                                 } else {
                                     selectedColumns = [...selectedColumns, column.name];
                                 }
+                            } else {
+                                // get summary
+                                if (column.type.includes("INT") || column.type.includes("DOUBLE")) {
+                                    dispatch('updateFieldSummary', {field: column.name, path})
+                                }
                             }
                         }}>
                             {column.name} 
@@ -145,31 +153,38 @@ let selectedColumns = [];
                     </div>
                     <div class='justify-self-end text-right text-gray-500 italic break-all' class:remove={collapseGrid}>
                         {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)}
+                        {#if column.summary}
+                        <div transition:slide={{duration: 200}}>
+                            <div>
+                                min ~ {column.summary.min}
+                            </div>
+                            <div>
+                                q25 ~ {column.summary.q25}
+                            </div>
+                            <div>
+                                q50 ~ {column.summary.q50}
+                            </div>
+                            <div>
+                                q75 ~ {column.summary.q75}
+                            </div>
+                            <div>
+                                max ~ {column.summary.max}
+                            </div>
+                            <div>
+                                mean ~ {column.summary.mean}
+                            </div>
+                            <div>
+                                sd ~ {column.summary.sd}
+                            </div>
+                            <!-- {JSON.stringify(column.summary, null, 2)} -->
+                        </div>
+                        {/if}
                     </div>
                     {/each}
                 {/if}
             </div>
         </div>
     {/if}
-
-    <!-- <table cellpadding="0" cellspacing="0">
-    {#each profile as column}
-      <tr>
-        <td>
-        <div class="font-medium">{column.name} 
-            <span class="column-type">
-              {column.type}
-            </span>
-            <span class="font-light text-gray-500">
-            {#if column.pk === 1} (primary){:else}{/if}
-          </span></div> 
-        </td>
-        <td class='column-example'>
-          {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,50)}
-        </td>
-      </tr>
-    {/each}
-    </table> -->
   </div>
 
 <style lang="postcss">
