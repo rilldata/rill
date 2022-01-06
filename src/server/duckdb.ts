@@ -3,6 +3,8 @@ import fs from "fs";
 import duckdb from 'duckdb';
 import { default as glob } from 'glob';
 
+import { guidGenerator } from "../util/guid.js";
+
 interface DB {
 	all: Function;
 	exec: Function;
@@ -135,6 +137,18 @@ export async function createSourceProfile(parquetFile:string) {
 	return await dbAll(db, `select * from parquet_schema('${parquetFile}');`) as any[];
 }
 
+export async function parquetToDBTypes(parquetFile:string) {
+	const guid = guidGenerator().replace(/-/g, '_');
+    await dbAll(db, `
+	CREATE TEMP TABLE tbl_${guid} AS (
+        SELECT * from '${parquetFile}' LIMIT 1
+    );
+	`);
+	const tableDef = await dbAll(db, `PRAGMA table_info(tbl_${guid});`)
+	await dbAll(db, `DROP TABLE tbl_${guid};`);
+    return tableDef;
+}
+
 export async function getCardinality(parquetFile:string) {
 	const [cardinality] =  await dbAll(db, `select count(*) as count FROM '${parquetFile}';`);
 	return cardinality.count;
@@ -217,28 +231,120 @@ export async function getParquetFilesInRoot() {
  * categorical: cardinality
  */
 
- export function toDistributionSummary(column:string) {
+//  export function toDistributionSummary(column:string) {
+// 	return [
+// 		`min(${column}) as min_${column}`,
+// 		`approx_quantile(${column}, 0.25) as q25_${column}`,
+// 		`approx_quantile(${column}, 0.5)  as q50_${column}`,
+// 		`approx_quantile(${column}, 0.75) as q75_${column}`,
+// 		`max(${column}) as max_${column}`,
+// 		`avg(${column}) as mean_${column}`,
+// 		`stddev_pop(${column}) as sd_${column}`,
+// 	]
+// }
+
+// // FIXME: deprecate and remove all code paths
+// export async function getDistributionSummary(parquetFilePath:string, column:string) {
+// 	const [point] = await dbAll(db, `
+// SELECT 
+// 	min(${column}) as min, 
+// 	approx_quantile(${column}, 0.25) as q25, 
+// 	approx_quantile(${column}, 0.5)  as q50,
+// 	approx_quantile(${column}, 0.75) as q75,
+// 	max(${column}) as max,
+// 	avg(${column}) as mean,
+// 	stddev_pop(${column}) as sd
+// 	FROM '${parquetFilePath}';`);
+// 	return point;
+// }
+
+
+
+
+
+
+
+
+
+
+export function toDistributionSummary(column) {
 	return [
-		`min(${column}) as min_${column}`,
-		`approx_quantile(${column}, 0.25) as q25_${column}`,
-		`approx_quantile(${column}, 0.5)  as q50_${column}`,
-		`approx_quantile(${column}, 0.75) as q75_${column}`,
-		`max(${column}) as max_${column}`,
-		`avg(${column}) as mean_${column}`,
-		`stddev_pop(${column}) as sd_${column}`,
+		`min(${column}) as ${column}_min`,
+		`reservoir_quantile(${column}, 0.25) as ${column}_q25`,
+		`reservoir_quantile(${column}, 0.5)  as ${column}_q50`,
+		`reservoir_quantile(${column}, 0.75) as ${column}_q75`,
+		`max(${column}) as ${column}_max`,
+		`avg(${column}) as ${column}_mean`,
+		`stddev_pop(${column}) as ${column}_sd`,
 	]
 }
 
-export async function getDistributionSummary(parquetFilePath:string, column:string) {
-	const [point] = await dbAll(db, `
-SELECT 
-	min(${column}) as min, 
-	approx_quantile(${column}, 0.25) as q25, 
-	approx_quantile(${column}, 0.5)  as q50,
-	approx_quantile(${column}, 0.75) as q75,
-	max(${column}) as max,
-	avg(${column}) as mean,
-	stddev_pop(${column}) as sd
-	FROM '${parquetFilePath}';`);
-	return point;
+function topK(parquetFile, column) {
+	return `SELECT ${column} as value, count(*) AS count from '${parquetFile}'
+GROUP BY ${column}
+ORDER BY count desc
+LIMIT 50;`
+}
+
+async function getTopKAndCardinality(parquetFilePath, column) {
+	const topKValues = await dbAll(db, topK(parquetFilePath, column));
+	const [cardinality] = await dbAll(db, `SELECT approx_count_distinct(${column}) as count from '${parquetFilePath}';`);
+	return {
+		column,
+		topK: topKValues,
+		cardinality: cardinality.count
+	}
+}
+
+export async function getDistributionSummaries(parquetFilePath, fields) {
+	const numericSelects = fields.map(n => toDistributionSummary(n.name).join(',\n  ')).join(',\n  ');
+	const [summaries] = await dbAll(db, `SELECT \n${numericSelects}\n FROM '${parquetFilePath}';`);
+	return fields.map(n => n.name).reduce((acc, field) => {
+		acc[field] = {
+			min: summaries[`${field}_min`],
+			q25: summaries[`${field}_q25`],
+			q50: summaries[`${field}_q50`],
+			q75: summaries[`${field}_q75`],
+			max: summaries[`${field}_max`],
+			mean: summaries[`${field}_mean`],
+			sd: summaries[`${field}_sd`],
+		};
+		return acc;
+	}, {});
+}
+
+export async function getCategoricalSummaries(parquetFilePath, fields) {
+	const summaries = await Promise.all(fields.map((s) => {
+		return getTopKAndCardinality(parquetFilePath, s.name);
+	}));
+	return summaries.reduce((acc, fieldSummary) => {
+		acc[fieldSummary.column] = {
+			topK: fieldSummary.topK,
+			cardinality: fieldSummary.cardinality
+		}
+		return acc;
+	}, {});
+}
+
+export async function getTimestampSummaries(parquetFilePath:string, fields:any) {
+	const queries = fields.map(field => {
+		return `
+		max(${field.name}) - min(${field.name}) AS ${field.name}_interval,
+		min(${field.name}) as ${field.name}_min,
+		max(${field.name}) as ${field.name}_max
+		`
+	}).join(',\n  ');
+	const [results] = await dbAll(db, `
+		SELECT
+			${queries}
+		FROM '${parquetFilePath}';
+	`);
+	return fields.reduce((acc, field) => {
+		acc[field.name] = { 
+			min: results[`${field.name}_min`],
+			max: results[`${field.name}_max`],
+			interval: results[`${field.name}_interval`]
+		 };
+		return acc;
+	}, {});
 }

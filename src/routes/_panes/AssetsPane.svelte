@@ -4,7 +4,7 @@ import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
-import DatabaseIcon from "$lib/components/icons/Database.svelte";
+
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import SourcePreview from  "$lib/components/SourcePreview.svelte";
 
@@ -38,26 +38,9 @@ let innerWidth;
     <div class='drawer-handler w-4 absolute hover:cursor-col-resize translate-x-2 body-height'
     use:drag={{ side: 'left', minSize: 300, maxSize: 500 }} />
     <div class='assets'>
-        <!-- <button on:click={async () => {
-          let fileHandle;
-
-          async function getFile() {
-            // open file picker
-            [fileHandle] = await window.showOpenFilePicker();
-            console.log(fileHandle);
-            if (fileHandle.kind === 'file') {
-              // run file code
-            } else if (fileHandle.kind === 'directory') {
-              // run directory code
-            }
-
-          }
-          getFile();
-        }}>add query</button> -->
-
         <h3 class='pl-8 pb-3 pt-3'>Sources</h3>
         {#if $store && $store.sources}
-          {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
+          {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id, categoricalSummaries, timestampSummaries, numericalSummaries} (id)}
           <div class='pl-3 pr-3 pt-1 pb-1' animate:flip transition:slide|local>
             <SourcePreview
               icon={ParquetIcon}
@@ -68,6 +51,9 @@ let innerWidth;
               {head}
               {path}
               {sizeInBytes}
+              {categoricalSummaries}
+              {timestampSummaries}
+              {numericalSummaries}
               on:updateFieldSummary={(evt) => {
                 console.log('got em', evt.detail);
                 store.action('updateFieldSummary', evt.detail);

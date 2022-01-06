@@ -4,15 +4,10 @@
  * This enables us to swap out different APIs & backends as needed.
  */
 import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
-
+import { guidGenerator } from "../util/guid.js";
 let queryNumber = 0;
 
-function guidGenerator() {
-	var S4 = function () {
-		return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-	};
-	return S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4();
-}
+
 
 interface DataModellerState {
     activeQuery?: string;
@@ -202,7 +197,62 @@ export const createServerActions = (api, notifyUser) => {
                         } else {
                             draft.sources.push(source);
                         }
+                    });
+
+                    const duckdbTypes = await api.parquetToDBTypes(source.path);
+                    // run expensive stuff but update it async.
+                    const numerics = duckdbTypes.filter(c => {
+                        return c.type.includes("INTEGER") || c.type.includes("DOUBLE") || c.type.includes("BIGINT");
+                    });
+                    const strings = duckdbTypes.filter(c => {
+                        return c.type.includes("VARCHAR");
                     })
+
+                    const timestamps = duckdbTypes.filter(c => {
+                        return c.type.includes('TIMESTAMP');
+                    })
+
+                    
+                    if (strings.length) {
+                        api.getCategoricalSummaries(source.path, strings).then(stringSummaries => {
+                            dispatch((draft:DataModellerState) => {
+                                // assuming the source to update
+                                const sourceToUpdate = getQuery(draft.sources, source.id);
+                                sourceToUpdate.categoricalSummaries = stringSummaries;
+                            });
+                        });
+                    }
+                    
+
+                    if (numerics.length) {
+                        api.getDistributionSummaries(source.path, numerics).then(numericalSummaries => {
+                            // console.log(numericalSummaries);
+                            dispatch((draft:DataModellerState) => {
+                                // assuming the source to update
+                                const sourceToUpdate = getQuery(draft.sources, source.id);
+                                sourceToUpdate.numericalSummaries = numericalSummaries;
+                            });
+                        });
+                    }
+                    
+
+
+                    if (timestamps.length) {
+                        api.getTimestampSummaries(source.path, timestamps).then(timestampSummaries => {
+                            dispatch((draft:DataModellerState) => {
+                                const sourceToUpdate = getQuery(draft.sources, source.id);
+                                sourceToUpdate.timestampSummaries = timestampSummaries;
+                            })
+                        })
+                    }
+                    
+                    // api.getDistributionSummaries(source.path, numerics).then(numericSummaries => {
+                    //     dispatch((draft:DataModellerState) => {
+                    //         // assuming the source to update
+                    //         const sourceToUpdate = getQuery(draft.sources, source.id);
+                    //         sourceToUpdate.numericSummaries = numericSummaries;
+                    //     });
+                    // });
                 } catch (err) {
                     console.log("addSource", err, path);
                     //throw Error(err);

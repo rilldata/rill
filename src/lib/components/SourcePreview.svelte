@@ -6,9 +6,13 @@ import { cubicInOut as easing } from "svelte/easing";
 import { format } from "d3-format";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
+import TopKSummary from "$lib/components/TopKSummary.svelte";
 
 import { dropStore } from '$lib/drop-store';
 import type { SvelteComponent } from "svelte/internal";
+
+import { intervalToTimestring } from "../../util/formatters";
+
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -17,6 +21,9 @@ export let cardinality:number;
 export let profile:any;
 export let head:any;
 export let sizeInBytes:number;
+export let categoricalSummaries:any; // FIXME
+export let timestampSummaries:any; // FIXME
+export let numericalSummaries:any; // FIXME
 export let collapseWidth = 200 + 120 + 16;
 export let emphasizeTitle:boolean = false;
 export let draggable = true;
@@ -38,7 +45,8 @@ function formatCardinality(n) {
 let container;
 
 let containerWidth = 0;
-let show = false;
+let show = true;
+let firstColWidth = 0;
 
 function humanFileSize(size:number) {
     var i = Math.floor( Math.log(size) / Math.log(1024) );
@@ -63,6 +71,9 @@ $: sizeTween.set(sizeInBytes);
 
 let selectingColumns = false;
 let selectedColumns = [];
+
+let showSummaries = true;
+let summaryColumns = [];
 
 </script>
 
@@ -111,11 +122,18 @@ let selectedColumns = [];
                         {:else}
                             {formatCardinality($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid && sizeInBytes !== undefined}, {humanFileSize($sizeTween)}{/if}
                         {/if}
-                        {#if draggable}
-                        <button class:font-bold={selectingColumns} on:click={() => {
-                            selectingColumns = !selectingColumns;
-                        }}>*</button>
-                        {/if}
+                        <span>
+                            {#if draggable}
+                            <button class:font-bold={selectingColumns} on:click={() => {
+                                selectingColumns = !selectingColumns;
+                            }}>*</button>
+                            {/if}
+                            <button class:font-bold={showSummaries} on:click={() => {
+                                showSummaries = !showSummaries;
+                            }}>
+                                &
+                            </button>
+                        </span>
                     </div>
 
             </svelte:fragment>
@@ -126,8 +144,12 @@ let selectedColumns = [];
             <div class="rows" class:break-grid={collapseGrid}>
                 {#if profile}
                     {#each profile as column}
-                    <div class="font-medium break-word">
-                        <button class='break-all {selectingColumns ? 'hover:underline' : ''}' class:font-bold={selectingColumns && selectedColumns.includes(column.name)} 
+                    <div class="font-medium break-word" bind:this={colSizer}>
+                        <button class='break-all text-left {(selectingColumns || showSummaries) ? 'hover:underline' : ''}' 
+                            class:font-bold={
+                                (selectingColumns && selectedColumns.includes(column.name)) ||
+                                (showSummaries && summaryColumns.includes(column.name))
+                            } 
                             on:click={() => {
                             if (selectingColumns) {
                                 if (selectedColumns.includes(column.name)) {
@@ -135,11 +157,17 @@ let selectedColumns = [];
                                 } else {
                                     selectedColumns = [...selectedColumns, column.name];
                                 }
-                            } else {
-                                // get summary
-                                if (column.type.includes("INT") || column.type.includes("DOUBLE")) {
-                                    dispatch('updateFieldSummary', {field: column.name, path})
+                            } else if (showSummaries) {
+                                if (summaryColumns.includes(column.name)) {
+                                    summaryColumns = summaryColumns.filter(c => c !== column.name)
+                                } else {
+                                    summaryColumns = [...summaryColumns, column.name];
                                 }
+                                // DEPRECATED: get summary
+                                // if (column.type.includes("INT") || column.type.includes("DOUBLE")) {
+                                //     dispatch('updateFieldSummary', {field: column.name, path})
+                                // }
+
                             }
                         }}>
                             {column.name} 
@@ -153,33 +181,44 @@ let selectedColumns = [];
                     </div>
                     <div class='justify-self-end text-right text-gray-500 italic break-all' class:remove={collapseGrid}>
                         {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)}
-                        {#if column.summary}
-                        <div transition:slide={{duration: 200}}>
-                            <div>
-                                min ~ {column.summary.min}
-                            </div>
-                            <div>
-                                q25 ~ {column.summary.q25}
-                            </div>
-                            <div>
-                                q50 ~ {column.summary.q50}
-                            </div>
-                            <div>
-                                q75 ~ {column.summary.q75}
-                            </div>
-                            <div>
-                                max ~ {column.summary.max}
-                            </div>
-                            <div>
-                                mean ~ {column.summary.mean}
-                            </div>
-                            <div>
-                                sd ~ {column.summary.sd}
-                            </div>
-                            <!-- {JSON.stringify(column.summary, null, 2)} -->
-                        </div>
-                        {/if}
                     </div>
+                    <!-- 
+                        summary element.
+                        For topK, the labels should be firstColWidth wide.
+                    -->
+                    <!-- categorical summaries -->
+                    {#if showSummaries && summaryColumns.includes(column.name) && categoricalSummaries && column.name in categoricalSummaries}
+                    <div class='col-span-2 pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
+                        <TopKSummary 
+                            totalRows={cardinality}
+                            cardinality={categoricalSummaries[column.name].cardinality}
+                            topK={categoricalSummaries[column.name].topK}
+                            displaySize={collapseGrid ? 'sm' : 'md'}
+                        />
+                    </div>
+                    {/if}
+                    <!-- timestamp summaries -->
+                    {#if showSummaries && summaryColumns.includes(column.name) && timestampSummaries && column.name in timestampSummaries}
+                        <div class='col-span-2 pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
+
+                                {intervalToTimestring(timestampSummaries[column.name].interval)} 
+                                ({timestampSummaries[column.name].min}
+                                    to
+                                    {timestampSummaries[column.name].max}
+                                )
+                                <!-- {JSON.stringify(timestampSummaries[column.name], null, 2)} -->
+                        </div>
+                    {/if}
+
+                    <!-- numerical summaries -->
+                        {#if showSummaries && summaryColumns.includes(column.name) && numericalSummaries && column.name in numericalSummaries}
+                        <div class='col-span-2 pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
+                            <pre>
+                                {JSON.stringify(numericalSummaries[column.name], null, 2)}
+                            </pre>
+                        </div>
+                    {/if}
+
                     {/each}
                 {/if}
             </div>

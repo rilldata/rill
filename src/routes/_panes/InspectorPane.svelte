@@ -32,8 +32,6 @@ let whichTable = {
 
 let innerWidth;
 
-
-
 let showSources = false;
 let showOutputs;
 let showDestination;

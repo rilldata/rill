@@ -1,5 +1,6 @@
 <script>
 import { getContext } from "svelte";
+import { fade } from "svelte/transition";
 
 import AddIcon from "$lib/components/icons/AddIcon.svelte";
 import RefreshIcon from "$lib/components/icons/RefreshIcon.svelte";
@@ -110,6 +111,18 @@ let destinationSize;
 
 const store = getContext("rill:app:store");
 
+let dbRunState = 'disconnected';
+let runstateTimer;
+
+function debounceRunstate(state) {
+  if (runstateTimer) clearTimeout(runstateTimer);
+  setTimeout(() => {
+    dbRunState = state;
+  }, 500)
+}
+
+$: debounceRunstate($store?.status || 'disconnected');
+
 </script>
 
 <header class="header pr-3">
@@ -120,8 +133,10 @@ const store = getContext("rill:app:store");
   </button>
   <div></div>
   <div class="self-center">
-    {#if $store?.status === 'running'}
-      <Spinner />
+    {#if dbRunState === 'running'}
+      <div transition:fade={{ duration: 300 }}>
+        <Spinner />
+      </div>
     {/if}
   </div>
 </header>
