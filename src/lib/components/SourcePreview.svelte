@@ -144,8 +144,12 @@ let summaryColumns = [];
             <div class="rows" class:break-grid={collapseGrid}>
                 {#if profile}
                     {#each profile as column}
-                    <div class="font-medium break-word" bind:this={colSizer}>
-                        <button class='break-all text-left {(selectingColumns || showSummaries) ? 'hover:underline' : ''}' 
+                    <div 
+                        class="font-medium break-word grid gap-x-2 items-baseline" 
+                        style="grid-template-columns: minmax(90px, max-content) auto;" 
+                        bind:this={colSizer}>
+                        <button 
+                            class='text-ellipsis overflow-hidden whitespace-nowrap break-all text-left {(selectingColumns || showSummaries) ? 'hover:underline' : ''}' 
                             class:font-bold={
                                 (selectingColumns && selectedColumns.includes(column.name)) ||
                                 (showSummaries && summaryColumns.includes(column.name))
@@ -163,21 +167,14 @@ let summaryColumns = [];
                                 } else {
                                     summaryColumns = [...summaryColumns, column.name];
                                 }
-                                // DEPRECATED: get summary
-                                // if (column.type.includes("INT") || column.type.includes("DOUBLE")) {
-                                //     dispatch('updateFieldSummary', {field: column.name, path})
-                                // }
-
                             }
                         }}>
                             {column.name} 
                         </button>
-                        <span class="text-gray-500">
+                        <div 
+                        class="text-gray-500 text-ellipsis overflow-hidden whitespace-nowrap ">
                             {column.type}
-                        </span>
-                        <span class="font-light text-gray-500">
-                        {#if column.pk === 1} (primary){:else}{/if}
-                    </span>
+                        </div>
                     </div>
                     <div class='justify-self-end text-right text-gray-500 italic break-all' class:remove={collapseGrid}>
                         {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)}

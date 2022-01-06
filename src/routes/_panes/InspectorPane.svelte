@@ -1,8 +1,6 @@
 <script>
 import { getContext } from "svelte";
 import { flip } from "svelte/animate";
-import { tweened } from "svelte/motion";
-import { cubicOut as easing } from "svelte/easing";
 import { slide } from "svelte/transition";
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
@@ -21,7 +19,7 @@ import {format} from "d3-format";
 const store = getContext('rill:app:store');
 
 const formatCardinality = format(',');
-const formatRollupFactor = format(',r')
+const formatRollupFactor = format(',r');
 
 // FIXME
 let outputView = 'row';
@@ -34,11 +32,6 @@ let innerWidth;
 
 let showSources = false;
 let showOutputs;
-let showDestination;
-
-function computeCardinality(info) {
-
-}
 
 function sourceDestinationCompute(key, source, destination) {
   return source.reduce((acc,v) => acc + v[key], 0) / destination[key];
@@ -114,22 +107,6 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
         </CollapsibleTitle>
         {#if showSources}
         <div transition:slide|local={{duration: 120 }}>
-          <!-- {#each currentQuery.profile as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-            <div class='pt-1 pb-1' animate:flip transition:slide|local>
-              <SourcePreview
-                icon={ParquetIcon}
-                collapseWidth={240 + 120 + 16}
-                emphasizeTitle={true}
-                {name}
-                {cardinality}
-                {profile}
-                {head}
-                {path}
-                {sizeInBytes}
-              />
-            </div>
-          {/each} -->
-
           {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
           <div class='pt-1 pb-1' animate:flip transition:slide|local>
             <SourcePreview
@@ -153,7 +130,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
     <div class='source-tables p-4'>
       {#if currentQuery?.destinationProfile}
           <SourcePreview 
-          collapseWidth={240 + 120 + 16}
+            collapseWidth={240 + 120 + 16}
             name="Destination"
             path=""
             cardinality={currentQuery?.cardinality}
