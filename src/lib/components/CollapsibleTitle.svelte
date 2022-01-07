@@ -1,7 +1,8 @@
-<script>
+<script lang="ts">
 import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
+import type { SvelteComponent } from "svelte";
 export let active = true;
-export let icon;
+export let icon:SvelteComponent;
 </script>
 
 <div 
@@ -24,9 +25,12 @@ export let icon;
                 grid-template-columns: max-content {icon ? 'max-content' : ''} auto max-content
             "
         on:click={() => { active = !active; }}>
-            <div style="
-                transition: transform 100ms;
-                transform: translateY(-1px) rotate({active ? 0 : -90}deg);
+            <div class="
+                transition-tranform 
+                duration-100
+                {active ? '-rotate-90' : ''}
+            " 
+            style="
             "><CaretDownIcon size={14} />
         </div>
         {#if icon}
@@ -37,22 +41,9 @@ export let icon;
         <div class="text-ellipsis overflow-hidden whitespace-nowrap">
             <slot />
         </div>
-        <!-- {#if caret === 'right'}
-            <div style="
-                transition: transform 100ms;
-                transform: translateY(-1px) rotate({active ? 0 : -90}deg);
-            "><CaretDownIcon size={14} /></div> 
-        {/if} -->
     </button>
 
     <div class="contextual-information justify-self-stretch text-right">
         <slot name="contextual-information" />
     </div>
 </div>
-
-<style>
-button {
-    font-family: "MD IO 0.4";
-    transform: translateX(-.25rem);
-}
-</style>

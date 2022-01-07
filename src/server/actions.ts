@@ -4,62 +4,14 @@
  * This enables us to swap out different APIs & backends as needed.
  */
 import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
+import type { Item, Query, Source, DataModellerState } from "../types"
 import { guidGenerator } from "../util/guid.js";
 let queryNumber = 0;
-
-
-
-interface DataModellerState {
-    activeQuery?: string;
-    queries: Query[];
-    sources: Source[];
-    status: string;
-}
 
 interface NewQueryArguments {
     query?: string;
     name?: string;
-}
-
-interface Query {
-    /**  */
-    query: string;
-    /** sanitizedQuery is always a 1:1 function of the query itself */
-    sanitizedQuery: string;
-    /** name is used for the filename and exported file */
-    name: string;
-    /** the id is a unique identifier used in the interface */
-    id: string;
-    /** cardinality is the total number of rows of the previewed dataset */
-    cardinality?: number;
-    /** sizeInBytes is the total size of the previewed dataset. 
-     * It is not generated until the user exports the query.
-     * */
-    sizeInBytes?: number; // TODO: make sure this is just size
-    error?: string;
-    sources?: string[];
-    profile?: ProfileColumn[]; // TODO: create Profile interface
-    preview?: any;
-    destinationProfile?: any;
-}
-
-interface Source {
-    id: string;
-    path: string;
-    name: string;
-    profile: ProfileColumn[]; // TODO: create Profile interface
-    head: any[];
-    cardinality?: number;
-    sizeInBytes?: number;
-}
-
-/**
- * The type definition for a "profile column"
- */
-interface ProfileColumn {
-    name: string;
-    type: string;
-    summary?: any; // FIXME
+    at?: number;
 }
 
 export function newSource(): Source {
@@ -101,20 +53,20 @@ export function initialState() : DataModellerState {
     }
 }
 
-function getQuery(queries, id) {
-    return queries.find(q => q.id === id);
+function getByID(items:(Item[]), id:string) : Item| null {
+    return items.find(q => q.id === id);
 }
 
-function addError(dispatch:Function, id:string, message:string) {
+function addError(dispatch:Function, id:string, message:string) : void {
     dispatch((draft:DataModellerState) => {
-        let q = getQuery(draft.queries, id);
+        let q = getByID(draft.queries, id) as Query;
         q.error = message;
     });
 }
 
-function clearQuery(dispatch:Function, id:string) {
+function clearQuery(dispatch:Function, id:string) : void {
     dispatch((draft:DataModellerState) => {
-        let q = getQuery(draft.queries, id);
+        let q = getByID(draft.queries, id) as Query;
         q.sizeInBytes = undefined;
         q.destinationProfile = undefined;
         q.preview = undefined;
@@ -124,21 +76,21 @@ function clearQuery(dispatch:Function, id:string) {
 
 function clearError(dispatch:Function, id:string) {
     dispatch((draft:DataModellerState) => {
-        let q =  getQuery(draft.queries, id);
+        let q =  getByID(draft.queries, id) as Query;
         q.error = undefined;
     });
 }
 
 function sanitizeQuery(dispatch:Function, id:string) {
     dispatch((draft:DataModellerState) => {
-        let q =  getQuery(draft.queries, id);
+        let q =  getByID(draft.queries, id) as Query;
         q.sanitizedQuery = _sanitizeQuery(q.query);
     });
 }
 
 function updateQueryField(dispatch:Function, id:string, field:string, value:any) {
     dispatch((draft:DataModellerState) => {
-        let q = getQuery(draft.queries, id);
+        let q = getByID(draft.queries, id);
         q[field] = value;
     });
 }
@@ -190,7 +142,7 @@ export const createServerActions = (api, notifyUser) => {
                     source.head = await api.getFirstN(`'${source.path}'`);
                     dispatch((draft:DataModellerState) => {
                         if (!!sourceExists) {
-                            const sourceToUpdate = getQuery(draft.sources, source.id);
+                            const sourceToUpdate = getByID(draft.sources, source.id);
                             Object.keys(source).forEach((k) => {
                                 sourceToUpdate[k] = source[k];
                             })
@@ -214,11 +166,10 @@ export const createServerActions = (api, notifyUser) => {
 
                     
                     if (strings.length) {
-                        api.getCategoricalSummaries(source.path, strings).then(stringSummaries => {
+                        api.getCategoricalSummaries(source.path, strings).then(categoricalSummaries => {
                             dispatch((draft:DataModellerState) => {
-                                // assuming the source to update
-                                const sourceToUpdate = getQuery(draft.sources, source.id);
-                                sourceToUpdate.categoricalSummaries = stringSummaries;
+                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                                sourceToUpdate.categoricalSummaries = categoricalSummaries;
                             });
                         });
                     }
@@ -226,33 +177,29 @@ export const createServerActions = (api, notifyUser) => {
 
                     if (numerics.length) {
                         api.getDistributionSummaries(source.path, numerics).then(numericalSummaries => {
-                            // console.log(numericalSummaries);
                             dispatch((draft:DataModellerState) => {
-                                // assuming the source to update
-                                const sourceToUpdate = getQuery(draft.sources, source.id);
+                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                                 sourceToUpdate.numericalSummaries = numericalSummaries;
                             });
                         });
                     }
-                    
-
 
                     if (timestamps.length) {
                         api.getTimestampSummaries(source.path, timestamps).then(timestampSummaries => {
                             dispatch((draft:DataModellerState) => {
-                                const sourceToUpdate = getQuery(draft.sources, source.id);
+                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                                 sourceToUpdate.timestampSummaries = timestampSummaries;
                             })
                         })
                     }
+
+                    api.getNullCounts(source.path, duckdbTypes).then(nullCounts => {
+                        dispatch((draft:DataModellerState) => {
+                            const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                            sourceToUpdate.nullCounts = nullCounts;
+                        });
+                    })
                     
-                    // api.getDistributionSummaries(source.path, numerics).then(numericSummaries => {
-                    //     dispatch((draft:DataModellerState) => {
-                    //         // assuming the source to update
-                    //         const sourceToUpdate = getQuery(draft.sources, source.id);
-                    //         sourceToUpdate.numericSummaries = numericSummaries;
-                    //     });
-                    // });
                 } catch (err) {
                     console.log("addSource", err, path);
                     //throw Error(err);
@@ -261,7 +208,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         scanRootForSources() {
-            return async (dispatch, getState) => {
+            return async (dispatch:Function) => {
                 const files = await api.getParquetFilesInRoot();
                 files.sort();
                 const filePaths = new Set(files);
@@ -283,7 +230,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         // queries
-        addQuery(params) {
+        addQuery(params:NewQueryArguments) {
             const query = params.query || undefined;
             const name = params.name || undefined;
             const at = params.at;
@@ -297,7 +244,8 @@ export const createServerActions = (api, notifyUser) => {
         },
         updateQuery({id, query}) {
             return (draft:DataModellerState) => {
-                getQuery(draft.queries, id).query = query;
+                const queryItem = getByID(draft.queries, id) as Query;
+                queryItem.query = query;
             };
         },
 
@@ -343,7 +291,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         exportToParquet({query, id, path}) {
-            return async (dispatch) => {
+            return async (dispatch:Function) => {
                 await api.exportToParquet(query, path);
 
                 api.getDestinationSize(path).then((size) => {
@@ -362,9 +310,7 @@ export const createServerActions = (api, notifyUser) => {
 
         updateFieldSummary({ path, field }) {
             return async (dispatch:Function) => {
-                // find the field
                 const summary = await api.getDistributionSummary(path, field);
-                console.log(summary);
                 dispatch((draft:DataModellerState) => {
                     const source = draft.sources.find(source => source.path === path);
                     const fieldInfo = source.profile.find((p) => p.name === field);
@@ -374,7 +320,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         updateQueryInformation({id}) {
-            return async (dispatch, getState) => {
+            return async (dispatch:Function, getState:Function) => {
                 const state = getState();
                 const queryInfo = state.queries.find(query => query.id === id);
                 // check to see if it is valid.
@@ -410,22 +356,18 @@ export const createServerActions = (api, notifyUser) => {
 
                 // attach the source name here.
                 const sources = api.extractParquetFilesFromQuery(queryInfo.query);
-                dispatch((draft:DataModellerState) => {
-                    updateQueryField(dispatch, id, 'sources', sources);
-                });
+                updateQueryField(dispatch, id, 'sources', sources);
+
 
 
                 api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
                     updateQueryField(dispatch, id, 'cardinality', cardinality);
-                    /** if the cardinality is small enough, should we export to parquet and 
-                     * get the file size?
-                     */
                 }).catch(error => {
                     console.error('calculateDestinationCardinality', error);
                 });
 
                 api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`)
-                    .then((size) => {
+                    .then((size:number) => {
                         if (size !== undefined) {
                             updateQueryField(dispatch, id, 'sizeInBytes', size);
                         }

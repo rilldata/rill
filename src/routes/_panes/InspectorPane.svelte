@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 import { getContext } from "svelte";
 import { flip } from "svelte/animate";
 import { slide } from "svelte/transition";
@@ -12,11 +12,14 @@ import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 import SourcePreview from "$lib/components/SourcePreview.svelte";
 
+import type { AppStore } from '$lib/app-store';
+import type { Query } from "../../types";
+
 import { drag } from "$lib/drag";
 
 import {format} from "d3-format";
 
-const store = getContext('rill:app:store');
+const store = getContext('rill:app:store') as AppStore;
 
 const formatCardinality = format(',');
 const formatRollupFactor = format(',r');
@@ -51,7 +54,7 @@ let rollup;
 let compression;
 let sources;
 
-let currentQuery = {};
+let currentQuery = {} as Query;
 $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.activeQuery);
 $: if (currentQuery?.sources) sources = $store.sources.filter(source => currentQuery.sources.includes(source.path));
 $: if (currentQuery?.cardinality && sources) rollup = computeRollup(sources, {cardinality: currentQuery.cardinality });

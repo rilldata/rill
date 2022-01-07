@@ -348,3 +348,14 @@ export async function getTimestampSummaries(parquetFilePath:string, fields:any) 
 		return acc;
 	}, {});
 }
+
+export async function getNullCounts(parquetFilePath:string, fields:any) {
+	const [nullities] = await dbAll(db, `
+		SELECT
+		${fields.map(field => {
+			return `COUNT(CASE WHEN ${field.name} IS NULL THEN 1 ELSE NULL END) as ${field.name}`
+		}).join(',\n')}
+		FROM '${parquetFilePath}';
+	`);
+	return nullities;
+}

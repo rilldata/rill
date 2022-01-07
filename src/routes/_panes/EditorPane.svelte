@@ -1,11 +1,13 @@
-<script>
+<script lang="ts">
 import { getContext } from "svelte";
-import { fly, slide } from "svelte/transition";
+import { slide } from "svelte/transition";
+import type { AppStore } from '$lib/app-store';
 import { cubicOut as easing } from 'svelte/easing';
 import { flip } from "svelte/animate";
 import Editor from "$lib/components/Editor.svelte";
 import DropZone from "$lib/components/DropZone.svelte";
-const store = getContext("rill:app:store");
+
+const store = getContext("rill:app:store") as AppStore;
 
 let error;
 
@@ -28,7 +30,7 @@ function getErrorLineNumber(errorString) {
     animate:flip={{duration: 100}}>
 
       <DropZone 
-        padTop={$store.queries.length}
+        padTop={!!$store.queries.length}
         on:source-drop={(evt) => { 
           store.action('addQuery', { query: evt.detail.props.content, at: i } ); 
         }} />

@@ -1,31 +1,31 @@
 <script lang="ts">
-
     import { format } from "d3-format";
+    import BarAndLabel from "$lib/components/BarAndLabel.svelte";
     const formatPercentage = format('.1%');
     const formatCount = format(',');
 
     export let displaySize:string = "md";
     export let totalRows:number;
     export let topK:any; // FIXME
-    export let cardinality:number;
 </script>
 
 <div style="w-full">
-    <div class='pb-3'>
-        {formatCount(cardinality)} unique values
-    </div>
     <div class='grid w-full' style="grid-template-columns: auto max-content; justify-items: stretch; justify-content: stretch; grid-column-gap: 1rem;">
         {#each topK.slice(0, 5) as { value, count}}
 
                 <div
                     class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
                 >
-                    {value} 
+                    {value} {value === null ? '∅' : ''}
                 </div>
+                <BarAndLabel value={count / totalRows}>
+                    {formatCount(count)} ({formatPercentage(count / totalRows)})
+                </BarAndLabel>
+<!-- 
                 <div class="text-right" style="position:relative;">
                     {formatCount(count)} ({formatPercentage(count / totalRows)})
                     <div class='number-bar' style="--width: {count / totalRows};" />
-                </div>
+                </div> -->
         {/each}
     </div>
 </div>
