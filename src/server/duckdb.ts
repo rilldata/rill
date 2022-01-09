@@ -160,8 +160,9 @@ export async function getFirstN(table, n=1) {
 
 export function extractParquetFilesFromQuery(query:string) {
 	let re = /'[^']*\.parquet'/g;
-	const matches = query.match(re).map(match => match.replace(/'/g, ''));
-	return matches;
+	const matches = query.match(re);
+	if (matches === null) { return null };
+	return matches.map(match => match.replace(/'/g, ''));;
 }
 
 export async function createSourceProfileFromQuery(query:string) {

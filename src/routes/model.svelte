@@ -11,96 +11,6 @@ import EditorPane from "./_panes/EditorPane.svelte";
 import InspectorPane from "./_panes/InspectorPane.svelte";
 import AssetsPane from "./_panes/AssetsPane.svelte";
 
-`
---SELECT events.pageId from events
---JOIN pages ON pages.pageId = events.pageId
---JOIN articles ON articles.pageId = events.pageId
---LIMIT 100;
-WITH 
-events_count AS (
-  SELECT 
-    COUNT(*) as count, 
-  date(datetime(pages.createdAt / 1000, 'unixepoch')) AS dt 
-  FROM events 
-  JOIN pages ON events.pageId = pages.pageId 
-  GROUP BY dt),
-page_visit_count AS (
-  SELECT COUNT(*) as count, 
-  date(datetime(createdAt / 1000, 'unixepoch')) AS dt 
-  FROM pages 
-  GROUP BY dt),
-article_count AS (
-  SELECT 
-    COUNT(*) as count, 
-    date(datetime(pages.createdAt / 1000, 'unixepoch')) as dt 
-FROM articles JOIN pages ON pages.pageId = articles.pageId GROUP BY dt)
-SELECT 
-  page_visit_count.count AS page_count,
-  events_count.count AS event_count,
-  COALESCE(article_count.count, 0) AS article_count,
-  events_count.dt
-FROM events_count
-LEFT OUTER JOIN page_visit_count ON events_count.dt = page_visit_count.dt
-LEFT OUTER JOIN article_count ON events_count.dt = article_count.dt;
-`
-
-
-const another = `
-SELECT
-    pageId,
-    nextTimestamp - timestamp AS duration,
-    timestamp as startTime
-    FROM
-    (SELECT 
-    timestamp,
-    eventType,
-    pageId,
-    LEAD(timestamp, 1) OVER (ORDER BY pageId, timestamp) AS nextTimestamp,
-    LEAD(eventType, 1) OVER (ORDER BY pageId, timestamp) AS nextEvent,
-    LEAD(pageId, 1) OVER (ORDER BY pageId, timestamp) AS nextPageId
-        FROM
-    -- subquery to order all events by page ID and timestamp first.
-        (SELECT *
-        FROM events
-        ORDER BY pageId, timestamp
-        )
-)
-WHERE pageId = nextPageId
-AND (
-    (eventType = 'attention-start' and nextEvent = 'attention-stop') OR
-    (eventType = 'attention-start' and nextEvent = 'page-visit-stop')
-)
-`
-
-const lastOne = `
-WITH events_count AS (
-  SELECT 
-    COUNT(*) as count, 
-  strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
-  FROM events 
-  JOIN pages ON events.pageId = pages.pageId 
-  GROUP BY dt),
-page_visit_count AS (
-  SELECT COUNT(*) as count, 
-  strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
-  FROM pages 
-  GROUP BY dt),
-article_count AS (
-  SELECT 
-    COUNT(*) as count, 
-    strftime(epoch_ms(pages.createdAt), '%Y-%m-%d') AS dt 
-FROM articles JOIN pages ON pages.pageId = articles.pageId GROUP BY dt)
-SELECT 
-  page_visit_count.count AS page_count,
-  events_count.count AS event_count,
-  COALESCE(article_count.count, 0) AS article_count,
-  events_count.dt
-FROM events_count
-LEFT OUTER JOIN page_visit_count ON events_count.dt = page_visit_count.dt
-LEFT OUTER JOIN article_count ON events_count.dt = article_count.dt;
-`
-
-
 let resultset;
 let queryInfo;
 let query;
@@ -145,7 +55,7 @@ $: debounceRunstate($store?.status || 'disconnected');
     <AssetsPane />
   </div>
   <div class="pane inputs">
-    <EditorPane bind:destinationSize bind:queryInfo bind:resultset bind:query bind:destinationInfo />
+    <EditorPane />
   </div>
 
   <div class='pane outputs'>

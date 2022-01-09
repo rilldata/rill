@@ -1,5 +1,5 @@
 <script>
-export let size = 24;
+export let size = '1em';
 </script>
 
 

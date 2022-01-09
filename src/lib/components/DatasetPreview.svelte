@@ -1,19 +1,20 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { slide } from "svelte/transition";
+import { slide, fade, fly } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { cubicInOut as easing } from "svelte/easing";
 import { format } from "d3-format";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 import TopKSummary from "$lib/components/TopKSummary.svelte";
+import IconButton from "$lib/components/IconButton.svelte";
 
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 
 import { dropStore } from '$lib/drop-store';
 import type { SvelteComponent } from "svelte/internal";
 
-import { intervalToTimestring } from "../../util/formatters";
+import { intervalToTimestring, formatCardinality } from "../../util/formatters";
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -35,21 +36,11 @@ let colSizer;
 const formatInteger = format(',');
 const percentage = format('.1%');
 
-function formatCardinality(n) {
-    let fmt:Function;
-    if (n <= 1000) {
-        fmt = formatInteger;
-        return fmt(~~n);
-    } else {
-        fmt = format('.3s');
-        return fmt(n);
-    }
-}
+
 let container;
 
 let containerWidth = 0;
-let show = true;
-let firstColWidth = 0;
+let show = false;
 
 function humanFileSize(size:number) {
     var i = Math.floor( Math.log(size) / Math.log(1024) );
@@ -61,12 +52,12 @@ onMount(() => {
         entries.forEach((entry) => {
             containerWidth = container.clientWidth;
         });
-        firstColWidth = colSizer.offsetWidth;
     });
     observer.observe(container);
 });
 
 $: collapseGrid = containerWidth < collapseWidth;
+
 let cardinalityTween = tweened(cardinality, { duration: 600, easing });
 let sizeTween = tweened(sizeInBytes, { duration: 650, easing, delay: 150 });
 $: cardinalityTween.set(cardinality);
@@ -83,7 +74,13 @@ let summaryColumns = [];
 
 function sortByCardinality(a,b) {
     if (categoricalSummaries) {
-        return (categoricalSummaries[a.name]?.cardinality < categoricalSummaries[b.name]?.cardinality) ? 1 : -1;
+        if (categoricalSummaries[a.name]?.cardinality < categoricalSummaries[b.name]?.cardinality) {
+            return 1;
+        } else if (categoricalSummaries[a.name]?.cardinality > categoricalSummaries[b.name]?.cardinality) {
+            return -1;
+        } else {
+            return sortByName(a,b);
+        }
     } else {
         return 0;
     }
@@ -91,7 +88,13 @@ function sortByCardinality(a,b) {
 
 function sortByNullity(a,b) {
     if (nullCounts) {
-        return (nullCounts[a.name] < nullCounts[b.name]) ? 1 : -1;
+        if (nullCounts[a.name] < nullCounts[b.name]) {
+            return 1;
+        } else if ((nullCounts[a.name] > nullCounts[b.name])) {
+            return -1;
+        } else {
+            return sortByName(a,b);
+        }
     } else {
         return 0;
     }
@@ -101,13 +104,17 @@ function sortByName(a,b) {
     return (a.name > b.name) ? 1 : -1;
 }
 
-$: sortedProfile = profile.sort((a,b) => {
-    if (a.type !== 'BYTE_ARRAY' && b.type !== 'BYTE_ARRAY') return sortByNullity(b,a);
+function defaultSort(a, b) {
     if (a.type === 'BYTE_ARRAY' &&  b.type !== 'BYTE_ARRAY') return 1;
+    if (a.type !== 'BYTE_ARRAY' &&  b.type === 'BYTE_ARRAY') return -1;
+    if (a.type !== 'BYTE_ARRAY' && b.type !== 'BYTE_ARRAY') return sortByNullity(b,a);
     return sortByCardinality(a,b);
-})
+}
 
-//$: sortedProfile = profile.sort(sortByName);
+let sortMethod = defaultSort;
+$: sortedProfile = [...profile].sort(sortMethod);
+
+let previewView = 'card';
 </script>
 
 <div bind:this={container}>
@@ -152,20 +159,8 @@ $: sortedProfile = profile.sort((a,b) => {
                                 select columns
                             {/if}
                         {:else}
-                            {formatCardinality($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid && sizeInBytes !== undefined}, {humanFileSize($sizeTween)}{/if}
+                            {formatInteger($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid && sizeInBytes !== undefined}, {humanFileSize($sizeTween)}{/if}
                         {/if}
-                        <span>
-                            {#if draggable}
-                            <button class:font-bold={selectingColumns} on:click={() => {
-                                selectingColumns = !selectingColumns;
-                            }}>*</button>
-                            {/if}
-                            <button class:font-bold={showSummaries} on:click={() => {
-                                showSummaries = !showSummaries;
-                            }}>
-                                &
-                            </button>
-                        </span>
                     </div>
 
             </svelte:fragment>
@@ -173,11 +168,58 @@ $: sortedProfile = profile.sort((a,b) => {
     </div>
     {#if show}
         <div class="pt-1 pl-accordion" transition:slide|local={{duration: 120 }}>
+
+            <div class:hidden={collapseGrid} class='grid grid-flow-col justify-between'>
+                <div class='grid justify-start grid-cols-3 items-baseline pb-2 pt-2'>
+                    <IconButton title="sort by cardinality" selected={sortMethod === defaultSort} on:click={() => {
+                        sortMethod = defaultSort;
+                    }}>||</IconButton>
+
+                    <IconButton 
+                        title="sort by null % of field"
+                        selected={sortMethod === sortByNullity}  on:click={() => {
+                        sortMethod = sortByNullity;
+                    }}>∅</IconButton>
+                    <IconButton title="sort by name" selected={sortMethod === sortByName}  on:click={() => {
+                        sortMethod = sortByName;
+                    }}>AZ</IconButton>
+                </div>
+
+                <div class='grid justify-start grid-cols-2 items-baseline pb-2 pt-2'>
+                    {#if draggable}
+                    <IconButton 
+                        title="select columns"
+                        selected={selectingColumns} on:click={() => {
+                        selectingColumns = !selectingColumns;
+                    }}>*</IconButton>
+                    {/if}
+                    <IconButton title="summarize columns" selected={showSummaries} on:click={() => {
+                        showSummaries = !showSummaries;
+                    }}>
+                        &
+                    </IconButton>
+                </div>
+
+                <div class='grid justify-end grid-flow-col pb-2 pt-2 '>
+                    <IconButton 
+                        title="show summaries (cardinalities, null %, and time range)"
+                        selected={previewView === 'card'} 
+                        on:click={() => {
+                            previewView = 'card';
+                    }}>||</IconButton>
+                    <IconButton 
+                        title="show example value"
+                        selected={previewView === 'example'}  
+                        on:click={() => {
+                            previewView = 'example';
+                    }}>Ex</IconButton>
+                </div>
+            </div>
             <div 
                 class="gap-x-4 w-full" 
                 class:grid={!collapseGrid} 
                 class:block={collapseGrid}
-                style="grid-template-columns: auto minmax(80px, auto) 56px;"
+                style="grid-template-columns: minmax(80px, auto) {previewView === 'example' ? "minmax(108px, 164px)" : "auto 68px"};"
             >
                 {#if sortedProfile}
                     {#each sortedProfile as column}
@@ -211,18 +253,21 @@ $: sortedProfile = profile.sort((a,b) => {
                         </button>
                         <div
                         title={column.type} 
-                        class="text-gray-500 text-ellipsis overflow-hidden whitespace-nowrap ">
+                        class="text-ellipsis overflow-hidden whitespace-nowrap " style="font-size:11px; color: #959595;">
                             {column.type}
                             <!-- <span class='italic text-gray-600' style="font-size:10px;">{(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)}</span> -->
                             
                         </div>
                     </div>
+                    {#if previewView === 'card'}
                     <div 
                         class='justify-self-end text-right text-gray-500  break-all' class:hidden={collapseGrid}>
                         {#if categoricalSummaries && column.name in categoricalSummaries}
-                            <!-- <BarAndLabel value={categoricalSummaries[column.name].cardinality / cardinality}> -->
-                                |{formatCardinality(categoricalSummaries[column.name].cardinality)}|
-                            <!-- </BarAndLabel> -->
+                            <!-- <span title="{column.name}: {formatCardinality(categoricalSummaries[column.name].cardinality)} unique values"> -->
+                            <BarAndLabel value={categoricalSummaries[column.name].cardinality / cardinality}>
+                                |{formatInteger(categoricalSummaries[column.name].cardinality)}|
+                            <!-- </span> -->
+                            </BarAndLabel>
                         {/if}
                         {#if timestampSummaries && column.name in timestampSummaries}
                             {intervalToTimestring(timestampSummaries[column.name].interval)} 
@@ -231,12 +276,26 @@ $: sortedProfile = profile.sort((a,b) => {
                         <!-- {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)} -->
                     </div>
                     <div class='self-stretch text-right text-gray-500 break-all' class:hidden={collapseGrid}>
+                        <!-- && !(summaryColumns.includes(column.name) && 
+                            (categoricalSummaries && column.name in categoricalSummaries && (categoricalSummaries[column.name].topK.slice(0,5).map(k => k.value).includes(null)) )) -->
+
+                            <!-- in:fly={{ duration: 100, x: -10, y: 20, delay: 100 }} out:fly={{ duration: 50, x: -10, y: 20 }} -->
                         {#if nullCounts && column.name in nullCounts && cardinality}
-                            <BarAndLabel value={nullCounts[column.name] / cardinality || 0}>
-                                <span class:text-gray-300={nullCounts[column.name] === 0}>∅ {percentage(nullCounts[column.name] / cardinality)}</span>
-                            </BarAndLabel>
+                            <div  >
+                                <BarAndLabel
+                                title="{column.name}: {percentage(nullCounts[column.name] / cardinality)} of the values are null"
+                                bgColor={nullCounts[column.name] === 0 ? 'bg-white' : 'bg-gray-50'}
+                                value={nullCounts[column.name] / cardinality || 0}>
+                                            <span class:text-gray-300={nullCounts[column.name] === 0}>∅ {percentage(nullCounts[column.name] / cardinality)}</span>
+                                </BarAndLabel>
+                            </div>
                         {/if}
                     </div>
+                    {:else}
+                        <div class='text-gray-500 italic text-right text-ellipsis overflow-hidden whitespace-nowrap ' class:hidden={collapseGrid}>
+                            {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>')}
+                        </div>
+                    {/if}
 
                     <!-- 
                         summary element.
@@ -244,7 +303,7 @@ $: sortedProfile = profile.sort((a,b) => {
                     -->
                     <!-- categorical summaries -->
                     {#if showSummaries && summaryColumns.includes(column.name) && categoricalSummaries && column.name in categoricalSummaries}
-                    <div class='col-span-3 pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
+                    <div style="grid-column: 1 / -1;" class='pt-3 pb-3' transition:slide={{duration: 200 }}>
                         <TopKSummary 
                             totalRows={cardinality}
                             topK={categoricalSummaries[column.name].topK}
@@ -255,7 +314,7 @@ $: sortedProfile = profile.sort((a,b) => {
 
                     <!-- timestamp summaries -->
                     {#if showSummaries && summaryColumns.includes(column.name) && timestampSummaries && column.name in timestampSummaries}
-                        <div class='col-span-3 pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
+                        <div  style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
 
                                 {intervalToTimestring(timestampSummaries[column.name].interval)} 
                                 ({timestampSummaries[column.name].min}
@@ -267,7 +326,7 @@ $: sortedProfile = profile.sort((a,b) => {
 
                     <!-- numerical summaries -->
                         {#if showSummaries && summaryColumns.includes(column.name) && numericalSummaries && column.name in numericalSummaries}
-                        <div class='col-span-3 pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
+                        <div  style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
                             <pre>
                                 {JSON.stringify(numericalSummaries[column.name], null, 2)}
                             </pre>

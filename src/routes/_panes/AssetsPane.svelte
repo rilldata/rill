@@ -6,7 +6,7 @@ import { flip } from "svelte/animate";
 import type { AppStore } from '$lib/app-store';
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-import SourcePreview from  "$lib/components/SourcePreview.svelte";
+import DatasetPreview from  "$lib/components/DatasetPreview.svelte";
 
 import { drag } from '$lib/drag'
 
@@ -25,7 +25,7 @@ $: activeQuery = $store && $store?.queries ? $store.queries.find(q => q.id === $
         {#if $store && $store.sources}
           {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id, categoricalSummaries, timestampSummaries, numericalSummaries, nullCounts} (id)}
           <div class='pl-3 pr-5 pt-1 pb-1' animate:flip transition:slide|local>
-            <SourcePreview
+            <DatasetPreview 
               icon={ParquetIcon}
               emphasizeTitle={activeQuery?.profile?.map(source => source.table).includes(path)}
               {name}
@@ -39,7 +39,6 @@ $: activeQuery = $store && $store?.queries ? $store.queries.find(q => q.id === $
               {numericalSummaries}
               {nullCounts}
               on:updateFieldSummary={(evt) => {
-                console.log('got em', evt.detail);
                 store.action('updateFieldSummary', evt.detail);
               }}
             />

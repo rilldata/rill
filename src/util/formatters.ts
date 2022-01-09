@@ -29,3 +29,14 @@ export function intervalToTimestring(interval:Interval) {
     if (interval.months === 0 && interval.days > 0 && interval.days > 365) return `${formatRate(interval.days / 365)} years`
     return `${months}${days}${time}`;
 }
+
+export function formatCardinality(n:number) {
+    let fmt:Function;
+    if (n <= 1000) {
+        fmt = formatInteger;
+        return fmt(~~n);
+    } else {
+        fmt = format('.3s');
+        return fmt(n);
+    }
+}

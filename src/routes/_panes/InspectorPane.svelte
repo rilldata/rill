@@ -6,11 +6,14 @@ import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
 import RowIcon from "$lib/components/icons/RowIcon.svelte";
 import JSONIcon from "$lib/components/icons/JsonIcon.svelte";
+import IconButton from "$lib/components/IconButton.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
-import SourcePreview from "$lib/components/SourcePreview.svelte";
+import DatasetPreview from "$lib/components/DatasetPreview.svelte";
+
+import { formatCardinality } from "../../util/formatters"
 
 import type { AppStore } from '$lib/app-store';
 import type { Query } from "../../types";
@@ -21,7 +24,7 @@ import {format} from "d3-format";
 
 const store = getContext('rill:app:store') as AppStore;
 
-const formatCardinality = format(',');
+//const formatCardinality = format(',');
 const formatRollupFactor = format(',r');
 
 // FIXME
@@ -112,7 +115,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
         <div transition:slide|local={{duration: 120 }}>
           {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
           <div class='pt-1 pb-1' animate:flip transition:slide|local>
-            <SourcePreview
+            <DatasetPreview
               icon={ParquetIcon}
               collapseWidth={240 + 120 + 16}
               emphasizeTitle={true}
@@ -132,7 +135,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
     
     <div class='source-tables p-4'>
       {#if currentQuery?.destinationProfile}
-          <SourcePreview 
+          <DatasetPreview 
             collapseWidth={240 + 120 + 16}
             name="Destination"
             path=""
@@ -154,12 +157,12 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
         <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
         {#if showOutputs}
         <div class="inspector-button-row grid grid-flow-col justify-start">
-          <button class='inspector-button' class:selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
+          <IconButton selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
             <RowIcon size={16} />
-          </button>
-          <button  class='inspector-button'  class:selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
-            <JSONIcon size={16}  />
-          </button>
+          </IconButton>
+          <IconButton selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
+            <JSONIcon size={16} />
+          </IconButton>
         </div>
         {/if}
       </div>
