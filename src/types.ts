@@ -4,7 +4,9 @@
  interface ProfileColumn {
     name: string;
     type: string;
+    conceptualType: string;
     summary?: any; // FIXME
+    nullCount?:number;
 }
 
 export interface Item {
@@ -39,9 +41,6 @@ export interface Source extends Item {
     head: any[];
     cardinality?: number;
     sizeInBytes?: number;
-    numericalSummaries?:any;
-    timestampSummaries?:any;
-    categoricalSummaries?:any;
     nullCounts?:any;
 }
 

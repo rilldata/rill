@@ -10,9 +10,11 @@ import TopKSummary from "$lib/components/TopKSummary.svelte";
 import IconButton from "$lib/components/IconButton.svelte";
 
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
+import Spinner from "$lib/components/Spinner.svelte";
 
 import { dropStore } from '$lib/drop-store';
 import type { SvelteComponent } from "svelte/internal";
+import Histogram from "$lib/components/Histogram.svelte";
 
 import { intervalToTimestring, formatCardinality } from "../../util/formatters";
 
@@ -40,7 +42,7 @@ const percentage = format('.1%');
 let container;
 
 let containerWidth = 0;
-let show = false;
+let show = true;
 
 function humanFileSize(size:number) {
     var i = Math.floor( Math.log(size) / Math.log(1024) );
@@ -73,10 +75,10 @@ let summaryColumns = [];
 // on the backend, not here.
 
 function sortByCardinality(a,b) {
-    if (categoricalSummaries) {
-        if (categoricalSummaries[a.name]?.cardinality < categoricalSummaries[b.name]?.cardinality) {
+    if (a.summary && b.summary) {
+        if (a.summary?.cardinality < b.summary?.cardinality) {
             return 1;
-        } else if (categoricalSummaries[a.name]?.cardinality > categoricalSummaries[b.name]?.cardinality) {
+        } else if (a.summary?.cardinality > b.summary?.cardinality) {
             return -1;
         } else {
             return sortByName(a,b);
@@ -87,16 +89,16 @@ function sortByCardinality(a,b) {
 }
 
 function sortByNullity(a,b) {
-    if (nullCounts) {
-        if (nullCounts[a.name] < nullCounts[b.name]) {
+    if (a.nullCount !== undefined && b.nullCount !== undefined) {
+        if (a.nullCount < b.nullCount) {
             return 1;
-        } else if ((nullCounts[a.name] > nullCounts[b.name])) {
+        } else if ((a.nullCount > b.nullCount)) {
             return -1;
         } else {
             return sortByName(a,b);
         }
     } else {
-        return 0;
+        return sortByName(a,b);
     }
 }
 
@@ -115,6 +117,16 @@ let sortMethod = defaultSort;
 $: sortedProfile = [...profile].sort(sortMethod);
 
 let previewView = 'card';
+
+// FIXME: replace once we work through logical types in parquet_scan
+function typeToSymbol(fieldType) {
+    if (fieldType === 'BYTE_ARRAY') {
+        return {symbol: "C", text: 'categorical (BYTE_ARRAY)', color: 'red'};
+    } else {
+        return {symbol: fieldType.slice(0,1), text: fieldType, color: 'sky'};
+    }
+}
+
 </script>
 
 <div bind:this={container}>
@@ -170,7 +182,9 @@ let previewView = 'card';
         <div class="pt-1 pl-accordion" transition:slide|local={{duration: 120 }}>
 
             <div class:hidden={collapseGrid} class='grid grid-flow-col justify-between'>
-                <div class='grid justify-start grid-cols-3 items-baseline pb-2 pt-2'>
+                <div 
+                    class='grid justify-start grid-cols-3 items-baseline pb-2 pt-2'
+                >
                     <IconButton title="sort by cardinality" selected={sortMethod === defaultSort} on:click={() => {
                         sortMethod = defaultSort;
                     }}>||</IconButton>
@@ -216,20 +230,49 @@ let previewView = 'card';
                 </div>
             </div>
             <div 
-                class="gap-x-4 w-full" 
+                class="gap-x-4 w-full items-center" 
                 class:grid={!collapseGrid} 
                 class:block={collapseGrid}
-                style="grid-template-columns: minmax(80px, auto) {previewView === 'example' ? "minmax(108px, 164px)" : "auto 68px"};"
+                style="
+                    grid-template-columns: minmax(80px, auto) {previewView === 'example' ? "minmax(108px, 164px)" : "auto 68px"};
+                "
             >
                 {#if sortedProfile}
-                    {#each sortedProfile as column}
+                    {#each sortedProfile as column (column.name)}
                     <div 
-                        class="font-medium break-word grid gap-x-2 items-baseline" 
-                        style="grid-template-columns: minmax(90px, max-content) auto;" 
+                        class="font-medium break-word grid gap-x-2 items-center" 
+                        style="
+                            height: 19px;
+                            grid-template-columns: max-content minmax(90px, max-content);
+                        " 
                         bind:this={colSizer}>
+                        {#if column.summary}
+                        <div
+                        in:fade 
+                        title={typeToSymbol(column.type).text} 
+                        class:bg-sky-100={column.type === 'BYTE_ARRAY'}
+                        class:bg-red-100={column.type !== 'BYTE_ARRAY'}
+                        class:text-sky-800={column.type === 'BYTE_ARRAY'}
+                        class:text-red-800={column.type !== 'BYTE_ARRAY'}
+                        class="
+                            text-ellipsis overflow-hidden whitespace-nowrap 
+                            grid place-items-center rounded" 
+                            style="font-size:8px; width: 16px; height: 16px;">
+                            <div style="transform: translateY(.5px);">
+                                {typeToSymbol(column.type).symbol}                           
+                            </div> 
+                        </div>
+                        {:else}
+                            <div in:fade class="grid place-items-center" style="width: 16px; height: 16px;">
+                                <Spinner size=".45rem" bg="hsl(240, 1%, 70%)" />
+                            </div>
+                        {/if}
                         <button
+                            disabled={!column.summary}
                             title={column.name}
                             class='text-ellipsis overflow-hidden whitespace-nowrap break-all text-left {(selectingColumns || showSummaries) ? 'hover:underline' : ''}' 
+                            class:text-gray-500={!column.summary}
+                            class:italic={!column.summary}
                             class:font-bold={
                                 (selectingColumns && selectedColumns.includes(column.name)) ||
                                 (showSummaries && summaryColumns.includes(column.name))
@@ -251,44 +294,34 @@ let previewView = 'card';
                         }}>
                             {column.name} 
                         </button>
-                        <div
-                        title={column.type} 
-                        class="text-ellipsis overflow-hidden whitespace-nowrap " style="font-size:11px; color: #959595;">
-                            {column.type}
-                            <!-- <span class='italic text-gray-600' style="font-size:10px;">{(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)}</span> -->
-                            
-                        </div>
+
                     </div>
                     {#if previewView === 'card'}
                     <div 
-                        class='justify-self-end text-right text-gray-500  break-all' class:hidden={collapseGrid}>
-                        {#if categoricalSummaries && column.name in categoricalSummaries}
-                            <!-- <span title="{column.name}: {formatCardinality(categoricalSummaries[column.name].cardinality)} unique values"> -->
-                            <BarAndLabel value={categoricalSummaries[column.name].cardinality / cardinality}>
-                                |{formatInteger(categoricalSummaries[column.name].cardinality)}|
-                            <!-- </span> -->
+                        class='justify-self-stretch text-right text-gray-500  break-all' class:hidden={collapseGrid}>
+                        {#if column.conceptualType === 'VARCHAR' && column?.summary?.cardinality}
+                            <BarAndLabel 
+                            color={column.type !== 'BYTE_ARRAY' ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
+                            value={column.summary.cardinality / cardinality}>
+                                |{formatInteger(column.summary.cardinality)}|
                             </BarAndLabel>
-                        {/if}
-                        {#if timestampSummaries && column.name in timestampSummaries}
-                            {intervalToTimestring(timestampSummaries[column.name].interval)} 
+                        <!-- {:else if column.conceptualType === 'TIMESTAMP' && column.summary}
+                            {intervalToTimestring(column.summary.interval)} -->
+                        {:else if column?.summary?.histogram}
+                            <Histogram data={column.summary.histogram} width={94} height={19} color="hsl(1,50%, 80%)" />
                         {/if}
            
                         <!-- {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)} -->
                     </div>
                     <div class='self-stretch text-right text-gray-500 break-all' class:hidden={collapseGrid}>
-                        <!-- && !(summaryColumns.includes(column.name) && 
-                            (categoricalSummaries && column.name in categoricalSummaries && (categoricalSummaries[column.name].topK.slice(0,5).map(k => k.value).includes(null)) )) -->
-
-                            <!-- in:fly={{ duration: 100, x: -10, y: 20, delay: 100 }} out:fly={{ duration: 50, x: -10, y: 20 }} -->
-                        {#if nullCounts && column.name in nullCounts && cardinality}
-                            <div  >
-                                <BarAndLabel
-                                title="{column.name}: {percentage(nullCounts[column.name] / cardinality)} of the values are null"
-                                bgColor={nullCounts[column.name] === 0 ? 'bg-white' : 'bg-gray-50'}
-                                value={nullCounts[column.name] / cardinality || 0}>
-                                            <span class:text-gray-300={nullCounts[column.name] === 0}>∅ {percentage(nullCounts[column.name] / cardinality)}</span>
-                                </BarAndLabel>
-                            </div>
+                        {#if cardinality && column.nullCount !== undefined}
+                            <BarAndLabel
+                                title="{column.name}: {percentage(column.nullCount / cardinality)} of the values are null"
+                                bgColor={column.nullCount === 0 ? 'bg-white' : 'bg-gray-50'}
+                                color={column.type !== 'BYTE_ARRAY' ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
+                                value={column.nullCount / cardinality || 0}>
+                                        <span class:text-gray-300={column.nullCount === 0}>∅ {percentage(column.nullCount / cardinality)}</span>
+                            </BarAndLabel>
                         {/if}
                     </div>
                     {:else}
@@ -302,34 +335,28 @@ let previewView = 'card';
                         For topK, the labels should be firstColWidth wide.
                     -->
                     <!-- categorical summaries -->
-                    {#if showSummaries && summaryColumns.includes(column.name) && categoricalSummaries && column.name in categoricalSummaries}
-                    <div style="grid-column: 1 / -1;" class='pt-3 pb-3' transition:slide={{duration: 200 }}>
-                        <TopKSummary 
-                            totalRows={cardinality}
-                            topK={categoricalSummaries[column.name].topK}
-                            displaySize={collapseGrid ? 'sm' : 'md'}
-                        />
-                    </div>
-                    {/if}
-
-                    <!-- timestamp summaries -->
-                    {#if showSummaries && summaryColumns.includes(column.name) && timestampSummaries && column.name in timestampSummaries}
-                        <div  style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
-
-                                {intervalToTimestring(timestampSummaries[column.name].interval)} 
-                                ({timestampSummaries[column.name].min}
+                    {#if showSummaries && summaryColumns.includes(column.name)}
+                        <div style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide|local={{duration: 200 }} >
+                            {#if column.conceptualType === 'VARCHAR'}
+                            <TopKSummary 
+                                totalRows={cardinality}
+                                topK={column.summary.topK}
+                                displaySize={collapseGrid ? 'sm' : 'md'}
+                            />
+                            {/if}
+                            <!-- {#if  column.conceptualType === 'TIMESTAMP'}
+                                {intervalToTimestring(column.summary.interval)} 
+                                ({column.summary.min}
                                     to
-                                    {timestampSummaries[column.name].max}
+                                    {column.summary.max}
                                 )
-                        </div>
-                    {/if}
+                            {/if} -->
 
-                    <!-- numerical summaries -->
-                        {#if showSummaries && summaryColumns.includes(column.name) && numericalSummaries && column.name in numericalSummaries}
-                        <div  style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide={{duration: 200 }}>
+                            {#if column.conceptualType !== 'VARCHAR' && column.conceptualType !=='TIMESTAMP'}
                             <pre>
-                                {JSON.stringify(numericalSummaries[column.name], null, 2)}
+                                {JSON.stringify(column.summary, null, 2)}
                             </pre>
+                            {/if}
                         </div>
                     {/if}
 

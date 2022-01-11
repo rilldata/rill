@@ -1,11 +1,13 @@
-<div class='spinner spinning' />
+<script>
+export let size = '1rem';
+export let bg = 'linear-gradient(to left, hsl(300, 100%, 50%), hsl(1, 100%, 50%))';
+</script>
+
+<div class='spinner spinning' style="width: {size}; height: {size}; background: {bg};" />
 
 <style>
 	.spinner {
-		width: 1rem;
-		height: 1rem;
         opacity: .5;
-		background: linear-gradient(to left, hsl(300, 100%, 50%), hsl(1, 100%, 50%));
 	}
 	
 	.spinning {

@@ -8,18 +8,15 @@ import AssetsPane from "./_panes/AssetsPane.svelte";
 const store = getContext("rill:app:store");
 </script>
 
-
-  <div class="pane assets">
-    <AssetsPane />
-  </div>
-  <div class="pane inputs">
-    <EditorPane />
-  </div>
-
-  <div class='pane outputs'>
-    <InspectorPane />
-    </div>
-
+<div class="pane assets">
+  <AssetsPane />
+</div>
+<div class="pane inputs">
+  <EditorPane />
+</div>
+<div class='pane outputs'>
+  <InspectorPane />
+</div>
 
 <style>
 .inputs {

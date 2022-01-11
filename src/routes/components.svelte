@@ -62,7 +62,7 @@
     })
 </script>
 
-<div data-grid="container" class="h-screen bg-slate-800 text-white">
+<div data-grid="container" class="h-screen w-full bg-slate-800 text-white">
     <div data-grid="a" class="p-4">
         <h1 class="mb-4 text-xl">Vignettes</h1>
         <ul>

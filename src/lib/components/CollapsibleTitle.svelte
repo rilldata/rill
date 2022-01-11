@@ -28,7 +28,7 @@ export let icon:SvelteComponent;
             <div class="
                 transition-tranform 
                 duration-100
-                {active ? '-rotate-90' : ''}
+                {!active ? '-rotate-90' : ''}
             " 
             style="
             "><CaretDownIcon size={14} />

@@ -287,7 +287,7 @@ ORDER BY count desc
 LIMIT 50;`
 }
 
-async function getTopKAndCardinality(parquetFilePath, column) {
+export async function getTopKAndCardinality(parquetFilePath, column) {
 	const topKValues = await dbAll(db, topK(parquetFilePath, column));
 	const [cardinality] = await dbAll(db, `SELECT approx_count_distinct(${column}) as count from '${parquetFilePath}';`);
 	return {
@@ -313,6 +313,8 @@ export async function getDistributionSummaries(parquetFilePath, fields) {
 		return acc;
 	}, {});
 }
+
+// FIXME: convert to generator?
 
 export async function getCategoricalSummaries(parquetFilePath, fields) {
 	const summaries = await Promise.all(fields.map((s) => {
@@ -350,6 +352,13 @@ export async function getTimestampSummaries(parquetFilePath:string, fields:any) 
 	}, {});
 }
 
+export async function getNullCount(parquetFilePath:string, field:string) {
+	const [nullity] = await dbAll(db, `
+		SELECT COUNT(*) as count FROM '${parquetFilePath}' WHERE ${field} IS NULL;
+	`);
+	return nullity.count;
+}
+
 export async function getNullCounts(parquetFilePath:string, fields:any) {
 	const [nullities] = await dbAll(db, `
 		SELECT
@@ -359,4 +368,50 @@ export async function getNullCounts(parquetFilePath:string, fields:any) {
 		FROM '${parquetFilePath}';
 	`);
 	return nullities;
+}
+
+export async function numericHistogram(parquetFilePath:string, field:string, fieldType:string = null) {
+
+	// if the field type is an integer and the total number of values is low, can't we just use
+	// first check a sample to see how many buckets there are for this value.
+	const buckets = await dbAll(db, `SELECT count(*) as count, ${field} FROM '${parquetFilePath}' WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
+	const bucketSize = Math.min(40, buckets.length);
+	return dbAll(db, `
+	WITH dataset AS (
+		SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM '${parquetFilePath}'
+	) , S AS (
+		SELECT 
+			min(${field}) as minVal,
+			max(${field}) as maxVal,
+			(max(${field}) - min(${field})) as range
+			FROM dataset
+	), values AS (
+		SELECT ${field} as value from dataset
+		WHERE ${field} IS NOT NULL
+	), buckets AS (
+		SELECT
+			range as bucket,
+			(range - 1) * (select range FROM S) / ${bucketSize} + (select minVal from S) as low,
+			(range) * (select range FROM S) / ${bucketSize} + (select minVal from S) as high
+		FROM range(0, ${bucketSize}, 1)
+	)
+	, histogram_stage AS (
+		SELECT
+			bucket,
+			low,
+			high,
+			count(values.value) as count
+		FROM buckets
+		LEFT JOIN values ON values.value BETWEEN low and high
+		GROUP BY bucket, low, high
+		ORDER BY BUCKET
+	)
+	SELECT 
+		bucket,
+		low,
+		high,
+		CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
+		FROM histogram_stage;
+	
+	`)
 }

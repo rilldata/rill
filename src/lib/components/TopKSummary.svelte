@@ -12,6 +12,7 @@
 <div>
     <div class='grid w-full' style="
         grid-template-columns: auto  max-content; 
+        grid-auto-rows: 19px;
         justify-items: stretch; 
         justify-content: stretch; 
         grid-column-gap: 1rem;"

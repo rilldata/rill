@@ -30,6 +30,7 @@
 		"@typescript-eslint/parser": "^4.31.1",
 		"autoprefixer": "^10.4.0",
 		"babel-jest": "^27.0.0",
+		"d3-scale": "^4.0.2",
 		"electron": "^16.0.4",
 		"eslint": "^7.32.0",
 		"eslint-config-prettier": "^8.3.0",

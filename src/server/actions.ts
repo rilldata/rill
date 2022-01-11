@@ -140,6 +140,7 @@ export const createServerActions = (api, notifyUser) => {
                     source.sizeInBytes = await api.getDestinationSize(source.path);
                     source.cardinality = await api.getCardinality(source.path);
                     source.head = await api.getFirstN(`'${source.path}'`);
+                    console.time(source.path + ' core-actions');
                     dispatch((draft:DataModellerState) => {
                         if (!!sourceExists) {
                             const sourceToUpdate = getByID(draft.sources, source.id);
@@ -149,55 +150,87 @@ export const createServerActions = (api, notifyUser) => {
                         } else {
                             draft.sources.push(source);
                         }
+                        console.timeEnd(source.path + ' core-actions');
                     });
 
                     const duckdbTypes = await api.parquetToDBTypes(source.path);
+                    dispatch((draft:DataModellerState) => {
+                        const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                        duckdbTypes.map((t) => {
+                            sourceToUpdate.profile.find(p => p.name === t.name).conceptualType = t.type;
+                        });
+                    })
                     // run expensive stuff but update it async.
                     const numerics = duckdbTypes.filter(c => {
                         return c.type.includes("INTEGER") || c.type.includes("DOUBLE") || c.type.includes("BIGINT");
                     });
                     const strings = duckdbTypes.filter(c => {
                         return c.type.includes("VARCHAR");
-                    })
+                    });
 
                     const timestamps = duckdbTypes.filter(c => {
                         return c.type.includes('TIMESTAMP');
-                    })
+                    });
 
-                    
                     if (strings.length) {
-                        api.getCategoricalSummaries(source.path, strings).then(categoricalSummaries => {
-                            dispatch((draft:DataModellerState) => {
-                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                                sourceToUpdate.categoricalSummaries = categoricalSummaries;
+                        strings.forEach(field => {
+                            api.getTopKAndCardinality(source.path, field.name).then(summary => {
+                                dispatch((draft:DataModellerState) => {
+                                    const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                                    const profile = sourceToUpdate.profile.find(p => p.name === field.name);
+                                    profile.summary = summary;
+                                });
                             });
                         });
                     }
                     
 
                     if (numerics.length) {
-                        api.getDistributionSummaries(source.path, numerics).then(numericalSummaries => {
-                            dispatch((draft:DataModellerState) => {
-                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                                sourceToUpdate.numericalSummaries = numericalSummaries;
-                            });
-                        });
-                    }
-
-                    if (timestamps.length) {
-                        api.getTimestampSummaries(source.path, timestamps).then(timestampSummaries => {
-                            dispatch((draft:DataModellerState) => {
-                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                                sourceToUpdate.timestampSummaries = timestampSummaries;
+                        numerics.forEach((field) => {
+                            api.numericHistogram(source.path, field.name, field.type).then((histogram) => {
+                                dispatch((draft:DataModellerState) => {
+                                    const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                                    const profile = sourceToUpdate.profile.find(p => p.name === field.name);
+                                    if (!('summary'in profile)) {
+                                        profile.summary = {};
+                                    }
+                                    profile.summary.histogram = histogram;
+                                });
                             })
                         })
                     }
 
-                    api.getNullCounts(source.path, duckdbTypes).then(nullCounts => {
-                        dispatch((draft:DataModellerState) => {
-                            const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                            sourceToUpdate.nullCounts = nullCounts;
-                        });
+                    if (timestamps.length) {
+                        // api.getTimestampSummaries(source.path, timestamps).then(timestampSummaries => {
+                        //     dispatch((draft:DataModellerState) => {
+                        //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                        //         Object.keys(timestampSummaries).forEach(key => {
+                        //             sourceToUpdate.profile.find(field => field.name === key).summary = timestampSummaries[key];
+                        //         })
+                        //     })
+                        // })
+                        timestamps.forEach(field => {
+                            api.numericHistogram(source.path, field.name, field.type).then((histogram) => {
+                                dispatch((draft:DataModellerState) => {
+                                    const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                                    const profile = sourceToUpdate.profile.find(p => p.name === field.name);
+                                    if (!('summary'in profile)) {
+                                        profile.summary = {};
+                                    }
+                                    profile.summary.histogram = histogram;
+                                });
+                            })
+                        })
+                    }
+                    duckdbTypes.forEach(field => {
+                        api.getNullCount(source.path, field.name).then((nullCount) => {
+                            dispatch((draft:DataModellerState) => {
+                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                                const profile = sourceToUpdate.profile.find(p => p.name === field.name);
+                                sourceToUpdate.profile.find(p => p.name === field.name).nullCount = nullCount;
+                            })
+                        })
+                        
                     })
                     
                 } catch (err) {
