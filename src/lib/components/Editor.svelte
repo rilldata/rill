@@ -129,6 +129,8 @@ const breakpointMarker = new class extends GutterMarker {
     }
 }
 
+let cursorLocation = 0;
+
 onMount(() => {
     editor = new EditorView({
         state: EditorState.create({doc: oldContent, extensions: [
@@ -136,6 +138,11 @@ onMount(() => {
             sql(),
             breakpointGutter,
             EditorView.updateListener.of((v)=> {
+                const candidateLocation = v.state.selection.ranges[0].head;
+                if (candidateLocation !== cursorLocation) {
+                    cursorLocation = candidateLocation;
+                    dispatch('cursor-location', {location: cursorLocation, content: v.state.doc.toString()})
+                }
                 if (v.focusChanged) {
                     if (v.view.hasFocus) {
                         dispatch('receive-focus');

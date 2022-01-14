@@ -172,9 +172,11 @@ export const createServerActions = (api, notifyUser) => {
                         return c.type.includes('TIMESTAMP');
                     });
 
+                    const parquetPath = `'${source.path}'`;
+
                     if (strings.length) {
                         strings.forEach(field => {
-                            api.getTopKAndCardinality(source.path, field.name).then(summary => {
+                            api.getTopKAndCardinality(parquetPath, field.name).then(summary => {
                                 dispatch((draft:DataModellerState) => {
                                     const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                                     const profile = sourceToUpdate.profile.find(p => p.name === field.name);
@@ -187,7 +189,7 @@ export const createServerActions = (api, notifyUser) => {
 
                     if (numerics.length) {
                         numerics.forEach((field) => {
-                            api.numericHistogram(source.path, field.name, field.type).then((histogram) => {
+                            api.numericHistogram(parquetPath, field.name, field.type).then((histogram) => {
                                 dispatch((draft:DataModellerState) => {
                                     const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                                     const profile = sourceToUpdate.profile.find(p => p.name === field.name);
@@ -201,16 +203,8 @@ export const createServerActions = (api, notifyUser) => {
                     }
 
                     if (timestamps.length) {
-                        // api.getTimestampSummaries(source.path, timestamps).then(timestampSummaries => {
-                        //     dispatch((draft:DataModellerState) => {
-                        //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                        //         Object.keys(timestampSummaries).forEach(key => {
-                        //             sourceToUpdate.profile.find(field => field.name === key).summary = timestampSummaries[key];
-                        //         })
-                        //     })
-                        // })
                         timestamps.forEach(field => {
-                            api.numericHistogram(source.path, field.name, field.type).then((histogram) => {
+                            api.numericHistogram(parquetPath, field.name, field.type).then((histogram) => {
                                 dispatch((draft:DataModellerState) => {
                                     const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                                     const profile = sourceToUpdate.profile.find(p => p.name === field.name);
@@ -223,7 +217,7 @@ export const createServerActions = (api, notifyUser) => {
                         })
                     }
                     duckdbTypes.forEach(field => {
-                        api.getNullCount(source.path, field.name).then((nullCount) => {
+                        api.getNullCount(parquetPath, field.name).then((nullCount) => {
                             dispatch((draft:DataModellerState) => {
                                 const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                                 const profile = sourceToUpdate.profile.find(p => p.name === field.name);
@@ -336,7 +330,6 @@ export const createServerActions = (api, notifyUser) => {
                     }
                 });
                 notifyUser({ message: `exported ${path}`, type: "info"});
-                //dispatch(this.scanRootForSources());
                 return true;
             }
         },

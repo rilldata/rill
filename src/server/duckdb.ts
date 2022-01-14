@@ -1,9 +1,15 @@
+/**
+ * A single-process duckdb engine.
+ */
+
+
 // @ts-nocheck
 import fs from "fs";
 import duckdb from 'duckdb';
 import { default as glob } from 'glob';
 
 import { guidGenerator } from "../util/guid.js";
+// import { Piscina } from "piscina";
 
 interface DB {
 	all: Function;
@@ -280,16 +286,22 @@ export function toDistributionSummary(column) {
 	]
 }
 
-function topK(parquetFile, column) {
-	return `SELECT ${column} as value, count(*) AS count from '${parquetFile}'
+// const piscina = new Piscina({
+// 	filename: new URL('./duckdb-worker.js', import.meta.url).href
+// })
+
+
+function topK(tablePath, column) {
+	return `SELECT ${column} as value, count(*) AS count from ${tablePath}
 GROUP BY ${column}
 ORDER BY count desc
 LIMIT 50;`
 }
 
-export async function getTopKAndCardinality(parquetFilePath, column) {
-	const topKValues = await dbAll(db, topK(parquetFilePath, column));
-	const [cardinality] = await dbAll(db, `SELECT approx_count_distinct(${column}) as count from '${parquetFilePath}';`);
+
+export async function getTopKAndCardinality(tablePath, column, dbEngine = db) {
+	const topKValues = await dbAll(dbEngine, topK(tablePath, column));
+	const [cardinality] = await dbAll(dbEngine = db, `SELECT approx_count_distinct(${column}) as count from ${tablePath};`);
 	return {
 		column,
 		topK: topKValues,
@@ -297,88 +309,33 @@ export async function getTopKAndCardinality(parquetFilePath, column) {
 	}
 }
 
-export async function getDistributionSummaries(parquetFilePath, fields) {
-	const numericSelects = fields.map(n => toDistributionSummary(n.name).join(',\n  ')).join(',\n  ');
-	const [summaries] = await dbAll(db, `SELECT \n${numericSelects}\n FROM '${parquetFilePath}';`);
-	return fields.map(n => n.name).reduce((acc, field) => {
-		acc[field] = {
-			min: summaries[`${field}_min`],
-			q25: summaries[`${field}_q25`],
-			q50: summaries[`${field}_q50`],
-			q75: summaries[`${field}_q75`],
-			max: summaries[`${field}_max`],
-			mean: summaries[`${field}_mean`],
-			sd: summaries[`${field}_sd`],
-		};
-		return acc;
-	}, {});
-}
-
-// FIXME: convert to generator?
-
-export async function getCategoricalSummaries(parquetFilePath, fields) {
-	const summaries = await Promise.all(fields.map((s) => {
-		return getTopKAndCardinality(parquetFilePath, s.name);
-	}));
-	return summaries.reduce((acc, fieldSummary) => {
-		acc[fieldSummary.column] = {
-			topK: fieldSummary.topK,
-			cardinality: fieldSummary.cardinality
-		}
-		return acc;
-	}, {});
-}
-
-export async function getTimestampSummaries(parquetFilePath:string, fields:any) {
-	const queries = fields.map(field => {
-		return `
-		max(${field.name}) - min(${field.name}) AS ${field.name}_interval,
-		min(${field.name}) as ${field.name}_min,
-		max(${field.name}) as ${field.name}_max
-		`
-	}).join(',\n  ');
-	const [results] = await dbAll(db, `
-		SELECT
-			${queries}
-		FROM '${parquetFilePath}';
-	`);
-	return fields.reduce((acc, field) => {
-		acc[field.name] = { 
-			min: results[`${field.name}_min`],
-			max: results[`${field.name}_max`],
-			interval: results[`${field.name}_interval`]
-		 };
-		return acc;
-	}, {});
-}
-
-export async function getNullCount(parquetFilePath:string, field:string) {
-	const [nullity] = await dbAll(db, `
-		SELECT COUNT(*) as count FROM '${parquetFilePath}' WHERE ${field} IS NULL;
+export async function getNullCount(tablePath:string, field:string, dbEngine = db) {
+	const [nullity] = await dbAll(dbEngine, `
+		SELECT COUNT(*) as count FROM ${tablePath} WHERE ${field} IS NULL;
 	`);
 	return nullity.count;
 }
 
-export async function getNullCounts(parquetFilePath:string, fields:any) {
-	const [nullities] = await dbAll(db, `
+export async function getNullCounts(tablePath:string, fields:any, dbEngine = db) {
+	const [nullities] = await dbAll(dbEngine, `
 		SELECT
 		${fields.map(field => {
 			return `COUNT(CASE WHEN ${field.name} IS NULL THEN 1 ELSE NULL END) as ${field.name}`
 		}).join(',\n')}
-		FROM '${parquetFilePath}';
+		FROM ${tablePath};
 	`);
 	return nullities;
 }
 
-export async function numericHistogram(parquetFilePath:string, field:string, fieldType:string = null) {
+export async function numericHistogram(tablePath:string, field:string, fieldType:string, dbEngine = db) {
 
 	// if the field type is an integer and the total number of values is low, can't we just use
 	// first check a sample to see how many buckets there are for this value.
-	const buckets = await dbAll(db, `SELECT count(*) as count, ${field} FROM '${parquetFilePath}' WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
+	const buckets = await dbAll(dbEngine, `SELECT count(*) as count, ${field} FROM ${tablePath} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
 	const bucketSize = Math.min(40, buckets.length);
-	return dbAll(db, `
+	return dbAll(dbEngine, `
 	WITH dataset AS (
-		SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM '${parquetFilePath}'
+		SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tablePath}
 	) , S AS (
 		SELECT 
 			min(${field}) as minVal,

@@ -29,10 +29,12 @@ const serverActions = createServerActions(api,
 );
 
 const store = createStore(
-    //initialState,
     initializeFromSavedState('saved-state')(initialState),
-    addProduce(),
-    addActions(serverActions),
+    // add our main production method. This gives us the store.produce function.
+    addProduce(), 
+    // after we've added our produce and thunks, let's add a bunch of thunks
+    // to our store.
+    addActions(serverActions), 
     resettable(initialState),
     connectStateToSocket(), // emit to socket any state changes via store.subscribe
     saveToLocalFile('saved-state') // let's save to our local file
@@ -46,11 +48,13 @@ api.registerDBRunCallbacks(
 
 console.log('initialized the store.');
 
+
 io.on("connection", thisSocket => {
     console.log('connected', thisSocket.id);
     socket = thisSocket;
-    socket.emit("app-state", store.get());
     store.scanRootForSources();
+
+    socket.emit("app-state", store.get());
     store.connectStateToSocket(socket);
   });
 
