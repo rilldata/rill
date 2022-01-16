@@ -127,6 +127,8 @@ export const createServerActions = (api, notifyUser) => {
 
         ...createDatasetActions(api),
 
+        // FIXME: should this move to src/server/dataset/index.ts?
+        // FIXME: rename source => dataset
         addOrUpdateSource(path) {
             return async (dispatch:Function, getState:()=>DataModelerState) => {
                 const sources = getState().sources;

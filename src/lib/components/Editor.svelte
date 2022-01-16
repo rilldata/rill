@@ -236,7 +236,7 @@ onMount(() => {
 
 .edit-text input {
     width: 100%;
-    font-family: "MD IO 0.4";
+    font-family: "MD IO";
     font-size: 12px;
     background-color: transparent;
     border: none;

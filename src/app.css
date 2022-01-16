@@ -15,7 +15,7 @@
 }
 
 body {
-    font-family: "MD IO 0.4";
+    font-family: "MD IO";
     margin: 0;
     padding: 0;
     --header-height: 2.5rem;
@@ -40,11 +40,11 @@ body {
 }
 
 button {
-    font-family: "MD IO 0.4";
+    font-family: "MD IO";
 }
 
 .ͼ1 .cm-scroller {
-    font-family: "MD IO 0.4";
+    font-family: "MD IO";
     font-size: 13px;
 }
 

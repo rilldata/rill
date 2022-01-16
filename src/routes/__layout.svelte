@@ -1,4 +1,5 @@
 <script>
+import "../fonts.css";
 import "../app.css";
 import { setContext } from "svelte";
 import { createStore } from '$lib/app-store';
