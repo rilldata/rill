@@ -32,6 +32,6 @@
 		"src/**/*.d.ts", 
 		"src/**/*.ts", 
 		"src/**/*.svelte",
-		"src/util/sanitize-query.mjs",
-		"tsc-tmp/**/*.js"]
+		"tsc-tmp/**/*.js"
+	]
 }

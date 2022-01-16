@@ -34,9 +34,6 @@
                   {timestampSummaries}
                   {numericalSummaries}
                   {nullCounts}
-                  on:updateFieldSummary={(evt) => {
-                    store.action('updateFieldSummary', evt.detail);
-                  }}
                 />
               </div>
               {/each}

@@ -3,13 +3,14 @@
  * should be assumed to exist in the api object passed to createServerActions.
  * This enables us to swap out different APIs & backends as needed.
  */
-import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query";
-import { summarizeCategoricalField, summarizeNumericField, summarizeNullCounts } from "./dataset/index";
+import { createDatasetActions } from "./dataset/index.js";
 import type { Item, Query, Source, DataModelerState } from "../types"
-import { guidGenerator } from "../util/guid";
+import { guidGenerator } from "../util/guid.js";
+import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
+
 let queryNumber = 0;
 
-interface NewQueryArguments {
+interface NewQueryArguments { 
     query?: string;
     name?: string;
     at?: number;
@@ -123,28 +124,8 @@ export const createServerActions = (api, notifyUser) => {
                 draft.status = state;
             }
         },
-        clearSources() {
-            return (draft:DataModelerState) => {
-                draft.sources = [];
-            }
-        },
 
-        summarizeCategoricalField(datasetID, tableOrPath, field){
-            return async (dispatch:Function, getState:()=>DataModelerState) => {
-                const state = getState();
-                const targetSource = getByID(state.sources, datasetID) as Source;
-                const profileField = targetSource.profile.find(({ name }) => name === field);
-                if (!('summary' in profileField)) {
-                    api.getTopKAndCardinality(tableOrPath, field).then((summary) => {
-                        dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft.sources, datasetID) as Source;
-                            const profile = sourceToUpdate.profile.find(p => p.name === field);
-                            profile.summary = summary;
-                        })
-                    })
-                }
-            }
-        },
+        ...createDatasetActions(api),
 
         addOrUpdateSource(path) {
             return async (dispatch:Function, getState:()=>DataModelerState) => {
@@ -197,88 +178,26 @@ export const createServerActions = (api, notifyUser) => {
                     if (strings.length) {
                         strings.forEach(field => {
                             dispatch(this.summarizeCategoricalField(source.id, parquetPath, field.name));
-                            // summarizeCategoricalField(
-                            //     source.id,
-                            //     parquetPath,
-                            //     field.name,
-                            //     api,
-                            //     getState,
-                            //     dispatch
-                            // )
-
-                            // const state = getState();
-                            // const existingSource = getByID(state.sources, source.id) as Source;
-                            // api.getTopKAndCardinality(parquetPath, field.name).then(summary => {
-                            //     dispatch((draft:DataModelerState) => {
-                            //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                            //         const profile = sourceToUpdate.profile.find(p => p.name === field.name);
-                            //         profile.summary = summary;
-                            //     });
-                            // });
                         });
                     }
-                    
 
                     if (numerics.length) {
                         numerics.forEach((field) => {
-                            summarizeNumericField(
-                                source.id,
-                                parquetPath,
-                                field.name,
-                                field.type,
-                                api,
-                                getState,
-                                dispatch
-                            )
-                            // api.numericHistogram(parquetPath, field.name, field.type).then((histogram) => {
-                            //     dispatch((draft:DataModelerState) => {
-                            //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                            //         const profile = sourceToUpdate.profile.find(p => p.name === field.name);
-                            //         if (!('summary'in profile)) {
-                            //             profile.summary = {};
-                            //         }
-                            //         profile.summary.histogram = histogram;
-                            //     });
-                            // })
+                            dispatch(this.summarizeNumericField(source.id, parquetPath, field.name, field.type));
                         })
                     }
 
                     if (timestamps.length) {
                         timestamps.forEach(field => {
-                            api.numericHistogram(parquetPath, field.name, field.type).then((histogram) => {
-                                dispatch((draft:DataModelerState) => {
-                                    const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                                    const profile = sourceToUpdate.profile.find(p => p.name === field.name);
-                                    if (!('summary'in profile)) {
-                                        profile.summary = {};
-                                    }
-                                    profile.summary.histogram = histogram;
-                                });
-                            })
+                            dispatch(this.summarizeNumericField(source.id, parquetPath, field.name, field.type));
                         })
                     }
                     duckdbTypes.forEach(field => {
-                        summarizeNullCounts(
-                            source.id,
-                            parquetPath,
-                            field.name,
-                            api,
-                            getState,
-                            dispatch
-                        )
-                        // api.getNullCount(parquetPath, field.name).then((nullCount) => {
-                        //     dispatch((draft:DataModelerState) => {
-                        //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                        //         const profile = sourceToUpdate.profile.find(p => p.name === field.name);
-                        //         sourceToUpdate.profile.find(p => p.name === field.name).nullCount = nullCount;
-                        //     })
-                        // })
-                        
+                        dispatch(this.summarizeNullCount(source.id, parquetPath, field.name));
                     })
                     
                 } catch (err) {
                     console.log("addSource", err, path);
-                    //throw Error(err);
                 }
             }
         },
@@ -380,17 +299,6 @@ export const createServerActions = (api, notifyUser) => {
                 });
                 notifyUser({ message: `exported ${path}`, type: "info"});
                 return true;
-            }
-        },
-
-        updateFieldSummary({ path, field }) {
-            return async (dispatch:Function) => {
-                const summary = await api.getDistributionSummary(path, field);
-                dispatch((draft:DataModelerState) => {
-                    const source = draft.sources.find(source => source.path === path);
-                    const fieldInfo = source.profile.find((p) => p.name === field);
-                    fieldInfo.summary = {...summary};
-                })
             }
         },
 

@@ -9,7 +9,6 @@ import duckdb from 'duckdb';
 import { default as glob } from 'glob';
 
 import { guidGenerator } from "../util/guid.js";
-// import { Piscina } from "piscina";
 
 interface DB {
 	all: Function;
@@ -231,48 +230,6 @@ export async function getParquetFilesInRoot() {
 		)
 	});
 }
-/**
- * getSummary
- * number: five number summary + mean
- * date: max, min, total time between the two
- * categorical: cardinality
- */
-
-//  export function toDistributionSummary(column:string) {
-// 	return [
-// 		`min(${column}) as min_${column}`,
-// 		`approx_quantile(${column}, 0.25) as q25_${column}`,
-// 		`approx_quantile(${column}, 0.5)  as q50_${column}`,
-// 		`approx_quantile(${column}, 0.75) as q75_${column}`,
-// 		`max(${column}) as max_${column}`,
-// 		`avg(${column}) as mean_${column}`,
-// 		`stddev_pop(${column}) as sd_${column}`,
-// 	]
-// }
-
-// // FIXME: deprecate and remove all code paths
-// export async function getDistributionSummary(parquetFilePath:string, column:string) {
-// 	const [point] = await dbAll(db, `
-// SELECT 
-// 	min(${column}) as min, 
-// 	approx_quantile(${column}, 0.25) as q25, 
-// 	approx_quantile(${column}, 0.5)  as q50,
-// 	approx_quantile(${column}, 0.75) as q75,
-// 	max(${column}) as max,
-// 	avg(${column}) as mean,
-// 	stddev_pop(${column}) as sd
-// 	FROM '${parquetFilePath}';`);
-// 	return point;
-// }
-
-
-
-
-
-
-
-
-
 
 export function toDistributionSummary(column) {
 	return [
@@ -285,11 +242,6 @@ export function toDistributionSummary(column) {
 		`stddev_pop(${column}) as ${column}_sd`,
 	]
 }
-
-// const piscina = new Piscina({
-// 	filename: new URL('./duckdb-worker.js', import.meta.url).href
-// })
-
 
 function topK(tablePath, column) {
 	return `SELECT ${column} as value, count(*) AS count from ${tablePath}
@@ -328,7 +280,6 @@ export async function getNullCounts(tablePath:string, fields:any, dbEngine = db)
 }
 
 export async function numericHistogram(tablePath:string, field:string, fieldType:string, dbEngine = db) {
-
 	// if the field type is an integer and the total number of values is low, can't we just use
 	// first check a sample to see how many buckets there are for this value.
 	const buckets = await dbAll(dbEngine, `SELECT count(*) as count, ${field} FROM ${tablePath} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
