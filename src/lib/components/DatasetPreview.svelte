@@ -234,7 +234,7 @@ function typeToSymbol(fieldType) {
                 class:grid={!collapseGrid} 
                 class:block={collapseGrid}
                 style="
-                    grid-template-columns: minmax(80px, auto) {previewView === 'example' ? "minmax(108px, 164px)" : "auto 68px"};
+                    grid-template-columns: minmax(80px, auto) {previewView === 'example' ? "minmax(108px, 164px)" : "108px 68px"};
                 "
             >
                 {#if sortedProfile}
@@ -308,7 +308,7 @@ function typeToSymbol(fieldType) {
                         <!-- {:else if column.conceptualType === 'TIMESTAMP' && column.summary}
                             {intervalToTimestring(column.summary.interval)} -->
                         {:else if column?.summary?.histogram}
-                            <Histogram data={column.summary.histogram} width={94} height={19} color="hsl(1,50%, 80%)" />
+                            <Histogram data={column.summary.histogram} width={98} height={19} color="hsl(1,50%, 80%)" />
                         {/if}
            
                         <!-- {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)} -->

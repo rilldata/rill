@@ -47,12 +47,11 @@ api.registerDBRunCallbacks(
 )
 
 console.log('initialized the store.');
-
+//store.scanRootForSources();
 
 io.on("connection", thisSocket => {
     console.log('connected', thisSocket.id);
     socket = thisSocket;
-    store.scanRootForSources();
 
     socket.emit("app-state", store.get());
     store.connectStateToSocket(socket);
@@ -66,7 +65,7 @@ io.on("connection", thisSocket => {
 let timeoutId:any;
 function watch() {
   if (timeoutId) clearTimeout(timeoutId);
-  timeoutId = setTimeout(() => store.scanRootForSources(), 100);
+  timeoutId = setTimeout(() => store.scanRootForSources(), 1000);
 }
 watcher
     .on('change', watch)

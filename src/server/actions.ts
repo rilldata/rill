@@ -3,9 +3,10 @@
  * should be assumed to exist in the api object passed to createServerActions.
  * This enables us to swap out different APIs & backends as needed.
  */
-import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
-import type { Item, Query, Source, DataModellerState } from "../types"
-import { guidGenerator } from "../util/guid.js";
+import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query";
+import { summarizeCategoricalField, summarizeNumericField, summarizeNullCounts } from "./dataset/index";
+import type { Item, Query, Source, DataModelerState } from "../types"
+import { guidGenerator } from "../util/guid";
 let queryNumber = 0;
 
 interface NewQueryArguments {
@@ -45,7 +46,7 @@ export function emptyQuery(): Query {
 	return newQuery({});
 }
 
-export function initialState() : DataModellerState {
+export function initialState() : DataModelerState {
     return {
         queries: [emptyQuery()],
         sources: [],
@@ -58,14 +59,14 @@ function getByID(items:(Item[]), id:string) : Item| null {
 }
 
 function addError(dispatch:Function, id:string, message:string) : void {
-    dispatch((draft:DataModellerState) => {
+    dispatch((draft:DataModelerState) => {
         let q = getByID(draft.queries, id) as Query;
         q.error = message;
     });
 }
 
 function clearQuery(dispatch:Function, id:string) : void {
-    dispatch((draft:DataModellerState) => {
+    dispatch((draft:DataModelerState) => {
         let q = getByID(draft.queries, id) as Query;
         q.sizeInBytes = undefined;
         q.destinationProfile = undefined;
@@ -75,21 +76,21 @@ function clearQuery(dispatch:Function, id:string) : void {
 }
 
 function clearError(dispatch:Function, id:string) {
-    dispatch((draft:DataModellerState) => {
+    dispatch((draft:DataModelerState) => {
         let q =  getByID(draft.queries, id) as Query;
         q.error = undefined;
     });
 }
 
 function sanitizeQuery(dispatch:Function, id:string) {
-    dispatch((draft:DataModellerState) => {
+    dispatch((draft:DataModelerState) => {
         let q =  getByID(draft.queries, id) as Query;
         q.sanitizedQuery = _sanitizeQuery(q.query);
     });
 }
 
 function updateQueryField(dispatch:Function, id:string, field:string, value:any) {
-    dispatch((draft:DataModellerState) => {
+    dispatch((draft:DataModelerState) => {
         let q = getByID(draft.queries, id);
         q[field] = value;
     });
@@ -118,43 +119,62 @@ export const createServerActions = (api, notifyUser) => {
     return (store, options) => ({
         // sources
         setDBStatus(state:string) {
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 draft.status = state;
             }
         },
         clearSources() {
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 draft.sources = [];
             }
         },
+
+        summarizeCategoricalField(datasetID, tableOrPath, field){
+            return async (dispatch:Function, getState:()=>DataModelerState) => {
+                const state = getState();
+                const targetSource = getByID(state.sources, datasetID) as Source;
+                const profileField = targetSource.profile.find(({ name }) => name === field);
+                if (!('summary' in profileField)) {
+                    api.getTopKAndCardinality(tableOrPath, field).then((summary) => {
+                        dispatch((draft:DataModelerState) => {
+                            const sourceToUpdate = getByID(draft.sources, datasetID) as Source;
+                            const profile = sourceToUpdate.profile.find(p => p.name === field);
+                            profile.summary = summary;
+                        })
+                    })
+                }
+            }
+        },
+
         addOrUpdateSource(path) {
-            return async (dispatch:Function, getState:Function) => {
+            return async (dispatch:Function, getState:()=>DataModelerState) => {
                 const sources = getState().sources;
                 const sourceExists = sources.find(s => s.path === path);
                 const source = {...(sourceExists || newSource())};
                 source.path = path;
                 source.name = path.split('/').slice(-1)[0];
                 try {
-                    source.profile = await api.createSourceProfile(source.path);
-                    source.profile = source.profile.filter(row => row.name !== 'duckdb_schema');
+                    if (!('profile' in source && source.profile.length)) {
+                        source.profile = await api.createSourceProfile(source.path);
+                        source.profile = source.profile.filter(row => row.name !== 'duckdb_schema' && row.name !== 'schema');
+                    }
                     source.sizeInBytes = await api.getDestinationSize(source.path);
                     source.cardinality = await api.getCardinality(source.path);
                     source.head = await api.getFirstN(`'${source.path}'`);
-                    console.time(source.path + ' core-actions');
-                    dispatch((draft:DataModellerState) => {
+                    dispatch((draft:DataModelerState) => {
                         if (!!sourceExists) {
                             const sourceToUpdate = getByID(draft.sources, source.id);
+                            // replace 
                             Object.keys(source).forEach((k) => {
                                 sourceToUpdate[k] = source[k];
                             })
                         } else {
                             draft.sources.push(source);
                         }
-                        console.timeEnd(source.path + ' core-actions');
                     });
 
                     const duckdbTypes = await api.parquetToDBTypes(source.path);
-                    dispatch((draft:DataModellerState) => {
+                    dispatch((draft:DataModelerState) => {
                         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                         duckdbTypes.map((t) => {
                             sourceToUpdate.profile.find(p => p.name === t.name).conceptualType = t.type;
@@ -176,36 +196,57 @@ export const createServerActions = (api, notifyUser) => {
 
                     if (strings.length) {
                         strings.forEach(field => {
-                            api.getTopKAndCardinality(parquetPath, field.name).then(summary => {
-                                dispatch((draft:DataModellerState) => {
-                                    const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                                    const profile = sourceToUpdate.profile.find(p => p.name === field.name);
-                                    profile.summary = summary;
-                                });
-                            });
+                            dispatch(this.summarizeCategoricalField(source.id, parquetPath, field.name));
+                            // summarizeCategoricalField(
+                            //     source.id,
+                            //     parquetPath,
+                            //     field.name,
+                            //     api,
+                            //     getState,
+                            //     dispatch
+                            // )
+
+                            // const state = getState();
+                            // const existingSource = getByID(state.sources, source.id) as Source;
+                            // api.getTopKAndCardinality(parquetPath, field.name).then(summary => {
+                            //     dispatch((draft:DataModelerState) => {
+                            //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                            //         const profile = sourceToUpdate.profile.find(p => p.name === field.name);
+                            //         profile.summary = summary;
+                            //     });
+                            // });
                         });
                     }
                     
 
                     if (numerics.length) {
                         numerics.forEach((field) => {
-                            api.numericHistogram(parquetPath, field.name, field.type).then((histogram) => {
-                                dispatch((draft:DataModellerState) => {
-                                    const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                                    const profile = sourceToUpdate.profile.find(p => p.name === field.name);
-                                    if (!('summary'in profile)) {
-                                        profile.summary = {};
-                                    }
-                                    profile.summary.histogram = histogram;
-                                });
-                            })
+                            summarizeNumericField(
+                                source.id,
+                                parquetPath,
+                                field.name,
+                                field.type,
+                                api,
+                                getState,
+                                dispatch
+                            )
+                            // api.numericHistogram(parquetPath, field.name, field.type).then((histogram) => {
+                            //     dispatch((draft:DataModelerState) => {
+                            //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                            //         const profile = sourceToUpdate.profile.find(p => p.name === field.name);
+                            //         if (!('summary'in profile)) {
+                            //             profile.summary = {};
+                            //         }
+                            //         profile.summary.histogram = histogram;
+                            //     });
+                            // })
                         })
                     }
 
                     if (timestamps.length) {
                         timestamps.forEach(field => {
                             api.numericHistogram(parquetPath, field.name, field.type).then((histogram) => {
-                                dispatch((draft:DataModellerState) => {
+                                dispatch((draft:DataModelerState) => {
                                     const sourceToUpdate = getByID(draft.sources, source.id) as Source;
                                     const profile = sourceToUpdate.profile.find(p => p.name === field.name);
                                     if (!('summary'in profile)) {
@@ -217,13 +258,21 @@ export const createServerActions = (api, notifyUser) => {
                         })
                     }
                     duckdbTypes.forEach(field => {
-                        api.getNullCount(parquetPath, field.name).then((nullCount) => {
-                            dispatch((draft:DataModellerState) => {
-                                const sourceToUpdate = getByID(draft.sources, source.id) as Source;
-                                const profile = sourceToUpdate.profile.find(p => p.name === field.name);
-                                sourceToUpdate.profile.find(p => p.name === field.name).nullCount = nullCount;
-                            })
-                        })
+                        summarizeNullCounts(
+                            source.id,
+                            parquetPath,
+                            field.name,
+                            api,
+                            getState,
+                            dispatch
+                        )
+                        // api.getNullCount(parquetPath, field.name).then((nullCount) => {
+                        //     dispatch((draft:DataModelerState) => {
+                        //         const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                        //         const profile = sourceToUpdate.profile.find(p => p.name === field.name);
+                        //         sourceToUpdate.profile.find(p => p.name === field.name).nullCount = nullCount;
+                        //     })
+                        // })
                         
                     })
                     
@@ -240,7 +289,7 @@ export const createServerActions = (api, notifyUser) => {
                 files.sort();
                 const filePaths = new Set(files);
                 // prune & dedup
-                dispatch((draft:DataModellerState) => {
+                dispatch((draft:DataModelerState) => {
                     draft.sources = draft.sources.filter(s => filePaths.has(s.path));
                     draft.sources = draft.sources.filter((value, index, self) =>
                         index === self.findIndex((t) => (t.path === value.path))
@@ -261,7 +310,7 @@ export const createServerActions = (api, notifyUser) => {
             const query = params.query || undefined;
             const name = params.name || undefined;
             const at = params.at;
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 if (at !== undefined) {
                     draft.queries = [...draft.queries.slice(0, at), newQuery({ query, name }), ...draft.queries.slice(at)];
                 } else {
@@ -270,31 +319,31 @@ export const createServerActions = (api, notifyUser) => {
             };
         },
         updateQuery({id, query}) {
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 const queryItem = getByID(draft.queries, id) as Query;
                 queryItem.query = query;
             };
         },
 
         setActiveQuery({id}) {
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 draft.activeQuery = id;
             }
         },
 
         changeQueryName({id, name}) {
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 draft.queries.find((q) => q.id === id).name = name;
             }
         },
         deleteQuery({id}) {
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 draft.queries = draft.queries.filter(q => q.id !== id);
             }
         },
 
         moveQueryDown({id}) { 
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 const idx = draft.queries.findIndex((q) => q.id === id);
                 if (idx < draft.queries.length - 1) {
                     const thisQuery = { ...draft.queries[idx] };
@@ -306,7 +355,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         moveQueryUp({id}) {
-            return (draft:DataModellerState) => {
+            return (draft:DataModelerState) => {
                 const idx = draft.queries.findIndex((q) => q.id === id);
                 if (idx > 0) {
                     const thisQuery = { ...draft.queries[idx] };
@@ -323,7 +372,7 @@ export const createServerActions = (api, notifyUser) => {
 
                 api.getDestinationSize(path).then((size) => {
                     if (size !== undefined) {
-                        dispatch((draft:DataModellerState) => {
+                        dispatch((draft:DataModelerState) => {
                             let q = draft.queries.find(query => query.id === id);
                             q.sizeInBytes = size;
                         })
@@ -337,7 +386,7 @@ export const createServerActions = (api, notifyUser) => {
         updateFieldSummary({ path, field }) {
             return async (dispatch:Function) => {
                 const summary = await api.getDistributionSummary(path, field);
-                dispatch((draft:DataModellerState) => {
+                dispatch((draft:DataModelerState) => {
                     const source = draft.sources.find(source => source.path === path);
                     const fieldInfo = source.profile.find((p) => p.name === field);
                     fieldInfo.summary = {...summary};

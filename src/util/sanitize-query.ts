@@ -1,4 +1,4 @@
-export function sanitizeQuery(query) {
+export function sanitizeQuery(query:string) {
     // remove comments;
     let noComments = query
         .replace(/--.*\n/g, ' ')

@@ -1,7 +1,8 @@
 {
   "transform": {
     "^.+\\.js$": "babel-jest",
-    "^.+\\.svelte$": "svelte-jester"
+    "^.+\\.svelte$": "svelte-jester",
+    "^.+\\.ts?$": "ts-jest"
   },
   "moduleNameMapper": {
     "^\\$lib(.*)$": "<rootDir>/src/lib$1",
@@ -15,6 +16,7 @@
   ],
   "moduleFileExtensions": [
     "js",
+    "ts",
     "svelte"
   ],
   "setupFilesAfterEnv": [

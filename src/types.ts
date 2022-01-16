@@ -1,11 +1,11 @@
 /**
  * The type definition for a "profile column"
  */
- interface ProfileColumn {
+ export interface ProfileColumn {
     name: string;
     type: string;
     conceptualType: string;
-    summary?: any; // FIXME
+    summary?: (CategoricalSummary | any); // FIXME
     nullCount?:number;
 }
 
@@ -44,7 +44,31 @@ export interface Source extends Item {
     nullCounts?:any;
 }
 
-export interface DataModellerState {
+export interface CategoricalSummary {
+    topK:TopKEntry[];
+    cardinality:number;
+}
+
+export interface NumericSummary {
+    histogram:NumericHistogramBin[]
+}
+
+export interface TopKEntry {
+    value:any;
+    count:number;
+}
+
+export interface NumericHistogramBin {
+    bucket:number;
+    low:number;
+    high:number;
+    count:number
+}
+
+/**
+ * The entire state object for the data modeler.
+ */
+export interface DataModelerState {
     activeQuery?: string;
     queries: Query[];
     sources: Source[];
