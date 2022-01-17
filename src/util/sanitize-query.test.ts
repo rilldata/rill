@@ -1,4 +1,4 @@
-import { sanitizeQuery } from "./sanitize-query";
+import { sanitizeQuery } from "./sanitize-query.js";
 
 describe("sanitizeQuery", () => {
     it("removes comments, unused whitespace, and ;", () => {

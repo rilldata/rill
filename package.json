@@ -14,7 +14,7 @@
 		"start": "electron ./electron.cjs",
 		"duckdb": "node ./server/server.duckdb.js",
 		"server": "node src/server",
-		"test": "NODE_OPTIONS=--experimental-vm-modules jest src --config jest.config.json",
+		"test": "tsc && NODE_OPTIONS=--experimental-vm-modules jest tsc-tmp --config jest.config.json",
 		"test:watch": "npm run test -- --watch"
 	},
 	"devDependencies": {

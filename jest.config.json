@@ -16,7 +16,6 @@
   ],
   "moduleFileExtensions": [
     "js",
-    "ts",
     "svelte"
   ],
   "setupFilesAfterEnv": [

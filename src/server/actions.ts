@@ -4,7 +4,7 @@
  * This enables us to swap out different APIs & backends as needed.
  */
 import { createDatasetActions } from "./dataset/index.js";
-import { createTransformActions } from "./query/index.js";
+import { createTransformActions } from "./transform/index.js";
 import type { Item, Query, Source, DataModelerState } from "../types"
 import { guidGenerator } from "../util/guid.js";
 import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
