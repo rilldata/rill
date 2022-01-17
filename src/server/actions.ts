@@ -4,6 +4,7 @@
  * This enables us to swap out different APIs & backends as needed.
  */
 import { createDatasetActions } from "./dataset/index.js";
+import { createTransformActions } from "./query/index.js";
 import type { Item, Query, Source, DataModelerState } from "../types"
 import { guidGenerator } from "../util/guid.js";
 import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
@@ -126,6 +127,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         ...createDatasetActions(api),
+        ...createTransformActions(api),
 
         // FIXME: should this move to src/server/dataset/index.ts?
         // FIXME: rename source => dataset
@@ -227,146 +229,146 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         // queries
-        addQuery(params:NewQueryArguments) {
-            const query = params.query || undefined;
-            const name = params.name || undefined;
-            const at = params.at;
-            return (draft:DataModelerState) => {
-                if (at !== undefined) {
-                    draft.queries = [...draft.queries.slice(0, at), newQuery({ query, name }), ...draft.queries.slice(at)];
-                } else {
-                    draft.queries.push(newQuery({ query, name })); 
-                }
-            };
-        },
-        updateQuery({id, query}) {
-            return (draft:DataModelerState) => {
-                const queryItem = getByID(draft.queries, id) as Query;
-                queryItem.query = query;
-            };
-        },
+        // addQuery(params:NewQueryArguments) {
+        //     const query = params.query || undefined;
+        //     const name = params.name || undefined;
+        //     const at = params.at;
+        //     return (draft:DataModelerState) => {
+        //         if (at !== undefined) {
+        //             draft.queries = [...draft.queries.slice(0, at), newQuery({ query, name }), ...draft.queries.slice(at)];
+        //         } else {
+        //             draft.queries.push(newQuery({ query, name })); 
+        //         }
+        //     };
+        // },
+        // updateQuery({id, query}) {
+        //     return (draft:DataModelerState) => {
+        //         const queryItem = getByID(draft.queries, id) as Query;
+        //         queryItem.query = query;
+        //     };
+        // },
 
-        setActiveQuery({id}) {
-            return (draft:DataModelerState) => {
-                draft.activeQuery = id;
-            }
-        },
+        // setActiveQuery({id}) {
+        //     return (draft:DataModelerState) => {
+        //         draft.activeQuery = id;
+        //     }
+        // },
 
-        changeQueryName({id, name}) {
-            return (draft:DataModelerState) => {
-                draft.queries.find((q) => q.id === id).name = name;
-            }
-        },
-        deleteQuery({id}) {
-            return (draft:DataModelerState) => {
-                draft.queries = draft.queries.filter(q => q.id !== id);
-            }
-        },
+        // changeQueryName({id, name}) {
+        //     return (draft:DataModelerState) => {
+        //         draft.queries.find((q) => q.id === id).name = name;
+        //     }
+        // },
+        // deleteQuery({id}) {
+        //     return (draft:DataModelerState) => {
+        //         draft.queries = draft.queries.filter(q => q.id !== id);
+        //     }
+        // },
 
-        moveQueryDown({id}) { 
-            return (draft:DataModelerState) => {
-                const idx = draft.queries.findIndex((q) => q.id === id);
-                if (idx < draft.queries.length - 1) {
-                    const thisQuery = { ...draft.queries[idx] };
-                    const nextQuery = { ...draft.queries[idx + 1] };
-                    draft.queries[idx] = nextQuery;
-                    draft.queries[idx + 1] = thisQuery;
-                }
-            };
-        },
+        // moveQueryDown({id}) { 
+        //     return (draft:DataModelerState) => {
+        //         const idx = draft.queries.findIndex((q) => q.id === id);
+        //         if (idx < draft.queries.length - 1) {
+        //             const thisQuery = { ...draft.queries[idx] };
+        //             const nextQuery = { ...draft.queries[idx + 1] };
+        //             draft.queries[idx] = nextQuery;
+        //             draft.queries[idx + 1] = thisQuery;
+        //         }
+        //     };
+        // },
 
-        moveQueryUp({id}) {
-            return (draft:DataModelerState) => {
-                const idx = draft.queries.findIndex((q) => q.id === id);
-                if (idx > 0) {
-                    const thisQuery = { ...draft.queries[idx] };
-                    const nextQuery = { ...draft.queries[idx - 1] };
-                    draft.queries[idx] = nextQuery;
-                    draft.queries[idx - 1] = thisQuery;
-                }
-            }
-        },
+        // moveQueryUp({id}) {
+        //     return (draft:DataModelerState) => {
+        //         const idx = draft.queries.findIndex((q) => q.id === id);
+        //         if (idx > 0) {
+        //             const thisQuery = { ...draft.queries[idx] };
+        //             const nextQuery = { ...draft.queries[idx - 1] };
+        //             draft.queries[idx] = nextQuery;
+        //             draft.queries[idx - 1] = thisQuery;
+        //         }
+        //     }
+        // },
 
-        exportToParquet({query, id, path}) {
-            return async (dispatch:Function) => {
-                await api.exportToParquet(query, path);
+        // exportToParquet({query, id, path}) {
+        //     return async (dispatch:Function) => {
+        //         await api.exportToParquet(query, path);
 
-                api.getDestinationSize(path).then((size) => {
-                    if (size !== undefined) {
-                        dispatch((draft:DataModelerState) => {
-                            let q = draft.queries.find(query => query.id === id);
-                            q.sizeInBytes = size;
-                        })
-                    }
-                });
-                notifyUser({ message: `exported ${path}`, type: "info"});
-                return true;
-            }
-        },
+        //         api.getDestinationSize(path).then((size) => {
+        //             if (size !== undefined) {
+        //                 dispatch((draft:DataModelerState) => {
+        //                     let q = draft.queries.find(query => query.id === id);
+        //                     q.sizeInBytes = size;
+        //                 })
+        //             }
+        //         });
+        //         notifyUser({ message: `exported ${path}`, type: "info"});
+        //         return true;
+        //     }
+        // },
 
-        updateQueryInformation({id}) {
-            return async (dispatch:Function, getState:Function) => {
-                const state = getState();
-                const queryInfo = state.queries.find(query => query.id === id);
-                // check to see if it is valid.
-                try {
-                    await api.checkQuery(queryInfo.query);
-                } catch (error) {
-                    if (error.message !== 'No statement to prepare!') {
-                        console.log(id);
-                        addError(dispatch, id, error.message);
-                    }  else {
-                        clearQuery(dispatch, id);
-                    } 
-                    return;
-                }
-                // reset 
-                clearError(dispatch, id);
-                sanitizeQuery(dispatch, id);
+        // updateQueryInformation({id}) {
+        //     return async (dispatch:Function, getState:Function) => {
+        //         const state = getState();
+        //         const queryInfo = state.queries.find(query => query.id === id);
+        //         // check to see if it is valid.
+        //         try {
+        //             await api.checkQuery(queryInfo.query);
+        //         } catch (error) {
+        //             if (error.message !== 'No statement to prepare!') {
+        //                 console.log(id);
+        //                 addError(dispatch, id, error.message);
+        //             }  else {
+        //                 clearQuery(dispatch, id);
+        //             } 
+        //             return;
+        //         }
+        //         // reset 
+        //         clearError(dispatch, id);
+        //         sanitizeQuery(dispatch, id);
 
-                // if valid, wrap query as temp view.
-                try {
-                    await api.wrapQueryAsView(queryInfo.query);
-                } catch (err) {
-                    console.error('reached an error', err);
-                }
+        //         // if valid, wrap query as temp view.
+        //         try {
+        //             await api.wrapQueryAsView(queryInfo.query);
+        //         } catch (err) {
+        //             console.error('reached an error', err);
+        //         }
                 
-                let anyRemainingErrors = false;
-                // get the preview dataset.
-                api.createPreview(queryInfo.query).then((preview) => {
-                    updateQueryField(dispatch, id, 'preview', preview);
-                }).catch(error => {
-                    console.error('createPreview', error);
-                });
+        //         let anyRemainingErrors = false;
+        //         // get the preview dataset.
+        //         api.createPreview(queryInfo.query).then((preview) => {
+        //             updateQueryField(dispatch, id, 'preview', preview);
+        //         }).catch(error => {
+        //             console.error('createPreview', error);
+        //         });
 
-                // attach the source name here.
-                const sources = api.extractParquetFilesFromQuery(queryInfo.query);
-                updateQueryField(dispatch, id, 'sources', sources);
+        //         // attach the source name here.
+        //         const sources = api.extractParquetFilesFromQuery(queryInfo.query);
+        //         updateQueryField(dispatch, id, 'sources', sources);
 
 
 
-                api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
-                    updateQueryField(dispatch, id, 'cardinality', cardinality);
-                }).catch(error => {
-                    console.error('calculateDestinationCardinality', error);
-                });
+        //         api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
+        //             updateQueryField(dispatch, id, 'cardinality', cardinality);
+        //         }).catch(error => {
+        //             console.error('calculateDestinationCardinality', error);
+        //         });
 
-                api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`)
-                    .then((size:number) => {
-                        if (size !== undefined) {
-                            updateQueryField(dispatch, id, 'sizeInBytes', size);
-                        }
-                    }).catch(error => {
-                        console.error('getDestinationSize', error);
-                    });
+        //         api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`)
+        //             .then((size:number) => {
+        //                 if (size !== undefined) {
+        //                     updateQueryField(dispatch, id, 'sizeInBytes', size);
+        //                 }
+        //             }).catch(error => {
+        //                 console.error('getDestinationSize', error);
+        //             });
 
-                api.createDestinationProfile(queryInfo.query).then((destinationProfile) => {
-                    updateQueryField(dispatch, id, 'destinationProfile', destinationProfile);
-                }).catch(error => {
-                    console.error('createDestinationProfile', error);
-                });
+        //         api.createDestinationProfile(queryInfo.query).then((destinationProfile) => {
+        //             updateQueryField(dispatch, id, 'destinationProfile', destinationProfile);
+        //         }).catch(error => {
+        //             console.error('createDestinationProfile', error);
+        //         });
 
-            }
-        }
+        //     }
+        // }
     })
 }

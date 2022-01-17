@@ -1,6 +1,7 @@
 {
-	"name": "sql-better",
-	"version": "0.0.1",
+	"name": "data-modeler",
+	"version": "0.1.0",
+	"type": "module",
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build",
@@ -49,7 +50,6 @@
 		"tslib": "^2.3.1",
 		"typescript": "^4.4.3"
 	},
-	"type": "module",
 	"dependencies": {
 		"@codemirror/basic-setup": "^0.19.0",
 		"@codemirror/lang-sql": "^0.19.4",
