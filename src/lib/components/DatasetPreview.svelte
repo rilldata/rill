@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { slide, fade, fly } from "svelte/transition";
+import { fade, slide } from "svelte/transition";
 import { tweened } from "svelte/motion";
-import { cubicInOut as easing } from "svelte/easing";
+import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
@@ -25,10 +25,6 @@ export let cardinality:number;
 export let profile:any;
 export let head:any; // FIXME
 export let sizeInBytes:number;
-export let categoricalSummaries:any; // FIXME
-export let timestampSummaries:any; // FIXME
-export let numericalSummaries:any; // FIXME
-export let nullCounts:any;
 export let collapseWidth = 200 + 120 + 16;
 export let emphasizeTitle:boolean = false;
 export let draggable = true;
@@ -39,7 +35,7 @@ const formatInteger = format(',');
 const percentage = format('.1%');
 
 
-let container;
+
 
 let containerWidth = 0;
 let show = true;
@@ -49,11 +45,10 @@ function humanFileSize(size:number) {
     return ( size / Math.pow(1024, i) ).toFixed(2) + ['B', 'K', 'M', 'G'][i];
 };
 
+let container;
 onMount(() => {
     const observer = new ResizeObserver(entries => {
-        entries.forEach((entry) => {
-            containerWidth = container.clientWidth;
-        });
+        containerWidth = container.clientWidth;
     });
     observer.observe(container);
 });
@@ -127,6 +122,55 @@ function typeToSymbol(fieldType) {
     }
 }
 
+type EasingFunction = (t: number) => number;
+interface TransitionConfig {
+	delay?: number;
+	duration?: number;
+	easing?: EasingFunction;
+	css?: (t: number, u: number) => string;
+	tick?: (t: number, u: number) => void;
+}
+interface SlideParams {
+	delay?: number;
+	duration?: number;
+	easing?: EasingFunction;
+}
+function horizontalSlide(node: Element, {
+	delay = 0,
+	duration = 200,
+	easing = cubicOut
+}: SlideParams = {}): TransitionConfig {
+	const style = getComputedStyle(node);
+	const opacity = +style.opacity;
+	const height = parseFloat(style.height);
+    const width = parseFloat(style.width)
+	const padding_top = parseFloat(style.paddingTop);
+	const padding_bottom = parseFloat(style.paddingBottom);
+	const margin_top = parseFloat(style.marginTop);
+	const margin_bottom = parseFloat(style.marginBottom);
+	const border_top_width = parseFloat(style.borderTopWidth);
+	const border_bottom_width = parseFloat(style.borderBottomWidth);
+
+	return {
+		delay,
+		duration,
+		easing,
+		css: t =>
+			'overflow: hidden;' +
+			`opacity: ${Math.min(t * 20, 1) * opacity};` +
+            // `width: ${t * height}px;` +
+			`width: ${t * width}px;` +
+            //'outline: 1px solid black;' + 
+			`padding-top: ${t * padding_top}px;` +
+			`padding-bottom: ${t * padding_bottom}px;` +
+			`margin-top: ${t * margin_top}px;` +
+			`margin-bottom: ${t * margin_bottom}px;` +
+			`border-top-width: ${t * border_top_width}px;` +
+			`border-bottom-width: ${t * border_bottom_width}px;`
+	};
+}
+
+
 </script>
 
 <div bind:this={container}>
@@ -165,13 +209,18 @@ function typeToSymbol(fieldType) {
             <svelte:fragment slot='contextual-information'>
                     <div class='italic text-gray-600'>
                         {#if selectingColumns}
-                            {#if selectedColumns.length}
-                                selected {selectedColumns.length} column{#if selectedColumns.length > 1}s{/if}
-                            {:else}
-                                select columns
-                            {/if}
+                            <span>
+                                {#if selectedColumns.length}
+                                    selected {selectedColumns.length} column{#if selectedColumns.length > 1}s{/if}
+                                {:else}
+                                    select columns
+                                {/if}
+                            </span>
                         {:else}
-                            {formatInteger($cardinalityTween)} row{#if cardinality !== 1}s{/if}{#if !collapseGrid && sizeInBytes !== undefined}, {humanFileSize($sizeTween)}{/if}
+                            <span class="grid grid-flow-col">
+                                <span><span>{formatInteger($cardinalityTween)}</span> row{#if cardinality !== 1}s{/if}</span>{#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
+                                " transition:horizontalSlide|local>, {humanFileSize($sizeTween)}</span>{/if}
+                            </span>
                         {/if}
                     </div>
 

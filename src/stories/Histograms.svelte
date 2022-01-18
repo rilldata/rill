@@ -1,5 +1,6 @@
 <script>
 import Histogram from "$lib/components/Histogram.svelte";
+import DetailHistogram from "$lib/components/DetailHistogram.svelte";
 const data = [
   {
     "bucket": 0,
@@ -254,3 +255,5 @@ const data = [
 {#each [1,2,3,4,5] as wi}
     <Histogram width={wi * 50} height={wi*15} {data} />
 {/each}
+
+<DetailHistogram width={200} height={65} {data} color=black />
