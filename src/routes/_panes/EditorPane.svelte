@@ -46,6 +46,12 @@ function getErrorLineNumber(errorString) {
             store.action('setActiveQuery', { id: q.id });
             store.action("updateQueryInformation", {id: q.id});
         }}
+        on:release-focus={() => {
+          //store.action('releaseActiveQueryFocus', { id: q.id });
+        }}
+        on:model-profile={() => {
+          store.action('computeModelProfile', { id: q.id });
+        }}
         on:rename={(evt) => {
           store.action('changeQueryName', {id: q.id, name: evt.detail});
         }}

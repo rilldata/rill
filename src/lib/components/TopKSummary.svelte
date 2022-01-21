@@ -1,12 +1,18 @@
 <script lang="ts">
     import { format } from "d3-format";
     import BarAndLabel from "$lib/components/BarAndLabel.svelte";
-    const formatPercentage = format('.1%');
+    //const formatPercentage = format('.1%');
     const formatCount = format(',');
 
     export let displaySize:string = "md";
     export let totalRows:number;
     export let topK:any; // FIXME
+
+    $: smallestPercentage = Math.min(...topK.slice(0,5).map(entry => entry.count / totalRows))
+    $: formatPercentage = smallestPercentage < 0.001 ? 
+        format('.2%') : 
+        format('.1%');
+
 </script>
 
 <div>
@@ -23,8 +29,10 @@
                 >
                     {value} {value === null ? '∅' : ''}
                 </div>
+                {@const negligiblePercentage = count / totalRows < .001}
+                {@const percentage = negligiblePercentage ? 'ϵ%' : formatPercentage(count / totalRows)}
                 <BarAndLabel value={count / totalRows} color='hsl(340,50%, 87%)'>
-                    {formatCount(count)} ({formatPercentage(count / totalRows)})
+                    <span class:text-gray-500={negligiblePercentage}>{formatCount(count)} ({percentage})</span>
                 </BarAndLabel>
         {/each}
     </div>

@@ -95,8 +95,8 @@ export function validateQuery(query:string, ...validators:Function[]) {
 	return validators.map((validator) => validator(query)).filter((validation) => validation);
 }
 
-function wrapQueryAsTemporaryView(query:string) {
-	return `CREATE OR REPLACE TEMPORARY VIEW tmp AS (
+function wrapQueryAsTemporaryView(query:string, newTableName:string) {
+	return `CREATE OR REPLACE TEMPORARY VIEW ${newTableName} AS (
 	${query.replace(';', '')}
 );`;
 }
@@ -113,22 +113,22 @@ export async function checkQuery(query:string) : Promise<void> {
 	}
 }
 
-export async function wrapQueryAsView(query:string) {
+export async function wrapQueryAsView(query:string, newTableName:string) {
 	return new Promise((resolve, reject) => {
-		db.run(wrapQueryAsTemporaryView(query), (err) => {
+		db.run(wrapQueryAsTemporaryView(query, newTableName), (err) => {
 			if (err !== null) reject(err);
 			resolve(true);
 		})
 	})
 }
 
-export async function createPreview(query:string) {
+export async function createPreview(query:string, table:string) {
     // FIXME: sort out the type here
 	let preview:any;
     try {
 		try {
 			// get the preview.
-			preview = await dbAll(db, 'SELECT * from tmp LIMIT 25;');
+			preview = await dbAll(db, `SELECT * from ${table} LIMIT 25;`);
 		} catch (err) {
 			throw Error(err);
 		}
@@ -201,13 +201,13 @@ export async function getDestinationSize(path:string) {
 	return undefined;
 }
 
-export async function calculateDestinationCardinality(query:string) {
-	const [outputSize] = await dbAll(db, 'SELECT count(*) AS cardinality from tmp;') as any[];
+export async function calculateDestinationCardinality(query:string, table:string) {
+	const [outputSize] = await dbAll(db, `SELECT count(*) AS cardinality from ${table};`) as any[];
 	return outputSize.cardinality;
 }
 
-export async function createDestinationProfile(query:string) {
-	const info = await dbAll(db, `PRAGMA table_info(tmp);`);
+export async function createDestinationProfile(table:string) {
+	const info = await dbAll(db, `PRAGMA table_info(${table});`);
 	return info;
 }
 
@@ -233,13 +233,13 @@ export async function getParquetFilesInRoot() {
 
 export function toDistributionSummary(column) {
 	return [
-		`min(${column}) as ${column}_min`,
-		`reservoir_quantile(${column}, 0.25) as ${column}_q25`,
-		`reservoir_quantile(${column}, 0.5)  as ${column}_q50`,
-		`reservoir_quantile(${column}, 0.75) as ${column}_q75`,
-		`max(${column}) as ${column}_max`,
-		`avg(${column}) as ${column}_mean`,
-		`stddev_pop(${column}) as ${column}_sd`,
+		`min(${column}) as min`,
+		`reservoir_quantile(${column}, 0.25) as q25`,
+		`reservoir_quantile(${column}, 0.5)  as q50`,
+		`reservoir_quantile(${column}, 0.75) as q75`,
+		`max(${column}) as max`,
+		`avg(${column}) as mean`,
+		`stddev_pop(${column}) as sd`,
 	]
 }
 
@@ -277,6 +277,13 @@ export async function getNullCounts(tablePath:string, fields:any, dbEngine = db)
 		FROM ${tablePath};
 	`);
 	return nullities;
+}
+
+export async function descriptiveStatistics(tablePath:string, field:string, fieldType: string, dbEngine = db) {
+	const query = `SELECT ${toDistributionSummary(field)} FROM ${tablePath};`;
+	const [results] = await dbAll(dbEngine, query);
+	return results;
+
 }
 
 export async function numericHistogram(tablePath:string, field:string, fieldType:string, dbEngine = db) {

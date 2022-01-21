@@ -26,9 +26,8 @@ $: maxX = Math.max(...data.map( d => d.high ));
 $: X = scaleLinear().domain([minX, maxX]).range([0, width]);
 
 $: yVals = data.map( d => d.count );
-$: minY = Math.min(...yVals);
 $: maxY = Math.max(...yVals);
-$: Y = scaleLinear().domain([minY, maxY]).range([height - 4, 4]);
+$: Y = scaleLinear().domain([0, maxY]).range([height - 4, 4]);
 
 $: t1.set(1);
 $: t2.set(1);

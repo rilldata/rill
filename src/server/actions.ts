@@ -131,6 +131,32 @@ export const createServerActions = (api, notifyUser) => {
 
         // FIXME: should this move to src/server/dataset/index.ts?
         // FIXME: rename source => dataset
+
+        computeModelProfile({id}) {
+            return async (dispatch:Function, getState:() => DataModelerState) => {
+                //get query
+                const state = getState();
+                const query = getByID(state.queries, id) as Query;
+                const tableName = query.name.split(".sql")[0];
+                // update destinationPreview
+                // the destinationPreview shoudl be of type Source
+                // get this table's fields.
+                const profile = await api.createDestinationProfile(tableName);
+                dispatch((draft:DataModelerState) => {
+                    (getByID(draft.queries, id) as Query).profile = profile;
+                })
+                profile.forEach(field => {
+                    if (field.type === 'VARCHAR') {
+                        dispatch(this.summarizeCategoricalField(query.id, tableName, field.name, 'queries'));
+                        
+                    } else {
+                        dispatch(this.summarizeNumericField(query.id, tableName, field.name, field.type, 'queries'));
+                    }
+                    dispatch(this.summarizeNullCount(query.id, tableName, field.name, 'queries'));
+                })
+            };
+        },
+
         addOrUpdateSource(path) {
             return async (dispatch:Function, getState:()=>DataModelerState) => {
                 const sources = getState().sources;
@@ -289,86 +315,88 @@ export const createServerActions = (api, notifyUser) => {
         //     }
         // },
 
-        // exportToParquet({query, id, path}) {
-        //     return async (dispatch:Function) => {
-        //         await api.exportToParquet(query, path);
+        exportToParquet({query, id, path}) {
+            return async (dispatch:Function) => {
+                await api.exportToParquet(query, path);
 
-        //         api.getDestinationSize(path).then((size) => {
-        //             if (size !== undefined) {
-        //                 dispatch((draft:DataModelerState) => {
-        //                     let q = draft.queries.find(query => query.id === id);
-        //                     q.sizeInBytes = size;
-        //                 })
-        //             }
-        //         });
-        //         notifyUser({ message: `exported ${path}`, type: "info"});
-        //         return true;
-        //     }
-        // },
+                api.getDestinationSize(path).then((size) => {
+                    if (size !== undefined) {
+                        dispatch((draft:DataModelerState) => {
+                            let q = draft.queries.find(query => query.id === id);
+                            q.sizeInBytes = size;
+                        })
+                    }
+                });
+                notifyUser({ message: `exported ${path}`, type: "info"});
+                return true;
+            }
+        },
 
-        // updateQueryInformation({id}) {
-        //     return async (dispatch:Function, getState:Function) => {
-        //         const state = getState();
-        //         const queryInfo = state.queries.find(query => query.id === id);
-        //         // check to see if it is valid.
-        //         try {
-        //             await api.checkQuery(queryInfo.query);
-        //         } catch (error) {
-        //             if (error.message !== 'No statement to prepare!') {
-        //                 console.log(id);
-        //                 addError(dispatch, id, error.message);
-        //             }  else {
-        //                 clearQuery(dispatch, id);
-        //             } 
-        //             return;
-        //         }
-        //         // reset 
-        //         clearError(dispatch, id);
-        //         sanitizeQuery(dispatch, id);
-
-        //         // if valid, wrap query as temp view.
-        //         try {
-        //             await api.wrapQueryAsView(queryInfo.query);
-        //         } catch (err) {
-        //             console.error('reached an error', err);
-        //         }
+        updateQueryInformation({id}) {
+            return async (dispatch:Function, getState:Function) => {
+                const state = getState();
+                const queryInfo = state.queries.find(query => query.id === id);
+                // check to see if it is valid.
+                try {
+                    await api.checkQuery(queryInfo.query);
+                } catch (error) {
+                    if (error.message !== 'No statement to prepare!') {
+                        console.log(id);
+                        addError(dispatch, id, error.message);
+                    }  else {
+                        clearQuery(dispatch, id);
+                    } 
+                    return;
+                }
+                // reset 
+                clearError(dispatch, id);
+                sanitizeQuery(dispatch, id);
                 
-        //         let anyRemainingErrors = false;
-        //         // get the preview dataset.
-        //         api.createPreview(queryInfo.query).then((preview) => {
-        //             updateQueryField(dispatch, id, 'preview', preview);
-        //         }).catch(error => {
-        //             console.error('createPreview', error);
-        //         });
+                const tableName = queryInfo.name.split('.sql')[0];
 
-        //         // attach the source name here.
-        //         const sources = api.extractParquetFilesFromQuery(queryInfo.query);
-        //         updateQueryField(dispatch, id, 'sources', sources);
+                // if valid, wrap query as temp view.
+                try {
+                    await api.wrapQueryAsView(queryInfo.query, tableName);
+                } catch (err) {
+                    console.error('reached an error', err);
+                }
+                
+                let anyRemainingErrors = false;
+                // get the preview dataset.
+                api.createPreview(queryInfo.query, tableName).then((preview) => {
+                    updateQueryField(dispatch, id, 'preview', preview);
+                }).catch(error => {
+                    console.error('createPreview', error);
+                });
+
+                // attach the source name here.
+                const sources = api.extractParquetFilesFromQuery(queryInfo.query);
+                updateQueryField(dispatch, id, 'sources', sources);
 
 
 
-        //         api.calculateDestinationCardinality(queryInfo.query).then((cardinality) => {
-        //             updateQueryField(dispatch, id, 'cardinality', cardinality);
-        //         }).catch(error => {
-        //             console.error('calculateDestinationCardinality', error);
-        //         });
+                api.calculateDestinationCardinality(queryInfo.query, tableName).then((cardinality) => {
+                    updateQueryField(dispatch, id, 'cardinality', cardinality);
+                }).catch(error => {
+                    console.error('calculateDestinationCardinality', error);
+                });
 
-        //         api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`)
-        //             .then((size:number) => {
-        //                 if (size !== undefined) {
-        //                     updateQueryField(dispatch, id, 'sizeInBytes', size);
-        //                 }
-        //             }).catch(error => {
-        //                 console.error('getDestinationSize', error);
-        //             });
+                api.getDestinationSize(`./export/${queryInfo.name.replace('.sql', '.parquet')}`)
+                    .then((size:number) => {
+                        if (size !== undefined) {
+                            updateQueryField(dispatch, id, 'sizeInBytes', size);
+                        }
+                    }).catch(error => {
+                        console.error('getDestinationSize', error);
+                    });
 
-        //         api.createDestinationProfile(queryInfo.query).then((destinationProfile) => {
-        //             updateQueryField(dispatch, id, 'destinationProfile', destinationProfile);
-        //         }).catch(error => {
-        //             console.error('createDestinationProfile', error);
-        //         });
+                api.createDestinationProfile(tableName).then((destinationProfile) => {
+                    updateQueryField(dispatch, id, 'destinationProfile', destinationProfile);
+                }).catch(error => {
+                    console.error('createDestinationProfile', error);
+                });
 
-        //     }
-        // }
+            }
+        }
     })
 }

@@ -1,6 +1,7 @@
 <script>
 import Histogram from "$lib/components/Histogram.svelte";
 import DetailHistogram from "$lib/components/DetailHistogram.svelte";
+import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
 const data = [
   {
     "bucket": 0,
@@ -257,3 +258,15 @@ const data = [
 {/each}
 
 <DetailHistogram width={200} height={65} {data} color=black />
+
+<SummaryAndHistogram 
+  min={9508263}
+  qlow={21123818}
+  median={30627455}
+  mean={34851293}
+  qhigh={45410890}
+  max={52802608}
+  width={300} 
+  height={65} 
+  {data} 
+  color=black />

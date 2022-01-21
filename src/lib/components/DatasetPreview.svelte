@@ -15,6 +15,9 @@ import Spinner from "$lib/components/Spinner.svelte";
 import { dropStore } from '$lib/drop-store';
 import type { SvelteComponent } from "svelte/internal";
 import Histogram from "$lib/components/Histogram.svelte";
+import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
+
+import { horizontalSlide } from "$lib/transitions"
 
 import { intervalToTimestring, formatCardinality } from "../../util/formatters";
 
@@ -34,11 +37,8 @@ let colSizer;
 const formatInteger = format(',');
 const percentage = format('.1%');
 
-
-
-
 let containerWidth = 0;
-let show = true;
+export let show = false;
 
 function humanFileSize(size:number) {
     var i = Math.floor( Math.log(size) / Math.log(1024) );
@@ -57,8 +57,10 @@ $: collapseGrid = containerWidth < collapseWidth;
 
 let cardinalityTween = tweened(cardinality, { duration: 600, easing });
 let sizeTween = tweened(sizeInBytes, { duration: 650, easing, delay: 150 });
-$: cardinalityTween.set(cardinality);
-$: sizeTween.set(sizeInBytes);
+
+$: cardinalityTween.set(cardinality || 0);
+$: interimCardinality = ~~$cardinalityTween;
+$: sizeTween.set(sizeInBytes || 0);
 
 let selectingColumns = false;
 let selectedColumns = [];
@@ -122,53 +124,6 @@ function typeToSymbol(fieldType) {
     }
 }
 
-type EasingFunction = (t: number) => number;
-interface TransitionConfig {
-	delay?: number;
-	duration?: number;
-	easing?: EasingFunction;
-	css?: (t: number, u: number) => string;
-	tick?: (t: number, u: number) => void;
-}
-interface SlideParams {
-	delay?: number;
-	duration?: number;
-	easing?: EasingFunction;
-}
-function horizontalSlide(node: Element, {
-	delay = 0,
-	duration = 200,
-	easing = cubicOut
-}: SlideParams = {}): TransitionConfig {
-	const style = getComputedStyle(node);
-	const opacity = +style.opacity;
-	const height = parseFloat(style.height);
-    const width = parseFloat(style.width)
-	const padding_top = parseFloat(style.paddingTop);
-	const padding_bottom = parseFloat(style.paddingBottom);
-	const margin_top = parseFloat(style.marginTop);
-	const margin_bottom = parseFloat(style.marginBottom);
-	const border_top_width = parseFloat(style.borderTopWidth);
-	const border_bottom_width = parseFloat(style.borderBottomWidth);
-
-	return {
-		delay,
-		duration,
-		easing,
-		css: t =>
-			'overflow: hidden;' +
-			`opacity: ${Math.min(t * 20, 1) * opacity};` +
-            // `width: ${t * height}px;` +
-			`width: ${t * width}px;` +
-            //'outline: 1px solid black;' + 
-			`padding-top: ${t * padding_top}px;` +
-			`padding-bottom: ${t * padding_bottom}px;` +
-			`margin-top: ${t * margin_top}px;` +
-			`margin-bottom: ${t * margin_bottom}px;` +
-			`border-top-width: ${t * border_top_width}px;` +
-			`border-bottom-width: ${t * border_bottom_width}px;`
-	};
-}
 
 
 </script>
@@ -218,8 +173,8 @@ function horizontalSlide(node: Element, {
                             </span>
                         {:else}
                             <span class="grid grid-flow-col">
-                                <span><span>{formatInteger($cardinalityTween)}</span> row{#if cardinality !== 1}s{/if}</span>{#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
-                                " transition:horizontalSlide|local>, {humanFileSize($sizeTween)}</span>{/if}
+                                <span><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span>{#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
+                                " transition:horizontalSlide|local={{duration: 250 + sizeInBytes / 5000000 * 1.3}}>, {sizeInBytes !== undefined && $sizeTween !== NaN && sizeInBytes !== NaN ? humanFileSize($sizeTween) : ''}</span>{/if}
                             </span>
                         {/if}
                     </div>
@@ -348,7 +303,7 @@ function horizontalSlide(node: Element, {
                     {#if previewView === 'card'}
                     <div 
                         class='justify-self-stretch text-right text-gray-500  break-all' class:hidden={collapseGrid}>
-                        {#if column.conceptualType === 'VARCHAR' && column?.summary?.cardinality}
+                        {#if column?.summary && column.conceptualType === 'VARCHAR' && column?.summary?.cardinality}
                             <BarAndLabel 
                             color={column.type !== 'BYTE_ARRAY' ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
                             value={column.summary.cardinality / cardinality}>
@@ -385,7 +340,8 @@ function horizontalSlide(node: Element, {
                     -->
                     <!-- categorical summaries -->
                     {#if showSummaries && summaryColumns.includes(column.name)}
-                        <div style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide|local={{duration: 200 }} >
+                        <div style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide|local={{duration: 200 }}>
+
                             {#if column.conceptualType === 'VARCHAR'}
                             <TopKSummary 
                                 totalRows={cardinality}
@@ -393,19 +349,29 @@ function horizontalSlide(node: Element, {
                                 displaySize={collapseGrid ? 'sm' : 'md'}
                             />
                             {/if}
-                            <!-- {#if  column.conceptualType === 'TIMESTAMP'}
+
+
+                            {#if column?.summary && column.conceptualType !== 'VARCHAR' && column.conceptualType !=='TIMESTAMP'}
+                                <SummaryAndHistogram
+                                    width={containerWidth - 32 - 16}
+                                    height={65} 
+                                    data={column.summary.histogram}
+                                    min={column.summary.statistics.min}
+                                    qlow={column.summary.statistics.q25}
+                                    median={column.summary.statistics.q50}
+                                    qhigh={column.summary.statistics.q75}
+                                    mean={column.summary.statistics.mean}
+                                    max={column.summary.statistics.max}
+                                />
+                            {/if}
+
+                                                        <!-- {#if  column.conceptualType === 'TIMESTAMP'}
                                 {intervalToTimestring(column.summary.interval)} 
                                 ({column.summary.min}
                                     to
                                     {column.summary.max}
                                 )
                             {/if} -->
-
-                            {#if column.conceptualType !== 'VARCHAR' && column.conceptualType !=='TIMESTAMP'}
-                            <pre>
-                                {JSON.stringify(column.summary, null, 2)}
-                            </pre>
-                            {/if}
                         </div>
                     {/if}
 

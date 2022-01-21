@@ -31,15 +31,17 @@ export function createDatasetActions(api) {
          * @param field the column to summarize
          * @returns 
          */
-        summarizeCategoricalField(datasetID:string, tableOrPath:string, field:string){
+        summarizeCategoricalField(datasetID:string, tableOrPath:string, field:string, key='sources'){
             return async (dispatch:Function, getState:()=>DataModelerState) => {
                 const state = getState();
-                const targetSource = getByID(state.sources, datasetID) as Source;
+
+                const targetSource = getByID(state[key], datasetID) as Source;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('summary' in profileField)) {
+
                     api.getTopKAndCardinality(tableOrPath, field).then((summary) => {
                         dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft.sources, datasetID) as Source;
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Source;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
                             profile.summary = summary;
                         })
@@ -56,17 +58,17 @@ export function createDatasetActions(api) {
          * @param fieldType the type of the column; used to handle TIMESTAMPS differently
          * @returns 
          */
-        summarizeNumericField(datasetID:string, tableOrPath:string, field:string, fieldType:string){
+        summarizeNumericField(datasetID:string, tableOrPath:string, field:string, fieldType:string, key='sources'){
             return async (dispatch:Function, getState:()=>DataModelerState) => {
                 // check to see if this field 
                 const state = getState();
                 // check to see if the function has been called before.
-                const targetSource = getByID(state.sources, datasetID) as Source;
+                const targetSource = getByID(state[key], datasetID) as Source;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('summary' in profileField)) {
                     api.numericHistogram(tableOrPath, field, fieldType).then((histogram) => {
                         dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft.sources, datasetID) as Source;
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Source;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
                             if (!('summary'in profile)) {
                                 profile.summary = {};
@@ -74,6 +76,20 @@ export function createDatasetActions(api) {
                             profile.summary.histogram = histogram;
                         })
                     })
+                    if (fieldType !== 'TIMESTAMP') {
+                        api.descriptiveStatistics(tableOrPath, field).then((summaryStatistics) => {
+                            dispatch((draft:DataModelerState) => {
+                                const sourceToUpdate = getByID(draft[key], datasetID) as Source;
+                                const profile = sourceToUpdate.profile.find(p => p.name === field);
+                                if (!('summary'in profile)) {
+                                    profile.summary = {};
+                                }
+                                profile.summary.statistics = summaryStatistics;
+                            })
+                            
+                        })
+                    }
+                    
                 }
             }   
         },
@@ -85,17 +101,17 @@ export function createDatasetActions(api) {
          * @param field the column to summarize
          * @returns 
          */
-        summarizeNullCount(datasetID:string, tableOrPath:string, field:string, fieldType:string){
+        summarizeNullCount(datasetID:string, tableOrPath:string, field:string, key='sources'){
             return async (dispatch:Function, getState:()=>DataModelerState) => {
                 // check to see if this field 
                 const state = getState();
                 // check to see if the function has been called before.
-                const targetSource = getByID(state.sources, datasetID) as Source;
+                const targetSource = getByID(state[key], datasetID) as Source;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('nullCount' in profileField)) {
-                    api.getNullCount(tableOrPath, field, fieldType).then((nullCount) => {
+                    api.getNullCount(tableOrPath, field).then((nullCount) => {
                         dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft.sources, datasetID) as Source;
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Source;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
                             profile.nullCount = nullCount;
                         })

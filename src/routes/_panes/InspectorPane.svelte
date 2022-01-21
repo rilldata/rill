@@ -62,6 +62,7 @@ $: if ($store?.queries) currentQuery = $store.queries.find(q => q.id === $store.
 $: if (currentQuery?.sources) sources = $store.sources.filter(source => currentQuery.sources.includes(source.path));
 $: if (currentQuery?.cardinality && sources) rollup = computeRollup(sources, {cardinality: currentQuery.cardinality });
 $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(sources, { sizeInBytes: currentQuery.sizeInBytes })
+
 </script>
 
 <svelte:window bind:innerWidth />
@@ -73,112 +74,114 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
   use:drag={{ minSize: 400 }} />
 
   <div class='inspector divide-y divide-gray-200'>
-    {#if currentQuery && sources}
-      <div class="w-full flex align-items-stretch flex-col">
-        <button class="p-3 pt-2 pb-2 bg-transparent border border-black m-3 rounded-md" on:click={() => {
-          const query = currentQuery.query;
-          const exportFilename = currentQuery.name.replace('.sql', '.parquet');
-          const path = `./export/${exportFilename}`
-          store.action('exportToParquet', {query, path, id: currentQuery.id });
-        }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
-      </div>
-    {/if}
-    {#if currentQuery && sources}
-      <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
-        <div style="font-weight: bold;">
-          {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
+    {#if currentQuery}
+      {#if sources}
+        <div class="w-full flex align-items-stretch flex-col">
+          <button class="p-3 pt-2 pb-2 bg-transparent border border-black m-3 rounded-md" on:click={() => {
+            const query = currentQuery.query;
+            const exportFilename = currentQuery.name.replace('.sql', '.parquet');
+            const path = `./export/${exportFilename}`
+            store.action('exportToParquet', {query, path, id: currentQuery.id });
+          }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
         </div>
-        <div style="color: #666; text-align:right;">
-          {formatCardinality(sources.reduce((acc,v) => acc + v.cardinality, 0))} ⭢
-          {formatCardinality(currentQuery.cardinality)} rows
-        </div>
-        <div>
-          {#if currentQuery.sizeInBytes}
-          {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
-          {:else}...{/if}
-        </div>
-        <div style="color: #666; text-align: right;">
-          {formatCardinality(sources.reduce((acc,v) => acc + v.sizeInBytes, 0))} ⭢
-          {#if currentQuery.sizeInBytes}{formatCardinality(currentQuery.sizeInBytes)} bytes{:else}...{/if}
-        </div>
-      </div>
-    {/if}
-    <div class='source-tables p-4'>
-      {#if currentQuery && sources}
-        <CollapsibleTitle bind:active={showSources}>
-          Sources
-          <svelte:fragment slot="contextual-information">
-            {formatCardinality(sources.reduce((acc,v) => acc + v.cardinality, 0))} rows
-          </svelte:fragment>
-        </CollapsibleTitle>
-        {#if showSources}
-        <div transition:slide|local={{duration: 120 }}>
-          {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-          <div class='pt-1 pb-1' animate:flip transition:slide|local>
-            <DatasetPreview
-              icon={ParquetIcon}
-              collapseWidth={240 + 120 + 16}
-              emphasizeTitle={true}
-              {name}
-              {cardinality}
-              {profile}
-              {head}
-              {path}
-              {sizeInBytes}
-            />
+      {/if}
+      {#if sources}
+        <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
+          <div style="font-weight: bold;">
+            {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
           </div>
-        {/each}
+          <div style="color: #666; text-align:right;">
+            {formatCardinality(sources.reduce((acc,v) => acc + v.cardinality, 0))} ⭢
+            {formatCardinality(currentQuery.cardinality)} rows
+          </div>
+          <div>
+            {#if currentQuery.sizeInBytes}
+            {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
+            {:else}...{/if}
+          </div>
+          <div style="color: #666; text-align: right;">
+            {formatCardinality(sources.reduce((acc,v) => acc + v.sizeInBytes, 0))} ⭢
+            {#if currentQuery.sizeInBytes}{formatCardinality(currentQuery.sizeInBytes)}{:else}...{/if}
+          </div>
         </div>
+      {/if}
+      <div class='source-tables p-4'>
+        {#if sources}
+          <CollapsibleTitle bind:active={showSources}>
+            Sources
+            <svelte:fragment slot="contextual-information">
+              {formatCardinality(sources.reduce((acc,v) => acc + v.cardinality, 0))} rows
+            </svelte:fragment>
+          </CollapsibleTitle>
+          {#if showSources}
+          <div transition:slide|local={{duration: 120 }}>
+            {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
+            <div class='pt-1 pb-1' animate:flip transition:slide|local>
+              <DatasetPreview
+                icon={ParquetIcon}
+                collapseWidth={240 + 120 + 16}
+                emphasizeTitle={true}
+                {name}
+                {cardinality}
+                {profile}
+                {head}
+                {path}
+                {sizeInBytes}
+              />
+            </div>
+          {/each}
+          </div>
+          {/if}
         {/if}
-      {/if}
-    </div>
-    
-    <div class='source-tables p-4'>
-      {#if currentQuery?.destinationProfile}
-          <DatasetPreview 
-            collapseWidth={240 + 120 + 16}
-            name="Destination"
-            path=""
-            cardinality={currentQuery?.cardinality}
-            sizeInBytes={currentQuery?.sizeInBytes}
-            profile={currentQuery.destinationProfile}
-            head={currentQuery.preview}
-            draggable={false}
-          />
-      {/if}
-    </div>
+      </div>
+      
+      <div class='source-tables p-4'>
+        {#if currentQuery?.profile}
+            <DatasetPreview 
+              collapseWidth={240 + 120 + 16}
+              name="Destination"
+              path=""
+              cardinality={currentQuery?.cardinality}
+              sizeInBytes={currentQuery?.sizeInBytes}
+              profile={currentQuery.profile}
+              head={currentQuery.preview}
+              draggable={false}
+            />
+        {/if}
+      </div>
 
-    {#if currentQuery?.preview && currentQuery.preview.length}
-    <div class='results-container'>
-      <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
-        transform: translateY({showOutputs ? '-6px' : '0px'});
-        grid-template-columns: auto max-content;
-      ">
-        <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
+      {#if currentQuery?.preview && currentQuery.preview.length}
+      <div class='results-container'>
+        <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
+          transform: translateY({showOutputs ? '-6px' : '0px'});
+          grid-template-columns: auto max-content;
+        ">
+          <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
+          {#if showOutputs}
+          <div class="inspector-button-row grid grid-flow-col justify-start">
+            <IconButton title="table" selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
+              <RowIcon size={16} />
+            </IconButton>
+            <IconButton title="JSON" selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
+              <JSONIcon size={16} />
+            </IconButton>
+          </div>
+          {/if}
+        </div>
+
+
         {#if showOutputs}
-        <div class="inspector-button-row grid grid-flow-col justify-start">
-          <IconButton selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
-            <RowIcon size={16} />
-          </IconButton>
-          <IconButton selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
-            <JSONIcon size={16} />
-          </IconButton>
+        <div class="results p-4 pt-0 mt-0">
+          {#if currentQuery.preview}
+            {#key currentQuery.query}
+              <svelte:component this={whichTable[outputView]} data={currentQuery.preview} />
+            {/key}
+          {/if}
         </div>
         {/if}
-      </div>
 
-
-      {#if showOutputs}
-      <div class="results p-4 pt-0 mt-0">
-        {#if currentQuery.preview}
-          {#key currentQuery.query}
-            <svelte:component this={whichTable[outputView]} data={currentQuery.preview} />
-          {/key}
-        {/if}
       </div>
       {/if}
-
-    </div>
     {/if}
     <div>
     </div>

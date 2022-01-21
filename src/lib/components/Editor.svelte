@@ -8,9 +8,8 @@ import { basicSetup } from "@codemirror/basic-setup";
 import { sql } from "@codemirror/lang-sql";
 
 import RemoveCircleDark from "./icons/RemoveCircleDark.svelte";
-
-
-import EditIcon from "$lib/components/icons/EditIcon.svelte"
+import EditIcon from "$lib/components/icons/EditIcon.svelte";
+import FreezeIcon from "$lib/components/icons/Freeze.svelte";
 
 const dispatch = createEventDispatcher();
 export let content;
@@ -146,7 +145,9 @@ onMount(() => {
                 if (v.focusChanged) {
                     if (v.view.hasFocus) {
                         dispatch('receive-focus');
-                    } 
+                    } else {
+                        dispatch('release-focus');
+                    }
                 }
                 if(v.docChanged) {
                     dispatch('write', {
@@ -189,6 +190,11 @@ onMount(() => {
                     <EditIcon size={12} />
                 </button>
         </div>
+        <div class=''>
+            <button class=small-action-button on:click={() => {
+                dispatch('model-profile');
+            }}><FreezeIcon size={"14"} /></button>
+        </div>
     </div>
     <div class='editor-container' bind:this={editorContainer}>
         <div bind:this={editorContainerComponent} />
@@ -205,7 +211,7 @@ onMount(() => {
 
 .controls {
     display: grid;
-    grid-template-columns: max-content max-content max-content auto;
+    grid-template-columns: max-content max-content max-content auto max-content;
     align-items: stretch;
     align-content: stretch;
     justify-content: stretch;
