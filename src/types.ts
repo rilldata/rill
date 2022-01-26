@@ -117,12 +117,16 @@ export interface DimensionConfiguration {
     id: string;
 }
 
+export interface Asset {
+    id: string;
+    assetType: string;
+}
+
 /**
  * The entire state object for the data modeler.
  */
 export interface DataModelerState {
-    activeQuery?: string;
-    activeMetricsModel?: string;
+    activeAsset?: Asset;
     queries: Query[];
     sources: Source[];
     metricsModels: MetricsModel[];

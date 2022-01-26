@@ -7,6 +7,7 @@ import type { AppStore } from '$lib/app-store';
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
+import MetricsIcon from "$lib/components/icons/List.svelte";
 import DatasetPreview from  "$lib/components/DatasetPreview.svelte";
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 
@@ -16,7 +17,7 @@ import { drag } from '$lib/drag'
 
 const store = getContext('rill:app:store') as AppStore;
 
-$: activeQuery = $store && $store?.queries ? $store.queries.find(q => q.id === $store.activeQuery) : undefined;
+$: activeQuery = $store && $store?.queries && $store?.activeAsset ? $store.queries.find(q => q.id === $store.activeAsset.id) : undefined;
 let showSources = true;
 let showModels = true;
 let showMetrics = true;
@@ -67,7 +68,6 @@ onMount(() => {
                 <div class='pl-3 pr-5 pb-1' animate:flip>
                   <DatasetPreview 
                     icon={ParquetIcon}
-                    emphasizeTitle={activeQuery?.sources ? activeQuery?.sources.includes(path) : false}
                     {name}
                     {cardinality}
                     {profile}
@@ -82,31 +82,53 @@ onMount(() => {
           {/if}
         
           {#if $store && $store.queries}
-            <div class='pl-8 pb-3'>
-              <CollapsibleTitle bind:active={showModels}>
+          <div class='pl-8 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
+            <CollapsibleTitle bind:active={showModels}>
                 <h4 class='font-normal'> Models</h4>
               </CollapsibleTitle>
+              <button class='text-gray-500 italic bg-gray-100 pl-3 pr-3 rounded' style="font-size:12px;" on:click={() => {
+                // FIXME: rename this action to model.
+                store.action('addQuery', {});
+                if (!showModels) {
+                  showModels = true;
+                }
+              }}>new +</button>
             </div>
             {#if showModels}
               <div class='pb-6'  transition:slide={{duration:200}}>
               {#each $store.queries as query, i (query.id)}
-                <div  class=' pl-8 pr-5 pb-1 grid content-center justify-items-stretch items-center w-full' style="grid-template-columns: 1rem auto max-content; grid-gap:.45rem; " class:font-bold={query.id === $store.activeQuery}>
-                  <ModelIcon size={12} color="gray" /> <div>{query.name}</div> {#if  i === 0}<div style="font-size:10px" class='text-gray-400 italic  rounded border-dashed text-clip overflow-hidden whitespace-nowrap' transition:horizontalSlide={{duration: 350}}>preview coming soon</div>{/if}
-                </div>
+                <button 
+                  on:click={() => { store.action('setActiveAsset', { id: query.id, assetType: 'model' })}}
+                  class='pl-8 pr-5 pb-1 grid justify-start justify-items-stretch items-center w-full' style="grid-template-columns: 1rem auto max-content; grid-gap:.45rem; " class:font-bold={query.id === $store?.activeAsset?.id}>
+                  <ModelIcon size={12} color="gray" /> <div>{query.name}</div>
+                </button>
               {/each}
               </div>
             {/if}
           {/if}
 
       
-        <div class='pl-8 pb-3 '>
+        <div class='pl-8 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
           <CollapsibleTitle bind:active={showMetrics}>
-            <h4 class='font-normal'> Metrics</h4>
+            <h4 class='font-normal'> Metrics Definitions</h4>
           </CollapsibleTitle>
+          <button class='text-gray-500 italic bg-gray-100 pl-3 pr-3 rounded' style="font-size:12px;" on:click={() => {
+            store.action('createMetricsModel');
+            if (!showMetrics) {
+              showMetrics = true;
+            }
+          }}>new +</button>
+
         </div>
         {#if showMetrics}
-        <div class="pb-6 pl-12 pt-3 pr-5 italic text-gray-500" transition:slide={{duration: 200}}>
-          <div class='pl-2 text-gray-400 italic '>metrics coming soon!</div>
+        <div class="pl-8 pr-5 italic" transition:slide={{duration: 200}}>
+          {#each ($store?.metricsModels || []) as model (model.id)}
+            <button
+            class:font-bold={model.id === $store?.activeAsset?.id}
+            on:click={() => { store.action('setActiveAsset', { id: model.id, assetType: 'metricsDefinition' })}}
+              class="grid grid-flow-col justify-start justify-items-stretch items-center gap-x-2.5 pb-1"
+            ><MetricsIcon size={13} /> {model.name}</button>
+          {/each}
         </div>
         {/if}
     </div>

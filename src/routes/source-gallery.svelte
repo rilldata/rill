@@ -11,7 +11,7 @@
     let innerWidth = 0;
     const store = getContext('rill:app:store') as AppStore;
     
-    $: activeQuery = $store && $store?.queries ? $store.queries.find(q => q.id === $store.activeQuery) : undefined;
+    $: activeQuery = $store && $store?.queries ? $store.queries.find(q => q.id === $store.activeAsset.id ) : undefined;
     $: sortedSources = $store?.sources || [];
     $: if ($store?.sources) sortedSources = sortedSources.sort((a, b) => {
       if (a.profile.length > b.profile.length) return -1;

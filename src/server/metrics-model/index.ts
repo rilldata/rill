@@ -24,11 +24,7 @@ import yaml from 'js-yaml';
  
  export function createMetricsModelActions(api) {
      return {
-        setActiveMetricsModel({ id } : { id: string }) {
-            return ((draft:DataModelerState) => {
-                draft.activeMetricsModel = id;
-            })
-        },
+
 
          createMetricsModel() {
              return ((draft:DataModelerState) => {
@@ -44,9 +40,9 @@ import yaml from 'js-yaml';
              return ((draft:DataModelerState) => {
                 
                 draft.metricsModels = draft.metricsModels.filter(model => model.id !== id);
-                if (draft.activeMetricsModel === id && draft.metricsModels.length) {
-                    draft.activeMetricsModel = draft.metricsModels[0].id;
-                }
+                // if (draft.activeMetricsModel === id && draft.metricsModels.length) {
+                //     draft.activeMetricsModel = draft.metricsModels[0].id;
+                // }
              })
          },
  

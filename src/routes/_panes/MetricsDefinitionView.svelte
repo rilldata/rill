@@ -8,7 +8,8 @@ import MetricsEditor from "$lib/components/MetricsEditor.svelte";
 
 const store = getContext("rill:app:store") as AppStore;
 
-$: currentModel = ($store && $store?.metricsModels) ? $store?.metricsModels.find(model => model.id === $store.activeMetricsModel) : undefined;
+$: currentModel = ($store && $store?.metricsModels) ? $store?.metricsModels.find(model => model.id === $store?.activeAsset?.id) : undefined;
+$: console.log(currentModel)
 </script>
 
 <section class='bg-gray-100'>

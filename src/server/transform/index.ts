@@ -11,6 +11,7 @@ interface NewQueryArguments {
     query?: string;
     name?: string;
     at?: number;
+    makeActive?: boolean;
 }
 
 let queryNumber = 1;
@@ -48,13 +49,22 @@ export function emptyQuery(): Query {
         addQuery(params:NewQueryArguments) {
             const query = params.query || undefined;
             const name = params.name || undefined;
+            const makeActive = params.makeActive || false;
             const at = params.at;
             return (draft:DataModelerState) => {
                 if (at !== undefined) {
                     draft.queries = [...draft.queries.slice(0, at), newQuery({ query, name }), ...draft.queries.slice(at)];
                 } else {
-                    draft.queries.push(newQuery({ query, name })); 
+                    const draftQuery = newQuery({ query, name })
+                    draft.queries.push(draftQuery); 
+                    if (makeActive) {
+                        draft.activeAsset = {
+                            id: draftQuery.id,
+                            assetType: 'model'
+                        }
+                    }
                 }
+
             };
         },
         updateQuery({id, query}) {
@@ -64,9 +74,15 @@ export function emptyQuery(): Query {
             };
         },
 
-        setActiveQuery({id}) {
+        setActiveAsset({ id, assetType }) {
             return (draft:DataModelerState) => {
-                draft.activeQuery = id;
+                draft.activeAsset = { id, assetType };
+            }
+        },
+
+        unsetActiveAsset() {
+            return (draft:DataModelerState) => {
+                draft.activeAsset = undefined;
             }
         },
 
@@ -78,8 +94,8 @@ export function emptyQuery(): Query {
 
         releaseActiveQueryFocus({ id }) {
             return (draft:DataModelerState) => {
-                if (draft.activeQuery === id) {
-                    draft.activeQuery = undefined;
+                if (draft.activeAsset.id === id) {
+                    draft.activeAsset = undefined;
                 }
             }
         },

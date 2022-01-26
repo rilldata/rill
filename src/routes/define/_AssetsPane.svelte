@@ -1,5 +1,4 @@
 <script>
-import Model from "$lib/components/icons/Model.svelte";
 import { getContext } from "svelte";
 const store = getContext("rill:app:store");
 </script>
@@ -12,9 +11,9 @@ const store = getContext("rill:app:store");
             <div>
                 <button
                     class="grid" 
-                    class:italic={!model.spec.length && model.id !== $store.activeMetricsModel} 
-                    class:font-bold={model.id === $store.activeMetricsModel} 
-                    on:click={() => { store.action('setActiveMetricsModel', {id: model.id}) }}>
+                    class:italic={!model.spec.length && model.id !== $store.activeAsset.id} 
+                    class:font-bold={model.id === $store.activeAsset.id} 
+                    on:click={() => { store.action('setActiveAsset', {id: model.id, assetType: 'metricsModel'}) }}>
                     {model.name}
                 </button>
             </div>
