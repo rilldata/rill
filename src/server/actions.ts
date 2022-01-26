@@ -5,7 +5,8 @@
  */
 import { createDatasetActions } from "./dataset/index.js";
 import { createTransformActions } from "./transform/index.js";
-import type { Item, Query, Source, DataModelerState } from "../types"
+import { createMetricsModelActions } from "./metrics-model/index.js";
+import type { Item, Query, Source, MetricsModel, DataModelerState } from "../types"
 import { guidGenerator } from "../util/guid.js";
 import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
 
@@ -52,6 +53,7 @@ export function initialState() : DataModelerState {
     return {
         queries: [emptyQuery()],
         sources: [],
+        metricsModels: [],
         status: 'disconnected'
     }
 }
@@ -60,7 +62,7 @@ function getByID(items:(Item[]), id:string) : Item| null {
     return items.find(q => q.id === id);
 }
 
-function addError(dispatch:Function, id:string, message:string) : void {
+export function addError(dispatch:Function, id:string, message:string) : void {
     dispatch((draft:DataModelerState) => {
         let q = getByID(draft.queries, id) as Query;
         q.error = message;
@@ -128,6 +130,7 @@ export const createServerActions = (api, notifyUser) => {
 
         ...createDatasetActions(api),
         ...createTransformActions(api),
+        ...createMetricsModelActions(api),
 
         // FIXME: should this move to src/server/dataset/index.ts?
         // FIXME: rename source => dataset
@@ -141,9 +144,48 @@ export const createServerActions = (api, notifyUser) => {
                 // update destinationPreview
                 // the destinationPreview shoudl be of type Source
                 // get this table's fields.
+                const path = `./export/${tableName}.parquet`;
+                await api.exportToParquet(query.query, path);
+
+                api.getDestinationSize(path).then((size) => {
+                    if (size !== undefined) {
+                        dispatch((draft:DataModelerState) => {
+                            let q = draft.queries.find(query => query.id === id);
+                            q.sizeInBytes = size;
+                        })
+                    }
+                });
+                
+                // drop the 
+                dispatch((draft:DataModelerState) => {
+                    const profile = (getByID(draft.queries, id) as Query).profile;
+                    if (profile) {
+                        profile.forEach(field => {
+                            field.summary = undefined;
+                            field.nullCount = undefined;
+                        })
+                    }
+                    
+                })
+                // let's do it. the hard thing. let's materialize the query.
+                notifyUser({ message: `materializing ${tableName}`, type: "info"})
+                try {
+                    console.time(`materialize: ${tableName}`)
+                    await api.materializeTable(tableName, query.query);
+                    console.timeEnd(`materialize: ${tableName}`)
+                } catch (err) {
+                    console.log(err);
+                }
+                
                 const profile = await api.createDestinationProfile(tableName);
                 dispatch((draft:DataModelerState) => {
                     (getByID(draft.queries, id) as Query).profile = profile;
+                })
+                dispatch((draft:DataModelerState) => {
+                    const sourceToUpdate = getByID(draft.queries, id) as Source;
+                    sourceToUpdate.profile.map((t) => {
+                        sourceToUpdate.profile.find(p => p.name === t.name).conceptualType = t.type;
+                    });
                 })
                 profile.forEach(field => {
                     if (field.type === 'VARCHAR') {
@@ -151,6 +193,9 @@ export const createServerActions = (api, notifyUser) => {
                         
                     } else {
                         dispatch(this.summarizeNumericField(query.id, tableName, field.name, field.type, 'queries'));
+                        if (field.type === 'TIMESTAMP') {
+                            dispatch(this.summarizeTimestampRange(query.id, tableName, field.name, 'queries'));
+                        }
                     }
                     dispatch(this.summarizeNullCount(query.id, tableName, field.name, 'queries'));
                 })
@@ -220,6 +265,7 @@ export const createServerActions = (api, notifyUser) => {
                     if (timestamps.length) {
                         timestamps.forEach(field => {
                             dispatch(this.summarizeNumericField(source.id, parquetPath, field.name, field.type));
+                            dispatch(this.summarizeTimestampRange(source.id, parquetPath, field.name));
                         })
                     }
                     duckdbTypes.forEach(field => {
@@ -253,67 +299,6 @@ export const createServerActions = (api, notifyUser) => {
                 });
             }
         },
-
-        // queries
-        // addQuery(params:NewQueryArguments) {
-        //     const query = params.query || undefined;
-        //     const name = params.name || undefined;
-        //     const at = params.at;
-        //     return (draft:DataModelerState) => {
-        //         if (at !== undefined) {
-        //             draft.queries = [...draft.queries.slice(0, at), newQuery({ query, name }), ...draft.queries.slice(at)];
-        //         } else {
-        //             draft.queries.push(newQuery({ query, name })); 
-        //         }
-        //     };
-        // },
-        // updateQuery({id, query}) {
-        //     return (draft:DataModelerState) => {
-        //         const queryItem = getByID(draft.queries, id) as Query;
-        //         queryItem.query = query;
-        //     };
-        // },
-
-        // setActiveQuery({id}) {
-        //     return (draft:DataModelerState) => {
-        //         draft.activeQuery = id;
-        //     }
-        // },
-
-        // changeQueryName({id, name}) {
-        //     return (draft:DataModelerState) => {
-        //         draft.queries.find((q) => q.id === id).name = name;
-        //     }
-        // },
-        // deleteQuery({id}) {
-        //     return (draft:DataModelerState) => {
-        //         draft.queries = draft.queries.filter(q => q.id !== id);
-        //     }
-        // },
-
-        // moveQueryDown({id}) { 
-        //     return (draft:DataModelerState) => {
-        //         const idx = draft.queries.findIndex((q) => q.id === id);
-        //         if (idx < draft.queries.length - 1) {
-        //             const thisQuery = { ...draft.queries[idx] };
-        //             const nextQuery = { ...draft.queries[idx + 1] };
-        //             draft.queries[idx] = nextQuery;
-        //             draft.queries[idx + 1] = thisQuery;
-        //         }
-        //     };
-        // },
-
-        // moveQueryUp({id}) {
-        //     return (draft:DataModelerState) => {
-        //         const idx = draft.queries.findIndex((q) => q.id === id);
-        //         if (idx > 0) {
-        //             const thisQuery = { ...draft.queries[idx] };
-        //             const nextQuery = { ...draft.queries[idx - 1] };
-        //             draft.queries[idx] = nextQuery;
-        //             draft.queries[idx - 1] = thisQuery;
-        //         }
-        //     }
-        // },
 
         exportToParquet({query, id, path}) {
             return async (dispatch:Function) => {
@@ -356,14 +341,15 @@ export const createServerActions = (api, notifyUser) => {
 
                 // if valid, wrap query as temp view.
                 try {
-                    await api.wrapQueryAsView(queryInfo.query, tableName);
+                    //await api.wrapQueryAsView(queryInfo.query, tableName);
+                    await api.wrapQueryAsView(queryInfo.query, 'tmp');
                 } catch (err) {
                     console.error('reached an error', err);
                 }
                 
                 let anyRemainingErrors = false;
                 // get the preview dataset.
-                api.createPreview(queryInfo.query, tableName).then((preview) => {
+                api.createPreview(queryInfo.query, 'tmp').then((preview) => {
                     updateQueryField(dispatch, id, 'preview', preview);
                 }).catch(error => {
                     console.error('createPreview', error);
@@ -373,9 +359,7 @@ export const createServerActions = (api, notifyUser) => {
                 const sources = api.extractParquetFilesFromQuery(queryInfo.query);
                 updateQueryField(dispatch, id, 'sources', sources);
 
-
-
-                api.calculateDestinationCardinality(queryInfo.query, tableName).then((cardinality) => {
+                api.calculateDestinationCardinality(queryInfo.query, 'tmp').then((cardinality) => {
                     updateQueryField(dispatch, id, 'cardinality', cardinality);
                 }).catch(error => {
                     console.error('calculateDestinationCardinality', error);
@@ -390,7 +374,7 @@ export const createServerActions = (api, notifyUser) => {
                         console.error('getDestinationSize', error);
                     });
 
-                api.createDestinationProfile(tableName).then((destinationProfile) => {
+                api.createDestinationProfile('tmp').then((destinationProfile) => {
                     updateQueryField(dispatch, id, 'destinationProfile', destinationProfile);
                 }).catch(error => {
                     console.error('createDestinationProfile', error);

@@ -45,9 +45,9 @@ $: debounceRunstate($store?.status || 'disconnected');
     <div id="controls" class="grid grid-flow-col">
       <!-- FIXME: move this to slot in __layout -->
       <button  on:click={() => store.action("addQuery", {})}><AddIcon size={18} /></button>
-      <button on:click={() => store.action('reset')}>
+      <!-- <button on:click={() => store.action('reset')}>
           <RefreshIcon size={18} />
-      </button>
+      </button> -->
     </div>
   </div>
     <div></div>

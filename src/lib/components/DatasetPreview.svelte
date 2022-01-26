@@ -20,6 +20,7 @@ import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
 import { horizontalSlide } from "$lib/transitions"
 
 import { intervalToTimestring, formatCardinality } from "../../util/formatters";
+import ColumnIcon from "./icons/ColumnIcon.svelte";
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -92,21 +93,36 @@ function sortByNullity(a,b) {
         } else if ((a.nullCount > b.nullCount)) {
             return -1;
         } else {
+            const byType = sortByType(a,b);
+            if (byType) return byType;
             return sortByName(a,b);
         }
-    } else {
-        return sortByName(a,b);
     }
+
+    return sortByName(a,b);
+}
+
+function sortByType(a,b) {
+    if (categoricals.has(a.type) && !categoricals.has(b.type)) return 1;
+    if (!categoricals.has(a.type) && categoricals.has(b.type)) return -1;
+    if ((a.conceptualType === 'TIMESTAMP' || a.type === 'TIMESTAMP') && (b.conceptualType !== 'TIMESTAMP' && b.type !== 'TIMESTAMP')) {
+                return -1;
+    } else if ((a.conceptualType !== 'TIMESTAMP' && a.type !== 'TIMESTAMP') && (b.conceptualType === 'TIMESTAMP' || b.type ==='TIMESTAMP')) {
+        return 1;
+    }
+    return 0;
 }
 
 function sortByName(a,b) {
     return (a.name > b.name) ? 1 : -1;
 }
 
+const categoricals = new Set(['BYTE_ARRAY', 'VARCHAR'])
+
 function defaultSort(a, b) {
-    if (a.type === 'BYTE_ARRAY' &&  b.type !== 'BYTE_ARRAY') return 1;
-    if (a.type !== 'BYTE_ARRAY' &&  b.type === 'BYTE_ARRAY') return -1;
-    if (a.type !== 'BYTE_ARRAY' && b.type !== 'BYTE_ARRAY') return sortByNullity(b,a);
+    const byType = sortByType(a,b);
+    if (byType !== 0) return byType;
+    if (categoricals.has(a.type) && !categoricals.has(b.type)) return sortByNullity(b,a);
     return sortByCardinality(a,b);
 }
 
@@ -117,14 +133,12 @@ let previewView = 'card';
 
 // FIXME: replace once we work through logical types in parquet_scan
 function typeToSymbol(fieldType) {
-    if (fieldType === 'BYTE_ARRAY') {
+    if (fieldType === 'BYTE_ARRAY' || fieldType === 'VARCHAR') {
         return {symbol: "C", text: 'categorical (BYTE_ARRAY)', color: 'red'};
     } else {
         return {symbol: fieldType.slice(0,1), text: fieldType, color: 'sky'};
     }
 }
-
-
 
 </script>
 
@@ -185,7 +199,7 @@ function typeToSymbol(fieldType) {
     {#if show}
         <div class="pt-1 pl-accordion" transition:slide|local={{duration: 120 }}>
 
-            <div class:hidden={collapseGrid} class='grid grid-flow-col justify-between'>
+            <div class='grid grid-flow-col justify-between'>
                 <div 
                     class='grid justify-start grid-cols-3 items-baseline pb-2 pt-2'
                 >
@@ -253,11 +267,13 @@ function typeToSymbol(fieldType) {
                         {#if column.summary}
                         <div
                         in:fade 
-                        title={typeToSymbol(column.type).text} 
-                        class:bg-sky-100={column.type === 'BYTE_ARRAY'}
-                        class:bg-red-100={column.type !== 'BYTE_ARRAY'}
-                        class:text-sky-800={column.type === 'BYTE_ARRAY'}
-                        class:text-red-800={column.type !== 'BYTE_ARRAY'}
+                        title={typeToSymbol(column.type).text}
+                        class:bg-sky-100={categoricals.has(column.type)}
+                        class:bg-red-100={!categoricals.has(column.type)}
+                        class:bg-teal-200={column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP'}
+                        class:text-sky-800={categoricals.has(column.type)}
+                        class:text-red-800={!categoricals.has(column.type)}
+                        class:text-teal-800={column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP'}
                         class="
                             text-ellipsis overflow-hidden whitespace-nowrap 
                             grid place-items-center rounded" 
@@ -297,32 +313,33 @@ function typeToSymbol(fieldType) {
                             }
                         }}>
                             {column.name} 
+                            {#if column.conceptualType === 'TIMESTAMP' && column?.summary?.interval}<span class='text-gray-500 italic pl-2' style="font-size:11px">{ intervalToTimestring(column.summary.interval)}</span>{/if}
+                            <!-- {#if column.conceptualType === 'TIMESTAMP' && column?.summary?.interval}{JSON.stringify(column.summary.interval)} {/if} -->
                         </button>
 
                     </div>
                     {#if previewView === 'card'}
                     <div 
                         class='justify-self-stretch text-right text-gray-500  break-all' class:hidden={collapseGrid}>
-                        {#if column?.summary && column.conceptualType === 'VARCHAR' && column?.summary?.cardinality}
+                        {#if column?.summary && (categoricals.has(column.type) || categoricals.has(column.conceptualType)) && column?.summary?.cardinality}
                             <BarAndLabel 
-                            color={column.type !== 'BYTE_ARRAY' ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
+                            color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
                             value={column.summary.cardinality / cardinality}>
                                 |{formatInteger(column.summary.cardinality)}|
                             </BarAndLabel>
                         <!-- {:else if column.conceptualType === 'TIMESTAMP' && column.summary}
                             {intervalToTimestring(column.summary.interval)} -->
                         {:else if column?.summary?.histogram}
-                            <Histogram data={column.summary.histogram} width={98} height={19} color="hsl(1,50%, 80%)" />
+                            <Histogram data={column.summary.histogram} width={98} height={19} color={(column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP') ? "#14b8a6" : "hsl(1,50%, 80%)"} />
                         {/if}
            
-                        <!-- {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>').slice(0,25)} -->
                     </div>
                     <div class='self-stretch text-right text-gray-500 break-all' class:hidden={collapseGrid}>
                         {#if cardinality && column.nullCount !== undefined}
                             <BarAndLabel
                                 title="{column.name}: {percentage(column.nullCount / cardinality)} of the values are null"
                                 bgColor={column.nullCount === 0 ? 'bg-white' : 'bg-gray-50'}
-                                color={column.type !== 'BYTE_ARRAY' ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
+                                color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
                                 value={column.nullCount / cardinality || 0}>
                                         <span class:text-gray-300={column.nullCount === 0}>∅ {percentage(column.nullCount / cardinality)}</span>
                             </BarAndLabel>
@@ -342,7 +359,7 @@ function typeToSymbol(fieldType) {
                     {#if showSummaries && summaryColumns.includes(column.name)}
                         <div style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide|local={{duration: 200 }}>
 
-                            {#if column.conceptualType === 'VARCHAR'}
+                            {#if column?.summary && categoricals.has(column.type) || categoricals.has(column.conceptualType)}
                             <TopKSummary 
                                 totalRows={cardinality}
                                 topK={column.summary.topK}
@@ -351,7 +368,7 @@ function typeToSymbol(fieldType) {
                             {/if}
 
 
-                            {#if column?.summary && column.conceptualType !== 'VARCHAR' && column.conceptualType !=='TIMESTAMP'}
+                            {#if column?.summary && !(categoricals.has(column.type) || categoricals.has(column.conceptualType)) && column.conceptualType !=='TIMESTAMP' && column.type !== 'TIMESTAMP'}
                                 <SummaryAndHistogram
                                     width={containerWidth - 32 - 16}
                                     height={65} 
@@ -363,6 +380,9 @@ function typeToSymbol(fieldType) {
                                     mean={column.summary.statistics.mean}
                                     max={column.summary.statistics.max}
                                 />
+                            {/if}
+                            {#if column?.summary && (column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP') && column?.summary?.interval}
+                                {JSON.stringify(column.summary.interval)}
                             {/if}
 
                                                         <!-- {#if  column.conceptualType === 'TIMESTAMP'}

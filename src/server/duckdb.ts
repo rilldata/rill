@@ -7,7 +7,10 @@
 import fs from "fs";
 import duckdb from 'duckdb';
 import { default as glob } from 'glob';
-
+// we will use d3's binning for now until we can
+// debug my histogram query
+import { bin } from "d3-array";
+import { sanitizeQuery } from "../util/sanitize-query.js";
 import { guidGenerator } from "../util/guid.js";
 
 interface DB {
@@ -142,6 +145,13 @@ export async function createSourceProfile(parquetFile:string) {
 	return await dbAll(db, `select * from parquet_schema('${parquetFile}');`) as any[];
 }
 
+export async function materializeTable(tableName:string, query:string) {
+	// check for table
+	await dbAll(db, `DROP TABLE IF EXISTS ${tableName}`);
+	const sanitizedQuery = sanitizeQuery(query);
+	return dbAll(db, `CREATE TABLE ${tableName} AS ${sanitizedQuery}`);
+}
+
 export async function parquetToDBTypes(parquetFile:string) {
 	const guid = guidGenerator().replace(/-/g, '_');
     await dbAll(db, `
@@ -238,7 +248,7 @@ export function toDistributionSummary(column) {
 		`reservoir_quantile(${column}, 0.5)  as q50`,
 		`reservoir_quantile(${column}, 0.75) as q75`,
 		`max(${column}) as max`,
-		`avg(${column}) as mean`,
+		`avg(${column})::FLOAT as mean`,
 		`stddev_pop(${column}) as sd`,
 	]
 }
@@ -283,9 +293,19 @@ export async function descriptiveStatistics(tablePath:string, field:string, fiel
 	const query = `SELECT ${toDistributionSummary(field)} FROM ${tablePath};`;
 	const [results] = await dbAll(dbEngine, query);
 	return results;
-
 }
 
+export async function getTimeRange(tablePath:string, field:any, dbEngine = db) {
+	const [ranges] = await dbAll(dbEngine, `
+	SELECT
+		min(${field}) as min, max(${field}) as max, 
+		max(${field}) - min(${field}) as interval
+		FROM ${tablePath};
+	`)
+	return ranges;
+}
+
+// FIXME: this doesn't work as expected.
 export async function numericHistogram(tablePath:string, field:string, fieldType:string, dbEngine = db) {
 	// if the field type is an integer and the total number of values is low, can't we just use
 	// first check a sample to see how many buckets there are for this value.
@@ -306,8 +326,8 @@ export async function numericHistogram(tablePath:string, field:string, fieldType
 	), buckets AS (
 		SELECT
 			range as bucket,
-			(range - 1) * (select range FROM S) / ${bucketSize} + (select minVal from S) as low,
-			(range) * (select range FROM S) / ${bucketSize} + (select minVal from S) as high
+			(range) * (select range FROM S) / ${bucketSize} + (select minVal from S) as low,
+			(range + 1) * (select range FROM S) / ${bucketSize} + (select minVal from S) as high
 		FROM range(0, ${bucketSize}, 1)
 	)
 	, histogram_stage AS (
@@ -329,4 +349,21 @@ export async function numericHistogram(tablePath:string, field:string, fieldType
 		FROM histogram_stage;
 	
 	`)
+}
+
+export async function numericHistogram_d3(tablePath:string, field:string, fieldType:string, dbEngine = db) {
+	// const buckets = await dbAll(dbEngine, `SELECT count(*) as count, ${field} FROM ${tablePath} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
+	// const bucketSize = Math.min(40, buckets.length);
+	const results = dbAll(dbEngine, `SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tablePath}`);
+	const binFcn = bin();
+	// binFcn.
+	const binned = binFcn(results.map(result => result[field]));
+	return binned.map((binnedData, i:number) => {
+		return {
+			bucket: i,
+			count: binnedData.length,
+			low: binnedData.x0,
+			high: binnedData.x1
+		};
+	})
 }

@@ -65,12 +65,66 @@ export interface NumericHistogramBin {
     count:number
 }
 
+
+/** Metrics Models 
+ * A metrics model 
+*/
+
+
+export interface MetricsModel {
+    /** the current materialized table */
+    id: string;
+    name: string;
+    spec: string;
+    parsedSpec?: any;
+    error?: string;
+    // table?: string;
+    // timeField?: string;
+    // timeGrain?: 'day' | 'hour';
+    // metrics: MetricConfiguration[];
+    // dimensions: DimensionConfiguration[];
+    // activeMetrics:string[];
+    // activeDimensions:string[];
+    // view: MetricsModelView;
+}
+
+export interface MetricsModelView {
+    metrics: TimeSeries[];
+    dimensions: Leaderboard[]
+}
+
+export interface TimeSeries {
+    name: string;
+    data: any[];
+}
+
+export interface Leaderboard {
+    name: string;
+    data: any[];
+}
+
+export interface MetricConfiguration {
+    name: string;
+    transform: string;
+    field: string;
+    description?: string;
+    id: string;
+}
+
+export interface DimensionConfiguration {
+    name: string;
+    field: string;
+    id: string;
+}
+
 /**
  * The entire state object for the data modeler.
  */
 export interface DataModelerState {
     activeQuery?: string;
+    activeMetricsModel?: string;
     queries: Query[];
     sources: Source[];
+    metricsModels: MetricsModel[];
     status: string;
 }

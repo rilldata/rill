@@ -66,6 +66,13 @@ export function createDatasetActions(api) {
                 const targetSource = getByID(state[key], datasetID) as Source;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('summary' in profileField)) {
+                    // clear!
+                    // dispatch((draft) => {
+                    //     const sourceToUpdate = getByID(draft[key], datasetID) as Source;
+                    //     const profile = sourceToUpdate.profile.find(p => p.name === field);
+                    //     profile.summary = {};
+                    // })
+                //if (true) {
                     api.numericHistogram(tableOrPath, field, fieldType).then((histogram) => {
                         dispatch((draft:DataModelerState) => {
                             const sourceToUpdate = getByID(draft[key], datasetID) as Source;
@@ -114,6 +121,27 @@ export function createDatasetActions(api) {
                             const sourceToUpdate = getByID(draft[key], datasetID) as Source;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
                             profile.nullCount = nullCount;
+                        })
+                    })
+                }
+            }   
+        },
+
+        summarizeTimestampRange(datasetID:string, tableOrPath:string, field:string, key='sources'){
+            return async (dispatch:Function, getState:()=>DataModelerState) => {
+                // check to see if this field 
+                const state = getState();
+                // check to see if the function has been called before.
+                const targetSource = getByID(state[key], datasetID) as Source;
+                const profileField = targetSource.profile.find(({ name }) => name === field);
+                if (!('summary' in profileField && 'interval' in profileField.summary)) {
+                    api.getTimeRange(tableOrPath, field).then((timeInterval) => {
+                        dispatch((draft:DataModelerState) => {
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Source;
+                            const profile = sourceToUpdate.profile.find(p => p.name === field);
+
+                            profile.summary = {...profile.summary || {}, ...timeInterval}
+                            //profile.summary.interval = timeInterval;
                         })
                     })
                 }

@@ -20,7 +20,7 @@ export interface AppStore extends Pick<Writable<DataModelerState>, "subscribe"> 
 export function createStore() : AppStore {
 	const socket = io("http://localhost:3001");
 	socket.on("connect", () => {});
-	const store:Writable<DataModelerState> = writable({queries:[], sources:[], status: undefined});
+	const store:Writable<DataModelerState> = writable({queries:[], sources:[], metricsModels:[], status: undefined});
 	socket.on("app-state", (state:DataModelerState) => {
 		store.set(state);
 	});

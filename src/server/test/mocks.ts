@@ -1,5 +1,5 @@
 import {jest} from '@jest/globals'
-import type { DataModelerState, CategoricalSummary, NumericHistogramBin, TopKEntry } from "src/types";
+import type { DataModelerState, MetricsModel, CategoricalSummary, NumericHistogramBin, TopKEntry } from "src/types";
 
 export const createAPI = () => ({
     getTopKAndCardinality: jest.fn(async (table, field) : Promise<CategoricalSummary> => ({
@@ -7,7 +7,8 @@ export const createAPI = () => ({
         cardinality: 5
     })),
     getNullCount: jest.fn(async (table, field) => 10),
-    numericHistogram: jest.fn(async (table, field, fieldType) : Promise<NumericHistogramBin[]> => (numericHistogram))
+    numericHistogram: jest.fn(async (table, field, fieldType) : Promise<NumericHistogramBin[]> => (numericHistogram)),
+    descriptiveStatistics: jest.fn(async (table, field) => ({max:10, min:5, mean: 7.5, q25: 6, q75: 8, median: 7}))
 })
 
 export const createDispatcher = (state:DataModelerState) => {
@@ -59,5 +60,6 @@ export const mockState = () : DataModelerState => ({
         }
     ],
     queries: [],
+    metricsModels: [],
     status: 'figure out later.'
 })

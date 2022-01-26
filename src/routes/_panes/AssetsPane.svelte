@@ -61,10 +61,10 @@ onMount(() => {
             </CollapsibleTitle>
           </div>
             {#if showSources}
-              <div class="pb-6" transition:slide={{duration:200}}>
+              <div class="pb-6" transition:slide|local={{duration:200}}>
               {#if $store && $store.sources}
                 {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-                <div class='pl-3 pr-5 pb-1' animate:flip transition:slide|local>
+                <div class='pl-3 pr-5 pb-1' animate:flip>
                   <DatasetPreview 
                     icon={ParquetIcon}
                     emphasizeTitle={activeQuery?.sources ? activeQuery?.sources.includes(path) : false}
@@ -90,8 +90,8 @@ onMount(() => {
             {#if showModels}
               <div class='pb-6'  transition:slide={{duration:200}}>
               {#each $store.queries as query, i (query.id)}
-                <div  class=' pl-8 pr-5 pt-1 pb-1 grid content-center justify-items-stretch items-center w-full' style="grid-template-columns: 1rem auto max-content; grid-gap:.45rem; " class:font-bold={query.id === $store.activeQuery}>
-                  <ModelIcon color="gray" /> <div>{query.name}</div> {#if  i === 0}<div style="font-size:10px" class='text-gray-400 italic  rounded border-dashed text-clip overflow-hidden whitespace-nowrap' transition:horizontalSlide={{duration: 350}}>preview coming soon</div>{/if}
+                <div  class=' pl-8 pr-5 pb-1 grid content-center justify-items-stretch items-center w-full' style="grid-template-columns: 1rem auto max-content; grid-gap:.45rem; " class:font-bold={query.id === $store.activeQuery}>
+                  <ModelIcon size={12} color="gray" /> <div>{query.name}</div> {#if  i === 0}<div style="font-size:10px" class='text-gray-400 italic  rounded border-dashed text-clip overflow-hidden whitespace-nowrap' transition:horizontalSlide={{duration: 350}}>preview coming soon</div>{/if}
                 </div>
               {/each}
               </div>

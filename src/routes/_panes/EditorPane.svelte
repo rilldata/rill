@@ -66,13 +66,14 @@ function getErrorLineNumber(errorString) {
 
   {/each}
 
-  <DropZone end         padTop={$store.queries.length}
+  <DropZone end padTop={$store.queries.length}
   on:source-drop={(evt) => {
     store.action('addQuery', { query: evt.detail.props.content } );
   }} />
 
 </div>
 
+<!-- FIXME: componentize!-->
   {#if $store.activeQuery && $store.queries.find(q => q.id === $store.activeQuery)?.error}
     <div transition:slide={{ duration: 200, easing }} 
       class="error p-4 m-4 rounded-lg shadow-md"
