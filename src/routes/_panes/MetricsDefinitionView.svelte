@@ -18,6 +18,9 @@ $: console.log(currentModel)
             <MetricsEditor
                 content={currentModel.spec}
                 name={currentModel.name}
+                on:process={() => {
+                    store.action('createExploreConfiguration', { metricsModelID: currentModel.id, name: currentModel.name });
+                }}
                 on:rename={(event) => {
                     store.action('updateMetricsModelName', { id: currentModel.id, name: event.detail} )
                 }}

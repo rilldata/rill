@@ -60,7 +60,7 @@ onMount(() => {
 
 <div class="metrics-editor h-full" bind:this={componentContainer}>
     <div>
-        <button>Process</button>
+        <button on:click={() => dispatch('process')}>Process</button>
         <button on:click={() => dispatch('save')}>Save</button>
         <button on:click={() => dispatch('delete')}>Delete</button>
         <button on:click={() => dispatch('cancel')}>Cancel</button>

@@ -6,6 +6,7 @@
 import { createDatasetActions } from "./dataset/index.js";
 import { createTransformActions } from "./transform/index.js";
 import { createMetricsModelActions } from "./metrics-model/index.js";
+import { createExploreConfigurationActions } from "./explore/index.js";
 import type { Item, Query, Source, MetricsModel, DataModelerState } from "../types"
 import { guidGenerator } from "../util/guid.js";
 import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
@@ -54,6 +55,7 @@ export function initialState() : DataModelerState {
         queries: [emptyQuery()],
         sources: [],
         metricsModels: [],
+        exploreConfigurations: [],
         status: 'disconnected'
     }
 }
@@ -131,6 +133,7 @@ export const createServerActions = (api, notifyUser) => {
         ...createDatasetActions(api),
         ...createTransformActions(api),
         ...createMetricsModelActions(api),
+        ...createExploreConfigurationActions(api),
 
         // FIXME: should this move to src/server/dataset/index.ts?
         // FIXME: rename source => dataset

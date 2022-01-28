@@ -61,5 +61,6 @@ export const mockState = () : DataModelerState => ({
     ],
     queries: [],
     metricsModels: [],
+    exploreConfigurations: [],
     status: 'figure out later.'
 })

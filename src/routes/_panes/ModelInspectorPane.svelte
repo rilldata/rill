@@ -18,7 +18,6 @@ import { formatCardinality } from "../../util/formatters"
 import type { AppStore } from '$lib/app-store';
 import type { Query } from "../../types";
 
-import { drag } from "$lib/drag";
 
 import {format} from "d3-format";
 
@@ -67,13 +66,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
 
 <svelte:window bind:innerWidth />
 
-<div class='drawer-container flex'>
-  <!-- Drawer Handler -->
-
-  <div class='drawer-handler w-4 absolute hover:cursor-col-resize -translate-x-2 body-height'
-  use:drag={{ minSize: 400 }} />
-
-  <div class='inspector divide-y divide-gray-200'>
+  <div class='divide-y divide-gray-200'>
     {#if currentQuery}
       {#if sources}
         <!-- <div class="w-full flex align-items-stretch flex-col">
@@ -186,17 +179,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
     <div>
     </div>
   </div>
-</div>
 <style lang="postcss">
-
-.drawer-container {
-  height: calc(100vh - var(--header-height));
-}
-
-.inspector {
-  width: var(--right-sidebar-width, 400px);
-  font-size: 12px;
-}
 
 .source-tables {
   @apply grid grid-flow-row gap-2;

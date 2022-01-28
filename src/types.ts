@@ -122,6 +122,19 @@ export interface Asset {
     assetType: string;
 }
 
+ 
+export interface ExploreConfiguration {
+    id: string;
+    modelID: string;
+    name: string;
+    activeMetrics: string[];
+    activeDimensions: string[];
+    selectedMetrics: string[];
+    selectedDimensions: string[];
+    currentMetricLeaderboard?: string;
+    preview: any;
+}
+
 /**
  * The entire state object for the data modeler.
  */
@@ -130,5 +143,6 @@ export interface DataModelerState {
     queries: Query[];
     sources: Source[];
     metricsModels: MetricsModel[];
+    exploreConfigurations: ExploreConfiguration[];
     status: string;
 }

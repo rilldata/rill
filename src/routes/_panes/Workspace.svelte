@@ -4,6 +4,7 @@ import type { AppStore } from '$lib/app-store';
 import DropZone from "$lib/components/DropZone.svelte";
 import ModelView from "./ModelView.svelte";
 import MetricsDefinitionView from "./MetricsDefinitionView.svelte";
+import ExploreView from "./ExploreView.svelte";
 const store = getContext("rill:app:store") as AppStore;
 </script>
 
@@ -17,6 +18,8 @@ const store = getContext("rill:app:store") as AppStore;
     <ModelView />
 {:else if $store?.activeAsset?.assetType === 'metricsDefinition'}
     <MetricsDefinitionView />
+{:else if $store?.activeAsset?.assetType === 'exploreConfiguration'}
+    <ExploreView />
 {:else}
 <DropZone 
     padTop={!!$store?.queries?.length}

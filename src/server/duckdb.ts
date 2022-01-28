@@ -12,6 +12,7 @@ import { default as glob } from 'glob';
 import { bin } from "d3-array";
 import { sanitizeQuery } from "../util/sanitize-query.js";
 import { guidGenerator } from "../util/guid.js";
+import { rollupQuery } from "./explore-api.js"
 
 interface DB {
 	all: Function;
@@ -253,16 +254,16 @@ export function toDistributionSummary(column) {
 	]
 }
 
-function topK(tablePath, column) {
-	return `SELECT ${column} as value, count(*) AS count from ${tablePath}
+function topK(tablePath, column, func = 'count(*)') {
+	return `SELECT ${column} as value, ${func} AS count from ${tablePath}
 GROUP BY ${column}
 ORDER BY count desc
 LIMIT 50;`
 }
 
 
-export async function getTopKAndCardinality(tablePath, column, dbEngine = db) {
-	const topKValues = await dbAll(dbEngine, topK(tablePath, column));
+export async function getTopKAndCardinality(tablePath, column, func = 'count(*)', dbEngine = db) {
+	const topKValues = await dbAll(dbEngine, topK(tablePath, column, func));
 	const [cardinality] = await dbAll(dbEngine = db, `SELECT approx_count_distinct(${column}) as count from ${tablePath};`);
 	return {
 		column,
@@ -366,4 +367,30 @@ export async function numericHistogram_d3(tablePath:string, field:string, fieldT
 			high: binnedData.x1
 		};
 	})
+}
+
+export async function generateExploreTimeseries({ table, metrics, dimensions = [], timeField, timeGrain}) {
+	const query = rollupQuery({ table, timeField, timeGrain, metrics, dimensions });
+	const results = await dbAll(db, query);
+	return results;
+}
+
+export function generateExploreLeaderboard({
+	table, leaderboardMetric, dimension, timeField, timeMin = undefined, timeMax = undefined
+}) {
+	const lowWhere = timeMin && `${timeField} >= TIMESTAMP '${timeMin.toISOString()}'`;
+    const highWhere = timeMax && `${timeField} <= TIMESTAMP '${timeMax.toISOString()}'`;
+    let whereClauses = []
+    if (lowWhere) whereClauses.push(lowWhere)
+    if (highWhere) whereClauses.push(highWhere)
+	dimensions.forEach((slice) => {
+		whereClauses.push(`${slice.field} = ${typeof slice.value === 'string' ? `'${slice.value}'` : slice.value}`);
+	})
+    const whereClause = lowWhere || highWhere ? `WHERE ${whereClauses.join(' AND ')}` : '';
+	const query = `SELECT ${dimension} as value, ${leaderboardMetric} AS count from ${table}
+${whereClause}
+GROUP BY ${dimension}
+ORDER BY count desc
+LIMIT 50;`
+	return dbAll(db, query);
 }

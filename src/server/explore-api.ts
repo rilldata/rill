@@ -39,6 +39,7 @@ export function rollupQuery({ table, timeField, metrics, timeGrain = 'day', dime
         FROM ${table}
         ${whereStatement}
         ${groupStatement}
+        ORDER BY ${timeFieldStatement} asc
     `
 }
 
