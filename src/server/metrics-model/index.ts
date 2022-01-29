@@ -21,11 +21,30 @@ import yaml from 'js-yaml';
         q.error = message;
     });
 }
+
+// commonFunctions:
+// create, delete update___
+
+function createCommonListActions(key, arrayName, itemGeneratorFunction) {
+    return {
+        // create function
+        [`create${key}`]() {
+            return ((draft:DataModelerState) => {
+                draft[arrayName].push(itemGeneratorFunction());
+            })
+        },
+        // delete function
+        [`delete${key}`]({ id }) {
+            return ((draft:DataModelerState) => {
+                draft[arrayName] = draft[arrayName].filter(item => item.id !== id);
+             })
+        }
+    }
+    
+}
  
  export function createMetricsModelActions(api) {
      return {
-
-
          createMetricsModel() {
              return ((draft:DataModelerState) => {
                  draft.metricsModels.push({
@@ -38,11 +57,7 @@ import yaml from 'js-yaml';
          
          deleteMetricsModel({ id } : { id: string }) {
              return ((draft:DataModelerState) => {
-                
                 draft.metricsModels = draft.metricsModels.filter(model => model.id !== id);
-                // if (draft.activeMetricsModel === id && draft.metricsModels.length) {
-                //     draft.activeMetricsModel = draft.metricsModels[0].id;
-                // }
              })
          },
  

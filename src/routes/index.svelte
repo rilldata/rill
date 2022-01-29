@@ -1,23 +1,23 @@
 <script>
 import { getContext } from "svelte";
 
-import Workspace from "./_panes/Workspace.svelte";
-import InspectorPane from "./_panes/InspectorPane.svelte";
-import AssetsPane from "./_panes/AssetsPane.svelte";
+import Workspace from "./_surfaces/Workspace.svelte";
+import InspectorSidebar from "./_surfaces/InspectorSidebar.svelte";
+import AssetsSidebar from "./_surfaces/AssetsSidebar.svelte";
 
 const store = getContext("rill:app:store");
 
 
 </script>
 
-<div class="pane assets">
-  <AssetsPane />
+<div class="surface assets">
+  <AssetsSidebar />
 </div>
-<div class="pane inputs">
+<div class="surface inputs">
   <Workspace />
 </div>
-<div class='pane outputs'>
-  <InspectorPane />
+<div class='surface outputs'>
+  <InspectorSidebar />
 </div>
 
 <style>
@@ -32,15 +32,15 @@ const store = getContext("rill:app:store");
   overflow-y: auto;
 }
 
-.pane {
+.surface {
   box-sizing: border-box;
 }
 
-.pane:first-child {
+.surface:first-child {
   border-right: 1px solid #ddd;
 }
 
-.pane.outputs, .pane.assets {
+.surface.outputs, .surface.assets {
   height: calc(100vh - var(--header-height));
   overflow-y: auto;
   overflow-x: hidden;

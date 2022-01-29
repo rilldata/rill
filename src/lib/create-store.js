@@ -3,11 +3,34 @@ import { produce } from "immer";
 import fs from 'fs';
 
 /*
-My state approach.
+A non-redux state approach that just sort of grew organically.
 
-an initializer itself is just a function that returns the initial state.
+A store is a serializable json object.
+
+the createStore method is the key entrypoint. It takes in an initial state
+(or an initialization function), and a bunch of plugins.
+A plugin returns a function whose arguments are:
+- store – the current Svelte store
+- initialState
+- 
+
+An initializer is just a function that returns the initial state.
 a plugin must return an object w/ the key nextStore
-The main premise
+The main premise is that these plugins add additional functions
+both to the store object, and that they intercept state changes
+and do things as a conequence. For instance, addProduce
+creates a method, produce, that operates much like a redux-style thunk.
+The vast majority of operations on this global store are of this style.
+
+The plugin that adds the most functionality is probably addActions.
+In the app, this takes a large collection of "actions" and threads them
+into the app w/ the selected API.
+
+Other plugins are fairly innocuous. loggable() for instance simply passes
+through the store, adding a single subscribe method that logs the current state
+to the console. I don't recommend using it for anything real since we essentially
+stream small state changes to the frontend, which would result in a flood
+of console messages.
 */
 
 export function initializeFromSavedState(key) {
@@ -163,12 +186,20 @@ export function connectStateToSocket() {
 					if (socket) {
 						socket.emit('app-state', state);
 					} else {
-						console.log('socket not initialized yet')
+						console.log('socket not yet initialized')
 					}
 				});
 				Object.keys(options).forEach(action => {
 					if (action !== 'nextStore' && action !== 'socket') {
-						socket.on(action, options[action]);
+						// split period and chain
+						if (action.includes('.')) {
+							const [concept, operation] = action.split('.');
+							socket.on(action, options[concept][operation]);
+						} else {
+							// top level operation.
+							socket.on(action, options[action]);
+						}
+						
 					}
 				})
 				options.socket = socket;
