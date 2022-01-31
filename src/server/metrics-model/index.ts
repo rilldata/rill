@@ -9,11 +9,11 @@
 // FIXME: this should be part of the api spec, not here locally!
 import yaml from 'js-yaml';
 
- import type { DataModelerState } from "../../types";
+
  import { getByID } from "../dataset/index.js";
- import type { MetricsModel, MetricsModelView, TimeSeries, Leaderboard, MetricConfiguration, DimensionConfiguration } from "../../types"
+ import type { MetricsModel, DataModelerState, MetricsModelView, TimeSeries, Leaderboard, MetricConfiguration, DimensionConfiguration } from "../../lib/types"
  import { rollupQuery } from '../explore-api.js';
- import { guidGenerator } from "../../util/guid.js";
+ import { guidGenerator } from "../../lib/util/guid.js";
  
  export function addError(dispatch:Function, id:string, message:string) : void {
     dispatch((draft:DataModelerState) => {

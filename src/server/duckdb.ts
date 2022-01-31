@@ -10,8 +10,8 @@ import { default as glob } from 'glob';
 // we will use d3's binning for now until we can
 // debug my histogram query
 import { bin } from "d3-array";
-import { sanitizeQuery } from "../util/sanitize-query.js";
-import { guidGenerator } from "../util/guid.js";
+import { sanitizeQuery } from "../lib/util/sanitize-query.js";
+import { guidGenerator } from "../lib/util/guid.js";
 import { rollupQuery } from "./explore-api.js"
 
 interface DB {

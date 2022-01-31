@@ -1,5 +1,5 @@
 import {jest} from '@jest/globals'
-import type { DataModelerState, MetricsModel, CategoricalSummary, NumericHistogramBin, TopKEntry } from "src/types";
+import type { DataModelerState, MetricsModel, CategoricalSummary, NumericHistogramBin, TopKEntry } from "../../lib/types";
 
 export const createAPI = () => ({
     getTopKAndCardinality: jest.fn(async (table, field) : Promise<CategoricalSummary> => ({

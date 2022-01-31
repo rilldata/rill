@@ -7,9 +7,9 @@ import { createDatasetActions } from "./dataset/index.js";
 import { createTransformActions } from "./transform/index.js";
 import { createMetricsModelActions } from "./metrics-model/index.js";
 import { createExploreConfigurationActions } from "./explore/index.js";
-import type { Item, Query, Source, MetricsModel, DataModelerState } from "../types"
-import { guidGenerator } from "../util/guid.js";
-import { sanitizeQuery as _sanitizeQuery } from "../util/sanitize-query.js";
+import type { Item, Query, Source, MetricsModel, DataModelerState } from "../lib/types"
+import { guidGenerator } from "../lib/util/guid.js";
+import { sanitizeQuery as _sanitizeQuery } from "../lib/util/sanitize-query.js";
 
 let queryNumber = 0;
 

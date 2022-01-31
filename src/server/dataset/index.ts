@@ -3,7 +3,7 @@
  * contains the actions that can be taken to construct a dataset.
  */
 
-import type { DataModelerState, Source, Item } from "src/types"
+import type { DataModelerState, Source, Item } from "../../lib/types"
 
 // TODO: we use this in other modules. Probably should have single source
 export function getByID(items:(Item[]), id:string) : Item| null {

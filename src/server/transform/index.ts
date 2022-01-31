@@ -3,9 +3,9 @@
  * contains the actions that can be taken to construct a dataset.
  */
 
- import type { DataModelerState, Query, Item } from "src/types"
- import { sanitizeQuery as _sanitizeQuery } from "../../util/sanitize-query.js";
- import { guidGenerator } from "../../util/guid.js";
+ import type { DataModelerState, Query, Item } from "../../lib/types"
+ import { sanitizeQuery as _sanitizeQuery } from "../../lib/util/sanitize-query.js";
+ import { guidGenerator } from "../../lib/util/guid.js";
 
 interface NewQueryArguments { 
     query?: string;
@@ -40,9 +40,9 @@ export function emptyQuery(): Query {
      return items.find(q => q.id === id);
  }
  
- /**
-  * NOTE: there's some amount of duplication within many of the summarizing functions.
-  */
+/**
+ * NOTE: there's some amount of duplication within many of the summarizing functions.
+ */
  export function createTransformActions(api) {
  
      return {

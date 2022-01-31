@@ -1,7 +1,7 @@
 import duckdb from 'duckdb';
 import {jest} from '@jest/globals';
 
-import { sanitizeQuery } from "../../util/sanitize-query.js";
+import { sanitizeQuery } from "../../lib/util/sanitize-query.js";
 import { rollupQuery, topKQuery } from "../explore-api";
 import type { Metric, DimensionSlice } from "../explore-api";
 import { dbRun } from '../duckdb.js';

@@ -2,7 +2,7 @@ import type { Socket } from "socket.io";
 import { io } from "socket.io-client";
 import { writable } from "svelte/store";
 import type { Writable } from "svelte/store";
-import type { DataModelerState } from "../types";
+import type { DataModelerState } from "./types";
 
 interface ServerToClientEvents {
 	['app-state']: (state:DataModelerState) => void;

@@ -7,7 +7,7 @@
 import { getByID, createDatasetActions } from "../dataset"
 import { mockState, createAPI, createDispatcher, topK, numericHistogram } from './mocks'
 
-import type { DataModelerState, Source } from "src/types";
+import type { DataModelerState, Source } from "../../lib/types";
 
 describe("dataset actions", () => {
 

@@ -10,9 +10,9 @@
 import yaml from 'js-yaml';
 
  import { getByID } from "../dataset/index.js";
- import type { ExploreConfiguration, DataModelerState, MetricsModel } from "../../types"
+ import type { ExploreConfiguration, DataModelerState, MetricsModel } from "../../lib/types"
  import { rollupQuery } from '../explore-api.js';
- import { guidGenerator } from "../../util/guid.js";
+ import { guidGenerator } from "../../lib/util/guid.js";
 
 
  export function createExploreConfigurationActions(api) {

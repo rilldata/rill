@@ -19,7 +19,7 @@ import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
 
 import { horizontalSlide } from "$lib/transitions"
 
-import { intervalToTimestring, formatCardinality } from "../../util/formatters";
+import { intervalToTimestring, formatCardinality } from "../../lib/util/formatters";
 import ColumnIcon from "./icons/ColumnIcon.svelte";
 
 export let icon:SvelteComponent;

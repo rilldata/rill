@@ -13,10 +13,10 @@ import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 import DatasetPreview from "$lib/components/DatasetPreview.svelte";
 
-import { formatCardinality } from "../../../util/formatters"
+import { formatCardinality } from "../../../lib/util/formatters"
 
 import type { AppStore } from '$lib/app-store';
-import type { Query } from "../../../types";
+import type { Query } from "$lib/types";
 
 
 import {format} from "d3-format";
