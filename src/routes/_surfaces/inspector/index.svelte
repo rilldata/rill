@@ -13,15 +13,15 @@ $: activeAsset = $store?.activeAsset;
 
 
  <script lang="ts">
-    import { getContext } from "svelte";
-    import ModelInspectorPane from "./ModelInspectorPane.svelte";
-    
-    import type { AppStore } from '$lib/app-store';
-    
-    import { drag } from "$lib/drag";    
-    const store = getContext('rill:app:store') as AppStore;
-    
-    </script>
+import { getContext } from "svelte";
+import ModelInspector from "./Model.svelte";
+
+import type { AppStore } from '$lib/app-store';
+
+import { drag } from "$lib/drag";    
+const store = getContext('rill:app:store') as AppStore;
+
+</script>
         
     <div class='drawer-container flex'>    
       <div class='drawer-handler w-4 absolute hover:cursor-col-resize -translate-x-2 body-height'
@@ -29,14 +29,14 @@ $: activeAsset = $store?.activeAsset;
     
       <div class='inspector'>
             {#if $store?.activeAsset?.assetType === 'model'}
-            <ModelInspectorPane />
+            <ModelInspector />
           {/if}
     </div>
     </div>
     <style lang="postcss">
     
     .drawer-container {
-      height: calc(100vh - var(--header-height));
+      /* height: calc(100vh - var(--header-height)); */
     }
     
     .inspector {

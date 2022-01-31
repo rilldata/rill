@@ -2,17 +2,17 @@
 import { getContext } from "svelte";
 import type { AppStore } from '$lib/app-store';
 import DropZone from "$lib/components/DropZone.svelte";
-import ModelView from "./ModelView.svelte";
-import MetricsDefinitionView from "./MetricsDefinitionView.svelte";
-import ExploreView from "./ExploreView.svelte";
+import ModelView from "./Model.svelte";
+import MetricsDefinitionView from "./MetricsDefinition.svelte";
+import ExploreView from "./Explore.svelte";
 const store = getContext("rill:app:store") as AppStore;
 </script>
 
-<button 
+<!-- <button 
     class="grid justify-end w-full p-3"
     on:click={() => {
         store.action('unsetActiveAsset');
-    }} style="font-size:12px;">✕</button>
+    }} style="font-size:12px;">✕</button> -->
 
 {#if $store?.activeAsset?.assetType === 'model'}
     <ModelView />

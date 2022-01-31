@@ -37,8 +37,6 @@ $: debounceRunstate($store?.status || 'disconnected');
 
 </script>
 
-
-
 <header class="header pr-3">
   <h1><Logo /></h1>
   <div class='grid grid-flow-col'>
@@ -65,11 +63,16 @@ $: debounceRunstate($store?.status || 'disconnected');
 
 <style>
   .body {
-    width: calc(100vw);
+    width: 100vw;
     display: grid;
-    grid-template-columns: max-content auto max-content;
+    grid-template-columns: max-content auto var(--right-sidebar-width, 400px);
+    grid-template-rows: auto var(--preview-height, 0px);
+    grid-template-areas: "left-pane workspace right-pane"
+                         "left-pane preview preview";
     align-content: stretch;
-    min-height: calc(100vh - var(--header-height));
+    align-items: stretch;
+    height: calc(100vh - var(--header-height));
+    /* height: calc(100vh - var(--header-height)); */
   }
   
   header {
@@ -96,20 +99,6 @@ $: debounceRunstate($store?.status || 'disconnected');
     padding: 0px 12px;
     padding-left: 2px;
     margin-left: 1rem;
-  }
-  
-  header button {
-    color: white;
-    background-color: transparent;
-    display: grid;
-    place-items: center;
-    padding: 0px 12px;
-    border:none;
-    font-size: 1.5rem;
-  }
-  
-  header button:hover {
-    background-color: hsla(var(--hue), var(--sat), var(--lgt), .1);
   }
   
   </style>

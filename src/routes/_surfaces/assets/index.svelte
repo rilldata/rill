@@ -109,7 +109,10 @@ onMount(() => {
           {/if}
 
       
-        <div class='pl-8 pb-3  pr-8 grid' style="grid-template-columns: auto max-content;">
+
+        <!-- Define -->
+        
+        <!-- <div class='pl-8 pb-3  pr-8 grid' style="grid-template-columns: auto max-content;">
           <CollapsibleTitle bind:active={showMetrics}>
             <h4 class='font-normal'> Metrics</h4>
           </CollapsibleTitle>
@@ -134,22 +137,17 @@ onMount(() => {
           </div>
           {/each}
         </div>
-        {/if}
+        {/if} -->
 
 
 
+        <!-- Explore -->
 
-
-        <div class='pl-8 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
+        <!-- <div class='pl-8 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
           <CollapsibleTitle bind:active={showExplores}>
             <h4 class='font-normal'> Explore</h4>
           </CollapsibleTitle>
-          <!-- <button class='text-gray-500 italic bg-gray-100 pl-3 pr-3 rounded' style="font-size:12px;" on:click={() => {
-            store.action('createMetricsModel');
-            if (!showExplores) {
-              showExplores = true;
-            }
-          }}>new +</button> -->
+
 
         </div>
         {#if showExplores}
@@ -165,7 +163,7 @@ onMount(() => {
           </div>
           {/each}
         </div>
-        {/if}
+        {/if} -->
 
     </div>
 
@@ -173,7 +171,7 @@ onMount(() => {
 </div>
 <style lang="postcss">
 .drawer-container {
-  height: calc(100vh - var(--header-height));
+  /* height: calc(100vh - var(--header-height)); */
 }
 
 .assets {

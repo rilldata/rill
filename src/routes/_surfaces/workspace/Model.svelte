@@ -122,7 +122,7 @@ $: currentQuery = $store?.activeAsset ? $store.queries.find(query => query.id ==
 .editor-pane {
   display: grid;
   grid-template-rows: auto max-content;
-  height: calc(100vh - var(--header-height));
+  /* height: calc(100vh - var(--header-height)); */
 }
 
 .error {

@@ -19,3 +19,12 @@ $: header = Object.keys(data[0]);
         {/each}
     </table>
 </div>
+
+<style>
+table {
+    border-spacing: 20px;
+}
+td {
+    min-width: 200px;
+}
+</style>

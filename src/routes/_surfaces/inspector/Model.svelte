@@ -13,10 +13,10 @@ import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 import DatasetPreview from "$lib/components/DatasetPreview.svelte";
 
-import { formatCardinality } from "../../util/formatters"
+import { formatCardinality } from "../../../util/formatters"
 
 import type { AppStore } from '$lib/app-store';
-import type { Query } from "../../types";
+import type { Query } from "../../../types";
 
 
 import {format} from "d3-format";
@@ -69,14 +69,14 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
   <div class='divide-y divide-gray-200'>
     {#if currentQuery}
       {#if sources}
-        <!-- <div class="w-full flex align-items-stretch flex-col">
+        <div class="w-full flex align-items-stretch flex-col">
           <button class="p-3 pt-2 pb-2 bg-transparent border border-black m-3 rounded-md" on:click={() => {
             const query = currentQuery.query;
             const exportFilename = currentQuery.name.replace('.sql', '.parquet');
             const path = `./export/${exportFilename}`
             store.action('exportToParquet', {query, path, id: currentQuery.id });
           }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
-        </div> -->
+        </div>
       {/if}
       {#if sources}
         <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
