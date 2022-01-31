@@ -37,7 +37,7 @@ $: debounceRunstate($store?.status || 'disconnected');
 
 </script>
 
-<header class="header pr-3">
+<!-- <header class="header pr-3">
   <h1><Logo /></h1>
   <div class='grid grid-flow-col'>
     <div id="controls" class="grid grid-flow-col">
@@ -53,7 +53,7 @@ $: debounceRunstate($store?.status || 'disconnected');
     </div>
 
 
-</header>
+</header> -->
 <div class='body'>
   <slot />
   </div>
@@ -75,7 +75,7 @@ $: debounceRunstate($store?.status || 'disconnected');
     /* height: calc(100vh - var(--header-height)); */
   }
   
-  header {
+  /* header {
     box-sizing: border-box;
     margin:0;
     background: linear-gradient(to right, hsl(300, 30%, 14%), hsl(300, 60%, 18%));
@@ -99,6 +99,6 @@ $: debounceRunstate($store?.status || 'disconnected');
     padding: 0px 12px;
     padding-left: 2px;
     margin-left: 1rem;
-  }
+  } */
   
   </style>

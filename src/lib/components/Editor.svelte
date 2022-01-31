@@ -11,6 +11,7 @@ import RemoveCircleDark from "./icons/RemoveCircleDark.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
 import FreezeIcon from "$lib/components/icons/Freeze.svelte";
 import TrashIcon from "$lib/components/icons/Trash.svelte";
+import ModelIcon from "$lib/components/icons/Code.svelte";
 
 const dispatch = createEventDispatcher();
 export let content;
@@ -168,22 +169,20 @@ onMount(() => {
 </script>
 
 <div bind:this={componentContainer}>
-    <div class=controls>
-        <div class="close-container">
-            <button title="delete this" class="small-action-button really-small-round color-gray-500" on:click={() => dispatch('delete')}>
-                <!-- x -->
-                <TrashIcon />
-            </button>
-        </div>
+    <div class="controls pb-8">
         <!-- <button class=small-action-button on:click={() => dispatch('up')}>↑</button>
         <button class=small-action-button on:click={() => dispatch('down')}>↓</button> -->
+        <div class='grid content-center pl-3'>
+            <ModelIcon size={12} />
+        </div>
         <div class='edit-text'>
             <input 
                 bind:this={titleInput} 
                 on:input={(evt) => {
                     titleInputValue = evt.target.value;
                     editingTitle = true;
-                }} 
+                }}
+                class:font-bold={editingTitle === false}
                 on:blur={()  => { editingTitle = false; }}
                 value={name} 
                 size={Math.max((editingTitle ? titleInputValue : name)?.length || 0, 5) + 2} 
@@ -193,6 +192,12 @@ onMount(() => {
                 }}>
                     <EditIcon size={12} />
                 </button>
+        </div>
+        <div class="">
+            <button title="delete this" class="small-action-button color-gray-500" on:click={() => dispatch('delete')}>
+                <!-- x -->
+                <TrashIcon />
+            </button>
         </div>
         <div class=''>
             <button title="caveat: temporary, but this materializes the dataset" class=small-action-button on:click={() => {
@@ -210,18 +215,18 @@ onMount(() => {
     padding: .5rem;
     background-color: white;
     border-radius: .25rem;
-    box-shadow: 0px .25rem .25rem rgba(0,0,0,.05);
+    max-width: 740px;
+    /* box-shadow: 0px .25rem .25rem rgba(0,0,0,.05); */
 }
 
 .controls {
     display: grid;
-    grid-template-columns:  max-content auto max-content;
+    grid-template-columns:  max-content auto max-content max-content;
     align-items: stretch;
     align-content: stretch;
     justify-content: stretch;
     justify-items: stretch;
     width: 100%;
-    margin-bottom: .25rem;
 }
 
 .edit-button {
@@ -250,7 +255,6 @@ onMount(() => {
     font-size: 12px;
     background-color: transparent;
     border: none;
-    color: hsl(217,20%, 50%);
     text-overflow: ellipsis;
     padding: 0;
     box-sizing: border-box;
@@ -259,28 +263,5 @@ onMount(() => {
 .edit-text input:focus {
     color: hsl(217,20%, 20%);
     outline: none;
-}
-
-.close-container {
-    color: hsl(217,20%, 50%);
-    padding-left: .25rem;
-    padding-right: .25rem;
-    display: grid;
-    place-items: center;
-}
-
-.really-small-round {
-    background-color: hsl(217,20%, 95%);
-    /* color: hsl(217,20%, 20%); */
-    font-size: 14px;
-    padding: 0px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-}
-
-.really-small-round:hover {
-    background: hsla(var(--hue), var(--sat), 20%, 1);
-    color: white;
 }
 </style>

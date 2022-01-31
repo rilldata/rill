@@ -5,11 +5,14 @@ import { flip } from "svelte/animate";
 
 import type { AppStore } from '$lib/app-store';
 
+import Logo from "$lib/components/Logo.svelte";
+
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import MetricsIcon from "$lib/components/icons/List.svelte";
 import DatasetPreview from  "$lib/components/DatasetPreview.svelte";
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
+import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte"
 
 import { horizontalSlide } from "$lib/transitions";
 
@@ -44,6 +47,15 @@ onMount(() => {
     use:drag={{ side: 'left', minSize: 300, maxSize: 500 }} />
     <div class='assets' bind:this={container}>
 
+      <header>
+        <h1  class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
+          <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
+            R
+          </div>
+          <div class='font-normal'>Data Modeler Prototype</div>
+        </h1>
+      </header>
+
         <div 
           class='grid grid-flow-col justify-items-center justify-start pb-3 pt-3 gap-x-5 pl-3'
         >
@@ -56,11 +68,11 @@ onMount(() => {
         </div>
         <hr />
 
-          <div class='pl-8 pb-3 pt-3'>
+          <div class='pl-3 pb-3 pt-3'>
             <!-- TODO: rename sources to datasets in the code -->
-            <CollapsibleTitle bind:active={showSources}>
-              <h4 class='font-normal'>Datasets</h4>
-            </CollapsibleTitle>
+            <CollapsibleSectionTitle bind:active={showSources}>
+              <h4>Datasets</h4>
+            </CollapsibleSectionTitle>
           </div>
             {#if showSources}
               <div class="pb-6" transition:slide|local={{duration:200}}>
@@ -83,10 +95,10 @@ onMount(() => {
           {/if}
         
           {#if $store && $store.queries}
-          <div class='pl-8 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
-            <CollapsibleTitle bind:active={showModels}>
-                <h4 class='font-normal'> Models</h4>
-              </CollapsibleTitle>
+          <div class='pl-3 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
+            <CollapsibleSectionTitle bind:active={showModels}>
+                <h4> Models</h4>
+              </CollapsibleSectionTitle>
               <button class='text-gray-500 italic bg-gray-100 pl-3 pr-3 rounded' style="font-size:12px;" on:click={() => {
                 // FIXME: rename this action to model.
                 store.action('addQuery', {});

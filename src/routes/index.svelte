@@ -36,7 +36,7 @@ const store = getContext("rill:app:store");
   --lgt: 95%;
   --bg: hsl(var(--hue), var(--sat), var(--lgt));
   --bg-transparent: hsla(var(--hue), var(--sat), var(--lgt), .8);
-  background-color: var(--bg);
+  /* background-color: var(--bg); */
   overflow-y: auto;
   height:100%;
 }

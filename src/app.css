@@ -143,3 +143,8 @@ button {
 .draggable:active {
     cursor: dragging;
 }
+
+.ͼ2 .cm-gutters {
+    background-color: transparent;
+    border-right: none;
+}
