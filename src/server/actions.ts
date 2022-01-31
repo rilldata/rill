@@ -4,7 +4,7 @@
  * This enables us to swap out different APIs & backends as needed.
  */
 import { createDatasetActions } from "./dataset/index.js";
-import { createTransformActions } from "./transform/index.js";
+import { createModelActions } from "./model/index.js";
 import { createMetricsModelActions } from "./metrics-model/index.js";
 import { createExploreConfigurationActions } from "./explore/index.js";
 import type { Item, Query, Source, MetricsModel, DataModelerState } from "../lib/types"
@@ -121,7 +121,7 @@ function updateQueryField(dispatch:Function, id:string, field:string, value:any)
  * }
  * @returns {object}
  */
-export const createServerActions = (api, notifyUser) => {
+export const createDataModelerActions = (api, notifyUser) => {
     return (store, options) => ({
         // sources
         setDBStatus(state:string) {
@@ -131,7 +131,7 @@ export const createServerActions = (api, notifyUser) => {
         },
 
         ...createDatasetActions(api),
-        ...createTransformActions(api),
+        ...createModelActions(api),
         ...createMetricsModelActions(api),
         ...createExploreConfigurationActions(api),
 
@@ -326,10 +326,9 @@ export const createServerActions = (api, notifyUser) => {
                 const queryInfo = state.queries.find(query => query.id === id);
                 // check to see if it is valid.
                 try {
-                    await api.checkQuery(queryInfo.query);
+                    await api.validateQuery(queryInfo.query);
                 } catch (error) {
                     if (error.message !== 'No statement to prepare!') {
-                        console.log(id);
                         addError(dispatch, id, error.message);
                     }  else {
                         clearQuery(dispatch, id);
@@ -344,7 +343,6 @@ export const createServerActions = (api, notifyUser) => {
 
                 // if valid, wrap query as temp view.
                 try {
-                    //await api.wrapQueryAsView(queryInfo.query, tableName);
                     await api.wrapQueryAsView(queryInfo.query, 'tmp');
                 } catch (err) {
                     console.error('reached an error', err);
@@ -352,17 +350,17 @@ export const createServerActions = (api, notifyUser) => {
                 
                 let anyRemainingErrors = false;
                 // get the preview dataset.
-                api.createPreview(queryInfo.query, 'tmp').then((preview) => {
+                api.getPreviewDataset(queryInfo.query, 'tmp').then((preview) => {
                     updateQueryField(dispatch, id, 'preview', preview);
                 }).catch(error => {
                     console.error('createPreview', error);
                 });
 
-                // attach the source name here.
+                // FIXME: we need to generalize this source table crawl.
                 const sources = api.extractParquetFilesFromQuery(queryInfo.query);
                 updateQueryField(dispatch, id, 'sources', sources);
 
-                api.calculateDestinationCardinality(queryInfo.query, 'tmp').then((cardinality) => {
+                api.getTransformRowCardinality(queryInfo.query, 'tmp').then((cardinality) => {
                     updateQueryField(dispatch, id, 'cardinality', cardinality);
                 }).catch(error => {
                     console.error('calculateDestinationCardinality', error);

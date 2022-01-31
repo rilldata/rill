@@ -12,7 +12,7 @@ import {
 
 import * as api from "./duckdb.js";
 
-import { createServerActions, initialState as createInitialState } from "./actions.js"
+import { createDataModelerActions, initialState as createInitialState } from "./actions.js"
 
 let socket;
 
@@ -23,7 +23,9 @@ const io = new Server({ cors: {
 
 const initialState = createInitialState();
 
-const serverActions = createServerActions(api, 
+const serverActions = createDataModelerActions(
+  // plug in the duckdb API
+  api, 
   // hook for user function
   ({ message, type }) => socket.emit("notification", { message, type })
 );

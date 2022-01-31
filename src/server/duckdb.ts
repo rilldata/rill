@@ -95,26 +95,26 @@ export function containsMultipleQueries(query:string) {
 		: false;
 }
 
-export function validateQuery(query:string, ...validators:Function[]) {
+export function runDataModelerValidationQueries(query:string, ...validators:Function[]) {
 	return validators.map((validator) => validator(query)).filter((validation) => validation);
+}
+
+export async function validateQuery(query:string) : Promise<void> {
+	const output = {};
+	const isValid = await validQuery(db, query);
+	if (!(isValid.value)) {
+		throw Error(isValid.message);
+	}
+	const validation = runDataModelerValidationQueries(query, hasCreateStatement, containsMultipleQueries);
+	if (validation.length) {
+		throw Error(validation[0])
+	}
 }
 
 function wrapQueryAsTemporaryView(query:string, newTableName:string) {
 	return `CREATE OR REPLACE TEMPORARY VIEW ${newTableName} AS (
 	${query.replace(';', '')}
 );`;
-}
-
-export async function checkQuery(query:string) : Promise<void> {
-	const output = {};
-	const isValid = await validQuery(db, query);
-	if (!(isValid.value)) {
-		throw Error(isValid.message);
-	}
-	const validation = validateQuery(query, hasCreateStatement, containsMultipleQueries);
-	if (validation.length) {
-		throw Error(validation[0])
-	}
 }
 
 export async function wrapQueryAsView(query:string, newTableName:string) {
@@ -126,7 +126,7 @@ export async function wrapQueryAsView(query:string, newTableName:string) {
 	})
 }
 
-export async function createPreview(query:string, table:string) {
+export async function getPreviewDataset(query:string, table:string) {
     // FIXME: sort out the type here
 	let preview:any;
     try {
@@ -212,7 +212,7 @@ export async function getDestinationSize(path:string) {
 	return undefined;
 }
 
-export async function calculateDestinationCardinality(query:string, table:string) {
+export async function getTransformRowCardinality(query:string, table:string) {
 	const [outputSize] = await dbAll(db, `SELECT count(*) AS cardinality from ${table};`) as any[];
 	return outputSize.cardinality;
 }

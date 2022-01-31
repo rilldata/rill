@@ -43,7 +43,7 @@ export function emptyQuery(): Query {
 /**
  * NOTE: there's some amount of duplication within many of the summarizing functions.
  */
- export function createTransformActions(api) {
+ export function createModelActions(api) {
  
      return {
         addQuery(params:NewQueryArguments) {
