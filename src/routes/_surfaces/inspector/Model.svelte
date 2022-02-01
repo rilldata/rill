@@ -56,6 +56,8 @@ let rollup;
 let compression;
 let sources;
 
+let showDestination = true;
+
 let currentQuery;
 $: if ($store?.queries && $store?.activeAsset) currentQuery = $store.queries.find(q => q.id === $store.activeAsset.id);
 $: if (currentQuery?.sources) sources = $store.sources.filter(source => currentQuery.sources.includes(source.path));
@@ -66,7 +68,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
 
 <svelte:window bind:innerWidth />
 
-  <div class='divide-y divide-gray-200'>
+  <div>
     {#if currentQuery}
       {#if sources}
         <div class="w-full flex align-items-stretch flex-col">
@@ -90,7 +92,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
           <div>
             {#if currentQuery.sizeInBytes}
             {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
-            {:else}...{/if}
+            {:else}<button on:click={() => {}}>generate compression</button>{/if}
           </div>
           <div style="color: #666; text-align: right;">
             {formatCardinality(sources.reduce((acc,v) => acc + v.sizeInBytes, 0))} ⭢
@@ -134,6 +136,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
               collapseWidth={240 + 120 + 16}
               name="Destination"
               path=""
+              bind:show={showDestination}
               cardinality={currentQuery?.cardinality}
               sizeInBytes={currentQuery?.sizeInBytes}
               profile={currentQuery.profile}

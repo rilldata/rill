@@ -98,8 +98,17 @@ function sanitizeQuery(dispatch:Function, id:string) {
 function updateQueryField(dispatch:Function, id:string, field:string, value:any) {
     dispatch((draft:DataModelerState) => {
         let q = getByID(draft.queries, id);
+        q[field] = undefined;
         q[field] = value;
     });
+}
+
+const debounceTimers = {};
+function debounce(timerKey, fcn, timeout = 500) {
+    if (debounceTimers[timerKey]) clearTimeout(debounceTimers[timerKey]);
+    debounceTimers[timerKey] = setTimeout(() => {
+      fcn();
+    }, timeout)
 }
 
 /**
@@ -132,13 +141,14 @@ export const createDataModelerActions = (api, notifyUser) => {
 
         ...createDatasetActions(api),
         ...createModelActions(api),
+        // we won't develop these two action sets too much going forward.
         ...createMetricsModelActions(api),
         ...createExploreConfigurationActions(api),
 
         // FIXME: should this move to src/server/dataset/index.ts?
         // FIXME: rename source => dataset
 
-        computeModelProfile({id}) {
+        computeModelProfile({ id }) {
             return async (dispatch:Function, getState:() => DataModelerState) => {
                 //get query
                 const state = getState();
@@ -148,16 +158,6 @@ export const createDataModelerActions = (api, notifyUser) => {
                 // the destinationPreview shoudl be of type Source
                 // get this table's fields.
                 const path = `./export/${tableName}.parquet`;
-                await api.exportToParquet(query.query, path);
-
-                api.getDestinationSize(path).then((size) => {
-                    if (size !== undefined) {
-                        dispatch((draft:DataModelerState) => {
-                            let q = draft.queries.find(query => query.id === id);
-                            q.sizeInBytes = size;
-                        })
-                    }
-                });
                 
                 // drop the 
                 dispatch((draft:DataModelerState) => {
@@ -168,15 +168,16 @@ export const createDataModelerActions = (api, notifyUser) => {
                             field.nullCount = undefined;
                         })
                     }
-                    
                 })
                 // let's do it. the hard thing. let's materialize the query.
-                notifyUser({ message: `materializing ${tableName}`, type: "info"})
+                //notifyUser({ message: `materializing ${tableName}`, type: "info"})
                 try {
                     console.time(`materialize: ${tableName}`)
-                    await api.materializeTable(tableName, query.query);
+                    //await api.materializeTable(tableName, query.query);
+                    await api.createViewOfQuery(tableName, query.query)
                     console.timeEnd(`materialize: ${tableName}`)
                 } catch (err) {
+                    console.log('we are hitting this error state')
                     console.log(err);
                 }
                 
@@ -324,6 +325,8 @@ export const createDataModelerActions = (api, notifyUser) => {
             return async (dispatch:Function, getState:Function) => {
                 const state = getState();
                 const queryInfo = state.queries.find(query => query.id === id);
+
+                // STEP ONE
                 // check to see if it is valid.
                 try {
                     await api.validateQuery(queryInfo.query);
@@ -337,6 +340,29 @@ export const createDataModelerActions = (api, notifyUser) => {
                 }
                 // reset 
                 clearError(dispatch, id);
+
+                // let's check if the query differs from the last sanitized queyr.
+                const sanitized = queryInfo.sanitizedQuery;
+                const thisQuery = queryInfo.query;
+                const nextSanitizedQuery = _sanitizeQuery(thisQuery);
+
+                // if they are not the same, let's debounce a re-materialization of the fields.
+                if (sanitized !== nextSanitizedQuery) {
+                    debounce('destination-profile', () => {
+                        const state = getState();
+                        const queryInfo = state.queries.find(query => query.id === id);
+                        if (queryInfo) {
+                            dispatch(this.computeModelProfile({ id: queryInfo.id }))
+                        } else {
+                            console.info('model removed before we could debounce');
+                        }
+                    }, 1000);
+                } else {
+                    return;
+                }
+                
+
+
                 sanitizeQuery(dispatch, id);
                 
                 const tableName = queryInfo.name.split('.sql')[0];
@@ -350,11 +376,27 @@ export const createDataModelerActions = (api, notifyUser) => {
                 
                 let anyRemainingErrors = false;
                 // get the preview dataset.
-                api.getPreviewDataset(queryInfo.query, 'tmp').then((preview) => {
-                    updateQueryField(dispatch, id, 'preview', preview);
-                }).catch(error => {
-                    console.error('createPreview', error);
-                });
+
+                // Check for groupBy in this query.
+                // if group by exists, debounce.
+
+                const hasGroupBy = nextSanitizedQuery.includes('group by');
+
+                // only generate preview every 500ms;
+
+                function preview() {
+                    api.getPreviewDataset(queryInfo.query, 'tmp').then((preview) => {
+                        updateQueryField(dispatch, id, 'preview', preview);
+                    }).catch(error => {
+                        console.error('createPreview', error);
+                    });
+                }
+                if (hasGroupBy) {
+                    debounce('has-group-by', preview, 200)
+                } else {
+                    preview();
+                }
+                
 
                 // FIXME: we need to generalize this source table crawl.
                 const sources = api.extractParquetFilesFromQuery(queryInfo.query);
@@ -380,6 +422,8 @@ export const createDataModelerActions = (api, notifyUser) => {
                 }).catch(error => {
                     console.error('createDestinationProfile', error);
                 });
+
+
 
             }
         }

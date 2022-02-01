@@ -25,6 +25,10 @@ export function connect() : DB {
 }
 
 const db:DB = connect();
+db.exec(`
+PRAGMA threads=32;
+PRAGMA log_query_path='./log';
+`);
 
 let onCallback;
 let offCallback;
@@ -112,7 +116,9 @@ export async function validateQuery(query:string) : Promise<void> {
 }
 
 function wrapQueryAsTemporaryView(query:string, newTableName:string) {
-	return `CREATE OR REPLACE TEMPORARY VIEW ${newTableName} AS (
+	return `
+-- wrapQueryAsTemporaryView
+CREATE OR REPLACE TEMPORARY VIEW ${newTableName} AS (
 	${query.replace(';', '')}
 );`;
 }
@@ -148,19 +154,31 @@ export async function createSourceProfile(parquetFile:string) {
 
 export async function materializeTable(tableName:string, query:string) {
 	// check for table
-	await dbAll(db, `DROP TABLE IF EXISTS ${tableName}`);
+	await dbAll(db, `-- wrapQueryAsTemporaryView
+DROP TABLE IF EXISTS ${tableName}`);
 	const sanitizedQuery = sanitizeQuery(query);
-	return dbAll(db, `CREATE TABLE ${tableName} AS ${sanitizedQuery}`);
+	return dbAll(db, `-- wrapQueryAsTemporaryView
+CREATE TABLE ${tableName} AS ${sanitizedQuery}`);
+}
+
+export async function createViewOfQuery(tableName:string, query:string) {
+	// check for table
+	await dbAll(db, `-- createViewOfQuery
+DROP VIEW IF EXISTS ${tableName}`);
+	const sanitizedQuery = sanitizeQuery(query);
+	return dbAll(db, `-- createViewOfQuery
+CREATE TEMP VIEW ${tableName} AS ${sanitizedQuery}`);
 }
 
 export async function parquetToDBTypes(parquetFile:string) {
 	const guid = guidGenerator().replace(/-/g, '_');
-    await dbAll(db, `
+    await dbAll(db, `-- parquetToDBTypes
 	CREATE TEMP TABLE tbl_${guid} AS (
         SELECT * from '${parquetFile}' LIMIT 1
     );
 	`);
-	const tableDef = await dbAll(db, `PRAGMA table_info(tbl_${guid});`)
+	const tableDef = await dbAll(db, `-- parquetToDBTypes
+PRAGMA table_info(tbl_${guid});`)
 	await dbAll(db, `DROP TABLE tbl_${guid};`);
     return tableDef;
 }
@@ -242,21 +260,23 @@ export async function getParquetFilesInRoot() {
 	});
 }
 
-export function toDistributionSummary(column) {
+export function toDistributionSummary(field:string) {
+	//const quotedField = `'${field}'`;
 	return [
-		`min(${column}) as min`,
-		`reservoir_quantile(${column}, 0.25) as q25`,
-		`reservoir_quantile(${column}, 0.5)  as q50`,
-		`reservoir_quantile(${column}, 0.75) as q75`,
-		`max(${column}) as max`,
-		`avg(${column})::FLOAT as mean`,
-		`stddev_pop(${column}) as sd`,
+		`min(${field}) as min`,
+		`reservoir_quantile(${field}, 0.25) as q25`,
+		`reservoir_quantile(${field}, 0.5)  as q50`,
+		`reservoir_quantile(${field}, 0.75) as q75`,
+		`max(${field}) as max`,
+		`avg(${field})::FLOAT as mean`,
+		`stddev_pop(${field}) as sd`,
 	]
 }
 
-function topK(tablePath, column, func = 'count(*)') {
-	return `SELECT ${column} as value, ${func} AS count from ${tablePath}
-GROUP BY ${column}
+function topK(tablePath, field:string, func = 'count(*)') {
+	//const quotedField = `'${field}'`;
+	return `SELECT ${field} as value, ${func} AS count from ${tablePath}
+GROUP BY ${field}
 ORDER BY count desc
 LIMIT 50;`
 }
@@ -310,6 +330,8 @@ export async function getTimeRange(tablePath:string, field:any, dbEngine = db) {
 export async function numericHistogram(tablePath:string, field:string, fieldType:string, dbEngine = db) {
 	// if the field type is an integer and the total number of values is low, can't we just use
 	// first check a sample to see how many buckets there are for this value.
+	//const quotedField = `'${field}'`;
+
 	const buckets = await dbAll(dbEngine, `SELECT count(*) as count, ${field} FROM ${tablePath} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
 	const bucketSize = Math.min(40, buckets.length);
 	return dbAll(dbEngine, `

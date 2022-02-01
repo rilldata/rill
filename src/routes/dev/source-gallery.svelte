@@ -1,8 +1,6 @@
 <script lang="ts">
     import { getContext } from "svelte";
-    import { slide } from "svelte/transition";
-    import { flip } from "svelte/animate";
-    
+
     import type { AppStore } from '$lib/app-store';
     
     import ParquetIcon from "$lib/components/icons/Parquet.svelte";
@@ -11,7 +9,6 @@
     let innerWidth = 0;
     const store = getContext('rill:app:store') as AppStore;
     
-    $: activeQuery = $store && $store?.queries ? $store.queries.find(q => q.id === $store.activeAsset.id ) : undefined;
     $: sortedSources = $store?.sources || [];
     $: if ($store?.sources) sortedSources = sortedSources.sort((a, b) => {
       if (a.profile.length > b.profile.length) return -1;
@@ -26,12 +23,11 @@
         <!-- Drawer Handler -->
         <div class='assets'>
             <div class="grid grid-cols-3">
-            {#if $store && $store.sources}
-              {#each sortedSources as { path, name, cardinality, profile, head, sizeInBytes, id, nullCounts} (id)}
-              <div class='source-list pl-3 pr-5 pt-3 pb-1' style:width="{innerWidth / 3 - 6}px" animate:flip transition:slide|local>
+            {#if $store && $store.sources && sortedSources}
+              {#each sortedSources as { path, name, cardinality, profile, head, sizeInBytes, id, nullCounts} ( id )}
+              <div class='source-list pl-3 pr-5 pt-3 pb-1' style:width="{innerWidth / 3 - 6}px" >
                 <DatasetPreview 
                   icon={ParquetIcon}
-                  emphasizeTitle={activeQuery?.profile?.map(source => source.table).includes(path)}
                   {name}
                   {cardinality}
                   {profile}

@@ -23,25 +23,21 @@ const store = getContext('rill:app:store') as AppStore;
 
 </script>
         
-    <div class='drawer-container flex'>    
-      <div class='drawer-handler w-4 absolute hover:cursor-col-resize -translate-x-2 body-height'
-      use:drag={{ minSize: 400 }} />
-    
-      <div class='inspector'>
-            {#if $store?.activeAsset?.assetType === 'model'}
-            <ModelInspector />
-          {/if}
-    </div>
-    </div>
-    <style lang="postcss">
-    
-    .drawer-container {
-      /* height: calc(100vh - var(--header-height)); */
-    }
-    
-    .inspector {
-      width: var(--right-sidebar-width, 400px);
-      font-size: 12px;
-    }
-    
-    </style>
+  <div class='drawer-container flex'>    
+    <div class='drawer-handler w-4 absolute hover:cursor-col-resize -translate-x-2 body-height'
+    use:drag={{ minSize: 400 }} />
+  
+    <div class='inspector'>
+          {#if $store?.activeAsset?.assetType === 'model'}
+          <ModelInspector />
+        {/if}
+  </div>
+  </div>
+  <style lang="postcss">
+  
+  .inspector {
+    width: var(--right-sidebar-width, 400px);
+    font-size: 12px;
+  }
+  
+  </style>
