@@ -14,8 +14,11 @@ src/server/scratch/
 server/venv/
 tsc-tmp/
 export/
+.idea
+*.parquet
 
 # generated content
+log
 saved-state.json
 last-query-output.json
 staging-databases
