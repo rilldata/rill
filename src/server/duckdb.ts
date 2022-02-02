@@ -71,7 +71,7 @@ export function dbRun(query:string) {
 
 export async function validQuery(db:DB, query:string): Promise<{value: boolean, message?: string}> {
 	return new Promise((resolve) => {
-		db.run(query, (err) => {
+		db.prepare(query, (err) => {
 			if (err !== null) {
 				resolve({
 					value: false,
