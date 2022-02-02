@@ -254,7 +254,7 @@ function typeToSymbol(fieldType) {
 
                 style="
                     grid-template-columns: minmax(80px, auto) {
-                        previewView === 'example' ? "minmax(108px, 164px)" : `max-content`
+                        previewView === 'example' ? "minmax(108px, 164px)" : `minmax(auto, 168px)`
                     };
                 "
             >
@@ -321,8 +321,7 @@ function typeToSymbol(fieldType) {
 
                     </div>
                     <!-- Preview elements -->
-                    <div>
-                       
+                    <div style:max-width="{108 + 68}px">
                         {#if !collapseGrid}
                             <div  class="grid" style:grid-template-columns="max-content max-content">
                             {#if previewView === 'card'}
