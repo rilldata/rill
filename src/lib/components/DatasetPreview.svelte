@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { fade, slide } from "svelte/transition";
+import { fade, slide, fly } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
@@ -247,12 +247,15 @@ function typeToSymbol(fieldType) {
                     }}>Ex</IconButton>
                 </div>
             </div>
+            <!--                 class:grid={!collapseGrid} 
+                class:block={collapseGrid} -->
             <div 
-                class="gap-x-4 w-full items-center" 
-                class:grid={!collapseGrid} 
-                class:block={collapseGrid}
+                class="gap-x-4 w-full items-center grid" 
+
                 style="
-                    grid-template-columns: minmax(80px, auto) {previewView === 'example' ? "minmax(108px, 164px)" : "108px 68px"};
+                    grid-template-columns: minmax(80px, auto) {
+                        previewView === 'example' ? "minmax(108px, 164px)" : `max-content`
+                    };
                 "
             >
                 {#if sortedProfile}
@@ -314,43 +317,51 @@ function typeToSymbol(fieldType) {
                         }}>
                             {column.name} 
                             {#if column.conceptualType === 'TIMESTAMP' && column?.summary?.interval}<span class='text-gray-500 italic pl-2' style="font-size:11px">{ intervalToTimestring(column.summary.interval)}</span>{/if}
-                            <!-- {#if column.conceptualType === 'TIMESTAMP' && column?.summary?.interval}{JSON.stringify(column.summary.interval)} {/if} -->
                         </button>
 
                     </div>
-                    {#if previewView === 'card'}
-                    <div 
-                        class='justify-self-stretch text-right text-gray-500  break-all' class:hidden={collapseGrid}>
-                        {#if column?.summary && (categoricals.has(column.type) || categoricals.has(column.conceptualType)) && column?.summary?.cardinality}
-                            <BarAndLabel 
-                            color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
-                            value={column.summary.cardinality / cardinality}>
-                                |{formatInteger(column.summary.cardinality)}|
-                            </BarAndLabel>
-                        <!-- {:else if column.conceptualType === 'TIMESTAMP' && column.summary}
-                            {intervalToTimestring(column.summary.interval)} -->
-                        {:else if column?.summary?.histogram}
-                            <Histogram data={column.summary.histogram} width={98} height={19} color={(column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP') ? "#14b8a6" : "hsl(1,50%, 80%)"} />
-                        {/if}
-           
-                    </div>
-                    <div class='self-stretch text-right text-gray-500 break-all' class:hidden={collapseGrid}>
-                        {#if cardinality && column.nullCount !== undefined}
-                            <BarAndLabel
-                                title="{column.name}: {percentage(column.nullCount / cardinality)} of the values are null"
-                                bgColor={column.nullCount === 0 ? 'bg-white' : 'bg-gray-50'}
-                                color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
-                                value={column.nullCount / cardinality || 0}>
-                                        <span class:text-gray-300={column.nullCount === 0}>∅ {percentage(column.nullCount / cardinality)}</span>
-                            </BarAndLabel>
-                        {/if}
-                    </div>
-                    {:else}
-                        <div class='text-gray-500 italic text-right text-ellipsis overflow-hidden whitespace-nowrap ' class:hidden={collapseGrid}>
-                            {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>')}
+                    <!-- Preview elements -->
+                    <div>
+                       
+                        {#if !collapseGrid}
+                            <div  class="grid" style:grid-template-columns="max-content max-content">
+                            {#if previewView === 'card'}
+                            <div
+                                style:width="108px"
+                                class='overflow-hidden whitespace-nowrap justify-self-stretch text-right text-gray-500  break-all' >
+                                {#if column?.summary && (categoricals.has(column.type) || categoricals.has(column.conceptualType)) && column?.summary?.cardinality}
+                                    <BarAndLabel 
+                                    color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
+                                    value={column.summary.cardinality / cardinality}>
+                                        |{formatInteger(column.summary.cardinality)}|
+                                    </BarAndLabel>
+                                {:else if column?.summary?.histogram}
+                                    <Histogram data={column.summary.histogram} width={98} height={19} color={(column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP') ? "#14b8a6" : "hsl(1,50%, 80%)"} />
+                                {/if}
+                            </div>
+                            <div
+                                style:width="68px"  
+                                class='self-stretch text-right text-gray-500 break-all overflow-hidden  whitespace-nowrap '>
+                                {#if cardinality && column.nullCount !== undefined}
+                                    <BarAndLabel
+                                        title="{column.name}: {percentage(column.nullCount / cardinality)} of the values are null"
+                                        bgColor={column.nullCount === 0 ? 'bg-white' : 'bg-gray-50'}
+                                        color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
+                                        value={column.nullCount / cardinality || 0}>
+                                                <span class:text-gray-300={column.nullCount === 0}>∅ {percentage(column.nullCount / cardinality)}</span>
+                                    </BarAndLabel>
+                                {/if}
+                            </div>
+                            {:else}
+                                <div 
+                                    class='text-gray-500 italic text-right text-ellipsis overflow-hidden whitespace-nowrap ' 
+                                    class:hidden={collapseGrid}>
+                                    {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>')}
+                                </div>
+                            {/if}
                         </div>
-                    {/if}
-
+                        {/if}
+                    </div>
                     <!-- 
                         summary element.
                         For topK, the labels should be firstColWidth wide.
