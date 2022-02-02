@@ -74,11 +74,12 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
         <div class="grid justify-items-center" style:height="var(--header-height)" >
           <button class="
             p-3 pt-1 pb-1
-            bg-gray-400 text-white m-2
-            hover:bg-white hover:text-black
-            hover:border-black
+            m-2
+            bg-white
+            text-black
+            border
+            border-black
             transition-colors
-            border border-transparent
             rounded-md" on:click={() => {
             const query = currentQuery.query;
             const exportFilename = currentQuery.name.replace('.sql', '.parquet');
