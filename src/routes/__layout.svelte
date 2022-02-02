@@ -62,18 +62,7 @@ $: debounceRunstate($store?.status || 'disconnected');
 
 
 <style>
-  .body {
-    width: 100vw;
-    display: grid;
-    grid-template-columns: max-content auto var(--right-sidebar-width, 400px);
-    grid-template-rows: auto var(--preview-height, 0px);
-    grid-template-areas: "left-pane workspace right-pane"
-                         "left-pane preview preview";
-    align-content: stretch;
-    align-items: stretch;
-    height: calc(100vh - var(--header-height));
-    /* height: calc(100vh - var(--header-height)); */
-  }
+
   
   /* header {
     box-sizing: border-box;

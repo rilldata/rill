@@ -169,13 +169,13 @@ onMount(() => {
 </script>
 
 <div bind:this={componentContainer}>
-    <div class="controls pb-8">
+    <div class="controls pb-1">
         <!-- <button class=small-action-button on:click={() => dispatch('up')}>↑</button>
         <button class=small-action-button on:click={() => dispatch('down')}>↓</button> -->
-        <div class='grid content-center pl-3'>
+        <!-- <div class='grid content-center pl-3'>
             <ModelIcon size={12} />
-        </div>
-        <div class='edit-text'>
+        </div> -->
+        <!-- <div class='edit-text'>
             <input 
                 bind:this={titleInput} 
                 on:input={(evt) => {
@@ -192,7 +192,7 @@ onMount(() => {
                 }}>
                     <EditIcon size={12} />
                 </button>
-        </div>
+        </div> -->
         <div class="">
             <button title="delete this" class="small-action-button color-gray-500" on:click={() => dispatch('delete')}>
                 <!-- x -->

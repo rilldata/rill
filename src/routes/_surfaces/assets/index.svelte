@@ -38,7 +38,6 @@ onMount(() => {
     observer.observe(container);
 })
 
-
 </script>
 
 <div class='drawer-container flex flex-row-reverse'>
@@ -57,7 +56,7 @@ onMount(() => {
       </header>
 
         <div 
-          class='grid grid-flow-col justify-items-center justify-start pb-3 pt-3 gap-x-5 pl-3'
+          class='grid grid-flow-col justify-items-center justify-start pb-6 pt-6 gap-x-5 pl-3'
         >
           <button on:click={() => { view = 'assets' }}>
             <h3>Assets</h3>
@@ -66,7 +65,7 @@ onMount(() => {
             <h3 class="font-normal text-gray-400 cursor-not-allowed" title="coming soon!">Pipelines</h3>
           </button>
         </div>
-        <hr />
+        <!-- <hr /> -->
 
           <div class='pl-3 pb-3 pt-3'>
             <!-- TODO: rename sources to datasets in the code -->
