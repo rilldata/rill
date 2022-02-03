@@ -10,7 +10,7 @@ import Logo from "$lib/components/Logo.svelte";
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import MetricsIcon from "$lib/components/icons/List.svelte";
-import DatasetPreview from  "$lib/components/DatasetPreview.svelte";
+import DatasetPreview from  "$lib/components/dataset-preview/DatasetPreview.svelte";
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte"
 
@@ -46,12 +46,12 @@ onMount(() => {
     use:drag={{ side: 'left', minSize: 300, maxSize: 500 }} />
     <div class='assets' bind:this={container}>
 
-      <header class='sticky top-0 bg-gray-100'>
+      <header class='sticky top-0'>
         <h1  class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
           <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
             R
           </div>
-          <div class='font-normal'>Data Modeler Prototype</div>
+          <div class='font-normal'>untitled project</div>
         </h1>
       </header>
 

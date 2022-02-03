@@ -11,7 +11,7 @@ import IconButton from "$lib/components/IconButton.svelte";
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
-import DatasetPreview from "$lib/components/DatasetPreview.svelte";
+import DatasetPreview from "$lib/components/dataset-preview/DatasetPreview.svelte";
 
 import { formatCardinality } from "../../../lib/util/formatters"
 

@@ -19,7 +19,7 @@ const store = getContext("rill:app:store");
   <div style:grid-area="header-bar">
     <Header />
   </div>
-  <div class="surface inputs" style:grid-area="workspace">
+  <div class="surface inputs bg-gray-100" style:grid-area="workspace">
     <Workspace />
   </div>
   <div class='surface outputs transition-colors border-l hover:border-gray-300 border-transparent' style:grid-area="right-pane">

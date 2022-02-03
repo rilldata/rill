@@ -27,4 +27,3 @@ const store = getContext("rill:app:store") as AppStore;
     store.action('addQuery', { query: evt.detail.props.content, makeActive: true } ); 
     }} />
 {/if}
-

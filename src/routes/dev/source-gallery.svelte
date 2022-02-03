@@ -4,7 +4,7 @@
     import type { AppStore } from '$lib/app-store';
     
     import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-    import DatasetPreview from  "$lib/components/DatasetPreview.svelte";
+    import DatasetPreview from  "$lib/components/dataset-preview/DatasetPreview.svelte";
     
     let innerWidth = 0;
     const store = getContext('rill:app:store') as AppStore;

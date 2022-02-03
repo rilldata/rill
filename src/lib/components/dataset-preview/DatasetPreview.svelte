@@ -19,8 +19,7 @@ import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
 
 import { horizontalSlide } from "$lib/transitions"
 
-import { intervalToTimestring, formatCardinality } from "../../lib/util/formatters";
-import ColumnIcon from "./icons/ColumnIcon.svelte";
+import { intervalToTimestring, formatCardinality } from "$lib/util/formatters";
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -198,11 +197,8 @@ function typeToSymbol(fieldType) {
     </div>
     {#if show}
         <div class="pt-1 pl-accordion" transition:slide|local={{duration: 120 }}>
-
             <div class='grid grid-flow-col justify-between'>
-                <div 
-                    class='grid justify-start grid-cols-3 items-baseline pb-2 pt-2'
-                >
+                <div class='grid justify-start grid-cols-3 items-baseline pb-2 pt-2'>
                     <IconButton title="sort by cardinality" selected={sortMethod === defaultSort} on:click={() => {
                         sortMethod = defaultSort;
                     }}>||</IconButton>
@@ -253,8 +249,10 @@ function typeToSymbol(fieldType) {
                 class="gap-x-4 w-full items-center grid" 
 
                 style="
-                    grid-template-columns: minmax(80px, auto) {
-                        previewView === 'example' ? "minmax(108px, 164px)" : `minmax(auto, 168px)`
+                    grid-template-columns: minmax(80px, 1fr) {
+                        !collapseGrid ?
+                        (previewView === 'example' ? "minmax(108px, 164px)" : `minmax(auto, 168px)`) :
+                        "0px"
                     };
                 "
             >
@@ -321,7 +319,7 @@ function typeToSymbol(fieldType) {
 
                     </div>
                     <!-- Preview elements -->
-                    <div style:max-width="{108 + 68}px">
+                    <div style:max-width="{108 + 68}px" class="justify-self-end">
                         {#if !collapseGrid}
                             <div  class="grid" style:grid-template-columns="max-content max-content">
                             {#if previewView === 'card'}
@@ -361,10 +359,6 @@ function typeToSymbol(fieldType) {
                         </div>
                         {/if}
                     </div>
-                    <!-- 
-                        summary element.
-                        For topK, the labels should be firstColWidth wide.
-                    -->
                     <!-- categorical summaries -->
                     {#if showSummaries && summaryColumns.includes(column.name)}
                         <div style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide|local={{duration: 200 }}>
@@ -379,6 +373,7 @@ function typeToSymbol(fieldType) {
 
 
                             {#if column?.summary && !(categoricals.has(column.type) || categoricals.has(column.conceptualType)) && column.conceptualType !=='TIMESTAMP' && column.type !== 'TIMESTAMP'}
+                            <div>
                                 <SummaryAndHistogram
                                     width={containerWidth - 32 - 16}
                                     height={65} 
@@ -390,18 +385,11 @@ function typeToSymbol(fieldType) {
                                     mean={column.summary.statistics.mean}
                                     max={column.summary.statistics.max}
                                 />
+                            </div>
                             {/if}
                             {#if column?.summary && (column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP') && column?.summary?.interval}
                                 {JSON.stringify(column.summary.interval)}
                             {/if}
-
-                                                        <!-- {#if  column.conceptualType === 'TIMESTAMP'}
-                                {intervalToTimestring(column.summary.interval)} 
-                                ({column.summary.min}
-                                    to
-                                    {column.summary.max}
-                                )
-                            {/if} -->
                         </div>
                     {/if}
 
