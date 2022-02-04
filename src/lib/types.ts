@@ -5,7 +5,7 @@
     name: string;
     type: string;
     conceptualType: string;
-    summary?: (CategoricalSummary | any); // FIXME
+    summary?: ProfileColumnSummary | any;
     nullCount?:number;
 }
 
@@ -13,7 +13,11 @@ export interface Item {
     id: string;
 }
 
-export interface Query extends Item {
+export interface ColumnarItem extends Item {
+    profile?: ProfileColumn[]; // TODO: create Profile interface
+}
+
+export interface Model extends ColumnarItem {
     /**  */
     query: string;
     /** sanitizedQuery is always a 1:1 function of the query itself */
@@ -28,21 +32,20 @@ export interface Query extends Item {
     sizeInBytes?: number; // TODO: make sure this is just size
     error?: string;
     sources?: string[];
-    profile?: ProfileColumn[]; // TODO: create Profile interface
     preview?: any;
     destinationProfile?: any;
 }
 
-export interface Source extends Item {
-    id: string;
+export interface Dataset extends ColumnarItem {
     path: string;
     name: string;
-    profile: ProfileColumn[]; // TODO: create Profile interface
     head: any[];
     cardinality?: number;
     sizeInBytes?: number;
     nullCounts?:any;
 }
+
+export type ProfileColumnSummary = CategoricalSummary | NumericSummary | TimeRangeSummary;
 
 export interface CategoricalSummary {
     topK:TopKEntry[];
@@ -50,7 +53,8 @@ export interface CategoricalSummary {
 }
 
 export interface NumericSummary {
-    histogram:NumericHistogramBin[]
+    histogram?: NumericHistogramBin[];
+    statistics?: NumericStatistics;
 }
 
 export interface TopKEntry {
@@ -65,6 +69,25 @@ export interface NumericHistogramBin {
     count:number
 }
 
+export interface NumericStatistics {
+    min: number;
+    max: number;
+    mean: number;
+    q25: number;
+    q50: number;
+    q75: number;
+    sd: number;
+}
+
+export interface TimeRangeSummary {
+    min: string;
+    max: string;
+    interval: {
+        months: number,
+        days: number,
+        micros: number,
+    }
+}
 
 /** Metrics Models 
  * A metrics model 
@@ -140,9 +163,13 @@ export interface ExploreConfiguration {
  */
 export interface DataModelerState {
     activeAsset?: Asset;
-    queries: Query[];
-    sources: Source[];
+    queries: Model[];
+    sources: Dataset[];
     metricsModels: MetricsModel[];
     exploreConfigurations: ExploreConfiguration[];
     status: string;
 }
+
+export type ColumnarTypeKeys = {
+    [K in keyof DataModelerState]: DataModelerState[K] extends (Model[] | Dataset[]) ? K : never
+}[keyof DataModelerState];

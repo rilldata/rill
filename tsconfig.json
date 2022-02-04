@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"moduleResolution": "node",
-		"module": "es2020",
+		"module": "commonjs",
 		"lib": ["es2020", "DOM"],
 		"target": "es2020",
 		/**
@@ -19,12 +19,14 @@
 		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
+		"experimentalDecorators": true,
 		"baseUrl": ".",
 		"allowJs": true,
 		"checkJs": true,
 		"paths": {
 			"$lib": ["src/lib"],
-			"$lib/*": ["src/lib/*"]
+			"$lib/*": ["src/lib/*"],
+			"$common/*": ["src/common/*"]
 		},
 		"outDir": "tsc-tmp"
 	},
@@ -32,6 +34,7 @@
 		"src/**/*.d.ts", 
 		"src/**/*.ts", 
 		"src/**/*.svelte",
+		"test/**/*.ts",
 		"tsc-tmp/**/*.js"
 	]
 }

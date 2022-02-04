@@ -9,17 +9,19 @@
     "^\\$app(.*)$": [
       "<rootDir>/.svelte-kit/dev/runtime/app$1",
       "<rootDir>/.svelte-kit/build/runtime/app$1"
-    ]
+    ],
+    "^\\$common(.*)$": "<rootDir>/src/common$1"
   },
   "extensionsToTreatAsEsm": [
     ".svelte"
   ],
   "moduleFileExtensions": [
+    "ts",
     "js",
     "svelte"
   ],
   "setupFilesAfterEnv": [
     "@testing-library/jest-dom/extend-expect"
   ],
-  "testEnvironment": "jsdom"
+  "testEnvironment": "node"
 }

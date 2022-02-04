@@ -1,7 +1,6 @@
 {
 	"name": "data-modeler",
 	"version": "0.1.0",
-	"type": "module",
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build",
@@ -18,6 +17,7 @@
 		"test:watch": "npm run test -- --watch"
 	},
 	"devDependencies": {
+		"@adityahegde/typescript-test-utils": "^1.3.2",
 		"@babel/core": "^7.14.0",
 		"@babel/preset-env": "^7.14.0",
 		"@sveltejs/adapter-auto": "next",
@@ -38,9 +38,11 @@
 		"eslint-config-prettier": "^8.3.0",
 		"eslint-plugin-svelte3": "^3.2.1",
 		"jest": "^27.0.0",
+		"parquetjs": "^0.11.2",
 		"postcss-load-config": "^3.1.0",
 		"prettier": "^2.4.1",
 		"prettier-plugin-svelte": "^2.4.0",
+		"sinon": "^13.0.1",
 		"svelte": "^3.46.0",
 		"svelte-check": "^2.2.6",
 		"svelte-jester": "^2.0.1",
@@ -49,7 +51,8 @@
 		"ts-jest": "^27.0.0",
 		"ts-node": "^10.4.0",
 		"tslib": "^2.3.1",
-		"typescript": "^4.4.3"
+		"typescript": "^4.4.3",
+		"worker-farm": "^1.7.0"
 	},
 	"dependencies": {
 		"@codemirror/basic-setup": "^0.19.0",
@@ -67,11 +70,16 @@
 		"immer": "^9.0.7",
 		"js-sql-parser": "^1.4.1",
 		"js-yaml": "^4.1.0",
+		"module-alias": "^2.2.2",
 		"node-sql-parser": "^4.0.5",
 		"pgsql-ast-parser": "^9.2.1",
 		"pgsql-parser": "^13.1.13",
 		"piscina": "^3.2.0",
 		"socket.io": "^4.4.0",
 		"socket.io-client": "^4.4.0"
+	},
+	"_moduleAliases": {
+		"$lib": "src/lib",
+		"$common": "src/common"
 	}
 }

@@ -16,7 +16,7 @@ import DatasetPreview from "$lib/components/DatasetPreview.svelte";
 import { formatCardinality } from "../../../lib/util/formatters"
 
 import type { AppStore } from '$lib/app-store';
-import type { Query } from "$lib/types";
+import type { Model } from "$lib/types";
 
 
 import {format} from "d3-format";
