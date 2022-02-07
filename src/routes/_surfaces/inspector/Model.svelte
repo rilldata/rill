@@ -10,8 +10,8 @@ import IconButton from "$lib/components/IconButton.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 
-import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
-import DatasetPreview from "$lib/components/dataset-preview/DatasetPreview.svelte";
+import NavEntry from "$lib/components/NavEntry.svelte";
+import AssetNavItem from "$lib/components/asset-nav-item/AssetNavItem.svelte";
 
 import { formatCardinality } from "../../../lib/util/formatters"
 
@@ -110,17 +110,17 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
       {/if}
       <div class='source-tables pt-4 pb-4'>
         {#if sources}
-          <CollapsibleTitle bind:active={showSources}>
+          <NavEntry bind:active={showSources}>
             Sources
             <div class='italic text-gray-600' slot="contextual-information">
               {formatCount(sources.reduce((acc,v) => acc + v.cardinality, 0))} rows
             </div>
-          </CollapsibleTitle>
+          </NavEntry>
           {#if showSources}
           <div transition:slide|local={{duration: 120 }}>
             {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
             <div class='pl-3 pr-5 pt-1 pb-1' animate:flip transition:slide|local>
-              <DatasetPreview
+              <AssetNavItem
                 icon={ParquetIcon}
                 collapseWidth={240 + 120 + 16}
                 emphasizeTitle={true}
@@ -140,7 +140,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
       
       <div class='source-tables pt-4 pb-4'>
         {#if currentQuery?.profile}
-            <DatasetPreview 
+            <AssetNavItem 
               collapseWidth={240 + 120 + 16}
               name="Destination"
               path=""
@@ -160,7 +160,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
           transform: translateY({showOutputs ? '-6px' : '0px'});
           grid-template-columns: auto max-content;
         ">
-          <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
+          <NavEntry bind:active={showOutputs}>Preview</NavEntry>
           {#if showOutputs}
           <div class="inspector-button-row grid grid-flow-col justify-start">
             <IconButton title="table" selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>

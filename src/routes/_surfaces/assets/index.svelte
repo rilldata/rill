@@ -9,8 +9,7 @@ import Logo from "$lib/components/Logo.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
-import DatasetPreview from  "$lib/components/dataset-preview/DatasetPreview.svelte";
-import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
+import AssetNavItem from  "$lib/components/asset-nav-item/AssetNavItem.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte"
 
 import { horizontalSlide } from "$lib/transitions";
@@ -77,7 +76,7 @@ onMount(() => {
               {#if $store && $store.sources}
                 {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
                 <div animate:flip>
-                  <DatasetPreview 
+                  <AssetNavItem 
                     icon={ParquetIcon}
                     {name}
                     {cardinality}
@@ -109,7 +108,7 @@ onMount(() => {
               <div class='pb-6'  transition:slide={{duration:200}}>
               {#each $store.queries as query, i (query.id)}
 
-                <DatasetPreview
+                <AssetNavItem
                   on:select={() => {
                     store.action('setActiveAsset', { id: query.id, assetType: 'model' });
                   }}
@@ -131,63 +130,6 @@ onMount(() => {
               </div>
             {/if}
           {/if}
-
-      
-
-        <!-- Define -->
-        
-        <!-- <div class='pl-8 pb-3  pr-8 grid' style="grid-template-columns: auto max-content;">
-          <CollapsibleTitle bind:active={showMetrics}>
-            <h4 class='font-normal'> Metrics</h4>
-          </CollapsibleTitle>
-          <button class='text-gray-500 italic bg-gray-100 pl-3 pr-3 rounded' style="font-size:12px;" on:click={() => {
-            store.action('createMetricsModel');
-            if (!showMetrics) {
-              showMetrics = true;
-            }
-          }}>new +</button>
-
-        </div>
-        {#if showMetrics}
-        <div class="pl-8 pr-5 pb-6 italic" transition:slide={{duration: 200}}>
-          {#each ($store?.metricsModels || []) as model (model.id)}
-          <div class='grid grid-flow-col justify-items-between items-center  pb-1'>
-              <button
-              class:font-bold={model.id === $store?.activeAsset?.id}
-              on:click={() => { store.action('setActiveAsset', { id: model.id, assetType: 'metricsDefinition' })}}
-                class="grid grid-flow-col justify-start justify-items-stretch items-center gap-x-2.5"
-              ><MetricsIcon size={13} /> {model.name}
-            </button>
-          </div>
-          {/each}
-        </div>
-        {/if} -->
-
-
-
-        <!-- Explore -->
-
-        <!-- <div class='pl-8 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
-          <CollapsibleTitle bind:active={showExplores}>
-            <h4 class='font-normal'> Explore</h4>
-          </CollapsibleTitle>
-
-
-        </div>
-        {#if showExplores}
-        <div class="pl-8 pr-5 italic" transition:slide={{duration: 200}}>
-          {#each ($store?.exploreConfigurations || []) as explore (explore.id)}
-          <div class='grid grid-flow-col justify-items-between items-center  pb-1'>
-              <button
-              class:font-bold={explore.id === $store?.activeAsset?.id}
-              on:click={() => { store.action('setActiveAsset', { id: explore.id, assetType: 'exploreConfiguration' })}}
-                class="grid grid-flow-col justify-start justify-items-stretch items-center gap-x-2.5"
-              ><MetricsIcon size={13} /> {explore.name}
-            </button>
-          </div>
-          {/each}
-        </div>
-        {/if} -->
 
     </div>
 

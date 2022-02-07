@@ -1,7 +1,7 @@
 <script>
-import Histogram from "$lib/components/Histogram.svelte";
+import Histogram from "$lib/components/viz/SmallHistogram.svelte";
 import DetailHistogram from "$lib/components/DetailHistogram.svelte";
-import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
+import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
 const data = [
   {
     "bucket": 0,

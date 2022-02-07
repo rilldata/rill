@@ -8,6 +8,7 @@ const dispatch = createEventDispatcher();
 
 export let expanded = true;
 export let expandable = true;
+export let selected = false;
 export let icon:SvelteComponent;
 </script>
 
@@ -15,7 +16,7 @@ export let icon:SvelteComponent;
     style:height="24px"
     style:grid-template-columns="[left-control] max-content [body] auto"
     class="
-        bg-transparent
+        {selected ? 'bg-gray-100' : 'bg-transparent'}
         grid
         grid-flow-col
         gap-1

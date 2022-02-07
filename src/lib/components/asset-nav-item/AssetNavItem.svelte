@@ -5,19 +5,19 @@ import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
 
-import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
-import TopKSummary from "$lib/components/TopKSummary.svelte";
+import NavEntry from "$lib/components/NavEntry.svelte";
+import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 import Spinner from "$lib/components/Spinner.svelte";
 
 import { dropStore } from '$lib/drop-store';
 import type { SvelteComponent } from "svelte/internal";
-import Histogram from "$lib/components/Histogram.svelte";
-import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
+import Histogram from "$lib/components/viz/SmallHistogram.svelte";
+import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
 
-import SummaryViewSelector from "$lib/components/dataset-preview/SummaryViewSelector.svelte";
-import { defaultSort, categoricals } from "$lib/components/dataset-preview/shared"
+import SummaryViewSelector from "$lib/components/asset-nav-item/SummaryViewSelector.svelte";
+import { defaultSort, categoricals } from "$lib/components/asset-nav-item/shared"
 
 import { horizontalSlide } from "$lib/transitions"
 
@@ -121,8 +121,9 @@ function typeToSymbol(fieldType) {
             }
             dropStore.set(undefined);
         }}>
-    <CollapsibleTitle
+    <NavEntry
         expanded={show}
+        selected={emphasizeTitle}
         on:select-body={() => { 
             // show = !show; 
             // pass up select body
@@ -153,7 +154,7 @@ function typeToSymbol(fieldType) {
                                 {/if}
                             </span>
                         {:else}
-                            <span class="grid grid-flow-col">
+                            <span class="grid grid-flow-col text-gray-500">
                                 <span><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span>{#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
                                 " transition:horizontalSlide|local={{duration: 250 + sizeInBytes / 5000000 * 1.3}}>, {sizeInBytes !== undefined && $sizeTween !== NaN && sizeInBytes !== NaN ? humanFileSize($sizeTween) : ''}</span>{/if}
                             </span>
@@ -161,7 +162,7 @@ function typeToSymbol(fieldType) {
                     </div>
 
             </svelte:fragment>
-      </CollapsibleTitle>
+      </NavEntry>
     </div>
     {#if show}
         <div class="pl-3 pr-5 pt-1  pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
