@@ -7,8 +7,10 @@ import type { AppStore } from '$lib/app-store';
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
+import AddIcon from "$lib/components/icons/Add.svelte";
 import AssetNavItem from  "$lib/components/asset-nav-item/AssetNavItem.svelte";
-import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte"
+import RightNavButton from "$lib/components/asset-nav-item/RightNavButton.svelte";
+import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
 
@@ -88,20 +90,23 @@ onMount(() => {
           {/if}
         
           {#if $store && $store.queries}
-          <div class='pl-3 pb-3 pr-8 grid' style="grid-template-columns: auto max-content;">
+          <div class='pl-3 pb-3 pr-5 grid justify-between' style="grid-template-columns: auto max-content;">
             <CollapsibleSectionTitle bind:active={showModels}>
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
-              <button class='text-gray-500 italic bg-gray-100 pl-3 pr-3 rounded' style="font-size:12px;" on:click={() => {
+              <RightNavButton on:click={() => {
                 // FIXME: rename this action to model.
                 store.action('addQuery', {});
                 if (!showModels) {
                   showModels = true;
                 }
-              }}>new +</button>
+              }}>
+                <AddIcon />
+              </RightNavButton>
+
             </div>
             {#if showModels}
-              <div class='pb-6'  transition:slide={{duration:200}}>
+              <div class='pb-6 justify-self-end'  transition:slide={{duration:200}}>
               {#each $store.queries as query, i (query.id)}
 
                 <AssetNavItem
