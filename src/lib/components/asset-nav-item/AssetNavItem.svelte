@@ -5,7 +5,7 @@ import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
 
-import NavEntry from "$lib/components/NavEntry.svelte";
+import NavEntry from "$lib/components/asset-nav-item/NavEntry.svelte";
 import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";

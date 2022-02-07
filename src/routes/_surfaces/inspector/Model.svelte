@@ -10,7 +10,7 @@ import IconButton from "$lib/components/IconButton.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 
-import NavEntry from "$lib/components/NavEntry.svelte";
+import NavEntry from "$lib/components/asset-nav-item/NavEntry.svelte";
 import AssetNavItem from "$lib/components/asset-nav-item/AssetNavItem.svelte";
 
 import { formatCardinality } from "../../../lib/util/formatters"

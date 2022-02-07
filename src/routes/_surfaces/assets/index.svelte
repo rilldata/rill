@@ -5,14 +5,10 @@ import { flip } from "svelte/animate";
 
 import type { AppStore } from '$lib/app-store';
 
-import Logo from "$lib/components/Logo.svelte";
-
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import AssetNavItem from  "$lib/components/asset-nav-item/AssetNavItem.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte"
-
-import { horizontalSlide } from "$lib/transitions";
 
 import { drag } from '$lib/drag'
 
@@ -120,12 +116,6 @@ onMount(() => {
                   sizeInByptes={query?.sizeInBytes}
                   emphasizeTitle ={query?.id === $store?.activeAsset?.id}
                 />
-
-                <!-- <button 
-                  on:click={() => { store.action('setActiveAsset', { id: query.id, assetType: 'model' })}}
-                  class='pl-8 pr-5 pb-1 grid justify-start justify-items-stretch items-center w-full' style="grid-template-columns: 1rem auto max-content; grid-gap:.45rem; " class:font-bold={query.id === $store?.activeAsset?.id}>
-                  <ModelIcon size={12} color="gray" /> <div>{query.name}</div>
-                </button> -->
               {/each}
               </div>
             {/if}
