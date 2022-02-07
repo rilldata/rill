@@ -108,7 +108,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
           </div>
         </div>
       {/if}
-      <div class='source-tables p-4'>
+      <div class='source-tables pt-4 pb-4'>
         {#if sources}
           <CollapsibleTitle bind:active={showSources}>
             Sources
@@ -119,7 +119,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
           {#if showSources}
           <div transition:slide|local={{duration: 120 }}>
             {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-            <div class='pt-1 pb-1' animate:flip transition:slide|local>
+            <div class='pl-3 pr-5 pt-1 pb-1' animate:flip transition:slide|local>
               <DatasetPreview
                 icon={ParquetIcon}
                 collapseWidth={240 + 120 + 16}
@@ -138,7 +138,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
         {/if}
       </div>
       
-      <div class='source-tables p-4'>
+      <div class='source-tables pt-4 pb-4'>
         {#if currentQuery?.profile}
             <DatasetPreview 
               collapseWidth={240 + 120 + 16}

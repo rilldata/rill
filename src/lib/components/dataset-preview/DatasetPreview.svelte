@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from "svelte";
+import { onMount, createEventDispatcher } from "svelte";
 import { fade, slide, fly } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
@@ -7,7 +7,6 @@ import { format } from "d3-format";
 
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 import TopKSummary from "$lib/components/TopKSummary.svelte";
-import IconButton from "$lib/components/IconButton.svelte";
 
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 import Spinner from "$lib/components/Spinner.svelte";
@@ -16,6 +15,9 @@ import { dropStore } from '$lib/drop-store';
 import type { SvelteComponent } from "svelte/internal";
 import Histogram from "$lib/components/Histogram.svelte";
 import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
+
+import SummaryViewSelector from "$lib/components/dataset-preview/SummaryViewSelector.svelte";
+import { defaultSort, categoricals } from "$lib/components/dataset-preview/shared"
 
 import { horizontalSlide } from "$lib/transitions"
 
@@ -31,14 +33,16 @@ export let sizeInBytes:number;
 export let collapseWidth = 200 + 120 + 16;
 export let emphasizeTitle:boolean = false;
 export let draggable = true;
+export let show = false;
 
 let colSizer;
+
+const dispatch = createEventDispatcher();
 
 const formatInteger = format(',');
 const percentage = format('.1%');
 
 let containerWidth = 0;
-export let show = false;
 
 function humanFileSize(size:number) {
     var i = Math.floor( Math.log(size) / Math.log(1024) );
@@ -69,61 +73,8 @@ let showSummaries = true;
 let summaryColumns = [];
 
 // FIXME: we should be sorting columns by type (timestamp, numeric, categorical)
-// on the backend, not here.
+// on the backend, not here?
 
-function sortByCardinality(a,b) {
-    if (a.summary && b.summary) {
-        if (a.summary?.cardinality < b.summary?.cardinality) {
-            return 1;
-        } else if (a.summary?.cardinality > b.summary?.cardinality) {
-            return -1;
-        } else {
-            return sortByName(a,b);
-        }
-    } else {
-        return 0;
-    }
-}
-
-function sortByNullity(a,b) {
-    if (a.nullCount !== undefined && b.nullCount !== undefined) {
-        if (a.nullCount < b.nullCount) {
-            return 1;
-        } else if ((a.nullCount > b.nullCount)) {
-            return -1;
-        } else {
-            const byType = sortByType(a,b);
-            if (byType) return byType;
-            return sortByName(a,b);
-        }
-    }
-
-    return sortByName(a,b);
-}
-
-function sortByType(a,b) {
-    if (categoricals.has(a.type) && !categoricals.has(b.type)) return 1;
-    if (!categoricals.has(a.type) && categoricals.has(b.type)) return -1;
-    if ((a.conceptualType === 'TIMESTAMP' || a.type === 'TIMESTAMP') && (b.conceptualType !== 'TIMESTAMP' && b.type !== 'TIMESTAMP')) {
-                return -1;
-    } else if ((a.conceptualType !== 'TIMESTAMP' && a.type !== 'TIMESTAMP') && (b.conceptualType === 'TIMESTAMP' || b.type ==='TIMESTAMP')) {
-        return 1;
-    }
-    return 0;
-}
-
-function sortByName(a,b) {
-    return (a.name > b.name) ? 1 : -1;
-}
-
-const categoricals = new Set(['BYTE_ARRAY', 'VARCHAR'])
-
-function defaultSort(a, b) {
-    const byType = sortByType(a,b);
-    if (byType !== 0) return byType;
-    if (categoricals.has(a.type) && !categoricals.has(b.type)) return sortByNullity(b,a);
-    return sortByCardinality(a,b);
-}
 
 let sortMethod = defaultSort;
 $: sortedProfile = [...profile].sort(sortMethod);
@@ -170,9 +121,26 @@ function typeToSymbol(fieldType) {
             }
             dropStore.set(undefined);
         }}>
-    <CollapsibleTitle {icon} bind:active={show}>
+    <CollapsibleTitle
+        expanded={show}
+        on:select-body={() => { 
+            // show = !show; 
+            // pass up select body
+            dispatch('select');
+        }}
+        on:expand={() => {
+            show = !show;
+            // pass up expand
+            dispatch('expand');
+        }}
+        {icon} >
         <span class:font-bold={emphasizeTitle} class:italic={selectingColumns}>
-            {name}{#if selectingColumns}&nbsp;<span class="font-bold"> *</span>{/if}
+            {#if name.split('.').length > 1}
+                {name.split('.').slice(0, -1).join('.')}<span class='text-gray-500 italic pl-1'>.{name.split('.').slice(-1).join('.')}</span>
+            {:else}
+                {name}
+            {/if}
+            {#if selectingColumns}&nbsp;<span class="font-bold"> *</span>{/if}
         </span>
             <svelte:fragment slot='contextual-information'>
                     <div class='italic text-gray-600'>
@@ -196,55 +164,10 @@ function typeToSymbol(fieldType) {
       </CollapsibleTitle>
     </div>
     {#if show}
-        <div class="pt-1 pl-accordion" transition:slide|local={{duration: 120 }}>
-            <div class='grid grid-flow-col justify-between'>
-                <div class='grid justify-start grid-cols-3 items-baseline pb-2 pt-2'>
-                    <IconButton title="sort by cardinality" selected={sortMethod === defaultSort} on:click={() => {
-                        sortMethod = defaultSort;
-                    }}>||</IconButton>
+        <div class="pl-3 pr-5 pt-1  pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
 
-                    <IconButton 
-                        title="sort by null % of field"
-                        selected={sortMethod === sortByNullity}  on:click={() => {
-                        sortMethod = sortByNullity;
-                    }}>∅</IconButton>
-                    <IconButton title="sort by name" selected={sortMethod === sortByName}  on:click={() => {
-                        sortMethod = sortByName;
-                    }}>AZ</IconButton>
-                </div>
+            <SummaryViewSelector bind:sortMethod bind:previewView />
 
-                <div class='grid justify-start grid-cols-2 items-baseline pb-2 pt-2'>
-                    {#if draggable}
-                    <IconButton 
-                        title="select columns"
-                        selected={selectingColumns} on:click={() => {
-                        selectingColumns = !selectingColumns;
-                    }}>*</IconButton>
-                    {/if}
-                    <IconButton title="summarize columns" selected={showSummaries} on:click={() => {
-                        showSummaries = !showSummaries;
-                    }}>
-                        &
-                    </IconButton>
-                </div>
-
-                <div class='grid justify-end grid-flow-col pb-2 pt-2 '>
-                    <IconButton 
-                        title="show summaries (cardinalities, null %, and time range)"
-                        selected={previewView === 'card'} 
-                        on:click={() => {
-                            previewView = 'card';
-                    }}>||</IconButton>
-                    <IconButton 
-                        title="show example value"
-                        selected={previewView === 'example'}  
-                        on:click={() => {
-                            previewView = 'example';
-                    }}>Ex</IconButton>
-                </div>
-            </div>
-            <!--                 class:grid={!collapseGrid} 
-                class:block={collapseGrid} -->
             <div 
                 class="gap-x-4 w-full items-center grid" 
 
@@ -259,7 +182,7 @@ function typeToSymbol(fieldType) {
                 {#if sortedProfile}
                     {#each sortedProfile as column (column.name)}
                     <div 
-                        class="font-medium break-word grid gap-x-2 items-center" 
+                        class="pl-3 pr-5 font-medium break-word grid gap-x-2 items-center" 
                         style="
                             height: 19px;
                             grid-template-columns: max-content minmax(90px, max-content);

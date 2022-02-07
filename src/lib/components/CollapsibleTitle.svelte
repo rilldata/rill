@@ -1,49 +1,82 @@
 <script lang="ts">
+// FIXME: we should probably rename this to AssetNavigationElement.svelte or something like that.
+import { createEventDispatcher } from "svelte";
 import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
 import type { SvelteComponent } from "svelte";
-export let active = true;
+
+const dispatch = createEventDispatcher();
+
+export let expanded = true;
+export let expandable = true;
 export let icon:SvelteComponent;
 </script>
 
-<div 
-    class='collapsible-title align grid grid-cols-max justify-between'
-    style="grid-template-columns: auto max-content;"
+<div
+    style:height="24px"
+    style:grid-template-columns="[left-control] max-content [body] auto"
+    class="
+        bg-transparent
+        grid
+        grid-flow-col
+        gap-1
+        items-center
+        hover:bg-gray-200
+        pl-3 pr-5 
+    "
 >
-    <button 
+    {#if expandable}
+    <button
+        on:click={() => { dispatch('expand') }}
+        style:width="16px"
+        style:height="16px"
+        style:grid-column="left-control"
         class="
-            bg-transparent 
-            grid 
-            grid-flow-col 
-            gap-2
+            hover:bg-gray-300
+            transition-tranform 
+            duration-100
+            grid
             items-center
-            p-0 
-            pr-1 
-            border-transparent 
-            hover:border-slate-200"
-            style="
-                max-width: 100%;
-                grid-template-columns: max-content {icon ? 'max-content' : ''} auto max-content
-            "
-        on:click={() => { active = !active; }}>
-            <div class="
-                transition-tranform 
-                duration-100
-                {!active ? '-rotate-90' : ''}
-            " 
-            style="
-            "><CaretDownIcon size={14} />
-        </div>
+            justify-center
+            rounded
+            {!expanded ? '-rotate-90' : ''}"
+    >
+        <CaretDownIcon size="14px" />
+    </button>
+    {/if}
+    <button 
+        on:click={() => { dispatch('select-body')}}
+        style:grid-column="body"
+        style:grid-template-columns="[icon] max-content [text] 1fr [contextual-information] max-content"
+        class="
+            w-full 
+            justify-start
+            text-left 
+            grid  gap-2
+            items-center
+            p-0 pr-1"
+        >
         {#if icon}
-            <div class="text-gray-400">
-                <svelte:component this={icon} size=1em />
+            <div 
+                style:grid-column="icon" 
+                class="text-gray-400">
+                <svelte:component this={icon} size=14px />
             </div>
         {/if}
-        <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+        <div
+            style:grid-column="text"
+            class="
+                justify-self-auto
+                text-ellipsis 
+                overflow-hidden 
+                whitespace-nowrap">
             <slot />
         </div>
-    </button>
 
-    <div class="contextual-information justify-self-stretch text-right">
-        <slot name="contextual-information" />
-    </div>
+        <div 
+            style:grid-column="contextual-information"
+            class="justify-self-end"
+        >
+            <slot name="contextual-information" />
+        </div>
+    </button>
 </div>

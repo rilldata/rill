@@ -9,7 +9,6 @@ import Logo from "$lib/components/Logo.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
-import MetricsIcon from "$lib/components/icons/List.svelte";
 import DatasetPreview from  "$lib/components/dataset-preview/DatasetPreview.svelte";
 import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte"
@@ -77,7 +76,7 @@ onMount(() => {
               <div class="pb-6" transition:slide|local={{duration:200}}>
               {#if $store && $store.sources}
                 {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-                <div class='pl-3 pr-5 pb-1' animate:flip>
+                <div animate:flip>
                   <DatasetPreview 
                     icon={ParquetIcon}
                     {name}
@@ -109,11 +108,25 @@ onMount(() => {
             {#if showModels}
               <div class='pb-6'  transition:slide={{duration:200}}>
               {#each $store.queries as query, i (query.id)}
-                <button 
+
+                <DatasetPreview
+                  on:select={() => {
+                    store.action('setActiveAsset', { id: query.id, assetType: 'model' });
+                  }}
+                  icon={ModelIcon}
+                  name={query.name}
+                  cardinality={query.cardinality}
+                  profile={query?.profile || []}
+                  head={query.preview}
+                  sizeInByptes={query?.sizeInBytes}
+                  emphasizeTitle ={query?.id === $store?.activeAsset?.id}
+                />
+
+                <!-- <button 
                   on:click={() => { store.action('setActiveAsset', { id: query.id, assetType: 'model' })}}
                   class='pl-8 pr-5 pb-1 grid justify-start justify-items-stretch items-center w-full' style="grid-template-columns: 1rem auto max-content; grid-gap:.45rem; " class:font-bold={query.id === $store?.activeAsset?.id}>
                   <ModelIcon size={12} color="gray" /> <div>{query.name}</div>
-                </button>
+                </button> -->
               {/each}
               </div>
             {/if}
