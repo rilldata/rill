@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
-import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
-import type {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
+import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 
 export class SocketServer {
     private readonly server: Server;

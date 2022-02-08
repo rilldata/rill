@@ -1,5 +1,5 @@
-import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
-import type {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
+import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import type {DataModelerSocketServiceMock} from "./DataModelerSocketServiceMock";
 
 export class SocketServerMock {

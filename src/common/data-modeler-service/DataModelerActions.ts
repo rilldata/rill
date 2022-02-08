@@ -1,6 +1,6 @@
-import type {DataModelerStateService} from "../state-actions/DataModelerStateService";
-import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
-import type {DatabaseService} from "$common/database/DatabaseService";
+import type {DataModelerStateService} from "../data-modeler-state-service/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
+import type {DatabaseService} from "$common/database-service/DatabaseService";
 
 export class DataModelerActions {
     protected dataModelerActionAPI: DataModelerService;

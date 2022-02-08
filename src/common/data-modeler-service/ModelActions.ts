@@ -1,6 +1,6 @@
-import {DataModelerActions} from "$common/data-modeler-actions/DataModelerActions";
+import {DataModelerActions} from "$common/data-modeler-service/DataModelerActions";
 import type {DataModelerState, Model} from "$lib/types";
-import {ColumnarItemType} from "$common/state-actions/ProfileColumnStateActions";
+import {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {IDLE_STATUS, MODEL_PREVIEW_COUNT, RUNNING_STATUS} from "$common/constants";
 import {sanitizeQuery} from "$lib/util/sanitize-query";
 

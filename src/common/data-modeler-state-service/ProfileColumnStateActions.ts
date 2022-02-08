@@ -1,4 +1,4 @@
-import {StateActions} from "../state-actions/StateActions";
+import {StateActions} from ".//StateActions";
 import type {ColumnarItem, ColumnarTypeKeys, DataModelerState, ProfileColumn, ProfileColumnSummary} from "$lib/types";
 
 export enum ColumnarItemType {

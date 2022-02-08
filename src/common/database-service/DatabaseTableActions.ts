@@ -1,6 +1,6 @@
 import {DatabaseActions} from "./DatabaseActions";
 import {guidGenerator} from "$lib/util/guid";
-import type {DatabaseMetadata} from "$common/database/DatabaseMetadata";
+import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
 export class DatabaseTableActions extends DatabaseActions {
     public async materializeTable(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {

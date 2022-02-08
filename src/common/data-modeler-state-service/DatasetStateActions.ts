@@ -1,8 +1,8 @@
-import {StateActions} from "../state-actions/StateActions";
+import {StateActions} from ".//StateActions";
 import type {Dataset} from "$lib/types";
 import type {DataModelerState} from "$lib/types";
 import type {Model} from "$lib/types";
-import {ColumnarItemType, ColumnarItemTypeMap} from "$common/state-actions/ProfileColumnStateActions";
+import {ColumnarItemType, ColumnarItemTypeMap} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 
 export class DatasetStateActions extends StateActions {
     public addOrUpdateDatasetToState(draftState: DataModelerState, dataset: Dataset, isNew: boolean): void {

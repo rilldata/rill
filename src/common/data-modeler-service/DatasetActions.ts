@@ -1,7 +1,7 @@
-import {DataModelerActions} from "../data-modeler-actions/DataModelerActions";
+import {DataModelerActions} from ".//DataModelerActions";
 import type {DataModelerState, Dataset} from "$lib/types";
 import {newSource} from "$common/data-factory";
-import {ColumnarItemType} from "$common/state-actions/ProfileColumnStateActions";
+import {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {IDLE_STATUS, RUNNING_STATUS} from "$common/constants";
 import {sanitizeTableName} from "$lib/util/sanitize-table-name";
 

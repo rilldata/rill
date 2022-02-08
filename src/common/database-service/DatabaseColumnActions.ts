@@ -1,7 +1,7 @@
 import {DatabaseActions} from "./DatabaseActions";
 import type {CategoricalSummary, NumericSummary, TimeRangeSummary} from "$lib/types";
 import {calculateBins} from "$common/utils/calculateBins";
-import type {DatabaseMetadata} from "$common/database/DatabaseMetadata";
+import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
 const TOP_K_COUNT = 50;
 

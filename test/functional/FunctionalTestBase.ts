@@ -1,7 +1,7 @@
 import {TestBase} from "@adityahegde/typescript-test-utils";
 import {JestTestLibrary} from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
-import {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
-import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
+import {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
 import type {SocketServer} from "$common/SocketServer";
 import {dataModelerServiceFactory} from "$common/serverFactory";
 import {asyncWait, waitUntil} from "$common/utils/waitUtils";

@@ -1,6 +1,6 @@
-import {DataModelerService, DataModelerActionsDefinition} from "$common/data-modeler-actions/DataModelerService";
+import {DataModelerService, DataModelerActionsDefinition} from "$common/data-modeler-service/DataModelerService";
 import { io, Socket } from "socket.io-client";
-import type {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
+import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import type {Patch} from "immer";
 
 export class DataModelerSocketService extends DataModelerService {

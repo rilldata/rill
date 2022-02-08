@@ -1,6 +1,6 @@
-import {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
-import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
-import {DataModelerSocketService} from "$common/data-modeler-actions/DataModelerSocketService";
+import {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
+import {DataModelerSocketService} from "$common/data-modeler-service/DataModelerSocketService";
 
 export function clientFactory(): {
     dataModelerStateService: DataModelerStateService,

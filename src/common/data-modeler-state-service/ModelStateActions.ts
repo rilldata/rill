@@ -1,4 +1,4 @@
-import {StateActions} from "../state-actions/StateActions";
+import {StateActions} from ".//StateActions";
 import type {DataModelerState, Model, ProfileColumn} from "$lib/types";
 
 export class ModelStateActions extends StateActions {

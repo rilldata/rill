@@ -3,7 +3,7 @@ import type {DatasetStateActions} from "./DatasetStateActions";
 import type {ModelStateActions} from "./ModelStateActions";
 import type {ProfileColumnStateActions} from "./ProfileColumnStateActions";
 import type {ExtractActionTypeDefinitions} from "$common/ServiceBase";
-import type {StateActions} from "$common/state-actions/StateActions";
+import type {StateActions} from "$common/data-modeler-state-service/StateActions";
 import { writable, get, Writable } from "svelte/store";
 import produce, {enablePatches, applyPatches, Patch} from "immer";
 import {initialState} from "../data-factory";

@@ -1,10 +1,10 @@
-import type {DatabaseDataLoaderActions} from "$common/database/DatabaseDataLoaderActions";
-import type {DatabaseTableActions} from "$common/database/DatabaseTableActions";
-import type {DatabaseColumnActions} from "$common/database/DatabaseColumnActions";
-import type {DuckDBClient} from "$common/database/DuckDBClient";
-import type {DatabaseActions} from "$common/database/DatabaseActions";
+import type {DatabaseDataLoaderActions} from "$common/database-service/DatabaseDataLoaderActions";
+import type {DatabaseTableActions} from "$common/database-service/DatabaseTableActions";
+import type {DatabaseColumnActions} from "$common/database-service/DatabaseColumnActions";
+import type {DuckDBClient} from "$common/database-service/DuckDBClient";
+import type {DatabaseActions} from "$common/database-service/DatabaseActions";
 import {ExtractActionTypeDefinitions, getActionMethods, PickActionFunctions} from "$common/ServiceBase";
-import type {DatabaseMetadata} from "$common/database/DatabaseMetadata";
+import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
 export type DatabaseActionsClasses = PickActionFunctions<DatabaseMetadata, (
     DatabaseDataLoaderActions &

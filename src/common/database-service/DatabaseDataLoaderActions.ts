@@ -1,6 +1,6 @@
 import {DatabaseActions} from "./DatabaseActions";
 import fs from "fs";
-import type {DatabaseMetadata} from "$common/database/DatabaseMetadata";
+import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
 /**
  * Abstraction around loading data into duck db.

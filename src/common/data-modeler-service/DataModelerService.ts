@@ -1,13 +1,13 @@
-import type {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
-import type {DatasetActions} from "$common/data-modeler-actions/DatasetActions";
+import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
+import type {DatasetActions} from "$common/data-modeler-service/DatasetActions";
 import type {ExtractActionTypeDefinitions, PickActionFunctions} from "$common/ServiceBase";
-import type {DataModelerActions} from "$common/data-modeler-actions/DataModelerActions";
-import type {ProfileColumnActions} from "$common/data-modeler-actions/ProfileColumnActions";
-import type {ModelActions} from "$common/data-modeler-actions/ModelActions";
+import type {DataModelerActions} from "$common/data-modeler-service/DataModelerActions";
+import type {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnActions";
+import type {ModelActions} from "$common/data-modeler-service/ModelActions";
 import {getActionMethods} from "$common/ServiceBase";
 import {IDLE_STATUS, RUNNING_STATUS} from "$common/constants";
 import type {DataModelerState} from "$lib/types";
-import type {DatabaseService} from "$common/database/DatabaseService";
+import type {DatabaseService} from "$common/database-service/DatabaseService";
 
 export type DataModelerActionsClasses = PickActionFunctions<DataModelerState, (
     DatasetActions &
