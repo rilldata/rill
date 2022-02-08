@@ -15,40 +15,40 @@ export class ModelActions extends DataModelerActions {
 
         const sanitizedQuery = sanitizeQuery(query);
 
-        this.dataModelerStateManager.dispatch("updateModelQuery", [id, query, sanitizedQuery]);
+        this.dataModelerStateService.dispatch("updateModelQuery", [id, query, sanitizedQuery]);
 
-        this.dataModelerStateManager.dispatch("setDatasetStatus",
+        this.dataModelerStateService.dispatch("setDatasetStatus",
             [ColumnarItemType.Model, id, RUNNING_STATUS]);
 
         // validate query 1st
         if (!await this.validateModelQuery(model, sanitizedQuery)) {
-            this.dataModelerStateManager.dispatch("setDatasetStatus",
+            this.dataModelerStateService.dispatch("setDatasetStatus",
                 [ColumnarItemType.Model, id, IDLE_STATUS]);
             return;
         }
-        this.dataModelerStateManager.dispatch("clearModelError", [model.id]);
+        this.dataModelerStateService.dispatch("clearModelError", [model.id]);
 
         try {
             // create a view of the query for other analysis
-            await this.databaseTableActions.createViewOfQuery(model.tableName, sanitizedQuery);
+            await this.databaseService.dispatch("createViewOfQuery", [model.tableName, sanitizedQuery]);
 
             await this.collectModelInfo(model);
         } catch (err) {
             console.log(err);
         }
 
-        this.dataModelerStateManager.dispatch("setDatasetStatus",
+        this.dataModelerStateService.dispatch("setDatasetStatus",
             [ColumnarItemType.Model, id, IDLE_STATUS]);
     }
 
     private async validateModelQuery(model: Model, sanitizedQuery: string): Promise<boolean> {
         try {
-            await this.databaseTableActions.validateQuery(sanitizedQuery);
+            await this.databaseService.dispatch("validateQuery", [sanitizedQuery]);
         } catch (error) {
             if (error.message !== 'No statement to prepare!') {
-                this.dataModelerStateManager.dispatch("addModelError", [model.id, error.message]);
+                this.dataModelerStateService.dispatch("addModelError", [model.id, error.message]);
             }  else {
-                this.dataModelerStateManager.dispatch("clearModelQuery", [model.id]);
+                this.dataModelerStateService.dispatch("clearModelQuery", [model.id]);
             }
             return false;
         }
@@ -56,18 +56,18 @@ export class ModelActions extends DataModelerActions {
     }
 
     private async collectModelInfo(model: Model): Promise<void> {
-        this.dataModelerStateManager.dispatch("updateModelProfileColumns",
-            [model.id, await this.databaseTableActions.getProfileColumns(model.tableName)]);
+        this.dataModelerStateService.dispatch("updateModelProfileColumns",
+            [model.id, await this.databaseService.dispatch("getProfileColumns", [model.tableName])]);
         await Promise.all([
             async () => await this.dataModelerActionAPI.dispatch("collectProfileColumns",
                 [model.id, ColumnarItemType.Model]),
             // TODO: add debouncing
-            async () => this.dataModelerStateManager.dispatch("updateModelPreview",
-                [model.id, await this.databaseTableActions.getFirstN(model.tableName, MODEL_PREVIEW_COUNT)]),
-            async () => this.dataModelerStateManager.dispatch("updateModelCardinality",
-                [model.id, await this.databaseTableActions.getCardinality(model.tableName)]),
-            async () => this.dataModelerStateManager.dispatch("updateModelDestinationSize",
-                [model.id, await this.databaseDataLoaderActions.getDestinationSize(model.tableName)]),
+            async () => this.dataModelerStateService.dispatch("updateModelPreview", [model.id,
+                await this.databaseService.dispatch("getFirstNOfTable", [model.tableName, MODEL_PREVIEW_COUNT])]),
+            async () => this.dataModelerStateService.dispatch("updateModelCardinality", [model.id,
+                await this.databaseService.dispatch("getCardinalityOfTable", [model.tableName])]),
+            async () => this.dataModelerStateService.dispatch("updateModelDestinationSize", [model.id,
+                await this.databaseService.dispatch("getDestinationSize", [model.tableName])]),
         ].map(asyncFunc => asyncFunc()));
     }
 }

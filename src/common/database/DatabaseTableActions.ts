@@ -1,20 +1,21 @@
 import {DatabaseActions} from "./DatabaseActions";
 import {guidGenerator} from "$lib/util/guid";
+import type {DatabaseMetadata} from "$common/database/DatabaseMetadata";
 
 export class DatabaseTableActions extends DatabaseActions {
-    public async materializeTable(tableName: string, query: string): Promise<any> {
+    public async materializeTable(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {
         await this.dbClient.execute(`-- wrapQueryAsTemporaryView
             DROP TABLE IF EXISTS '${tableName}'`);
         return await this.dbClient.execute(`-- wrapQueryAsTemporaryView
             CREATE TABLE '${tableName}' AS ${query}`);
     }
 
-    public async createViewOfQuery(tableName: string, query: string): Promise<any> {
+    public async createViewOfQuery(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {
         await this.dbClient.execute(`-- wrapQueryAsTemporaryView
             CREATE OR REPLACE TEMPORARY VIEW ${tableName} AS (${query});`);
     }
 
-    public async getFirstN(tableName: string, n = 1): Promise<any[]> {
+    public async getFirstNOfTable(metadata: DatabaseMetadata, tableName: string, n = 1): Promise<any[]> {
         // FIXME: sort out the type here
         try {
             return await this.dbClient.execute(`SELECT * from '${tableName}' LIMIT ${n};`);
@@ -23,12 +24,12 @@ export class DatabaseTableActions extends DatabaseActions {
         }
     }
 
-    public async getCardinality(tableName: string): Promise<number> {
+    public async getCardinalityOfTable(metadata: DatabaseMetadata, tableName: string): Promise<number> {
         const [cardinality] = await this.dbClient.execute(`select count(*) as count FROM '${tableName}';`);
         return cardinality.count;
     }
 
-    public async getProfileColumns(tableName: string): Promise<any[]> {
+    public async getProfileColumns(metadata: DatabaseMetadata, tableName: string): Promise<any[]> {
         const guid = guidGenerator().replace(/-/g, '_');
         await this.dbClient.execute(`-- parquetToDBTypes
 	        CREATE TEMP TABLE tbl_${guid} AS (
@@ -41,7 +42,7 @@ export class DatabaseTableActions extends DatabaseActions {
         return tableDef;
     }
 
-    public async validateQuery(query: string): Promise<void> {
+    public async validateQuery(metadata: DatabaseMetadata, query: string): Promise<void> {
         return this.dbClient.prepare(query);
     }
 }

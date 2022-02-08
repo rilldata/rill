@@ -1,18 +1,14 @@
-import type {DatabaseTableActions} from "../database/DatabaseTableActions";
-import type {DatabaseColumnActions} from "../database/DatabaseColumnActions";
-import type {DatabaseDataLoaderActions} from "../database/DatabaseDataLoaderActions";
-import type {DataModelerStateManager} from "../state-actions/DataModelerStateManager";
-import type {DataModelerActionAPI} from "$common/data-modeler-actions/DataModelerActionAPI";
+import type {DataModelerStateService} from "../state-actions/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
+import type {DatabaseService} from "$common/database/DatabaseService";
 
 export class DataModelerActions {
-    protected dataModelerActionAPI: DataModelerActionAPI;
+    protected dataModelerActionAPI: DataModelerService;
 
-    constructor(protected readonly dataModelerStateManager: DataModelerStateManager,
-                protected readonly databaseTableActions: DatabaseTableActions,
-                protected readonly databaseColumnActions: DatabaseColumnActions,
-                protected readonly databaseDataLoaderActions: DatabaseDataLoaderActions) {}
+    constructor(protected readonly dataModelerStateService: DataModelerStateService,
+                protected readonly databaseService: DatabaseService) {}
 
-    public setDataModelerActionAPI(dataModelerActionAPI: DataModelerActionAPI): void {
+    public setDataModelerActionAPI(dataModelerActionAPI: DataModelerService): void {
         this.dataModelerActionAPI = dataModelerActionAPI;
     }
 }

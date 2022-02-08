@@ -13,9 +13,9 @@ export class DatasetActions extends DataModelerActions {
         dataset.path = path;
         dataset.tableName = sanitizeTableName(path);
 
-        this.dataModelerStateManager.dispatch("addOrUpdateDatasetToState",
+        this.dataModelerStateService.dispatch("addOrUpdateDatasetToState",
             [dataset, !existingDataset]);
-        this.dataModelerStateManager.dispatch("setDatasetStatus",
+        this.dataModelerStateService.dispatch("setDatasetStatus",
             [ColumnarItemType.Dataset, dataset.id, RUNNING_STATUS]);
 
         try {
@@ -27,12 +27,12 @@ export class DatasetActions extends DataModelerActions {
             console.log(err);
         }
 
-        this.dataModelerStateManager.dispatch("setDatasetStatus",
+        this.dataModelerStateService.dispatch("setDatasetStatus",
             [ColumnarItemType.Dataset, dataset.id, IDLE_STATUS]);
     }
 
     private async collectDatasetInfo(dataset: Dataset) {
-        await this.databaseDataLoaderActions.loadData(dataset.path, dataset.tableName);
+        await this.databaseService.dispatch("loadData", [dataset.path, dataset.tableName]);
 
         // create new dataset as one passed in args is readonly from the state.
         const newDataset: Dataset = {
@@ -44,16 +44,20 @@ export class DatasetActions extends DataModelerActions {
 
         await Promise.all([
             async () => {
-                newDataset.profile = await this.databaseTableActions.getProfileColumns(dataset.tableName);
+                newDataset.profile = await this.databaseService.dispatch("getProfileColumns",
+                    [dataset.tableName]);
                 newDataset.profile = newDataset.profile
                     .filter(row => row.name !== "duckdb_schema" && row.name !== "schema" && row.name !== "root");
             },
-            async () => newDataset.sizeInBytes = await this.databaseDataLoaderActions.getDestinationSize(dataset.path),
-            async () => newDataset.cardinality = await this.databaseTableActions.getCardinality(dataset.tableName),
-            async () => newDataset.head = await this.databaseTableActions.getFirstN(dataset.tableName),
+            async () => newDataset.sizeInBytes =
+                await this.databaseService.dispatch("getDestinationSize", [dataset.path]),
+            async () => newDataset.cardinality =
+                await this.databaseService.dispatch("getCardinalityOfTable", [dataset.tableName]),
+            async () => newDataset.head =
+                await this.databaseService.dispatch("getFirstNOfTable", [dataset.tableName]),
         ].map(asyncFunc => asyncFunc()));
 
-        this.dataModelerStateManager.dispatch("addOrUpdateDatasetToState",
+        this.dataModelerStateService.dispatch("addOrUpdateDatasetToState",
             [newDataset, false]);
     }
 }

@@ -1,27 +1,28 @@
-import type {DataModelerStateManager} from "$common/state-actions/DataModelerStateManager";
+import type {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
 import type {DatasetActions} from "$common/data-modeler-actions/DatasetActions";
-import type {ExtractActionTypeDefinitions, PickActionFunctions} from "$common/ActionDispatcher";
-import type {DuckDBClient} from "$common/database/DuckDBClient";
+import type {ExtractActionTypeDefinitions, PickActionFunctions} from "$common/ServiceBase";
 import type {DataModelerActions} from "$common/data-modeler-actions/DataModelerActions";
 import type {ProfileColumnActions} from "$common/data-modeler-actions/ProfileColumnActions";
 import type {ModelActions} from "$common/data-modeler-actions/ModelActions";
-import {getActionMethods} from "$common/ActionDispatcher";
+import {getActionMethods} from "$common/ServiceBase";
 import {IDLE_STATUS, RUNNING_STATUS} from "$common/constants";
+import type {DataModelerState} from "$lib/types";
+import type {DatabaseService} from "$common/database/DatabaseService";
 
-export type DataModelerActionsClasses = PickActionFunctions<
+export type DataModelerActionsClasses = PickActionFunctions<DataModelerState, (
     DatasetActions &
     ProfileColumnActions &
     ModelActions
->;
-export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<DataModelerActionsClasses>;
+)>;
+export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<DataModelerState, DataModelerActionsClasses>;
 
-export class DataModelerActionAPI {
+export class DataModelerService {
     private actionsMap: {
         [Action in keyof DataModelerActionsDefinition]?: DataModelerActionsClasses
     } = {};
 
-    public constructor(protected readonly dataModelerStateManager: DataModelerStateManager,
-                       private readonly duckDBClient: DuckDBClient,
+    public constructor(protected readonly dataModelerStateService: DataModelerStateService,
+                       private readonly databaseService: DatabaseService,
                        private readonly dataModelerActions: Array<DataModelerActions>) {
         dataModelerActions.forEach((actions) => {
             actions.setDataModelerActionAPI(this);
@@ -32,8 +33,8 @@ export class DataModelerActionAPI {
     }
 
     public async init(): Promise<void> {
-        this.dataModelerStateManager.init();
-        await this.duckDBClient?.init();
+        this.dataModelerStateService.init();
+        await this.databaseService?.init();
     }
 
     public async dispatch<Action extends keyof DataModelerActionsDefinition>(
@@ -44,9 +45,9 @@ export class DataModelerActionAPI {
             return;
         }
         const actionsInstance = this.actionsMap[action];
-        this.dataModelerStateManager.dispatch("setStatus", [RUNNING_STATUS]);
-        await actionsInstance[action].call(actionsInstance, this.dataModelerStateManager.getCurrentState(), ...args);
-        this.dataModelerStateManager.dispatch("setStatus", [IDLE_STATUS]);
+        this.dataModelerStateService.dispatch("setStatus", [RUNNING_STATUS]);
+        await actionsInstance[action].call(actionsInstance, this.dataModelerStateService.getCurrentState(), ...args);
+        this.dataModelerStateService.dispatch("setStatus", [IDLE_STATUS]);
     }
 
     public async destroy(): Promise<void> {}

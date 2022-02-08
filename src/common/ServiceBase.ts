@@ -1,14 +1,12 @@
-import type {DataModelerState} from "$lib/types";
-
 // pick only action functions from handler
-export type PickActionFunctions<Handler> = Pick<Handler, {
+export type PickActionFunctions<FirstArg, Handler> = Pick<Handler, {
     [Action in keyof Handler]: Handler[Action] extends
-        (draftState: DataModelerState, ...args: any[]) => void | Promise<void> ? Action : never
+        (firstArg: FirstArg, ...args: any[]) => any ? Action : never
 }[keyof Handler]>;
 // converts handler to Map of "Action Type" to "Array of args to the action"
-export type ExtractActionTypeDefinitions<Handler> = {
+export type ExtractActionTypeDefinitions<FirstArg, Handler> = {
     [Action in keyof Handler]: Handler[Action] extends
-        (draftState: DataModelerState, ...args: infer Args) => void | Promise<void> ? Args : never
+        (firstArg: FirstArg, ...args: infer Args) => any ? Args : never
 };
 
 export function getActionMethods(instance: any): Array<string> {

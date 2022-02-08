@@ -2,43 +2,53 @@ import {DuckDBClient} from "$common/database/DuckDBClient";
 import {DatabaseDataLoaderActions} from "$common/database/DatabaseDataLoaderActions";
 import {DatabaseTableActions} from "$common/database/DatabaseTableActions";
 import {DatabaseColumnActions} from "$common/database/DatabaseColumnActions";
-import {DataModelerStateManager} from "$common/state-actions/DataModelerStateManager";
+import {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
 import {DatasetStateActions} from "$common/state-actions/DatasetStateActions";
 import {ModelStateActions} from "$common/state-actions/ModelStateActions";
 import {DatasetActions} from "$common/data-modeler-actions/DatasetActions";
 import {ModelActions} from "$common/data-modeler-actions/ModelActions";
 import {ProfileColumnStateActions} from "$common/state-actions/ProfileColumnStateActions";
-import {DataModelerActionAPI} from "$common/data-modeler-actions/DataModelerActionAPI";
+import {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
 import {ProfileColumnActions} from "$common/data-modeler-actions/ProfileColumnActions";
 import {SocketServer} from "$common/SocketServer";
+import {DatabaseService} from "$common/database/DatabaseService";
 
-export function serverFactory(): {
-    dataModelerStateManager: DataModelerStateManager,
-    dataModelerActionAPI: DataModelerActionAPI,
-    socketServer: SocketServer,
-} {
+export function databaseServiceFactory() {
     const duckDbClient = new DuckDBClient();
-    const duckDBDataLoaderAPI = new DatabaseDataLoaderActions(duckDbClient);
-    const duckDbTableAPI = new DatabaseTableActions(duckDbClient);
-    const duckDBColumnAPI = new DatabaseColumnActions(duckDbClient);
+    const databaseDataLoaderActions = new DatabaseDataLoaderActions(duckDbClient);
+    const databaseTableActions = new DatabaseTableActions(duckDbClient);
+    const databaseColumnActions = new DatabaseColumnActions(duckDbClient);
+    return new DatabaseService(duckDbClient,
+        [databaseDataLoaderActions, databaseTableActions, databaseColumnActions]);
+}
 
+export function dataModelerStateServiceFactory() {
     const datasetStateActions = new DatasetStateActions();
     const modelStateActions = new ModelStateActions();
     const profileColumnStateActions = new ProfileColumnStateActions();
-    const dataModelerStateManager = new DataModelerStateManager(
+    return new DataModelerStateService(
         [datasetStateActions, modelStateActions, profileColumnStateActions]);
+}
 
-    const datasetActions = new DatasetActions(
-        dataModelerStateManager, duckDbTableAPI, duckDBColumnAPI, duckDBDataLoaderAPI);
-    const modelActions = new ModelActions(
-        dataModelerStateManager, duckDbTableAPI, duckDBColumnAPI, duckDBDataLoaderAPI);
-    const profileColumnActions = new ProfileColumnActions(
-        dataModelerStateManager, duckDbTableAPI, duckDBColumnAPI, duckDBDataLoaderAPI);
-    const dataModelerActionAPI = new DataModelerActionAPI(dataModelerStateManager, duckDbClient,
+export function dataModelerServiceFactory() {
+    const databaseService = databaseServiceFactory();
+
+    const dataModelerStateService = dataModelerStateServiceFactory()
+
+    const datasetActions = new DatasetActions(dataModelerStateService, databaseService);
+    const modelActions = new ModelActions(dataModelerStateService, databaseService);
+    const profileColumnActions = new ProfileColumnActions(dataModelerStateService, databaseService);
+    const dataModelerService = new DataModelerService(dataModelerStateService, databaseService,
         [datasetActions, modelActions, profileColumnActions]);
 
-    const socketServer = new SocketServer(dataModelerActionAPI, dataModelerStateManager,
+    return {dataModelerStateService, dataModelerService};
+}
+
+export function serverFactory() {
+    const {dataModelerStateService, dataModelerService} = dataModelerServiceFactory();
+
+    const socketServer = new SocketServer(dataModelerService, dataModelerStateService,
         "http://localhost:3000", 3001);
 
-    return {dataModelerStateManager, dataModelerActionAPI, socketServer};
+    return {dataModelerStateService, dataModelerService, socketServer};
 }

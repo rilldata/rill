@@ -31,41 +31,41 @@ export class ProfileColumnActions extends DataModelerActions {
 
     private async collectTopKAndCardinality(columnarItemId: string, columnarItemType: ColumnarItemType,
                                             item: Model | Dataset, column: ProfileColumn): Promise<void> {
-        this.dataModelerStateManager.dispatch("updateColumnSummary", [
+        this.dataModelerStateService.dispatch("updateColumnSummary", [
             columnarItemId, columnarItemType, column.name,
-            await this.databaseColumnActions.getTopKAndCardinality(item.tableName, column.name),
+            await this.databaseService.dispatch("getTopKAndCardinality", [item.tableName, column.name]),
         ]);
     }
 
     private async collectNumericHistogram(columnarItemId: string, columnarItemType: ColumnarItemType,
                                           item: Model | Dataset, column: ProfileColumn): Promise<void> {
-        this.dataModelerStateManager.dispatch("updateColumnSummary", [
+        this.dataModelerStateService.dispatch("updateColumnSummary", [
             columnarItemId, columnarItemType, column.name,
-            await this.databaseColumnActions.getNumericHistogram(item.tableName, column.name, column.type),
+            await this.databaseService.dispatch("getNumericHistogram", [item.tableName, column.name, column.type]),
         ]);
     }
 
     private async collectTimeRange(columnarItemId: string, columnarItemType: ColumnarItemType,
                                    item: Model | Dataset, column: ProfileColumn): Promise<void> {
-        this.dataModelerStateManager.dispatch("updateColumnSummary", [
+        this.dataModelerStateService.dispatch("updateColumnSummary", [
             columnarItemId, columnarItemType, column.name,
-            await this.databaseColumnActions.getTimeRange(item.tableName, column.name),
+            await this.databaseService.dispatch("getTimeRange", [item.tableName, column.name]),
         ]);
     }
 
     private async collectDescriptiveStatistics(columnarItemId: string, columnarItemType: ColumnarItemType,
                                                item: Model | Dataset, column: ProfileColumn): Promise<void> {
-        this.dataModelerStateManager.dispatch("updateColumnSummary", [
+        this.dataModelerStateService.dispatch("updateColumnSummary", [
             columnarItemId, columnarItemType, column.name,
-            await this.databaseColumnActions.getDescriptiveStatistics(item.tableName, column.name),
+            await this.databaseService.dispatch("getDescriptiveStatistics", [item.tableName, column.name]),
         ]);
     }
 
     private async collectNullCount(columnarItemId: string, columnarItemType: ColumnarItemType,
                                    item: Model | Dataset, column: ProfileColumn): Promise<void> {
-        this.dataModelerStateManager.dispatch("updateNullCount", [
+        this.dataModelerStateService.dispatch("updateNullCount", [
             columnarItemId, columnarItemType, column.name,
-            await this.databaseColumnActions.getNullCount(item.tableName, column.name),
+            await this.databaseService.dispatch("getNullCount", [item.tableName, column.name]),
         ]);
     }
 }

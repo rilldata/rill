@@ -1,25 +1,28 @@
 import {DatabaseActions} from "./DatabaseActions";
 import type {CategoricalSummary, NumericSummary, TimeRangeSummary} from "$lib/types";
 import {calculateBins} from "$common/utils/calculateBins";
+import type {DatabaseMetadata} from "$common/database/DatabaseMetadata";
 
 const TOP_K_COUNT = 50;
 
 export class DatabaseColumnActions extends DatabaseActions {
-    public async getTopKAndCardinality(tableName: string, columnName: string,
+    public async getTopKAndCardinality(metadata: DatabaseMetadata, tableName: string, columnName: string,
                                        func = "count(*)"): Promise<CategoricalSummary> {
         return {
-            topK: await this.getTopK(tableName, columnName, func),
-            cardinality: await this.getCardinality(tableName, columnName),
+            topK: await this.getTopKOfColumn(metadata, tableName, columnName, func),
+            cardinality: await this.getCardinalityOfColumn(metadata, tableName, columnName),
         };
     }
 
-    public async getNullCount(tableName: string, columnName: string): Promise<number> {
+    public async getNullCount(metadata: DatabaseMetadata,
+                              tableName: string, columnName: string): Promise<number> {
         const [nullity] = await this.dbClient.execute(
             `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${columnName} IS NULL;`);
         return nullity.count;
     }
 
-    public async getDescriptiveStatistics(tableName: string, columnName: string): Promise<NumericSummary> {
+    public async getDescriptiveStatistics(metadata: DatabaseMetadata,
+                                          tableName: string, columnName: string): Promise<NumericSummary> {
         const [results] = await this.dbClient.execute(`
             SELECT
                 min(${columnName}) as min,
@@ -34,13 +37,15 @@ export class DatabaseColumnActions extends DatabaseActions {
         return { statistics: results };
     }
 
-    public async getNumericHistogram(tableName: string, field: string, fieldType: string): Promise<NumericSummary> {
+    public async getNumericHistogram(metadata: DatabaseMetadata,
+                                     tableName: string, field: string, fieldType: string): Promise<NumericSummary> {
         const results = await this.dbClient.execute(
             `SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM '${tableName}'`);
         return { histogram: calculateBins(results, field) };
     }
 
-    public async getTimeRange(tableName: string, columnName: string): Promise<TimeRangeSummary> {
+    public async getTimeRange(metadata: DatabaseMetadata,
+                              tableName: string, columnName: string): Promise<TimeRangeSummary> {
         const [ranges] = await this.dbClient.execute(`
 	        SELECT
 		    min(${columnName}) as min, max(${columnName}) as max, 
@@ -50,7 +55,8 @@ export class DatabaseColumnActions extends DatabaseActions {
         return ranges;
     }
 
-    private async getTopK(tableName: string, columnName: string, func = "count(*)"): Promise<any> {
+    private async getTopKOfColumn(metadata: DatabaseMetadata,
+                          tableName: string, columnName: string, func = "count(*)"): Promise<any> {
         return this.dbClient.execute(`
             SELECT ${columnName} as value, ${func} AS count from '${tableName}'
             GROUP BY ${columnName}
@@ -59,7 +65,8 @@ export class DatabaseColumnActions extends DatabaseActions {
         `);
     }
 
-    private async getCardinality(tableName: string, columnName: string): Promise<number> {
+    private async getCardinalityOfColumn(metadata: DatabaseMetadata,
+                                 tableName: string, columnName: string): Promise<number> {
         const [results] = await this.dbClient.execute(
             `SELECT approx_count_distinct(${columnName}) as count from '${tableName}';`);
         return results.count;

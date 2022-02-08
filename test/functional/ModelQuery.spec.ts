@@ -7,7 +7,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     @FunctionalTestBase.BeforeSuite()
     public async setupDataset(): Promise<void> {
         await Promise.all(ParquetFileTestData.subData.map(async (parquetFileData) => {
-            await this.clientDataModelerActionAPI.dispatch("addOrUpdateDataset", [parquetFileData.title]);
+            await this.clientDataModelerService.dispatch("addOrUpdateDataset", [parquetFileData.title]);
         }));
         await this.waitForDatasets();
     }
@@ -18,11 +18,11 @@ export class ModelQuerySpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test("queryInfoTestData")
     public async shouldUpdateQueryInfo(query: string, columns: TestDataColumns): Promise<void> {
-        const modelId = this.clientDataModelerStateManager.getCurrentState().queries[0].id;
-        await this.clientDataModelerActionAPI.dispatch("updateQueryInformation", [modelId, query]);
+        const modelId = this.clientDataModelerStateService.getCurrentState().queries[0].id;
+        await this.clientDataModelerService.dispatch("updateQueryInformation", [modelId, query]);
         await this.waitForModels();
 
-        const model = this.clientDataModelerStateManager.getCurrentState().queries[0];
+        const model = this.clientDataModelerStateService.getCurrentState().queries[0];
         expect(model.error).toBeUndefined();
         expect(model.query).toBe(query);
         expect(model.cardinality).toBeGreaterThan(0);

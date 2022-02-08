@@ -1,14 +1,14 @@
-import {DataModelerStateManager} from "$common/state-actions/DataModelerStateManager";
-import type {DataModelerActionAPI} from "$common/data-modeler-actions/DataModelerActionAPI";
-import {DataModelerActionSocketAPI} from "$common/data-modeler-actions/DataModelerActionSocketAPI";
+import {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
+import {DataModelerSocketService} from "$common/data-modeler-actions/DataModelerSocketService";
 
 export function clientFactory(): {
-    dataModelerStateManager: DataModelerStateManager,
-    dataModelerActionAPI: DataModelerActionAPI,
+    dataModelerStateService: DataModelerStateService,
+    dataModelerService: DataModelerService,
 } {
-    const dataModelerStateManager = new DataModelerStateManager([]);
-    const dataModelerActionAPI = new DataModelerActionSocketAPI(dataModelerStateManager,
+    const dataModelerStateService = new DataModelerStateService([]);
+    const dataModelerService = new DataModelerSocketService(dataModelerStateService,
         "http://localhost:3001");
 
-    return {dataModelerStateManager, dataModelerActionAPI};
+    return {dataModelerStateService, dataModelerService};
 }

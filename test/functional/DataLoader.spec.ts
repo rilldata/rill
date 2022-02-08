@@ -14,11 +14,11 @@ export class DataLoaderSpec extends FunctionalTestBase {
 
     @TestBase.Test("parquetFileTestData")
     public async shouldLoadParquetFile(parquetFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
-        await this.clientDataModelerActionAPI.dispatch("addOrUpdateDataset", [parquetFile]);
+        await this.clientDataModelerService.dispatch("addOrUpdateDataset", [parquetFile]);
 
         await this.waitForDatasets();
 
-        const dataset = this.clientDataModelerStateManager.getCurrentState().sources
+        const dataset = this.clientDataModelerStateService.getCurrentState().sources
             .find(datasetFind => datasetFind.path === parquetFile);
 
         expect(dataset.path).toBe(parquetFile);

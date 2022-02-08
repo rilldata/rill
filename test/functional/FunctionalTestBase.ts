@@ -1,43 +1,39 @@
 import {TestBase} from "@adityahegde/typescript-test-utils";
 import {JestTestLibrary} from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
-import type {DataModelerStateManager} from "$common/state-actions/DataModelerStateManager";
-import type {DataModelerActionAPI} from "$common/data-modeler-actions/DataModelerActionAPI";
+import {DataModelerStateService} from "$common/state-actions/DataModelerStateService";
+import type {DataModelerService} from "$common/data-modeler-actions/DataModelerService";
 import type {SocketServer} from "$common/SocketServer";
-import {serverFactory} from "$common/serverFactory";
-import {clientFactory} from "$common/clientFactory";
+import {dataModelerServiceFactory} from "$common/serverFactory";
 import {asyncWait, waitUntil} from "$common/utils/waitUtils";
 import {IDLE_STATUS} from "$common/constants";
 import type {ColumnarTypeKeys, ProfileColumn} from "$lib/types";
 import type {TestDataColumns} from "../data/DataLoader.data";
+import {DataModelerSocketServiceMock} from "./DataModelerSocketServiceMock";
+import {SocketServerMock} from "./SocketServerMock";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
-    protected serverDataModelerStateManager: DataModelerStateManager;
-    protected serverDataModelerActionAPI: DataModelerActionAPI;
-    protected socketServer: SocketServer;
+    protected clientDataModelerStateService: DataModelerStateService;
+    protected clientDataModelerService: DataModelerService;
 
-    protected clientDataModelerStateManager: DataModelerStateManager;
-    protected clientDataModelerActionAPI: DataModelerActionAPI;
+    protected serverDataModelerStateService: DataModelerStateService;
+    protected serverDataModelerService: DataModelerService;
+    protected socketServer: SocketServerMock;
 
     @TestBase.BeforeSuite()
     public async setup(): Promise<void> {
-        const serverInstances = serverFactory();
-        this.serverDataModelerStateManager = serverInstances.dataModelerStateManager;
-        this.serverDataModelerActionAPI = serverInstances.dataModelerActionAPI;
-        this.socketServer = serverInstances.socketServer;
+        this.clientDataModelerStateService = new DataModelerStateService([]);
+        this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
-        const clientInstances = clientFactory();
-        this.clientDataModelerStateManager = clientInstances.dataModelerStateManager;
-        this.clientDataModelerActionAPI = clientInstances.dataModelerActionAPI;
+        const serverInstances = dataModelerServiceFactory();
+        this.serverDataModelerStateService = serverInstances.dataModelerStateService;
+        this.serverDataModelerService = serverInstances.dataModelerService;
+        this.socketServer = new SocketServerMock(this.serverDataModelerService, this.serverDataModelerStateService,
+            this.clientDataModelerService as DataModelerSocketServiceMock);
+        (this.clientDataModelerService as DataModelerSocketServiceMock).socketServerMock = this.socketServer;
 
+        await this.clientDataModelerService.init();
         await this.socketServer.init();
-        await this.clientDataModelerActionAPI.init();
-    }
-
-    @TestBase.AfterSuite()
-    public async teardown(): Promise<void> {
-        await this.clientDataModelerActionAPI.destroy();
-        await this.socketServer.destroy();
     }
 
     protected async waitForDatasets(): Promise<void> {
@@ -60,7 +56,7 @@ export class FunctionalTestBase extends TestBase {
     private async waitForColumnar(columnarKey: ColumnarTypeKeys): Promise<void> {
         await asyncWait(200);
         await waitUntil(() => {
-            const currentState = this.clientDataModelerStateManager.getCurrentState();
+            const currentState = this.clientDataModelerStateService.getCurrentState();
             return currentState.status === IDLE_STATUS &&
                 (currentState[columnarKey] as any[]).every(item => item.status === IDLE_STATUS);
         });
