@@ -2,6 +2,7 @@
 import { getContext } from "svelte";
 import { flip } from "svelte/animate";
 import { slide } from "svelte/transition";
+import { horizontalSlide } from "$lib/transitions"
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
 import RowIcon from "$lib/components/icons/RowIcon.svelte";
@@ -36,7 +37,7 @@ let whichTable = {
 let innerWidth;
 
 let showSources = false;
-let showOutputs;
+let showOutputs = true;
 
 function sourceDestinationCompute(key, source, destination) {
   return source.reduce((acc,v) => acc + v[key], 0) / destination[key];
@@ -156,18 +157,20 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
 
       {#if currentQuery?.preview && currentQuery.preview.length}
       <div class='results-container'>
-        <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
-          transform: translateY({showOutputs ? '-6px' : '0px'});
+        <div class="inspector-header pt-4 pb-4 pr-4 grid items-baseline sticky top-0"  style="
+
           grid-template-columns: auto max-content;
         ">
-          <NavEntry bind:active={showOutputs}>Preview</NavEntry>
+          <NavEntry expanded={showOutputs} on:select-body={() => { showOutputs = !showOutputs}} on:expand={() => { showOutputs=!showOutputs }} >
+            Preview
+          </NavEntry>
           {#if showOutputs}
-          <div class="inspector-button-row grid grid-flow-col justify-start">
+          <div class="inspector-button-row grid grid-flow-col justify-start" transition:horizontalSlide>
             <IconButton title="table" selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
-              <RowIcon size={16} />
+              <RowIcon size={14} />
             </IconButton>
             <IconButton title="JSON" selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
-              <JSONIcon size={16} />
+              <JSONIcon size={14} />
             </IconButton>
           </div>
           {/if}

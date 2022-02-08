@@ -5,9 +5,10 @@ export let title:string;
 
 <button
     {title}
+    style:width="20px"
+    style:height="20px"
     class="
     text-black 
-    w-7 h-7
     grid
     place-content-center place-items-center
     hover:border
