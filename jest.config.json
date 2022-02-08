@@ -1,8 +1,8 @@
 {
   "transform": {
-    "^.+\\.js$": "babel-jest",
+
     "^.+\\.svelte$": "svelte-jester",
-    "^.+\\.ts?$": "ts-jest"
+    "^.+\\.[tj]s?$": "ts-jest"
   },
   "moduleNameMapper": {
     "^\\$lib(.*)$": "<rootDir>/src/lib$1",
@@ -23,5 +23,6 @@
   "setupFilesAfterEnv": [
     "@testing-library/jest-dom/extend-expect"
   ],
-  "testEnvironment": "node"
+  "testEnvironment": "node",
+  "testTimeout": 100000
 }

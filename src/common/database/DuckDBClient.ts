@@ -4,10 +4,11 @@ interface DuckDB {
     // TODO: define concrete styles
     all: (...args: Array<any>) => any;
     exec: (...args: Array<any>) => any;
-    run: (...args: Array<any>) => any;
     prepare: (...args: Array<any>) => any;
 }
 
+// There is only one db right now.
+// But in the future we can easily add an interface to this and have different implementations.
 export class DuckDBClient {
     protected db: DuckDB;
 
@@ -20,7 +21,7 @@ export class DuckDBClient {
         this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
     }
 
-    public all(query: string): Promise<any> {
+    public execute(query: string): Promise<any> {
         this.onCallback?.();
         return new Promise((resolve, reject) => {
             try {
@@ -35,15 +36,6 @@ export class DuckDBClient {
             } catch (err) {
                 reject(err);
             }
-        });
-    }
-
-    public run(query: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.db.run(query, (err) => {
-                if (err !== null) reject(false);
-                else resolve(true);
-            });
         });
     }
 

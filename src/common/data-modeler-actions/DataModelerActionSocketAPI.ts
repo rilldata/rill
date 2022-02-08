@@ -14,6 +14,7 @@ export class DataModelerActionSocketAPI extends DataModelerActionAPI {
         await super.init();
         this.socket = io(this.serverUrl);
         this.socket.on("patch", (patches: Array<Patch>) => this.dataModelerStateManager.applyPatches(patches));
+        this.socket.on("init-state", (initialState) => this.dataModelerStateManager.updateState(initialState));
         // this.socket.on("connect", () => console.log("DataModelerActionSocketAPI Connected to server"));
         // this.socket.on("connect_error", (err) => console.log("connect_error", err));
         // this.socket.on("disconnect", (err) => console.log("disconnect", err));

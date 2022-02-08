@@ -1,11 +1,11 @@
 import workerFarm, {Workers} from "worker-farm";
-import {waitUntil} from "$common/utils/waitUtils";
-import {BATCH_SIZE, DATA_GENERATOR_TYPE_MAP} from "./DataGeneratorTypeMap";
+import {DATA_GENERATOR_TYPE_MAP} from "./DataGeneratorTypeMap";
 import parquet from "parquetjs";
 import {execSync} from "node:child_process";
 import os from "os";
+import {BATCH_SIZE} from "./data-constants";
 
-const PARQUET_FOLDER = `${__dirname}/../../../`;
+const PARQUET_FOLDER = `${__dirname}/../../..`;
 const CPU_COUNT = os.cpus().length;
 
 export class DataGeneratorFarm {
@@ -18,27 +18,25 @@ export class DataGeneratorFarm {
     }
 
     public async generate(type: string, count: number): Promise<void> {
-        let requests = 0;
-        let responses = 0;
+        console.log(`Generating ${type}`);
 
-        execSync(`rm ${PARQUET_FOLDER}/${type}.parquet | true`);
+        const parquetFile = `${PARQUET_FOLDER}/${type}.parquet`;
+        execSync(`rm ${parquetFile} | true`);
         const parquetWriter = await parquet.ParquetWriter.openFile(
-            new parquet.ParquetSchema(DATA_GENERATOR_TYPE_MAP[type].getParquetSchema()),
-            `${PARQUET_FOLDER}/${type}.parquet`);
+            new parquet.ParquetSchema(DATA_GENERATOR_TYPE_MAP[type].getParquetSchema()), parquetFile);
+        parquetWriter.setRowGroupSize(2 * CPU_COUNT * BATCH_SIZE);
 
         const handleResponse = async (rows: Array<Record<string, any>>) => {
             await Promise.all(rows.map(row => parquetWriter.appendRow(row)));
-            responses++;
         };
 
-        for (let i = 0; i < count; i += BATCH_SIZE) {
-            await waitUntil(() => requests - responses < 2 * CPU_COUNT);
-            if (requests % 5 * CPU_COUNT === 0) console.log(`Generating ${i} rows`);
-            requests++;
-            this.generateInWorker(type, i).then(handleResponse);
+        for (let ids = 0; ids < count;) {
+            const promises = [];
+            for (let batch = 0; batch < (2 * CPU_COUNT) && ids < count; batch++, ids += BATCH_SIZE) {
+                promises.push(this.generateInWorker(type, ids).then(handleResponse));
+            }
+            await Promise.all(promises);
         }
-
-        await waitUntil(() => responses === requests);
 
         await parquetWriter.close();
     }

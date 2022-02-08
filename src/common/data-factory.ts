@@ -1,6 +1,8 @@
 import type {DataModelerState, Dataset, Model} from "$lib/types";
 import {guidGenerator} from "$lib/util/guid";
 import {sanitizeQuery as _sanitizeQuery} from "$lib/util/sanitize-query";
+import {IDLE_STATUS} from "$common/constants";
+import {sanitizeTableName} from "$lib/util/sanitize-table-name";
 
 let queryNumber = 0;
 
@@ -14,11 +16,12 @@ export function newSource(): Dataset {
     return {
         id: guidGenerator(),
         path: '',
-        name: '',
+        tableName: '',
         profile: [],
         cardinality: undefined,
         sizeInBytes: undefined,
-        head: []
+        head: [],
+        status: IDLE_STATUS,
     }
 }
 
@@ -31,9 +34,11 @@ export function newQuery(params: NewQueryArguments = {}): Model {
         query,
         sanitizedQuery,
         name,
+        tableName: sanitizeTableName(name),
         id: guidGenerator(),
         preview: undefined,
-        sizeInBytes: undefined
+        sizeInBytes: undefined,
+        status: IDLE_STATUS,
     };
 }
 

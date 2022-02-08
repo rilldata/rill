@@ -11,6 +11,7 @@
 
 export interface Item {
     id: string;
+    status?: string;
 }
 
 export interface ColumnarItem extends Item {
@@ -24,6 +25,7 @@ export interface Model extends ColumnarItem {
     sanitizedQuery: string;
     /** name is used for the filename and exported file */
     name: string;
+    tableName?: string;
     /** cardinality is the total number of rows of the previewed dataset */
     cardinality?: number;
     /** sizeInBytes is the total size of the previewed dataset. 
@@ -38,7 +40,8 @@ export interface Model extends ColumnarItem {
 
 export interface Dataset extends ColumnarItem {
     path: string;
-    name: string;
+    name?: string;
+    tableName?: string;
     head: any[];
     cardinality?: number;
     sizeInBytes?: number;

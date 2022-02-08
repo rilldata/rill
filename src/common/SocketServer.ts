@@ -21,6 +21,7 @@ export class SocketServer {
         });
 
         this.server.on("connection", (socket) => {
+            socket.emit("init-state", this.dataModelerStateManager.getCurrentState());
             socket.on("action", async (action, args) => {
                 await this.dataModelerActionAPI.dispatch(action, args);
             });

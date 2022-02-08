@@ -49,6 +49,10 @@ export class DataModelerStateManager {
         this.patchesSubscribers.push(subscriber);
     }
 
+    public updateState(dataModelerState: DataModelerState): void {
+        this.store.set(dataModelerState);
+    }
+
     public dispatch<Action extends keyof StateActionsDefinition>(
         action: Action, args: StateActionsDefinition[Action],
     ): void {
@@ -57,7 +61,7 @@ export class DataModelerStateManager {
             return;
         }
         const currentState = this.getCurrentState();
-        this.store.set(produce(currentState, (draft) => {
+        this.updateState(produce(currentState, (draft) => {
             const actionsInstance = this.actionsMap[action];
             actionsInstance[action].call(actionsInstance, draft, ...args);
         }, (patches, inversePatches) => {
@@ -67,6 +71,6 @@ export class DataModelerStateManager {
     }
 
     public applyPatches(patches: Array<Patch>): void {
-        this.store.set(applyPatches(this.getCurrentState(), patches));
+        this.updateState(applyPatches(this.getCurrentState(), patches));
     }
 }
