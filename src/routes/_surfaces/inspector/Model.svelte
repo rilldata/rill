@@ -2,6 +2,7 @@
 import { getContext } from "svelte";
 import { flip } from "svelte/animate";
 import { slide } from "svelte/transition";
+import { horizontalSlide } from "$lib/transitions"
 import RowTable from "$lib/components/RowTable.svelte";
 import RawJSON from "$lib/components/rawJson.svelte";
 import RowIcon from "$lib/components/icons/RowIcon.svelte";
@@ -10,8 +11,8 @@ import IconButton from "$lib/components/IconButton.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 
-import CollapsibleTitle from "$lib/components/CollapsibleTitle.svelte";
-import DatasetPreview from "$lib/components/DatasetPreview.svelte";
+import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
+import CollapsibleTableSummary from "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
 
 import { formatCardinality } from "../../../lib/util/formatters"
 
@@ -36,7 +37,7 @@ let whichTable = {
 let innerWidth;
 
 let showSources = false;
-let showOutputs;
+let showOutputs = true;
 
 function sourceDestinationCompute(key, source, destination) {
   return source.reduce((acc,v) => acc + v[key], 0) / destination[key];
@@ -108,19 +109,19 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
           </div>
         </div>
       {/if}
-      <div class='source-tables p-4'>
+      <div class='source-tables pt-4 pb-4'>
         {#if sources}
-          <CollapsibleTitle bind:active={showSources}>
+          <NavEntry bind:active={showSources}>
             Sources
             <div class='italic text-gray-600' slot="contextual-information">
               {formatCount(sources.reduce((acc,v) => acc + v.cardinality, 0))} rows
             </div>
-          </CollapsibleTitle>
+          </NavEntry>
           {#if showSources}
           <div transition:slide|local={{duration: 120 }}>
             {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-            <div class='pt-1 pb-1' animate:flip transition:slide|local>
-              <DatasetPreview
+            <div class='pl-3 pr-5 pt-1 pb-1' animate:flip transition:slide|local>
+              <CollapsibleTableSummary
                 icon={ParquetIcon}
                 collapseWidth={240 + 120 + 16}
                 emphasizeTitle={true}
@@ -138,9 +139,9 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
         {/if}
       </div>
       
-      <div class='source-tables p-4'>
+      <div class='source-tables pt-4 pb-4'>
         {#if currentQuery?.profile}
-            <DatasetPreview 
+            <CollapsibleTableSummary 
               collapseWidth={240 + 120 + 16}
               name="Destination"
               path=""
@@ -156,18 +157,20 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
 
       {#if currentQuery?.preview && currentQuery.preview.length}
       <div class='results-container'>
-        <div class="inspector-header p-4 grid items-baseline sticky top-0"  style="
-          transform: translateY({showOutputs ? '-6px' : '0px'});
+        <div class="inspector-header pt-4 pb-4 pr-4 grid items-baseline sticky top-0"  style="
+
           grid-template-columns: auto max-content;
         ">
-          <CollapsibleTitle bind:active={showOutputs}>Preview</CollapsibleTitle>
+          <NavEntry expanded={showOutputs} on:select-body={() => { showOutputs = !showOutputs}} on:expand={() => { showOutputs=!showOutputs }} >
+            Preview
+          </NavEntry>
           {#if showOutputs}
-          <div class="inspector-button-row grid grid-flow-col justify-start">
+          <div class="inspector-button-row grid grid-flow-col justify-start" transition:horizontalSlide>
             <IconButton title="table" selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
-              <RowIcon size={16} />
+              <RowIcon size={14} />
             </IconButton>
             <IconButton title="JSON" selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
-              <JSONIcon size={16} />
+              <JSONIcon size={14} />
             </IconButton>
           </div>
           {/if}

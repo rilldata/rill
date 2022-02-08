@@ -5,7 +5,7 @@
     import { scaleLinear } from 'd3-scale';
     import { format } from "d3-format";
     // FIXME: move util to $lib or add a $util
-    import { guidGenerator, guidGenerator } from "../../lib/util/guid";
+    import { guidGenerator } from "$lib/util/guid";
 
     interface HistogramBin {
         bucket:number;

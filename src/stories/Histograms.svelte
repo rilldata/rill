@@ -1,7 +1,6 @@
 <script>
-import Histogram from "$lib/components/Histogram.svelte";
-import DetailHistogram from "$lib/components/DetailHistogram.svelte";
-import SummaryAndHistogram from "$lib/components/SummaryAndHistogram.svelte";
+import Histogram from "$lib/components/viz/SmallHistogram.svelte";
+import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
 const data = [
   {
     "bucket": 0,
@@ -256,9 +255,6 @@ const data = [
 {#each [1,2,3,4,5] as wi}
     <Histogram width={wi * 50} height={wi*15} {data} />
 {/each}
-
-<DetailHistogram width={200} height={65} {data} color=black />
-
 <SummaryAndHistogram 
   min={9508263}
   qlow={21123818}
