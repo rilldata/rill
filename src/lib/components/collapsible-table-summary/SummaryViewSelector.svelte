@@ -1,6 +1,6 @@
 <script lang="ts">
 import IconButton from "$lib/components/IconButton.svelte";
-import { defaultSort, sortByNullity, sortByName } from "$lib/components/asset-nav-item/shared";
+import { defaultSort, sortByNullity, sortByName } from "$lib/components/collapsible-table-summary/sort-utils";
 export let sortMethod = defaultSort;
 export let previewView = 'card';
 

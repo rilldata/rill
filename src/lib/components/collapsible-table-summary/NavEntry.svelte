@@ -2,7 +2,7 @@
 // FIXME: we should probably rename this to AssetNavigationElement.svelte or something like that.
 import { createEventDispatcher } from "svelte";
 import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
-import NavIconButton from "$lib/components/asset-nav-item/NavIconButton.svelte";
+import ExpanderButton from "$lib/components/collapsible-table-summary/ExpanderButton.svelte";
 import type { SvelteComponent } from "svelte";
 
 const dispatch = createEventDispatcher();
@@ -27,9 +27,9 @@ export let icon:SvelteComponent;
     "
 >
     {#if expandable}
-    <NavIconButton rotated={expanded} on:click={() => { dispatch('expand' )}}>
+    <ExpanderButton rotated={expanded} on:click={() => { dispatch('expand' )}}>
         <CaretDownIcon size="14px" />
-    </NavIconButton>
+    </ExpanderButton>
     {/if}
     <button 
         on:click={() => { dispatch('select-body')}}

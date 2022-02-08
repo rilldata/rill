@@ -5,7 +5,7 @@ import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
 
-import NavEntry from "$lib/components/asset-nav-item/NavEntry.svelte";
+import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
 import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
@@ -16,8 +16,8 @@ import type { SvelteComponent } from "svelte/internal";
 import Histogram from "$lib/components/viz/SmallHistogram.svelte";
 import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
 
-import SummaryViewSelector from "$lib/components/asset-nav-item/SummaryViewSelector.svelte";
-import { defaultSort, categoricals } from "$lib/components/asset-nav-item/shared"
+import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
+import { defaultSort, categoricals } from "$lib/components/collapsible-table-summary/sort-utils"
 
 import { horizontalSlide } from "$lib/transitions"
 

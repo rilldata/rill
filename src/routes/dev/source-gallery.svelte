@@ -4,7 +4,7 @@
     import type { AppStore } from '$lib/app-store';
     
     import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-    import AssetNavItem from  "$lib/components/asset-nav-item/AssetNavItem.svelte";
+    import CollapsibleTableSummary from  "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
     
     let innerWidth = 0;
     const store = getContext('rill:app:store') as AppStore;
@@ -26,7 +26,7 @@
             {#if $store && $store.sources && sortedSources}
               {#each sortedSources as { path, name, cardinality, profile, head, sizeInBytes, id, nullCounts} ( id )}
               <div class='source-list pl-3 pr-5 pt-3 pb-1' style:width="{innerWidth / 3 - 6}px" >
-                <AssetNavItem 
+                <CollapsibleTableSummary 
                   icon={ParquetIcon}
                   {name}
                   {cardinality}

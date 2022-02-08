@@ -2,9 +2,9 @@ export const categoricals = new Set(['BYTE_ARRAY', 'VARCHAR']);
 
 export function sortByCardinality(a,b) {
     if (a.summary && b.summary) {
-        if (a.summary?.cardinality < b.summary?.cardinality) {
+        if (a.summary.cardinality < b.summary.cardinality) {
             return 1;
-        } else if (a.summary?.cardinality > b.summary?.cardinality) {
+        } else if (a.summary.cardinality > b.summary.cardinality) {
             return -1;
         } else {
             return sortByName(a,b);

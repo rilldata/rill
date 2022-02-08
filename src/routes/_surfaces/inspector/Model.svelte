@@ -10,8 +10,8 @@ import IconButton from "$lib/components/IconButton.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 
-import NavEntry from "$lib/components/asset-nav-item/NavEntry.svelte";
-import AssetNavItem from "$lib/components/asset-nav-item/AssetNavItem.svelte";
+import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
+import CollapsibleTableSummary from "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
 
 import { formatCardinality } from "../../../lib/util/formatters"
 
@@ -120,7 +120,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
           <div transition:slide|local={{duration: 120 }}>
             {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
             <div class='pl-3 pr-5 pt-1 pb-1' animate:flip transition:slide|local>
-              <AssetNavItem
+              <CollapsibleTableSummary
                 icon={ParquetIcon}
                 collapseWidth={240 + 120 + 16}
                 emphasizeTitle={true}
@@ -140,7 +140,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
       
       <div class='source-tables pt-4 pb-4'>
         {#if currentQuery?.profile}
-            <AssetNavItem 
+            <CollapsibleTableSummary 
               collapseWidth={240 + 120 + 16}
               name="Destination"
               path=""

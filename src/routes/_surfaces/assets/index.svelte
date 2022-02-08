@@ -8,8 +8,8 @@ import type { AppStore } from '$lib/app-store';
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import AddIcon from "$lib/components/icons/Add.svelte";
-import AssetNavItem from  "$lib/components/asset-nav-item/AssetNavItem.svelte";
-import RightNavButton from "$lib/components/asset-nav-item/RightNavButton.svelte";
+import CollapsibleTableSummary from  "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
+import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
@@ -74,7 +74,7 @@ onMount(() => {
               {#if $store && $store.sources}
                 {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
                 <div animate:flip>
-                  <AssetNavItem 
+                  <CollapsibleTableSummary 
                     icon={ParquetIcon}
                     {name}
                     {cardinality}
@@ -94,7 +94,7 @@ onMount(() => {
             <CollapsibleSectionTitle bind:active={showModels}>
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
-              <RightNavButton on:click={() => {
+              <ContextButton on:click={() => {
                 // FIXME: rename this action to model.
                 store.action('addQuery', {});
                 if (!showModels) {
@@ -102,14 +102,14 @@ onMount(() => {
                 }
               }}>
                 <AddIcon />
-              </RightNavButton>
+              </ContextButton>
 
             </div>
             {#if showModels}
               <div class='pb-6 justify-self-end'  transition:slide={{duration:200}}>
               {#each $store.queries as query, i (query.id)}
 
-                <AssetNavItem
+                <CollapsibleTableSummary
                   on:select={() => {
                     store.action('setActiveAsset', { id: query.id, assetType: 'model' });
                   }}
