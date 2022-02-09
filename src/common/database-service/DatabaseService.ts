@@ -18,7 +18,7 @@ export class DatabaseService {
         [Action in keyof DatabaseActionsDefinition]?: DatabaseActionsClasses
     } = {};
 
-    public constructor(private readonly duckDBClient: DuckDBClient,
+    public constructor(private readonly databaseClient: DuckDBClient,
                        private readonly databaseActions: Array<DatabaseActions>) {
         databaseActions.forEach((actions) => {
             getActionMethods(actions).forEach(action => {
@@ -28,7 +28,7 @@ export class DatabaseService {
     }
 
     public async init(): Promise<void> {
-        await this.duckDBClient?.init();
+        await this.databaseClient?.init();
     }
 
     public async dispatch<Action extends keyof DatabaseActionsDefinition>(

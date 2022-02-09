@@ -4,12 +4,13 @@ import {sanitizeQuery as _sanitizeQuery} from "$lib/util/sanitize-query";
 import {IDLE_STATUS} from "$common/constants";
 import {sanitizeTableName} from "$lib/util/sanitize-table-name";
 
+// TODO: rename things here
+
 let queryNumber = 0;
 
 interface NewQueryArguments {
     query?: string;
     name?: string;
-    at?: number;
 }
 
 export function newSource(): Dataset {
@@ -22,6 +23,7 @@ export function newSource(): Dataset {
         sizeInBytes: undefined,
         head: [],
         status: IDLE_STATUS,
+        lastUpdated: 0,
     }
 }
 

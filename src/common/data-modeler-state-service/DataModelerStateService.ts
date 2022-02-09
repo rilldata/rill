@@ -6,7 +6,7 @@ import type {ExtractActionTypeDefinitions} from "$common/ServiceBase";
 import type {StateActions} from "$common/data-modeler-state-service/StateActions";
 import { writable, get, Writable } from "svelte/store";
 import produce, {enablePatches, applyPatches, Patch} from "immer";
-import {initialState} from "../data-factory";
+import {initialState} from "../dataFactory";
 import {getActionMethods, PickActionFunctions} from "$common/ServiceBase";
 
 enablePatches();

@@ -3,9 +3,9 @@ import {DATA_GENERATOR_TYPE_MAP} from "./DataGeneratorTypeMap";
 import parquet from "parquetjs";
 import {execSync} from "node:child_process";
 import os from "os";
-import {BATCH_SIZE} from "./data-constants";
+import {BATCH_SIZE, DATA_FOLDER} from "./data-constants";
 
-const PARQUET_FOLDER = `${__dirname}/../../..`;
+const PARQUET_FOLDER = `${__dirname}/../../../${DATA_FOLDER}`;
 const CPU_COUNT = os.cpus().length;
 
 export class DataGeneratorFarm {

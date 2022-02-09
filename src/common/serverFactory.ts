@@ -12,12 +12,13 @@ import {DataModelerService} from "$common/data-modeler-service/DataModelerServic
 import {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnActions";
 import {SocketServer} from "$common/SocketServer";
 import {DatabaseService} from "$common/database-service/DatabaseService";
+import type {RootConfig} from "$common/config/RootConfig";
 
-export function databaseServiceFactory() {
-    const duckDbClient = new DuckDBClient();
-    const databaseDataLoaderActions = new DatabaseDataLoaderActions(duckDbClient);
-    const databaseTableActions = new DatabaseTableActions(duckDbClient);
-    const databaseColumnActions = new DatabaseColumnActions(duckDbClient);
+export function databaseServiceFactory(config: RootConfig) {
+    const duckDbClient = new DuckDBClient(config.database);
+    const databaseDataLoaderActions = new DatabaseDataLoaderActions(config.database, duckDbClient);
+    const databaseTableActions = new DatabaseTableActions(config.database, duckDbClient);
+    const databaseColumnActions = new DatabaseColumnActions(config.database, duckDbClient);
     return new DatabaseService(duckDbClient,
         [databaseDataLoaderActions, databaseTableActions, databaseColumnActions]);
 }
@@ -30,8 +31,8 @@ export function dataModelerStateServiceFactory() {
         [datasetStateActions, modelStateActions, profileColumnStateActions]);
 }
 
-export function dataModelerServiceFactory() {
-    const databaseService = databaseServiceFactory();
+export function dataModelerServiceFactory(config: RootConfig) {
+    const databaseService = databaseServiceFactory(config);
 
     const dataModelerStateService = dataModelerStateServiceFactory()
 
@@ -44,11 +45,10 @@ export function dataModelerServiceFactory() {
     return {dataModelerStateService, dataModelerService};
 }
 
-export function serverFactory() {
-    const {dataModelerStateService, dataModelerService} = dataModelerServiceFactory();
+export function serverFactory(config: RootConfig) {
+    const {dataModelerStateService, dataModelerService} = dataModelerServiceFactory(config);
 
-    const socketServer = new SocketServer(dataModelerService, dataModelerStateService,
-        "http://localhost:3000", 3001);
+    const socketServer = new SocketServer(dataModelerService, dataModelerStateService, config.server);
 
     return {dataModelerStateService, dataModelerService, socketServer};
 }

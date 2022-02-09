@@ -46,6 +46,7 @@ export interface Dataset extends ColumnarItem {
     cardinality?: number;
     sizeInBytes?: number;
     nullCounts?:any;
+    lastUpdated?: number;
 }
 
 export type ProfileColumnSummary = CategoricalSummary | NumericSummary | TimeRangeSummary;

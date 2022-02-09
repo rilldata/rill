@@ -26,6 +26,7 @@
 		"paths": {
 			"$lib": ["src/lib"],
 			"$lib/*": ["src/lib/*"],
+			"$common": ["src/common"],
 			"$common/*": ["src/common/*"]
 		},
 		"outDir": "tsc-tmp"

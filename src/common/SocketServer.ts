@@ -1,15 +1,16 @@
 import { Server } from "socket.io";
 import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
 import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
+import type {ServerConfig} from "$common/config/ServerConfig";
 
 export class SocketServer {
     private readonly server: Server;
 
     constructor(private readonly dataModelerService: DataModelerService,
                 private readonly dataModelerStateService: DataModelerStateService,
-                origin: string, private readonly port: number) {
+                private readonly serverConfig: ServerConfig) {
         this.server = new Server({
-            cors: { origin, methods: ["GET", "POST"] },
+            cors: { origin: this.serverConfig.serverUrl, methods: ["GET", "POST"] },
         });
     }
 
@@ -27,7 +28,7 @@ export class SocketServer {
             });
         });
 
-        this.server.listen(this.port);
+        this.server.listen(this.serverConfig.socketPort);
     }
 
     public async destroy(): Promise<void> {

@@ -2,17 +2,19 @@ import {DataModelerService, DataModelerActionsDefinition} from "$common/data-mod
 import { io, Socket } from "socket.io-client";
 import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import type {Patch} from "immer";
+import type {ServerConfig} from "$common/config/ServerConfig";
 
 export class DataModelerSocketService extends DataModelerService {
     private socket: Socket;
 
-    public constructor(dataModelerStateManager: DataModelerStateService, private readonly serverUrl: string) {
+    public constructor(dataModelerStateManager: DataModelerStateService,
+                       private readonly serverConfig: ServerConfig) {
         super(dataModelerStateManager, null, []);
     }
 
     public async init(): Promise<void> {
         await super.init();
-        this.socket = io(this.serverUrl);
+        this.socket = io(this.serverConfig.socketUrl);
         this.socket.on("patch", (patches: Array<Patch>) => this.dataModelerStateService.applyPatches(patches));
         this.socket.on("init-state", (initialState) => this.dataModelerStateService.updateState(initialState));
         // this.socket.on("connect", () => console.log("DataModelerActionSocketAPI Connected to server"));
