@@ -4,7 +4,7 @@ import { min, max } from 'd3-array';
 import { timeFormat } from "d3-time-format";
 import type { AppStore } from '$lib/app-store';
 import ExploreChart from "$lib/components/viz/ExploreChart.svelte";
-import TopKSummary from "$lib/components/TopKSummary.svelte";
+import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
     
 const store = getContext("rill:app:store") as AppStore;
 

@@ -27,7 +27,7 @@ $: titleInput = currentModel?.name;
 <header 
     style:font-size='12px'
     style:height="var(--header-height)" 
-    class="grid items-center content-stretch" 
+    class="grid items-center content-stretch bg-gray-100" 
     style:grid-template-columns="[title] auto [controls] auto">
     <div>
         <h1 title="model: {titleInput}" style:font-size='16px' class="grid grid-flow-col justify-start items-center gap-x-3 p-3 pl-5 pr-5">
@@ -40,6 +40,7 @@ $: titleInput = currentModel?.name;
                         editingTitle = true;
                     }}
                     class:font-bold={editingTitle === false}
+                    class="bg-gray-100"
                     on:blur={()  => { editingTitle = false; }}
                     value={titleInput} 
                     size={Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1} 
