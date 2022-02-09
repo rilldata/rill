@@ -3,7 +3,7 @@
  * contains the actions that can be taken to construct a dataset.
  */
 
- import type { DataModelerState, Query, Item } from "../../lib/types"
+ import type { DataModelerState, Model, Item } from "../../lib/types"
  import { sanitizeQuery as _sanitizeQuery } from "../../lib/util/sanitize-query.js";
  import { guidGenerator } from "../../lib/util/guid.js";
 
@@ -16,7 +16,7 @@ interface NewQueryArguments {
 
 let queryNumber = 1;
 
-export function newQuery(params:NewQueryArguments = {}): Query {
+export function newQuery(params:NewQueryArguments = {}): Model {
     const query = params.query || '';
     const sanitizedQuery = _sanitizeQuery(query);
     const name = `${params.name || `query_${queryNumber}`}.sql`;
@@ -31,7 +31,7 @@ export function newQuery(params:NewQueryArguments = {}): Query {
 	};
 }
 
-export function emptyQuery(): Query {
+export function emptyQuery(): Model {
 	return newQuery({});
 }
 
@@ -69,7 +69,7 @@ export function emptyQuery(): Query {
         },
         updateQuery({id, query}) {
             return (draft:DataModelerState) => {
-                const queryItem = getByID(draft.queries, id) as Query;
+                const queryItem = getByID(draft.queries, id) as Model;
                 queryItem.query = query;
             };
         },

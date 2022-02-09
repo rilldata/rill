@@ -7,7 +7,7 @@ import { createDatasetActions } from "./dataset/index.js";
 import { createModelActions } from "./model/index.js";
 import { createMetricsModelActions } from "./metrics-model/index.js";
 import { createExploreConfigurationActions } from "./explore/index.js";
-import type { Item, Query, Source, MetricsModel, DataModelerState } from "../lib/types"
+import type { Item, Model, Dataset, MetricsModel, DataModelerState } from "../lib/types"
 import { guidGenerator } from "../lib/util/guid.js";
 import { sanitizeQuery as _sanitizeQuery } from "../lib/util/sanitize-query.js";
 
@@ -19,7 +19,7 @@ interface NewQueryArguments {
     at?: number;
 }
 
-export function newSource(): Source {
+export function newSource(): Dataset {
     return {
         id: guidGenerator(),
         path: '',
@@ -31,7 +31,7 @@ export function newSource(): Source {
     }
 }
 
-export function newQuery(params:NewQueryArguments = {}): Query {
+export function newQuery(params:NewQueryArguments = {}): Model {
     const query = params.query || '';
     const sanitizedQuery = _sanitizeQuery(query);
     const name = `${params.name || `query_${queryNumber}`}.sql`;
@@ -46,7 +46,7 @@ export function newQuery(params:NewQueryArguments = {}): Query {
 	};
 }
 
-export function emptyQuery(): Query {
+export function emptyQuery(): Model {
 	return newQuery({});
 }
 
@@ -66,14 +66,14 @@ function getByID(items:(Item[]), id:string) : Item| null {
 
 export function addError(dispatch:Function, id:string, message:string) : void {
     dispatch((draft:DataModelerState) => {
-        let q = getByID(draft.queries, id) as Query;
+        let q = getByID(draft.queries, id) as Model;
         q.error = message;
     });
 }
 
 function clearQuery(dispatch:Function, id:string) : void {
     dispatch((draft:DataModelerState) => {
-        let q = getByID(draft.queries, id) as Query;
+        let q = getByID(draft.queries, id) as Model;
         q.sizeInBytes = undefined;
         q.destinationProfile = undefined;
         q.preview = undefined;
@@ -83,14 +83,14 @@ function clearQuery(dispatch:Function, id:string) : void {
 
 function clearError(dispatch:Function, id:string) {
     dispatch((draft:DataModelerState) => {
-        let q =  getByID(draft.queries, id) as Query;
+        let q =  getByID(draft.queries, id) as Model;
         q.error = undefined;
     });
 }
 
 function sanitizeQuery(dispatch:Function, id:string) {
     dispatch((draft:DataModelerState) => {
-        let q =  getByID(draft.queries, id) as Query;
+        let q =  getByID(draft.queries, id) as Model;
         q.sanitizedQuery = _sanitizeQuery(q.query);
     });
 }
@@ -152,7 +152,7 @@ export const createDataModelerActions = (api, notifyUser) => {
             return async (dispatch:Function, getState:() => DataModelerState) => {
                 //get query
                 const state = getState();
-                const query = getByID(state.queries, id) as Query;
+                const query = getByID(state.queries, id) as Model;
                 const tableName = query.name.split(".sql")[0];
                 // update destinationPreview
                 // the destinationPreview shoudl be of type Source
@@ -161,7 +161,7 @@ export const createDataModelerActions = (api, notifyUser) => {
                 
                 // drop the 
                 dispatch((draft:DataModelerState) => {
-                    const profile = (getByID(draft.queries, id) as Query).profile;
+                    const profile = (getByID(draft.queries, id) as Model).profile;
                     if (profile) {
                         profile.forEach(field => {
                             field.summary = undefined;
@@ -183,10 +183,10 @@ export const createDataModelerActions = (api, notifyUser) => {
                 
                 const profile = await api.createDestinationProfile(tableName);
                 dispatch((draft:DataModelerState) => {
-                    (getByID(draft.queries, id) as Query).profile = profile;
+                    (getByID(draft.queries, id) as Model).profile = profile;
                 })
                 dispatch((draft:DataModelerState) => {
-                    const sourceToUpdate = getByID(draft.queries, id) as Source;
+                    const sourceToUpdate = getByID(draft.queries, id) as Dataset;
                     sourceToUpdate.profile.map((t) => {
                         sourceToUpdate.profile.find(p => p.name === t.name).conceptualType = t.type;
                     });
@@ -235,7 +235,7 @@ export const createDataModelerActions = (api, notifyUser) => {
 
                     const duckdbTypes = await api.parquetToDBTypes(source.path);
                     dispatch((draft:DataModelerState) => {
-                        const sourceToUpdate = getByID(draft.sources, source.id) as Source;
+                        const sourceToUpdate = getByID(draft.sources, source.id) as Dataset;
                         duckdbTypes.map((t) => {
                             sourceToUpdate.profile.find(p => p.name === t.name).conceptualType = t.type;
                         });
