@@ -111,7 +111,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
       {/if}
       <div class='source-tables pt-4 pb-4'>
         {#if sources}
-          <NavEntry bind:active={showSources}>
+          <NavEntry expanded={showSources} on:select-body={() => {showSources = !showSources; }}>
             Sources
             <div class='italic text-gray-600' slot="contextual-information">
               {formatCount(sources.reduce((acc,v) => acc + v.cardinality, 0))} rows
