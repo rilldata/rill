@@ -5,6 +5,7 @@ import { timeFormat } from "d3-time-format";
 import type { AppStore } from '$lib/app-store';
 import ExploreChart from "$lib/components/viz/ExploreChart.svelte";
 import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
+import {dataModelerService} from "$lib/app-store";
     
 const store = getContext("rill:app:store") as AppStore;
 
@@ -41,7 +42,7 @@ let hoveredDate;
 
     <div style:grid-area="timeseries-header" class="grid grid-flow-col">
         <button on:click={() => {
-            store.action('deleteExploreConfiguration', { id: currentExploreConfiguration.id })
+            //dataModelerService.dispatch('deleteExploreConfiguration', [{ id: currentExploreConfiguration.id }])
         }}>delete</button>
     
         <button on:click={() => { ranges = { low: undefined,  high: undefined }}}>

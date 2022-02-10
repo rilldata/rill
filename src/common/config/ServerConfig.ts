@@ -20,7 +20,7 @@ export class ServerConfig extends Config<ServerConfig> {
     constructor(configJson) {
         super(configJson);
 
-        this.serverUrl = `http://${this.serverHost}/${this.serverPort}`;
-        this.socketUrl = `http://${this.socketHost}/${this.socketPort}`;
+        this.serverUrl = `http://${this.serverHost}:${this.serverPort}`;
+        this.socketUrl = `http://${this.socketHost}:${this.socketPort}`;
     }
 }

@@ -3,6 +3,7 @@ import { getContext, createEventDispatcher } from "svelte";
 import type { AppStore } from "$lib/app-store"
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
+import {dataModelerService} from "$lib/app-store";
 const dispatch = createEventDispatcher();
 const store = getContext('rill:app:store') as AppStore;
 
@@ -46,7 +47,7 @@ $: titleInput = currentModel?.name;
                     size={Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1} 
                     on:change={(e) => { 
                         if (currentModel?.id) {
-                            store.action('changeQueryName', { id: currentModel?.id, name: formatModelName(e.target.value) });
+                            dataModelerService.dispatch('updateModelName', [currentModel?.id, formatModelName(e.target.value)]);
                         }
                         
                     }} />
@@ -66,7 +67,7 @@ $: titleInput = currentModel?.name;
             const query = currentModel.query;
             const exportFilename = currentModel.name.replace('.sql', '.parquet');
             const path = `./export/${exportFilename}`
-            store.action('exportToParquet', {query, path, id: currentModel.id });
+            dataModelerService.dispatch('exportToParquet', [{query, path, id: currentModel.id }]);
           }}>generate {currentModel.name.replace('.sql', '.parquet')}</button>
         </div>
       {/if}

@@ -21,6 +21,7 @@ import type { Model } from "$lib/types";
 
 
 import {format} from "d3-format";
+import {dataModelerService} from "$lib/app-store";
 
 const store = getContext('rill:app:store') as AppStore;
 
@@ -85,7 +86,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
             const query = currentQuery.query;
             const exportFilename = currentQuery.name.replace('.sql', '.parquet');
             const path = `./export/${exportFilename}`
-            store.action('exportToParquet', {query, path, id: currentQuery.id });
+            //dataModelerService.dispatch('exportToParquet', [currentQuery.id, path]);
           }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
         </div>
       {/if}

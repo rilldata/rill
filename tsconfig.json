@@ -32,10 +32,9 @@
 		"outDir": "tsc-tmp"
 	},
 	"include": [
-		"src/**/*.d.ts", 
+		"src/**/*.d.ts",
 		"src/**/*.ts", 
 		"src/**/*.svelte",
-		"test/**/*.ts",
-		"tsc-tmp/**/*.js"
+		"test/**/*.ts"
 	]
 }

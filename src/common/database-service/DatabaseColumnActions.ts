@@ -39,8 +39,12 @@ export class DatabaseColumnActions extends DatabaseActions {
 
     public async getNumericHistogram(metadata: DatabaseMetadata,
                                      tableName: string, field: string, fieldType: string): Promise<NumericSummary> {
-        const results = await this.databaseClient.execute(
-            `SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM '${tableName}'`);
+        const results = await this.databaseClient.execute(`
+            SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field}
+            FROM '${tableName}'
+            -- WHERE ${field} != null
+            ORDER BY ${field}
+        `);
         return { histogram: calculateBins(results, field) };
     }
 

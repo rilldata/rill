@@ -34,9 +34,12 @@ export class DatasetStateActions extends StateActions {
     public pruneAndDedupeDatasets(draftState: DataModelerState, files: Array<string>): void {
         const filePaths = new Set(files);
 
-        draftState.sources = draftState.sources.filter((dataset, index, self) => {
+        const newSources = draftState.sources.filter((dataset, index, self) => {
            if (!filePaths.has(dataset.path)) return false;
            return index === self.findIndex(indexCheckDataset => (indexCheckDataset.path === dataset.path));
         });
+        if (newSources.length !== draftState.sources.length) {
+            draftState.sources = newSources;
+        }
     }
 }

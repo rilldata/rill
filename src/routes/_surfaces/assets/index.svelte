@@ -13,6 +13,7 @@ import ContextButton from "$lib/components/collapsible-table-summary/ContextButt
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
+import {dataModelerService} from "$lib/app-store";
 
 const store = getContext('rill:app:store') as AppStore;
 
@@ -96,7 +97,7 @@ onMount(() => {
               </CollapsibleSectionTitle>
               <ContextButton on:click={() => {
                 // FIXME: rename this action to model.
-                store.action('addQuery', {});
+                dataModelerService.dispatch("addModel", [{}]);
                 if (!showModels) {
                   showModels = true;
                 }
@@ -111,7 +112,7 @@ onMount(() => {
 
                 <CollapsibleTableSummary
                   on:select={() => {
-                    store.action('setActiveAsset', { id: query.id, assetType: 'model' });
+                    dataModelerService.dispatch("setActiveAsset", [query.id, 'model']);
                   }}
                   icon={ModelIcon}
                   name={query.name}

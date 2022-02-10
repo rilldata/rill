@@ -1,6 +1,6 @@
 import {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
-import {DataModelerSocketService} from "$common/data-modeler-service/DataModelerSocketService";
+import {DataModelerSocketService} from "$common/socket/DataModelerSocketService";
 import type {RootConfig} from "$common/config/RootConfig";
 
 export function clientFactory(config: RootConfig): {

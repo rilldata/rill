@@ -10,7 +10,7 @@ import {ModelActions} from "$common/data-modeler-service/ModelActions";
 import {ProfileColumnStateActions} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {DataModelerService} from "$common/data-modeler-service/DataModelerService";
 import {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnActions";
-import {SocketServer} from "$common/SocketServer";
+import {SocketServer} from "$common/socket/SocketServer";
 import {DatabaseService} from "$common/database-service/DatabaseService";
 import type {RootConfig} from "$common/config/RootConfig";
 
@@ -48,7 +48,7 @@ export function dataModelerServiceFactory(config: RootConfig) {
 export function serverFactory(config: RootConfig) {
     const {dataModelerStateService, dataModelerService} = dataModelerServiceFactory(config);
 
-    const socketServer = new SocketServer(dataModelerService, dataModelerStateService, config.server);
+    const socketServer = new SocketServer(dataModelerService, dataModelerStateService, config);
 
     return {dataModelerStateService, dataModelerService, socketServer};
 }

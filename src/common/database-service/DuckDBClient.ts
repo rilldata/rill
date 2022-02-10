@@ -20,7 +20,7 @@ export class DuckDBClient {
 
     public async init(): Promise<void> {
         // we can later on swap this over to WASM and update data loader
-        this.db = new duckdb.Database(`:${this.databaseConfig.databaseName}:`);
+        this.db = new duckdb.Database(this.databaseConfig.databaseName);
         this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
     }
 

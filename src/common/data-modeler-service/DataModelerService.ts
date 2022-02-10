@@ -45,9 +45,9 @@ export class DataModelerService {
             return;
         }
         const actionsInstance = this.actionsMap[action];
-        this.dataModelerStateService.dispatch("setStatus", [RUNNING_STATUS]);
+        // this.dataModelerStateService.dispatch("setStatus", [RUNNING_STATUS]);
         await actionsInstance[action].call(actionsInstance, this.dataModelerStateService.getCurrentState(), ...args);
-        this.dataModelerStateService.dispatch("setStatus", [IDLE_STATUS]);
+        // this.dataModelerStateService.dispatch("setStatus", [IDLE_STATUS]);
     }
 
     public async destroy(): Promise<void> {}

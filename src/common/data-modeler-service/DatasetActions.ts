@@ -6,6 +6,7 @@ import {IDLE_STATUS, RUNNING_STATUS} from "$common/constants";
 import {sanitizeTableName} from "$lib/util/sanitize-table-name";
 import {getParquetFiles} from "$common/utils/getParquetFiles";
 import {stat} from "fs/promises";
+import retryTimes = jest.retryTimes;
 
 export class DatasetActions extends DataModelerActions {
     public async clearDatasets(currentState: DataModelerState): Promise<void> {
@@ -14,8 +15,29 @@ export class DatasetActions extends DataModelerActions {
 
     public async updateDatasetsFromSource(currentState: DataModelerState, sourcePath: string): Promise<void> {
         const files = await getParquetFiles(sourcePath);
-        this.dataModelerStateService.dispatch("pruneAndDedupeDatasets", [files]);
-        await Promise.all(files.map(file => this.dataModelerService.dispatch("addOrUpdateDataset", [file])));
+        const filePaths = new Set(files);
+        const newSources = currentState.sources.filter((dataset, index, self) => {
+            if (!filePaths.has(dataset.path)) return false;
+            return index === self.findIndex(indexCheckDataset => (indexCheckDataset.path === dataset.path));
+        });
+        if (currentState.sources.length !== newSources.length) {
+            this.dataModelerStateService.dispatch("pruneAndDedupeDatasets", [files]);
+        }
+
+        await this.dataModelerService.dispatch("addOrUpdateAllDataset", [files]);
+    }
+
+    public async addOrUpdateAllDataset(currentState: DataModelerState, files: Array<string>): Promise<void> {
+        const filePaths = new Set(files);
+        await Promise.all(currentState.sources.map(async (dataset) => {
+            const fileStats = await stat(dataset.path);
+            if (fileStats.mtimeMs < dataset.lastUpdated) filePaths.delete(dataset.path);
+            else filePaths.add(dataset.path);
+        }));
+        if (filePaths.size > 0) {
+            await Promise.all([...filePaths].map(filePath =>
+              this.dataModelerService.dispatch("addOrUpdateDataset", [filePath])));
+        }
     }
 
     public async addOrUpdateDataset(currentState: DataModelerState, path: string): Promise<void> {
@@ -23,6 +45,7 @@ export class DatasetActions extends DataModelerActions {
         const existingDataset = datasets.find(s => s.path === path);
         const dataset = {...(existingDataset || newSource())};
         dataset.path = path;
+        dataset.name = path.split("/").slice(-1)[0];
         dataset.tableName = sanitizeTableName(path);
 
         // get stats of the file and update only if it changed since we last saw it
@@ -63,6 +86,7 @@ export class DatasetActions extends DataModelerActions {
         const newDataset: Dataset = {
             id: dataset.id,
             path: dataset.path,
+            name: dataset.name,
             tableName: dataset.tableName,
             head: undefined,
         };

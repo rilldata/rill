@@ -4,10 +4,13 @@ import type {ModelStateActions} from "./ModelStateActions";
 import type {ProfileColumnStateActions} from "./ProfileColumnStateActions";
 import type {ExtractActionTypeDefinitions} from "$common/ServiceBase";
 import type {StateActions} from "$common/data-modeler-state-service/StateActions";
-import { writable, get, Writable } from "svelte/store";
-import produce, {enablePatches, applyPatches, Patch} from "immer";
+import { writable, get } from "svelte/store";
+import type {Writable} from "svelte/store";
+import produce, {enablePatches, applyPatches} from "immer";
+import type {Patch} from "immer";
 import {initialState} from "../dataFactory";
-import {getActionMethods, PickActionFunctions} from "$common/ServiceBase";
+import {getActionMethods} from "$common/ServiceBase";
+import type {PickActionFunctions} from "$common/ServiceBase";
 
 enablePatches();
 
@@ -21,7 +24,7 @@ type StateActionsDefinition = ExtractActionTypeDefinitions<DataModelerState, Sta
 export type PatchesSubscriber = (patches: Array<Patch>, inversePatches: Array<Patch>) => void;
 
 export class DataModelerStateService {
-    private store: Writable<DataModelerState>;
+    public store: Writable<DataModelerState>;
 
     private readonly actionsMap: {
         [Action in keyof StateActionsDefinition]?: StateActionsClasses

@@ -28,7 +28,7 @@ export class FunctionalTestBase extends TestBase {
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
         const serverInstances = dataModelerServiceFactory(new RootConfig({
-            database: { databaseName: "test", parquetFolder: "data" }
+            database: { parquetFolder: "data" }
         }));
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
@@ -61,6 +61,7 @@ export class FunctionalTestBase extends TestBase {
             expect(profileColumn.type).toBe(columns[idx].type);
             expect(profileColumn.nullCount > 0).toBe(columns[idx].isNull);
             // TODO: assert summary
+            // console.log(profileColumn.name, profileColumn.summary);
         });
     }
 
@@ -68,8 +69,7 @@ export class FunctionalTestBase extends TestBase {
         await asyncWait(200);
         await waitUntil(() => {
             const currentState = this.clientDataModelerStateService.getCurrentState();
-            return currentState.status === IDLE_STATUS &&
-                (currentState[columnarKey] as any[]).every(item => item.status === IDLE_STATUS);
+            return (currentState[columnarKey] as any[]).every(item => item.status === IDLE_STATUS);
         });
     }
 }
