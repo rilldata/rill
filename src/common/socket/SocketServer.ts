@@ -3,9 +3,10 @@ import type {DataModelerService} from "$common/data-modeler-service/DataModelerS
 import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import type { RootConfig } from "$common/config/RootConfig";
 import {existsSync, readFileSync, writeFileSync} from "fs";
+import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
 
 export class SocketServer {
-    private readonly server: Server;
+    private readonly server: Server<ClientToServerEvents, ServerToClientEvents>;
 
     constructor(private readonly dataModelerService: DataModelerService,
                 private readonly dataModelerStateService: DataModelerStateService,
@@ -13,6 +14,10 @@ export class SocketServer {
         this.server = new Server({
             cors: { origin: this.config.server.serverUrl, methods: ["GET", "POST"] },
         });
+    }
+
+    public getSocketServer() {
+        return this.server;
     }
 
     public async init(): Promise<void> {
@@ -25,7 +30,7 @@ export class SocketServer {
 
         this.server.on("connection", (socket) => {
             console.log("New connection", socket.id);
-            socket.emit("init-state", this.dataModelerStateService.getCurrentState());
+            socket.emit("initialState", this.dataModelerStateService.getCurrentState());
             socket.on("action", async (action, args) => {
                 await this.dataModelerService.dispatch(action, args);
             });
@@ -50,9 +55,9 @@ export class SocketServer {
 
     private syncStateToFile() {
         setInterval(() => {
-			      writeFileSync(this.config.state.savedStateFile,
+            writeFileSync(this.config.state.savedStateFile,
               JSON.stringify(this.dataModelerStateService.getCurrentState()));
-		    }, 500);
+        }, 500);
     }
 
     private readSourceFolder() {

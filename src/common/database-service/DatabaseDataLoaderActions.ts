@@ -1,5 +1,5 @@
 import {DatabaseActions} from "./DatabaseActions";
-import fs from "fs";
+import { existsSync, mkdirSync } from "fs";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
 /**
@@ -13,10 +13,20 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     }
 
     public async getDestinationSize(metadata: DatabaseMetadata, path: string): Promise<number> {
-        if (fs.existsSync(path)) {
+        if (existsSync(path)) {
             const size = await this.databaseClient.execute(`SELECT total_compressed_size from parquet_metadata('${path}')`) as any[];
             return size.reduce((acc: number, v: Record<string, any>) => acc + v.total_compressed_size, 0);
         }
         return undefined;
+    }
+
+    public async exportToParquet(metadata: DatabaseMetadata, query: string, exportFile: string): Promise<any> {
+        if (!existsSync(this.databaseConfig.exportFolder)) {
+            mkdirSync(this.databaseConfig.exportFolder);
+        }
+        const exportPath = `${this.databaseConfig.exportFolder}/${exportFile}`;
+        const exportQuery = `COPY (${query}) TO '${exportPath}' (FORMAT 'parquet')`;
+        await this.databaseClient.execute(exportQuery);
+        return exportPath;
     }
 }

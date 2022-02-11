@@ -13,6 +13,7 @@ import {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnAc
 import {SocketServer} from "$common/socket/SocketServer";
 import {DatabaseService} from "$common/database-service/DatabaseService";
 import type {RootConfig} from "$common/config/RootConfig";
+import { SocketNotificationService } from "$common/socket/SocketNotificationService";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -34,21 +35,24 @@ export function dataModelerStateServiceFactory() {
 export function dataModelerServiceFactory(config: RootConfig) {
     const databaseService = databaseServiceFactory(config);
 
-    const dataModelerStateService = dataModelerStateServiceFactory()
+    const dataModelerStateService = dataModelerStateServiceFactory();
+
+    const notificationService = new SocketNotificationService();
 
     const datasetActions = new DatasetActions(dataModelerStateService, databaseService);
     const modelActions = new ModelActions(dataModelerStateService, databaseService);
     const profileColumnActions = new ProfileColumnActions(dataModelerStateService, databaseService);
-    const dataModelerService = new DataModelerService(dataModelerStateService, databaseService,
+    const dataModelerService = new DataModelerService(dataModelerStateService, databaseService, notificationService,
         [datasetActions, modelActions, profileColumnActions]);
 
-    return {dataModelerStateService, dataModelerService};
+    return {dataModelerStateService, dataModelerService, notificationService};
 }
 
 export function serverFactory(config: RootConfig) {
-    const {dataModelerStateService, dataModelerService} = dataModelerServiceFactory(config);
+    const {dataModelerStateService, dataModelerService, notificationService} = dataModelerServiceFactory(config);
 
     const socketServer = new SocketServer(dataModelerService, dataModelerStateService, config);
+    notificationService.setSocketServer(socketServer.getSocketServer());
 
     return {dataModelerStateService, dataModelerService, socketServer};
 }

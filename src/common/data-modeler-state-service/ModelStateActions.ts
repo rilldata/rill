@@ -1,6 +1,6 @@
 import {StateActions} from "./StateActions";
 import type {DataModelerState, Model, ProfileColumn} from "$lib/types";
-import {newQuery} from "$common/dataFactory";
+import {getNewModel} from "$common/stateInstancesFactory";
 
 export interface NewModelParams {
     query?: string;
@@ -11,7 +11,7 @@ export interface NewModelParams {
 
 export class ModelStateActions extends StateActions {
     public addModel(draftState: DataModelerState, params: NewModelParams): void {
-        const newModel = newQuery({query: params.query, name: params.name});
+        const newModel = getNewModel({query: params.query, name: params.name});
         if (params.at !== undefined) {
             draftState.queries.splice(params.at, 0, newModel);
         } else {

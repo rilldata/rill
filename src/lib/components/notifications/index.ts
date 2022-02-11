@@ -59,7 +59,7 @@ import type { SvelteComponent } from "svelte";
        clear();
      },
      listenToSocket(s) {
-         // s.on('notification', ({ message, type }) => send({message, type }))
+         s.on('notification', ({ message, type }) => send({message, type }))
      }
    };
  }

@@ -96,7 +96,6 @@ onMount(() => {
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
               <ContextButton on:click={() => {
-                // FIXME: rename this action to model.
                 dataModelerService.dispatch("addModel", [{}]);
                 if (!showModels) {
                   showModels = true;

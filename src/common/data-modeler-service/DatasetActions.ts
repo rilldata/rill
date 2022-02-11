@@ -1,18 +1,13 @@
 import {DataModelerActions} from ".//DataModelerActions";
 import type {DataModelerState, Dataset} from "$lib/types";
-import {newSource} from "$common/dataFactory";
+import {getNewDataset} from "$common/stateInstancesFactory";
 import {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {IDLE_STATUS, RUNNING_STATUS} from "$common/constants";
 import {sanitizeTableName} from "$lib/util/sanitize-table-name";
 import {getParquetFiles} from "$common/utils/getParquetFiles";
 import {stat} from "fs/promises";
-import retryTimes = jest.retryTimes;
 
 export class DatasetActions extends DataModelerActions {
-    public async clearDatasets(currentState: DataModelerState): Promise<void> {
-        // TODO
-    }
-
     public async updateDatasetsFromSource(currentState: DataModelerState, sourcePath: string): Promise<void> {
         const files = await getParquetFiles(sourcePath);
         const filePaths = new Set(files);
@@ -43,7 +38,7 @@ export class DatasetActions extends DataModelerActions {
     public async addOrUpdateDataset(currentState: DataModelerState, path: string): Promise<void> {
         const datasets = currentState.sources;
         const existingDataset = datasets.find(s => s.path === path);
-        const dataset = {...(existingDataset || newSource())};
+        const dataset = {...(existingDataset || getNewDataset())};
         dataset.path = path;
         dataset.name = path.split("/").slice(-1)[0];
         dataset.tableName = sanitizeTableName(path);

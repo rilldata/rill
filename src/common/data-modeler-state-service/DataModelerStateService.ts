@@ -8,7 +8,7 @@ import { writable, get } from "svelte/store";
 import type {Writable} from "svelte/store";
 import produce, {enablePatches, applyPatches} from "immer";
 import type {Patch} from "immer";
-import {initialState} from "../dataFactory";
+import {initialState} from "../stateInstancesFactory";
 import {getActionMethods} from "$common/ServiceBase";
 import type {PickActionFunctions} from "$common/ServiceBase";
 
@@ -19,10 +19,13 @@ type StateActionsClasses = PickActionFunctions<DataModelerState, (
     ModelStateActions &
     ProfileColumnStateActions
 )>;
-type StateActionsDefinition = ExtractActionTypeDefinitions<DataModelerState, StateActionsClasses>;
+export type StateActionsDefinition = ExtractActionTypeDefinitions<DataModelerState, StateActionsClasses>;
 
 export type PatchesSubscriber = (patches: Array<Patch>, inversePatches: Array<Patch>) => void;
 
+/**
+ * Lower order actions that update the data modeler state directly and somewhat atomically.
+ */
 export class DataModelerStateService {
     public store: Writable<DataModelerState>;
 

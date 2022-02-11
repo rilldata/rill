@@ -47,8 +47,12 @@ export class ModelActions extends DataModelerActions {
             [ColumnarItemType.Model, modelId, IDLE_STATUS]);
     }
 
-    public async exportToParquet(currentState: DataModelerState, modeId: string, exportPath: string): Promise<void> {
-        // TODO
+    public async exportToParquet(currentState: DataModelerState, modelId: string, exportFile: string): Promise<void> {
+        const model = currentState.queries.find(findModel => findModel.id === modelId);
+        const exportPath = await this.databaseService.dispatch("exportToParquet", [model.sanitizedQuery, exportFile]);
+        await this.dataModelerStateService.dispatch("updateModelDestinationSize",
+          [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
+        this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"})
     }
 
     public async updateModelName(currentState: DataModelerState, modelId: string, name: string): Promise<void> {

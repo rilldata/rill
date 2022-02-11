@@ -3,6 +3,7 @@ import type { Writable } from "svelte/store";
 import type { DataModelerState } from "./types";
 import { clientFactory } from "$common/clientFactory";
 import { RootConfig } from "$common/config/RootConfig";
+import type { DataModelerSocketService } from "$common/socket/DataModelerSocketService";
 
 interface ServerToClientEvents {
 	['app-state']: (state:DataModelerState) => void;
@@ -26,7 +27,7 @@ export function createStore() : AppStore {
 	return {
 		subscribe: dataModelerStateService.store.subscribe,
 		// @ts-ignore
-		socket: null,
+		socket: (dataModelerService as DataModelerSocketService).getSocket(),
 		reset() {
 			// socket.emit('reset');
 		},
