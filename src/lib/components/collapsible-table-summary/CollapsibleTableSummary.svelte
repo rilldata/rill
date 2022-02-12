@@ -1,9 +1,16 @@
 <script lang="ts">
+import type { SvelteComponent } from "svelte/internal";
 import { onMount, createEventDispatcher } from "svelte";
 import { fade, slide, fly } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
+
+import Menu from "$lib/components/menu/Menu.svelte";
+import MenuItem from "$lib/components/menu/MenuItem.svelte";
+import Divider from "$lib/components/menu/Divider.svelte";
+
+import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
 
 import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
 import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
@@ -11,17 +18,23 @@ import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 import Spinner from "$lib/components/Spinner.svelte";
 
+// icons
+import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
+import CircleEmpty from "$lib/components/icons/CircleEmpty.svelte";
+import CheckCircle from "$lib/components/icons/CheckCircle.svelte";
+
 import { dropStore } from '$lib/drop-store';
-import type { SvelteComponent } from "svelte/internal";
 import Histogram from "$lib/components/viz/SmallHistogram.svelte";
 import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
 import {DataTypeIcon} from "$lib/components/data-types";
 import { CATEGORICALS } from "$lib/duckdb-data-types"
 
 import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
-import { defaultSort } from "$lib/components/collapsible-table-summary/sort-utils"
+import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/collapsible-table-summary/sort-utils"
 
-import { horizontalSlide } from "$lib/transitions"
+import { onClickOutside } from "$lib/util/on-click-outside";
+
+import { horizontalSlide } from "$lib/transitions";
 
 import { intervalToTimestring, formatCardinality } from "$lib/util/formatters";
 
@@ -45,18 +58,19 @@ const formatInteger = format(',');
 const percentage = format('.1%');
 
 let containerWidth = 0;
-
-function humanFileSize(size:number) {
-    var i = Math.floor( Math.log(size) / Math.log(1024) );
-    return ( size / Math.pow(1024, i) ).toFixed(2) + ['B', 'K', 'M', 'G'][i];
-};
-
+let contextMenu;
+let contextMenuOpen = false;
 let container;
+
 onMount(() => {
     const observer = new ResizeObserver(entries => {
         containerWidth = container?.clientWidth ?? 0;
     });
     observer.observe(container);
+    onClickOutside(() => {
+        console.log('hmmm')
+        contextMenuOpen = false;
+    }, contextMenu);
 });
 
 $: collapseGrid = containerWidth < collapseWidth;
@@ -92,6 +106,9 @@ function typeToSymbol(fieldType) {
     }
 }
 
+// state for title bar hover.
+let titleElementHovered = false;
+
 </script>
 
 <div bind:this={container}>
@@ -126,6 +143,7 @@ function typeToSymbol(fieldType) {
     <NavEntry
         expanded={show}
         selected={emphasizeTitle}
+        bind:hovered={titleElementHovered}
         on:select-body={() => { 
             // show = !show; 
             // pass up select body
@@ -156,9 +174,15 @@ function typeToSymbol(fieldType) {
                                 {/if}
                             </span>
                         {:else}
-                            <span class="grid grid-flow-col text-gray-500">
-                                <span><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span>{#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
-                                " transition:horizontalSlide|local={{duration: 250 + sizeInBytes / 5000000 * 1.3}}>, {sizeInBytes !== undefined && $sizeTween !== NaN && sizeInBytes !== NaN ? humanFileSize($sizeTween) : ''}</span>{/if}
+                            <span class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap ">
+                                {#if titleElementHovered || emphasizeTitle}
+                                <span ><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span>
+                                <span class='self-center'>
+                                    <ContextButton on:click={() => { contextMenuOpen = !contextMenuOpen; }}><MoreIcon /></ContextButton>
+                                </span>
+                                {/if}
+                                <!-- {#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
+                                " transition:horizontalSlide|local={{duration: 250 + sizeInBytes / 5000000 * 1.3}}>, {sizeInBytes !== undefined && $sizeTween !== NaN && sizeInBytes !== NaN ? humanFileSize($sizeTween) : ''}</span>{/if} -->
                             </span>
                         {/if}
                     </div>
@@ -166,10 +190,37 @@ function typeToSymbol(fieldType) {
             </svelte:fragment>
       </NavEntry>
     </div>
+    {#if contextMenuOpen}
+        <div bind:this={contextMenu} class="absolute z-50" style:transform="translateY(-1rem)" style:left="calc(var(--left-sidebar-width) - 1rem)">
+            <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
+                <MenuItem on:select={() => { sortMethod = defaultSort;  }}>
+                    <svelte:component slot="icon" this={sortMethod === defaultSort ? CheckCircle : CircleEmpty} size="16px" />
+                    sort columns by cardinality
+                </MenuItem>
+                <MenuItem on:select={() => { sortMethod = sortByName; }}>
+                    <svelte:component slot="icon" this={sortMethod === sortByName ? CheckCircle : CircleEmpty} size="16px" />
+                    sort columns by name
+                </MenuItem>
+                <MenuItem on:select={() => { sortMethod = sortByNullity; }}>
+                    <svelte:component slot="icon" this={sortMethod === sortByNullity ? CheckCircle : CircleEmpty} size="16px" />
+                    sort columns by null percentage
+                </MenuItem>
+                <Divider />
+                <MenuItem on:select={() => { previewView="card"; }}>
+                    <svelte:component slot="icon" this={previewView === "card" ? CheckCircle : CircleEmpty} size="16px" />
+                    show cardinality and null %
+                </MenuItem>
+                <MenuItem on:select={() => { previewView="example"; }}>
+                    <svelte:component slot="icon" this={previewView === "example" ? CheckCircle : CircleEmpty} size="16px" />
+                    show example
+                </MenuItem>
+            </Menu>
+        </div>
+    {/if}
     {#if show}
         <div class="pl-3 pr-5 pt-1  pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
 
-            <SummaryViewSelector bind:sortMethod bind:previewView />
+            <!-- <SummaryViewSelector bind:sortMethod bind:previewView /> -->
 
             <div 
                 class="gap-x-4 w-full items-center grid" 

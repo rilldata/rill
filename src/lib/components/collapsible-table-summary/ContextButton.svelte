@@ -4,8 +4,8 @@
     
     <button
     on:click
-    style:width="20px"
-    style:height="20px"
+    style:width="16px"
+    style:height="16px"
     style:grid-column="left-control"
     class="
         hover:bg-gray-300
@@ -18,7 +18,7 @@
         border
         border-transparent
         hover:border-gray-400
-        {!rotated ? '-rotate-90' : ''}"
+        {rotated ? '-rotate-90' : ''}"
     >
         <slot />
     </button>
