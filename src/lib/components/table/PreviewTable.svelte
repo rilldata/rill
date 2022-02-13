@@ -138,7 +138,7 @@ function togglePin(name, type, selectedCols) {
 {#if visualCellValue !== undefined}
 <div 
     transition:slide={{duration: 100}} 
-        class="sticky bottom-0 left-0 bg-white p-3 border border-t-1 border-gray-200 pointer-events-none z-30 grid grid-flow-col justify-start gap-x-3 items-center"
+        class="sticky bottom-0 left-0 bg-white p-3 border border-t-1 border-gray-200 pointer-events-none z-30 grid grid-flow-col justify-start gap-x-3 items-baseline"
         style:box-shadow="0 -4px 2px 0 rgb(0 0 0 / 0.05)"
     >
         <!-- <DataTypeIcon type={visualCellType} /> -->
