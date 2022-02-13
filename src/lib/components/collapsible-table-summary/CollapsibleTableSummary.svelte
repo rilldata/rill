@@ -182,6 +182,7 @@ function typeToSymbol(fieldType) {
             >
                 {#if sortedProfile}
                     {#each sortedProfile as column (column.name)}
+                    <!-- FIXME: make this element work with src/lib/components/data-types/DataTypeIcon.svelte -->
                     <div 
                         class="pl-3 pr-5 font-medium break-word grid gap-x-2 items-center" 
                         style="

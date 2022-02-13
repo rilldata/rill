@@ -17,11 +17,11 @@ export let sticky:string = 'top';
             pl-4
             pr-4
             border
-            border-gray-300
+            border-gray-200
             border-t-0
             border-l-0
             text-left
-            bg-gray-200
+            bg-gray-100
         "
     >
         <slot />

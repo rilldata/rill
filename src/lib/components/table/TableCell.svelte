@@ -5,12 +5,12 @@
  * - the max cell-width that preserves a timestamp is 210px.
 */
 import { createEventDispatcher } from "svelte";
-import { timeFormat } from "d3-time-format";
-import { DataType } from "$lib/components/data-types/"
+import { FormattedDataType } from "$lib/components/data-types/";
+import { standardTimestampFormat } from "$lib/util/formatters"
 export let type;
 export let value;
 export let name;
-export let index;
+export let index = undefined;
 
 const dispatch = createEventDispatcher();
 
@@ -21,12 +21,11 @@ const dispatch = createEventDispatcher();
  * IF time differs but date does not, we gray out date.
  * For now, et's just default to showing the value.
  */
-let timeFormatter = timeFormat('%b %d, %Y %I:%M:%S');
 
 let formattedValue;
 $: {
     if (type === 'TIMESTAMP') {
-        formattedValue = timeFormatter(value);
+        formattedValue = standardTimestampFormat(value);
     } else if(value === null) {
         formattedValue = `∅ null`
     } else {
@@ -71,7 +70,7 @@ let activeCell = false;
     style:width="var(--table-column-width-{name}, 210px)"
     style:max-width="var(--table-column-width-{name}, 210px)"
 >
-    <DataType {type} {isNull} inTable>
+    <FormattedDataType {type} {isNull} inTable>
         {formattedValue}
-    </DataType>
+    </FormattedDataType>
 </td>
