@@ -5,7 +5,8 @@
  * - the max cell-width that preserves a timestamp is 210px.
 */
 import { createEventDispatcher } from "svelte";
-import { timeFormat } from "d3-time-format"
+import { timeFormat } from "d3-time-format";
+import { DataType } from "$lib/components/data-types/"
 export let type;
 export let value;
 export let name;
@@ -65,36 +66,12 @@ let activeCell = false;
         pr-4
         border
         border-gray-200
-        {styleType}
-        {isNull && 'null'}
         {activeCell && 'bg-gray-200'}
     "
     style:width="var(--table-column-width-{name}, 210px)"
     style:max-width="var(--table-column-width-{name}, 210px)"
 >
-    {formattedValue}
+    <DataType {type} {isNull} inTable>
+        {formattedValue}
+    </DataType>
 </td>
-
-<style lang="postcss">
-
-td {
-    @apply text-gray-700;
-}
-
-.null {
-    @apply text-gray-400 italic;
-}
-
-.number {
-    @apply pl-8 text-right font-semibold;
-}
-
-.null.number {
-    @apply text-right font-normal;
-}
-
-.timestamp {
-    @apply pl-8 text-right italic font-semibold text-slate-500;
-}
-
-</style>

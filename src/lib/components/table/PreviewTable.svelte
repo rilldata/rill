@@ -7,6 +7,7 @@
 */
 import { slide } from "svelte/transition";
 import { Table, TableRow, TableHeader, TableCell } from "$lib/components/table/";
+import { DataType } from "$lib/components/data-types/"
 import Pin from "$lib/components/icons/Pin.svelte";
 
 interface ColumnName {
@@ -83,7 +84,6 @@ function togglePin(name, type, selectedCols) {
                     {name} 
                     {type} 
                     value={row[name]}
-                    hovered={activeIndex === index}
                     />
                 {/each}
             </TableRow>
@@ -120,7 +120,6 @@ function togglePin(name, type, selectedCols) {
                             {name} 
                             {type} 
                             {index}
-                            hovered={activeIndex === index}
                             value={row[name]} />
                     {/each}
                 </TableRow>
@@ -136,6 +135,8 @@ function togglePin(name, type, selectedCols) {
         style:box-shadow="0 -4px 2px 0 rgb(0 0 0 / 0.05)"
     >
         <span class='font-bold pr-5'>{visualCellField}</span>
-        {visualCellValue}
+        <DataType type={columnNames.find(column => column.name === visualCellField).type} isNull={visualCellValue === null}>
+            {visualCellValue}
+        </DataType>
 </div>
 {/if}
