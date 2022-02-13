@@ -144,7 +144,7 @@ function togglePin(name, type, selectedCols) {
         <!-- <DataTypeIcon type={visualCellType} /> -->
         <span class='font-bold pr-5'>{visualCellField}</span>
         <FormattedDataType type={visualCellType} isNull={visualCellValue === null}>
-            {visualCellType === 'TIMESTAMP' ? standardTimestampFormat(visualCellValue) : visualCellValue}
+            {visualCellType === 'TIMESTAMP' ? standardTimestampFormat(new Date(visualCellValue)) : visualCellValue}
         </FormattedDataType>
 </div>
 {/if}
