@@ -48,14 +48,15 @@ function togglePin(name, type, selectedCols) {
     }
 }
 
+
 </script>
 
-<div class='flex relative'>
+<div class='flex relative bg-gray-100'>
     
     <Table on:mouseleave={() => { visualCellValue = undefined; }}>
         <!-- headers -->
         <TableRow>
-            {#each columnNames as {name, type}}
+            {#each columnNames as {name, type} (name)}
                 {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
                 <TableHeader {name} {type}>
                  <div 
@@ -85,12 +86,12 @@ function togglePin(name, type, selectedCols) {
         <!-- values -->
         {#each rows as row, index}
             <TableRow hovered={activeIndex === index}>
-                {#each columnNames as { name, type }}
+                {#each columnNames as { name, type } (index+name)}
                     <TableCell
-                    on:inspect={() => { setActiveElement(row[name], name, index) }} 
-                    {name} 
-                    {type} 
-                    value={row[name]}
+                        on:inspect={() => { setActiveElement(row[name], name, index) }} 
+                        {name} 
+                        {type} 
+                        value={row[name]}
                     />
                 {/each}
             </TableRow>
@@ -98,7 +99,7 @@ function togglePin(name, type, selectedCols) {
     </Table>
 
     {#if selectedColumns.length}
-    <div class="sticky right-0 z-20 bg-white border border-l-4 border-t-0 border-b-0 border-r-0 border-gray-400" >
+    <div class="sticky right-0 z-20 bg-white border border-l-4 border-t-0 border-b-0 border-r-0 border-gray-300" >
         <Table>
             <TableRow>
                 {#each selectedColumns as {name, type} (name)}
@@ -135,13 +136,13 @@ function togglePin(name, type, selectedCols) {
     </div>
     {/if}
 </div>
+
 {#if visualCellValue !== undefined}
 <div 
     transition:slide={{duration: 100}} 
         class="sticky bottom-0 left-0 bg-white p-3 border border-t-1 border-gray-200 pointer-events-none z-30 grid grid-flow-col justify-start gap-x-3 items-baseline"
         style:box-shadow="0 -4px 2px 0 rgb(0 0 0 / 0.05)"
     >
-        <!-- <DataTypeIcon type={visualCellType} /> -->
         <span class='font-bold pr-5'>{visualCellField}</span>
         <FormattedDataType type={visualCellType} isNull={visualCellValue === null}>
             {visualCellType === 'TIMESTAMP' ? standardTimestampFormat(new Date(visualCellValue)) : visualCellValue}

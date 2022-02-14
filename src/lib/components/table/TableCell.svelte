@@ -5,15 +5,15 @@
  * - the max cell-width that preserves a timestamp is 210px.
 */
 import { createEventDispatcher } from "svelte";
+import { fade } from "svelte/transition"
 import { FormattedDataType } from "$lib/components/data-types/";
-import { standardTimestampFormat } from "$lib/util/formatters"
+import { standardTimestampFormat } from "$lib/util/formatters";
 export let type;
 export let value;
 export let name;
 export let index = undefined;
 
 const dispatch = createEventDispatcher();
-
 /**
  * FIXME: should we format the date according to the range?
  * IF date and time varies, we show with same styling
@@ -34,20 +34,7 @@ $: {
     }
 }
 
-let styleType:string;
 let isNull = false;
-$: {
-    if (value === null) {
-        isNull = true;
-    }
-    if (type === 'VARCHAR') {
-        styleType = 'varchar';
-    } else if (type === 'TIMESTAMP') {
-        styleType = 'timestamp';
-    } else {
-        styleType = 'number';
-    }
-}
 
 let activeCell = false;
 
@@ -71,7 +58,11 @@ let activeCell = false;
     style:width="var(--table-column-width-{name}, 210px)"
     style:max-width="var(--table-column-width-{name}, 210px)"
 >
-    <FormattedDataType {type} {isNull} inTable>
-        {formattedValue}
-    </FormattedDataType>
+    {#if value !== undefined}
+    <span transition:fade={{duration: 75}}>
+        <FormattedDataType {type} {isNull} inTable>
+            {formattedValue}
+        </FormattedDataType>
+    </span>
+    {/if}
 </td>

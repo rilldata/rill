@@ -11,17 +11,17 @@ $: if ($store?.queries && $store?.activeAsset) currentQuery = $store.queries.fin
 </script>
 
 <div 
-    class=""
     style:width="calc(100vw - var(--left-sidebar-width))"
     style:height="var(--bottom-sidebar-width)"
 >
 
     <div 
-        class="relative  bg-gray-50 overflow-x-auto border-t border-gray-300" 
+        class="relative  bg-gray-50 overflow-auto border-t border-gray-300" 
         style:height="var(--bottom-sidebar-width)"
         style:min-width="calc(100vw - var(--left-sidebar-width) - .5rem)"
         style:font-size="12px">
         {#if currentQuery?.preview}
+        <!-- <RowTable data={currentQuery.preview} /> -->
         <PreviewTable rows={currentQuery.preview} columnNames={currentQuery.profile} />
         <!-- <RowTable data={currentQuery.preview} /> -->
     {/if}

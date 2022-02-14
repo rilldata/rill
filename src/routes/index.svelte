@@ -26,6 +26,7 @@ const store = getContext("rill:app:store");
     <InspectorSidebar />
   </div>
   <div
+    style:display="none"
     class='preview-drawer bg-white'
     style:height="var(--bottom-sidebar-width, 300px)"
     style:grid-area="preview" 
