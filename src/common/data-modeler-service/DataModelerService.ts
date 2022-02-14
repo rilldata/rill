@@ -27,7 +27,7 @@ export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<DataMode
  * Use dispatch for taking actions.
  *
  * Is passed an array {@link DataModelerActions} instances.
- * Actions supported is dependent on these instances.
+ * Actions supported is dependent on these instances passed in the constructor.
  * One caveat to note, type definition and actual instances passed might not match.
  */
 export class DataModelerService {

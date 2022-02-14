@@ -19,10 +19,10 @@ export class DatasetActions extends DataModelerActions {
             this.dataModelerStateService.dispatch("pruneAndDedupeDatasets", [files]);
         }
 
-        await this.dataModelerService.dispatch("addOrUpdateAllDataset", [files]);
+        await this.dataModelerService.dispatch("addOrUpdateAllDatasets", [files]);
     }
 
-    public async addOrUpdateAllDataset(currentState: DataModelerState, files: Array<string>): Promise<void> {
+    public async addOrUpdateAllDatasets(currentState: DataModelerState, files: Array<string>): Promise<void> {
         const filePaths = new Set(files);
         await Promise.all(currentState.sources.map(async (dataset) => {
             const fileStats = await stat(dataset.path);

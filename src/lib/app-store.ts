@@ -14,8 +14,6 @@ interface ClientToServerEvents {
 
 export interface AppStore extends Pick<Writable<DataModelerState>, "subscribe"> {
 	socket:Socket<ServerToClientEvents, ClientToServerEvents>;
-	reset:Function;
-	action:Function;
 }
 
 const clientInstances = clientFactory(RootConfig.getDefaultConfig());
@@ -28,11 +26,5 @@ export function createStore() : AppStore {
 		subscribe: dataModelerStateService.store.subscribe,
 		// @ts-ignore
 		socket: (dataModelerService as DataModelerSocketService).getSocket(),
-		reset() {
-			// socket.emit('reset');
-		},
-		action(name: any, args: any) {
-			dataModelerService.dispatch(name, args);
-		}
 	}
 }

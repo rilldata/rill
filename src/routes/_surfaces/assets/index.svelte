@@ -73,11 +73,11 @@ onMount(() => {
             {#if showSources}
               <div class="pb-6" transition:slide|local={{duration:200}}>
               {#if $store && $store.sources}
-                {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
+                {#each ($store.sources) as { path, tableName, cardinality, profile, head, sizeInBytes, id} (id)}
                 <div animate:flip>
                   <CollapsibleTableSummary 
                     icon={ParquetIcon}
-                    {name}
+                    name={tableName}
                     {cardinality}
                     {profile}
                     {head}

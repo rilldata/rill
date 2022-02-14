@@ -6,6 +6,11 @@ import type {DataModelerStateService} from "$common/data-modeler-state-service/D
 import type {ServerConfig} from "$common/config/ServerConfig";
 import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
 
+/**
+ * {@link DataModelerService} implementation that sits on the client side.
+ * Forwards dispatched actions to the socket server.
+ * Also listens to immer patches from the socket server and applies to the DataModelerStateService.
+ */
 export class DataModelerSocketService extends DataModelerService {
     private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 

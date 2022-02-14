@@ -8,7 +8,6 @@ import type {NewModelParams} from "$common/data-modeler-state-service/ModelState
 export class ModelActions extends DataModelerActions {
     public async addModel(currentState: DataModelerState, params: NewModelParams) {
         this.dataModelerStateService.dispatch("addModel", [params]);
-        // TODO: update model info
     }
 
     public async updateModelQuery(currentState: DataModelerState, modelId: string, query: string): Promise<void> {

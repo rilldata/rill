@@ -1,9 +1,15 @@
-// pick only action functions from handler
+/**
+ * Picks only action functions from handler.
+ * Action function is identified based on FirstArg type.
+ */
 export type PickActionFunctions<FirstArg, Handler> = Pick<Handler, {
     [Action in keyof Handler]: Handler[Action] extends
         (firstArg: FirstArg, ...args: any[]) => any ? Action : never
 }[keyof Handler]>;
-// converts handler to Map of "Action Type" to "Array of args to the action"
+/**
+ * Converts handler to Map of "Action Type" to "Array of args to the action"
+ * Handler is identified based on FirstArg type.
+ */
 export type ExtractActionTypeDefinitions<FirstArg, Handler> = {
     [Action in keyof Handler]: Handler[Action] extends
         (firstArg: FirstArg, ...args: infer Args) => any ? Args : never

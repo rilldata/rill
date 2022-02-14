@@ -8,8 +8,12 @@ interface DuckDB {
     prepare: (...args: Array<any>) => any;
 }
 
-// There is only one db right now.
-// But in the future we can easily add an interface to this and have different implementations.
+/**
+ * Runs a duckdb instance. Database name can be configured {@link DatabaseConfig}
+ *
+ * There is only one db right now.
+ * But in the future we can easily add an interface to this and have different implementations.
+ */
 export class DuckDBClient {
     protected db: DuckDB;
 

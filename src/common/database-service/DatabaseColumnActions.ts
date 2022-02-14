@@ -1,6 +1,5 @@
 import {DatabaseActions} from "./DatabaseActions";
 import type {CategoricalSummary, NumericSummary, TimeRangeSummary} from "$lib/types";
-import {calculateBins} from "$common/utils/calculateBins";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
 const TOP_K_COUNT = 50;
@@ -38,14 +37,46 @@ export class DatabaseColumnActions extends DatabaseActions {
     }
 
     public async getNumericHistogram(metadata: DatabaseMetadata,
-                                     tableName: string, field: string, fieldType: string): Promise<NumericSummary> {
-        const results = await this.databaseClient.execute(`
-            SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field}
-            FROM '${tableName}'
-            -- WHERE ${field} != null
-            ORDER BY ${field}
-        `);
-        return { histogram: calculateBins(results, field) };
+                                              tableName: string, field: string, fieldType: string): Promise<NumericSummary> {
+        const buckets = await this.databaseClient.execute(`SELECT count(*) as count, ${field} FROM ${tableName} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
+        const bucketSize = Math.min(40, buckets.length);
+        return this.databaseClient.execute(`
+          WITH dataset AS (
+            SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tableName}
+          ) , S AS (
+            SELECT 
+              min(${field}) as minVal,
+              max(${field}) as maxVal,
+              (max(${field}) - min(${field})) as range
+              FROM dataset
+          ), values AS (
+            SELECT ${field} as value from dataset
+            WHERE ${field} IS NOT NULL
+          ), buckets AS (
+            SELECT
+              range as bucket,
+              (range) * (select range FROM S) / ${bucketSize} + (select minVal from S) as low,
+              (range + 1) * (select range FROM S) / ${bucketSize} + (select minVal from S) as high
+            FROM range(0, ${bucketSize}, 1)
+          )
+          , histogram_stage AS (
+            SELECT
+              bucket,
+              low,
+              high,
+              count(values.value) as count
+            FROM buckets
+            LEFT JOIN values ON values.value BETWEEN low and high
+            GROUP BY bucket, low, high
+            ORDER BY BUCKET
+          )
+          SELECT 
+            bucket,
+            low,
+            high,
+            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
+            FROM histogram_stage;
+	      `);
     }
 
     public async getTimeRange(metadata: DatabaseMetadata,

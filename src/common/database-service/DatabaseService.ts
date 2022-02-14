@@ -6,13 +6,22 @@ import type {DatabaseActions} from "$common/database-service/DatabaseActions";
 import {ExtractActionTypeDefinitions, getActionMethods, PickActionFunctions} from "$common/ServiceBase";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
-export type DatabaseActionsClasses = PickActionFunctions<DatabaseMetadata, (
+type DatabaseActionsClasses = PickActionFunctions<DatabaseMetadata, (
     DatabaseDataLoaderActions &
     DatabaseTableActions &
     DatabaseColumnActions
 )>;
 export type DatabaseActionsDefinition = ExtractActionTypeDefinitions<DatabaseMetadata, DatabaseActionsClasses>;
 
+/**
+ * Has actions that directly talk to the database.
+ * Use dispatch for taking actions.
+ *
+ * Takes a databaseClient (Currently an instance of {@link DuckDBClient}
+ * Also takes an array of {@link DatabaseActions} instances.
+ * Actions supported is dependent on these instances passed in the constructor.
+ * One caveat to note, type definition and actual instances passed might not match.
+ */
 export class DatabaseService {
     private actionsMap: {
         [Action in keyof DatabaseActionsDefinition]?: DatabaseActionsClasses
@@ -31,6 +40,11 @@ export class DatabaseService {
         await this.databaseClient?.init();
     }
 
+    /**
+     * Forwards action to the appropriate class.
+     * @param action
+     * @param args
+     */
     public async dispatch<Action extends keyof DatabaseActionsDefinition>(
         action: Action, args: DatabaseActionsDefinition[Action],
     ): Promise<any> {
