@@ -9,8 +9,8 @@
     let innerWidth = 0;
     const store = getContext('rill:app:store') as AppStore;
     
-    $: sortedSources = $store?.sources || [];
-    $: if ($store?.sources) sortedSources = sortedSources.sort((a, b) => {
+    $: sortedTables = $store?.tables || [];
+    $: if ($store?.tables) sortedTables = sortedTables.sort((a, b) => {
       if (a.profile.length > b.profile.length) return -1;
       return 1;
     })
@@ -23,8 +23,8 @@
         <!-- Drawer Handler -->
         <div class='assets'>
             <div class="grid grid-cols-3">
-            {#if $store && $store.sources && sortedSources}
-              {#each sortedSources as { path, name, cardinality, profile, head, sizeInBytes, id, nullCounts} ( id )}
+            {#if $store && $store.tables && sortedTables}
+              {#each sortedTables as { path, name, cardinality, profile, head, sizeInBytes, id, nullCounts} ( id )}
               <div class='source-list pl-3 pr-5 pt-3 pb-1' style:width="{innerWidth / 3 - 6}px" >
                 <CollapsibleTableSummary 
                   icon={ParquetIcon}

@@ -13,9 +13,9 @@ export class ModelStateActions extends StateActions {
     public addModel(draftState: DataModelerState, params: NewModelParams): void {
         const newModel = getNewModel({query: params.query, name: params.name});
         if (params.at !== undefined) {
-            draftState.queries.splice(params.at, 0, newModel);
+            draftState.models.splice(params.at, 0, newModel);
         } else {
-            draftState.queries.push(newModel);
+            draftState.models.push(newModel);
             if (params.makeActive) {
                 draftState.activeAsset = {
                     id: newModel.id,
@@ -68,25 +68,25 @@ export class ModelStateActions extends StateActions {
     }
 
     public deleteModel(draftState: DataModelerState, modelId: string): void {
-        const index = draftState.queries.findIndex(model => model.id === modelId);
+        const index = draftState.models.findIndex(model => model.id === modelId);
         if (index === -1) return;
-        draftState.queries.splice(index, 1);
+        draftState.models.splice(index, 1);
     }
 
     public moveModelDown(draftState: DataModelerState, modelId: string): void {
-        const index = draftState.queries.findIndex(model => model.id === modelId);
-        if (index === -1 || index === draftState.queries.length - 1) return;
+        const index = draftState.models.findIndex(model => model.id === modelId);
+        if (index === -1 || index === draftState.models.length - 1) return;
 
-        [draftState.queries[index], draftState.queries[index + 1]] =
-            [draftState.queries[index + 1], draftState.queries[index]];
+        [draftState.models[index], draftState.models[index + 1]] =
+            [draftState.models[index + 1], draftState.models[index]];
     }
 
     public moveModelUp(draftState: DataModelerState, modelId: string): void {
-        const index = draftState.queries.findIndex(model => model.id === modelId);
+        const index = draftState.models.findIndex(model => model.id === modelId);
         if (index === -1 || index === 0) return;
 
-        [draftState.queries[index], draftState.queries[index - 1]] =
-            [draftState.queries[index - 1], draftState.queries[index]];
+        [draftState.models[index], draftState.models[index - 1]] =
+            [draftState.models[index - 1], draftState.models[index]];
     }
 
     private static updateModelField<Field extends keyof Model>(draftState: DataModelerState, modelId: string,

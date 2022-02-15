@@ -17,8 +17,8 @@ import {dataModelerService} from "$lib/app-store";
 
 const store = getContext('rill:app:store') as AppStore;
 
-$: activeQuery = $store && $store?.queries && $store?.activeAsset ? $store.queries.find(q => q.id === $store.activeAsset.id) : undefined;
-let showSources = true;
+$: activeQuery = $store && $store?.models && $store?.activeAsset ? $store.models.find(q => q.id === $store.activeAsset.id) : undefined;
+let showTables = true;
 let showModels = true;
 let showMetrics = true;
 let showExplores = true;
@@ -65,15 +65,14 @@ onMount(() => {
         <!-- <hr /> -->
 
           <div class='pl-3 pb-3 pt-3'>
-            <!-- TODO: rename sources to datasets in the code -->
-            <CollapsibleSectionTitle bind:active={showSources}>
-              <h4>Datasets</h4>
+            <CollapsibleSectionTitle bind:active={showTables}>
+              <h4>Tables</h4>
             </CollapsibleSectionTitle>
           </div>
-            {#if showSources}
+            {#if showTables}
               <div class="pb-6" transition:slide|local={{duration:200}}>
-              {#if $store && $store.sources}
-                {#each ($store.sources) as { path, tableName, cardinality, profile, head, sizeInBytes, id} (id)}
+              {#if $store && $store.tables}
+                {#each ($store.tables) as { path, tableName, cardinality, profile, head, sizeInBytes, id} (id)}
                 <div animate:flip>
                   <CollapsibleTableSummary 
                     icon={ParquetIcon}
@@ -90,7 +89,7 @@ onMount(() => {
             </div>
           {/if}
         
-          {#if $store && $store.queries}
+          {#if $store && $store.models}
           <div class='pl-3 pb-3 pr-5 grid justify-between' style="grid-template-columns: auto max-content;">
             <CollapsibleSectionTitle bind:active={showModels}>
                 <h4> Models</h4>
@@ -107,7 +106,7 @@ onMount(() => {
             </div>
             {#if showModels}
               <div class='pb-6 justify-self-end'  transition:slide={{duration:200}}>
-              {#each $store.queries as query, i (query.id)}
+              {#each $store.models as query, i (query.id)}
 
                 <CollapsibleTableSummary
                   on:select={() => {

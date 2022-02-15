@@ -22,11 +22,11 @@ function getErrorLineNumber(errorString) {
   return { message, lineNumber };
 };
 
-$: currentQuery = $store?.activeAsset ? $store.queries.find(query => query.id === $store.activeAsset.id) : undefined;
+$: currentQuery = $store?.activeAsset ? $store.models.find(query => query.id === $store.activeAsset.id) : undefined;
 </script>
 
 <div class="editor-pane">
-  {#if $store && $store.queries && currentQuery}
+  {#if $store && $store.models && currentQuery}
     <div class="input-body p-4 overflow-auto">
     <!-- {#each $store.queries as q, i (q.id)}
     <div class="stack" 
@@ -102,7 +102,7 @@ $: currentQuery = $store?.activeAsset ? $store.queries.find(query => query.id ==
   </div>
   
 
-  <DropZone end padTop={$store.queries.length}
+  <DropZone end padTop={$store.models.length}
   on:source-drop={(evt) => {
     dataModelerService.dispatch('addModel', [{ query: evt.detail.props.content } ]);
   }} />
@@ -110,10 +110,10 @@ $: currentQuery = $store?.activeAsset ? $store.queries.find(query => query.id ==
 </div>
 
 <!-- FIXME: componentize!-->
-  {#if $store.activeAsset && $store.queries.find(q => q.id === $store.activeAsset.id)?.error}
+  {#if $store.activeAsset && $store.models.find(q => q.id === $store.activeAsset.id)?.error}
     <div transition:slide={{ duration: 200, easing }} 
       class="error p-4 m-4 rounded-lg shadow-md"
-    >{$store.queries.find(q => q.id === $store.activeAsset.id).error}</div>
+    >{$store.models.find(q => q.id === $store.activeAsset.id).error}</div>
     {/if}
   {/if}
 </div>

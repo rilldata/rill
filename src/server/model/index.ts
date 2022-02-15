@@ -53,10 +53,10 @@ export function emptyQuery(): Model {
             const at = params.at;
             return (draft:DataModelerState) => {
                 if (at !== undefined) {
-                    draft.queries = [...draft.queries.slice(0, at), newQuery({ query, name }), ...draft.queries.slice(at)];
+                    draft.models = [...draft.models.slice(0, at), newQuery({ query, name }), ...draft.models.slice(at)];
                 } else {
                     const draftQuery = newQuery({ query, name })
-                    draft.queries.push(draftQuery); 
+                    draft.models.push(draftQuery);
                     if (makeActive) {
                         draft.activeAsset = {
                             id: draftQuery.id,
@@ -69,7 +69,7 @@ export function emptyQuery(): Model {
         },
         updateQuery({id, query}) {
             return (draft:DataModelerState) => {
-                const queryItem = getByID(draft.queries, id) as Model;
+                const queryItem = getByID(draft.models, id) as Model;
                 queryItem.query = query;
             };
         },
@@ -88,7 +88,7 @@ export function emptyQuery(): Model {
 
         changeQueryName({id, name}) {
             return (draft:DataModelerState) => {
-                draft.queries.find((q) => q.id === id).name = name;
+                draft.models.find((q) => q.id === id).name = name;
             }
         },
 
@@ -102,30 +102,30 @@ export function emptyQuery(): Model {
 
         deleteQuery({id}) {
             return (draft:DataModelerState) => {
-                draft.queries = draft.queries.filter(q => q.id !== id);
+                draft.models = draft.models.filter(q => q.id !== id);
             }
         },
 
         moveQueryDown({id}) { 
             return (draft:DataModelerState) => {
-                const idx = draft.queries.findIndex((q) => q.id === id);
-                if (idx < draft.queries.length - 1) {
-                    const thisQuery = { ...draft.queries[idx] };
-                    const nextQuery = { ...draft.queries[idx + 1] };
-                    draft.queries[idx] = nextQuery;
-                    draft.queries[idx + 1] = thisQuery;
+                const idx = draft.models.findIndex((q) => q.id === id);
+                if (idx < draft.models.length - 1) {
+                    const thisQuery = { ...draft.models[idx] };
+                    const nextQuery = { ...draft.models[idx + 1] };
+                    draft.models[idx] = nextQuery;
+                    draft.models[idx + 1] = thisQuery;
                 }
             };
         },
 
         moveQueryUp({id}) {
             return (draft:DataModelerState) => {
-                const idx = draft.queries.findIndex((q) => q.id === id);
+                const idx = draft.models.findIndex((q) => q.id === id);
                 if (idx > 0) {
-                    const thisQuery = { ...draft.queries[idx] };
-                    const nextQuery = { ...draft.queries[idx - 1] };
-                    draft.queries[idx] = nextQuery;
-                    draft.queries[idx - 1] = thisQuery;
+                    const thisQuery = { ...draft.models[idx] };
+                    const nextQuery = { ...draft.models[idx - 1] };
+                    draft.models[idx] = nextQuery;
+                    draft.models[idx - 1] = thisQuery;
                 }
             }
         },

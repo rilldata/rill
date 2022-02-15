@@ -3,13 +3,6 @@ import {guidGenerator} from "$lib/util/guid";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 
 export class DatabaseTableActions extends DatabaseActions {
-    public async materializeTable(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {
-        await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
-            DROP TABLE IF EXISTS '${tableName}'`);
-        return await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
-            CREATE TABLE '${tableName}' AS ${query}`);
-    }
-
     public async createViewOfQuery(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {
         await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
             CREATE OR REPLACE TEMPORARY VIEW ${tableName} AS (${query});`);

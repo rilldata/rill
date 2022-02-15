@@ -1,5 +1,5 @@
 import type {DataModelerState} from "$lib/types";
-import type {DatasetStateActions} from "./DatasetStateActions";
+import type {TableStateActions} from "./TableStateActions";
 import type {ModelStateActions} from "./ModelStateActions";
 import type {ProfileColumnStateActions} from "./ProfileColumnStateActions";
 import type {ExtractActionTypeDefinitions} from "$common/ServiceBase";
@@ -15,7 +15,7 @@ import type {PickActionFunctions} from "$common/ServiceBase";
 enablePatches();
 
 type DataModelerStateActionsClasses = PickActionFunctions<DataModelerState, (
-    DatasetStateActions &
+    TableStateActions &
     ModelStateActions &
     ProfileColumnStateActions
 )>;

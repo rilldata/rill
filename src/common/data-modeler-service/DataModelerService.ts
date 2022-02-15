@@ -1,5 +1,5 @@
 import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
-import type {DatasetActions} from "$common/data-modeler-service/DatasetActions";
+import type {TableActions} from "$common/data-modeler-service/TableActions";
 import type {ExtractActionTypeDefinitions, PickActionFunctions} from "$common/ServiceBase";
 import type {DataModelerActions} from "$common/data-modeler-service/DataModelerActions";
 import type {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnActions";
@@ -10,7 +10,7 @@ import type {DatabaseService} from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
 
 type DataModelerActionsClasses = PickActionFunctions<DataModelerState, (
-    DatasetActions &
+    TableActions &
     ProfileColumnActions &
     ModelActions
 )>;

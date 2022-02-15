@@ -23,7 +23,7 @@ const store = getContext("rill:app:store") as AppStore;
     <ExploreView />
 {:else}
 <DropZone 
-    padTop={!!$store?.queries?.length}
+    padTop={!!$store?.models?.length}
     on:source-drop={(evt) => { 
     dataModelerService.dispatch('addModel', [{ query: evt.detail.props.content, makeActive: true } ]);
     }} />

@@ -41,16 +41,16 @@ export class DatabaseColumnActions extends DatabaseActions {
         const buckets = await this.databaseClient.execute(`SELECT count(*) as count, ${field} FROM ${tableName} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
         const bucketSize = Math.min(40, buckets.length);
         const result = await this.databaseClient.execute(`
-          WITH dataset AS (
+          WITH data_table AS (
             SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tableName}
           ) , S AS (
             SELECT 
               min(${field}) as minVal,
               max(${field}) as maxVal,
               (max(${field}) - min(${field})) as range
-              FROM dataset
+              FROM data_table
           ), values AS (
-            SELECT ${field} as value from dataset
+            SELECT ${field} as value from data_table
             WHERE ${field} IS NOT NULL
           ), buckets AS (
             SELECT

@@ -16,9 +16,9 @@ function formatModelName(str) {
 }
 
 let currentModel;
-let sources;
-$: if ($store?.queries && $store?.activeAsset) currentModel = $store.queries.find(q => q.id === $store.activeAsset.id);
-$: if (currentModel?.sources) sources = $store.sources.filter(source => currentModel.sources.includes(source.path));
+let tables;
+$: if ($store?.models && $store?.activeAsset) currentModel = $store.models.find(q => q.id === $store.activeAsset.id);
+$: if (currentModel?.sources) tables = $store.tables.filter(source => currentModel.sources.includes(source.path));
 
 let editingTitle = false;
 let titleInputValue;

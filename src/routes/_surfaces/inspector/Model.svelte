@@ -36,34 +36,34 @@ let whichTable = {
 
 let innerWidth;
 
-let showSources = false;
+let showTables = false;
 let showOutputs = true;
 
-function sourceDestinationCompute(key, source, destination) {
-  return source.reduce((acc,v) => acc + v[key], 0) / destination[key];
+function tableDestinationCompute(key, table, destination) {
+  return table.reduce((acc,v) => acc + v[key], 0) / destination[key];
 
 }
 
-function computeRollup(source, destination) {
-  return sourceDestinationCompute('cardinality', source, destination);
+function computeRollup(table, destination) {
+  return tableDestinationCompute('cardinality', table, destination);
 }
 
-function computeCompression(source, destination) {
-  return sourceDestinationCompute('sizeInBytes', source, destination);
+function computeCompression(table, destination) {
+  return tableDestinationCompute('sizeInBytes', table, destination);
 }
 
 
 let rollup;
 let compression;
-let sources;
+let tables;
 
 let showDestination = true;
 
 let currentQuery;
-$: if ($store?.queries && $store?.activeAsset) currentQuery = $store.queries.find(q => q.id === $store.activeAsset.id);
-$: if (currentQuery?.sources) sources = $store.sources.filter(source => currentQuery.sources.includes(source.path));
-$: if (currentQuery?.cardinality && sources) rollup = computeRollup(sources, {cardinality: currentQuery.cardinality });
-$: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(sources, { sizeInBytes: currentQuery.sizeInBytes })
+$: if ($store?.models && $store?.activeAsset) currentQuery = $store.models.find(q => q.id === $store.activeAsset.id);
+$: if (currentQuery?.sources) tables = $store.tables.filter(source => currentQuery.sources.includes(source.path));
+$: if (currentQuery?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentQuery.cardinality });
+$: if (currentQuery?.sizeInBytes && tables) compression = computeCompression(tables, { sizeInBytes: currentQuery.sizeInBytes })
 
 </script>
 
@@ -71,7 +71,7 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
 
   <div>
     {#if currentQuery}
-      {#if sources}
+      {#if tables}
         <div class="grid justify-items-center" style:height="var(--header-height)" >
           <button class="
             p-3 pt-1 pb-1
@@ -87,13 +87,13 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
           }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
         </div>
       {/if}
-      {#if sources}
+      {#if tables}
         <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
           <div style="font-weight: bold;">
             {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
           </div>
           <div style="color: #666; text-align:right;">
-            {formatCardinality(sources.reduce((acc,v) => acc + v.cardinality, 0))} ⭢
+            {formatCardinality(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
             {formatCardinality(currentQuery.cardinality)} rows
           </div>
           <div>
@@ -102,22 +102,22 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
             {:else}<button on:click={() => {}}>generate compression</button>{/if}
           </div>
           <div style="color: #666; text-align: right;">
-            {formatCardinality(sources.reduce((acc,v) => acc + v.sizeInBytes, 0))} ⭢
+            {formatCardinality(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
             {#if currentQuery.sizeInBytes}{formatCardinality(currentQuery.sizeInBytes)}{:else}...{/if}
           </div>
         </div>
       {/if}
       <div class='source-tables pt-4 pb-4'>
-        {#if sources}
-          <NavEntry bind:active={showSources}>
+        {#if tables}
+          <NavEntry bind:active={showTables}>
             Sources
             <div class='italic text-gray-600' slot="contextual-information">
-              {formatCount(sources.reduce((acc,v) => acc + v.cardinality, 0))} rows
+              {formatCount(tables.reduce((acc, v) => acc + v.cardinality, 0))} rows
             </div>
           </NavEntry>
-          {#if showSources}
+          {#if showTables}
           <div transition:slide|local={{duration: 120 }}>
-            {#each sources as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
+            {#each tables as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
             <div class='pl-3 pr-5 pt-1 pb-1' animate:flip transition:slide|local>
               <CollapsibleTableSummary
                 icon={ParquetIcon}

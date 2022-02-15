@@ -3,9 +3,9 @@ import {DatabaseDataLoaderActions} from "$common/database-service/DatabaseDataLo
 import {DatabaseTableActions} from "$common/database-service/DatabaseTableActions";
 import {DatabaseColumnActions} from "$common/database-service/DatabaseColumnActions";
 import {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
-import {DatasetStateActions} from "$common/data-modeler-state-service/DatasetStateActions";
+import {TableStateActions} from "$common/data-modeler-state-service/TableStateActions";
 import {ModelStateActions} from "$common/data-modeler-state-service/ModelStateActions";
-import {DatasetActions} from "$common/data-modeler-service/DatasetActions";
+import {TableActions} from "$common/data-modeler-service/TableActions";
 import {ModelActions} from "$common/data-modeler-service/ModelActions";
 import {ProfileColumnStateActions} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {DataModelerService} from "$common/data-modeler-service/DataModelerService";
@@ -25,11 +25,11 @@ export function databaseServiceFactory(config: RootConfig) {
 }
 
 export function dataModelerStateServiceFactory() {
-    const datasetStateActions = new DatasetStateActions();
+    const tableStateActions = new TableStateActions();
     const modelStateActions = new ModelStateActions();
     const profileColumnStateActions = new ProfileColumnStateActions();
     return new DataModelerStateService(
-        [datasetStateActions, modelStateActions, profileColumnStateActions]);
+        [tableStateActions, modelStateActions, profileColumnStateActions]);
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {
@@ -39,11 +39,11 @@ export function dataModelerServiceFactory(config: RootConfig) {
 
     const notificationService = new SocketNotificationService();
 
-    const datasetActions = new DatasetActions(dataModelerStateService, databaseService);
+    const tableActions = new TableActions(dataModelerStateService, databaseService);
     const modelActions = new ModelActions(dataModelerStateService, databaseService);
     const profileColumnActions = new ProfileColumnActions(dataModelerStateService, databaseService);
     const dataModelerService = new DataModelerService(dataModelerStateService, databaseService, notificationService,
-        [datasetActions, modelActions, profileColumnActions]);
+        [tableActions, modelActions, profileColumnActions]);
 
     return {dataModelerStateService, dataModelerService, notificationService};
 }

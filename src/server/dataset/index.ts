@@ -3,7 +3,7 @@
  * contains the actions that can be taken to construct a dataset.
  */
 
-import type { DataModelerState, Dataset, Item } from "../../lib/types"
+import type { DataModelerState, Table, Item } from "../../lib/types"
 
 // TODO: we use this in other modules. Probably should have single source
 export function getByID(items:(Item[]), id:string) : Item| null {
@@ -19,7 +19,7 @@ export function createDatasetActions(api) {
 
         clearSources() {
             return (draft:DataModelerState) => {
-                draft.sources = [];
+                draft.tables = [];
             }
         },
 
@@ -35,13 +35,13 @@ export function createDatasetActions(api) {
             return async (dispatch:Function, getState:()=>DataModelerState) => {
                 const state = getState();
 
-                const targetSource = getByID(state[key], datasetID) as Dataset;
+                const targetSource = getByID(state[key], datasetID) as Table;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('summary' in profileField)) {
 
                     api.getTopKAndCardinality(tableOrPath, field).then((summary) => {
                         dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft[key], datasetID) as Dataset;
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Table;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
                             profile.summary = summary;
                         })
@@ -63,7 +63,7 @@ export function createDatasetActions(api) {
                 // check to see if this field 
                 const state = getState();
                 // check to see if the function has been called before.
-                const targetSource = getByID(state[key], datasetID) as Dataset;
+                const targetSource = getByID(state[key], datasetID) as Table;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('summary' in profileField)) {
                     // clear!
@@ -75,7 +75,7 @@ export function createDatasetActions(api) {
                 //if (true) {
                     api.numericHistogram(tableOrPath, field, fieldType).then((histogram) => {
                         dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft[key], datasetID) as Dataset;
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Table;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
                             if (!('summary'in profile)) {
                                 profile.summary = {};
@@ -86,7 +86,7 @@ export function createDatasetActions(api) {
                     if (fieldType !== 'TIMESTAMP') {
                         api.descriptiveStatistics(tableOrPath, field).then((summaryStatistics) => {
                             dispatch((draft:DataModelerState) => {
-                                const sourceToUpdate = getByID(draft[key], datasetID) as Dataset;
+                                const sourceToUpdate = getByID(draft[key], datasetID) as Table;
                                 const profile = sourceToUpdate.profile.find(p => p.name === field);
                                 if (!('summary'in profile)) {
                                     profile.summary = {};
@@ -113,12 +113,12 @@ export function createDatasetActions(api) {
                 // check to see if this field 
                 const state = getState();
                 // check to see if the function has been called before.
-                const targetSource = getByID(state[key], datasetID) as Dataset;
+                const targetSource = getByID(state[key], datasetID) as Table;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('nullCount' in profileField)) {
                     api.getNullCount(tableOrPath, field).then((nullCount) => {
                         dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft[key], datasetID) as Dataset;
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Table;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
                             profile.nullCount = nullCount;
                         })
@@ -132,12 +132,12 @@ export function createDatasetActions(api) {
                 // check to see if this field 
                 const state = getState();
                 // check to see if the function has been called before.
-                const targetSource = getByID(state[key], datasetID) as Dataset;
+                const targetSource = getByID(state[key], datasetID) as Table;
                 const profileField = targetSource.profile.find(({ name }) => name === field);
                 if (!('summary' in profileField && 'interval' in profileField.summary)) {
                     api.getTimeRange(tableOrPath, field).then((timeInterval) => {
                         dispatch((draft:DataModelerState) => {
-                            const sourceToUpdate = getByID(draft[key], datasetID) as Dataset;
+                            const sourceToUpdate = getByID(draft[key], datasetID) as Table;
                             const profile = sourceToUpdate.profile.find(p => p.name === field);
 
                             profile.summary = {...profile.summary || {}, ...timeInterval}
