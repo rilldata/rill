@@ -40,7 +40,7 @@ export class DatabaseColumnActions extends DatabaseActions {
                                               tableName: string, field: string, fieldType: string): Promise<NumericSummary> {
         const buckets = await this.databaseClient.execute(`SELECT count(*) as count, ${field} FROM ${tableName} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
         const bucketSize = Math.min(40, buckets.length);
-        return this.databaseClient.execute(`
+        const result = await this.databaseClient.execute(`
           WITH dataset AS (
             SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tableName}
           ) , S AS (
@@ -77,6 +77,7 @@ export class DatabaseColumnActions extends DatabaseActions {
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
             FROM histogram_stage;
 	      `);
+        return { histogram: result };
     }
 
     public async getTimeRange(metadata: DatabaseMetadata,
