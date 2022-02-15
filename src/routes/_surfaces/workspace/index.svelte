@@ -5,6 +5,7 @@ import DropZone from "$lib/components/DropZone.svelte";
 import ModelView from "./Model.svelte";
 import MetricsDefinitionView from "./MetricsDefinition.svelte";
 import ExploreView from "./Explore.svelte";
+import {dataModelerService} from "$lib/app-store";
 const store = getContext("rill:app:store") as AppStore;
 </script>
 
@@ -24,6 +25,6 @@ const store = getContext("rill:app:store") as AppStore;
 <DropZone 
     padTop={!!$store?.queries?.length}
     on:source-drop={(evt) => { 
-    store.action('addQuery', { query: evt.detail.props.content, makeActive: true } ); 
+    dataModelerService.dispatch('addModel', [{ query: evt.detail.props.content, makeActive: true } ]);
     }} />
 {/if}

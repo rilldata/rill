@@ -18,10 +18,28 @@ export class DatasetStateActions extends StateActions {
     public setStatus(draftState: DataModelerState, status: string): void {
         draftState.status = status;
     }
+    public setActiveAsset(draftState: DataModelerState, id: string, assetType: string): void {
+        draftState.activeAsset = { id, assetType };
+    }
+    public unsetActiveAsset(draftState: DataModelerState): void {
+        draftState.activeAsset = undefined;
+    }
 
     public setDatasetStatus(draftState: DataModelerState, columnarItemType: ColumnarItemType, columnarItemId: string, status: string): void {
         const item: Model | Dataset = (draftState[ColumnarItemTypeMap[columnarItemType]] as any[])
             .find(findItem => findItem.id === columnarItemId);
         item.status = status;
+    }
+
+    public pruneAndDedupeDatasets(draftState: DataModelerState, files: Array<string>): void {
+        const filePaths = new Set(files);
+
+        const newSources = draftState.sources.filter((dataset, index, self) => {
+           if (!filePaths.has(dataset.path)) return false;
+           return index === self.findIndex(indexCheckDataset => (indexCheckDataset.path === dataset.path));
+        });
+        if (newSources.length !== draftState.sources.length) {
+            draftState.sources = newSources;
+        }
     }
 }

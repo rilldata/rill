@@ -3,27 +3,32 @@ import type {DataModelerState, Model} from "$lib/types";
 import {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {IDLE_STATUS, MODEL_PREVIEW_COUNT, RUNNING_STATUS} from "$common/constants";
 import {sanitizeQuery} from "$lib/util/sanitize-query";
+import type {NewModelParams} from "$common/data-modeler-state-service/ModelStateActions";
 
 export class ModelActions extends DataModelerActions {
-    public async updateQueryInformation(currentState: DataModelerState, id: string, query: string): Promise<void> {
-        const model = currentState.queries.find(findModel => findModel.id === id);
+    public async addModel(currentState: DataModelerState, params: NewModelParams) {
+        this.dataModelerStateService.dispatch("addModel", [params]);
+    }
+
+    public async updateModelQuery(currentState: DataModelerState, modelId: string, query: string): Promise<void> {
+        const model = currentState.queries.find(findModel => findModel.id === modelId);
 
         if (!model) {
-            console.log(`No model found for ${id}`);
+            console.log(`No model found for ${modelId}`);
             return;
         }
 
         const sanitizedQuery = sanitizeQuery(query);
 
-        this.dataModelerStateService.dispatch("updateModelQuery", [id, query, sanitizedQuery]);
+        this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
 
         this.dataModelerStateService.dispatch("setDatasetStatus",
-            [ColumnarItemType.Model, id, RUNNING_STATUS]);
+            [ColumnarItemType.Model, modelId, RUNNING_STATUS]);
 
         // validate query 1st
         if (!await this.validateModelQuery(model, sanitizedQuery)) {
             this.dataModelerStateService.dispatch("setDatasetStatus",
-                [ColumnarItemType.Model, id, IDLE_STATUS]);
+                [ColumnarItemType.Model, modelId, IDLE_STATUS]);
             return;
         }
         this.dataModelerStateService.dispatch("clearModelError", [model.id]);
@@ -38,7 +43,31 @@ export class ModelActions extends DataModelerActions {
         }
 
         this.dataModelerStateService.dispatch("setDatasetStatus",
-            [ColumnarItemType.Model, id, IDLE_STATUS]);
+            [ColumnarItemType.Model, modelId, IDLE_STATUS]);
+    }
+
+    public async exportToParquet(currentState: DataModelerState, modelId: string, exportFile: string): Promise<void> {
+        const model = currentState.queries.find(findModel => findModel.id === modelId);
+        const exportPath = await this.databaseService.dispatch("exportToParquet", [model.sanitizedQuery, exportFile]);
+        await this.dataModelerStateService.dispatch("updateModelDestinationSize",
+          [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
+        this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"})
+    }
+
+    public async updateModelName(currentState: DataModelerState, modelId: string, name: string): Promise<void> {
+        this.dataModelerStateService.dispatch("updateModelName", [modelId, name]);
+    }
+
+    public async deleteModel(currentState: DataModelerState, modelId: string): Promise<void> {
+        this.dataModelerStateService.dispatch("deleteModel", [modelId]);
+    }
+
+    public async moveModelDown(currentState: DataModelerState, modelId: string): Promise<void> {
+        this.dataModelerStateService.dispatch("moveModelDown", [modelId]);
+    }
+
+    public async moveModelUp(currentState: DataModelerState, modelId: string): Promise<void> {
+        this.dataModelerStateService.dispatch("moveModelUp", [modelId]);
     }
 
     private async validateModelQuery(model: Model, sanitizedQuery: string): Promise<boolean> {
@@ -59,7 +88,7 @@ export class ModelActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("updateModelProfileColumns",
             [model.id, await this.databaseService.dispatch("getProfileColumns", [model.tableName])]);
         await Promise.all([
-            async () => await this.dataModelerActionAPI.dispatch("collectProfileColumns",
+            async () => await this.dataModelerService.dispatch("collectProfileColumns",
                 [model.id, ColumnarItemType.Model]),
             // TODO: add debouncing
             async () => this.dataModelerStateService.dispatch("updateModelPreview", [model.id,

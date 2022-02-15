@@ -26,15 +26,15 @@
 		"paths": {
 			"$lib": ["src/lib"],
 			"$lib/*": ["src/lib/*"],
+			"$common": ["src/common"],
 			"$common/*": ["src/common/*"]
 		},
 		"outDir": "tsc-tmp"
 	},
 	"include": [
-		"src/**/*.d.ts", 
+		"src/**/*.d.ts",
 		"src/**/*.ts", 
 		"src/**/*.svelte",
-		"test/**/*.ts",
-		"tsc-tmp/**/*.js"
+		"test/**/*.ts"
 	]
 }

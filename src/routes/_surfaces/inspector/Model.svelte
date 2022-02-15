@@ -17,10 +17,10 @@ import CollapsibleTableSummary from "$lib/components/collapsible-table-summary/C
 import { formatCardinality } from "../../../lib/util/formatters"
 
 import type { AppStore } from '$lib/app-store';
-import type { Model } from "$lib/types";
 
 
 import {format} from "d3-format";
+import {dataModelerService} from "$lib/app-store";
 
 const store = getContext('rill:app:store') as AppStore;
 
@@ -82,10 +82,8 @@ $: if (currentQuery?.sizeInBytes && sources) compression = computeCompression(so
             border-black
             transition-colors
             rounded-md" on:click={() => {
-            const query = currentQuery.query;
             const exportFilename = currentQuery.name.replace('.sql', '.parquet');
-            const path = `./export/${exportFilename}`
-            store.action('exportToParquet', {query, path, id: currentQuery.id });
+            dataModelerService.dispatch('exportToParquet', [currentQuery.id, exportFilename]);
           }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
         </div>
       {/if}

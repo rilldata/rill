@@ -34,3 +34,5 @@ export const USER_NULL_CHANCE = 0.5;
 export const MAX_USERS = 100;
 export const AD_BID_COUNT = 1000000;
 export const AD_IMPRESSION_COUNT = 500000;
+
+export const DATA_FOLDER = "data";

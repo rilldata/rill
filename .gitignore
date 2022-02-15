@@ -16,6 +16,7 @@ tsc-tmp/
 export/
 .idea
 *.parquet
+*.wal
 
 # generated content
 log

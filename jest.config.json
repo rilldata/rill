@@ -1,6 +1,5 @@
 {
   "transform": {
-
     "^.+\\.svelte$": "svelte-jester",
     "^.+\\.[tj]s?$": "ts-jest"
   },

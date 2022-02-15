@@ -8,7 +8,7 @@ export class DataModelerSocketServiceMock extends DataModelerService {
     public socketServerMock: SocketServerMock;
 
     public constructor(dataModelerStateService: DataModelerStateService) {
-        super(dataModelerStateService, null, []);
+        super(dataModelerStateService, null, null, []);
     }
 
     public async init(): Promise<void> {

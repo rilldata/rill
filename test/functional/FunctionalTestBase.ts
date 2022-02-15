@@ -2,7 +2,6 @@ import {TestBase} from "@adityahegde/typescript-test-utils";
 import {JestTestLibrary} from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
-import type {SocketServer} from "$common/SocketServer";
 import {dataModelerServiceFactory} from "$common/serverFactory";
 import {asyncWait, waitUntil} from "$common/utils/waitUtils";
 import {IDLE_STATUS} from "$common/constants";
@@ -10,6 +9,9 @@ import type {ColumnarTypeKeys, ProfileColumn} from "$lib/types";
 import type {TestDataColumns} from "../data/DataLoader.data";
 import {DataModelerSocketServiceMock} from "./DataModelerSocketServiceMock";
 import {SocketServerMock} from "./SocketServerMock";
+import {ParquetFileTestData} from "../data/DataLoader.data";
+import {DATA_FOLDER} from "../data/generator/data-constants";
+import {RootConfig} from "$common/config/RootConfig";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -25,7 +27,9 @@ export class FunctionalTestBase extends TestBase {
         this.clientDataModelerStateService = new DataModelerStateService([]);
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
-        const serverInstances = dataModelerServiceFactory();
+        const serverInstances = dataModelerServiceFactory(new RootConfig({
+            database: { parquetFolder: "data" }
+        }));
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
         this.socketServer = new SocketServerMock(this.serverDataModelerService, this.serverDataModelerStateService,
@@ -34,6 +38,13 @@ export class FunctionalTestBase extends TestBase {
 
         await this.clientDataModelerService.init();
         await this.socketServer.init();
+    }
+
+    protected async loadTestTables(): Promise<void> {
+        await Promise.all(ParquetFileTestData.subData.map(async (parquetFileData) => {
+            await this.clientDataModelerService.dispatch("addOrUpdateDataset", [`${DATA_FOLDER}/${parquetFileData.title}`]);
+        }));
+        await this.waitForDatasets();
     }
 
     protected async waitForDatasets(): Promise<void> {
@@ -50,6 +61,7 @@ export class FunctionalTestBase extends TestBase {
             expect(profileColumn.type).toBe(columns[idx].type);
             expect(profileColumn.nullCount > 0).toBe(columns[idx].isNull);
             // TODO: assert summary
+            // console.log(profileColumn.name, profileColumn.summary);
         });
     }
 
@@ -57,8 +69,7 @@ export class FunctionalTestBase extends TestBase {
         await asyncWait(200);
         await waitUntil(() => {
             const currentState = this.clientDataModelerStateService.getCurrentState();
-            return currentState.status === IDLE_STATUS &&
-                (currentState[columnarKey] as any[]).every(item => item.status === IDLE_STATUS);
+            return (currentState[columnarKey] as any[]).every(item => item.status === IDLE_STATUS);
         });
     }
 }

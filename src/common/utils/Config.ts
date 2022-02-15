@@ -9,6 +9,10 @@ export type ConfigFieldType = {
     subConfigClass?: typeof Config;
 }
 
+/**
+ * Config class that supports defaults.
+ * Usage: Extend this class and pass the config class name as generic arg to add style to constructor.
+ */
 export class Config<C> {
     private static configTypes = new Array<ConfigFieldType>();
 
@@ -18,11 +22,7 @@ export class Config<C> {
         // if null is passed explicitly default param value does not take hold
         configJson = configJson || {};
         (this.constructor as typeof Config).configTypes.forEach((configType) => {
-            const configValue = configJson[configType.key ? configType.key : configType.field] || configType.defaultValue;
-
-            if (configValue === undefined) {
-                return;
-            }
+            const configValue = configJson[configType.key ? configType.key : configType.field] ?? configType.defaultValue;
 
             if (configType.subConfigClass) {
                 this[configType.field] = new configType.subConfigClass(configValue);
@@ -32,24 +32,39 @@ export class Config<C> {
         });
     }
 
+    /**
+     * Decorator that adds a config field.
+     * Automatically pulls the field from config object passed in constructor.
+     *
+     * @param defaultValue Defaults to undefined. Can be overridden with this param.
+     * @param key Defaults to using property key. Can be overridden with this param.
+     */
     public static ConfigField(defaultValue?: any, key?: string) {
         return (target: Config<any>, propertyKey: string) => {
             const constructor = this.createConfigTypes(target);
             constructor.configTypes.push({
                 field: propertyKey,
-                key: key || propertyKey,
+                key: key ?? propertyKey,
                 defaultValue,
             });
         };
     }
 
+    /**
+     * Decorator that adds a sub config field. Takes a class also extends Config.
+     * Automatically pulls the field from config object passed in constructor.
+     *
+     * @param subConfigClass
+     * @param defaultValue Defaults to empty object. Can be overridden with this param.
+     * @param key Defaults to using property key. Can be overridden with this param.
+     */
     public static SubConfig(subConfigClass: typeof Config, defaultValue?: any, key?: string) {
         return (target: Config<any>, propertyKey: string) => {
             const constructor = this.createConfigTypes(target);
             constructor.configTypes.push({
                 field: propertyKey,
-                key: key || propertyKey,
-                defaultValue,
+                key: key ?? propertyKey,
+                defaultValue: defaultValue ?? {},
                 subConfigClass,
             });
         };

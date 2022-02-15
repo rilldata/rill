@@ -4,15 +4,14 @@ import {sanitizeQuery as _sanitizeQuery} from "$lib/util/sanitize-query";
 import {IDLE_STATUS} from "$common/constants";
 import {sanitizeTableName} from "$lib/util/sanitize-table-name";
 
-let queryNumber = 0;
+let modelNumber = 0;
 
-interface NewQueryArguments {
+interface NewModelArguments {
     query?: string;
     name?: string;
-    at?: number;
 }
 
-export function newSource(): Dataset {
+export function getNewDataset(): Dataset {
     return {
         id: guidGenerator(),
         path: '',
@@ -22,14 +21,15 @@ export function newSource(): Dataset {
         sizeInBytes: undefined,
         head: [],
         status: IDLE_STATUS,
+        lastUpdated: 0,
     }
 }
 
-export function newQuery(params: NewQueryArguments = {}): Model {
+export function getNewModel(params: NewModelArguments = {}): Model {
     const query = params.query || '';
     const sanitizedQuery = _sanitizeQuery(query);
-    const name = `${params.name || `query_${queryNumber}`}.sql`;
-    queryNumber += 1;
+    const name = `${params.name || `query_${modelNumber}`}.sql`;
+    modelNumber += 1;
     return {
         query,
         sanitizedQuery,
@@ -39,16 +39,17 @@ export function newQuery(params: NewQueryArguments = {}): Model {
         preview: undefined,
         sizeInBytes: undefined,
         status: IDLE_STATUS,
+        sources: [],
     };
 }
 
-export function emptyQuery(): Model {
-    return newQuery({});
+export function getEmptyModel(): Model {
+    return getNewModel({});
 }
 
 export function initialState() : DataModelerState {
     return {
-        queries: [emptyQuery()],
+        queries: [getEmptyModel()],
         sources: [],
         metricsModels: [],
         exploreConfigurations: [],

@@ -52,7 +52,7 @@ function humanFileSize(size:number) {
 let container;
 onMount(() => {
     const observer = new ResizeObserver(entries => {
-        containerWidth = container.clientWidth;
+        containerWidth = container?.clientWidth ?? 0;
     });
     observer.observe(container);
 });

@@ -5,6 +5,7 @@ import { cubicOut as easing } from "svelte/easing";
 import type { AppStore } from '$lib/app-store';
 
 import MetricsEditor from "$lib/components/MetricsEditor.svelte";
+import {dataModelerService} from "$lib/app-store";
 
 const store = getContext("rill:app:store") as AppStore;
 
@@ -19,17 +20,17 @@ $: console.log(currentModel)
                 content={currentModel.spec}
                 name={currentModel.name}
                 on:process={() => {
-                    store.action('createExploreConfiguration', { metricsModelID: currentModel.id, name: currentModel.name });
+                    //dataModelerService.dispatch('createExploreConfiguration', [{ metricsModelID: currentModel.id, name: currentModel.name }]);
                 }}
                 on:rename={(event) => {
-                    store.action('updateMetricsModelName', { id: currentModel.id, name: event.detail} )
+                    //dataModelerService.dispatch('updateMetricsModelName', [{ id: currentModel.id, name: event.detail} ])
                 }}
                 on:delete={() => {
-                    store.action('deleteMetricsModel', { id: currentModel.id })
+                    //dataModelerService.dispatch('deleteMetricsModel', [{ id: currentModel.id }])
                 }}
                 on:write={(event) => {
                     const newSpec = event.detail.content;
-                    store.action('updateMetricsModelSpec', { id: currentModel.id, newSpec })
+                    //dataModelerService.dispatch('updateMetricsModelSpec', [{ id: currentModel.id, newSpec }])
                 }}
             >
             <svelte:fragment slot='prototype-container'>

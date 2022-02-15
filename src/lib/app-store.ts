@@ -1,8 +1,9 @@
 import type { Socket } from "socket.io";
-import { io } from "socket.io-client";
-import { writable } from "svelte/store";
 import type { Writable } from "svelte/store";
 import type { DataModelerState } from "./types";
+import { clientFactory } from "$common/clientFactory";
+import { RootConfig } from "$common/config/RootConfig";
+import type { DataModelerSocketService } from "$common/socket/DataModelerSocketService";
 
 interface ServerToClientEvents {
 	['app-state']: (state:DataModelerState) => void;
@@ -13,26 +14,17 @@ interface ClientToServerEvents {
 
 export interface AppStore extends Pick<Writable<DataModelerState>, "subscribe"> {
 	socket:Socket<ServerToClientEvents, ClientToServerEvents>;
-	reset:Function;
-	action:Function;
 }
 
+const clientInstances = clientFactory(RootConfig.getDefaultConfig());
+export const dataModelerService = clientInstances.dataModelerService;
+export const dataModelerStateService = clientInstances.dataModelerStateService;
+dataModelerService.init();
+
 export function createStore() : AppStore {
-	const socket = io("http://localhost:3001");
-	socket.on("connect", () => {});
-	const store:Writable<DataModelerState> = writable({queries:[], sources:[], metricsModels:[], exploreConfigurations: [], status: undefined});
-	socket.on("app-state", (state:DataModelerState) => {
-		store.set(state);
-	});
 	return {
-		subscribe: store.subscribe,
+		subscribe: dataModelerStateService.store.subscribe,
 		// @ts-ignore
-		socket,
-		reset() {
-			socket.emit('reset');
-		},
-		action(name:string, args:any) {
-			socket.emit(name, args);
-		}
+		socket: (dataModelerService as DataModelerSocketService).getSocket(),
 	}
 }

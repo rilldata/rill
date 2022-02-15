@@ -1,6 +1,8 @@
 //import adapter from '@sveltejs/adapter-auto';
 import adapter from '@sveltejs/adapter-static';
 import preprocess from 'svelte-preprocess';
+import { resolve } from "path";
+import typescript from '@rollup/plugin-typescript';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -8,11 +10,23 @@ const config = {
 	// for more information about preprocessors
 	preprocess: preprocess(),
 
+	plugins: [
+		typescript({ sourceMap: true })
+	],
+
 	kit: {
 		adapter: adapter(),
 
 		// hydrate the <div id="svelte"> element in src/app.html
-		target: '#svelte'
+		target: '#svelte',
+		vite: {
+			resolve: {
+				alias: {
+					$common: resolve('./src/common'),
+					$lib: resolve('./src/lib'),
+				}
+			}
+		}
 	}
 };
 

@@ -6,6 +6,7 @@ import { cubicOut as easing } from 'svelte/easing';
 import { flip } from "svelte/animate";
 import Editor from "$lib/components/Editor.svelte";
 import DropZone from "$lib/components/DropZone.svelte";
+import {dataModelerService} from "$lib/app-store";
 
 const store = getContext("rill:app:store") as AppStore;
 
@@ -34,33 +35,33 @@ $: currentQuery = $store?.activeAsset ? $store.queries.find(query => query.id ==
       <DropZone 
         padTop={!!$store.queries.length}
         on:source-drop={(evt) => { 
-          store.action('addQuery', { query: evt.detail.props.content, at: i } ); 
+          dataModelerService.dispatch('addQuery', [{ query: evt.detail.props.content, at: i } ]); 
         }} />
         
       <Editor 
         content={q.query}
         name={q.name}
         errorLineNumber={q.id === $store.activeQuery ? errorLineNumber : undefined}
-        on:down={() => { store.action('moveQueryDown', {id: q.id}); }}
-        on:up={() => { store.action('moveQueryUp', {id: q.id}); }}
-        on:delete={() => { store.action('deleteQuery', {id: q.id}); }}
+        on:down={() => { dataModelerService.dispatch('moveQueryDown', [{id: q.id}]); }}
+        on:up={() => { dataModelerService.dispatch('moveQueryUp', [{id: q.id}]); }}
+        on:delete={() => { dataModelerService.dispatch('deleteQuery', [{id: q.id}]); }}
         on:receive-focus={() => {
-            store.action('setActiveQuery', { id: q.id });
-            store.action("updateQueryInformation", {id: q.id});
+            dataModelerService.dispatch('setActiveQuery', [{ id: q.id }]);
+            dataModelerService.dispatch('updateQueryInformation', [{id: q.id}]);
         }}
         on:release-focus={() => {
-          //store.action('releaseActiveQueryFocus', { id: q.id });
+          //dataModelerService.dispatch('releaseActiveQueryFocus', [{ id: q.id }]);
         }}
         on:model-profile={() => {
-          store.action('computeModelProfile', { id: q.id });
+          dataModelerService.dispatch('computeModelProfile', [{ id: q.id }]);
         }}
         on:rename={(evt) => {
-          store.action('changeQueryName', {id: q.id, name: evt.detail});
+          dataModelerService.dispatch('changeQueryName', [{id: q.id, name: evt.detail}]);
         }}
         on:write={(evt)=> {
-            store.action('setActiveQuery', { id: q.id })
-            store.action("updateQuery", {id: q.id, query: evt.detail.content});
-            store.action("updateQueryInformation", {id: q.id});
+            dataModelerService.dispatch('setActiveQuery', [{ id: q.id }])
+            dataModelerService.dispatch('updateQuery', [{id: q.id, query: evt.detail.content}]);
+            dataModelerService.dispatch('updateQueryInformation', [{id: q.id}]);
         }}
     />
 
@@ -74,26 +75,26 @@ $: currentQuery = $store?.activeAsset ? $store.queries.find(query => query.id ==
       content={currentQuery.query}
       name={currentQuery.name}
       errorLineNumber={ currentQuery.id === $store.activeAsset.id ? errorLineNumber : undefined }
-      on:down={() => { store.action('moveQueryDown', {id: currentQuery.id}); }}
-      on:up={() => { store.action('moveQueryUp', {id: currentQuery.id}); }}
-      on:delete={() => { store.action('deleteQuery', {id: currentQuery.id}); }}
+      on:down={() => { dataModelerService.dispatch('moveModelDown', [currentQuery.id]); }}
+      on:up={() => { dataModelerService.dispatch('moveModelUp', [currentQuery.id]); }}
+      on:delete={() => { dataModelerService.dispatch('deleteModel', [currentQuery.id]); }}
       on:receive-focus={() => {
-          store.action('setActiveAsset', { id: currentQuery.id, assetType: 'model' });
-          store.action("updateQueryInformation", {id: currentQuery.id });
+          dataModelerService.dispatch('setActiveAsset', [currentQuery.id, 'model']);
+          //dataModelerService.dispatch('updateQueryInformation', [{id: currentQuery.id }]);
       }}
       on:release-focus={() => {
-        //store.action('releaseActiveQueryFocus', { id: q.id });
+        //dataModelerService.dispatch('releaseActiveQueryFocus', [{ id: q.id }]);
       }}
       on:model-profile={() => {
-        store.action('computeModelProfile', { id: currentQuery.id });
+        //dataModelerService.dispatch('computeModelProfile', [{ id: currentQuery.id }]);
       }}
       on:rename={(evt) => {
-        store.action('changeQueryName', {id: currentQuery.id, name: evt.detail });
+        dataModelerService.dispatch('updateModelName', [currentQuery.id, evt.detail]);
       }}
       on:write={(evt)=> {
-          store.action('setActiveAsset', { id: currentQuery.id, assetType: 'model' });
-          store.action("updateQuery", { id: currentQuery.id, query: evt.detail.content });
-          store.action("updateQueryInformation", { id: currentQuery.id });
+          dataModelerService.dispatch('setActiveAsset', [currentQuery.id, 'model']);
+          dataModelerService.dispatch('updateModelQuery', [currentQuery.id, evt.detail.content ]);
+          //dataModelerService.dispatch('updateQueryInformation', [{ id: currentQuery.id }]);
       }}
   />
   {/key}
@@ -103,7 +104,7 @@ $: currentQuery = $store?.activeAsset ? $store.queries.find(query => query.id ==
 
   <DropZone end padTop={$store.queries.length}
   on:source-drop={(evt) => {
-    store.action('addQuery', { query: evt.detail.props.content } );
+    dataModelerService.dispatch('addModel', [{ query: evt.detail.props.content } ]);
   }} />
 
 </div>

@@ -13,6 +13,7 @@ import ContextButton from "$lib/components/collapsible-table-summary/ContextButt
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
+import {dataModelerService} from "$lib/app-store";
 
 const store = getContext('rill:app:store') as AppStore;
 
@@ -72,11 +73,11 @@ onMount(() => {
             {#if showSources}
               <div class="pb-6" transition:slide|local={{duration:200}}>
               {#if $store && $store.sources}
-                {#each ($store.sources) as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
+                {#each ($store.sources) as { path, tableName, cardinality, profile, head, sizeInBytes, id} (id)}
                 <div animate:flip>
                   <CollapsibleTableSummary 
                     icon={ParquetIcon}
-                    {name}
+                    name={tableName}
                     {cardinality}
                     {profile}
                     {head}
@@ -95,8 +96,7 @@ onMount(() => {
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
               <ContextButton on:click={() => {
-                // FIXME: rename this action to model.
-                store.action('addQuery', {});
+                dataModelerService.dispatch("addModel", [{}]);
                 if (!showModels) {
                   showModels = true;
                 }
@@ -111,7 +111,7 @@ onMount(() => {
 
                 <CollapsibleTableSummary
                   on:select={() => {
-                    store.action('setActiveAsset', { id: query.id, assetType: 'model' });
+                    dataModelerService.dispatch("setActiveAsset", [query.id, 'model']);
                   }}
                   icon={ModelIcon}
                   name={query.name}
