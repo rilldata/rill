@@ -12,6 +12,7 @@ import {SocketServerMock} from "./SocketServerMock";
 import {ParquetFileTestData} from "../data/DataLoader.data";
 import {DATA_FOLDER} from "../data/generator/data-constants";
 import {RootConfig} from "$common/config/RootConfig";
+import { ColumnarItemType, ColumnarItemTypeMap } from "$common/data-modeler-state-service/ProfileColumnStateActions";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -28,7 +29,7 @@ export class FunctionalTestBase extends TestBase {
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
         const serverInstances = dataModelerServiceFactory(new RootConfig({
-            database: { parquetFolder: "data" }
+            database: { parquetFolder: "data", databaseName: ":memory:" },
         }));
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
@@ -42,17 +43,17 @@ export class FunctionalTestBase extends TestBase {
 
     protected async loadTestTables(): Promise<void> {
         await Promise.all(ParquetFileTestData.subData.map(async (parquetFileData) => {
-            await this.clientDataModelerService.dispatch("addOrUpdateDataset", [`${DATA_FOLDER}/${parquetFileData.title}`]);
+            await this.clientDataModelerService.dispatch("addOrUpdateTable", [`${DATA_FOLDER}/${parquetFileData.title}`]);
         }));
-        await this.waitForDatasets();
+        await this.waitForTables();
     }
 
-    protected async waitForDatasets(): Promise<void> {
-        await this.waitForColumnar("sources");
+    protected async waitForTables(): Promise<void> {
+        await this.waitForColumnar(ColumnarItemTypeMap[ColumnarItemType.Table]);
     }
 
     protected async waitForModels(): Promise<void> {
-        await this.waitForColumnar("queries");
+        await this.waitForColumnar(ColumnarItemTypeMap[ColumnarItemType.Model]);
     }
 
     protected assertColumns(profileColumns: ProfileColumn[], columns: TestDataColumns): void {

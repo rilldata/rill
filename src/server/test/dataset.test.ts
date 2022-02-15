@@ -7,7 +7,7 @@
 import { getByID, createDatasetActions } from "../dataset"
 import { mockState, createAPI, createDispatcher, topK, numericHistogram } from './mocks'
 
-import type { DataModelerState, Dataset } from "../../lib/types";
+import type { DataModelerState, Table } from "../../lib/types";
 
 describe("dataset actions", () => {
 
@@ -33,7 +33,7 @@ describe("dataset actions", () => {
         
         expect(api.getTopKAndCardinality).toHaveBeenCalledTimes(1);
         
-        const src = getByID(state.sources, '12345') as Dataset;
+        const src = getByID(state.tables, '12345') as Table;
         const profile = src.profile[0];
 
         expect(profile.summary.cardinality).toBe(5);
@@ -56,7 +56,7 @@ describe("dataset actions", () => {
             actions.summarizeNumericField('12345', 'test', 'test-field-02', 'DOUBLE')
             (dispatch, () => state);
         expect(api.numericHistogram).toHaveBeenCalledTimes(1);
-        const src = getByID(state.sources, '12345') as Dataset;
+        const src = getByID(state.tables, '12345') as Table;
         const profile = src.profile[1];
         expect(profile.summary.histogram).toEqual(numericHistogram);
     })
@@ -70,7 +70,7 @@ describe("dataset actions", () => {
             (dispatch, () => state);
 
         expect(api.numericHistogram).toHaveBeenCalledTimes(1);
-        const src = getByID(state.sources, '12345') as Dataset;
+        const src = getByID(state.tables, '12345') as Table;
         const profile = src.profile[1];
         expect(profile.summary.histogram).toEqual(numericHistogram);
     });
@@ -80,7 +80,7 @@ describe("dataset actions", () => {
             actions.summarizeNullCount('12345', 'test', 'test-field-02')
             (dispatch, () => state);
         expect(api.getNullCount).toHaveBeenCalledTimes(1);
-        const src = getByID(state.sources, '12345') as Dataset;
+        const src = getByID(state.tables, '12345') as Table;
         const profile = src.profile[1];
         expect(profile.nullCount).toEqual(10);
     })
@@ -94,7 +94,7 @@ describe("dataset actions", () => {
             (dispatch, () => state);
 
         expect(api.getNullCount).toHaveBeenCalledTimes(1);
-        const src = getByID(state.sources, '12345') as Dataset;
+        const src = getByID(state.tables, '12345') as Table;
         const profile = src.profile[1];
         expect(profile.nullCount).toEqual(10);
     });

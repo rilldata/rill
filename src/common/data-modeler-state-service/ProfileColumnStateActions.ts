@@ -2,14 +2,14 @@ import {StateActions} from ".//StateActions";
 import type {ColumnarItem, ColumnarTypeKeys, DataModelerState, ProfileColumn, ProfileColumnSummary} from "$lib/types";
 
 export enum ColumnarItemType {
-    Dataset,
+    Table,
     Model,
 }
 export const ColumnarItemTypeMap: {
     [type in ColumnarItemType]: ColumnarTypeKeys
 } = {
-    [ColumnarItemType.Dataset]: "sources",
-    [ColumnarItemType.Model]: "queries",
+    [ColumnarItemType.Table]: "tables",
+    [ColumnarItemType.Model]: "models",
 }
 
 export class ProfileColumnStateActions extends StateActions {

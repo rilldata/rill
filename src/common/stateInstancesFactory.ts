@@ -1,4 +1,4 @@
-import type {DataModelerState, Dataset, Model} from "$lib/types";
+import type {DataModelerState, Table, Model} from "$lib/types";
 import {guidGenerator} from "$lib/util/guid";
 import {sanitizeQuery as _sanitizeQuery} from "$lib/util/sanitize-query";
 import {IDLE_STATUS} from "$common/constants";
@@ -11,7 +11,7 @@ interface NewModelArguments {
     name?: string;
 }
 
-export function getNewDataset(): Dataset {
+export function getNewTable(): Table {
     return {
         id: guidGenerator(),
         path: '',
@@ -49,8 +49,8 @@ export function getEmptyModel(): Model {
 
 export function initialState() : DataModelerState {
     return {
-        queries: [getEmptyModel()],
-        sources: [],
+        models: [getEmptyModel()],
+        tables: [],
         metricsModels: [],
         exploreConfigurations: [],
         status: 'disconnected'

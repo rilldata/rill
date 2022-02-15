@@ -11,7 +11,7 @@ export class ModelActions extends DataModelerActions {
     }
 
     public async updateModelQuery(currentState: DataModelerState, modelId: string, query: string): Promise<void> {
-        const model = currentState.queries.find(findModel => findModel.id === modelId);
+        const model = currentState.models.find(findModel => findModel.id === modelId);
 
         if (!model) {
             console.log(`No model found for ${modelId}`);
@@ -22,12 +22,12 @@ export class ModelActions extends DataModelerActions {
 
         this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
 
-        this.dataModelerStateService.dispatch("setDatasetStatus",
+        this.dataModelerStateService.dispatch("setTableStatus",
             [ColumnarItemType.Model, modelId, RUNNING_STATUS]);
 
         // validate query 1st
         if (!await this.validateModelQuery(model, sanitizedQuery)) {
-            this.dataModelerStateService.dispatch("setDatasetStatus",
+            this.dataModelerStateService.dispatch("setTableStatus",
                 [ColumnarItemType.Model, modelId, IDLE_STATUS]);
             return;
         }
@@ -42,12 +42,12 @@ export class ModelActions extends DataModelerActions {
             console.log(err);
         }
 
-        this.dataModelerStateService.dispatch("setDatasetStatus",
+        this.dataModelerStateService.dispatch("setTableStatus",
             [ColumnarItemType.Model, modelId, IDLE_STATUS]);
     }
 
     public async exportToParquet(currentState: DataModelerState, modelId: string, exportFile: string): Promise<void> {
-        const model = currentState.queries.find(findModel => findModel.id === modelId);
+        const model = currentState.models.find(findModel => findModel.id === modelId);
         const exportPath = await this.databaseService.dispatch("exportToParquet", [model.sanitizedQuery, exportFile]);
         await this.dataModelerStateService.dispatch("updateModelDestinationSize",
           [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);

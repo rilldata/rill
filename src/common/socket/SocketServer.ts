@@ -69,10 +69,10 @@ export class SocketServer {
     }
 
     private readSourceFolder() {
-        this.dataModelerService.dispatch("updateDatasetsFromSource",
+        this.dataModelerService.dispatch("updateTablesFromSource",
           [this.config.database.parquetFolder]);
         setInterval(() => {
-            this.dataModelerService.dispatch("updateDatasetsFromSource",
+            this.dataModelerService.dispatch("updateTablesFromSource",
               [this.config.database.parquetFolder]);
         }, 1000);
     }

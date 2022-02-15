@@ -6,7 +6,7 @@ import {asyncWait} from "$common/utils/waitUtils";
 @FunctionalTestBase.Suite
 export class ModelQuerySpec extends FunctionalTestBase {
     @FunctionalTestBase.BeforeSuite()
-    public async setupDataset(): Promise<void> {
+    public async setupTables(): Promise<void> {
         await this.loadTestTables();
     }
 
@@ -16,11 +16,11 @@ export class ModelQuerySpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test("modelQueryTestData")
     public async shouldUpdateModelQuery(query: string, columns: TestDataColumns): Promise<void> {
-        const modelId = this.clientDataModelerStateService.getCurrentState().queries[0].id;
+        const modelId = this.clientDataModelerStateService.getCurrentState().models[0].id;
         await this.clientDataModelerService.dispatch("updateModelQuery", [modelId, query]);
         await this.waitForModels();
 
-        const model = this.clientDataModelerStateService.getCurrentState().queries[0];
+        const model = this.clientDataModelerStateService.getCurrentState().models[0];
         expect(model.error).toBeUndefined();
         expect(model.query).toBe(query);
         expect(model.cardinality).toBeGreaterThan(0);
@@ -35,28 +35,28 @@ export class ModelQuerySpec extends FunctionalTestBase {
             [{name: "newModel", query: SingleTableQuery}]);
         await asyncWait(50);
 
-        let newModel = this.clientDataModelerStateService.getCurrentState().queries[1];
+        let newModel = this.clientDataModelerStateService.getCurrentState().models[1];
         expect(newModel.name).toBe("newModel.sql");
 
         const NEW_MODEL_UPDATE_NAME = "newModel_updated.sql";
         await this.clientDataModelerService.dispatch("updateModelName", [newModel.id, "newModel_updated"]);
         await asyncWait(50);
-        newModel = this.clientDataModelerStateService.getCurrentState().queries[1];
+        newModel = this.clientDataModelerStateService.getCurrentState().models[1];
         expect(newModel.name).toBe(NEW_MODEL_UPDATE_NAME);
 
         const OTHER_MODEL_NAME = "query_1.sql";
         await this.clientDataModelerService.dispatch("moveModelUp", [newModel.id]);
         await asyncWait(50);
-        expect(this.clientDataModelerStateService.getCurrentState().queries[0].name).toBe(NEW_MODEL_UPDATE_NAME);
-        expect(this.clientDataModelerStateService.getCurrentState().queries[1].name).toBe(OTHER_MODEL_NAME);
+        expect(this.clientDataModelerStateService.getCurrentState().models[0].name).toBe(NEW_MODEL_UPDATE_NAME);
+        expect(this.clientDataModelerStateService.getCurrentState().models[1].name).toBe(OTHER_MODEL_NAME);
 
         await this.clientDataModelerService.dispatch("moveModelDown", [newModel.id]);
         await asyncWait(50);
-        expect(this.clientDataModelerStateService.getCurrentState().queries[0].name).toBe(OTHER_MODEL_NAME);
-        expect(this.clientDataModelerStateService.getCurrentState().queries[1].name).toBe(NEW_MODEL_UPDATE_NAME);
+        expect(this.clientDataModelerStateService.getCurrentState().models[0].name).toBe(OTHER_MODEL_NAME);
+        expect(this.clientDataModelerStateService.getCurrentState().models[1].name).toBe(NEW_MODEL_UPDATE_NAME);
 
         await this.clientDataModelerService.dispatch("deleteModel", [newModel.id]);
-        expect(this.clientDataModelerStateService.getCurrentState().queries.length).toBe(1);
-        expect(this.clientDataModelerStateService.getCurrentState().queries[0].name).toBe(OTHER_MODEL_NAME);
+        expect(this.clientDataModelerStateService.getCurrentState().models.length).toBe(1);
+        expect(this.clientDataModelerStateService.getCurrentState().models[0].name).toBe(OTHER_MODEL_NAME);
     }
 }

@@ -200,7 +200,7 @@ onMount(() => {
             </button>
         </div>
         <div class=''>
-            <button title="caveat: temporary, but this materializes the dataset" class=small-action-button on:click={() => {
+            <button title="caveat: temporary, but this materializes the table" class=small-action-button on:click={() => {
                 dispatch('model-profile');
             }}><FreezeIcon size={"14"} /></button>
         </div>

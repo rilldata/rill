@@ -26,9 +26,9 @@ export interface Model extends ColumnarItem {
     /** name is used for the filename and exported file */
     name: string;
     tableName?: string;
-    /** cardinality is the total number of rows of the previewed dataset */
+    /** cardinality is the total number of rows of the previewed table */
     cardinality?: number;
-    /** sizeInBytes is the total size of the previewed dataset. 
+    /** sizeInBytes is the total size of the previewed table.
      * It is not generated until the user exports the query.
      * */
     sizeInBytes?: number; // TODO: make sure this is just size
@@ -38,7 +38,7 @@ export interface Model extends ColumnarItem {
     destinationProfile?: any;
 }
 
-export interface Dataset extends ColumnarItem {
+export interface Table extends ColumnarItem {
     path: string;
     name?: string;
     tableName?: string;
@@ -167,13 +167,13 @@ export interface ExploreConfiguration {
  */
 export interface DataModelerState {
     activeAsset?: Asset;
-    queries: Model[];
-    sources: Dataset[];
+    models: Model[];
+    tables: Table[];
     metricsModels: MetricsModel[];
     exploreConfigurations: ExploreConfiguration[];
     status: string;
 }
 
 export type ColumnarTypeKeys = {
-    [K in keyof DataModelerState]: DataModelerState[K] extends (Model[] | Dataset[]) ? K : never
+    [K in keyof DataModelerState]: DataModelerState[K] extends (Model[] | Table[]) ? K : never
 }[keyof DataModelerState];

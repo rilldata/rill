@@ -18,38 +18,38 @@ export class DataLoaderSpec extends FunctionalTestBase {
     public async shouldLoadParquetFile(parquetFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
         const actualFilePath = `${DATA_FOLDER}/${parquetFile}`;
 
-        await this.clientDataModelerService.dispatch("addOrUpdateDataset", [actualFilePath]);
+        await this.clientDataModelerService.dispatch("addOrUpdateTable", [actualFilePath]);
 
-        await this.waitForDatasets();
+        await this.waitForTables();
 
-        const dataset = this.clientDataModelerStateService.getCurrentState().sources
-            .find(datasetFind => datasetFind.path === actualFilePath);
+        const table = this.clientDataModelerStateService.getCurrentState().tables
+            .find(tableFind => tableFind.path === actualFilePath);
 
-        expect(dataset.path).toBe(actualFilePath);
-        expect(dataset.cardinality).toBe(cardinality);
+        expect(table.path).toBe(actualFilePath);
+        expect(table.cardinality).toBe(cardinality);
 
-        this.assertColumns(dataset.profile, columns);
+        this.assertColumns(table.profile, columns);
     }
 
     @TestBase.Test()
     public async shouldOnlyReloadNewFiles(): Promise<void> {
-        await this.clientDataModelerService.dispatch("updateDatasetsFromSource", [DATA_FOLDER]);
-        await this.waitForDatasets();
+        await this.clientDataModelerService.dispatch("updateTablesFromSource", [DATA_FOLDER]);
+        await this.waitForTables();
 
         const state = this.clientDataModelerStateService.getCurrentState();
-        const adBidDataset = state.sources.find(dataset => dataset.path.includes("AdBid"));
-        const adImpressionDataset = state.sources.find(dataset => dataset.path.includes("AdImpression"));
+        const adBidTable = state.tables.find(table => table.path.includes("AdBid"));
+        const adImpressionTable = state.tables.find(table => table.path.includes("AdImpression"));
 
         execSync("touch data/AdBids.parquet");
 
-        await this.clientDataModelerService.dispatch("updateDatasetsFromSource", [DATA_FOLDER]);
-        await this.waitForDatasets();
+        await this.clientDataModelerService.dispatch("updateTablesFromSource", [DATA_FOLDER]);
+        await this.waitForTables();
 
         const newState = this.clientDataModelerStateService.getCurrentState();
-        const newAdBidDataset = newState.sources.find(dataset => dataset.path.includes("AdBid"));
-        const newAdImpressionDataset = newState.sources.find(dataset => dataset.path.includes("AdImpression"));
+        const newAdBidTable = newState.tables.find(table => table.path.includes("AdBid"));
+        const newAdImpressionTable = newState.tables.find(table => table.path.includes("AdImpression"));
 
-        expect(adBidDataset.lastUpdated).toBeLessThan(newAdBidDataset.lastUpdated);
-        expect(adImpressionDataset.lastUpdated).toBe(newAdImpressionDataset.lastUpdated);
+        expect(adBidTable.lastUpdated).toBeLessThan(newAdBidTable.lastUpdated);
+        expect(adImpressionTable.lastUpdated).toBe(newAdImpressionTable.lastUpdated);
     }
 }

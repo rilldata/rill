@@ -1,16 +1,16 @@
-import type {ColumnarItem, DataModelerState, Dataset, Item, Model, ProfileColumn} from "$lib/types";
+import type {ColumnarItem, DataModelerState, Table, Item, Model, ProfileColumn} from "$lib/types";
 
 export class StateActions {
     protected static getByID<I extends Item>(items: (I[]), id: string): I | null {
         return items.find(item => item.id === id);
     }
 
-    protected static getDataset(state: DataModelerState, id: string): Dataset | null {
-        return this.getByID(state.sources, id);
+    protected static getTable(state: DataModelerState, id: string): Table | null {
+        return this.getByID(state.tables, id);
     }
 
     protected static getModel(state: DataModelerState, id: string): Model | null {
-        return this.getByID(state.queries, id);
+        return this.getByID(state.models, id);
     }
 
     protected static getProfile(items: ColumnarItem[], modelId: string, name: string): ProfileColumn | null {

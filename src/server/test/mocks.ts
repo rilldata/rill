@@ -47,7 +47,7 @@ export const numericHistogram:NumericHistogramBin[] = [
 
 
 export const mockState = () : DataModelerState => ({
-    sources: [
+    tables: [
         {
             id: '12345',
             name: 'test',
@@ -59,7 +59,7 @@ export const mockState = () : DataModelerState => ({
              ]
         }
     ],
-    queries: [],
+    models: [],
     metricsModels: [],
     exploreConfigurations: [],
     status: 'figure out later.'

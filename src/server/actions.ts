@@ -7,7 +7,7 @@ import { createDatasetActions } from "./dataset/index.js";
 import { createModelActions } from "./model/index.js";
 import { createMetricsModelActions } from "./metrics-model/index.js";
 import { createExploreConfigurationActions } from "./explore/index.js";
-import type { Item, Model, Dataset, MetricsModel, DataModelerState } from "../lib/types"
+import type { Item, Model, Table, MetricsModel, DataModelerState } from "../lib/types"
 import { guidGenerator } from "../lib/util/guid.js";
 import { sanitizeQuery as _sanitizeQuery } from "../lib/util/sanitize-query.js";
 
@@ -19,7 +19,7 @@ interface NewQueryArguments {
     at?: number;
 }
 
-export function newSource(): Dataset {
+export function newSource(): Table {
     return {
         id: guidGenerator(),
         path: '',
@@ -52,8 +52,8 @@ export function emptyQuery(): Model {
 
 export function initialState() : DataModelerState {
     return {
-        queries: [emptyQuery()],
-        sources: [],
+        models: [emptyQuery()],
+        tables: [],
         metricsModels: [],
         exploreConfigurations: [],
         status: 'disconnected'
@@ -66,14 +66,14 @@ function getByID(items:(Item[]), id:string) : Item| null {
 
 export function addError(dispatch:Function, id:string, message:string) : void {
     dispatch((draft:DataModelerState) => {
-        let q = getByID(draft.queries, id) as Model;
+        let q = getByID(draft.models, id) as Model;
         q.error = message;
     });
 }
 
 function clearQuery(dispatch:Function, id:string) : void {
     dispatch((draft:DataModelerState) => {
-        let q = getByID(draft.queries, id) as Model;
+        let q = getByID(draft.models, id) as Model;
         q.sizeInBytes = undefined;
         q.destinationProfile = undefined;
         q.preview = undefined;
@@ -83,21 +83,21 @@ function clearQuery(dispatch:Function, id:string) : void {
 
 function clearError(dispatch:Function, id:string) {
     dispatch((draft:DataModelerState) => {
-        let q =  getByID(draft.queries, id) as Model;
+        let q =  getByID(draft.models, id) as Model;
         q.error = undefined;
     });
 }
 
 function sanitizeQuery(dispatch:Function, id:string) {
     dispatch((draft:DataModelerState) => {
-        let q =  getByID(draft.queries, id) as Model;
+        let q =  getByID(draft.models, id) as Model;
         q.sanitizedQuery = _sanitizeQuery(q.query);
     });
 }
 
 function updateQueryField(dispatch:Function, id:string, field:string, value:any) {
     dispatch((draft:DataModelerState) => {
-        let q = getByID(draft.queries, id);
+        let q = getByID(draft.models, id);
         q[field] = undefined;
         q[field] = value;
     });
@@ -152,7 +152,7 @@ export const createDataModelerActions = (api, notifyUser) => {
             return async (dispatch:Function, getState:() => DataModelerState) => {
                 //get query
                 const state = getState();
-                const query = getByID(state.queries, id) as Model;
+                const query = getByID(state.models, id) as Model;
                 const tableName = query.name.split(".sql")[0];
                 // update destinationPreview
                 // the destinationPreview shoudl be of type Source
@@ -161,7 +161,7 @@ export const createDataModelerActions = (api, notifyUser) => {
                 
                 // drop the 
                 dispatch((draft:DataModelerState) => {
-                    const profile = (getByID(draft.queries, id) as Model).profile;
+                    const profile = (getByID(draft.models, id) as Model).profile;
                     if (profile) {
                         profile.forEach(field => {
                             field.summary = undefined;
@@ -183,10 +183,10 @@ export const createDataModelerActions = (api, notifyUser) => {
                 
                 const profile = await api.createDestinationProfile(tableName);
                 dispatch((draft:DataModelerState) => {
-                    (getByID(draft.queries, id) as Model).profile = profile;
+                    (getByID(draft.models, id) as Model).profile = profile;
                 })
                 dispatch((draft:DataModelerState) => {
-                    const sourceToUpdate = getByID(draft.queries, id) as Dataset;
+                    const sourceToUpdate = getByID(draft.models, id) as Table;
                     sourceToUpdate.profile.map((t) => {
                         sourceToUpdate.profile.find(p => p.name === t.name).conceptualType = t.type;
                     });
@@ -208,7 +208,7 @@ export const createDataModelerActions = (api, notifyUser) => {
 
         addOrUpdateSource(path) {
             return async (dispatch:Function, getState:()=>DataModelerState) => {
-                const sources = getState().sources;
+                const sources = getState().tables;
                 const sourceExists = sources.find(s => s.path === path);
                 const source = {...(sourceExists || newSource())};
                 source.path = path;
@@ -223,19 +223,19 @@ export const createDataModelerActions = (api, notifyUser) => {
                     source.head = await api.getFirstN(`'${source.path}'`);
                     dispatch((draft:DataModelerState) => {
                         if (!!sourceExists) {
-                            const sourceToUpdate = getByID(draft.sources, source.id);
+                            const sourceToUpdate = getByID(draft.tables, source.id);
                             // replace 
                             Object.keys(source).forEach((k) => {
                                 sourceToUpdate[k] = source[k];
                             })
                         } else {
-                            draft.sources.push(source);
+                            draft.tables.push(source);
                         }
                     });
 
                     const duckdbTypes = await api.parquetToDBTypes(source.path);
                     dispatch((draft:DataModelerState) => {
-                        const sourceToUpdate = getByID(draft.sources, source.id) as Dataset;
+                        const sourceToUpdate = getByID(draft.tables, source.id) as Table;
                         duckdbTypes.map((t) => {
                             sourceToUpdate.profile.find(p => p.name === t.name).conceptualType = t.type;
                         });
@@ -289,8 +289,8 @@ export const createDataModelerActions = (api, notifyUser) => {
                 const filePaths = new Set(files);
                 // prune & dedup
                 dispatch((draft:DataModelerState) => {
-                    draft.sources = draft.sources.filter(s => filePaths.has(s.path));
-                    draft.sources = draft.sources.filter((value, index, self) =>
+                    draft.tables = draft.tables.filter(s => filePaths.has(s.path));
+                    draft.tables = draft.tables.filter((value, index, self) =>
                         index === self.findIndex((t) => (t.path === value.path))
                     );
                 })
@@ -311,7 +311,7 @@ export const createDataModelerActions = (api, notifyUser) => {
                 api.getDestinationSize(path).then((size) => {
                     if (size !== undefined) {
                         dispatch((draft:DataModelerState) => {
-                            let q = draft.queries.find(query => query.id === id);
+                            let q = draft.models.find(query => query.id === id);
                             q.sizeInBytes = size;
                         })
                     }
