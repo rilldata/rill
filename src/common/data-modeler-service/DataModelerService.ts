@@ -54,8 +54,8 @@ export class DataModelerService {
         });
     }
 
-    public async init(): Promise<void> {
-        this.dataModelerStateService.init();
+    public async init(state?: DataModelerState): Promise<void> {
+        this.dataModelerStateService.init(state);
         await this.databaseService?.init();
     }
 

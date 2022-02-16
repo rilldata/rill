@@ -1,7 +1,6 @@
 {
 	"name": "data-modeler",
 	"version": "0.1.0",
-	"type": "module",
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build",
@@ -63,6 +62,7 @@
 		"@codemirror/state": "^0.19.6",
 		"@codemirror/view": "^0.19.42",
 		"chokidar": "^3.5.3",
+		"commander": "^9.0.0",
 		"d3-format": "^3.1.0",
 		"d3-shape": "^3.1.0",
 		"d3-time": "^3.0.0",
@@ -80,9 +80,5 @@
 		"piscina": "^3.2.0",
 		"socket.io": "^4.4.1",
 		"socket.io-client": "^4.4.1"
-	},
-	"_moduleAliases": {
-		"$lib": "src/lib",
-		"$common": "src/common"
 	}
 }

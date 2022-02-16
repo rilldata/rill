@@ -1,4 +1,4 @@
-import "module-alias/register";
+import "../moduleAlias";
 import {serverFactory} from "$common/serverFactory";
 import {RootConfig} from "$common/config/RootConfig";
 

@@ -13,6 +13,7 @@ import {ParquetFileTestData} from "../data/DataLoader.data";
 import {DATA_FOLDER} from "../data/generator/data-constants";
 import {RootConfig} from "$common/config/RootConfig";
 import { ColumnarItemType, ColumnarItemTypeMap } from "$common/data-modeler-state-service/ProfileColumnStateActions";
+import { DatabaseConfig } from "$common/config/DatabaseConfig";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -29,7 +30,7 @@ export class FunctionalTestBase extends TestBase {
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
         const serverInstances = dataModelerServiceFactory(new RootConfig({
-            database: { parquetFolder: "data", databaseName: ":memory:" },
+            database: new DatabaseConfig({ parquetFolder: "data", databaseName: ":memory:" }),
         }));
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;

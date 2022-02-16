@@ -50,8 +50,8 @@ export class DataModelerStateService {
         });
     }
 
-    public init(): void {
-        this.store = writable(initialState());
+    public init(state?: DataModelerState): void {
+        this.store = writable(state ?? initialState());
     }
 
     public getCurrentState(): DataModelerState {

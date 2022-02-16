@@ -1,4 +1,4 @@
-import "module-alias/register";
+import "../../../src/moduleAlias";
 import {DataGeneratorFarm} from "./DataGeneratorFarm";
 import {AD_BID_COUNT, AD_IMPRESSION_COUNT, MAX_USERS} from "./data-constants";
 
