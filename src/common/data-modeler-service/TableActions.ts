@@ -3,7 +3,7 @@ import type {DataModelerState, Table} from "$lib/types";
 import {getNewTable} from "$common/stateInstancesFactory";
 import {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {IDLE_STATUS, RUNNING_STATUS} from "$common/constants";
-import { extractFileExtension, extractTableName, sanitizeTableName } from "$lib/util/extract-table-name";
+import { extractFileExtension, extractTableName, INVALID_CHARS, sanitizeTableName } from "$lib/util/extract-table-name";
 import {getParquetFiles} from "$common/utils/getParquetFiles";
 import {stat} from "fs/promises";
 import { FILE_EXTENSION_TO_TABLE_TYPE, TableSourceType } from "$lib/types";
@@ -44,10 +44,24 @@ export class TableActions extends DataModelerActions {
             console.log("Invalid file type");
             return;
         }
+        if (tableName && INVALID_CHARS.test(tableName)) {
+            console.log("Input table name has invalid characters");
+            return;
+        }
 
         const tables = currentState.tables;
-        const existingTable = tables.find(s => s.path === path);
+        const existingTable = tables.find(t => t.path === path);
         const table = {...(existingTable || getNewTable())};
+
+        if (existingTable && existingTable.tableName !== name) {
+            console.log("New table name doesnt match existing. Renaming is not supported at the moment.");
+            return;
+        }
+        if (tables.find(t => t.tableName === name && t.path !== path)) {
+            console.log(`Another table with ${name} already exists.`);
+            return;
+        }
+
         table.path = path;
         table.name = name;
         table.tableName = name;

@@ -1,6 +1,6 @@
 const FILE_PATH_SPLIT_REGEX = /\//;
 const FILE_EXTENSION_REGEX = /\.(.*)$/;
-const INVALID_CHARS = /[^a-zA-Z_\d]/g;
+export const INVALID_CHARS = /[^a-zA-Z_\d]/g;
 
 export function extractTableName(filePath: string): string {
     const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
