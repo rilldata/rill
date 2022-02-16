@@ -38,10 +38,22 @@ export interface Model extends ColumnarItem {
     destinationProfile?: any;
 }
 
+export enum TableSourceType {
+    ParquetFile,
+    CSVFile,
+}
+export const FILE_EXTENSION_TO_TABLE_TYPE = {
+    "parquet": TableSourceType.ParquetFile,
+    "csv": TableSourceType.CSVFile,
+}
+
 export interface Table extends ColumnarItem {
     path: string;
     name?: string;
+    // we have a separate field to maintain different names in the future.
+    // currently, name = tableName
     tableName?: string;
+    sourceType?: TableSourceType;
     head: any[];
     cardinality?: number;
     sizeInBytes?: number;
