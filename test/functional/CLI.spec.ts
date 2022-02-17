@@ -8,7 +8,7 @@ import { AdBidsColumnsTestData, AdImpressionColumnsTestData } from "../data/Data
 
 const execPromise = promisify(exec);
 
-const CLI_TEST_FOLDER = "test/data/temp";
+const CLI_TEST_FOLDER = "temp/test";
 const DATA_MODELER_CLI = "./node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
 
 @FunctionalTestBase.Suite

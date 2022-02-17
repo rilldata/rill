@@ -1,6 +1,4 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
-import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { Command } from "commander";
 
 export class DropTableCommand extends DataModelerCliCommand {
@@ -14,8 +12,7 @@ export class DropTableCommand extends DataModelerCliCommand {
             });
     }
 
-    protected sendActions(dataModelerService: DataModelerService, dataModelerStateService: DataModelerStateService,
-                          projectPath: string, tableName: string): Promise<void> {
+    protected sendActions(tableName: string): Promise<void> {
         // TODO
         return Promise.resolve(undefined);
     }

@@ -1,6 +1,4 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
-import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { Command } from "commander";
 import { InfoCommand } from "$cli/InfoCommand";
 
@@ -21,9 +19,8 @@ export class ImportTableCommand extends DataModelerCliCommand {
             });
     }
 
-    protected async sendActions(dataModelerService: DataModelerService, dataModelerStateService: DataModelerStateService,
-                          projectPath: string, tableSourceFile: string, options: ImportTableOptions): Promise<void> {
-        await dataModelerService.dispatch("addOrUpdateTable", [tableSourceFile]);
-        InfoCommand.displayProjectInfo(projectPath, dataModelerStateService.getCurrentState());
+    protected async sendActions(tableSourceFile: string, {name}: ImportTableOptions): Promise<void> {
+        await this.dataModelerService.dispatch("addOrUpdateTable", [tableSourceFile]);
+        InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
     }
 }

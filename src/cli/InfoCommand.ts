@@ -1,6 +1,4 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
-import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { Command } from "commander";
 import type { DataModelerState } from "$lib/types";
 
@@ -14,9 +12,8 @@ export class InfoCommand extends DataModelerCliCommand {
             });
     }
 
-    protected async sendActions(dataModelerService: DataModelerService, dataModelerStateService: DataModelerStateService,
-                          projectPath: string): Promise<void> {
-        InfoCommand.displayProjectInfo(projectPath, dataModelerStateService.getCurrentState());
+    protected async sendActions(): Promise<void> {
+        InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
     }
 
     public static displayProjectInfo(projectPath: string, state: DataModelerState) {

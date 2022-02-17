@@ -11,6 +11,7 @@ import type {Patch} from "immer";
 import {initialState} from "../stateInstancesFactory";
 import {getActionMethods} from "$common/ServiceBase";
 import type {PickActionFunctions} from "$common/ServiceBase";
+import type { RootConfig } from "$common/config/RootConfig";
 
 enablePatches();
 
@@ -42,7 +43,8 @@ export class DataModelerStateService {
 
     private patchesSubscribers: Array<PatchesSubscriber> = [];
 
-    public constructor(private readonly stateActions: Array<StateActions>) {
+    public constructor(private readonly stateActions: Array<StateActions>,
+                       protected readonly config?: RootConfig) {
         stateActions.forEach((actions) => {
             getActionMethods(actions).forEach(action => {
                 this.actionsMap[action] = actions;
@@ -50,9 +52,11 @@ export class DataModelerStateService {
         });
     }
 
-    public init(state?: DataModelerState): void {
-        this.store = writable(state ?? initialState());
+    public init(): void {
+        this.store = writable(initialState());
     }
+
+    public teardown(): void {}
 
     public getCurrentState(): DataModelerState {
         return get(this.store);

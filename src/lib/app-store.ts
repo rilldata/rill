@@ -16,7 +16,7 @@ export interface AppStore extends Pick<Writable<DataModelerState>, "subscribe"> 
 	socket:Socket<ServerToClientEvents, ClientToServerEvents>;
 }
 
-const clientInstances = clientFactory(RootConfig.getDefaultConfig());
+const clientInstances = clientFactory(new RootConfig({}));
 export const dataModelerService = clientInstances.dataModelerService;
 export const dataModelerStateService = clientInstances.dataModelerStateService;
 dataModelerService.init();

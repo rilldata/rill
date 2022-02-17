@@ -1,7 +1,5 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
-import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { execSync } from "node:child_process";
 
 export class InitCommand extends DataModelerCliCommand {
@@ -14,9 +12,7 @@ export class InitCommand extends DataModelerCliCommand {
             });
     }
 
-    protected async sendActions(dataModelerService: DataModelerService,
-                          dataModelerStateService: DataModelerStateService,
-                          projectPath: string): Promise<void> {
-        execSync(`mkdir -p ${projectPath}/models`);
+    protected async sendActions(): Promise<void> {
+        execSync(`mkdir -p ${this.projectPath}/models`);
     }
 }

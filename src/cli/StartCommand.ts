@@ -1,7 +1,6 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
-import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { Command } from "commander";
+import { ExpressServer } from "../server/ExpressServer";
 
 export class StartCommand extends DataModelerCliCommand {
     public getCommand(): Command {
@@ -13,8 +12,8 @@ export class StartCommand extends DataModelerCliCommand {
             });
     }
 
-    protected sendActions(dataModelerService: DataModelerService, dataModelerStateService: DataModelerStateService): Promise<void> {
-        // TODO
-        return Promise.resolve(undefined);
+    protected sendActions(): Promise<void> {
+        return new ExpressServer(this.dataModelerService, this.dataModelerStateService,
+            this.notificationService, this.config).init();
     }
 }

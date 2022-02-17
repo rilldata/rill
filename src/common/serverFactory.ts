@@ -2,7 +2,6 @@ import {DuckDBClient} from "$common/database-service/DuckDBClient";
 import {DatabaseDataLoaderActions} from "$common/database-service/DatabaseDataLoaderActions";
 import {DatabaseTableActions} from "$common/database-service/DatabaseTableActions";
 import {DatabaseColumnActions} from "$common/database-service/DatabaseColumnActions";
-import {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import {TableStateActions} from "$common/data-modeler-state-service/TableStateActions";
 import {ModelStateActions} from "$common/data-modeler-state-service/ModelStateActions";
 import {TableActions} from "$common/data-modeler-service/TableActions";
@@ -14,6 +13,7 @@ import {SocketServer} from "$common/socket/SocketServer";
 import {DatabaseService} from "$common/database-service/DatabaseService";
 import type {RootConfig} from "$common/config/RootConfig";
 import { SocketNotificationService } from "$common/socket/SocketNotificationService";
+import { DataModelerServerStateService } from "../server/DataModelerServerStateService";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -24,18 +24,18 @@ export function databaseServiceFactory(config: RootConfig) {
         [databaseDataLoaderActions, databaseTableActions, databaseColumnActions]);
 }
 
-export function dataModelerStateServiceFactory() {
+export function dataModelerStateServiceFactory(config: RootConfig) {
     const tableStateActions = new TableStateActions();
     const modelStateActions = new ModelStateActions();
     const profileColumnStateActions = new ProfileColumnStateActions();
-    return new DataModelerStateService(
-        [tableStateActions, modelStateActions, profileColumnStateActions]);
+    return new DataModelerServerStateService(
+        [tableStateActions, modelStateActions, profileColumnStateActions], config);
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {
     const databaseService = databaseServiceFactory(config);
 
-    const dataModelerStateService = dataModelerStateServiceFactory();
+    const dataModelerStateService = dataModelerStateServiceFactory(config);
 
     const notificationService = new SocketNotificationService();
 

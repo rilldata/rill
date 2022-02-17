@@ -31,7 +31,7 @@
 			"$cli": ["src/cli"],
 			"$cli/*": ["src/cli/*"]
 		},
-		"outDir": "tsc-tmp"
+		"outDir": "dist"
 	},
 	"include": [
 		"src/**/*.d.ts",
