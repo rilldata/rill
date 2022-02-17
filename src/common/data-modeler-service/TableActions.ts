@@ -41,11 +41,11 @@ export class TableActions extends DataModelerActions {
         const type = FILE_EXTENSION_TO_TABLE_TYPE[extractFileExtension(path)];
         if (type === undefined) {
             // TODO: Create a error response pipeline
-            console.log("Invalid file type");
+            console.error("Invalid file type");
             return;
         }
         if (tableName && INVALID_CHARS.test(tableName)) {
-            console.log("Input table name has invalid characters");
+            console.error("Input table name has invalid characters");
             return;
         }
 
@@ -54,11 +54,11 @@ export class TableActions extends DataModelerActions {
         const table = {...(existingTable || getNewTable())};
 
         if (existingTable && existingTable.tableName !== name) {
-            console.log("New table name doesnt match existing. Renaming is not supported at the moment.");
+            console.error("New table name doesnt match existing. Renaming is not supported at the moment.");
             return;
         }
         if (tables.find(t => t.tableName === name && t.path !== path)) {
-            console.log(`Another table with ${name} already exists.`);
+            console.error(`Another table with ${name} already exists.`);
             return;
         }
 
@@ -82,12 +82,13 @@ export class TableActions extends DataModelerActions {
           [ColumnarItemType.Table, table.id, RUNNING_STATUS]);
 
         try {
+            await this.importTableDataByType(table);
             await this.collectTableInfo(table);
 
             await this.dataModelerService.dispatch("collectProfileColumns",
               [table.id, ColumnarItemType.Table]);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
 
         this.dataModelerStateService.dispatch("setTableStatus",
@@ -102,13 +103,15 @@ export class TableActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("unsetActiveAsset", []);
     }
 
-    private async collectTableInfo(table: Table) {
+    private async importTableDataByType(table: Table) {
         switch (table.sourceType) {
             case TableSourceType.ParquetFile:
                 await this.databaseService.dispatch("importParquetFile", [table.path, table.tableName]);
                 break;
         }
+    }
 
+    private async collectTableInfo(table: Table) {
         // create new table as one passed in args is readonly from the state.
         const newTable: Table = {
             id: table.id,
