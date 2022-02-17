@@ -7,7 +7,7 @@ import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
  * WASM version will change how the file is read.
  */
 export class DatabaseDataLoaderActions extends DatabaseActions {
-    public async loadData(metadata: DatabaseMetadata, parquetFile: string, tableName: string): Promise<any> {
+    public async importParquetFile(metadata: DatabaseMetadata, parquetFile: string, tableName: string): Promise<any> {
         await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
         return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM '${parquetFile}';`);
     }

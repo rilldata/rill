@@ -16,7 +16,7 @@ const SingleTableQueryColumnsTestData: TestDataColumns = [{
     type: "VARCHAR",
     isNull: false,
 }];
-export const SingleTableQuery = "select count(*) as impressions, publisher, domain from 'AdBids_parquet' group by publisher, domain";
+export const SingleTableQuery = "select count(*) as impressions, publisher, domain from 'AdBids' group by publisher, domain";
 const SingleTableQueryTestData: Args = [SingleTableQuery, SingleTableQueryColumnsTestData];
 
 const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
@@ -46,7 +46,7 @@ const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
 }];
 const TwoTableJoinQuery = `
 select count(*) as impressions, avg(bid.bid_price) as bid_price, bid.publisher, bid.domain, imp.city, imp.country
-from 'AdBids_parquet' bid join 'AdImpressions_parquet' imp on bid.id = imp.id
+from 'AdBids' bid join 'AdImpressions' imp on bid.id = imp.id
 group by bid.publisher, bid.domain, imp.city, imp.country
 `;
 const TwoTableJoinQueryTestData: Args = [TwoTableJoinQuery, TwoTableJoinQueryColumnsTestData];
