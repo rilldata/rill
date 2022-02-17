@@ -7,6 +7,7 @@ import {
 } from "../data/DataLoader.data";
 import {DATA_FOLDER} from "../data/generator/data-constants";
 import {execSync} from "node:child_process";
+import { assertColumns } from "./assertUtils";
 
 @TestBase.Suite
 export class DataLoaderSpec extends FunctionalTestBase {
@@ -28,7 +29,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
         expect(table.path).toBe(actualFilePath);
         expect(table.cardinality).toBe(cardinality);
 
-        this.assertColumns(table.profile, columns);
+        assertColumns(table.profile, columns);
     }
 
     @TestBase.Test()

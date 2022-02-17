@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-
+#!/usr/bin/env node --type "commonjs"
 import "../moduleAlias";
 import { Command } from "commander";
 import { InitCommand } from "$cli/InitCommand";
@@ -7,6 +6,7 @@ import { ImportTableCommand } from "$cli/ImportTableCommand";
 import { DropTableCommand } from "$cli/DropTableCommand";
 import { StartCommand } from "$cli/StartCommand";
 import { InfoCommand } from "$cli/InfoCommand";
+
 const program = new Command();
 
 program

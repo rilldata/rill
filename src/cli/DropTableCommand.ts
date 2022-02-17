@@ -8,14 +8,14 @@ export class DropTableCommand extends DataModelerCliCommand {
         return new Command("drop-table")
             .description("Drops a table.")
             .argument("<tableName>", "Name of the table to drop.")
-            .action((tableName) => {
-                // TODO
-                console.log(tableName);
+            .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
+            .action((tableName, {project}) => {
+                return this.run(project, tableName);
             });
     }
 
     protected sendActions(dataModelerService: DataModelerService, dataModelerStateService: DataModelerStateService,
-                          projectPath: string, ...args: Array<any>): Promise<void> {
+                          projectPath: string, tableName: string): Promise<void> {
         // TODO
         return Promise.resolve(undefined);
     }

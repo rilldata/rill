@@ -7,12 +7,14 @@ export class StartCommand extends DataModelerCliCommand {
     public getCommand(): Command {
         return new Command("start")
             .description("Starts the data-modeler UI.")
-            .action(() => {
-                // TODO
+            .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
+            .action(({project}) => {
+                return this.run(project);
             });
     }
 
     protected sendActions(dataModelerService: DataModelerService, dataModelerStateService: DataModelerStateService): Promise<void> {
+        // TODO
         return Promise.resolve(undefined);
     }
 }

@@ -18,6 +18,7 @@ export/
 .idea
 *.parquet
 *.wal
+/test/data/temp
 
 # generated content
 log

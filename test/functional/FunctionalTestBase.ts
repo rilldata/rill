@@ -57,16 +57,6 @@ export class FunctionalTestBase extends TestBase {
         await this.waitForColumnar(ColumnarItemTypeMap[ColumnarItemType.Model]);
     }
 
-    protected assertColumns(profileColumns: ProfileColumn[], columns: TestDataColumns): void {
-        profileColumns.forEach((profileColumn, idx) => {
-            expect(profileColumn.name).toBe(columns[idx].name);
-            expect(profileColumn.type).toBe(columns[idx].type);
-            expect(profileColumn.nullCount > 0).toBe(columns[idx].isNull);
-            // TODO: assert summary
-            // console.log(profileColumn.name, profileColumn.summary);
-        });
-    }
-
     private async waitForColumnar(columnarKey: ColumnarTypeKeys): Promise<void> {
         await asyncWait(200);
         await waitUntil(() => {
