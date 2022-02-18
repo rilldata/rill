@@ -26,23 +26,23 @@ function getErrorLineNumber(errorString) {
   return { message, lineNumber };
 };
 
-$: currentQuery = $store?.activeAsset ? $store.models.find(query => query.id === $store.activeAsset.id) : undefined;
+$: currentModel = $store?.activeAsset ? $store.models.find(query => query.id === $store.activeAsset.id) : undefined;
 </script>
 
 <div class="editor-pane">
   <div>
-  {#if $store && $store.models && currentQuery}
+  {#if $store && $store.models && currentModel}
     <div class="input-body p-4 overflow-auto">
-      {#key currentQuery?.id}
+      {#key currentModel?.id}
         <Editor 
-          content={currentQuery.query}
-          name={currentQuery.name}
-          errorLineNumber={ currentQuery.id === $store.activeAsset.id ? errorLineNumber : undefined }
-          on:down={() => { dataModelerService.dispatch('moveModelDown', [currentQuery.id]); }}
-          on:up={() => { dataModelerService.dispatch('moveModelUp', [currentQuery.id]); }}
-          on:delete={() => { dataModelerService.dispatch('deleteModel', [currentQuery.id]); }}
+          content={currentModel.query}
+          name={currentModel.name}
+          errorLineNumber={ currentModel.id === $store.activeAsset.id ? errorLineNumber : undefined }
+          on:down={() => { dataModelerService.dispatch('moveModelDown', [currentModel.id]); }}
+          on:up={() => { dataModelerService.dispatch('moveModelUp', [currentModel.id]); }}
+          on:delete={() => { dataModelerService.dispatch('deleteModel', [currentModel.id]); }}
           on:receive-focus={() => {
-              dataModelerService.dispatch('setActiveAsset', [currentQuery.id, 'model']);
+              dataModelerService.dispatch('setActiveAsset', [currentModel.id, 'model']);
               //dataModelerService.dispatch('updateQueryInformation', [{id: currentQuery.id }]);
           }}
           on:release-focus={() => {
@@ -52,11 +52,11 @@ $: currentQuery = $store?.activeAsset ? $store.models.find(query => query.id ===
             //dataModelerService.dispatch('computeModelProfile', [{ id: currentQuery.id }]);
           }}
           on:rename={(evt) => {
-            dataModelerService.dispatch('updateModelName', [currentQuery.id, evt.detail]);
+            dataModelerService.dispatch('updateModelName', [currentModel.id, evt.detail]);
           }}
           on:write={(evt)=> {
-              dataModelerService.dispatch('setActiveAsset', [currentQuery.id, 'model']);
-              dataModelerService.dispatch('updateModelQuery', [currentQuery.id, evt.detail.content ]);
+              dataModelerService.dispatch('setActiveAsset', [currentModel.id, 'model']);
+              dataModelerService.dispatch('updateModelQuery', [currentModel.id, evt.detail.content ]);
               //dataModelerService.dispatch('updateQueryInformation', [{ id: currentQuery.id }]);
           }}
       />
@@ -71,28 +71,26 @@ $: currentQuery = $store?.activeAsset ? $store.models.find(query => query.id ===
     </div>
   {/if}
 </div>
-
-<!-- FIXME: componentize!-->
-
-
+<!-- Show the model output preview -->
+{#if currentModel}
   <div style:font-size="12px" class="overflow-hidden h-full grid p-5" style:grid-template-rows="max-content auto">
     <button on:click={() => { showPreview = !showPreview }}>{#if showPreview}hide{:else}show{/if} preview</button>
     <div class="rounded overflow-auto border border border-gray-300 {!showPreview && 'hidden'}"
     >
-      {#if currentQuery?.preview && currentQuery?.profile}
-        <PreviewTable rows={currentQuery.preview} columnNames={currentQuery.profile} />
+      {#if currentModel?.preview && currentModel?.profile}
+        <PreviewTable rows={currentModel.preview} columnNames={currentModel.profile} />
       {:else}
         <div class="p-5  grid items-center justify-center italic">no columns selected</div>
       {/if}
     </div>
   </div>
+  {/if}
 </div>
 <style>
 
 .editor-pane {
   display: grid;
   grid-template-rows: auto 400px;
-  /* height: calc(100vh - var(--header-height)); */
   height: calc(100vh - var(--header-height));
 }
 .error {
