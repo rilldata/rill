@@ -11,7 +11,7 @@ const config = {
 	preprocess: preprocess(),
 
 	plugins: [
-		typescript({ sourceMap: true })
+		typescript({ sourceMap: true }),
 	],
 
 	kit: {

@@ -4,7 +4,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "svelte-kit dev",
-		"build": "svelte-kit build",
+		"build": "svelte-kit build && tsc --project tsconfig.node.json",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
@@ -14,8 +14,10 @@
 		"start": "electron ./electron.cjs",
 		"duckdb": "node ./server/server.duckdb.js",
 		"server": "ts-node-dev --project tsconfig.node.json -- src/server/server.ts",
-		"test": "tsc && NODE_OPTIONS=--experimental-vm-modules jest tsc-tmp --config jest.config.json",
-		"test:watch": "npm run test -- --watch"
+		"test": "jest",
+		"test:watch": "npm run test -- --watch",
+		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
+		"cli-dev": "ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
 	},
 	"devDependencies": {
 		"@adityahegde/typescript-test-utils": "^1.3.2",
@@ -27,6 +29,7 @@
 		"@sveltejs/kit": "next",
 		"@testing-library/jest-dom": "^5.16.2",
 		"@testing-library/svelte": "^3.0.3",
+		"@types/express": "^4.17.13",
 		"@types/jest": "^27.4.0",
 		"@types/testing-library__jest-dom": "^5.14.2",
 		"@typescript-eslint/eslint-plugin": "^5.11.0",
@@ -63,26 +66,21 @@
 		"@codemirror/state": "^0.19.6",
 		"@codemirror/view": "^0.19.42",
 		"chokidar": "^3.5.3",
+		"commander": "^9.0.0",
 		"d3-format": "^3.1.0",
 		"d3-shape": "^3.1.0",
 		"d3-time": "^3.0.0",
 		"d3-time-format": "^4.1.0",
 		"duckdb": "^0.3.2",
+		"express": "^4.17.3",
 		"glob": "^7.2.0",
 		"highlight.js": "^11.4.0",
 		"immer": "^9.0.12",
 		"js-sql-parser": "^1.4.1",
 		"js-yaml": "^4.1.0",
 		"module-alias": "^2.2.2",
-		"node-sql-parser": "^4.0.8",
-		"pgsql-ast-parser": "^9.3.2",
-		"pgsql-parser": "^13.1.13",
 		"piscina": "^3.2.0",
 		"socket.io": "^4.4.1",
 		"socket.io-client": "^4.4.1"
-	},
-	"_moduleAliases": {
-		"$lib": "src/lib",
-		"$common": "src/common"
 	}
 }

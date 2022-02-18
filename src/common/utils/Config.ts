@@ -17,7 +17,7 @@ export class Config<C> {
     private static configTypes = new Array<ConfigFieldType>();
 
     constructor(configJson: {
-        [K in keyof NonFunctionProperties<C>]?: any
+        [K in keyof NonFunctionProperties<C>]?: NonFunctionProperties<C>[K]
     }) {
         // if null is passed explicitly default param value does not take hold
         configJson = configJson || {};

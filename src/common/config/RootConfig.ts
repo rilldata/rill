@@ -12,8 +12,4 @@ export class RootConfig extends Config<RootConfig> {
 
     @Config.SubConfig(StateConfig)
     public state: StateConfig;
-
-    public static getDefaultConfig(): RootConfig {
-        return new RootConfig({database: {}, server: {}, state: {}});
-    }
 }

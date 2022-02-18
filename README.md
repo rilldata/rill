@@ -8,16 +8,49 @@ To get started:
 - run `npm run dev` to start the web UI dev server
 - in a separate process, run `npm run server` to start the backend server
 
-## sql engine API
+## CLI
+We need to use ts-node-dev with tsconfig.node.json to get nodejs command working
+```
+# NOTE: -- after cli-dev is needed to pass the args to the cli
+npm run cli-dev -- --help
+```
 
-We will need to expose a few functions from an API:
+### Creating a project
+```
+# init in current folder
+npm run cli-dev -- init
+```
 
-- `createSourceProfile` – creates a "profile" of the source table(s)
-- `createDestinationProfile` – creates a "profile" of the output dataframe
+```
+# init in /path/to/project folder
+npm run cli-dev -- init /path/to/project
+```
 
-## order of operations on startup
-- check the dbs in ./staging-databases for a databases.json file, which has an array of dbs with:
-    - path to the parquet file
-    - path to the duckdb stage
-- if one of those doesn't exist, then we do something.
+### Importing a table
+```
+# import table from /path/to/table/file into project under /path/to/project
+npm run cli-dev -- import-table /path/to/table/file --project /path/to/project
+```
+`--project` is optional. Will default to current directory if not specified.
 
+### Starting the UI
+```
+# build the UI so that the server can server the built static files
+npm run build
+# start the UI using info from project under /path/to/project
+npm run cli-dev -- start --project /path/to/project
+```
+`--project` is optional. Will default to current directory if not specified.
+
+## Local testing
+Generate local testing data using,
+```
+npm run generate-test-data
+```
+Will generate AdBids, AdImpressions and User data under /data
+NOTE: this will only work by temporarily removing `"type": "module"` from package.js. This will be fixed in the future.
+
+Run for test (Contains old tests that fail right now),
+```
+npm run test
+```

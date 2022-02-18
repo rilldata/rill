@@ -9,7 +9,7 @@ export type TestDataColumn = {
 export type TestDataColumns = Array<TestDataColumn>;
 type Args = [string, number, TestDataColumns];
 
-const AdBidsColumnsTestData: TestDataColumns = [{
+export const AdBidsColumnsTestData: TestDataColumns = [{
     name: "id",
     type: "BIGINT",
     isNull: false,
@@ -36,7 +36,7 @@ const AdBidsTestData: Args = [
     AdBidsColumnsTestData,
 ];
 
-const AdImpressionColumnsTestData: TestDataColumns = [{
+export const AdImpressionColumnsTestData: TestDataColumns = [{
     name: "id",
     type: "BIGINT",
     isNull: false,

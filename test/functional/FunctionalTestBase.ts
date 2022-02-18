@@ -13,6 +13,8 @@ import {ParquetFileTestData} from "../data/DataLoader.data";
 import {DATA_FOLDER} from "../data/generator/data-constants";
 import {RootConfig} from "$common/config/RootConfig";
 import { ColumnarItemType, ColumnarItemTypeMap } from "$common/data-modeler-state-service/ProfileColumnStateActions";
+import { DatabaseConfig } from "$common/config/DatabaseConfig";
+import { StateConfig } from "$common/config/StateConfig";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -29,7 +31,8 @@ export class FunctionalTestBase extends TestBase {
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
         const serverInstances = dataModelerServiceFactory(new RootConfig({
-            database: { parquetFolder: "data", databaseName: ":memory:" },
+            database: new DatabaseConfig({ parquetFolder: "data", databaseName: ":memory:" }),
+            state: new StateConfig({ autoSync: false }),
         }));
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
@@ -39,6 +42,11 @@ export class FunctionalTestBase extends TestBase {
 
         await this.clientDataModelerService.init();
         await this.socketServer.init();
+    }
+
+    @TestBase.AfterSuite()
+    public async teardown(): Promise<void> {
+        await this.serverDataModelerService?.destroy();
     }
 
     protected async loadTestTables(): Promise<void> {

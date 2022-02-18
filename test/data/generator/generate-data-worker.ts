@@ -1,4 +1,4 @@
-import "module-alias/register";
+import "../../../src/moduleAlias";
 import {DataGeneratorWorker} from "./DataGeneratorWorker";
 
 const dataGeneratorWorker = new DataGeneratorWorker();

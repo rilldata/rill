@@ -1,7 +1,6 @@
 <script>
 import { browser } from "$app/env"
 import Editor from "$lib/components/Editor.svelte";
-import * as p from 'node-sql-parser/umd/index.umd';
 
 let value;
 

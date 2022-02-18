@@ -27,9 +27,11 @@
 			"$lib": ["src/lib"],
 			"$lib/*": ["src/lib/*"],
 			"$common": ["src/common"],
-			"$common/*": ["src/common/*"]
+			"$common/*": ["src/common/*"],
+			"$cli": ["src/cli"],
+			"$cli/*": ["src/cli/*"]
 		},
-		"outDir": "tsc-tmp"
+		"outDir": "dist"
 	},
 	"include": [
 		"src/**/*.d.ts",

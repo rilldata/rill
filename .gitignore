@@ -1,6 +1,7 @@
 .DS_Store
 node_modules
 /build
+/dist
 /.svelte-kit
 /package
 .env
@@ -17,6 +18,7 @@ export/
 .idea
 *.parquet
 *.wal
+/temp
 
 # generated content
 log
