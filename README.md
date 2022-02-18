@@ -35,6 +35,8 @@ npm run cli-dev -- import-table /path/to/table/file --project /path/to/project
 
 ### Starting the UI
 ```
+# build the UI so that the server can server the built static files
+npm run build
 # start the UI using info from project under /path/to/project
 npm run cli-dev -- start --project /path/to/project
 ```
