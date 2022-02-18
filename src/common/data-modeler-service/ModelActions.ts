@@ -25,8 +25,8 @@ export class ModelActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("setTableStatus",
             [ColumnarItemType.Model, modelId, RUNNING_STATUS]);
 
-        // validate query 1st
-        if (!await this.validateModelQuery(model, sanitizedQuery)) {
+        // validate query with the original query first.
+        if (!await this.validateModelQuery(model, query)) {
             this.dataModelerStateService.dispatch("setTableStatus",
                 [ColumnarItemType.Model, modelId, IDLE_STATUS]);
             return;
@@ -35,7 +35,9 @@ export class ModelActions extends DataModelerActions {
 
         try {
             // create a view of the query for other analysis
-            await this.databaseService.dispatch("createViewOfQuery", [model.tableName, sanitizedQuery]);
+            // re-sanitize query but do not remove casing, in case there is case-sensitive syntax 
+            // in the query e.g. strftime(dt, '%I:%M:%S')
+            await this.databaseService.dispatch("createViewOfQuery", [model.tableName, sanitizeQuery(query, false)]);
 
             await this.collectModelInfo(model);
         } catch (err) {
