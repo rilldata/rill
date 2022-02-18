@@ -1,7 +1,7 @@
 import {Config} from "$common/utils/Config";
 
 export class DatabaseConfig extends Config<DatabaseConfig> {
-    @Config.ConfigField("project.db")
+    @Config.ConfigField("stage.db")
     public databaseName: string;
 
     @Config.ConfigField(".")
