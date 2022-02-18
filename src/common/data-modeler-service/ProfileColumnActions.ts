@@ -2,7 +2,7 @@ import type {DataModelerState, Table, Model, ProfileColumn} from "$lib/types";
 import type {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {ColumnarItemTypeMap} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {DataModelerActions} from "$common/data-modeler-service/DataModelerActions";
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
+import {TIMESTAMPS} from "$lib/duckdb-data-types";
 
 export class ProfileColumnActions extends DataModelerActions {
     public async collectProfileColumns(currentState: DataModelerState,

@@ -2,7 +2,7 @@ import {DatabaseActions} from "./DatabaseActions";
 import type {CategoricalSummary, NumericSummary, TimeRangeSummary} from "$lib/types";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 import {sanitizeColumn} from "$common/utils/queryUtils";
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
+import {TIMESTAMPS} from "$lib/duckdb-data-types";
 
 const TOP_K_COUNT = 50;
 
