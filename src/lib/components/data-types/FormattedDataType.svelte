@@ -1,5 +1,5 @@
 <script>
-import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types"
+import { NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types"
 import Varchar from "./Varchar.svelte";
 import Number from "./Number.svelte";
 import Timestamp from "./Timestamp.svelte";
