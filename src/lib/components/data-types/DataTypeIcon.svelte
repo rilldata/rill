@@ -1,26 +1,24 @@
-<script>
+<script lang="ts">
+import { DATA_TYPE_ICON_STYLES, CATEGORICALS } from "$lib/duckdb-data-types";
 export let type;
 
-function typeToSymbol(fieldType) {
-    if (fieldType === 'BYTE_ARRAY' || fieldType === 'VARCHAR') {
-        return {symbol: "C", text: 'categorical (BYTE_ARRAY)', color: 'red'};
+function typeToSymbol(fieldType:string) {
+    if (CATEGORICALS.has(fieldType)) {
+        return "C";
     } else {
-        return {symbol: fieldType.slice(0,1), text: fieldType, color: 'sky'};
+        return fieldType.slice(0,1);
     }
 }
 </script>
 <div
-class:bg-sky-200={type === 'VARCHAR'}
-class:bg-red-200={!(type === 'VARCHAR')}
-class:bg-teal-300={type === 'TIMESTAMP'}
-class:text-sky-800={type === 'VARCHAR'}
-class:text-red-800={type === 'VARCHAR'}
-class:text-teal-800={type === 'TIMESTAMP'}
+title="{type}"
 class="
+    { DATA_TYPE_ICON_STYLES[type]?.textClass || ''}
+    { DATA_TYPE_ICON_STYLES[type]?.bgClass || '' }
     text-ellipsis overflow-hidden whitespace-nowrap 
     grid place-items-center rounded" 
     style="font-size:8px; width: 16px; height: 16px;">
-    <div style="transform: translateY(.2px);">
-        {typeToSymbol(type).symbol}                    
+    <div style="transform: translateY(.1px);">
+        {typeToSymbol(type)}                    
     </div> 
 </div>

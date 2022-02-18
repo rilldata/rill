@@ -1,4 +1,5 @@
 <script>
+import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types"
 import Varchar from "./Varchar.svelte";
 import Number from "./Number.svelte";
 import Timestamp from "./Timestamp.svelte";
@@ -9,12 +10,13 @@ export let inTable = false;
 
 let dataType = Varchar;
 $: {
-    if (type === 'VARCHAR') {
-        dataType = Varchar;
-    } else if (type === 'TIMESTAMP') {
+    if (NUMERICS.has(type)) {
+        dataType = Number;
+    } else if (TIMESTAMPS.has(type)) {
         dataType = Timestamp;
     } else {
-        dataType = Number;
+        // default to the varchar style
+        dataType = Varchar;
     }
 }
 </script>

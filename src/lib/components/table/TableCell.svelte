@@ -21,7 +21,7 @@ const dispatch = createEventDispatcher();
  * IF date and time varies, we show with same styling
  * IF date differs but time does not, we gray out time
  * IF time differs but date does not, we gray out date.
- * For now, et's just default to showing the value.
+ * For now, let's just default to showing the value.
  */
 
 let formattedValue;
