@@ -15,9 +15,11 @@ import { dropStore } from '$lib/drop-store';
 import type { SvelteComponent } from "svelte/internal";
 import Histogram from "$lib/components/viz/SmallHistogram.svelte";
 import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
+import {DataTypeIcon} from "$lib/components/data-types";
+import { CATEGORICALS } from "$lib/duckdb-data-types"
 
 import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
-import { defaultSort, categoricals } from "$lib/components/collapsible-table-summary/sort-utils"
+import { defaultSort } from "$lib/components/collapsible-table-summary/sort-utils"
 
 import { horizontalSlide } from "$lib/transitions"
 
@@ -182,6 +184,7 @@ function typeToSymbol(fieldType) {
             >
                 {#if sortedProfile}
                     {#each sortedProfile as column (column.name)}
+                    <!-- FIXME: make this element work with src/lib/components/data-types/DataTypeIcon.svelte -->
                     <div 
                         class="pl-3 pr-5 font-medium break-word grid gap-x-2 items-center" 
                         style="
@@ -190,7 +193,8 @@ function typeToSymbol(fieldType) {
                         " 
                         bind:this={colSizer}>
                         {#if column.summary}
-                        <div
+                            <DataTypeIcon type={column.type} />
+                        <!-- <div
                         in:fade 
                         title={typeToSymbol(column.type).text}
                         class:bg-sky-100={categoricals.has(column.type)}
@@ -206,7 +210,7 @@ function typeToSymbol(fieldType) {
                             <div style="transform: translateY(.5px);">
                                 {typeToSymbol(column.type).symbol}                           
                             </div> 
-                        </div>
+                        </div> -->
                         {:else}
                             <div in:fade class="grid place-items-center" style="width: 16px; height: 16px;">
                                 <Spinner size=".45rem" bg="hsl(240, 1%, 70%)" />
@@ -250,9 +254,9 @@ function typeToSymbol(fieldType) {
                             <div
                                 style:width="108px"
                                 class='overflow-hidden whitespace-nowrap justify-self-stretch text-right text-gray-500  break-all' >
-                                {#if column?.summary && (categoricals.has(column.type) || categoricals.has(column.conceptualType)) && column?.summary?.cardinality}
+                                {#if column?.summary && (CATEGORICALS.has(column.type) || CATEGORICALS.has(column.conceptualType)) && column?.summary?.cardinality}
                                     <BarAndLabel 
-                                    color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
+                                    color={!CATEGORICALS.has(column.type) ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
                                     value={column.summary.cardinality / cardinality}>
                                         |{formatInteger(column.summary.cardinality)}|
                                     </BarAndLabel>
@@ -267,7 +271,7 @@ function typeToSymbol(fieldType) {
                                     <BarAndLabel
                                         title="{column.name}: {percentage(column.nullCount / cardinality)} of the values are null"
                                         bgColor={column.nullCount === 0 ? 'bg-white' : 'bg-gray-50'}
-                                        color={!categoricals.has(column.type) ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
+                                        color={!CATEGORICALS.has(column.type) ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
                                         value={column.nullCount / cardinality || 0}>
                                                 <span class:text-gray-300={column.nullCount === 0}>∅ {percentage(column.nullCount / cardinality)}</span>
                                     </BarAndLabel>
@@ -287,7 +291,7 @@ function typeToSymbol(fieldType) {
                     {#if showSummaries && summaryColumns.includes(column.name)}
                         <div style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide|local={{duration: 200 }}>
 
-                            {#if column?.summary && categoricals.has(column.type) || categoricals.has(column.conceptualType)}
+                            {#if column?.summary && CATEGORICALS.has(column.type) || CATEGORICALS.has(column.conceptualType)}
                             <TopKSummary 
                                 totalRows={cardinality}
                                 topK={column.summary.topK}
@@ -296,7 +300,7 @@ function typeToSymbol(fieldType) {
                             {/if}
 
 
-                            {#if column?.summary && !(categoricals.has(column.type) || categoricals.has(column.conceptualType)) && column.conceptualType !=='TIMESTAMP' && column.type !== 'TIMESTAMP'}
+                            {#if column?.summary && !(CATEGORICALS.has(column.type) || CATEGORICALS.has(column.conceptualType)) && column.conceptualType !=='TIMESTAMP' && column.type !== 'TIMESTAMP'}
                             <div>
                                 <SummaryAndHistogram
                                     width={containerWidth - 32 - 16}

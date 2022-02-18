@@ -12,7 +12,7 @@ $: valueTween.set(value);
 </script>
 
 <div {title} class="text-right {bgColor} grid items-center" style="position: relative; width: 100%;">
-    <div class='pl-2 pr-2' style="position: relative; z-index: 3;"><slot /></div> 
+    <div class='pl-2 pr-2' style="position: relative;"><slot /></div> 
     <div class='number-bar' style="--width: {$valueTween}; --color: {color}" />
 </div>
 
@@ -23,10 +23,15 @@ $: valueTween.set(value);
         display: inline-block;
         width: calc(100% * var(--width));
         position: absolute;
-        z-index: 2;
         left: 0;
         top: 0;
         height: 1rem;
         background-color: var(--color);
+        /* TEST: 
+            mix-blend-mode multiply enables underlying text to be seen, and
+            pointer-events none enables the user to highlight the text as if it were on top.
+         */
+        mix-blend-mode: multiply;
+        pointer-events: none;
     }
     </style> 

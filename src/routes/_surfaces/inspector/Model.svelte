@@ -153,7 +153,7 @@ $: if (currentQuery?.sizeInBytes && tables) compression = computeCompression(tab
         {/if}
       </div>
 
-      {#if currentQuery?.preview && currentQuery.preview.length}
+      <!-- {#if currentQuery?.preview && currentQuery.preview.length}
       <div class='results-container'>
         <div class="inspector-header pt-4 pb-4 pr-4 grid items-baseline sticky top-0"  style="
 
@@ -186,7 +186,7 @@ $: if (currentQuery?.sizeInBytes && tables) compression = computeCompression(tab
         {/if}
 
       </div>
-      {/if}
+      {/if} -->
     {/if}
     <div>
     </div>

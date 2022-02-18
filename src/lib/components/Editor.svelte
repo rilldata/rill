@@ -205,7 +205,7 @@ onMount(() => {
             }}><FreezeIcon size={"14"} /></button>
         </div>
     </div>
-    <div class='editor-container' bind:this={editorContainer}>
+    <div class='editor-container border h-full' bind:this={editorContainer}>
         <div bind:this={editorContainerComponent} />
     </div>
 </div>
@@ -215,7 +215,7 @@ onMount(() => {
     padding: .5rem;
     background-color: white;
     border-radius: .25rem;
-    max-width: 740px;
+    min-height: 400px;
     /* box-shadow: 0px .25rem .25rem rgba(0,0,0,.05); */
 }
 

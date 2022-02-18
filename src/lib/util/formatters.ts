@@ -1,9 +1,11 @@
 import { format } from "d3-format";
+import { timeFormat } from "d3-time-format";
+
 
 const zeroPad = format('02d');
 const formatInteger = format(',');
 const formatRate = format('.1f');
-
+export const standardTimestampFormat = timeFormat('%b %d, %Y %I:%M:%S');
 
 export function microsToTimestring(micros:number) {
     // to format micros, we need to translate this to hh:mm:ss.

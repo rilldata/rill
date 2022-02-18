@@ -3,7 +3,7 @@ export let data;
 $: header = Object.keys(data[0]);
 </script>
 
-<div class='table-container'>
+<div class='table-container bg-white'>
     <table>
         <tr>
             {#each header as key}
