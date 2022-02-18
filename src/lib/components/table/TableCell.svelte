@@ -12,6 +12,8 @@ export let type;
 export let value;
 export let name;
 export let index = undefined;
+export let isNull = false;
+
 
 const dispatch = createEventDispatcher();
 /**
@@ -34,7 +36,6 @@ $: {
     }
 }
 
-let isNull = false;
 
 let activeCell = false;
 
@@ -59,7 +60,7 @@ let activeCell = false;
     style:max-width="var(--table-column-width-{name}, 210px)"
 >
     {#if value !== undefined}
-    <span transition:fade={{duration: 75}}>
+    <span transition:fade|local={{duration: 75}}>
         <FormattedDataType {type} {isNull} inTable>
             {formattedValue}
         </FormattedDataType>

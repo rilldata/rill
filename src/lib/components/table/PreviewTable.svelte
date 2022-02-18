@@ -92,6 +92,8 @@ function togglePin(name, type, selectedCols) {
                         {name} 
                         {type} 
                         value={row[name]}
+                        isNull={row[name] === null}
+
                     />
                 {/each}
             </TableRow>
@@ -128,6 +130,7 @@ function togglePin(name, type, selectedCols) {
                             {name} 
                             {type} 
                             {index}
+                            isNull={row[name] === null}
                             value={row[name]} />
                     {/each}
                 </TableRow>
