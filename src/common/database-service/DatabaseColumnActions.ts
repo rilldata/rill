@@ -17,7 +17,7 @@ export class DatabaseColumnActions extends DatabaseActions {
 
     public async getNullCount(metadata: DatabaseMetadata,
                               tableName: string, columnName: string): Promise<number> {
-        const sanitizedColumName = sanitizeColumn(columnName)
+        const sanitizedColumName = sanitizeColumn(columnName);
         const [nullity] = await this.databaseClient.execute(
             `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${sanitizedColumName} IS NULL;`);
         return nullity.count;
@@ -41,22 +41,22 @@ export class DatabaseColumnActions extends DatabaseActions {
     }
 
     public async getNumericHistogram(metadata: DatabaseMetadata,
-                                              tableName: string, columnName: string, fieldType: string): Promise<NumericSummary> {
-        const field = sanitizeColumn(columnName);
-        const buckets = await this.databaseClient.execute(`SELECT count(*) as count, ${field} FROM ${tableName} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
+                                              tableName: string, columnName: string, columnType: string): Promise<NumericSummary> {
+        const sanitizedColumnName = sanitizeColumn(columnName);
+        const buckets = await this.databaseClient.execute(`SELECT count(*) as count, ${sanitizedColumnName} FROM ${tableName} WHERE ${sanitizedColumnName} IS NOT NULL GROUP BY ${sanitizedColumnName} USING SAMPLE reservoir(1000 ROWS);`)
         const bucketSize = Math.min(40, buckets.length);
         const result = await this.databaseClient.execute(`
           WITH data_table AS (
-            SELECT ${TIMESTAMPS.has(fieldType) ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tableName}
+            SELECT ${TIMESTAMPS.has(columnType) ? `epoch(${sanitizedColumnName})` : `${sanitizedColumnName}::DOUBLE`} as ${sanitizedColumnName} FROM ${tableName}
           ) , S AS (
             SELECT 
-              min(${field}) as minVal,
-              max(${field}) as maxVal,
-              (max(${field}) - min(${field})) as range
+              min(${sanitizedColumnName}) as minVal,
+              max(${sanitizedColumnName}) as maxVal,
+              (max(${sanitizedColumnName}) - min(${sanitizedColumnName})) as range
               FROM data_table
           ), values AS (
-            SELECT ${field} as value from data_table
-            WHERE ${field} IS NOT NULL
+            SELECT ${sanitizedColumnName} as value from data_table
+            WHERE ${sanitizedColumnName} IS NOT NULL
           ), buckets AS (
             SELECT
               range as bucket,
@@ -87,11 +87,11 @@ export class DatabaseColumnActions extends DatabaseActions {
 
     public async getTimeRange(metadata: DatabaseMetadata,
                               tableName: string, columnName: string): Promise<TimeRangeSummary> {
-        const formattedColumNName = sanitizeColumn(columnName);
+        const sanitizedColumnName = sanitizeColumn(columnName);
         const [ranges] = await this.databaseClient.execute(`
 	        SELECT
-		    min(${formattedColumNName}) as min, max(${formattedColumNName}) as max, 
-		    max(${formattedColumNName}) - min(${formattedColumNName}) as interval
+		    min(${sanitizedColumnName}) as min, max(${sanitizedColumnName}) as max, 
+		    max(${sanitizedColumnName}) - min(${sanitizedColumnName}) as interval
 		    FROM '${tableName}';
 	    `);
         return ranges;
@@ -99,9 +99,10 @@ export class DatabaseColumnActions extends DatabaseActions {
 
     private async getTopKOfColumn(metadata: DatabaseMetadata,
                           tableName: string, columnName: string, func = "count(*)"): Promise<any> {
+        const sanitizedColumnName = sanitizeColumn(columnName);
         return this.databaseClient.execute(`
-            SELECT ${columnName} as value, ${func} AS count from '${tableName}'
-            GROUP BY ${columnName}
+            SELECT ${sanitizedColumnName} as value, ${func} AS count from '${tableName}'
+            GROUP BY ${sanitizedColumnName}
             ORDER BY count desc
             LIMIT ${TOP_K_COUNT};
         `);
@@ -109,8 +110,9 @@ export class DatabaseColumnActions extends DatabaseActions {
 
     private async getCardinalityOfColumn(metadata: DatabaseMetadata,
                                  tableName: string, columnName: string): Promise<number> {
+        const sanitizedColumnName = sanitizeColumn(columnName);
         const [results] = await this.databaseClient.execute(
-            `SELECT approx_count_distinct(${columnName}) as count from '${tableName}';`);
+            `SELECT approx_count_distinct(${sanitizedColumnName}) as count from '${tableName}';`);
         return results.count;
     }
 }
