@@ -14,8 +14,10 @@
 		"start": "electron ./electron.cjs",
 		"duckdb": "node ./server/server.duckdb.js",
 		"server": "ts-node-dev --project tsconfig.node.json -- src/server/server.ts",
-		"test": "tsc && NODE_OPTIONS=--experimental-vm-modules jest tsc-tmp --config jest.config.json",
-		"test:watch": "npm run test -- --watch"
+		"test": "jest",
+		"test:watch": "npm run test -- --watch",
+		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
+		"cli-dev": "ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
 	},
 	"devDependencies": {
 		"@adityahegde/typescript-test-utils": "^1.3.2",

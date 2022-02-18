@@ -20,7 +20,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
     }
 
     protected async sendActions(tableSourceFile: string, {name}: ImportTableOptions): Promise<void> {
-        await this.dataModelerService.dispatch("addOrUpdateTable", [tableSourceFile]);
+        await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [tableSourceFile, name]);
         InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
     }
 }

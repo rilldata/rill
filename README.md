@@ -11,12 +11,14 @@ To get started:
 ## CLI
 We need to use ts-node-dev with tsconfig.node.json to get nodejs command working
 ```
-npx ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts --help
+# NOTE: -- after cli-dev is needed to pass the args to the cli
+npm run cli-dev -- --help
 ```
 
 ## Local testing data
 Generate local testing data using,
 ```
-npx ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts
+npm run generate-test-data
 ```
 Will generate AdBids, AdImpressions and User data under /data
+NOTE: this will only work by temporarily removing `"type": "module"` from package.js. This will be fixed in the future.

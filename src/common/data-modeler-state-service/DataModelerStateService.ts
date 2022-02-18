@@ -56,7 +56,7 @@ export class DataModelerStateService {
         this.store = writable(initialState());
     }
 
-    public teardown(): void {}
+    public destroy(): void {}
 
     public getCurrentState(): DataModelerState {
         return get(this.store);

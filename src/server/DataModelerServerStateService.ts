@@ -13,7 +13,8 @@ export class DataModelerServerStateService extends DataModelerStateService {
 
     public init(): void {
         let initState: DataModelerState;
-        if (existsSync(this.config.state.savedStateFile)) {
+
+        if (this.config.state.autoSync && existsSync(this.config.state.savedStateFile)) {
             initState = JSON.parse(
                 readFileSync(this.config.state.savedStateFile).toString());
         } else {
@@ -21,10 +22,12 @@ export class DataModelerServerStateService extends DataModelerStateService {
         }
         this.store = writable(initState);
 
-        this.periodicallySyncStateToFile();
+        if (this.config.state.autoSync) {
+            this.periodicallySyncStateToFile();
+        }
     }
 
-    public teardown(): void {
+    public destroy(): void {
         this.syncStateToFile();
         if (this.timer) {
             clearInterval(this.timer);

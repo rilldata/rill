@@ -35,7 +35,7 @@ export abstract class DataModelerCliCommand {
     }
 
     private async teardown(): Promise<void> {
-        this.dataModelerStateService.teardown();
+        this.dataModelerStateService.destroy();
     }
 
     protected async run(projectPath: string, ...args: Array<any>): Promise<void> {

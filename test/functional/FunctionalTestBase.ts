@@ -14,6 +14,7 @@ import {DATA_FOLDER} from "../data/generator/data-constants";
 import {RootConfig} from "$common/config/RootConfig";
 import { ColumnarItemType, ColumnarItemTypeMap } from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
+import { StateConfig } from "$common/config/StateConfig";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -31,6 +32,7 @@ export class FunctionalTestBase extends TestBase {
 
         const serverInstances = dataModelerServiceFactory(new RootConfig({
             database: new DatabaseConfig({ parquetFolder: "data", databaseName: ":memory:" }),
+            state: new StateConfig({ autoSync: false }),
         }));
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
@@ -40,6 +42,11 @@ export class FunctionalTestBase extends TestBase {
 
         await this.clientDataModelerService.init();
         await this.socketServer.init();
+    }
+
+    @TestBase.AfterSuite()
+    public async teardown(): Promise<void> {
+        await this.serverDataModelerService?.destroy();
     }
 
     protected async loadTestTables(): Promise<void> {
@@ -55,6 +62,16 @@ export class FunctionalTestBase extends TestBase {
 
     protected async waitForModels(): Promise<void> {
         await this.waitForColumnar(ColumnarItemTypeMap[ColumnarItemType.Model]);
+    }
+
+    protected assertColumns(profileColumns: ProfileColumn[], columns: TestDataColumns): void {
+        profileColumns.forEach((profileColumn, idx) => {
+            expect(profileColumn.name).toBe(columns[idx].name);
+            expect(profileColumn.type).toBe(columns[idx].type);
+            expect(profileColumn.nullCount > 0).toBe(columns[idx].isNull);
+            // TODO: assert summary
+            // console.log(profileColumn.name, profileColumn.summary);
+        });
     }
 
     private async waitForColumnar(columnarKey: ColumnarTypeKeys): Promise<void> {

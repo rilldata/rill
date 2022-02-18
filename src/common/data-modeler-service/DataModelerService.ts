@@ -77,5 +77,8 @@ export class DataModelerService {
         // this.dataModelerStateService.dispatch("setStatus", [IDLE_STATUS]);
     }
 
-    public async destroy(): Promise<void> {}
+    public async destroy(): Promise<void> {
+        await this.databaseService?.destroy();
+        this.dataModelerStateService.destroy();
+    }
 }

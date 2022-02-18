@@ -2,7 +2,6 @@ import {FunctionalTestBase} from "./FunctionalTestBase";
 import type {TestDataColumns} from "../data/DataLoader.data";
 import {ModelQueryTestData, ModelQueryTestDataProvider, SingleTableQuery} from "../data/ModelQuery.data";
 import {asyncWait} from "$common/utils/waitUtils";
-import { assertColumns } from "./assertUtils";
 
 @FunctionalTestBase.Suite
 export class ModelQuerySpec extends FunctionalTestBase {
@@ -27,7 +26,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
         expect(model.cardinality).toBeGreaterThan(0);
         expect(model.preview.length).toBeGreaterThan(0);
 
-        assertColumns(model.profile, columns);
+        this.assertColumns(model.profile, columns);
     }
 
     @FunctionalTestBase.Test()
