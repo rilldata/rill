@@ -15,10 +15,40 @@ We need to use ts-node-dev with tsconfig.node.json to get nodejs command working
 npm run cli-dev -- --help
 ```
 
-## Local testing data
+### Creating a project
+```
+# init in current folder
+npm run cli-dev -- init
+```
+
+```
+# init in /path/to/project folder
+npm run cli-dev -- init /path/to/project
+```
+
+### Importing a table
+```
+# import table from /path/to/table/file into project under /path/to/project
+npm run cli-dev -- import-table /path/to/table/file --project /path/to/project
+```
+`--project` is optional. Will default to current directory if not specified.
+
+### Starting the UI
+```
+# start the UI using info from project under /path/to/project
+npm run cli-dev -- start --project /path/to/project
+```
+`--project` is optional. Will default to current directory if not specified.
+
+## Local testing
 Generate local testing data using,
 ```
 npm run generate-test-data
 ```
 Will generate AdBids, AdImpressions and User data under /data
 NOTE: this will only work by temporarily removing `"type": "module"` from package.js. This will be fixed in the future.
+
+Run for test (Contains old tests that fail right now),
+```
+npm run test
+```
