@@ -1,6 +1,8 @@
 import {DatabaseActions} from "./DatabaseActions";
 import type {CategoricalSummary, NumericSummary, TimeRangeSummary} from "$lib/types";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
+import {sanitizeColumn} from "$common/utils/queryUtils";
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
 
 const TOP_K_COUNT = 50;
 
@@ -15,34 +17,37 @@ export class DatabaseColumnActions extends DatabaseActions {
 
     public async getNullCount(metadata: DatabaseMetadata,
                               tableName: string, columnName: string): Promise<number> {
+        const sanitizedColumName = sanitizeColumn(columnName)
         const [nullity] = await this.databaseClient.execute(
-            `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${columnName} IS NULL;`);
+            `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${sanitizedColumName} IS NULL;`);
         return nullity.count;
     }
 
     public async getDescriptiveStatistics(metadata: DatabaseMetadata,
                                           tableName: string, columnName: string): Promise<NumericSummary> {
+        const sanitizedColumnName = sanitizeColumn(columnName);
         const [results] = await this.databaseClient.execute(`
             SELECT
-                min(${columnName}) as min,
-                reservoir_quantile(${columnName}, 0.25) as q25,
-                reservoir_quantile(${columnName}, 0.5)  as q50,
-                reservoir_quantile(${columnName}, 0.75) as q75,
-                max(${columnName}) as max,
-                avg(${columnName})::FLOAT as mean,
-                stddev_pop(${columnName}) as sd
+                min(${sanitizedColumnName}) as min,
+                reservoir_quantile(${sanitizedColumnName}, 0.25) as q25,
+                reservoir_quantile(${sanitizedColumnName}, 0.5)  as q50,
+                reservoir_quantile(${sanitizedColumnName}, 0.75) as q75,
+                max(${sanitizedColumnName}) as max,
+                avg(${sanitizedColumnName})::FLOAT as mean,
+                stddev_pop(${sanitizedColumnName}) as sd
             FROM '${tableName}';
        `);
         return { statistics: results };
     }
 
     public async getNumericHistogram(metadata: DatabaseMetadata,
-                                              tableName: string, field: string, fieldType: string): Promise<NumericSummary> {
+                                              tableName: string, columnName: string, fieldType: string): Promise<NumericSummary> {
+        const field = sanitizeColumn(columnName);
         const buckets = await this.databaseClient.execute(`SELECT count(*) as count, ${field} FROM ${tableName} WHERE ${field} IS NOT NULL GROUP BY ${field} USING SAMPLE reservoir(1000 ROWS);`)
         const bucketSize = Math.min(40, buckets.length);
         const result = await this.databaseClient.execute(`
           WITH data_table AS (
-            SELECT ${fieldType === 'TIMESTAMP' ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tableName}
+            SELECT ${TIMESTAMPS.has(fieldType) ? `epoch(${field})` : `${field}::DOUBLE`} as ${field} FROM ${tableName}
           ) , S AS (
             SELECT 
               min(${field}) as minVal,
@@ -82,10 +87,11 @@ export class DatabaseColumnActions extends DatabaseActions {
 
     public async getTimeRange(metadata: DatabaseMetadata,
                               tableName: string, columnName: string): Promise<TimeRangeSummary> {
+        const formattedColumNName = sanitizeColumn(columnName);
         const [ranges] = await this.databaseClient.execute(`
 	        SELECT
-		    min(${columnName}) as min, max(${columnName}) as max, 
-		    max(${columnName}) - min(${columnName}) as interval
+		    min(${formattedColumNName}) as min, max(${formattedColumNName}) as max, 
+		    max(${formattedColumNName}) - min(${formattedColumNName}) as interval
 		    FROM '${tableName}';
 	    `);
         return ranges;
