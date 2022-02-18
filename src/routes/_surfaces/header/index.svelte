@@ -1,10 +1,8 @@
 <script lang="ts">
-import { getContext, createEventDispatcher } from "svelte";
+import { getContext } from "svelte";
 import type { AppStore } from "$lib/app-store"
 import ModelIcon from "$lib/components/icons/Code.svelte";
-import EditIcon from "$lib/components/icons/EditIcon.svelte";
 import {dataModelerService} from "$lib/app-store";
-const dispatch = createEventDispatcher();
 const store = getContext('rill:app:store') as AppStore;
 
 function formatModelName(str) {
@@ -13,9 +11,7 @@ function formatModelName(str) {
 }
 
 let currentModel;
-let tables;
 $: if ($store?.models && $store?.activeAsset) currentModel = $store.models.find(q => q.id === $store.activeAsset.id);
-$: if (currentModel?.sources) tables = $store.tables.filter(source => currentModel.sources.includes(source.path));
 
 let editingTitle = false;
 let titleInputValue;
@@ -28,45 +24,26 @@ $: titleInput = currentModel?.name;
     class="grid items-center content-stretch bg-gray-100" 
     style:grid-template-columns="[title] auto [controls] auto">
     <div>
+        {#if titleInput !== undefined && titleInput !== null}
         <h1 title="model: {titleInput}" style:font-size='16px' class="grid grid-flow-col justify-start items-center gap-x-3 p-3 pl-5 pr-5">
             <ModelIcon />
-            {#if titleInput !== undefined}
-                    <input 
-                    bind:this={titleInput} 
-                    on:input={(evt) => {
-                        titleInputValue = evt.target.value;
-                        editingTitle = true;
-                    }}
-                    class:font-bold={editingTitle === false}
-                    class="bg-gray-100"
-                    on:blur={()  => { editingTitle = false; }}
-                    value={titleInput} 
-                    size={Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1} 
-                    on:change={(e) => { 
-                        if (currentModel?.id) {
-                            dataModelerService.dispatch('updateModelName', [currentModel?.id, formatModelName(e.target.value)]);
-                        }
-                        
-                    }} />
-                    <!-- <button class='small-action-button edit-button' on:click={() => {
-                        titleInput.focus();
-                    }}>
-                        <EditIcon />
-                    </button> -->
-            {/if}
-            <!-- {currentModel?.name || ''} -->
+                <input 
+                bind:this={titleInput} 
+                on:input={(evt) => {
+                    titleInputValue = evt.target.value;
+                    editingTitle = true;
+                }}
+                class:font-bold={editingTitle === false}
+                class="bg-gray-100"
+                on:blur={() => { editingTitle = false; }}
+                value={titleInput} 
+                size={Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1} 
+                on:change={(e) => { 
+                    if (currentModel?.id) {
+                        dataModelerService.dispatch('updateModelName', [currentModel?.id, formatModelName(e.target.value)]);
+                    }
+                }} />
         </h1>
+        {/if}
     </div>
-    <!-- <div class="grid justify-end items-center grid-flow-col pr-5 gap-x-3">
-        {#if sources}
-        <div class="w-full flex align-items-stretch flex-col">
-          <button class="p-2 pt-1 pb-1 bg-transparent bg-black text-white border border-black rounded-md" on:click={() => {
-            const query = currentModel.query;
-            const exportFilename = currentModel.name.replace('.sql', '.parquet');
-            const path = `./export/${exportFilename}`
-            dataModelerService.dispatch('exportToParquet', [{query, path, id: currentModel.id }]);
-          }}>generate {currentModel.name.replace('.sql', '.parquet')}</button>
-        </div>
-      {/if}
-    </div> -->
 </header>
