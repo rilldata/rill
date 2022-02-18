@@ -9,9 +9,6 @@ const store = getContext('rill:app:store') as AppStore;
 
 function formatModelName(str) {
     let output = str.trim().replaceAll(' ', '_');
-    if (!output.endsWith('.sql')) {
-        output += '.sql';
-    }
     return output;
 }
 

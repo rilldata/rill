@@ -1,4 +1,4 @@
-export const categoricals = new Set(['BYTE_ARRAY', 'VARCHAR']);
+import { CATEGORICALS } from "$lib/duckdb-data-types";
 
 export function sortByCardinality(a,b) {
     if (a.summary && b.summary) {
@@ -31,8 +31,8 @@ export function sortByNullity(a,b) {
 }
 
 export function sortByType(a,b) {
-    if (categoricals.has(a.type) && !categoricals.has(b.type)) return 1;
-    if (!categoricals.has(a.type) && categoricals.has(b.type)) return -1;
+    if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)) return 1;
+    if (!CATEGORICALS.has(a.type) && CATEGORICALS.has(b.type)) return -1;
     if ((a.conceptualType === 'TIMESTAMP' || a.type === 'TIMESTAMP') && (b.conceptualType !== 'TIMESTAMP' && b.type !== 'TIMESTAMP')) {
                 return -1;
     } else if ((a.conceptualType !== 'TIMESTAMP' && a.type !== 'TIMESTAMP') && (b.conceptualType === 'TIMESTAMP' || b.type ==='TIMESTAMP')) {
@@ -48,6 +48,6 @@ export function sortByName(a,b) {
 export function defaultSort(a, b) {
     const byType = sortByType(a,b);
     if (byType !== 0) return byType;
-    if (categoricals.has(a.type) && !categoricals.has(b.type)) return sortByNullity(b,a);
+    if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)) return sortByNullity(b,a);
     return sortByCardinality(a,b);
 }

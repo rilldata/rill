@@ -3,9 +3,10 @@ import type {DataModelerState, Table} from "$lib/types";
 import {getNewTable} from "$common/stateInstancesFactory";
 import {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {IDLE_STATUS, RUNNING_STATUS} from "$common/constants";
-import {sanitizeTableName} from "$lib/util/sanitize-table-name";
+import { extractFileExtension, extractTableName, INVALID_CHARS, sanitizeTableName } from "$lib/util/extract-table-name";
 import {getParquetFiles} from "$common/utils/getParquetFiles";
 import {stat} from "fs/promises";
+import { FILE_EXTENSION_TO_TABLE_TYPE, TableSourceType } from "$lib/types";
 
 export class TableActions extends DataModelerActions {
     public async updateTablesFromSource(currentState: DataModelerState, sourcePath: string): Promise<void> {
@@ -31,39 +32,67 @@ export class TableActions extends DataModelerActions {
         }));
         if (filePaths.size > 0) {
             await Promise.all([...filePaths].map(filePath =>
-              this.dataModelerService.dispatch("addOrUpdateTable", [filePath])));
+              this.dataModelerService.dispatch("addOrUpdateTableFromFile", [filePath])));
         }
     }
 
-    public async addOrUpdateTable(currentState: DataModelerState, path: string): Promise<void> {
+    public async addOrUpdateTableFromFile(currentState: DataModelerState, path: string, tableName?: string): Promise<void> {
+        const name = tableName ?? sanitizeTableName(extractTableName(path));
+        const type = FILE_EXTENSION_TO_TABLE_TYPE[extractFileExtension(path)];
+        if (type === undefined) {
+            // TODO: Create a error response pipeline
+            console.error("Invalid file type");
+            return;
+        }
+        if (tableName && INVALID_CHARS.test(tableName)) {
+            console.error("Input table name has invalid characters");
+            return;
+        }
+
         const tables = currentState.tables;
-        const existingTable = tables.find(s => s.path === path);
+        const existingTable = tables.find(t => t.path === path);
         const table = {...(existingTable || getNewTable())};
+
+        if (existingTable && existingTable.tableName !== name) {
+            console.error("New table name doesnt match existing. Renaming is not supported at the moment.");
+            return;
+        }
+        if (tables.find(t => t.tableName === name && t.path !== path)) {
+            console.error(`Another table with ${name} already exists.`);
+            return;
+        }
+
         table.path = path;
-        table.name = path.split("/").slice(-1)[0];
-        table.tableName = sanitizeTableName(path);
+        table.name = name;
+        table.tableName = name;
+        table.sourceType = type;
 
         // get stats of the file and update only if it changed since we last saw it
         const fileStats = await stat(path);
         if (fileStats.mtimeMs < table.lastUpdated) return;
         table.lastUpdated = Date.now();
 
+        await this.dataModelerService.dispatch("addOrUpdateTable", [table, !existingTable]);
+    }
+
+    public async addOrUpdateTable(currentState: DataModelerState, table: Table, isNew: boolean): Promise<void> {
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
-            [table, !existingTable]);
+          [table, isNew]);
         this.dataModelerStateService.dispatch("setTableStatus",
-            [ColumnarItemType.Table, table.id, RUNNING_STATUS]);
+          [ColumnarItemType.Table, table.id, RUNNING_STATUS]);
 
         try {
+            await this.importTableDataByType(table);
             await this.collectTableInfo(table);
 
             await this.dataModelerService.dispatch("collectProfileColumns",
-                [table.id, ColumnarItemType.Table]);
+              [table.id, ColumnarItemType.Table]);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
 
         this.dataModelerStateService.dispatch("setTableStatus",
-            [ColumnarItemType.Table, table.id, IDLE_STATUS]);
+          [ColumnarItemType.Table, table.id, IDLE_STATUS]);
     }
 
     // TODO: move this to something more meaningful
@@ -74,9 +103,15 @@ export class TableActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("unsetActiveAsset", []);
     }
 
-    private async collectTableInfo(table: Table) {
-        await this.databaseService.dispatch("loadData", [table.path, table.tableName]);
+    private async importTableDataByType(table: Table) {
+        switch (table.sourceType) {
+            case TableSourceType.ParquetFile:
+                await this.databaseService.dispatch("importParquetFile", [table.path, table.tableName]);
+                break;
+        }
+    }
 
+    private async collectTableInfo(table: Table) {
         // create new table as one passed in args is readonly from the state.
         const newTable: Table = {
             id: table.id,
@@ -88,8 +123,8 @@ export class TableActions extends DataModelerActions {
 
         await Promise.all([
             async () => {
-                newTable.profile = await this.databaseService.dispatch("getProfileColumns",
-                    [table.tableName]);
+                newTable.profile = await this.databaseService.dispatch(
+                  "getProfileColumns", [table.tableName]);
                 newTable.profile = newTable.profile
                     .filter(row => row.name !== "duckdb_schema" && row.name !== "schema" && row.name !== "root");
             },

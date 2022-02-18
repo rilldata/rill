@@ -9,6 +9,8 @@ import {DATA_FOLDER} from "../data/generator/data-constants";
 import {execSync} from "node:child_process";
 import { assertColumns } from "./assertUtils";
 
+const AdBidsFile = "data/AdBids.parquet";
+
 @TestBase.Suite
 export class DataLoaderSpec extends FunctionalTestBase {
     public parquetFileTestData(): ParquetFileTestDataProvider {
@@ -19,8 +21,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
     public async shouldLoadParquetFile(parquetFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
         const actualFilePath = `${DATA_FOLDER}/${parquetFile}`;
 
-        await this.clientDataModelerService.dispatch("addOrUpdateTable", [actualFilePath]);
-
+        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [actualFilePath]);
         await this.waitForTables();
 
         const table = this.clientDataModelerStateService.getCurrentState().tables
@@ -41,7 +42,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
         const adBidTable = state.tables.find(table => table.path.includes("AdBid"));
         const adImpressionTable = state.tables.find(table => table.path.includes("AdImpression"));
 
-        execSync("touch data/AdBids.parquet");
+        execSync(`touch ${AdBidsFile}`);
 
         await this.clientDataModelerService.dispatch("updateTablesFromSource", [DATA_FOLDER]);
         await this.waitForTables();
@@ -52,5 +53,30 @@ export class DataLoaderSpec extends FunctionalTestBase {
 
         expect(adBidTable.lastUpdated).toBeLessThan(newAdBidTable.lastUpdated);
         expect(adImpressionTable.lastUpdated).toBe(newAdImpressionTable.lastUpdated);
+    }
+
+    @TestBase.Test()
+    public async shouldUseTableNameFromArgs(): Promise<void> {
+        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
+          [AdBidsFile, "AdBidsTable"]);
+        await this.waitForTables();
+
+        const table = this.clientDataModelerStateService.getCurrentState().tables
+          .find(tableFind => tableFind.name === "AdBidsTable");
+
+        expect(table.path).toBe(AdBidsFile);
+        expect(table.name).toBe("AdBidsTable");
+    }
+
+    @TestBase.Test()
+    public async shouldNotLoadInvalidTable(): Promise<void> {
+        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
+          ["data/AdBids", "AdBidsTableInvalid"]);
+        await this.waitForTables();
+
+        const table = this.clientDataModelerStateService.getCurrentState().tables
+          .find(tableFind => tableFind.name === "AdBidsTableInvalid");
+
+        expect(table).toBeUndefined();
     }
 }

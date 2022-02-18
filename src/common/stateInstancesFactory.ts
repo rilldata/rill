@@ -2,7 +2,7 @@ import type {DataModelerState, Table, Model} from "$lib/types";
 import {guidGenerator} from "$lib/util/guid";
 import {sanitizeQuery as _sanitizeQuery} from "$lib/util/sanitize-query";
 import {IDLE_STATUS} from "$common/constants";
-import {sanitizeTableName} from "$lib/util/sanitize-table-name";
+import { extractTableName, sanitizeTableName } from "$lib/util/extract-table-name";
 
 let modelNumber = 0;
 
@@ -15,7 +15,6 @@ export function getNewTable(): Table {
     return {
         id: guidGenerator(),
         path: '',
-        tableName: '',
         profile: [],
         cardinality: undefined,
         sizeInBytes: undefined,
@@ -34,7 +33,7 @@ export function getNewModel(params: NewModelArguments = {}): Model {
         query,
         sanitizedQuery,
         name,
-        tableName: sanitizeTableName(name),
+        tableName: sanitizeTableName(extractTableName(name)),
         id: guidGenerator(),
         preview: undefined,
         sizeInBytes: undefined,

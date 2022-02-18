@@ -5,8 +5,8 @@ To get started:
 
 - get the DuckDB CLI from [https://duckdb.org/docs/installation/](https://duckdb.org/docs/installation/) and put it in `./server`
 - run `npm install`
-- run `npm run dev` to start the dev server
-- in a separate process, run `npm run server` to start the server
+- run `npm run dev` to start the web UI dev server
+- in a separate process, run `npm run server` to start the backend server
 
 ## CLI
 We need to use ts-node-dev with tsconfig.node.json to get nodejs command working

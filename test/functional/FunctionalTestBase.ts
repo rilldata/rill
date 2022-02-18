@@ -44,7 +44,7 @@ export class FunctionalTestBase extends TestBase {
 
     protected async loadTestTables(): Promise<void> {
         await Promise.all(ParquetFileTestData.subData.map(async (parquetFileData) => {
-            await this.clientDataModelerService.dispatch("addOrUpdateTable", [`${DATA_FOLDER}/${parquetFileData.title}`]);
+            await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [`${DATA_FOLDER}/${parquetFileData.title}`]);
         }));
         await this.waitForTables();
     }
