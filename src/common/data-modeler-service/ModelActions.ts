@@ -14,7 +14,7 @@ export class ModelActions extends DataModelerActions {
         const model = currentState.models.find(findModel => findModel.id === modelId);
 
         if (!model) {
-            console.log(`No model found for ${modelId}`);
+            console.error(`No model found for ${modelId}`);
             return;
         }
 
@@ -38,10 +38,9 @@ export class ModelActions extends DataModelerActions {
             // re-sanitize query but do not remove casing, in case there is case-sensitive syntax 
             // in the query e.g. strftime(dt, '%I:%M:%S')
             await this.databaseService.dispatch("createViewOfQuery", [model.tableName, sanitizeQuery(query, false)]);
-
             await this.collectModelInfo(model);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
 
         this.dataModelerStateService.dispatch("setTableStatus",
@@ -87,8 +86,22 @@ export class ModelActions extends DataModelerActions {
     }
 
     private async collectModelInfo(model: Model): Promise<void> {
+        let profileColumns;
+        try {
+            // To get the profile columns, we'll select a single  value out of 
+            // the view. This is also a good place to _test_ whether this query has any runtime errors, since
+            // to get one result of the view, we'll need to run the underlying query itself.
+            // FIXME: We should really start writing tests here!
+            profileColumns = await this.databaseService.dispatch("getProfileColumns", [model.tableName])
+        } catch (error) {
+            this.dataModelerStateService.dispatch("addModelError", [model.id, error.message]);
+            return;
+        }
+        // clear any model error if we get this far.
+        this.dataModelerStateService.dispatch("clearModelError", [model.id]);
+        
         this.dataModelerStateService.dispatch("updateModelProfileColumns",
-            [model.id, await this.databaseService.dispatch("getProfileColumns", [model.tableName])]);
+            [model.id, profileColumns]);
         await Promise.all([
             async () => await this.dataModelerService.dispatch("collectProfileColumns",
                 [model.id, ColumnarItemType.Model]),
