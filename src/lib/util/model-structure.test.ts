@@ -17,9 +17,9 @@ SELECt
 from cte1;
 `
 const cte1 = [
-    {name: "cte1", substring: "SELECt * from tbl1 LIMIT 100", start: 14, end: 49 },
-    {name: "cte2", substring: "SELECT * from cte1", start: 60, end: 85},
-    {name: "cte3", substring: "select created_date, count(*) from tbl2 GROUP BY created_date", start: 96, end: 164},
+    {name: "cte1", substring: "SELECt * from tbl1 LIMIT 100", start: 20, end: 49 },
+    {name: "cte2", substring: "SELECT * from cte1", start: 66, end: 85},
+    {name: "cte3", substring: "select created_date, count(*) from tbl2 GROUP BY created_date", start: 102, end: 164},
 ]
 
 const q2 = `
@@ -37,8 +37,8 @@ whatever is next is what is next.
 `
 
 const cte4 = [
-    {name: 'x', substring: 'select * from whatever', start: 11, end:34 },
-    {name: 'y', substring: 'select dt from another_table', start: 42, end:71 },
+    {name: 'x', substring: 'select * from whatever', start: 12, end:34 },
+    {name: 'y', substring: 'select dt from another_table', start: 43, end:71 },
 ]
 
 const q5 = `
@@ -47,7 +47,7 @@ SELECt * from x;
 `
 
 const cte5 = [
-    {name: 'x', substring: 'WITH y as (select * from test) select * from y', start: 11, end: 58}
+    {name: 'x', substring: 'WITH y as (select * from test) select * from y', start: 12, end: 58}
 ]
 
 describe("extractCTEs", () => {

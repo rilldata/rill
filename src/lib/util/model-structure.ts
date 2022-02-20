@@ -48,6 +48,10 @@ export function sortByCTEDependency(a:CTE, b:CTE) {
     return 0;
 }
 
+function firstCharacterAt(string) {
+   return string.split('').findIndex(char => !['\t', '\n', '\r', ' '].includes(char));
+}
+
 export function extractCTEs(query:string) : CTE[] {
     if (!query) { return []; }
     if (query.toLowerCase().trim().startsWith('select ')) { return [] };
@@ -98,7 +102,13 @@ export function extractCTEs(query:string) : CTE[] {
         // if we encounter a close parent AND the nest is at 0, then we've found the end of the CTE.
         if (char ===')' && nest === 0) {
             // we reset.
-            currentExpression.start = ei;
+            currentExpression.start = ei + 1;
+            // move up the start to the first non-whitespace char.
+
+            const firstRealChar = firstCharacterAt(query.slice(currentExpression.start));
+            if (firstRealChar !== -1) {
+                currentExpression.start += firstRealChar;
+            }
             currentExpression.end = ri;
             currentExpression.substring = query.slice(ei, ri+1).slice(1, -1).trim();
             CTEs.push({...currentExpression});
@@ -121,12 +131,13 @@ export function extractCTEs(query:string) : CTE[] {
 export function getCoreQuerySelectStatements(query:string) {
     const ctes = extractCTEs(query);
     const latest = ctes.slice(-1)[0].end;
-    const restOfQuery = query.slice(latest + 1).trim();
+    const restOfQuery = query.slice(latest + 1);
+    const startingBuffer = firstCharacterAt(restOfQuery);
 
-    if (!restOfQuery.toLowerCase().startsWith('select ')) {
+    if (!restOfQuery.toLowerCase().trim().startsWith('select ')) {
         throw Error(`rest of query must start with select, instead with ${restOfQuery.slice(0,10)}`);
     }
-    let i = 'SELECT '.length;
+    let i = 'SELECT '.length + (startingBuffer !== -1 ? startingBuffer : 0);
     let ri = i;
     let ei = ri;
     let reachedFrom = false;
@@ -152,20 +163,28 @@ export function getCoreQuerySelectStatements(query:string) {
              && 
             nestLevel === 0;
         if ((restOfQuery[ri] === ',' && nestLevel === 0) || endsWithFrom) {
-            const start = ei;
+            
+            let start = ei;
+            const firstRealChar = firstCharacterAt(restOfQuery.slice(start));
+            if (firstRealChar !== -1) {
+                start += firstRealChar;
+            }
             const end = ri - (endsWithFrom ? ' from '.length : 0);
-            const columnExpression = restOfQuery.slice(start, end).trim();
+
+            const columnExpression = restOfQuery.slice(start, end);
+
             const hasAs = columnExpression.toLowerCase().indexOf(' as ');
             let name;
             let expression;
             if (hasAs !== -1) {
                 expression = columnExpression.slice(0, hasAs);
-                name = columnExpression.slice(hasAs + 4); // remove the comma
+                name = columnExpression.slice(hasAs + 3); // remove the comma
             } else {
                 expression = columnExpression;
                 name = expression;
             }
-            columnSelects.push({ name, expression, start, end });
+            
+            columnSelects.push({ name, expression, start: latest + startingBuffer + start, end: latest + startingBuffer + end});
             // move ri past the comma
             ri += 1;
             ei = ri;

@@ -39,12 +39,16 @@ SELECT
 	FROM histogram_stage;`
 let location;
 
-$: ctes = extractCTEs(content);
-$: selects = getCoreQuerySelectStatements(content || '');
+$: ctes = (content?.length) ? extractCTEs(content) : [];
+$: selects = (content?.length) ? getCoreQuerySelectStatements(content || '') : [];
+
+let currentSelection;
+
 </script>
 
 <div class='grid grid-cols-2'>
 <Editor 
+selections={currentSelection ? [currentSelection] : undefined}
 content={`
 WITH dataset AS (
 	SELECT epoch(created_date) as created_date FROM './scripts/nyc311-reduced.parquet'
@@ -91,10 +95,16 @@ on:cursor-location={(event) => {
 <div>
 
 {#if ctes}
-<div class="p-3">
+<div class="p-3"  on:blur={() => { 
+	currentSelection = undefined }} on:mouseout={() => { 
+		currentSelection=undefined; 
+	}}>
     <div>ctes: {ctes.length}</div>
     {#each ctes as cte}
-        <div class="text-ellipsis overflow-hidden whitespace-nowrap ">
+        <div 
+		on:focus={() => { currentSelection = cte; }}
+		on:mouseover={() => { currentSelection = cte; }} 
+		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
             <b>{cte.name}</b> = <i>{cte.substring}</i>
         </div>
     {/each}
@@ -102,11 +112,17 @@ on:cursor-location={(event) => {
 {/if}
 
 {#if selects}
-<div class="p-3">
+<div class="p-3" on:blur={() => { 
+	currentSelection = undefined }} on:mouseout={() => { 
+		currentSelection=undefined; 
+	}}>
     <div>selects: {selects.length}</div>
     {#each selects as select}
-        <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-            <b>{select.name}</b> = <i>{select.expression}</i>
+        <div
+			on:focus={() => { currentSelection = select; }}
+			on:mouseover={() => { currentSelection = select; }} 
+			class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200 hover:cursor-pointer">
+            <b>{select.start} {select.end} {select.name}</b> = <i>{select.expression}</i>
         </div>
     {/each}
 </div>

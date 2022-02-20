@@ -1,89 +1,83 @@
-<script>
+<script lang="ts">
 import { onMount, createEventDispatcher } from 'svelte';
-import { EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap, Decoration, DecorationSet } from "@codemirror/view";
 import {RangeSet} from "@codemirror/rangeset"
 import {indentWithTab} from "@codemirror/commands"
 import {EditorState, StateField, StateEffect} from "@codemirror/state";
-import {gutter, GutterMarker} from "@codemirror/gutter"
 import { basicSetup } from "@codemirror/basic-setup";
 import { sql } from "@codemirror/lang-sql";
 
-import RemoveCircleDark from "./icons/RemoveCircleDark.svelte";
-import EditIcon from "$lib/components/icons/EditIcon.svelte";
-import FreezeIcon from "$lib/components/icons/Freeze.svelte";
-import TrashIcon from "$lib/components/icons/Trash.svelte";
-import ModelIcon from "$lib/components/icons/Code.svelte";
-
 const dispatch = createEventDispatcher();
 export let content;
-export let name;
-export let editable = true;
 export let componentContainer;
 export let editorHeight = 0;
+export let selections = [];
 
 $: editorHeight = componentContainer?.offsetHeight || 0;
-// export let errorLineNumber;
-// export let errorLineMessage;
 
 let oldContent = content;
 
 let editor;
 let editorContainer;
 let editorContainerComponent;
-let titleInput;
-let titleInputValue;
-let editingTitle = false;
-
-
-function formatModelName(str) {
-    let output = str.trim().replaceAll(' ', '_');
-    if (!output.endsWith('.sql')) {
-        output += '.sql';
-    }
-    return output;
-}
 
 export function refreshContent(newContent) {
     editor.update({changes: {from: 0, to: editor?.doc?.length || 0, insert: newContent}});
 }
 
+const addUnderline = StateEffect.define<{from: number, to: number}>();
 
-function getPos(text, lineNumber) {
-    if (lineNumber === 1) return 0;
-	return text.slice(0, lineNumber - 1).join(' ').length + 1;
-}
+const underlineField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(underlines, tr) {
+    underlines = underlines.map(tr.changes);
+    underlines = underlines.update({
+          filter: () => false
+      });
+    
+    for (let e of tr.effects) if (e.is(addUnderline)) {
+      underlines = underlines.update({
+        add: [underlineMark.range(e.value.from, e.value.to)]
+      })
+    }
+    return underlines
+  },
+  provide: f => EditorView.decorations.from(f)
+})
+
+const underlineMark = Decoration.mark({class: "cm-underline"})
+
+const underlineTheme = EditorView.baseTheme({
+  ".cm-underline": { backgroundColor: "yellow", outline:"2px solid red" }
+});
+
 
 const breakpointGutter = [
-  ///breakpointState,
-  gutter({
-    class: "cm-breakpoint-gutter",
-    // markers: v => v.state.field(breakpointState),
-    initialSpacer: () => breakpointMarker,
-    domEventHandlers: {
-      mousedown(view, line) {
-        return true
-      }
-    }
-  }),
   EditorView.baseTheme({
     ".cm-breakpoint-gutter .cm-gutterElement": {
       color: "red",
-      paddingLeft: "5px",
+      paddingLeft: "24px",
+      paddingRight:"24px",
       cursor: "default"
     }
   })
 ]
 
-const breakpointMarker = new class extends GutterMarker {
-  toDOM() { 
-      const element = document.createElement('div');
-      element.className='gutter-indicator'
-      const marker = new RemoveCircleDark({
-          target: element,
-          props: { size: 13 }
-      })
-      return element;
-    }
+function underlineSelection(view: EditorView, selections) {
+  const effects = selections.map(({start, end}) => ({ from: start, to: end}))
+    .map(({from, to}) => addUnderline.of({from, to}));
+
+  if (!view.state.field(underlineField, false))
+    effects.push(StateEffect.appendConfig.of([underlineField,
+                                              underlineTheme]))
+  view.dispatch({effects});
+  return true
+}
+
+$: if (editor) {
+    underlineSelection(editor, selections || []);
 }
 
 let cursorLocation = 0;
@@ -138,5 +132,4 @@ onMount(() => {
     border-radius: .25rem;
     min-height: 400px;
 }
-
 </style>
