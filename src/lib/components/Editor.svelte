@@ -1,7 +1,8 @@
 <script>
 import { onMount, createEventDispatcher } from 'svelte';
-import {EditorView} from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import {RangeSet} from "@codemirror/rangeset"
+import {indentWithTab} from "@codemirror/commands"
 import {EditorState, StateField, StateEffect} from "@codemirror/state";
 import {gutter, GutterMarker} from "@codemirror/gutter"
 import { basicSetup } from "@codemirror/basic-setup";
@@ -137,6 +138,7 @@ onMount(() => {
         state: EditorState.create({doc: oldContent, extensions: [
             basicSetup,
             sql(),
+            keymap.of([indentWithTab]),
             breakpointGutter,
             EditorView.updateListener.of((v)=> {
                 const candidateLocation = v.state.selection.ranges[0].head;
