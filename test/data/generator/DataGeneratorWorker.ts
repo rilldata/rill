@@ -1,4 +1,4 @@
-import {DATA_GENERATOR_TYPE_MAP} from "./DataGeneratorTypeMap";
+import {DATA_GENERATOR_TYPE_MAP} from "./types/DataGeneratorTypeMap";
 import {BATCH_SIZE} from "./data-constants";
 
 export class DataGeneratorWorker {

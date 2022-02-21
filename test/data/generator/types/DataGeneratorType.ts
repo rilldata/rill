@@ -11,6 +11,10 @@ export abstract class DataGeneratorType {
 
     public abstract getParquetSchema(): ParquetSchemaType;
 
+    public csvExtension = "csv";
+    public csvDelimiter = ",";
+    public columnsOrder: Array<string>;
+
     protected generateRandomInt(min: number, max: number): number {
         return Math.round(this.generateRandomFloat(min, max));
     }

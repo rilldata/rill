@@ -1,27 +1,30 @@
 import {TestBase} from "@adityahegde/typescript-test-utils";
 import {FunctionalTestBase} from "./FunctionalTestBase";
 import {
-    ParquetFileTestData,
-    ParquetFileTestDataProvider,
-    TestDataColumns
+    ParquetFileTestData, CSVFileTestData,
+    FileImportTestDataProvider,
+    TestDataColumns,
 } from "../data/DataLoader.data";
 import {DATA_FOLDER} from "../data/generator/data-constants";
 import {execSync} from "node:child_process";
-import { initialState } from "$common/stateInstancesFactory";
+import { extractFileExtension, extractTableName } from "$lib/util/extract-table-name";
 
 const AdBidsFile = "data/AdBids.parquet";
 
 @TestBase.Suite
 export class DataLoaderSpec extends FunctionalTestBase {
-    public parquetFileTestData(): ParquetFileTestDataProvider {
-        return ParquetFileTestData;
+    public fileImportTestData(): FileImportTestDataProvider {
+        return {
+            subData: [ParquetFileTestData, CSVFileTestData],
+        };
     }
 
-    @TestBase.Test("parquetFileTestData")
-    public async shouldLoadParquetFile(parquetFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
-        const actualFilePath = `${DATA_FOLDER}/${parquetFile}`;
+    @TestBase.Test("fileImportTestData")
+    public async shouldImportTableFromFile(inputFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
+        const actualFilePath = `${DATA_FOLDER}/${inputFile}`;
 
-        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [actualFilePath]);
+        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
+            [actualFilePath, `${extractTableName(inputFile)}_${extractFileExtension(inputFile)}`]);
         await this.waitForTables();
 
         const table = this.clientDataModelerStateService.getCurrentState().tables

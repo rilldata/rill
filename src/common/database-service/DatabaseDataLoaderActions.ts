@@ -8,15 +8,23 @@ import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
  */
 export class DatabaseDataLoaderActions extends DatabaseActions {
     public async importParquetFile(metadata: DatabaseMetadata, parquetFile: string, tableName: string): Promise<any> {
-        await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
-        return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM '${parquetFile}';`);
+        await this.databaseClient.all(`DROP TABLE IF EXISTS ${tableName};`);
+        return await this.databaseClient.all(`CREATE TABLE ${tableName} AS SELECT * FROM '${parquetFile}';`);
+    }
+
+    public async importCSVFile(metadata: DatabaseMetadata, csvFile: string,
+                               tableName: string, delimiter: string): Promise<void> {
+        await this.databaseClient.all(`DROP TABLE IF EXISTS ${tableName};`);
+        return await this.databaseClient.all(`CREATE TABLE ${tableName} AS SELECT * FROM ` +
+            `read_csv_auto('${csvFile}', header=true ${delimiter ? `,delim='${delimiter}'`: ""});`);
     }
 
     public async getDestinationSize(metadata: DatabaseMetadata, path: string): Promise<number> {
-        if (existsSync(path)) {
-            const size = await this.databaseClient.execute(`SELECT total_compressed_size from parquet_metadata('${path}')`) as any[];
-            return size.reduce((acc: number, v: Record<string, any>) => acc + v.total_compressed_size, 0);
-        }
+        // Being worked on to handle this in a better way.
+        // if (existsSync(path)) {
+        //     const size = await this.databaseClient.all(`SELECT total_compressed_size from parquet_metadata('${path}')`) as any[];
+        //     return size.reduce((acc: number, v: Record<string, any>) => acc + v.total_compressed_size, 0);
+        // }
         return undefined;
     }
 
@@ -26,7 +34,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
         }
         const exportPath = `${this.databaseConfig.exportFolder}/${exportFile}`;
         const exportQuery = `COPY (${query}) TO '${exportPath}' (FORMAT 'parquet')`;
-        await this.databaseClient.execute(exportQuery);
+        await this.databaseClient.all(exportQuery);
         return exportPath;
     }
 }

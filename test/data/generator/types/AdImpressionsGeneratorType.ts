@@ -1,5 +1,5 @@
 import {DataGeneratorType, ParquetDataType} from "./DataGeneratorType";
-import {CITY_NULL_CHANCE, LOCATIONS, MAX_USERS, USER_NULL_CHANCE} from "./data-constants";
+import {CITY_NULL_CHANCE, LOCATIONS, MAX_USERS, USER_NULL_CHANCE} from "../data-constants";
 
 export interface AdImpression {
     id: number;
@@ -9,6 +9,10 @@ export interface AdImpression {
 }
 
 export class AdImpressionsGeneratorType extends  DataGeneratorType {
+    public csvExtension = "tsv";
+    public csvDelimiter = "\t";
+    public columnsOrder = ["id", "city", "country", "user_id"];
+
     public generateRow(id: number): AdImpression {
         const location = this.selectRandomEntry(LOCATIONS);
         const adImpression: AdImpression = {
@@ -26,10 +30,10 @@ export class AdImpressionsGeneratorType extends  DataGeneratorType {
 
     public getParquetSchema(): Record<keyof AdImpression, ParquetDataType> {
         return {
-            id: { type: "INT64" },
+            id: { type: "INT32" },
             city: { type: "UTF8", optional: true },
             country: { type: "UTF8" },
-            user_id: { type: "INT64", optional: true },
+            user_id: { type: "INT32", optional: true },
         };
     }
 }

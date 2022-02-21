@@ -45,6 +45,7 @@ export enum TableSourceType {
 export const FILE_EXTENSION_TO_TABLE_TYPE = {
     "parquet": TableSourceType.ParquetFile,
     "csv": TableSourceType.CSVFile,
+    "tsv": TableSourceType.CSVFile,
 }
 
 export interface Table extends ColumnarItem {
@@ -53,7 +54,10 @@ export interface Table extends ColumnarItem {
     // we have a separate field to maintain different names in the future.
     // currently, name = tableName
     tableName?: string;
+
     sourceType?: TableSourceType;
+    csvDelimiter?: string;
+
     head: any[];
     cardinality?: number;
     sizeInBytes?: number;
