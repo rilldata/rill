@@ -1,98 +1,80 @@
 <script>
 import Editor from "$lib/components/Editor.svelte";
-import { extractCTEs, getCoreQuerySelectStatements } from "$lib/util/model-structure";
-let content = `
-WITH dataset AS (
-	SELECT epoch(created_date) as created_date FROM './scripts/nyc311-reduced.parquet'
-), S AS (
-	SELECT 
-		min(created_date) as minVal,
-		max(created_date) as maxVal,
-		(max(created_date) - min(created_date)) as range
-		FROM dataset
-), values AS (
-	SELECT created_date as value from dataset
-	WHERE created_date IS NOT NULL
-), buckets AS (
-	SELECT
-		range as bucket,
-		(range - 1) * (select range FROM S) / 40 + (select minVal from S) as low,
-		(range) * (select range FROM S) / 40 + (select minVal from S) as high
-	FROM range(0, 40, 1)
-)
-, histogram_stage AS (
-	SELECT
-		bucket,
-		low,
-		high,
-		count(values.value) as count
-	FROM buckets
-	LEFT JOIN values ON (values.value BETWEEN low and high)
-	GROUP BY bucket, low, high
-	ORDER BY BUCKET
-)
-SELECT 
-	bucket,
-	low,
-	high,
-	CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
-	FROM histogram_stage;`
+import { queries } from "./_demo-queries"
+import { extractCTEs, getCoreQuerySelectStatements, extractSourceTables } from "$lib/util/model-structure";
+let whichQuery = 0;
+
+$: content = queries[whichQuery];
 let location;
 
 $: ctes = (content?.length) ? extractCTEs(content) : [];
 $: selects = (content?.length) ? getCoreQuerySelectStatements(content || '') : [];
+$: sourceTables = (content?.length) ? extractSourceTables(content || '') : [];
+$: sourceTablesWithoutCTEs = (sourceTables.length && ctes.length) ? sourceTables.filter((table) => ctes.every(cte => cte.name !== table.name) ) : [];
 
 let currentSelection;
 
+const up = () => { 
+	whichQuery = Math.min(queries.length-1, whichQuery + 1);
+}
+
+const down = () => {
+	whichQuery = Math.max(0, whichQuery - 1);
+}
+
 </script>
 
+{whichQuery}
+<button on:click={down}>prev</button>
+<button on:click={up}>next</button>
+
 <div class='grid grid-cols-2'>
+{#key queries[whichQuery]}
 <Editor 
 selections={currentSelection ? [currentSelection] : undefined}
-content={`
-WITH dataset AS (
-	SELECT epoch(created_date) as created_date FROM './scripts/nyc311-reduced.parquet'
-), S AS (
-	SELECT 
-		min(created_date) as minVal,
-		max(created_date) as maxVal,
-		(max(created_date) - min(created_date)) as range
-		FROM dataset
-), values AS (
-	SELECT created_date as value from dataset
-	WHERE created_date IS NOT NULL
-), buckets AS (
-	SELECT
-		range as bucket,
-		(range - 1) * (select range FROM S) / 40 + (select minVal from S) as low,
-		(range) * (select range FROM S) / 40 + (select minVal from S) as high
-	FROM range(0, 40, 1)
-)
-, histogram_stage AS (
-	SELECT
-		bucket,
-		low,
-		high,
-		count(values.value) as count
-	FROM buckets
-	LEFT JOIN values ON (values.value BETWEEN low and high)
-	GROUP BY bucket, low, high
-	ORDER BY BUCKET
-)
-SELECT 
-	bucket,
-	low,
-	high,
-	CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
-	FROM histogram_stage;
-`}
+content={content}
 on:cursor-location={(event) => {
     location = event.detail.location;
     content = event.detail.content;
 }}
 />
+{/key}
 
 <div>
+
+{#if sourceTablesWithoutCTEs}
+<div class="p-3"  on:blur={() => { 
+	currentSelection = undefined }} on:mouseout={() => { 
+		currentSelection=undefined; 
+	}}>
+    <div>source tables: {sourceTablesWithoutCTEs.length}</div>
+    {#each sourceTablesWithoutCTEs as item}
+        <div 
+		on:focus={() => { currentSelection = item; }}
+		on:mouseover={() => { currentSelection = item; }} 
+		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
+            <b>{item.name}</b>
+        </div>
+    {/each}
+</div>
+{/if}
+
+{#if sourceTables}
+<div class="p-3"  on:blur={() => { 
+	currentSelection = undefined }} on:mouseout={() => { 
+		currentSelection=undefined; 
+	}}>
+    <div>all table refs: {sourceTables.length}</div>
+    {#each sourceTables as item}
+        <div 
+		on:focus={() => { currentSelection = item; }}
+		on:mouseover={() => { currentSelection = item; }} 
+		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
+            <b>{item.name}</b>
+        </div>
+    {/each}
+</div>
+{/if}
 
 {#if ctes}
 <div class="p-3"  on:blur={() => { 
@@ -111,6 +93,7 @@ on:cursor-location={(event) => {
 </div>
 {/if}
 
+
 {#if selects}
 <div class="p-3" on:blur={() => { 
 	currentSelection = undefined }} on:mouseout={() => { 
@@ -122,7 +105,7 @@ on:cursor-location={(event) => {
 			on:focus={() => { currentSelection = select; }}
 			on:mouseover={() => { currentSelection = select; }} 
 			class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200 hover:cursor-pointer">
-            <b>{select.start} {select.end} {select.name}</b> = <i>{select.expression}</i>
+            <b>{select.name}</b> = <i>{select.expression}</i>
         </div>
     {/each}
 </div>

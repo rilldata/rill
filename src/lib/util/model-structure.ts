@@ -49,7 +49,8 @@ export function sortByCTEDependency(a:CTE, b:CTE) {
 }
 
 function firstCharacterAt(string) {
-   return string.split('').findIndex(char => !['\t', '\n', '\r', ' '].includes(char));
+   const output = string.split('').findIndex(char => !['\t', '\n', '\r', ' ', ';'].includes(char));
+   return output === -1 ? 0 : output;
 }
 
 export function extractCTEs(query:string) : CTE[] {
@@ -200,4 +201,194 @@ export function getCoreQuerySelectStatements(query:string) {
         }
     };
     return columnSelects;
+}
+
+const expressionTokens = [
+    ' where ', ' group by ', ' having ', ' order by ',
+    ' left outer join ', ' right outer join ', 
+    ' inner join ', ' outer join ',
+    ' natural join ', ' right join ', ' left join ',
+    
+
+    ' join ', // make join last,
+]
+
+function getAllIndexes(arr, val) {
+    const indexes = []
+    let i = -1;
+    while ((i = arr.indexOf(val, i+1)) != -1){
+        indexes.push(i);
+    }
+    return indexes;
+}
+
+export function extractSourceTables(query:string) {
+
+    let latest = 0;
+    let restOfQuery = query.replace(/[\s\t\r\n]/g, ' ');
+    const finds = getAllIndexes(restOfQuery.toLowerCase(), ' from ');
+    
+    let sourceTables = [];
+
+    finds.forEach((fi) => {
+        let ei = fi + ' from '.length;
+        let ri = ei;
+        let nestLevel = 0;
+        while (ri < restOfQuery.length) {
+            
+            ri +=1;
+            let char = restOfQuery[ri-1];
+            let seqSoFar = restOfQuery.slice(ei, ri);
+            
+            // skip if the FROM statement contains a nested statement inside it.
+            if (char === '(' && nestLevel === 0) {
+                break;
+            }
+            
+            const containsExpressionToken = (str) => {
+                return expressionTokens.some(token => str.endsWith(token));
+            }
+            if (containsExpressionToken(seqSoFar.toLowerCase()) || char === ';' || char === ')' || ri === restOfQuery.length) {
+                
+
+                // reset seqSoFar to not include th expression token.
+
+                expressionTokens.forEach((token) => {
+                    // remove the token?
+                    if (seqSoFar.toLowerCase().endsWith(token)) {
+                        seqSoFar = seqSoFar.slice(0, -token.length);
+                        ri = ri - token.length;
+                    }
+                })
+
+                // we hit the end of the table def.
+                let rightCorrection = 0;
+                let leftCorrection = 0;
+
+                // can we flip this?
+                // get the right side if there's extra characters;
+                const leftSide = firstCharacterAt(seqSoFar);
+                const rightSide = firstCharacterAt(seqSoFar.split('').reverse().join(""));
+
+                if (rightSide !== -1) {
+                    rightCorrection = rightSide;
+                }
+                if (leftSide !== -1) {
+                    leftCorrection = leftSide;
+                }
+
+                if (char === ")") {
+                    rightCorrection += 1;
+                    // look for spaces b/t ) and statement.
+                    let additionalRightBuffer = firstCharacterAt(seqSoFar.split('').reverse().join("").slice(1));
+                    if (additionalRightBuffer !== -1) {
+                        rightCorrection += additionalRightBuffer;
+                    }
+                }
+                
+                const finalSeq = restOfQuery.slice(ei + leftCorrection, ri - rightCorrection);
+                
+                sourceTables.push({
+                    name: finalSeq,
+                    start: ei  + latest + leftCorrection,
+                    end: ri - rightCorrection + latest
+                });
+
+                break;
+            }
+        }
+    })
+    return sourceTables;
+    // get all FROM locations.
+}
+
+const postWhereClauses = [
+    ' having ', ' group by ', ' order by ', 
+]
+
+function endsWith(string, clauses = postWhereClauses) {
+    let intermediate = string.toLowerCase();
+    return clauses.some(clause => intermediate.endsWith(clause));
+}
+
+export function extractCoreWhereClauses(query:string) {
+    // set aside CTEs.
+    const ctes = extractCTEs(query);
+    let latest = 0;
+    let restOfQuery = query;
+    if (ctes.length) {
+        latest = ctes.slice(-1)[0].end;
+        restOfQuery = query.slice(latest + 1);
+    }
+    const startingBuffer = firstCharacterAt(restOfQuery);
+
+    if (!restOfQuery.toLowerCase().trim().startsWith('select ')) {
+        throw Error(`rest of query must start with select, instead with ${restOfQuery.slice(0,10)}`);
+    }
+    let i = 'SELECT '.length + (startingBuffer !== -1 ? startingBuffer : 0);
+    let ri = i;
+    let ei = ri;
+    let inWhereClause = false;
+    let nestLevel = 0;
+
+    const whereClauses = [];
+
+    while (ri < restOfQuery.length) {
+        // match on WHERE.
+        ri += 1;
+        const substring = restOfQuery.slice(ei, ri);
+        const normalized = substring.replace(/[\t\r\n\s]/g, ' ').toLowerCase();
+        if (normalized.endsWith(' where ')) {
+            // set ei to ri;
+            inWhereClause = true;
+            // reset ei to equal ri.
+            ei = ri;
+        }
+        if (inWhereClause) {
+            console.log('in the where clause!')
+
+            // we should actually just go nuts here.
+            if (ri === restOfQuery.length || substring[ri] === ';' || endsWith(substring, postWhereClauses) && nestLevel === 0) {
+                // let's split on  ' and ' and ' or '
+                const whereClause = substring; // we need to massage this
+                let matches = [];
+                const andsAndOrs = [...getAllIndexes(normalized, ' and '), getAllIndexes(normalized, ' or ')];
+            }
+
+            // wait until we get to an AND or OR statement.
+            if ((ri === restOfQuery.length || normalized.endsWith(' and ') || normalized.endsWith(' or ')) && nestLevel === 0) {
+                const ci = ei;
+                // this is where we split up and say the relation.
+                // ok let's goooo
+                let clauseType = normalized.endsWith(' and ') ? ' and ' : ' or ';
+                let start = latest + ei + firstCharacterAt(normalized);
+                // append the clause
+                let statement = substring.slice(0, -clauseType.length);
+                let end = ri + latest - firstCharacterAt(statement.split('').reverse().join(''));
+                whereClauses.push({
+                    start, 
+                    end, 
+                    clauseType: clauseType.trim(),
+                    statement
+                })
+                // rest ei to ri and continue the tape.
+                ei = ri;
+
+            }
+            // check for nesting of subqueries and also function parens.
+
+            if (restOfQuery[ri] === '(') {
+                nestLevel += 1;
+            }
+            if (restOfQuery[ri] === ')') {
+                nestLevel -= 1;
+            }
+        }
+        // if the substring ends in an expression token that takes us out of the where statement,
+        // and the nest level is 0, let's abort.
+        if ((endsWith(substring, postWhereClauses) && nestLevel === 0) || (nestLevel === 0 && substring[ri] === ';')) {
+            break;
+        }
+    }
+    return whereClauses;
 }

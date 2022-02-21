@@ -1,4 +1,4 @@
-import { extractCTEs, getCoreQuerySelectStatements } from "./model-structure";
+import { extractCTEs, getCoreQuerySelectStatements, extractSourceTables, extractCoreWhereClauses } from "./model-structure";
 
 const q1 = `
 WITH cte1 AS (
@@ -67,5 +67,98 @@ describe("extractCTEs", () => {
         // works with doubly-nested CTEs in that it ignores the nested CTEs.
         // one shouldn't even do this in practice but we'll still support it.
         expect(extractCTEs(q5)).toEqual(cte5);
+    })
+})
+
+const selectQueries = [
+    {
+        input: `SELECt * from table1;`,
+        output: [ { name: 'table1', start: 14, end: 20 } ]
+    },
+    {
+        input: `select * from table2`,
+        output: [ { name: 'table2', start: 14, end: 20 } ]
+    },
+    {
+        input: `          select * 
+        
+        
+        
+        
+        from table3       
+        
+        
+        `,
+        output: [ { name: 'table3', start: 69, end: 75 } ]
+    },
+    {
+        input: `with 
+        x as (select * from whatever),
+        abcd_wxyz as (select * from x)
+           SELECT * from       abcd_wxyz   ;
+        `,
+        output: [
+            {name: 'whatever', start: 34, end: 42},
+            {name: 'x', start: 81, end: 82},
+            {name: 'abcd_wxyz', start: 115, end: 124}
+        ]
+    },
+    // handles nested from statements
+    {
+        input: `   select something from (select * from abc_xyz)    `,
+        output: [
+            { name: 'abc_xyz', start: 40, end: 47}
+        ]
+    },
+    {
+        input: `   select something from            (       select * from abc_xyz         )    `,
+        output: [
+            { name: 'abc_xyz', start: 58, end: 65}
+        ]
+    },
+    // add where clause
+    {
+        input: `   select something from table WHERE id IS NOT NULL;`,
+        output: [{ name: 'table', start: 25, end: 30}]
+    },
+    // add GROUP BY clause
+    {
+        input: `   select something, count(*) from       table        GROUP BY count(*);`,
+        output: [{ name: 'table', start: 41, end: 46}]
+    },
+        // check wraps for ?
+        {
+            input: `
+select something, count(*) from       table        
+    LEFT JOIN cruds ON cruds.id = table.id;`,
+            output: [{ name: 'table', start: 39, end: 44}]
+        },
+]
+
+describe('getSourceTables', () => {
+    it('pulls out all the source tables', () => {
+        expect(extractSourceTables(selectQueries[0].input)).toEqual(selectQueries[0].output);
+        expect(extractSourceTables(selectQueries[1].input)).toEqual(selectQueries[1].output);
+        expect(extractSourceTables(selectQueries[2].input)).toEqual(selectQueries[2].output);
+        expect(extractSourceTables(selectQueries[3].input)).toEqual(selectQueries[3].output);
+        expect(extractSourceTables(selectQueries[4].input)).toEqual(selectQueries[4].output);
+        expect(extractSourceTables(selectQueries[5].input)).toEqual(selectQueries[5].output);
+        expect(extractSourceTables(selectQueries[6].input)).toEqual(selectQueries[6].output);
+        expect(extractSourceTables(selectQueries[7].input)).toEqual(selectQueries[7].output);
+
+        expect(extractSourceTables(selectQueries[8].input)).toEqual(selectQueries[8].output);
+    })
+})
+
+let whereQueries = [
+    { 
+        input: 'select * from table where dt < 2015', 
+        output: [ {start: 26, end: 35, statement: 'dt < 2015'}]
+    }
+]
+
+describe('extractCoreWhereClauses', () => {
+    it('where clause', () => {
+        expect(extractCoreWhereClauses(whereQueries[0].input)).toEqual(whereQueries[0].output);
     })
 })
