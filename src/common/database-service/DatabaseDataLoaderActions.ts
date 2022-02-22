@@ -8,14 +8,14 @@ import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
  */
 export class DatabaseDataLoaderActions extends DatabaseActions {
     public async importParquetFile(metadata: DatabaseMetadata, parquetFile: string, tableName: string): Promise<any> {
-        await this.databaseClient.all(`DROP TABLE IF EXISTS ${tableName};`);
-        return await this.databaseClient.all(`CREATE TABLE ${tableName} AS SELECT * FROM '${parquetFile}';`);
+        await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
+        return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM '${parquetFile}';`);
     }
 
     public async importCSVFile(metadata: DatabaseMetadata, csvFile: string,
                                tableName: string, delimiter: string): Promise<void> {
-        await this.databaseClient.all(`DROP TABLE IF EXISTS ${tableName};`);
-        return await this.databaseClient.all(`CREATE TABLE ${tableName} AS SELECT * FROM ` +
+        await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
+        return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM ` +
             `read_csv_auto('${csvFile}', header=true ${delimiter ? `,delim='${delimiter}'`: ""});`);
     }
 
@@ -34,7 +34,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
         }
         const exportPath = `${this.databaseConfig.exportFolder}/${exportFile}`;
         const exportQuery = `COPY (${query}) TO '${exportPath}' (FORMAT 'parquet')`;
-        await this.databaseClient.all(exportQuery);
+        await this.databaseClient.execute(exportQuery);
         return exportPath;
     }
 }

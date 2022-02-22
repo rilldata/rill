@@ -6,20 +6,23 @@ node_modules
 /package
 .env
 .env.*
-*.db
 server/__pycache__/*
-*.duckdb
-*.duckdb.wal
 src/server/duckdb
 src/server/scratch/
 server/venv/
 tsc-tmp/
 export/
 .idea
-*.parquet
-*.wal
 /temp
-/data
+
+# data files
+*.duckdb
+*.duckdb.wal
+*.db
+*.wal
+*.parquet
+*.csv
+*.tsv
 
 # generated content
 log
