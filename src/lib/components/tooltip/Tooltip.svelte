@@ -1,9 +1,10 @@
 <script lang="ts">
-import { fly } from "svelte/transition"
+import { onMount } from "svelte";
+import { fade } from "svelte/transition"
 import { placeElement } from '$lib/util/place-element';
 
 export let location = 'bottom';
-export let alignment = 'right';
+export let alignment = 'center';
 export let distance = 0;
 /** the delay in miliseconds before rendering the tooltip once mouse has entered */
 export let activeDelay = 150;
@@ -17,8 +18,9 @@ let left = 0;
 let innerHeight;
 let innerWidth;
 let scrollY;
+let scrollX;
 
-function setLocation(parentBoundingClientRect, elementBoundingClientRect, scrollYValue, windowWidth, windowHeight) {
+function setLocation(parentBoundingClientRect, elementBoundingClientRect, scrollXValue, scrollYvalue, windowWidth, windowHeight) {
     if (!(parentBoundingClientRect && elementBoundingClientRect)) return;
     const [leftPos, topPos] = placeElement({
       location,
@@ -26,7 +28,8 @@ function setLocation(parentBoundingClientRect, elementBoundingClientRect, scroll
       distance,
       parentPosition: parentBoundingClientRect,
       elementPosition: elementBoundingClientRect,
-      y: scrollYValue,
+      y: scrollYvalue,
+      x: scrollXValue,
       windowWidth, windowHeight
     });
     top = topPos;
@@ -41,10 +44,24 @@ function waitUntil(callback, time = 150) {
     waitUntilTimer = setTimeout(callback, time);
 }
 
+// $: firstParentElement = parent?.children[0].getBoundingClientRect();
+let firstParentElement;
+$: if (firstParentElement) setLocation(firstParentElement.getBoundingClientRect(), child?.getBoundingClientRect(), scrollX, scrollY, innerWidth, innerHeight);
 
-$: firstElement = parent?.children[0].getBoundingClientRect();
+onMount(() => {
+    // we listen to the parent.
+    console.log(parent);
+    // actually, we listen to the first chidl element! 
+    firstParentElement = parent?.children[0];
+    const config = { attributes: true  };
 
-$: setLocation(firstElement, child?.getBoundingClientRect(), scrollY, innerWidth, innerHeight);
+    const observer = new MutationObserver(() => {
+        setLocation(firstParentElement.getBoundingClientRect(), child?.getBoundingClientRect(), scrollX, scrollY, innerWidth, innerHeight);
+    })
+    observer.observe(firstParentElement, config);
+
+
+})
 
 </script>
 
@@ -63,8 +80,8 @@ $: setLocation(firstElement, child?.getBoundingClientRect(), scrollY, innerWidth
     }}>
     <slot />
     {#if active}
-    <div transition:fly|local={{duration: 50  }} bind:this={child} class="absolute" style:left="{left}px" style:top="{top}px">
-        <slot name="tooltip-content" />
-    </div>
+        <div transition:fade|local={{duration: 50 }} bind:this={child} class="absolute" style:left="{left}px" style:top="{top}px">
+            <slot name="tooltip-content" />
+        </div>
     {/if}
 </div>
