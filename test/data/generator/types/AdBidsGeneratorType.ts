@@ -1,5 +1,5 @@
 import {DataGeneratorType, ParquetDataType} from "./DataGeneratorType";
-import {BID_END, BID_START, END_DATE, PUBLISHER_DOMAINS, PUBLISHER_NULL_CHANCE, START_DATE} from "./data-constants";
+import {BID_END, BID_START, END_DATE, PUBLISHER_DOMAINS, PUBLISHER_NULL_CHANCE, START_DATE} from "../data-constants";
 
 export interface AdBid {
     id: number;
@@ -10,6 +10,8 @@ export interface AdBid {
 }
 
 export class AdBidsGeneratorType extends DataGeneratorType {
+    public columnsOrder = ["id", "timestamp", "publisher", "domain", "bid_price"];
+
     public generateRow(id: number): AdBid {
         const publisherDomain = this.selectRandomEntry(PUBLISHER_DOMAINS);
         const adBid: AdBid = {
@@ -26,7 +28,7 @@ export class AdBidsGeneratorType extends DataGeneratorType {
 
     public getParquetSchema(): Record<keyof AdBid, ParquetDataType> {
         return {
-            id: { type: "INT64" },
+            id: { type: "INT32" },
             timestamp: { type: "TIMESTAMP_MILLIS" },
             publisher: { type: "UTF8", optional: true },
             domain: { type: "UTF8" },

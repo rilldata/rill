@@ -11,7 +11,7 @@ type Args = [string, number, TestDataColumns];
 
 export const AdBidsColumnsTestData: TestDataColumns = [{
     name: "id",
-    type: "BIGINT",
+    type: "INTEGER",
     isNull: false,
 }, {
     name: "timestamp",
@@ -30,15 +30,10 @@ export const AdBidsColumnsTestData: TestDataColumns = [{
     type: "DOUBLE",
     isNull: false,
 }];
-const AdBidsTestData: Args = [
-    "AdBids.parquet",
-    AD_BID_COUNT,
-    AdBidsColumnsTestData,
-];
 
 export const AdImpressionColumnsTestData: TestDataColumns = [{
     name: "id",
-    type: "BIGINT",
+    type: "INTEGER",
     isNull: false,
 }, {
     name: "city",
@@ -50,18 +45,13 @@ export const AdImpressionColumnsTestData: TestDataColumns = [{
     isNull: false,
 }, {
     name: "user_id",
-    type: "BIGINT",
+    type: "INTEGER",
     isNull: true,
 }];
-const AdImpressionTestData: Args = [
-    "AdImpressions.parquet",
-    AD_IMPRESSION_COUNT,
-    AdImpressionColumnsTestData,
-];
 
 const UserColumnsTestData: TestDataColumns = [{
     name: "id",
-    type: "BIGINT",
+    type: "INTEGER",
     isNull: false,
 }, {
     name: "name",
@@ -76,17 +66,35 @@ const UserColumnsTestData: TestDataColumns = [{
     type: "VARCHAR",
     isNull: false,
 }];
-const UserTestData: Args = [
-    "Users.parquet",
-    MAX_USERS,
-    UserColumnsTestData,
-];
 
-export type ParquetFileTestDataProvider = DataProviderData<Args>;
-export const ParquetFileTestData: ParquetFileTestDataProvider = {
+export const normaliseCSVColumn = (testDataColumns: TestDataColumns) => {
+    // CSV autodetect cannot know that a posix timestamp is a timestamp vs bigint
+    return testDataColumns.map(testDataColumn => {
+        return {
+            ...testDataColumn,
+            type: testDataColumn.type === "TIMESTAMP" ? "BIGINT" : testDataColumn.type
+        };
+    });
+}
+
+export type FileImportTestDataProvider = DataProviderData<Args>;
+export const ParquetFileTestData: FileImportTestDataProvider = {
+    title: "ParquetFiles",
     subData: [
-        AdBidsTestData, AdImpressionTestData, UserTestData
-    ].map(data => {
+        ["AdBids.parquet", AD_BID_COUNT, AdBidsColumnsTestData],
+        ["AdImpressions.parquet", AD_IMPRESSION_COUNT, AdImpressionColumnsTestData],
+        ["Users.parquet", MAX_USERS, UserColumnsTestData],
+    ].map((data: Args) => {
         return { title: data[0], args: data };
+    }),
+};
+export const CSVFileTestData: FileImportTestDataProvider = {
+    title: "CSVFiles",
+    subData: [
+        ["AdBids.csv", AD_BID_COUNT, AdBidsColumnsTestData],
+        ["AdImpressions.tsv", AD_IMPRESSION_COUNT, AdImpressionColumnsTestData],
+        ["Users.csv", MAX_USERS, UserColumnsTestData],
+    ].map((data: Args) => {
+        return { title: data[0], args: [data[0], data[1], normaliseCSVColumn(data[2])] };
     }),
 };

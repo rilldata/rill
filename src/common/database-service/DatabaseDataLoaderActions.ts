@@ -12,11 +12,19 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
         return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM '${parquetFile}';`);
     }
 
+    public async importCSVFile(metadata: DatabaseMetadata, csvFile: string,
+                               tableName: string, delimiter: string): Promise<void> {
+        await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
+        return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM ` +
+            `read_csv_auto('${csvFile}', header=true ${delimiter ? `,delim='${delimiter}'`: ""});`);
+    }
+
     public async getDestinationSize(metadata: DatabaseMetadata, path: string): Promise<number> {
-        if (existsSync(path)) {
-            const size = await this.databaseClient.execute(`SELECT total_compressed_size from parquet_metadata('${path}')`) as any[];
-            return size.reduce((acc: number, v: Record<string, any>) => acc + v.total_compressed_size, 0);
-        }
+        // Being worked on to handle this in a better way.
+        // if (existsSync(path)) {
+        //     const size = await this.databaseClient.all(`SELECT total_compressed_size from parquet_metadata('${path}')`) as any[];
+        //     return size.reduce((acc: number, v: Record<string, any>) => acc + v.total_compressed_size, 0);
+        // }
         return undefined;
     }
 

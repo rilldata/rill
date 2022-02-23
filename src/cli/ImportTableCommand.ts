@@ -2,9 +2,10 @@ import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
 import { InfoCommand } from "$cli/InfoCommand";
 
-interface ImportTableOptions {
+interface ImportTableCommandOptions {
     project?: string;
     name?: string;
+    delimiter?: string;
 }
 
 export class ImportTableCommand extends DataModelerCliCommand {
@@ -14,13 +15,15 @@ export class ImportTableCommand extends DataModelerCliCommand {
             .argument("<tableSourceFile>", "File to import the table from. Supported types: parquet.")
             .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
             .option("--name <tableName>", "Optional name of the table. Defaults to file name without extension.")
-            .action((tableSourceFile, options: ImportTableOptions) => {
+            .option("--delimiter <delimiter>", "Optional name of the table. Defaults to file name without extension.")
+            .action((tableSourceFile, options: ImportTableCommandOptions) => {
                 return this.run(options.project, tableSourceFile, options);
             });
     }
 
-    protected async sendActions(tableSourceFile: string, {name}: ImportTableOptions): Promise<void> {
-        await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [tableSourceFile, name]);
+    protected async sendActions(tableSourceFile: string, {name, delimiter}: ImportTableCommandOptions): Promise<void> {
+        await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
+            [tableSourceFile, name, {csvDelimiter: delimiter}]);
         InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
     }
 }

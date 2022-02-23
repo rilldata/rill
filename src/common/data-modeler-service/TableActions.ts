@@ -8,6 +8,10 @@ import {getParquetFiles} from "$common/utils/getParquetFiles";
 import {stat} from "fs/promises";
 import { FILE_EXTENSION_TO_TABLE_TYPE, TableSourceType } from "$lib/types";
 
+export interface ImportTableOptions {
+    csvDelimiter?: string;
+}
+
 export class TableActions extends DataModelerActions {
     public async updateTablesFromSource(currentState: DataModelerState, sourcePath: string): Promise<void> {
         const files = await getParquetFiles(sourcePath);
@@ -36,7 +40,8 @@ export class TableActions extends DataModelerActions {
         }
     }
 
-    public async addOrUpdateTableFromFile(currentState: DataModelerState, path: string, tableName?: string): Promise<void> {
+    public async addOrUpdateTableFromFile(currentState: DataModelerState, path: string,
+                                          tableName?: string, options: ImportTableOptions = {}): Promise<void> {
         const name = tableName ?? sanitizeTableName(extractTableName(path));
         const type = FILE_EXTENSION_TO_TABLE_TYPE[extractFileExtension(path)];
         if (type === undefined) {
@@ -66,6 +71,9 @@ export class TableActions extends DataModelerActions {
         table.name = name;
         table.tableName = name;
         table.sourceType = type;
+        if (options.csvDelimiter) {
+            table.csvDelimiter = options.csvDelimiter;
+        }
 
         // get stats of the file and update only if it changed since we last saw it
         const fileStats = await stat(path);
@@ -107,6 +115,10 @@ export class TableActions extends DataModelerActions {
         switch (table.sourceType) {
             case TableSourceType.ParquetFile:
                 await this.databaseService.dispatch("importParquetFile", [table.path, table.tableName]);
+                break;
+
+            case TableSourceType.CSVFile:
+                await this.databaseService.dispatch("importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
                 break;
         }
     }

@@ -1,11 +1,11 @@
 import workerFarm, {Workers} from "worker-farm";
-import {DATA_GENERATOR_TYPE_MAP} from "./DataGeneratorTypeMap";
-import parquet from "parquetjs";
-import {execSync} from "node:child_process";
 import os from "os";
 import {BATCH_SIZE, DATA_FOLDER} from "./data-constants";
+import type { DataWriter } from "./writers/DataWriter";
+import { ParquetFileWriter } from "./writers/ParquetFileWriter";
+import { CSVFileWriter } from "./writers/CSVFileWriter";
 
-const PARQUET_FOLDER = `${__dirname}/../../../${DATA_FOLDER}`;
+const OUTPUT_FOLDER = `${__dirname}/../../../${DATA_FOLDER}`;
 const CPU_COUNT = os.cpus().length;
 
 export class DataGeneratorFarm {
@@ -20,14 +20,16 @@ export class DataGeneratorFarm {
     public async generate(type: string, count: number): Promise<void> {
         console.log(`Generating ${type}`);
 
-        const parquetFile = `${PARQUET_FOLDER}/${type}.parquet`;
-        execSync(`rm ${parquetFile} | true`);
-        const parquetWriter = await parquet.ParquetWriter.openFile(
-            new parquet.ParquetSchema(DATA_GENERATOR_TYPE_MAP[type].getParquetSchema()), parquetFile);
-        parquetWriter.setRowGroupSize(2 * CPU_COUNT * BATCH_SIZE);
+        const writers: Array<DataWriter> = [
+            new ParquetFileWriter(type, OUTPUT_FOLDER),
+            new CSVFileWriter(type, OUTPUT_FOLDER),
+        ];
+        for (const writer of writers) {
+            await writer.init();
+        }
 
         const handleResponse = async (rows: Array<Record<string, any>>) => {
-            await Promise.all(rows.map(row => parquetWriter.appendRow(row)));
+            await Promise.all(writers.map(writer => writer.write(rows)));
         };
 
         for (let ids = 0; ids < count;) {
@@ -38,7 +40,9 @@ export class DataGeneratorFarm {
             await Promise.all(promises);
         }
 
-        await parquetWriter.close();
+        for (const writer of writers) {
+            await writer.close();
+        }
     }
 
     public stop(): void {
