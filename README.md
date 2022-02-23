@@ -26,12 +26,21 @@ npm run cli-dev -- init
 npm run cli-dev -- init /path/to/project
 ```
 
-### Importing a table
+### Importing a table from a file
 ```
 # import table from /path/to/table/file into project under /path/to/project
 npm run cli-dev -- import-table /path/to/table/file --project /path/to/project
+
+# Optionally pass a delimiter to override auto detected delimiter by duckdb.
+# Only applies to a csv file
+npm run cli-dev -- import-table /path/to/table/csvfile --project /path/to/project --delimiter "|"
 ```
 `--project` is optional. Will default to current directory if not specified.
+
+**File types currently supported:**
+ - .parquet
+ - .csv
+ - .tsv
 
 ### Starting the UI
 ```
