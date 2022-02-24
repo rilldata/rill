@@ -28,13 +28,13 @@ export class SocketServer {
     }
 
     public async init(): Promise<void> {
-        this.dataModelerStateService.subscribePatches((patches) => {
-            this.server.emit("patch", patches);
+        this.dataModelerStateService.subscribePatches((entityType, stateType, patches) => {
+            this.server.emit("patch", entityType, stateType, patches);
         });
 
         this.server.on("connection", (socket) => {
             console.log("New connection", socket.id);
-            socket.emit("initialState", this.dataModelerStateService.getCurrentState());
+            socket.emit("initialState", this.dataModelerStateService.getCurrentStates());
             socket.on("action", async (action, args) => {
                 await this.dataModelerService.dispatch(action, args);
             });

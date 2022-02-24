@@ -26,7 +26,9 @@ export class DataModelerSocketService extends DataModelerService {
     public async init(): Promise<void> {
         await super.init();
         this.socket = io(this.serverConfig.socketUrl);
-        this.socket.on("patch", (patches) => this.dataModelerStateService.applyPatches(patches));
+        this.socket.on("patch",
+            (entityType, stateType, patches) =>
+                this.dataModelerStateService.applyPatches(entityType, stateType, patches));
         this.socket.on("initialState", (initialState) => this.dataModelerStateService.updateState(initialState));
     }
 

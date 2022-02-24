@@ -12,4 +12,7 @@ export class RootConfig extends Config<RootConfig> {
 
     @Config.SubConfig(StateConfig)
     public state: StateConfig;
+
+    @Config.ConfigField(".")
+    public projectFolder: string;
 }

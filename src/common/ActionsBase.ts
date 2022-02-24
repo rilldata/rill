@@ -44,11 +44,11 @@ export abstract class ActionsBase {
     }
 
     /**
-     * Marks a method as a generic action.
+     * Marks a method as a generic action on a state type.
      * Takes just a {@link StateType}. The method has to take {@link EntityType} as the 2nd argument.
      * @param stateType
      */
-    public static GenericAction<StateTypeArg extends StateType>(stateType: StateTypeArg) {
+    public static GenericStateAction<StateTypeArg extends StateType>(stateType: StateTypeArg) {
         return (target: ActionsBase, propertyKey: string,
                 // make sure the decorator and the state action arg match using this
                 descriptor: TypedPropertyDescriptor<
@@ -60,10 +60,26 @@ export abstract class ActionsBase {
     }
 
     public static PersistentAction() {
-        return this.GenericAction(StateType.Persistent);
+        return this.GenericStateAction(StateType.Persistent);
     }
     public static DerivedAction() {
-        return this.GenericAction(StateType.Derived);
+        return this.GenericStateAction(StateType.Derived);
+    }
+
+    /**
+     * Marks a method as a generic action.
+     * EntityType and StateType are passed as 1st and 2nd arguments respectively.
+     */
+    public static GenericAction() {
+        return (target: ActionsBase, propertyKey: string,
+                // make sure the decorator and the state action arg match using this
+                descriptor: TypedPropertyDescriptor<
+                    (stateArg: EntityStateActionArg<any>, entityType: EntityType,
+                     stateType: StateType, ...args: any[]) => any
+                >) => {
+            this.addStateAction(target.constructor as typeof ActionsBase, propertyKey,
+                undefined, undefined);
+        };
     }
 
     private static addStateAction(clazz: typeof ActionsBase, propertyKey: string,

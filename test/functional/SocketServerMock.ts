@@ -10,11 +10,11 @@ export class SocketServerMock {
     public async init(): Promise<void> {
         await this.dataModelerService.init();
 
-        this.dataModelerStateService.subscribePatches((patches) => {
-            this.dataModelerSocketServiceMock.applyPatches(patches);
+        this.dataModelerStateService.subscribePatches((entityType, stateType, patches) => {
+            this.dataModelerSocketServiceMock.applyPatches(entityType, stateType, patches);
         });
 
-        this.dataModelerSocketServiceMock.initialState(this.dataModelerStateService.getCurrentState());
+        this.dataModelerSocketServiceMock.initialState(this.dataModelerStateService.getCurrentStates());
     }
 
     public async dispatch(action: string, args: Array<any>) {

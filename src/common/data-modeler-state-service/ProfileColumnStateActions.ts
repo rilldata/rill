@@ -34,6 +34,7 @@ export class ProfileColumnStateActions extends StateActions {
                                columnName: string, summary: ProfileColumnSummary): void {
         const entityToUpdate = stateService.getById(entityId, draftState);
         const profileToUpdate = entityToUpdate.profile.find(column => column.name === columnName);
+        profileToUpdate.summary ??= {};
         shallowCopy(summary, profileToUpdate.summary);
     }
 

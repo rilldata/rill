@@ -35,6 +35,7 @@ export function getNewDerivedTable(table: PersistentTableEntity): DerivedTableEn
     return {
         id: table.id,
         type: EntityType.Table,
+        profile: [],
         lastUpdated: 0,
         status: EntityStatus.Idle,
     };
@@ -58,6 +59,7 @@ export function getNewDerivedModel(model: PersistentModelEntity): DerivedModelEn
         id: model.id,
         type: EntityType.Model,
         sanitizedQuery: sanitizeQuery(model.query),
+        profile: [],
         lastUpdated: 0,
         status: EntityStatus.Idle,
     };

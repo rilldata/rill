@@ -14,6 +14,19 @@ import {DatabaseService} from "$common/database-service/DatabaseService";
 import type {RootConfig} from "$common/config/RootConfig";
 import { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import { DataModelerServerStateService } from "../server/DataModelerServerStateService";
+import {
+    PersistentTableEntityService
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import {
+    DerivedTableEntityService
+} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import {
+    PersistentModelEntityService
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import {
+    DerivedModelEntityService
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { CommonActions } from "$common/data-modeler-state-service/CommonActions";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -25,11 +38,12 @@ export function databaseServiceFactory(config: RootConfig) {
 }
 
 export function dataModelerStateServiceFactory(config: RootConfig) {
-    const tableStateActions = new TableStateActions();
-    const modelStateActions = new ModelStateActions();
-    const profileColumnStateActions = new ProfileColumnStateActions();
     return new DataModelerServerStateService(
-        [tableStateActions, modelStateActions, profileColumnStateActions], config);
+        [TableStateActions, ModelStateActions,
+            ProfileColumnStateActions, CommonActions].map(StateActionsClass => new StateActionsClass()),
+        [PersistentTableEntityService, DerivedTableEntityService,
+            PersistentModelEntityService, DerivedModelEntityService].map(EntityStateService => new EntityStateService()),
+        config);
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {

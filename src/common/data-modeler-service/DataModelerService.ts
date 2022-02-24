@@ -55,7 +55,7 @@ export class DataModelerService {
     }
 
     public async init(): Promise<void> {
-        this.dataModelerStateService.init();
+        await this.dataModelerStateService.init();
         await this.databaseService?.init();
     }
 
@@ -72,13 +72,23 @@ export class DataModelerService {
             return;
         }
         const actionsInstance = this.actionsMap[action];
-        // this.dataModelerStateService.dispatch("setStatus", [RUNNING_STATUS]);
-        await actionsInstance[action].call(actionsInstance, this.dataModelerStateService.getCurrentState(), ...args);
-        // this.dataModelerStateService.dispatch("setStatus", [IDLE_STATUS]);
+        const stateTypes = (actionsInstance?.constructor as typeof DataModelerActions)
+            .actionToStateTypesMap[action];
+        if (!stateTypes) {
+            console.error(`No state types defined for ${action}`);
+            return;
+        }
+
+        // console.log("DataModelerService", stateTypes, action);
+
+        const stateService = this.dataModelerStateService.getEntityStateService(
+            stateTypes[0] ?? args[0] as any, stateTypes[1] ?? args[1] as any);
+        await actionsInstance[action].call(actionsInstance,
+            {stateService}, ...args);
     }
 
     public async destroy(): Promise<void> {
         await this.databaseService?.destroy();
-        this.dataModelerStateService.destroy();
+        await this.dataModelerStateService.destroy();
     }
 }

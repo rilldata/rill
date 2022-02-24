@@ -4,16 +4,16 @@ import type {ModelStateActions} from "./ModelStateActions";
 import type {ProfileColumnStateActions} from "./ProfileColumnStateActions";
 import type {ExtractActionTypeDefinitions} from "$common/ServiceBase";
 import type {StateActions} from "$common/data-modeler-state-service/StateActions";
-import { writable, get } from "svelte/store";
+import { writable } from "svelte/store";
 import type {Writable} from "svelte/store";
-import produce, {enablePatches, applyPatches} from "immer";
+import {enablePatches} from "immer";
 import type {Patch} from "immer";
 import {initialState} from "../stateInstancesFactory";
 import {getActionMethods} from "$common/ServiceBase";
 import type {PickActionFunctions} from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
 import type {
-    EntityRecord,
+    EntityRecord, EntityState,
     EntityStateActionArg,
     EntityStateService,
     EntityType,
@@ -23,17 +23,23 @@ import type {
     EntityRecordMapType,
     EntityStateServicesMapType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
+import type { CommonActions } from "$common/data-modeler-state-service/CommonActions";
 
 enablePatches();
 
 type DataModelerStateActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableStateActions &
     ModelStateActions &
-    ProfileColumnStateActions
+    ProfileColumnStateActions &
+    CommonActions
 )>;
 export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<EntityStateActionArg<any>, DataModelerStateActionsClasses>;
 
-export type PatchesSubscriber = (patches: Array<Patch>, inversePatches?: Array<Patch>) => void;
+export type PatchesSubscriber = (entityType: EntityType, stateType: StateType, patches: Array<Patch>) => void;
+
+export type EntityTypeAndStates = Array<[
+    EntityType, StateType, EntityState<any>,
+]>;
 
 /**
  * Lower order actions that update the data modeler state directly and somewhat atomically.
@@ -56,7 +62,7 @@ export class DataModelerStateService {
     private patchesSubscribers: Array<PatchesSubscriber> = [];
 
     public constructor(private readonly stateActions: Array<StateActions>,
-                       private readonly entityStateServices: Array<EntityStateService<any>>,
+                       protected readonly entityStateServices: Array<EntityStateService<any>>,
                        protected readonly config?: RootConfig) {
         stateActions.forEach((actions) => {
             getActionMethods(actions).forEach(action => {
@@ -69,14 +75,18 @@ export class DataModelerStateService {
         });
     }
 
-    public init(): void {
+    public async init(): Promise<void> {
         this.store = writable(initialState());
     }
 
-    public destroy(): void {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    public async destroy(): Promise<void> {}
 
-    public getCurrentState(): DataModelerState {
-        return get(this.store);
+    public getCurrentStates(): EntityTypeAndStates {
+        return this.entityStateServices.map(entityStateService => [
+            entityStateService.entityType, entityStateService.stateType,
+            entityStateService.getCurrentState(),
+        ]);
     }
 
     /**
@@ -95,8 +105,15 @@ export class DataModelerStateService {
         this.patchesSubscribers.push(subscriber);
     }
 
-    public updateState(dataModelerState: DataModelerState): void {
-        this.store.set(dataModelerState);
+    public updateState(entityTypeAndStates: EntityTypeAndStates): void {
+        entityTypeAndStates.forEach(([entityType, stateType, state]) => {
+            const service = this.entityStateServicesMap[entityType]?.[stateType];
+            if (!service) {
+                console.error(`Service not found. entityType=${entityType} stateType=${stateType}`);
+                return;
+            }
+            service.init(state);
+        });
     }
 
     /**
@@ -108,21 +125,36 @@ export class DataModelerStateService {
         action: Action, args: DataModelerStateActionsDefinition[Action],
     ): void {
         if (!this.actionsMap[action]?.[action]) {
-            console.log(`${action} not found`);
+            console.error(`${action} not found`);
             return;
         }
-        const currentState = this.getCurrentState();
-        this.updateState(produce(currentState, (draft) => {
-            const actionsInstance = this.actionsMap[action];
-            actionsInstance[action].call(actionsInstance, draft, ...args);
-        }, (patches, inversePatches) => {
-            this.patchesSubscribers.forEach(subscriber => subscriber(patches, inversePatches));
-            // we can later add a subscriber to store patches and inversePatches into some store
-        }));
+        const actionsInstance = this.actionsMap[action];
+        const stateTypes = (actionsInstance?.constructor as typeof StateActions)
+            .actionToStateTypesMap[action];
+        if (!stateTypes) {
+            console.error(`No state types defined for ${action}`);
+            return;
+        }
+
+        // console.log("DataModelerStateService", stateTypes, action);
+
+        const stateService = this.entityStateServicesMap
+            [stateTypes[0] ?? args[0] as any]?.[stateTypes[1] ?? args[1] as any];
+        this.updateStateAndEmitPatches(stateService, (draftState) => {
+            actionsInstance[action].call(actionsInstance,
+                {stateService, draftState}, ...args);
+        });
     }
 
-    public applyPatches(patches: Array<Patch>): void {
-        this.updateState(applyPatches(this.getCurrentState(), patches));
+    public applyPatches(entityType: EntityType, stateType: StateType,
+                        patches: Array<Patch>): void {
+        this.entityStateServicesMap[entityType][stateType].applyPatches(patches);
+    }
+
+    public getEntityStateService<EntityTypeArg extends EntityType, StateTypeArg extends StateType>(
+        entityType: EntityTypeArg, stateType: StateTypeArg,
+    ): EntityStateServicesMapType[EntityTypeArg][StateTypeArg] {
+        return this.entityStateServicesMap[entityType][stateType];
     }
 
     public getEntityById<EntityTypeArg extends EntityType, StateTypeArg extends StateType>(
@@ -131,6 +163,7 @@ export class DataModelerStateService {
         return this.entityStateServicesMap[entityType][stateType].getById(entityId) as any;
     }
 
+    // TODO: move all these to actions
     public addEntities(entityType: EntityType,
                        stateTypeEntities: Array<[StateType, EntityRecord]>,
                        atIndex?: number): void {
@@ -172,10 +205,14 @@ export class DataModelerStateService {
         }
     }
 
-    private updateStateAndEmitPatches(service: EntityStateService<any>,
-                                      callback: (draft) => void) {
-        service.updateState(callback, (patches) => {
-            this.patchesSubscribers.forEach(subscriber => subscriber(patches));
+    public updateStateAndEmitPatches(service: EntityStateService<any>,
+                                     callback: (draft) => void) {
+        service.updateState((draft) => {
+            callback(draft);
+            draft.lastUpdated = Date.now();
+        }, (patches) => {
+            this.patchesSubscribers.forEach(subscriber =>
+                subscriber(service.entityType, service.stateType, patches));
         });
     }
 }

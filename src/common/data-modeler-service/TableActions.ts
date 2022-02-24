@@ -38,7 +38,7 @@ export class TableActions extends DataModelerActions {
         }
 
         const existingTable = stateService.getByField("path", path);
-        const table = {...existingTable} ?? getNewTable();
+        const table = existingTable ?? getNewTable();
 
         if (existingTable && existingTable.tableName !== name) {
             console.error("New table name doesnt match existing. Renaming is not supported at the moment.");
@@ -98,7 +98,8 @@ export class TableActions extends DataModelerActions {
                 await this.databaseService.dispatch("getFirstNOfTable", [persistentTable.tableName]),
         ].map(asyncFunc => asyncFunc()));
 
-        stateService.updateEntity(stateService.getCurrentState(), tableId, newDerivedTable);
+        this.dataModelerStateService.dispatch("updateEntity",
+            [EntityType.Table, StateType.Derived, newDerivedTable])
         await this.dataModelerService.dispatch("collectProfileColumns",
             [EntityType.Table, tableId]);
         this.dataModelerStateService.dispatch("setTableStatus",

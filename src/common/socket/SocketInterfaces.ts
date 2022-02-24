@@ -1,11 +1,12 @@
 import type { Patch } from "immer";
-import type { DataModelerState } from "$lib/types";
 import type { DataModelerActionsDefinition } from "$common/data-modeler-service/DataModelerService";
 import type { Notification } from "$common/notifications/NotificationService";
+import type { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityTypeAndStates } from "$common/data-modeler-state-service/DataModelerStateService";
 
 export interface ServerToClientEvents {
-  patch: (patches: Array<Patch>) => void;
-  initialState: (initialState: DataModelerState) => void;
+  patch: (entityType: EntityType, stateType: StateType, patches: Array<Patch>) => void;
+  initialState: (initialStates: EntityTypeAndStates) => void;
   notification: (notification: Notification) => void;
 }
 

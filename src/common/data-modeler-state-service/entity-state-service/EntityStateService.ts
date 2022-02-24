@@ -1,7 +1,7 @@
 import { writable, get } from "svelte/store";
 import type {Writable} from "svelte/store";
 import { shallowCopy } from "$common/utils/shallowCopy";
-import produce, { Patch } from "immer";
+import produce, { applyPatches, Patch } from "immer";
 
 export enum EntityType {
     Table = "Table",
@@ -67,6 +67,10 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         }, pathCallback));
     }
 
+    public applyPatches(patches: Array<Patch>): void {
+        this.store.set(applyPatches(this.getCurrentState(), patches));
+    }
+
     public getById(id: string, state = this.getCurrentState()): Entity {
         return state.entities.find(entity => entity.id === id);
     }
@@ -91,7 +95,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         if (!entity) {
             console.error(`Record not found. entityType=${this.entityType} stateType=${this.stateType} id=${id}`);
         }
-        shallowCopy(entity, newEntity);
+        shallowCopy(newEntity, entity);
     }
 
     public updateEntityField<Field extends keyof Entity>(draftState: EntityState<Entity>,
