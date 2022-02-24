@@ -2,16 +2,19 @@ import type {DataModelerStateService} from "../data-modeler-state-service/DataMo
 import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
 import type {DatabaseService} from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
+import { ActionsBase } from "$common/ActionsBase";
 
 /**
  * Class that has the actual action implementations.
  */
-export class DataModelerActions {
+export class DataModelerActions extends ActionsBase {
     protected dataModelerService: DataModelerService;
     protected notificationService: NotificationService;
 
     constructor(protected readonly dataModelerStateService: DataModelerStateService,
-                protected readonly databaseService: DatabaseService) {}
+                protected readonly databaseService: DatabaseService) {
+        super();
+    }
 
     public setDataModelerActionService(dataModelerService: DataModelerService): void {
         this.dataModelerService = dataModelerService;

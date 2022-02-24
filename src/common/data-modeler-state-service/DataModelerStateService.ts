@@ -12,17 +12,28 @@ import {initialState} from "../stateInstancesFactory";
 import {getActionMethods} from "$common/ServiceBase";
 import type {PickActionFunctions} from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
+import type {
+    EntityRecord,
+    EntityStateActionArg,
+    EntityStateService,
+    EntityType,
+    StateType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+    EntityRecordMapType,
+    EntityStateServicesMapType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 
 enablePatches();
 
-type DataModelerStateActionsClasses = PickActionFunctions<DataModelerState, (
+type DataModelerStateActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableStateActions &
     ModelStateActions &
     ProfileColumnStateActions
 )>;
-export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<DataModelerState, DataModelerStateActionsClasses>;
+export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<EntityStateActionArg<any>, DataModelerStateActionsClasses>;
 
-export type PatchesSubscriber = (patches: Array<Patch>, inversePatches: Array<Patch>) => void;
+export type PatchesSubscriber = (patches: Array<Patch>, inversePatches?: Array<Patch>) => void;
 
 /**
  * Lower order actions that update the data modeler state directly and somewhat atomically.
@@ -40,15 +51,21 @@ export class DataModelerStateService {
     private readonly actionsMap: {
         [Action in keyof DataModelerStateActionsDefinition]?: DataModelerStateActionsClasses
     } = {};
+    private readonly entityStateServicesMap: EntityStateServicesMapType = {};
 
     private patchesSubscribers: Array<PatchesSubscriber> = [];
 
     public constructor(private readonly stateActions: Array<StateActions>,
+                       private readonly entityStateServices: Array<EntityStateService<any>>,
                        protected readonly config?: RootConfig) {
         stateActions.forEach((actions) => {
             getActionMethods(actions).forEach(action => {
                 this.actionsMap[action] = actions;
             });
+        });
+        entityStateServices.forEach((entityStateService) => {
+            this.entityStateServicesMap[entityStateService.entityType] ??= {};
+            (this.entityStateServicesMap[entityStateService.entityType] as any)[entityStateService.stateType] = entityStateService;
         });
     }
 
@@ -106,5 +123,59 @@ export class DataModelerStateService {
 
     public applyPatches(patches: Array<Patch>): void {
         this.updateState(applyPatches(this.getCurrentState(), patches));
+    }
+
+    public getEntityById<EntityTypeArg extends EntityType, StateTypeArg extends StateType>(
+        entityType: EntityTypeArg, stateType: StateTypeArg, entityId: string,
+    ): EntityRecordMapType[EntityTypeArg][StateTypeArg] {
+        return this.entityStateServicesMap[entityType][stateType].getById(entityId) as any;
+    }
+
+    public addEntities(entityType: EntityType,
+                       stateTypeEntities: Array<[StateType, EntityRecord]>,
+                       atIndex?: number): void {
+        for (const [stateType, entityRecord] of stateTypeEntities) {
+            const service = this.entityStateServicesMap[entityType][stateType];
+            this.updateStateAndEmitPatches(service, (draft) => {
+                service.addEntity(draft, entityRecord as any, atIndex);
+            });
+        }
+    }
+
+    public deleteEntities(entityType: EntityType, stateTypes: Array<StateType>,
+                          entityId: string): void {
+        for (const stateType of stateTypes) {
+            const service = this.entityStateServicesMap[entityType][stateType];
+            this.updateStateAndEmitPatches(service, (draft) => {
+                service.deleteEntity(draft, entityId);
+            });
+        }
+    }
+
+    public moveEntitiesUp(entityType: EntityType, stateTypes: Array<StateType>,
+                          entityId: string): void {
+        for (const stateType of stateTypes) {
+            const service = this.entityStateServicesMap[entityType][stateType];
+            this.updateStateAndEmitPatches(service, (draft) => {
+                service.moveEntityUp(draft, entityId);
+            });
+        }
+    }
+
+    public moveEntitiesDown(entityType: EntityType, stateTypes: Array<StateType>,
+                            entityId: string): void {
+        for (const stateType of stateTypes) {
+            const service = this.entityStateServicesMap[entityType][stateType];
+            this.updateStateAndEmitPatches(service, (draft) => {
+                service.moveEntityDown(draft, entityId);
+            });
+        }
+    }
+
+    private updateStateAndEmitPatches(service: EntityStateService<any>,
+                                      callback: (draft) => void) {
+        service.updateState(callback, (patches) => {
+            this.patchesSubscribers.forEach(subscriber => subscriber(patches));
+        });
     }
 }

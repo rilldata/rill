@@ -1,6 +1,11 @@
 import {StateActions} from "./StateActions";
-import type {DataModelerState, Model, ProfileColumn} from "$lib/types";
-import {getNewModel} from "$common/stateInstancesFactory";
+import type {ProfileColumn} from "$lib/types";
+import type {
+    PersistentModelStateActionArg
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type {
+    DerivedModelStateActionArg
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
 export interface NewModelParams {
     query?: string;
@@ -10,88 +15,67 @@ export interface NewModelParams {
 }
 
 export class ModelStateActions extends StateActions {
-    public addModel(draftState: DataModelerState, params: NewModelParams): void {
-        const newModel = getNewModel({query: params.query, name: params.name});
-        if (params.at !== undefined) {
-            draftState.models.splice(params.at, 0, newModel);
-        } else {
-            draftState.models.push(newModel);
-            if (params.makeActive) {
-                draftState.activeAsset = {
-                    id: newModel.id,
-                    assetType: "model"
-                };
-            }
-        }
+    @StateActions.DerivedModelAction()
+    public addModelError({stateService, draftState}: DerivedModelStateActionArg,
+                         modelId: string, message: string): void {
+        stateService.updateEntityField(draftState, modelId, "error", message);
     }
 
-    public addModelError(draftState: DataModelerState, modelId: string, message: string): void {
-        ModelStateActions.updateModelField(draftState, modelId, "error", message);
+    @StateActions.DerivedModelAction()
+    public clearModelError({stateService, draftState}: DerivedModelStateActionArg,
+                           modelId: string): void {
+        stateService.updateEntityField(draftState, modelId, "error", undefined);
     }
 
-    public clearModelError(draftState: DataModelerState, modelId: string): void {
-        ModelStateActions.updateModelField(draftState, modelId, "error", undefined);
-    }
-
-    public clearModelQuery(draftState: DataModelerState, modelId: string): void {
-        const model = ModelStateActions.getModel(draftState, modelId);
+    @StateActions.DerivedModelAction()
+    public clearModelProfile({stateService, draftState}: DerivedModelStateActionArg,
+                             modelId: string): void {
+        const model = stateService.getById(modelId, draftState);
         model.sizeInBytes = undefined;
-        model.destinationProfile = undefined;
         model.preview = undefined;
         model.profile = undefined;
     }
 
-    public updateModelQuery(draftState: DataModelerState, modelId: string, query: string, sanitizedQuery: string): void {
-        const model = ModelStateActions.getModel(draftState, modelId);
-        model.query = query;
-        model.sanitizedQuery = sanitizedQuery;
+    @StateActions.PersistentModelAction()
+    public updateModelQuery({stateService, draftState}: PersistentModelStateActionArg,
+                            modelId: string, query: string, sanitizedQuery: string): void {
+        stateService.updateEntityField(draftState, modelId, "query", query);
+        // TODO redirect to updateModelSanitizedQuery
     }
 
-    public updateModelProfileColumns(draftState: DataModelerState, modelId: string, profileColumns: Array<ProfileColumn>): void {
-        ModelStateActions.updateModelField(draftState, modelId, "profile", profileColumns);
+    @StateActions.DerivedModelAction()
+    public updateModelSanitizedQuery({stateService, draftState}: DerivedModelStateActionArg,
+                                     modelId: string, sanitizedQuery: string): void {
+        stateService.updateEntityField(draftState, modelId, "sanitizedQuery", sanitizedQuery);
     }
 
-    public updateModelPreview(draftState: DataModelerState, modelId: string, preview: Array<any>): void {
-        ModelStateActions.updateModelField(draftState, modelId, "preview", preview);
+    @StateActions.DerivedModelAction()
+    public updateModelProfileColumns({stateService, draftState}: DerivedModelStateActionArg,
+                                     modelId: string, profileColumns: Array<ProfileColumn>): void {
+        stateService.updateEntityField(draftState, modelId, "profile", profileColumns);
     }
 
-    public updateModelCardinality(draftState: DataModelerState, modelId: string, cardinality: number): void {
-        ModelStateActions.updateModelField(draftState, modelId, "cardinality", cardinality);
+    @StateActions.DerivedModelAction()
+    public updateModelPreview({stateService, draftState}: DerivedModelStateActionArg,
+                              modelId: string, preview: Array<any>): void {
+        stateService.updateEntityField(draftState, modelId, "preview", preview);
     }
 
-    public updateModelDestinationSize(draftState: DataModelerState, modelId: string, sizeInBytes: number): void {
-        ModelStateActions.updateModelField(draftState, modelId, "sizeInBytes", sizeInBytes);
+    @StateActions.DerivedModelAction()
+    public updateModelCardinality({stateService, draftState}: DerivedModelStateActionArg,
+                                  modelId: string, cardinality: number): void {
+        stateService.updateEntityField(draftState, modelId, "cardinality", cardinality);
     }
 
-    public updateModelName(draftState: DataModelerState, modelId: string, name: string): void {
-        ModelStateActions.updateModelField(draftState, modelId, "name", `${name}.sql`);
+    @StateActions.DerivedModelAction()
+    public updateModelDestinationSize({stateService, draftState}: DerivedModelStateActionArg,
+                                      modelId: string, sizeInBytes: number): void {
+        stateService.updateEntityField(draftState, modelId, "sizeInBytes", sizeInBytes);
     }
 
-    public deleteModel(draftState: DataModelerState, modelId: string): void {
-        const index = draftState.models.findIndex(model => model.id === modelId);
-        if (index === -1) return;
-        draftState.models.splice(index, 1);
-    }
-
-    public moveModelDown(draftState: DataModelerState, modelId: string): void {
-        const index = draftState.models.findIndex(model => model.id === modelId);
-        if (index === -1 || index === draftState.models.length - 1) return;
-
-        [draftState.models[index], draftState.models[index + 1]] =
-            [draftState.models[index + 1], draftState.models[index]];
-    }
-
-    public moveModelUp(draftState: DataModelerState, modelId: string): void {
-        const index = draftState.models.findIndex(model => model.id === modelId);
-        if (index === -1 || index === 0) return;
-
-        [draftState.models[index], draftState.models[index - 1]] =
-            [draftState.models[index - 1], draftState.models[index]];
-    }
-
-    private static updateModelField<Field extends keyof Model>(draftState: DataModelerState, modelId: string,
-                                                               field: Field, value: Model[Field]): void {
-        const model = ModelStateActions.getModel(draftState, modelId);
-        model[field] = value;
+    @StateActions.PersistentModelAction()
+    public updateModelName({stateService, draftState}: PersistentModelStateActionArg,
+                           modelId: string, name: string): void {
+        stateService.updateEntityField(draftState, modelId, "name", `${name}.sql`);
     }
 }

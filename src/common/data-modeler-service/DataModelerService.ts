@@ -5,11 +5,11 @@ import type {DataModelerActions} from "$common/data-modeler-service/DataModelerA
 import type {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnActions";
 import type {ModelActions} from "$common/data-modeler-service/ModelActions";
 import {getActionMethods} from "$common/ServiceBase";
-import type {DataModelerState} from "$lib/types";
 import type {DatabaseService} from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
+import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-type DataModelerActionsClasses = PickActionFunctions<DataModelerState, (
+type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &
     ProfileColumnActions &
     ModelActions
@@ -18,7 +18,7 @@ type DataModelerActionsClasses = PickActionFunctions<DataModelerState, (
  * Style definition for data modeler actions.
  * Action => [...args]
  */
-export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<DataModelerState, DataModelerActionsClasses>;
+export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<EntityStateActionArg<any>, DataModelerActionsClasses>;
 
 /**
  * Higher order / compound actions within data modeler that can call multiple state updates and other actions within Data Modeler Service
