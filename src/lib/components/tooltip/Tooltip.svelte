@@ -4,7 +4,7 @@ import { fade } from "svelte/transition"
 import { placeElement } from '$lib/util/place-element';
 
 export let location = 'bottom';
-export let alignment = 'center';
+export let alignment = 'middle';
 export let distance = 0;
 /** the delay in miliseconds before rendering the tooltip once mouse has entered */
 export let activeDelay = 150;
@@ -50,7 +50,6 @@ $: if (firstParentElement) setLocation(firstParentElement.getBoundingClientRect(
 
 onMount(() => {
     // we listen to the parent.
-    console.log(parent);
     // actually, we listen to the first chidl element! 
     firstParentElement = parent?.children[0];
     const config = { attributes: true  };
@@ -65,7 +64,11 @@ onMount(() => {
 
 </script>
 
-<svelte:window bind:scrollY bind:innerHeight bind:innerWidth />
+<svelte:window bind:scrollX bind:scrollY bind:innerHeight bind:innerWidth />
+
+<div class='fixed bg-black text-white p-3' style:left=0px style:top=0px>
+    {scrollX} <b>innerWidth</b> {innerWidth} <b>innerHeight</b> {innerHeight}
+</div>
 
 <div class='contents' bind:this={parent}  
     on:mouseenter={() => { 

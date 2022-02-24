@@ -30,8 +30,6 @@ export function mouseLocationToBoundingRect({ x, y, width = 0, height = 0 }) {
   };
 }
 
-
-
 export function placeElement({
   location,
   alignment,
@@ -50,20 +48,17 @@ export function placeElement({
   const elementWidth = elementPosition.width;
   const elementHeight = elementPosition.height;
 
-  const parentRight = parentPosition.right;
-  const parentLeft = parentPosition.left;
+  const parentRight = parentPosition.right + x;
+  const parentLeft = parentPosition.left + x;
   const parentTop = parentPosition.top + y;
   const parentBottom = parentPosition.bottom + y;
   const parentWidth = parentPosition.width;
   const parentHeight = parentPosition.height;
 
-  // OUR FIRST JOB IS REFLECTION ALONG THE LOCATION AXIS.
-  // If the location of the element would have it drawn off the screen,
-  // we will need to reflect it.
-
+  // Task 1: check if we need to reflect agains the location axis.
   if (location === "bottom") {
 
-    if (parentBottom + elementHeight + distance + pad > windowHeight) {
+    if (parentBottom + elementHeight + distance + pad  > windowHeight + y) {
       top = parentTop - elementHeight - distance;
     } else {
       top = parentBottom + distance;
@@ -71,15 +66,14 @@ export function placeElement({
 
     
   } else if (location === "top") {
-    if ((parentTop) - elementHeight - distance - pad < 0) {
+    if (parentTop - elementHeight - distance - pad < y) {
       top = parentBottom + distance;
     } else {
       top = parentTop - elementHeight - distance;
     }
-  } else if (location === "left") {
-    // FIXME: is this the left / right default?
 
-    if (parentLeft - distance - elementWidth - pad < 0) {
+  } else if (location === "left") {
+    if (parentLeft - distance - elementWidth - pad < x) {
       // reflect
       left = parentRight + distance;
     } else {
@@ -87,62 +81,54 @@ export function placeElement({
     }
 
   } else if (location === 'right') {
-    // reflect the left to the other side if this won't work.
-    if (parentRight + x + distance + elementWidth + pad > windowWidth) {
-      // reflect
-      left = parentLeft - elementWidth - distance + x;
+    if (parentRight + elementWidth + distance + pad > windowWidth + x) {
+      left = parentLeft - elementWidth - distance;
     } else {
-      left = parentRight + x + distance;
+      left = parentRight + distance;
     }
     
   }
 
   // OUR SECOND JOB IS RE-ALIGNMENT ALONG THE ALIGNMENT ACTION.
-  // if the alignment causes the elemnet to go off the page,
-  // we'll nudge it.
-  // FIXME: throw warning when location & alignment don't make sense
-  if (alignment === "right") {
-    left = parentRight - elementWidth;
-    // set right if off window
-    if (left < 0) {
-      left = parentLeft;
-    }
-  } else if (alignment === "left") {
-    // make it alignment="right" if it exceeds windowWith - elementWidth.
-    left = parentLeft;
-    if (left > windowWidth - elementWidth) {
-      left = parentRight - elementWidth;
-    }
-  } else if (alignment === "top") {
-    top = parentTop;
-    // if bottom edge of float is below height
-    if (top + elementHeight > windowHeight + y - pad) {
-      // top = parentBottom - elementHeight;
-      top = Math.max(pad, windowHeight + y - elementHeight - pad);
-    }
-  } else if (alignment === "bottom") {
-    top = parentBottom - elementHeight;
-    if (top < 0) {
-      top = parentTop;
-    }
-  } else if (location === "left" || location === "right") {
-    // TOP-BOTTOM alignment with left / right location.
-    top = minmax(
-      parentTop - (elementHeight - parentHeight) / 2,
-      distance + scrollY,
-      windowHeight + scrollY - distance - elementHeight
-    );
-  } else {
-    // align center + location is top or bottom
-    // location is top or bottom
-    left = minmax(
-      parentLeft - (elementWidth - parentWidth) / 2,
-      pad,
-      windowWidth - elementWidth - pad
-    );
-  }
+  let alignmentValue;
 
-  // I think we want some very controlled stuff here.
+  let rightLeft = (location === 'right' || location === 'left');
+
+  switch (alignment) {
+    case "start": {
+      alignmentValue = rightLeft ? 
+        parentTop : // right / left
+        parentLeft; // top / bottom
+      break;
+    }
+    case "end": {
+      alignmentValue = rightLeft ? 
+        parentBottom - elementHeight : // right / left
+        parentRight - elementWidth;    // top / bottom
+      break;
+    }
+    default: { // 'middle'
+      alignmentValue = rightLeft ? 
+      parentTop - (elementHeight - parentHeight) / 2 : // right / left
+      parentLeft - (elementWidth - parentWidth) / 2;  // top / bottom
+      break;
+    }
+  }
+  const alignMin = pad + (rightLeft ? y : x);
+  const alignMax = rightLeft ? 
+    y + windowHeight - elementHeight - pad : 
+    x + windowWidth  - elementWidth  - pad;
+  
+  const value = minmax(
+    alignmentValue,
+    alignMin,
+    alignMax
+  );
+  if (rightLeft) {
+    top = value;
+  } else {
+    left = value;
+  }
 
   return [left, top];
 }
