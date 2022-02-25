@@ -163,48 +163,6 @@ export class DataModelerStateService {
         return this.entityStateServicesMap[entityType][stateType].getById(entityId) as any;
     }
 
-    // TODO: move all these to actions
-    public addEntities(entityType: EntityType,
-                       stateTypeEntities: Array<[StateType, EntityRecord]>,
-                       atIndex?: number): void {
-        for (const [stateType, entityRecord] of stateTypeEntities) {
-            const service = this.entityStateServicesMap[entityType][stateType];
-            this.updateStateAndEmitPatches(service, (draft) => {
-                service.addEntity(draft, entityRecord as any, atIndex);
-            });
-        }
-    }
-
-    public deleteEntities(entityType: EntityType, stateTypes: Array<StateType>,
-                          entityId: string): void {
-        for (const stateType of stateTypes) {
-            const service = this.entityStateServicesMap[entityType][stateType];
-            this.updateStateAndEmitPatches(service, (draft) => {
-                service.deleteEntity(draft, entityId);
-            });
-        }
-    }
-
-    public moveEntitiesUp(entityType: EntityType, stateTypes: Array<StateType>,
-                          entityId: string): void {
-        for (const stateType of stateTypes) {
-            const service = this.entityStateServicesMap[entityType][stateType];
-            this.updateStateAndEmitPatches(service, (draft) => {
-                service.moveEntityUp(draft, entityId);
-            });
-        }
-    }
-
-    public moveEntitiesDown(entityType: EntityType, stateTypes: Array<StateType>,
-                            entityId: string): void {
-        for (const stateType of stateTypes) {
-            const service = this.entityStateServicesMap[entityType][stateType];
-            this.updateStateAndEmitPatches(service, (draft) => {
-                service.moveEntityDown(draft, entityId);
-            });
-        }
-    }
-
     public updateStateAndEmitPatches(service: EntityStateService<any>,
                                      callback: (draft) => void) {
         service.updateState((draft) => {

@@ -34,6 +34,8 @@ export class ModelStateActions extends StateActions {
         model.sizeInBytes = undefined;
         model.preview = undefined;
         model.profile = undefined;
+        // TODO: update this automatically
+        model.lastUpdated = Date.now();
     }
 
     @StateActions.PersistentModelAction()

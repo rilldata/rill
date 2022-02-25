@@ -3,7 +3,7 @@ import type {DataProviderData} from "@adityahegde/typescript-test-utils";
 
 type Args = [string, TestDataColumns];
 
-const SingleTableQueryColumnsTestData: TestDataColumns = [{
+export const SingleTableQueryColumnsTestData: TestDataColumns = [{
     name: "impressions",
     type: "BIGINT",
     isNull: false,
@@ -19,7 +19,7 @@ const SingleTableQueryColumnsTestData: TestDataColumns = [{
 export const SingleTableQuery = "select count(*) as impressions, publisher, domain from 'AdBids' group by publisher, domain";
 const SingleTableQueryTestData: Args = [SingleTableQuery, SingleTableQueryColumnsTestData];
 
-const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
+export const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
     name: "impressions",
     type: "BIGINT",
     isNull: false,
@@ -44,7 +44,7 @@ const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
     type: "VARCHAR",
     isNull: false,
 }];
-const TwoTableJoinQuery = `
+export const TwoTableJoinQuery = `
 select count(*) as impressions, avg(bid.bid_price) as bid_price, bid.publisher, bid.domain, imp.city, imp.country
 from 'AdBids' bid join 'AdImpressions' imp on bid.id = imp.id
 group by bid.publisher, bid.domain, imp.city, imp.country

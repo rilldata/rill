@@ -26,6 +26,8 @@ export class ProfileColumnStateActions extends StateActions {
             profile.summary = null;
             profile.nullCount = null;
         });
+        // TODO: update this automatically
+        entityToUpdate.lastUpdated = Date.now();
     }
 
     @StateActions.DerivedAction()
@@ -36,6 +38,8 @@ export class ProfileColumnStateActions extends StateActions {
         const profileToUpdate = entityToUpdate.profile.find(column => column.name === columnName);
         profileToUpdate.summary ??= {};
         shallowCopy(summary, profileToUpdate.summary);
+        // TODO: update this automatically
+        entityToUpdate.lastUpdated = Date.now();
     }
 
     @StateActions.DerivedAction()
@@ -45,5 +49,7 @@ export class ProfileColumnStateActions extends StateActions {
         const entityToUpdate = stateService.getById(entityId, draftState);
         const profileToUpdate = entityToUpdate.profile.find(column => column.name === columnName);
         profileToUpdate.nullCount = nullCount;
+        // TODO: update this automatically
+        entityToUpdate.lastUpdated = Date.now();
     }
 }

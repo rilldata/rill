@@ -25,6 +25,7 @@ export abstract class DataModelerCliCommand {
             database: new DatabaseConfig({ databaseName: `${this.projectPath}/${DATABASE_NAME}` }),
             state: new StateConfig({ savedStateFile: `${this.projectPath}/${SAVED_STATE_FILE}` }),
             server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
+            projectFolder: this.projectPath,
         });
         const {dataModelerService, dataModelerStateService, notificationService} = dataModelerServiceFactory(this.config);
         await dataModelerService.init();

@@ -8,6 +8,7 @@ import type { EntityStateService } from "$common/data-modeler-state-service/enti
 import {readFile, writeFile} from "fs/promises";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { existsSync } from "fs";
+import { execSync } from "node:child_process";
 
 export class EntityStateSyncService<
     Entity extends EntityRecord,
@@ -22,10 +23,12 @@ export class EntityStateSyncService<
                        private readonly dataModelerStateService: DataModelerStateService,
                        private readonly entityStateService: StateService) {
         this.fileName = `${this.config.projectFolder}/` +
-            `${this.entityType.toLowerCase()}_${this.stateType.toLowerCase()}.json`;
+            `${this.stateType.toLowerCase()}_${this.entityType.toLowerCase()}_state.json`;
     }
 
     public async init(): Promise<void> {
+        execSync(`mkdir -p ${this.config.projectFolder}`);
+
         let initialState: EntityState<Entity>;
 
         if (this.config.state.autoSync && existsSync(this.fileName)) {
@@ -50,48 +53,58 @@ export class EntityStateSyncService<
 
     private async sync(writeOnly = false): Promise<void> {
         if (!existsSync(this.fileName)) {
-            await this.syncWithCurrent();
+            await this.syncToCurrent();
         }
 
-        const sourceState: EntityState<Entity> =
-            JSON.parse((await readFile(this.fileName)).toString());
+        let sourceState: EntityState<Entity>;
+        try {
+            sourceState = JSON.parse((await readFile(this.fileName)).toString());
+        } catch (err) {
+            sourceState = {lastUpdated: 0, entities: []};
+        }
 
         const currentState = this.entityStateService.getCurrentState();
         if (sourceState.lastUpdated > currentState.lastUpdated && !writeOnly) {
-            this.syncWithSource(sourceState);
+            this.syncToSource(sourceState);
         } else if (sourceState.lastUpdated < currentState.lastUpdated) {
-            await this.syncWithCurrent();
+            await this.syncToCurrent();
         }
     }
 
-    private syncWithSource(sourceState: EntityState<Entity>): void {
+    private syncToSource(sourceState: EntityState<Entity>): void {
         const existingEntitiesMap = new Map<string, Entity>();
         this.entityStateService.getCurrentState().entities.forEach(entity =>
             existingEntitiesMap.set(entity.id, entity));
 
-        this.dataModelerStateService.updateStateAndEmitPatches(
-            this.entityStateService,
-            (draftState) => {
-                this.syncWithSourceEntities(draftState, sourceState, existingEntitiesMap);
-            }
-        );
-    }
-    private syncWithSourceEntities(draftState: EntityState<Entity>, sourceState: EntityState<Entity>,
-                                   existingEntitiesMap: Map<string, Entity>): void {
-
+        const updatedEntities = new Array<EntityRecord>();
+        const addedEntities = new Array<[EntityRecord, number]>();
         sourceState.entities.forEach((entity, index) => {
             if (existingEntitiesMap.has(entity.id)) {
-                existingEntitiesMap.delete(entity.id);
                 if (entity.lastUpdated <= existingEntitiesMap.get(entity.id).lastUpdated) return;
-
-                this.entityStateService.updateEntity(draftState, entity.id, entity);
+                existingEntitiesMap.delete(entity.id);
+                updatedEntities.push(entity);
             } else {
-                this.entityStateService.addEntity(draftState, entity, index);
+                addedEntities.push([entity, index]);
             }
         });
+
+        // only initiate state update if there are any changes
+        if (updatedEntities.length > 0 || addedEntities.length > 0) {
+            this.dataModelerStateService.updateStateAndEmitPatches(
+                this.entityStateService,
+                (draftState) => {
+                    updatedEntities.forEach(updatedEntity =>
+                        this.entityStateService.updateEntity(draftState,
+                            updatedEntity.id, updatedEntity as any));
+                    addedEntities.forEach(([addedEntity, index]) =>
+                        this.entityStateService.addEntity(draftState,
+                            addedEntity as any, index));
+                }
+            );
+        }
     }
 
-    private async syncWithCurrent(): Promise<void> {
+    private async syncToCurrent(): Promise<void> {
         await writeFile(this.fileName, JSON.stringify(this.entityStateService.getCurrentState()));
     }
 }

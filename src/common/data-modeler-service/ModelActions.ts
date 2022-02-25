@@ -1,5 +1,4 @@
 import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
-import type { DataModelerState } from "$lib/types";
 import { MODEL_PREVIEW_COUNT } from "$common/constants";
 import { sanitizeQuery } from "$lib/util/sanitize-query";
 import type { NewModelParams } from "$common/data-modeler-state-service/ModelStateActions";
@@ -8,7 +7,6 @@ import type {
     PersistentModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import {
-    AllStateTypes,
     EntityStatus,
     EntityType,
     StateType
@@ -22,10 +20,12 @@ export class ModelActions extends DataModelerActions {
     @DataModelerActions.PersistentModelAction()
     public async addModel(args: PersistentModelStateActionArg, params: NewModelParams) {
         const persistentModel = getNewModel(params);
-        this.dataModelerStateService.addEntities(EntityType.Model, [
-            [StateType.Persistent, persistentModel],
-            [StateType.Derived, getNewDerivedModel(persistentModel)],
-        ], params.at);
+        this.dataModelerStateService.dispatch("addEntity",
+            [EntityType.Model, StateType.Persistent,
+                persistentModel, params.at]);
+        this.dataModelerStateService.dispatch("addEntity",
+            [EntityType.Model, StateType.Derived,
+                getNewDerivedModel(persistentModel), params.at]);
     }
 
     @DataModelerActions.PersistentModelAction()
@@ -80,6 +80,7 @@ export class ModelActions extends DataModelerActions {
             // FIXME: We should really start writing tests here!
             profileColumns = await this.databaseService.dispatch("getProfileColumns", [persistentModel.tableName])
         } catch (error) {
+            console.log(error);
             this.dataModelerStateService.dispatch("addModelError", [modelId, error.message]);
             return;
         }
@@ -124,25 +125,35 @@ export class ModelActions extends DataModelerActions {
     @DataModelerActions.PersistentModelAction()
     public async deleteModel(args: PersistentModelStateActionArg,
                              modelId: string): Promise<void> {
-        this.dataModelerStateService.deleteEntities(EntityType.Model, AllStateTypes, modelId);
+        this.dataModelerStateService.dispatch("deleteEntity",
+            [EntityType.Model, StateType.Persistent, modelId]);
+        this.dataModelerStateService.dispatch("deleteEntity",
+            [EntityType.Model, StateType.Derived, modelId]);
     }
 
     @DataModelerActions.PersistentModelAction()
     public async moveModelDown(args: PersistentModelStateActionArg,
                                modelId: string): Promise<void> {
-        this.dataModelerStateService.moveEntitiesDown(EntityType.Model, AllStateTypes, modelId);
+        this.dataModelerStateService.dispatch("moveEntityDown",
+            [EntityType.Model, StateType.Persistent, modelId]);
+        this.dataModelerStateService.dispatch("moveEntityDown",
+            [EntityType.Model, StateType.Derived, modelId]);
     }
 
     @DataModelerActions.PersistentModelAction()
     public async moveModelUp(args: PersistentModelStateActionArg,
                              modelId: string): Promise<void> {
-        this.dataModelerStateService.moveEntitiesUp(EntityType.Model, AllStateTypes, modelId);
+        this.dataModelerStateService.dispatch("moveEntityUp",
+            [EntityType.Model, StateType.Persistent, modelId]);
+        this.dataModelerStateService.dispatch("moveEntityUp",
+            [EntityType.Model, StateType.Derived, modelId]);
     }
 
     private async validateModelQuery(model: PersistentModelEntity, sanitizedQuery: string): Promise<boolean> {
         try {
             await this.databaseService.dispatch("validateQuery", [sanitizedQuery]);
         } catch (error) {
+            console.log(error);
             if (error.message !== 'No statement to prepare!') {
                 this.dataModelerStateService.dispatch("addModelError", [model.id, error.message]);
             }  else {

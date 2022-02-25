@@ -24,6 +24,6 @@ export class ImportTableCommand extends DataModelerCliCommand {
     protected async sendActions(tableSourceFile: string, {name, delimiter}: ImportTableCommandOptions): Promise<void> {
         await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
             [tableSourceFile, name, {csvDelimiter: delimiter}]);
-        InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
+        // InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
     }
 }

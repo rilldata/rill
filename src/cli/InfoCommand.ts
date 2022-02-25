@@ -13,7 +13,7 @@ export class InfoCommand extends DataModelerCliCommand {
     }
 
     protected async sendActions(): Promise<void> {
-        InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
+        // InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
     }
 
     public static displayProjectInfo(projectPath: string, state: DataModelerState) {

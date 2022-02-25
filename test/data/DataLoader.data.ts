@@ -49,7 +49,7 @@ export const AdImpressionColumnsTestData: TestDataColumns = [{
     isNull: true,
 }];
 
-const UserColumnsTestData: TestDataColumns = [{
+export const UserColumnsTestData: TestDataColumns = [{
     name: "id",
     type: "INTEGER",
     isNull: false,

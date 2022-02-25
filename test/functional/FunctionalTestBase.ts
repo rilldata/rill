@@ -4,7 +4,6 @@ import type { DataModelerStateService } from "$common/data-modeler-state-service
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import { dataModelerServiceFactory } from "$common/serverFactory";
 import { asyncWait, waitUntil } from "$common/utils/waitUtils";
-import { IDLE_STATUS } from "$common/constants";
 import type { ProfileColumn } from "$lib/types";
 import type { TestDataColumns } from "../data/DataLoader.data";
 import { ParquetFileTestData } from "../data/DataLoader.data";
@@ -16,7 +15,8 @@ import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import {
     EntityRecord,
-    EntityStateService, EntityStatus,
+    EntityStateService,
+    EntityStatus,
     EntityType,
     StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -27,6 +27,12 @@ import type {
     DerivedTableEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import { dataModelerStateServiceClientFactory } from "$common/clientFactory";
+import type {
+    PersistentModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type {
+    DerivedModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -38,13 +44,14 @@ export class FunctionalTestBase extends TestBase {
     protected socketServer: SocketServerMock;
 
     @TestBase.BeforeSuite()
-    public async setup(): Promise<void> {
+    public async setup(configOverride?: RootConfig): Promise<void> {
         this.clientDataModelerStateService = dataModelerStateServiceClientFactory()
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
-        const serverInstances = dataModelerServiceFactory(new RootConfig({
-            database: new DatabaseConfig({ parquetFolder: "data", databaseName: ":memory:" }),
+        const serverInstances = dataModelerServiceFactory(configOverride ?? new RootConfig({
+            database: new DatabaseConfig({ databaseName: ":memory:" }),
             state: new StateConfig({ autoSync: false }),
+            projectFolder: "temp/test",
         }));
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
@@ -76,12 +83,12 @@ export class FunctionalTestBase extends TestBase {
     }
 
     protected getTables(field: string, value: any): [PersistentTableEntity, DerivedTableEntity] {
-        const persistent = this.getEntityByField(
-            EntityType.Table, StateType.Persistent, field, value) as PersistentTableEntity;
-        return [
-            persistent,
-            this.getEntityByField(EntityType.Table, StateType.Derived, "id", persistent.id) as DerivedTableEntity,
-        ];
+        return this.getStatesForEntityType(EntityType.Table, field, value) as
+            [PersistentTableEntity, DerivedTableEntity];
+    }
+    protected getModels(field: string, value: any): [PersistentModelEntity, DerivedModelEntity] {
+        return this.getStatesForEntityType(EntityType.Model, field, value) as
+            [PersistentModelEntity, DerivedModelEntity];
     }
 
     protected assertColumns(profileColumns: ProfileColumn[], columns: TestDataColumns): void {
@@ -109,5 +116,13 @@ export class FunctionalTestBase extends TestBase {
         return (this.clientDataModelerStateService
             .getEntityStateService(entityType, stateType) as EntityStateService<any>)
             .getByField(field, value);
+    }
+
+    private getStatesForEntityType(entityType: EntityType, field: string, value: any): [EntityRecord, EntityRecord] {
+        const persistent = this.getEntityByField(entityType, StateType.Persistent, field, value);
+        return [
+            persistent,
+            persistent ? this.getEntityByField(entityType, StateType.Derived, "id", persistent.id) : undefined,
+        ];
     }
 }

@@ -96,6 +96,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
             console.error(`Record not found. entityType=${this.entityType} stateType=${this.stateType} id=${id}`);
         }
         shallowCopy(newEntity, entity);
+        entity.lastUpdated = Date.now();
     }
 
     public updateEntityField<Field extends keyof Entity>(draftState: EntityState<Entity>,
@@ -105,6 +106,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
             console.error(`Record not found. entityType=${this.entityType} stateType=${this.stateType} id=${id}`);
         }
         entity[field] = value;
+        entity.lastUpdated = Date.now();
     }
 
     public deleteEntity(draftState: EntityState<Entity>, id: string): void {
@@ -119,6 +121,8 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         const index = draftState.entities.findIndex(entity => entity.id === id);
         if (index === -1 || index === draftState.entities.length - 1) return;
 
+        draftState.entities[index].lastUpdated = Date.now();
+        draftState.entities[index + 1].lastUpdated = Date.now();
         [draftState.entities[index], draftState.entities[index + 1]] =
             [draftState.entities[index + 1], draftState.entities[index]];
     }
@@ -127,6 +131,8 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         const index = draftState.entities.findIndex(entity => entity.id === id);
         if (index === -1 || index === 0) return;
 
+        draftState.entities[index].lastUpdated = Date.now();
+        draftState.entities[index - 1].lastUpdated = Date.now();
         [draftState.entities[index], draftState.entities[index - 1]] =
             [draftState.entities[index - 1], draftState.entities[index]];
     }
