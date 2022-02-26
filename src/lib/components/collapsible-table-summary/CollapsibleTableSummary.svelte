@@ -1,9 +1,17 @@
 <script lang="ts">
+import { SvelteComponent, tick } from "svelte/internal";
 import { onMount, createEventDispatcher } from "svelte";
 import { fade, slide, fly } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
+
+import Menu from "$lib/components/menu/Menu.svelte";
+import MenuItem from "$lib/components/menu/MenuItem.svelte";
+import * as classes from "$lib/util/component-classes";
+import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+
+import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
 
 import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
 import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
@@ -11,19 +19,24 @@ import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 import Spinner from "$lib/components/Spinner.svelte";
 
+// icons
+import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
+
 import { dropStore } from '$lib/drop-store';
-import type { SvelteComponent } from "svelte/internal";
 import Histogram from "$lib/components/viz/SmallHistogram.svelte";
 import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
 import {DataTypeIcon} from "$lib/components/data-types";
 import { CATEGORICALS } from "$lib/duckdb-data-types"
 
 import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
-import { defaultSort } from "$lib/components/collapsible-table-summary/sort-utils"
+import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/collapsible-table-summary/sort-utils"
 
-import { horizontalSlide } from "$lib/transitions"
+import { onClickOutside } from "$lib/util/on-click-outside";
+
+import { horizontalSlide } from "$lib/transitions";
 
 import { intervalToTimestring, formatCardinality } from "$lib/util/formatters";
+import Model from "../icons/Model.svelte";
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -45,13 +58,10 @@ const formatInteger = format(',');
 const percentage = format('.1%');
 
 let containerWidth = 0;
-
-function humanFileSize(size:number) {
-    var i = Math.floor( Math.log(size) / Math.log(1024) );
-    return ( size / Math.pow(1024, i) ).toFixed(2) + ['B', 'K', 'M', 'G'][i];
-};
-
+let contextMenu;
+let contextMenuOpen = false;
 let container;
+
 onMount(() => {
     const observer = new ResizeObserver(entries => {
         containerWidth = container?.clientWidth ?? 0;
@@ -74,14 +84,19 @@ let selectedColumns = [];
 let showSummaries = true;
 let summaryColumns = [];
 
-// FIXME: we should be sorting columns by type (timestamp, numeric, categorical)
-// on the backend, not here?
-
+let sortedProfile;
+function sortByOriginalOrder() {
+    sortedProfile = profile;
+}
 
 let sortMethod = defaultSort;
-$: sortedProfile = [...profile].sort(sortMethod);
+$: if (sortMethod !== sortByOriginalOrder) {
+    sortedProfile = [...profile].sort(sortMethod);
+} else {
+    sortedProfile = profile;
+}
 
-let previewView = 'card';
+let previewView = 'summaries';
 
 // FIXME: replace once we work through logical types in parquet_scan
 function typeToSymbol(fieldType) {
@@ -91,6 +106,18 @@ function typeToSymbol(fieldType) {
         return {symbol: fieldType.slice(0,1), text: fieldType, color: 'sky'};
     }
 }
+
+// these context menu coordinates will be where the element's context menu appears.
+let menuX;
+let menuY;
+let clickOutsideListener;
+$: if (!contextMenuOpen && clickOutsideListener) {
+    clickOutsideListener();
+    clickOutsideListener = undefined;
+}
+
+// state for title bar hover.
+let titleElementHovered = false;
 
 </script>
 
@@ -126,6 +153,7 @@ function typeToSymbol(fieldType) {
     <NavEntry
         expanded={show}
         selected={emphasizeTitle}
+        bind:hovered={titleElementHovered}
         on:select-body={() => { 
             // show = !show; 
             // pass up select body
@@ -156,9 +184,28 @@ function typeToSymbol(fieldType) {
                                 {/if}
                             </span>
                         {:else}
-                            <span class="grid grid-flow-col text-gray-500">
-                                <span><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span>{#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
-                                " transition:horizontalSlide|local={{duration: 250 + sizeInBytes / 5000000 * 1.3}}>, {sizeInBytes !== undefined && $sizeTween !== NaN && sizeInBytes !== NaN ? humanFileSize($sizeTween) : ''}</span>{/if}
+                            <span class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap ">
+                                {#if titleElementHovered || emphasizeTitle}
+                                <span ><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span>
+                                <span class='self-center'>
+                                    <ContextButton tooltipText="delete, more..." suppressTooltip={contextMenuOpen} on:click={async (event) => { 
+                                        contextMenuOpen = !contextMenuOpen;
+                                        menuX = event.clientX;
+                                        menuY = event.clientY;
+
+                                        if (!clickOutsideListener) {
+                                            await tick();
+                                            clickOutsideListener = onClickOutside(() => {
+                                                contextMenuOpen = false;
+                                            }, contextMenu);
+                                        }
+                                        
+                                        
+                                    }}><MoreIcon /></ContextButton>
+                                </span>
+                                {/if}
+                                <!-- {#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
+                                " transition:horizontalSlide|local={{duration: 250 + sizeInBytes / 5000000 * 1.3}}>, {sizeInBytes !== undefined && $sizeTween !== NaN && sizeInBytes !== NaN ? humanFileSize($sizeTween) : ''}</span>{/if} -->
                             </span>
                         {/if}
                     </div>
@@ -166,10 +213,36 @@ function typeToSymbol(fieldType) {
             </svelte:fragment>
       </NavEntry>
     </div>
+    {#if contextMenuOpen}
+        <!-- place this above codemirror.-->
+        <div bind:this={contextMenu}>
+            <FloatingElement relationship="mouse" target={{x: menuX, y:menuY}} location="right" alignment="start">
+                <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
+                    <MenuItem on:select={() => {
+                        dispatch("delete");
+                    }}>
+                        delete {name}
+                    </MenuItem>
+                </Menu>
+            </FloatingElement>
+        </div>
+    {/if}
     {#if show}
-        <div class="pl-3 pr-5 pt-1  pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
+        <div class="pl-3 pr-5 pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
+            <div style="grid-column: 1 / -1;" class='pt-2 pb-2 flex justify-between text-gray-500'>
+                <select bind:value={sortMethod} class={classes.NATIVE_SELECT}>
+                    <option value={sortByOriginalOrder}>sort by original order</option>
+                    <option value={defaultSort}>sort by cardinality</option>
+                    <option value={sortByNullity}>sort by null %</option>
+                    <option value={sortByName}>sort by name</option>
+                </select>
+                <select bind:value={previewView} class={classes.NATIVE_SELECT}>
+                    <option value="summaries">sort by summaries</option>
+                    <option value="example">sort by example</option>
+                </select>
+            </div>
 
-            <SummaryViewSelector bind:sortMethod bind:previewView />
+            <!-- <SummaryViewSelector bind:sortMethod bind:previewView /> -->
 
             <div 
                 class="gap-x-4 w-full items-center grid" 
@@ -250,7 +323,7 @@ function typeToSymbol(fieldType) {
                     <div style:max-width="{108 + 68}px" class="justify-self-end">
                         {#if !collapseGrid}
                             <div  class="grid" style:grid-template-columns="max-content max-content">
-                            {#if previewView === 'card'}
+                            {#if previewView === 'summaries'}
                             <div
                                 style:width="108px"
                                 class='overflow-hidden whitespace-nowrap justify-self-stretch text-right text-gray-500  break-all' >

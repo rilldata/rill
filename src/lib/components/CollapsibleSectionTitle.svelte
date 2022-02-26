@@ -3,17 +3,41 @@
  * for expandable asset elements. By contrast, this element is used as a header element
  * for asset sections.
 */
+import { fly } from "svelte/transition";
 
-import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
+import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+
 import type { SvelteComponent } from "svelte";
 export let active = true;
 export let icon:SvelteComponent;
+let duration = 0;
+
+let tooltipActive;
+
+// here's where we handle setting the active tooltip
+// duration, which will help us animate the fly element.
+let timer;
+
+function setDuration() {
+    if (!tooltipActive) {
+        clearTimeout(timer);
+        duration = 0;
+    } else {
+    timer = setTimeout(() => {
+        duration = 150;
+    }, 10);
+        // duration = 150;
+    }
+}
+
 </script>
 
 <div 
     class='collapsible-title align grid grid-cols-max justify-between'
     style="grid-template-columns: auto max-content;"
 >
+<Tooltip location="right" alignment="middle" distance={8} bind:active={tooltipActive}>
     <button 
         class="
             bg-transparent 
@@ -29,7 +53,13 @@ export let icon:SvelteComponent;
                 max-width: 100%;
 
             "
-        on:click={() => { active = !active; }}>
+        on:mouseover={setDuration}
+        on:mouseleave={setDuration}
+        on:focus={setDuration}
+        on:blur={setDuration}
+        on:click={() => { 
+            active = !active;
+        }}>
         <!-- {#if icon}
             <div class="text-gray-400">
                 <svelte:component this={icon} size=1em />
@@ -39,7 +69,16 @@ export let icon:SvelteComponent;
             <slot />
         </div>
     </button>
-
+    <TooltipContent slot="tooltip-content">
+        <div class="relative">
+            <span class="invisible">{active ? "hide" : "show"}</span>
+            {#key active}
+                <div class="absolute" style:left="0" style:top="0px" transition:fly={{duration, y: 7.5 * (!active ? 1 : -1)}}>{active ? "hide" : "show"}</div>
+            {/key}
+        </div>
+        
+    </TooltipContent>
+</Tooltip>
     <div class="contextual-information justify-self-stretch text-right">
         <slot name="contextual-information" />
     </div>

@@ -68,7 +68,7 @@
         <ul>
             {#each componentNames as name (name)}
                 <li
-                    class:opacity-40={name === current}
+                    class:opacity-40={name !== current}
                 >
                     <button on:click={setCurrentByName(name)}>
                         {name.split('/src/stories/')[1] || ''}

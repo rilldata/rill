@@ -53,35 +53,6 @@ function getPos(text, lineNumber) {
 	return text.slice(0, lineNumber - 1).join(' ').length + 1;
 }
 
-// const breakpointEffect = StateEffect.define({
-//   map: (val, mapping) => ({pos: mapping.mapPos(val.pos), on: val.on})
-// })
-
-// const breakpointState = StateField.define({
-//   create() { return RangeSet.empty },
-//   update(set, transaction) {
-//     set = set.map(transaction.changes)
-//     for (let e of transaction.effects) {
-//       if (e.is(breakpointEffect)) {
-//         if (e.value.on)
-//           set = set.update({add: [breakpointMarker.range(e.value.pos)]})
-//         else
-//           set = set.update({filter: from => from != e.value.pos})
-//       }
-//     }
-//     return set
-//   }
-// })
-
-// function toggleBreakpoint(view, pos) {
-//   let breakpoints = view.state.field(breakpointState)
-//   let hasBreakpoint = false
-//   breakpoints.between(pos, pos, () => {hasBreakpoint = true})
-//   view.dispatch({
-//     effects: breakpointEffect.of({pos, on: !hasBreakpoint})
-//   })
-// }
-
 const breakpointGutter = [
   ///breakpointState,
   gutter({
@@ -90,8 +61,6 @@ const breakpointGutter = [
     initialSpacer: () => breakpointMarker,
     domEventHandlers: {
       mousedown(view, line) {
-        //console.log(line)
-        //toggleBreakpoint(view, line.from);
         return true
       }
     }
@@ -105,15 +74,6 @@ const breakpointGutter = [
   })
 ]
 
-// let prevError = undefined;
-// $: if (editor && errorLineNumber) {
-//     toggleBreakpoint(editor, getPos(editor.state.doc.text, errorLineNumber));
-//     prevError = errorLineNumber;
-// } else if (editor && !errorLineNumber && prevError) {
-//     toggleBreakpoint(editor, getPos(editor.state.doc.text, prevError));
-//     prevError = undefined;
-// }
-
 const breakpointMarker = new class extends GutterMarker {
   toDOM() { 
       const element = document.createElement('div');
@@ -122,12 +82,7 @@ const breakpointMarker = new class extends GutterMarker {
           target: element,
           props: { size: 13 }
       })
-    //   element.textContent = '!!';
       return element;
-    // const element = document.createElement('div');
-    // element.className = 'gutter-indicator';
-    // element.textContent = "⚠️";
-    // return element;
     }
 }
 
@@ -171,42 +126,6 @@ onMount(() => {
 </script>
 
 <div bind:this={componentContainer}>
-    <div class="controls pb-1">
-        <!-- <button class=small-action-button on:click={() => dispatch('up')}>↑</button>
-        <button class=small-action-button on:click={() => dispatch('down')}>↓</button> -->
-        <!-- <div class='grid content-center pl-3'>
-            <ModelIcon size={12} />
-        </div> -->
-        <!-- <div class='edit-text'>
-            <input 
-                bind:this={titleInput} 
-                on:input={(evt) => {
-                    titleInputValue = evt.target.value;
-                    editingTitle = true;
-                }}
-                class:font-bold={editingTitle === false}
-                on:blur={()  => { editingTitle = false; }}
-                value={name} 
-                size={Math.max((editingTitle ? titleInputValue : name)?.length || 0, 5) + 2} 
-                on:change={(e) => {dispatch('rename', formatModelName(e.target.value))} } />
-                <button class='small-action-button edit-button' on:click={() => {
-                    titleInput.focus();
-                }}>
-                    <EditIcon size={12} />
-                </button>
-        </div> -->
-        <div class="">
-            <button title="delete this" class="small-action-button color-gray-500" on:click={() => dispatch('delete')}>
-                <!-- x -->
-                <TrashIcon />
-            </button>
-        </div>
-        <div class=''>
-            <button title="caveat: temporary, but this materializes the table" class=small-action-button on:click={() => {
-                dispatch('model-profile');
-            }}><FreezeIcon size={"14"} /></button>
-        </div>
-    </div>
     <div class='editor-container border h-full' bind:this={editorContainer}>
         <div bind:this={editorContainerComponent} />
     </div>
@@ -218,52 +137,6 @@ onMount(() => {
     background-color: white;
     border-radius: .25rem;
     min-height: 400px;
-    /* box-shadow: 0px .25rem .25rem rgba(0,0,0,.05); */
 }
 
-.controls {
-    display: grid;
-    grid-template-columns:  max-content auto max-content max-content;
-    align-items: stretch;
-    align-content: stretch;
-    justify-content: stretch;
-    justify-items: stretch;
-    width: 100%;
-}
-
-.edit-button {
-    opacity: 0;
-    transition: opacity 150ms;
-}
-
-.edit-text:hover .edit-button {
-    opacity: 1;
-}
-
-.edit-text {
-    max-width: 100%;
-    display: grid;
-    grid-template-columns: auto max-content;
-    align-items: center;
-    justify-content: stretch;
-    color: hsl(217,20%, 20%);
-    padding-left: .5rem;
-}
-
-
-.edit-text input {
-    width: 100%;
-    font-family: "MD IO";
-    font-size: 12px;
-    background-color: transparent;
-    border: none;
-    text-overflow: ellipsis;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-.edit-text input:focus {
-    color: hsl(217,20%, 20%);
-    outline: none;
-}
 </style>
