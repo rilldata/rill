@@ -109,6 +109,9 @@ let showSourceTables = true;
           </div>
         </div>
       {/if}
+
+      <hr />
+      
       <div class='pt-4 pb-4'>
         <div class=" pl-5 pr-5">
           <CollapsibleSectionTitle bind:active={showSourceTables}>
@@ -118,6 +121,7 @@ let showSourceTables = true;
         {#if sourceTableReferences && showSourceTables}
         <div transition:slide={{duration: 200}} class="mt-1">
           {#each sourceTableReferences as reference}
+          {@const correspondingTableCardinality = $store?.tables.find((table => table.name === reference.name)).cardinality}
             <div
               class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
               on:focus={() => {
@@ -138,40 +142,17 @@ let showSourceTables = true;
             </div>
             <div class="text-gray-500 italic">
               <!-- is there a source table with this name and cardinality established? -->
-              {`${formatInteger($store.tables.find((table => table.name === reference.name)).cardinality)} rows` || ''}
+              {#if correspondingTableCardinality}
+                {`${formatInteger(correspondingTableCardinality)} rows` || ''}
+              {/if}
             </div>
           </div>
           {/each}
         </div>
         {/if}
-        <!-- {#if tables}
-          <NavEntry bind:active={showTables}>
-            Sources
-            <div class='italic text-gray-600' slot="contextual-information">
-              {formatCount(tables.reduce((acc, v) => acc + v.cardinality, 0))} rows
-            </div>
-          </NavEntry>
-          {#if showTables}
-          <div transition:slide|local={{duration: 120 }}>
-            {#each tables as { path, name, cardinality, profile, head, sizeInBytes, id} (id)}
-            <div class='pl-3 pr-5 pt-1 pb-1' animate:flip transition:slide|local>
-              <CollapsibleTableSummary
-                icon={ParquetIcon}
-                collapseWidth={240 + 120 + 16}
-                emphasizeTitle={true}
-                {name}
-                {cardinality}
-                {profile}
-                {head}
-                {path}
-                {sizeInBytes}
-              />
-            </div>
-          {/each}
-          </div>
-          {/if}
-        {/if} -->
       </div>
+      
+      <hr />
       
       <div class='source-tables pt-4 pb-4'>
         {#if currentQuery?.profile}
@@ -188,6 +169,7 @@ let showSourceTables = true;
             />
         {/if}
       </div>
+
 
       <!-- {#if currentQuery?.preview && currentQuery.preview.length}
       <div class='results-container'>
