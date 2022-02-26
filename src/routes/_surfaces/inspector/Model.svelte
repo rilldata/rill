@@ -72,7 +72,7 @@ let showSourceTables = true;
 <svelte:window bind:innerWidth />
 
   <div>
-    {#if currentQuery}
+    {#if currentQuery && currentQuery.query.trim().length}
       {#if currentQuery.query.trim().length}
         <div class="grid justify-items-center" style:height="var(--header-height)" >
           <button class="
@@ -119,7 +119,7 @@ let showSourceTables = true;
           </CollapsibleSectionTitle>
         </div>
         {#if sourceTableReferences && showSourceTables}
-        <div transition:slide={{duration: 200}} class="mt-1">
+        <div transition:slide|local={{duration: 200}} class="mt-1">
           {#each sourceTableReferences as reference}
           {@const correspondingTableCardinality = $store?.tables.find((table => table.name === reference.name)).cardinality}
             <div
@@ -169,42 +169,6 @@ let showSourceTables = true;
             />
         {/if}
       </div>
-
-
-      <!-- {#if currentQuery?.preview && currentQuery.preview.length}
-      <div class='results-container'>
-        <div class="inspector-header pt-4 pb-4 pr-4 grid items-baseline sticky top-0"  style="
-
-          grid-template-columns: auto max-content;
-        ">
-          <NavEntry expanded={showOutputs} on:select-body={() => { showOutputs = !showOutputs}} on:expand={() => { showOutputs=!showOutputs }} >
-            Preview
-          </NavEntry>
-          {#if showOutputs}
-          <div class="inspector-button-row grid grid-flow-col justify-start" transition:horizontalSlide>
-            <IconButton title="table" selected={outputView === 'row'} on:click={() => { outputView = 'row' }}>
-              <RowIcon size={14} />
-            </IconButton>
-            <IconButton title="JSON" selected={outputView === 'json'} on:click={() => { outputView = 'json' }}>
-              <JSONIcon size={14} />
-            </IconButton>
-          </div>
-          {/if}
-        </div>
-
-
-        {#if showOutputs}
-        <div class="results p-4 pt-0 mt-0">
-          {#if currentQuery.preview}
-            {#key currentQuery.query}
-              <svelte:component this={whichTable[outputView]} data={currentQuery.preview} />
-            {/key}
-          {/if}
-        </div>
-        {/if}
-
-      </div>
-      {/if} -->
     {/if}
     <div>
     </div>
