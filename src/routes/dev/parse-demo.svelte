@@ -80,7 +80,7 @@ on:cursor-location={(event) => {
         <div 
 		on:focus={() => { currentSelection = [item]; }}
 		on:mouseover={() => { currentSelection = [item]; }} 
-		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
+		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200 hover:cursor-pointer">
             <b>{item.name}</b>
         </div>
     {/each}

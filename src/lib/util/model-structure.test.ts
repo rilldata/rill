@@ -36,7 +36,7 @@ y AS (select dt from another_table),
 whatever is next is what is next.
 `
 
-const cte4 = [
+const cte4 = [  
     {name: 'x', substring: 'select * from whatever', start: 12, end:34 },
     {name: 'y', substring: 'select dt from another_table', start: 43, end:71 },
 ]
@@ -147,9 +147,33 @@ describe('extractFromStatements', () => {
         expect(extractFromStatements(selectQueries[7].input)).toEqual(selectQueries[7].output);
 
         expect(extractFromStatements(selectQueries[8].input)).toEqual(selectQueries[8].output);
+
+        expect(extractFromStatements(selectQueries[9].input)).toEqual(selectQueries[9].output);
     })
 })
-
+        // {
+        //     input: `
+        //     WITH x as (select * from x0),
+        //     y as (select count(*) as count, category from x0 INNER JOIN y0 ON y0.id = x0.y_id GROUP BY category)
+        //     SELECT 
+        //         index, 
+        //         length(bits) AS bitlength,
+        //         created_date,
+        //         user_agent,
+        //         category,
+        //         y.count AS count
+        //     FROM x
+        //         INNER JOIN y ON y.category = x.category
+        // `,
+        // output: [
+        //     {name: 'index',expression: 'index',start: 192, end: 197},
+        //     {name: 'bitlength', expression: 'length(bits)', start: 216, end: 241},
+        //     {name: 'created_date', expression: 'created_date', start: 259, end: 271},
+        //     {name: 'user_agent', expression: 'user_agent', start: 289, end: 299},
+        //     {name: 'category', expression: 'category', start: 317, end: 325},
+        //     {name: 'count', expression: 'y.count', start: 343, end: 359}
+        // ]
+        // }
 // let whereQueries = [
 //     { 
 //         input: 'select * from table where dt < 2015', 

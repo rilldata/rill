@@ -14,11 +14,14 @@ import Logo from "$lib/components/Logo.svelte";
 import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
 import notification from "$lib/components/notifications/";
 
-let store;
+import { createQueryHighlightStore } from "$lib/query-highlight-store";
 
+let store;
+let queryHighlight = createQueryHighlightStore();
 if (browser) {
   store = createStore();
   setContext('rill:app:store', store);
+  setContext('rill:app:query-highlight', queryHighlight);
   notification.listenToSocket(store.socket);
 }
 

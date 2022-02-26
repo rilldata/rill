@@ -1,6 +1,7 @@
 import {StateActions} from "./StateActions";
-import type {DataModelerState, Model, ProfileColumn} from "$lib/types";
+import type {DataModelerState, Model, ProfileColumn, SourceTable} from "$lib/types";
 import {getNewModel} from "$common/stateInstancesFactory";
+import {extractSourceTables} from "$lib/util/model-structure"
 
 export interface NewModelParams {
     query?: string;
@@ -57,6 +58,13 @@ export class ModelStateActions extends StateActions {
 
     public updateModelCardinality(draftState: DataModelerState, modelId: string, cardinality: number): void {
         ModelStateActions.updateModelField(draftState, modelId, "cardinality", cardinality);
+    }
+
+    public getModelSourceTables(draftState: DataModelerState, modelId: string): void {
+        const model = ModelStateActions.getModel(draftState, modelId);
+        const query = model.query;
+        const sourceTables = extractSourceTables(query) as SourceTable[];
+        ModelStateActions.updateModelField(draftState, modelId, 'sources', sourceTables);
     }
 
     public updateModelDestinationSize(draftState: DataModelerState, modelId: string, sizeInBytes: number): void {
