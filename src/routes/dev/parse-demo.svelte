@@ -1,7 +1,7 @@
 <script>
 import Editor from "$lib/components/Editor.svelte";
 import { queries } from "./_demo-queries"
-import { extractCTEs, getCoreQuerySelectStatements, extractSourceTables } from "$lib/util/model-structure";
+import { extractCTEs, getCoreQuerySelectStatements, extractFromStatements, extractJoins, extractSourceTables } from "$lib/util/model-structure";
 let whichQuery = 0;
 
 $: content = queries[whichQuery];
@@ -9,9 +9,11 @@ let location;
 
 $: ctes = (content?.length) ? extractCTEs(content) : [];
 $: selects = (content?.length) ? getCoreQuerySelectStatements(content || '') : [];
-$: sourceTables = (content?.length) ? extractSourceTables(content || '') : [];
-$: sourceTablesWithoutCTEs = (sourceTables.length && ctes.length) ? sourceTables.filter((table) => ctes.every(cte => cte.name !== table.name) ) : [];
+$: fromStatements = (content?.length) ? extractFromStatements(content || '') : [];
+$: sourceTables = (content.length) ? extractSourceTables(content || '') : [];
+$: console.log(sourceTables)
 
+$: joins = (content?.length) ? extractJoins(content || '') : [];
 let currentSelection;
 
 const up = () => { 
@@ -22,6 +24,7 @@ const down = () => {
 	whichQuery = Math.max(0, whichQuery - 1);
 }
 
+$: selections = currentSelection;
 </script>
 
 {whichQuery}
@@ -31,7 +34,7 @@ const down = () => {
 <div class='grid grid-cols-2'>
 {#key queries[whichQuery]}
 <Editor 
-selections={currentSelection ? [currentSelection] : undefined}
+selections={selections}
 content={content}
 on:cursor-location={(event) => {
     location = event.detail.location;
@@ -42,16 +45,41 @@ on:cursor-location={(event) => {
 
 <div>
 
-{#if sourceTablesWithoutCTEs}
+{#if sourceTables}
 <div class="p-3"  on:blur={() => { 
 	currentSelection = undefined }} on:mouseout={() => { 
 		currentSelection=undefined; 
 	}}>
-    <div>source tables: {sourceTablesWithoutCTEs.length}</div>
-    {#each sourceTablesWithoutCTEs as item}
+    <div>source tables: {sourceTables.length}</div>
+    {#each sourceTables as item}
         <div 
-		on:focus={() => { currentSelection = item; }}
-		on:mouseover={() => { currentSelection = item; }} 
+		on:focus={() => { currentSelection = item.tables; }}
+		on:mouseover={() => { currentSelection = item.tables; }} 
+		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
+            <b>{item.name}</b>
+        </div>
+    {/each}
+    <!-- {#each sourceJoins as item}
+    <div 
+    on:focus={() => { currentSelection = item; }}
+    on:mouseover={() => { currentSelection = item; }} 
+    class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
+        <b>{item.name}</b>
+    </div>
+{/each} -->
+</div>
+{/if}
+
+{#if fromStatements}
+<div class="p-3"  on:blur={() => { 
+	currentSelection = undefined }} on:mouseout={() => { 
+		currentSelection=undefined; 
+	}}>
+    <div>all table refs: {fromStatements.length}</div>
+    {#each fromStatements as item}
+        <div 
+		on:focus={() => { currentSelection = [item]; }}
+		on:mouseover={() => { currentSelection = [item]; }} 
 		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
             <b>{item.name}</b>
         </div>
@@ -59,17 +87,17 @@ on:cursor-location={(event) => {
 </div>
 {/if}
 
-{#if sourceTables}
-<div class="p-3"  on:blur={() => { 
+{#if joins}
+<div class="p-3" on:blur={() => { 
 	currentSelection = undefined }} on:mouseout={() => { 
 		currentSelection=undefined; 
 	}}>
-    <div>all table refs: {sourceTables.length}</div>
-    {#each sourceTables as item}
-        <div 
-		on:focus={() => { currentSelection = item; }}
-		on:mouseover={() => { currentSelection = item; }} 
-		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
+    <div>joins: {joins.length}</div>
+    {#each joins as item}
+        <div
+			on:focus={() => { currentSelection = [item]; }}
+			on:mouseover={() => { currentSelection = [item]; }} 
+			class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200 hover:cursor-pointer">
             <b>{item.name}</b>
         </div>
     {/each}
@@ -84,8 +112,8 @@ on:cursor-location={(event) => {
     <div>ctes: {ctes.length}</div>
     {#each ctes as cte}
         <div 
-		on:focus={() => { currentSelection = cte; }}
-		on:mouseover={() => { currentSelection = cte; }} 
+		on:focus={() => { currentSelection = [cte]; }}
+		on:mouseover={() => { currentSelection = [cte]; }} 
 		class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200  hover:cursor-pointer">
             <b>{cte.name}</b> = <i>{cte.substring}</i>
         </div>
@@ -102,8 +130,8 @@ on:cursor-location={(event) => {
     <div>selects: {selects.length}</div>
     {#each selects as select}
         <div
-			on:focus={() => { currentSelection = select; }}
-			on:mouseover={() => { currentSelection = select; }} 
+			on:focus={() => { currentSelection = [select]; }}
+			on:mouseover={() => { currentSelection = [select]; }} 
 			class="text-ellipsis overflow-hidden whitespace-nowrap hover:bg-yellow-200 hover:cursor-pointer">
             <b>{select.name}</b> = <i>{select.expression}</i>
         </div>

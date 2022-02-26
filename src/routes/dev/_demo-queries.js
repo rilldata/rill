@@ -1,5 +1,20 @@
 
-export const queries = [`WITH dataset AS (
+export const queries = [
+`
+	WITH x as (select * from x0),
+	y as (select count(*) as count, category from x0 INNER JOIN y0 ON y0.id = x0.y_id GROUP BY category)
+	SELECT 
+		index, 
+		length(bits) AS bitlength,
+		created_date,
+		user_agent,
+		category,
+		y.count AS count
+	FROM x
+		INNER JOIN y ON y.category = x.category
+`,
+
+`WITH dataset AS (
 	SELECT epoch(revenue_usd) as revenue_usd FROM revenue_transactions_cleaned
 ), S AS (
 	SELECT 

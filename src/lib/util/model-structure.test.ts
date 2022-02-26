@@ -1,4 +1,4 @@
-import { extractCTEs, getCoreQuerySelectStatements, extractSourceTables, extractCoreWhereClauses } from "./model-structure";
+import { extractCTEs, getCoreQuerySelectStatements, extractFromStatements, extractCoreWhereClauses, extractJoins } from "./model-structure";
 
 const q1 = `
 WITH cte1 AS (
@@ -135,30 +135,79 @@ select something, count(*) from       table
         },
 ]
 
-describe('getSourceTables', () => {
+describe('extractFromStatements', () => {
     it('pulls out all the source tables', () => {
-        expect(extractSourceTables(selectQueries[0].input)).toEqual(selectQueries[0].output);
-        expect(extractSourceTables(selectQueries[1].input)).toEqual(selectQueries[1].output);
-        expect(extractSourceTables(selectQueries[2].input)).toEqual(selectQueries[2].output);
-        expect(extractSourceTables(selectQueries[3].input)).toEqual(selectQueries[3].output);
-        expect(extractSourceTables(selectQueries[4].input)).toEqual(selectQueries[4].output);
-        expect(extractSourceTables(selectQueries[5].input)).toEqual(selectQueries[5].output);
-        expect(extractSourceTables(selectQueries[6].input)).toEqual(selectQueries[6].output);
-        expect(extractSourceTables(selectQueries[7].input)).toEqual(selectQueries[7].output);
+        expect(extractFromStatements(selectQueries[0].input)).toEqual(selectQueries[0].output);
+        expect(extractFromStatements(selectQueries[1].input)).toEqual(selectQueries[1].output);
+        expect(extractFromStatements(selectQueries[2].input)).toEqual(selectQueries[2].output);
+        expect(extractFromStatements(selectQueries[3].input)).toEqual(selectQueries[3].output);
+        expect(extractFromStatements(selectQueries[4].input)).toEqual(selectQueries[4].output);
+        expect(extractFromStatements(selectQueries[5].input)).toEqual(selectQueries[5].output);
+        expect(extractFromStatements(selectQueries[6].input)).toEqual(selectQueries[6].output);
+        expect(extractFromStatements(selectQueries[7].input)).toEqual(selectQueries[7].output);
 
-        expect(extractSourceTables(selectQueries[8].input)).toEqual(selectQueries[8].output);
+        expect(extractFromStatements(selectQueries[8].input)).toEqual(selectQueries[8].output);
     })
 })
 
-let whereQueries = [
-    { 
-        input: 'select * from table where dt < 2015', 
-        output: [ {start: 26, end: 35, statement: 'dt < 2015'}]
+// let whereQueries = [
+//     { 
+//         input: 'select * from table where dt < 2015', 
+//         output: [ {start: 26, end: 35, statement: 'dt < 2015'}]
+//     }
+// ]
+
+// describe('extractCoreWhereClauses', () => {
+//     it('where clause', () => {
+//         expect(extractCoreWhereClauses(whereQueries[0].input)).toEqual(whereQueries[0].output);
+//     })
+// })
+
+
+let joinQueries = [
+    {
+        input: 'SELECt * from whatever inner join another ON another.id = whatever.another_id',
+        output: [
+            {
+                name: 'another',
+                start: 34,
+                end: 41
+            }
+        ]
+    },
+    {
+        input: `with 
+        x as (select * from whatever),
+        abcd_wxyz as (select * from x)
+           SELECT * from       abcd_wxyz    join    y        ON        y.id = abcd_wxyz.whatever   ;
+        `,
+        output: [
+            {name: 'y', start: 136, end: 137},
+        ]
+    },
+    {
+        input: `with 
+        x as (select * from whatever),
+        abcd_wxyz as (select * from x)
+           SELECT * from       abcd_wxyz    join    (select * from y)        ON        y.id = abcd_wxyz.whatever   ;
+        `,
+        output: []
     }
 ]
 
-describe('extractCoreWhereClauses', () => {
-    it('where clause', () => {
-        expect(extractCoreWhereClauses(whereQueries[0].input)).toEqual(whereQueries[0].output);
+describe('extractJoins', () => {
+    it('pulls out all the join predicates', () => {
+        expect(extractJoins(joinQueries[0].input)).toEqual(joinQueries[0].output);
+        expect(extractJoins(joinQueries[1].input)).toEqual(joinQueries[1].output);
+        // FIXME: we should make sure this selects y. but not right now?
+        expect(extractJoins(joinQueries[2].input)).toEqual(joinQueries[2].output);
     })
 })
+
+
+
+// describe('extractCoreWhereClauses', () => {
+//     it('where clause', () => {
+//         expect(extractCoreWhereClauses(joinQueries[0].input)).toEqual(joinQueries[0].output);
+//     })
+// })

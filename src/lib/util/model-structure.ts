@@ -132,7 +132,7 @@ export function extractCTEs(query:string) : CTE[] {
 export function getCoreQuerySelectStatements(query:string) {
     const ctes = extractCTEs(query);
     const latest = ctes.slice(-1)[0].end;
-    const restOfQuery = query.slice(latest + 1);
+    const restOfQuery = query.slice(latest + 1).replace(/[\s\n\t\r]/g, ' ');
     const startingBuffer = firstCharacterAt(restOfQuery);
 
     if (!restOfQuery.toLowerCase().trim().startsWith('select ')) {
@@ -146,7 +146,7 @@ export function getCoreQuerySelectStatements(query:string) {
     let columnSelects = [];
     
     function queryEndsWithFrom(query) {
-        return query.toLowerCase().replace(/[\s\n\t\r]/g, ' ').endsWith('from ');
+        return query.toLowerCase().endsWith('from ');
     }
     // goal:
     // when you hit AS or a , at nest level 0 (or reach nest 0 FROM statement), 
@@ -222,7 +222,7 @@ function getAllIndexes(arr, val) {
     return indexes;
 }
 
-export function extractSourceTables(query:string) {
+export function extractFromStatements(query:string) {
 
     let latest = 0;
     let restOfQuery = query.replace(/[\s\t\r\n]/g, ' ');
@@ -391,4 +391,55 @@ export function extractCoreWhereClauses(query:string) {
         }
     }
     return whereClauses;
+}
+
+export function extractJoins(query) {
+    let latest = 0;
+    let restOfQuery = query.replace(/[\s\t\r\n]/gi, ' ');
+
+    const finds = getAllIndexes(restOfQuery.toLowerCase(), ' join ');
+    let matches = [];
+    for (let find of finds) {
+        let ei = find + ' join '.length;//restOfQuery.slice(find + ' join '.length);
+        let ri = ei;
+        let noMatchYet = true;
+        while (ri < restOfQuery.length || noMatchYet) {
+            ri += 1;
+            let soFar = restOfQuery.slice(ei, ri);
+            // break if we're on a subquery, for now.
+            if (restOfQuery[ri] === '(') {
+                break;
+            }
+            if (soFar.toLowerCase().endsWith(' on ')) {
+                // we have a match.
+                let name = soFar.slice(0, -` on `.length);
+                let start = ei + firstCharacterAt(name);
+                let end = ei + name.length - firstCharacterAt(name.split('').reverse().join(''));
+                name = name.trim();
+                matches.push({name, start, end});
+                break;
+
+            }
+        }
+        
+    }
+    return matches;
+}
+
+export function extractSourceTables(query) {
+    const CTEs = extractCTEs(query);
+    let cteAliases = new Set(CTEs.map(cte => cte.name));
+    const froms = extractFromStatements(query).filter(statement => !cteAliases.has(statement.name));
+    const joins = extractJoins(query).filter(statement => !cteAliases.has(statement.name));
+    const all = [...froms.map(table => ({...table, type: 'from'})), ...joins.map(table => ({...table, type: 'join'}))];
+    // now let's coalesce.
+    // get uniques.
+    const names = [...new Set(all.map(table => table.name))];
+    return names.map((name) => {
+        const tables = all.filter(table => table.name === name);
+        return {
+            name,
+            tables
+        }
+    })
 }
