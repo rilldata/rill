@@ -40,7 +40,7 @@ const store = getContext("rill:app:store");
     width: 100vw;
     display: grid;
     grid-template-columns: max-content auto var(--right-sidebar-width, 400px);
-    grid-template-rows: var(--header-height, 60px) auto var(--preview-height, 0px);
+    grid-template-rows: var(--header-height, 80px) auto var(--preview-height, 0px);
     grid-template-areas: "left-pane header-bar right-pane"
                           "left-pane workspace right-pane"
                          "left-pane preview preview";
