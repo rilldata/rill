@@ -102,6 +102,10 @@ export class ModelActions extends DataModelerActions {
         
         this.dataModelerStateService.dispatch("updateModelProfileColumns",
             [model.id, profileColumns]);
+        
+        // retrieve the source table references from the query directly.
+        this.dataModelerStateService.dispatch("getModelSourceTables", [model.id]);
+
         await Promise.all([
             async () => await this.dataModelerService.dispatch("collectProfileColumns",
                 [model.id, ColumnarItemType.Model]),

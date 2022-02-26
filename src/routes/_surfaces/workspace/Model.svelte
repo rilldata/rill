@@ -9,6 +9,7 @@ import {dataModelerService} from "$lib/app-store";
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 
 const store = getContext("rill:app:store") as AppStore;
+const queryHighlight = getContext("rill:app:query-highlight");
 
 let error;
 
@@ -25,6 +26,7 @@ function getErrorLineNumber(errorString) {
 };
 
 $: currentModel = $store?.activeAsset ? $store.models.find(query => query.id === $store.activeAsset.id) : undefined;
+
 </script>
 
 <div class="editor-pane">
@@ -35,6 +37,7 @@ $: currentModel = $store?.activeAsset ? $store.models.find(query => query.id ===
         <Editor 
           content={currentModel.query}
           name={currentModel.name}
+          selections={$queryHighlight}
           errorLineNumber={ currentModel.id === $store.activeAsset.id ? errorLineNumber : undefined }
           on:down={() => { dataModelerService.dispatch('moveModelDown', [currentModel.id]); }}
           on:up={() => { dataModelerService.dispatch('moveModelUp', [currentModel.id]); }}

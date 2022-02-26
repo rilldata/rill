@@ -18,11 +18,22 @@ function formatModelName(str) {
 let currentModel;
 $: if ($store?.models && $store?.activeAsset) currentModel = $store.models.find(q => q.id === $store.activeAsset.id);
 
+let titleInputElement;
 let editingTitle = false;
 let titleInputValue;
 let tooltipActive;
+let titleInput = currentModel?.name;
 $: titleInput = currentModel?.name;
+
+
+function onKeydown(event) {
+    if (editingTitle && event.key === 'Enter') {
+        titleInputElement.blur();
+    }
+}
 </script>
+
+<svelte:window on:keydown={onKeydown} />
 
 <header 
     style:font-size='12px'
@@ -34,7 +45,7 @@ $: titleInput = currentModel?.name;
             <ModelIcon />
             <Tooltip distance={8} bind:active={tooltipActive} suppress={editingTitle}>
                 <input 
-                bind:this={titleInput} 
+                bind:this={titleInputElement} 
                 on:input={(evt) => {
                     titleInputValue = evt.target.value;
                     editingTitle = true;
