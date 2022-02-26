@@ -2,7 +2,7 @@
  * Provides mappings from duckdb's data types to conceptual types we use in the application:
  * CATEGORICALS, NUMERICS, and TIMESTAMPS.
  */
-export const CATEGORICALS = new Set(['BYTE_ARRAY', 'VARCHAR', "CHAR", "BPCHAR", "TEXT", "STRING"]);
+export const CATEGORICALS = new Set(['BYTE_ARRAY', 'VARCHAR', "CHAR", "BPCHAR", "TEXT", "STRING", "BOOLEAN"]);
 
 export const NUMERICS = new Set([
     'DOUBLE', 'DECIMAL', 'BIGINT', 'HUGEINT', 'SMALLINT', 'INTEGER', 'TINYINT', 'UBIGINT', 'UINTEGER', 'UTINYINT', 'INT1', 'FLOAT8', 'NUMERIC',
