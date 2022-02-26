@@ -10,7 +10,6 @@ import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
 import type { SvelteComponent } from "svelte";
 export let active = true;
-export let icon:SvelteComponent;
 let duration = 0;
 
 let tooltipActive;
@@ -20,15 +19,11 @@ let tooltipActive;
 let timer;
 
 function setDuration() {
-    if (!tooltipActive) {
-        clearTimeout(timer);
-        duration = 0;
-    } else {
+    duration = 150;
+    clearTimeout(timer);
     timer = setTimeout(() => {
-        duration = 150;
-    }, 10);
-        // duration = 150;
-    }
+        duration = 0;
+    }, 150)
 }
 
 </script>
@@ -53,12 +48,9 @@ function setDuration() {
                 max-width: 100%;
 
             "
-        on:mouseover={setDuration}
-        on:mouseleave={setDuration}
-        on:focus={setDuration}
-        on:blur={setDuration}
         on:click={() => { 
             active = !active;
+            setDuration();
         }}>
         <!-- {#if icon}
             <div class="text-gray-400">
