@@ -43,10 +43,7 @@
 
     // what do we have here? min, q25, q50, mean, q75, max
     
-    const t1 = tweened(0, { duration: time, easing });
-    const t2 = tweened(0, { duration: time * (1 + Math.random() / 5), easing, delay: time / 6 });
-    const t3 = tweened(0, { duration: time * (1 + Math.random() / 3), easing, delay: time / 3});
-    const t4 = tweened(0, { duration: time * (1 + Math.random() / 1.5), easing });
+    const tw = tweened(0, { duration: time, easing });
     
     const lowValue = tweened(0, { duration: time / 2, easing });
     const highValue = tweened(0, { duration: time / 2, easing });
@@ -59,14 +56,7 @@
     $: maxY = Math.max(...yVals);
     $: Y = scaleLinear().domain([0, maxY]).range([height - 4 - bottom, 4]);
     
-    $: t1.set(1);
-    $: t2.set(1);
-    $: t3.set(1);
-    $: t4.set(1);
-    
-    function s(i, ...ts) {
-        return ts[i % ts.length];
-    }
+    $: tw.set(1);
 
     $: tweeningFunction = dataType === 'int' ? (v:number) => ~~v : (v:number) => v;
 
@@ -103,13 +93,13 @@
 
             {@const x      = X(low) }
             {@const width  = X(high) - X(low)}
-            {@const y      = Y(0) * (1-s(i, $t1, $t2, $t3, $t4)) +  Y(count) * s(i, $t1, $t2, $t3, $t4)}
-            {@const height = Math.min(Y(0), Y(0) * (s(i, $t1, $t2, $t3, $t4))   -  Y(count) * (s(i, $t1, $t2, $t3, $t4)))}
+            {@const y      = Y(0) * (1-$tw) +  Y(count) * $tw}
+            {@const height = Math.min(Y(0), Y(0) * ($tw)   -  Y(count) * ($tw))}
             
             <rect x={x} {width} {y} {height} fill={color} />
 
         {/each}
-        <line x1={X(X.domain()[0])} x2={width * $t1 - right - vizOffset} y1={Y(0) + 4} y2={Y(0) + 4} stroke={color} />
+        <line x1={X(X.domain()[0])} x2={width * $tw - right - vizOffset} y1={Y(0) + 4} y2={Y(0) + 4} stroke={color} />
         </g>
         
         <g style:font-size="12px" class='lineElements'>
