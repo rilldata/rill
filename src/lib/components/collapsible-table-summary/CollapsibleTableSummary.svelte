@@ -237,8 +237,8 @@ let titleElementHovered = false;
                     <option value={sortByName}>sort by name</option>
                 </select>
                 <select bind:value={previewView} class={classes.NATIVE_SELECT}>
-                    <option value="summaries">sort by summaries</option>
-                    <option value="example">sort by example</option>
+                    <option value="summaries">show summaries</option>
+                    <option value="example">show example</option>
                 </select>
             </div>
 
