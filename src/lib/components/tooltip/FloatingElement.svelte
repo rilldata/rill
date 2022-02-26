@@ -68,6 +68,7 @@ onMount(() => {
 </script>
 
 <svelte:window bind:scrollX bind:scrollY bind:innerHeight bind:innerWidth />
-<div transition:fade|local={{duration: 25 }} bind:this={child} class="absolute" style:z-index=3 style:left="{left}px" style:top="{top}px">
+
+<div transition:fade|local={{duration: 25 }} bind:this={child} class="absolute" style:z-index="200" style:left="{left}px" style:top="{top}px">
     <slot />
 </div>

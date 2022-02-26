@@ -3,9 +3,7 @@
  * for expandable asset elements. By contrast, this element is used as a header element
  * for asset sections.
 */
-import { onMount } from "svelte";
 import { fly } from "svelte/transition";
-import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
 
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -20,15 +18,19 @@ let tooltipActive;
 // here's where we handle setting the active tooltip
 // duration, which will help us animate the fly element.
 let timer;
-$: if (tooltipActive) {
+
+function setDuration() {
+    if (!tooltipActive) {
+        clearTimeout(timer);
+        duration = 0;
+    } else {
     timer = setTimeout(() => {
         duration = 150;
-    }, 200);
-    
-} else {
-    clearTimeout(timer);
-    duration = 0;
+    }, 10);
+        // duration = 150;
+    }
 }
+
 </script>
 
 <div 
@@ -51,7 +53,13 @@ $: if (tooltipActive) {
                 max-width: 100%;
 
             "
-        on:click={() => { active = !active; }}>
+        on:mouseover={setDuration}
+        on:mouseleave={setDuration}
+        on:focus={setDuration}
+        on:blur={setDuration}
+        on:click={() => { 
+            active = !active;
+        }}>
         <!-- {#if icon}
             <div class="text-gray-400">
                 <svelte:component this={icon} size=1em />

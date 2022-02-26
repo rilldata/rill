@@ -1,5 +1,6 @@
 <script lang="ts">
 import FloatingElement from "./FloatingElement.svelte";
+import Portal from "../Portal.svelte";
 export let location = 'bottom';
 export let alignment = 'middle';
 export let distance = 0;
@@ -36,8 +37,12 @@ function waitUntil(callback, time = 120) {
     }}>
     <slot />
     {#if active && !suppress}
+    <Portal>
+        <div style="z-index:50;">
         <FloatingElement target={parent} {location} {alignment} {distance} {pad}>
             <slot name="tooltip-content" />
         </FloatingElement>
+        </div>
+    </Portal>
     {/if}
 </div>
