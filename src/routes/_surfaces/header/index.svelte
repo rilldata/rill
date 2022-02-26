@@ -25,7 +25,7 @@ $: titleInput = currentModel?.name;
     style:grid-template-columns="[title] auto [controls] auto">
     <div>
         {#if titleInput !== undefined && titleInput !== null}
-        <h1 title="model: {titleInput}" style:font-size='16px' class="grid grid-flow-col justify-start items-center gap-x-3 p-3 pl-5 pr-5">
+        <h1 title="model: {titleInput}" style:font-size='16px' class="grid grid-flow-col justify-start items-center gap-x-3 p-6">
             <ModelIcon />
                 <input 
                 bind:this={titleInput} 

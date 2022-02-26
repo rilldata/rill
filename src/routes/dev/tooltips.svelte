@@ -58,8 +58,11 @@ $: if ((location === 'left' || location === 'right') && (alignment === 'left' ||
 </div>
 
 <div style:font-size=12px style:height="200vh" style:width="200vw" class="border border-8 border-black overflow-hidden">
-<Tooltip alignment="left" distance={25}>
-    <div>position</div>
+
+    <h1 class="text-xl p-5 fixed left-2 top-2 bg-white backdrop-blur-md">Tooltip Positioning Semantics.</h1>
+    <div class="mt-24" />
+<Tooltip alignment="left" >
+    <div style:width="max-content">position</div>
     <svelte:fragment slot="tooltip-content">
         <div class='bg-black text-white p-5'>
             another element
@@ -94,18 +97,20 @@ another element!
     "Lorem ipsum dolor sit amet..", comes from a line in section 1.10.32.
 </p>
 
-<select bind:value={location}>
-    <option value="left">left</option>
-    <option value="right">right</option>
-    <option value="top">top</option>
-    <option value="bottom">bottom</option>
-</select>
+<div class="m-12">
+    <select bind:value={location}>
+        <option value="left">left</option>
+        <option value="right">right</option>
+        <option value="top">top</option>
+        <option value="bottom">bottom</option>
+    </select>
 
-<select bind:value={alignment}>
-    <option value="start">start</option>
-    <option value="middle">middle</option>
-    <option value="end">end</option>
-</select>
+    <select bind:value={alignment}>
+        <option value="start">start</option>
+        <option value="middle">middle</option>
+        <option value="end">end</option>
+    </select>
+</div>
 
 
 

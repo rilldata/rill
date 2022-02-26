@@ -96,7 +96,7 @@ onMount(() => {
             <CollapsibleSectionTitle bind:active={showModels}>
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
-              <ContextButton on:click={() => {
+              <ContextButton tooltipText="create a new model" on:click={() => {
                 dataModelerService.dispatch("addModel", [{}]);
                 if (!showModels) {
                   showModels = true;
@@ -113,6 +113,9 @@ onMount(() => {
                 <CollapsibleTableSummary
                   on:select={() => {
                     dataModelerService.dispatch("setActiveAsset", [query.id, 'model']);
+                  }}
+                  on:delete={() => {
+                    dataModelerService.dispatch('deleteModel', [query.id]);
                   }}
                   icon={ModelIcon}
                   name={query.name}

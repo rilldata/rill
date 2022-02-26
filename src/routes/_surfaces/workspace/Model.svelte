@@ -3,9 +3,7 @@ import { getContext } from "svelte";
 import { slide } from "svelte/transition";
 import type { AppStore } from '$lib/app-store';
 import { cubicOut as easing } from 'svelte/easing';
-import { flip } from "svelte/animate";
 import Editor from "$lib/components/Editor.svelte";
-import DropZone from "$lib/components/DropZone.svelte";
 import {dataModelerService} from "$lib/app-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
@@ -32,7 +30,7 @@ $: currentModel = $store?.activeAsset ? $store.models.find(query => query.id ===
 <div class="editor-pane">
   <div>
   {#if $store && $store.models && currentModel}
-    <div class="input-body p-4 overflow-auto">
+    <div class="input-body p-6 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}

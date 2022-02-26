@@ -11,23 +11,31 @@ function minmax(v, min, max) {
 
 export function mouseLocationToBoundingRect({ x, y, width = 0, height = 0 }) {
   return {
-    parentPosition: {
-      width,
-      height,
-      left: x,
-      right: x + width,
-      top: y,
-      bottom: y + height,
-    },
-    elementPosition: {
-      width,
-      height,
-      left: x,
-      right: x + width,
-      top: y,
-      bottom: y + height,
-    },
+    width,
+    height,
+    left: x,
+    right: x + width,
+    top: y,
+    bottom: y + height,
   };
+  // return {
+  //   parentPosition: {
+  //     width,
+  //     height,
+  //     left: x,
+  //     right: x + width,
+  //     top: y,
+  //     bottom: y + height,
+  //   },
+  //   elementPosition: {
+  //     width,
+  //     height,
+  //     left: x,
+  //     right: x + width,
+  //     top: y,
+  //     bottom: y + height,
+  //   },
+  // };
 }
 
 export function placeElement({
@@ -124,6 +132,7 @@ export function placeElement({
     alignMin,
     alignMax
   );
+  
   if (rightLeft) {
     top = value;
   } else {
