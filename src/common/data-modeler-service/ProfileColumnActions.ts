@@ -2,7 +2,7 @@ import type {DataModelerState, Table, Model, ProfileColumn} from "$lib/types";
 import type {ColumnarItemType} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {ColumnarItemTypeMap} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {DataModelerActions} from "$common/data-modeler-service/DataModelerActions";
-import {TIMESTAMPS} from "$lib/duckdb-data-types";
+import {TIMESTAMPS, CATEGORICALS} from "$lib/duckdb-data-types";
 
 export class ProfileColumnActions extends DataModelerActions {
     public async collectProfileColumns(currentState: DataModelerState,
@@ -16,7 +16,7 @@ export class ProfileColumnActions extends DataModelerActions {
     private async collectColumnInfo(columnarItemId: string, columnarItemType: ColumnarItemType,
                                     item: Model | Table, column: ProfileColumn): Promise<void> {
         const promises = [];
-        if (column.type.includes("VARCHAR")) {
+        if (CATEGORICALS.has(column.type)) {
             promises.push(this.collectTopKAndCardinality(columnarItemId, columnarItemType, item, column));
         } else {
             promises.push(this.collectNumericHistogram(columnarItemId, columnarItemType, item, column));
