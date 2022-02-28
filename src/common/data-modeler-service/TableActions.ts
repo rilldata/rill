@@ -75,35 +75,48 @@ export class TableActions extends DataModelerActions {
             type: EntityType.Table,
             status: EntityStatus.Profiling,
             lastUpdated: Date.now(),
+            profiled: false,
         };
 
-        this.dataModelerStateService.dispatch("setTableStatus",
-            [EntityType.Table, tableId, EntityStatus.Profiling]);
-        await this.dataModelerStateService.dispatch("clearProfileSummary",
-            [EntityType.Table, tableId]);
-        // TODO: should there be an update to lastUpdated here?
+        if (!persistentTable) {
+            console.error("No table found");
+            return;
+        }
 
-        await Promise.all([
-            async () => {
-                newDerivedTable.profile = await this.databaseService.dispatch(
-                    "getProfileColumns", [persistentTable.tableName]);
-                newDerivedTable.profile = newDerivedTable.profile
-                    .filter(row => row.name !== "duckdb_schema" && row.name !== "schema" && row.name !== "root");
-            },
-            async () => newDerivedTable.sizeInBytes =
-                await this.databaseService.dispatch("getDestinationSize", [persistentTable.path]),
-            async () => newDerivedTable.cardinality =
-                await this.databaseService.dispatch("getCardinalityOfTable", [persistentTable.tableName]),
-            async () => newDerivedTable.preview =
-                await this.databaseService.dispatch("getFirstNOfTable", [persistentTable.tableName]),
-        ].map(asyncFunc => asyncFunc()));
+        try {
+            await this.importTableDataByType(persistentTable);
 
-        this.dataModelerStateService.dispatch("updateEntity",
-            [EntityType.Table, StateType.Derived, newDerivedTable])
-        await this.dataModelerService.dispatch("collectProfileColumns",
-            [EntityType.Table, tableId]);
-        this.dataModelerStateService.dispatch("setTableStatus",
-            [EntityType.Table, tableId, EntityStatus.Idle]);
+            this.dataModelerStateService.dispatch("setTableStatus",
+                [EntityType.Table, tableId, EntityStatus.Profiling]);
+            await this.dataModelerStateService.dispatch("clearProfileSummary",
+                [EntityType.Table, tableId]);
+
+            await Promise.all([
+                async () => {
+                    newDerivedTable.profile = await this.databaseService.dispatch(
+                        "getProfileColumns", [persistentTable.tableName]);
+                    newDerivedTable.profile = newDerivedTable.profile
+                        .filter(row => row.name !== "duckdb_schema" && row.name !== "schema" && row.name !== "root");
+                },
+                async () => newDerivedTable.sizeInBytes =
+                    await this.databaseService.dispatch("getDestinationSize", [persistentTable.path]),
+                async () => newDerivedTable.cardinality =
+                    await this.databaseService.dispatch("getCardinalityOfTable", [persistentTable.tableName]),
+                async () => newDerivedTable.preview =
+                    await this.databaseService.dispatch("getFirstNOfTable", [persistentTable.tableName]),
+            ].map(asyncFunc => asyncFunc()));
+
+            this.dataModelerStateService.dispatch("updateEntity",
+                [EntityType.Table, StateType.Derived, newDerivedTable])
+            await this.dataModelerService.dispatch("collectProfileColumns",
+                [EntityType.Table, tableId]);
+            this.dataModelerStateService.dispatch("setTableStatus",
+                [EntityType.Table, tableId, EntityStatus.Idle]);
+            this.dataModelerStateService.dispatch("markAsProfiled",
+                [EntityType.Table, tableId, true]);
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<void> {
@@ -114,11 +127,11 @@ export class TableActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
             [table, isNew]);
 
-        try {
-            await this.importTableDataByType(table);
+        if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
-        } catch (err) {
-            console.error(err);
+        } else {
+            this.dataModelerStateService.dispatch("markAsProfiled",
+                [EntityType.Table, table.id, false]);
         }
     }
 

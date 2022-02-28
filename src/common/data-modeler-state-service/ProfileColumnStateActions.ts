@@ -52,4 +52,10 @@ export class ProfileColumnStateActions extends StateActions {
         // TODO: update this automatically
         entityToUpdate.lastUpdated = Date.now();
     }
+
+    @StateActions.DerivedAction()
+    public markAsProfiled({stateService, draftState}: DataProfileStateActionArg,
+                          entityType: EntityType, entityId: string, profiled: boolean) {
+        stateService.updateEntityField(draftState, entityId, "profiled", profiled);
+    }
 }

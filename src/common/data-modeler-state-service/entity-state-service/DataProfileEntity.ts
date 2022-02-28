@@ -14,6 +14,8 @@ export interface DataProfileEntity extends DerivedEntityRecord {
     sizeInBytes?: number;
     nullCounts?: any;
     preview?: any;
+
+    profiled?: boolean;
 }
 export type DataProfileState = EntityState<DataProfileEntity>;
 export type DataProfileStateActionArg = EntityStateActionArg<DataProfileEntity>;

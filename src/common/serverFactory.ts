@@ -13,7 +13,6 @@ import {SocketServer} from "$common/socket/SocketServer";
 import {DatabaseService} from "$common/database-service/DatabaseService";
 import type {RootConfig} from "$common/config/RootConfig";
 import { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { DataModelerServerStateService } from "../server/DataModelerServerStateService";
 import {
     PersistentTableEntityService
 } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
@@ -27,6 +26,7 @@ import {
     DerivedModelEntityService
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { CommonActions } from "$common/data-modeler-state-service/CommonActions";
+import { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -38,7 +38,7 @@ export function databaseServiceFactory(config: RootConfig) {
 }
 
 export function dataModelerStateServiceFactory(config: RootConfig) {
-    return new DataModelerServerStateService(
+    return new DataModelerStateService(
         [TableStateActions, ModelStateActions,
             ProfileColumnStateActions, CommonActions].map(StateActionsClass => new StateActionsClass()),
         [PersistentTableEntityService, DerivedTableEntityService,
@@ -53,9 +53,9 @@ export function dataModelerServiceFactory(config: RootConfig) {
 
     const notificationService = new SocketNotificationService();
 
-    const tableActions = new TableActions(dataModelerStateService, databaseService);
-    const modelActions = new ModelActions(dataModelerStateService, databaseService);
-    const profileColumnActions = new ProfileColumnActions(dataModelerStateService, databaseService);
+    const tableActions = new TableActions(config, dataModelerStateService, databaseService);
+    const modelActions = new ModelActions(config, dataModelerStateService, databaseService);
+    const profileColumnActions = new ProfileColumnActions(config, dataModelerStateService, databaseService);
     const dataModelerService = new DataModelerService(dataModelerStateService, databaseService, notificationService,
         [tableActions, modelActions, profileColumnActions]);
 
@@ -65,7 +65,7 @@ export function dataModelerServiceFactory(config: RootConfig) {
 export function serverFactory(config: RootConfig) {
     const {dataModelerStateService, dataModelerService, notificationService} = dataModelerServiceFactory(config);
 
-    const socketServer = new SocketServer(dataModelerService, dataModelerStateService, config);
+    const socketServer = new SocketServer(config, dataModelerService, dataModelerStateService);
     notificationService.setSocketServer(socketServer.getSocketServer());
 
     return {dataModelerStateService, dataModelerService, socketServer};

@@ -46,15 +46,11 @@ export class ModelActions extends DataModelerActions {
         }
         this.dataModelerStateService.dispatch("clearModelError", [model.id]);
 
-        try {
-            // create a view of the query for other analysis
-            // re-sanitize query but do not remove casing, in case there is case-sensitive syntax 
-            // in the query e.g. strftime(dt, '%I:%M:%S')
-            await this.databaseService.dispatch("createViewOfQuery",
-                [model.tableName, sanitizeQuery(query, false)]);
+        if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectModelInfo", [modelId]);
-        } catch (err) {
-            console.error(err);
+        } else {
+            this.dataModelerStateService.dispatch("markAsProfiled",
+                [EntityType.Model, modelId, false]);
         }
     }
 
@@ -66,6 +62,17 @@ export class ModelActions extends DataModelerActions {
         const model = stateService.getById(modelId);
         if (!model) {
             console.error(`No model found for ${modelId}`);
+            return;
+        }
+
+        try {
+            // create a view of the query for other analysis
+            // re-sanitize query but do not remove casing, in case there is case-sensitive syntax
+            // in the query e.g. strftime(dt, '%I:%M:%S')
+            await this.databaseService.dispatch("createViewOfQuery",
+                [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]);
+        } catch (err) {
+            console.error(err);
             return;
         }
 
@@ -105,6 +112,8 @@ export class ModelActions extends DataModelerActions {
                 await this.databaseService.dispatch("getDestinationSize", [persistentModel.tableName])]),
         ].map(asyncFunc => asyncFunc()));
 
+        this.dataModelerStateService.dispatch("markAsProfiled",
+            [EntityType.Model, modelId, true]);
         this.dataModelerStateService.dispatch("setTableStatus",
             [EntityType.Model, modelId, EntityStatus.Idle]);
     }

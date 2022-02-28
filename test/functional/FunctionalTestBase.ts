@@ -48,15 +48,16 @@ export class FunctionalTestBase extends TestBase {
         this.clientDataModelerStateService = dataModelerStateServiceClientFactory()
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
-        const serverInstances = dataModelerServiceFactory(configOverride ?? new RootConfig({
+        const config = configOverride ?? new RootConfig({
             database: new DatabaseConfig({ databaseName: ":memory:" }),
             state: new StateConfig({ autoSync: false }),
             projectFolder: "temp/test",
-        }));
+        });
+        const serverInstances = dataModelerServiceFactory(config);
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
-        this.socketServer = new SocketServerMock(this.serverDataModelerService, this.serverDataModelerStateService,
-            this.clientDataModelerService as DataModelerSocketServiceMock);
+        this.socketServer = new SocketServerMock(config, this.serverDataModelerService,
+            this.serverDataModelerStateService, this.clientDataModelerService as DataModelerSocketServiceMock);
         (this.clientDataModelerService as DataModelerSocketServiceMock).socketServerMock = this.socketServer;
 
         await this.clientDataModelerService.init();
@@ -66,6 +67,7 @@ export class FunctionalTestBase extends TestBase {
     @TestBase.AfterSuite()
     public async teardown(): Promise<void> {
         await this.serverDataModelerService?.destroy();
+        await this.socketServer?.destroy();
     }
 
     protected async loadTestTables(): Promise<void> {

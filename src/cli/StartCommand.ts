@@ -13,7 +13,7 @@ export class StartCommand extends DataModelerCliCommand {
     }
 
     protected sendActions(): Promise<void> {
-        return new ExpressServer(this.dataModelerService, this.dataModelerStateService,
-            this.notificationService, this.config).init();
+        return new ExpressServer(this.config, this.dataModelerService, this.dataModelerStateService,
+            this.notificationService).init();
     }
 }

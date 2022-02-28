@@ -15,6 +15,9 @@ import {
     TwoTableJoinQuery,
     TwoTableJoinQueryColumnsTestData
 } from "../data/ModelQuery.data";
+import {
+    DataModelerStateSyncService
+} from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 
 const SYNC_TEST_FOLDER = "temp/sync-test";
 
@@ -22,6 +25,7 @@ const SYNC_TEST_FOLDER = "temp/sync-test";
 export class StateSyncServiceSpec extends FunctionalTestBase {
     protected secondDataModelerStateService: DataModelerStateService;
     protected secondDataModelerService: DataModelerService;
+    protected secondDataModelerSyncService: DataModelerStateSyncService;
 
     public async setup(): Promise<void> {
         execSync(`rm -rf ${SYNC_TEST_FOLDER}/*`);
@@ -29,19 +33,25 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
         const config = new RootConfig({
             database: new DatabaseConfig({ databaseName: ":memory:" }),
             state: new StateConfig({ autoSync: true, syncInterval: 50 }),
-            projectFolder: SYNC_TEST_FOLDER,
+            projectFolder: SYNC_TEST_FOLDER, profileWithUpdate: false,
         });
         await super.setup(config);
 
         const secondServerInstances = dataModelerServiceFactory(config);
         this.secondDataModelerStateService = secondServerInstances.dataModelerStateService;
         this.secondDataModelerService = secondServerInstances.dataModelerService;
+        this.secondDataModelerSyncService = new DataModelerStateSyncService(config,
+            this.secondDataModelerStateService.entityStateServices,
+            this.secondDataModelerService, this.secondDataModelerStateService);
         await this.secondDataModelerService.init();
+        await this.secondDataModelerSyncService.init();
 
         await this.secondDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
         await this.secondDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
+        await asyncWait(100);
+        console.log("starting");
     }
 
     @FunctionalTestBase.Test()
@@ -97,6 +107,7 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
     @TestBase.AfterSuite()
     public async teardown(): Promise<void> {
         await super.teardown();
+        await this.secondDataModelerSyncService?.destroy();
         await this.secondDataModelerService?.destroy();
     }
 }

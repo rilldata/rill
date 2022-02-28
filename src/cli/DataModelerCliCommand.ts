@@ -7,6 +7,7 @@ import type { Command } from "commander";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import { StateConfig } from "$common/config/StateConfig";
 import { ServerConfig } from "$common/config/ServerConfig";
+import { execSync } from "node:child_process";
 
 const SAVED_STATE_FILE = "saved-state.json";
 const DATABASE_NAME = "stage.db";
@@ -25,9 +26,10 @@ export abstract class DataModelerCliCommand {
             database: new DatabaseConfig({ databaseName: `${this.projectPath}/${DATABASE_NAME}` }),
             state: new StateConfig({ savedStateFile: `${this.projectPath}/${SAVED_STATE_FILE}` }),
             server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
-            projectFolder: this.projectPath,
+            projectFolder: this.projectPath, profileWithUpdate: false,
         });
         const {dataModelerService, dataModelerStateService, notificationService} = dataModelerServiceFactory(this.config);
+        execSync(`mkdir -p ${this.projectPath}`);
         await dataModelerService.init();
 
         this.dataModelerService = dataModelerService;

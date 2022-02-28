@@ -13,6 +13,10 @@ export class ProfileColumnActions extends DataModelerActions {
         const persistentEntity = this.dataModelerStateService
             .getEntityById(entityType, StateType.Persistent, entityId);
         const entity = stateService.getById(entityId);
+        if (!entity) {
+            console.error(`Entity not found. entityType=${entityType} entityId=${entityId}`);
+            return;
+        }
         await Promise.all(entity.profile.map(column =>
             this.collectColumnInfo(entityType, entityId, persistentEntity.tableName, column)));
     }

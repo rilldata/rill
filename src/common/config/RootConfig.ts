@@ -15,4 +15,7 @@ export class RootConfig extends Config<RootConfig> {
 
     @Config.ConfigField(".")
     public projectFolder: string;
+
+    @Config.ConfigField(true)
+    public profileWithUpdate: boolean;
 }

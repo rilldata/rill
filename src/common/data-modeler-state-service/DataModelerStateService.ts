@@ -13,7 +13,7 @@ import {getActionMethods} from "$common/ServiceBase";
 import type {PickActionFunctions} from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
 import type {
-    EntityRecord, EntityState,
+    EntityState,
     EntityStateActionArg,
     EntityStateService,
     EntityType,
@@ -24,6 +24,7 @@ import type {
     EntityStateServicesMapType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import type { CommonActions } from "$common/data-modeler-state-service/CommonActions";
+import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 
 enablePatches();
 
@@ -135,8 +136,6 @@ export class DataModelerStateService {
             console.error(`No state types defined for ${action}`);
             return;
         }
-
-        // console.log("DataModelerStateService", stateTypes, action);
 
         const stateService = this.entityStateServicesMap
             [stateTypes[0] ?? args[0] as any]?.[stateTypes[1] ?? args[1] as any];

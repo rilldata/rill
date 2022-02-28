@@ -8,6 +8,7 @@ import {getActionMethods} from "$common/ServiceBase";
 import type {DatabaseService} from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
 import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { mkdirSync } from "fs";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &
@@ -55,7 +56,6 @@ export class DataModelerService {
     }
 
     public async init(): Promise<void> {
-        await this.dataModelerStateService.init();
         await this.databaseService?.init();
     }
 
@@ -78,8 +78,6 @@ export class DataModelerService {
             console.error(`No state types defined for ${action}`);
             return;
         }
-
-        // console.log("DataModelerService", stateTypes, action);
 
         const stateService = this.dataModelerStateService.getEntityStateService(
             stateTypes[0] ?? args[0] as any, stateTypes[1] ?? args[1] as any);
