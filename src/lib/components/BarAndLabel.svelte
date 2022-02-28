@@ -2,7 +2,7 @@
 import { tweened } from "svelte/motion";
 import { cubicOut as easing } from "svelte/easing";
 export let value = 0;
-export let color = 'hsl(280, 50%, 90%)';
+export let color = 'hsla(280, 50%, 90%)';
 export let bgColor:string = 'bg-gray-50';
 export let title:string;
 
@@ -11,7 +11,10 @@ $: valueTween.set(value);
 
 </script>
 
-<div {title} class="text-right {bgColor} grid items-center" style="position: relative; width: 100%;">
+<div {title} class="
+    text-right grid items-center relative w-full"
+    style:background-color="hsla(217,5%, 90%, .25)"
+>
     <div class='pl-2 pr-2' style="position: relative;"><slot /></div> 
     <div class='number-bar' style="--width: {$valueTween}; --color: {color}" />
 </div>
@@ -27,10 +30,7 @@ $: valueTween.set(value);
         top: 0;
         height: 1rem;
         background-color: var(--color);
-        /* TEST: 
-            mix-blend-mode multiply enables underlying text to be seen, and
-            pointer-events none enables the user to highlight the text as if it were on top.
-         */
+        
         mix-blend-mode: multiply;
         pointer-events: none;
     }

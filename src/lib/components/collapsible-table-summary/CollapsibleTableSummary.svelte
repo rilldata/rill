@@ -266,23 +266,6 @@ let titleElementHovered = false;
                         bind:this={colSizer}>
                         {#if column.summary}
                             <DataTypeIcon type={column.type} />
-                        <!-- <div
-                        in:fade 
-                        title={typeToSymbol(column.type).text}
-                        class:bg-sky-100={categoricals.has(column.type)}
-                        class:bg-red-100={!categoricals.has(column.type)}
-                        class:bg-teal-200={column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP'}
-                        class:text-sky-800={categoricals.has(column.type)}
-                        class:text-red-800={!categoricals.has(column.type)}
-                        class:text-teal-800={column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP'}
-                        class="
-                            text-ellipsis overflow-hidden whitespace-nowrap 
-                            grid place-items-center rounded" 
-                            style="font-size:8px; width: 16px; height: 16px;">
-                            <div style="transform: translateY(.5px);">
-                                {typeToSymbol(column.type).symbol}                           
-                            </div> 
-                        </div> -->
                         {:else}
                             <div in:fade class="grid place-items-center" style="width: 16px; height: 16px;">
                                 <Spinner size=".45rem" bg="hsl(240, 1%, 70%)" />

@@ -7,7 +7,7 @@
     export let displaySize:string = "md";
     export let totalRows:number;
     export let topK:any; // FIXME
-
+    
     $: smallestPercentage = Math.min(...topK.slice(0,5).map(entry => entry.count / totalRows))
     $: formatPercentage = smallestPercentage < 0.001 ? 
         format('.2%') : 
@@ -23,7 +23,7 @@
         justify-content: stretch; 
         grid-column-gap: 1rem;"
     >
-        {#each topK.slice(0, 5) as { value, count}}
+        {#each topK.slice(0, 10) as { value, count}}
                 <div
                     class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
                 >
@@ -37,22 +37,3 @@
         {/each}
     </div>
 </div>
-<!-- 
-<div style="w-full">
-    <table>
-        {#each topK.slice(0, 5) as { value, count}}
-            <tr>
-                <td
-                    class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
-                >
-                    {value} {value === null ? '∅' : ''}
-            </td>
-            <td>
-                <BarAndLabel value={count / totalRows}>
-                    {formatCount(count)} ({formatPercentage(count / totalRows)})
-                </BarAndLabel>
-            </td>
-            </tr>
-        {/each}
-    </table>
-</div> -->
