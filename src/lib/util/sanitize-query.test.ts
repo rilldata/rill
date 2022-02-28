@@ -17,4 +17,9 @@ SELECT * from         whateveR;
         `, false)
         expect(output).toBe('SELECT * from whateveR')
     })
+    it("removes comments not ending in a newline", () => {
+        const output = sanitizeQuery(`
+SELECT * from         whateveR; -- inline comment`, false)
+        expect(output).toBe('SELECT * from whateveR')
+    })
 })
