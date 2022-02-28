@@ -18,6 +18,17 @@ export interface ColumnarItem extends Item {
     profile?: ProfileColumn[]; // TODO: create Profile interface
 }
 
+export interface QueryElementReference {
+    name:string;
+    start:number;
+    end:number
+}
+
+export interface SourceTable {
+    name:string;
+    tables: QueryElementReference[]
+}
+
 export interface Model extends ColumnarItem {
     /**  */
     query: string;
@@ -33,7 +44,7 @@ export interface Model extends ColumnarItem {
      * */
     sizeInBytes?: number; // TODO: make sure this is just size
     error?: string;
-    sources?: string[];
+    sources?: SourceTable[];
     preview?: any;
     destinationProfile?: any;
 }

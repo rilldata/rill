@@ -9,6 +9,8 @@ import { slide } from "svelte/transition";
 import { Table, TableRow, TableHeader, TableCell } from "$lib/components/table/";
 import { FormattedDataType, DataTypeIcon } from "$lib/components/data-types/";
 import Pin from "$lib/components/icons/Pin.svelte";
+import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
 import { standardTimestampFormat } from "$lib/util/formatters"
 
@@ -71,6 +73,7 @@ function togglePin(name, type, selectedCols) {
                     <div class=" pr-5">
                         {name}
                     </div>
+                    <Tooltip location="top" alignment="middle" distance={16}>
                     <button 
                         class:text-gray-900={thisColumnIsPinned} 
                         class:text-gray-400={!thisColumnIsPinned}
@@ -79,6 +82,10 @@ function togglePin(name, type, selectedCols) {
                         >
                         <Pin size=".9em" />
                     </button>
+                    <TooltipContent slot="tooltip-content">
+                        {thisColumnIsPinned ? 'unpin this column from the right side of the table' : 'pin this column to the right side of the table'}
+                    </TooltipContent>
+                    </Tooltip>
                 </div>
                  </TableHeader>
             {/each}

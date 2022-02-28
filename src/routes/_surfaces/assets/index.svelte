@@ -52,7 +52,9 @@ onMount(() => {
         </h1>
       </header>
 
-        <div 
+      <div style:height="80px"></div>
+
+        <!-- <div 
           class='grid grid-flow-col justify-items-center justify-start pb-6 pt-6 gap-x-5 pl-3'
         >
           <button on:click={() => { view = 'assets' }}>
@@ -61,7 +63,7 @@ onMount(() => {
           <button disabled>
             <h3 class="font-normal text-gray-400 cursor-not-allowed" title="coming soon!">Pipelines</h3>
           </button>
-        </div>
+        </div> -->
         <!-- <hr /> -->
 
           <div class='pl-3 pb-3 pt-3'>
@@ -94,7 +96,7 @@ onMount(() => {
             <CollapsibleSectionTitle bind:active={showModels}>
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
-              <ContextButton on:click={() => {
+              <ContextButton tooltipText="create a new model" on:click={() => {
                 dataModelerService.dispatch("addModel", [{}]);
                 if (!showModels) {
                   showModels = true;
@@ -111,6 +113,9 @@ onMount(() => {
                 <CollapsibleTableSummary
                   on:select={() => {
                     dataModelerService.dispatch("setActiveAsset", [query.id, 'model']);
+                  }}
+                  on:delete={() => {
+                    dataModelerService.dispatch('deleteModel', [query.id]);
                   }}
                   icon={ModelIcon}
                   name={query.name}
@@ -135,7 +140,7 @@ onMount(() => {
 }
 
 .assets {
-  width: var(--left-sidebar-width, 300px);
+  width: var(--left-sidebar-width, 400px);
   font-size: 12px;
 }
 </style>

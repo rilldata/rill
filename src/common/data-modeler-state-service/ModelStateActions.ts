@@ -1,8 +1,9 @@
 import {StateActions} from "./StateActions";
-import type {ProfileColumn} from "$lib/types";
+import { extractSourceTables } from "$lib/util/model-structure";
 import type {
     PersistentModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { ProfileColumn, SourceTable } from "$lib/types";
 import type {
     DerivedModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
@@ -55,6 +56,13 @@ export class ModelStateActions extends StateActions {
     public updateModelProfileColumns({stateService, draftState}: DerivedModelStateActionArg,
                                      modelId: string, profileColumns: Array<ProfileColumn>): void {
         stateService.updateEntityField(draftState, modelId, "profile", profileColumns);
+    }
+
+    @StateActions.DerivedModelAction()
+    public getModelSourceTables({stateService, draftState}: DerivedModelStateActionArg,
+                                modelId: string, query: string): void {
+        const sourceTables = extractSourceTables(query) as SourceTable[];
+        stateService.updateEntityField(draftState, modelId, "sources", sourceTables);
     }
 
     @StateActions.DerivedModelAction()

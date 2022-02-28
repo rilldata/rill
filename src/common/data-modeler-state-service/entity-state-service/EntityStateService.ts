@@ -47,7 +47,7 @@ export type EntityStateActionArg<Entity extends EntityRecord, Service = EntitySt
  * Has CRUD methods. Can be overridden later on to fetch from a DB or an API.
  */
 export abstract class EntityStateService<Entity extends EntityRecord> {
-    private store: Writable<EntityState<Entity>>;
+    public store: Writable<EntityState<Entity>>;
 
     public readonly entityType: EntityType;
     public readonly stateType: StateType;

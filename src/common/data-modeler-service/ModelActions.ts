@@ -87,6 +87,10 @@ export class ModelActions extends DataModelerActions {
         // clear any model error if we get this far.
         this.dataModelerStateService.dispatch("clearModelError", [modelId]);
 
+        // retrieve the source table references from the query directly.
+        this.dataModelerStateService.dispatch("getModelSourceTables",
+            [model.id, persistentModel.query]);
+
         this.dataModelerStateService.dispatch("updateModelProfileColumns",
             [modelId, profileColumns]);
         await Promise.all([

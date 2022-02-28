@@ -14,11 +14,14 @@ import Logo from "$lib/components/Logo.svelte";
 import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
 import notification from "$lib/components/notifications/";
 
-let store;
+import { createQueryHighlightStore } from "$lib/query-highlight-store";
 
+let store;
+let queryHighlight = createQueryHighlightStore();
 if (browser) {
   store = createStore();
   setContext('rill:app:store', store);
+  setContext('rill:app:query-highlight', queryHighlight);
   notification.listenToSocket(store.socket);
 }
 
@@ -37,57 +40,8 @@ $: debounceRunstate($store?.status || 'disconnected');
 
 </script>
 
-<!-- <header class="header pr-3">
-  <h1><Logo /></h1>
-  <div class='grid grid-flow-col'>
-    <div id="controls" class="grid grid-flow-col">
-    </div>
-  </div>
-    <div></div>
-    <div class="self-center">
-      {#if dbRunState === 'running'}
-      <div transition:fade={{ duration: 300 }}>
-        <Spinner />
-      </div>
-    {/if}
-    </div>
-
-
-</header> -->
 <div class='body'>
   <slot />
   </div>
 
 <NotificationCenter />
-
-
-<style>
-
-  
-  /* header {
-    box-sizing: border-box;
-    margin:0;
-    background: linear-gradient(to right, hsl(300, 30%, 14%), hsl(300, 60%, 18%));
-    color: white;
-    height: var(--header-height);
-    display: grid;
-    justify-items: left;
-    justify-content: stretch;
-    align-items: stretch;
-    align-content: stretch;
-    grid-template-columns: max-content max-content auto max-content;
-  }
-  
-  header h1 {
-    font-size:13px;
-    font-weight: normal;
-    margin:0;
-    padding:0;
-    display: grid;
-    place-items: center;
-    padding: 0px 12px;
-    padding-left: 2px;
-    margin-left: 1rem;
-  } */
-  
-  </style>

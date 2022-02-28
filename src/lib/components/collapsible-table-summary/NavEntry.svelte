@@ -10,10 +10,13 @@ const dispatch = createEventDispatcher();
 export let expanded = true;
 export let expandable = true;
 export let selected = false;
+export let hovered = false;
 export let icon:SvelteComponent;
 </script>
 
 <div
+    on:mouseenter={() => { hovered = true; }}
+    on:mouseleave={() => { hovered = false; }}
     style:height="24px"
     style:grid-template-columns="[left-control] max-content [body] auto"
     class="
@@ -33,6 +36,8 @@ export let icon:SvelteComponent;
     {/if}
     <button 
         on:click={() => { dispatch('select-body')}}
+        on:focus={() => { hovered = true; }}
+        on:blur={() => { hovered = false; }}
         style:grid-column="body"
         style:grid-template-columns="[icon] max-content [text] 1fr [contextual-information] max-content"
         class="

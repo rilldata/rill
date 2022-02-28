@@ -1,8 +1,10 @@
-import type { ProfileColumn } from "$lib/types";
-import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
-import type { DataProfileStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+    DataProfileStateActionArg
+} from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
+import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
+import { CATEGORICALS, TIMESTAMPS } from "$lib/duckdb-data-types";
+import type { ProfileColumn } from "$lib/types";
 
 export class ProfileColumnActions extends DataModelerActions {
     @DataModelerActions.DerivedAction()
@@ -18,7 +20,7 @@ export class ProfileColumnActions extends DataModelerActions {
     private async collectColumnInfo(entityType: EntityType, entityId: string,
                                     tableName: string, column: ProfileColumn): Promise<void> {
         const promises = [];
-        if (column.type.includes("VARCHAR")) {
+        if (CATEGORICALS.has(column.type)) {
             promises.push(this.collectTopKAndCardinality(entityType, entityId, tableName, column));
         } else {
             promises.push(this.collectNumericHistogram(entityType, entityId, tableName, column));

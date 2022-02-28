@@ -62,7 +62,7 @@ export class DataModelerStateService {
     private patchesSubscribers: Array<PatchesSubscriber> = [];
 
     public constructor(private readonly stateActions: Array<StateActions>,
-                       protected readonly entityStateServices: Array<EntityStateService<any>>,
+                       public readonly entityStateServices: Array<EntityStateService<any>>,
                        protected readonly config?: RootConfig) {
         stateActions.forEach((actions) => {
             getActionMethods(actions).forEach(action => {

@@ -8,14 +8,13 @@ import type { DataModelerStateService } from "$common/data-modeler-state-service
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import { asyncWait } from "$common/utils/waitUtils";
 import { TestBase } from "@adityahegde/typescript-test-utils";
-import { AdBidsColumnsTestData, UserColumnsTestData } from "../data/DataLoader.data";
+import { UserColumnsTestData } from "../data/DataLoader.data";
 import {
     SingleTableQuery,
     SingleTableQueryColumnsTestData,
     TwoTableJoinQuery,
     TwoTableJoinQueryColumnsTestData
 } from "../data/ModelQuery.data";
-import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 const SYNC_TEST_FOLDER = "temp/sync-test";
 

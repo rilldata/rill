@@ -3,14 +3,13 @@ import { getContext } from "svelte";
 import { slide } from "svelte/transition";
 import type { AppStore } from '$lib/app-store';
 import { cubicOut as easing } from 'svelte/easing';
-import { flip } from "svelte/animate";
 import Editor from "$lib/components/Editor.svelte";
-import DropZone from "$lib/components/DropZone.svelte";
 import {dataModelerService} from "$lib/app-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 
 const store = getContext("rill:app:store") as AppStore;
+const queryHighlight = getContext("rill:app:query-highlight");
 
 let error;
 
@@ -27,16 +26,18 @@ function getErrorLineNumber(errorString) {
 };
 
 $: currentModel = $store?.activeAsset ? $store.models.find(query => query.id === $store.activeAsset.id) : undefined;
+
 </script>
 
 <div class="editor-pane">
   <div>
   {#if $store && $store.models && currentModel}
-    <div class="input-body p-4 overflow-auto">
+    <div class="input-body p-6 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}
           name={currentModel.name}
+          selections={$queryHighlight}
           errorLineNumber={ currentModel.id === $store.activeAsset.id ? errorLineNumber : undefined }
           on:down={() => { dataModelerService.dispatch('moveModelDown', [currentModel.id]); }}
           on:up={() => { dataModelerService.dispatch('moveModelUp', [currentModel.id]); }}
