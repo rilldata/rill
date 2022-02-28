@@ -141,7 +141,7 @@ export class TableActions extends DataModelerActions {
                     .filter(row => row.name !== "duckdb_schema" && row.name !== "schema" && row.name !== "root");
             },
             async () => newTable.sizeInBytes =
-                await this.databaseService.dispatch("getDestinationSize", [table.path]),
+                await this.databaseService.dispatch("getDestinationSize", [table, newTable.profile]),
             async () => newTable.cardinality =
                 await this.databaseService.dispatch("getCardinalityOfTable", [table.tableName]),
             async () => newTable.head =

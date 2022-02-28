@@ -50,8 +50,6 @@ export class ModelActions extends DataModelerActions {
     public async exportToParquet(currentState: DataModelerState, modelId: string, exportFile: string): Promise<void> {
         const model = currentState.models.find(findModel => findModel.id === modelId);
         const exportPath = await this.databaseService.dispatch("exportToParquet", [model.sanitizedQuery, exportFile]);
-        await this.dataModelerStateService.dispatch("updateModelDestinationSize",
-          [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
         this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"})
     }
 
@@ -111,7 +109,7 @@ export class ModelActions extends DataModelerActions {
             async () => this.dataModelerStateService.dispatch("updateModelCardinality", [model.id,
                 await this.databaseService.dispatch("getCardinalityOfTable", [model.tableName])]),
             async () => this.dataModelerStateService.dispatch("updateModelDestinationSize", [model.id,
-                await this.databaseService.dispatch("getDestinationSize", [model.tableName])]),
+                await this.databaseService.dispatch("getDestinationSize", [model, profileColumns])]),
         ].map(asyncFunc => asyncFunc()));
     }
 }

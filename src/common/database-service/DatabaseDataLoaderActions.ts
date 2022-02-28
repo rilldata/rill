@@ -1,6 +1,6 @@
-import {DatabaseActions} from "./DatabaseActions";
+import { DatabaseActions } from "./DatabaseActions";
 import { existsSync, mkdirSync } from "fs";
-import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
+import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 
 /**
  * Abstraction around loading data into duck db.
@@ -16,16 +16,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
                                tableName: string, delimiter: string): Promise<void> {
         await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
         return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM ` +
-            `read_csv_auto('${csvFile}', header=true ${delimiter ? `,delim='${delimiter}'`: ""});`);
-    }
-
-    public async getDestinationSize(metadata: DatabaseMetadata, path: string): Promise<number> {
-        // Being worked on to handle this in a better way.
-        // if (existsSync(path)) {
-        //     const size = await this.databaseClient.all(`SELECT total_compressed_size from parquet_metadata('${path}')`) as any[];
-        //     return size.reduce((acc: number, v: Record<string, any>) => acc + v.total_compressed_size, 0);
-        // }
-        return undefined;
+            `read_csv_auto('${csvFile}', header=true ${delimiter ? `,delim='${delimiter}'` : ""});`);
     }
 
     public async exportToParquet(metadata: DatabaseMetadata, query: string, exportFile: string): Promise<any> {
