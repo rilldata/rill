@@ -36,7 +36,6 @@ import { onClickOutside } from "$lib/util/on-click-outside";
 import { horizontalSlide } from "$lib/transitions";
 
 import { intervalToTimestring, formatCardinality } from "$lib/util/formatters";
-import Model from "../icons/Model.svelte";
 
 export let icon:SvelteComponent;
 export let name:string;
