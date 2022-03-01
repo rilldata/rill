@@ -4,22 +4,9 @@ import { format } from "d3-format";
 export const config = {
     // width of summary value
     // width of null %
-    nullPercentageWidth: "68px",
-    summaryVizWidth: "108px",
-    timestamp: {
-        histogramColor: 'black',
-        nullPercentageColor: 'black',
-    },
-    numeric: {
-        histogramColor: 'red',
-        nullPercentageColor: 'red',
-    },
-    categorical: {
-        histogramColor: 'blue',
-        nullPercentageColor: 'blue',
-        cardinalityColor: 'blue',
-        topKColor: 'blue'
-    },
+    nullPercentageWidth: 68,
+    summaryVizWidth: {medium: 98, small:  60},
+    exampleWidth: { medium: 204, small: 132}
 }
 
 export const percentage = format('.1%');

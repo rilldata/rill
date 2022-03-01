@@ -19,5 +19,5 @@ export let baselineStrokeColor:string;
 </script>
 
 <HistogramBase 
-    {data} {width} {height} top={4} bottom={4} left={0} right={0} buffer={0} {fillColor} {baselineStrokeColor} separate={false}
+    {data} {width} {height} top={4} bottom={5.5} left={0} right={0} buffer={0} {fillColor} {baselineStrokeColor} separate={false}
 />

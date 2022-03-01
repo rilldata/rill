@@ -34,7 +34,7 @@ export function intervalToTimestring(interval:Interval) {
     return `${months}${days}${time}`;
 }
 
-export function formatCardinality(n:number) {
+export function formatCompactInteger(n:number) {
     let fmt:Function;
     if (n <= 1000) {
         fmt = formatInteger;

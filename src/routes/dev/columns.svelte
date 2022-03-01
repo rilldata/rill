@@ -1,6 +1,7 @@
 <script>
 import { getContext, createEventDispatcher } from "svelte";
-import CategoricalEntry from "$lib/components/collapsible-table-summary/CategoricalEntry.svelte";
+import { slide } from "svelte/transition";
+import ColumnProfile from "$lib/components/collapsible-table-summary/ColumnProfile.svelte";
 import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
 import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte"
 import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
@@ -26,7 +27,7 @@ $: categoricals = $store?.tables
     ?.map(table => 
         table.profile
             //.filter(column => CATEGORICALS.has(column.type))
-            .map(column => ({...column, cardinality: table.cardinality }) ) )?.flat()
+            .map(column => ({...column, cardinality: table.cardinality, example: table.head[0] }) ) )?.flat()
 let sortedCategoricals = categoricals;
 $: sortedCategoricals = sortMethod !== undefined && categoricals !== undefined ? categoricals.sort(sortMethod) : undefined;
 
@@ -68,7 +69,6 @@ $: hideNullPercentage = width < 400;
     </span>
         <svelte:fragment slot='contextual-information'>
                 <div class='italic text-gray-600'>
-
                         <span class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap ">
                             {#if titleElementHovered || emphasizeTitle}
                             <!-- <span ><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span> -->
@@ -84,28 +84,32 @@ $: hideNullPercentage = width < 400;
         </svelte:fragment>
   </NavEntry>
 
+  {#if show}
+    <div  transition:slide|local={{duration: 120 }}>
+        <div class="pt-2 pb-2 pl-8">
+            <SummaryViewSelector bind:sortMethod bind:previewView />
+        </div>
+        {#if sortedCategoricals}
+            {#each sortedCategoricals as column, i (column.name + column.cardinality )}
+                <ColumnProfile
+                    bind:this={columns[i]}
+                    example={column.example[column.name]}
+                    containerWidth={width}
 
-<SummaryViewSelector bind:sortMethod bind:previewView />
+                    {hideRight}
+                    {hideNullPercentage}
+                    hideSummaryPreview={false}
 
-{#if sortedCategoricals}
-    {#each sortedCategoricals as column, i (column.name + column.cardinality )}
-        <CategoricalEntry
-            bind:this={columns[i]}
-            
-            containerWidth={width}
+                    view={previewView}
 
-            {hideRight}
-            {hideNullPercentage}
-            hideSummaryPreview={false}
-
-            view={previewView}
-
-            name={column.name}
-            type={column.type}
-            summary={column.summary}
-            totalRows={column.cardinality}
-            nullCount={column.nullCount}
-        />
-    {/each}
+                    name={column.name}
+                    type={column.type}
+                    summary={column.summary}
+                    totalRows={column.cardinality}
+                    nullCount={column.nullCount}
+                />
+            {/each}
+        {/if}
+    </div>
 {/if}
 </div>

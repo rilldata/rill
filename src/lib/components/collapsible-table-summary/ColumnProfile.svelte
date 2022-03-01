@@ -4,10 +4,11 @@ import ColumnEntry from "./ColumnEntry.svelte";
 import {DataTypeIcon} from "$lib/components/data-types";
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
+import FormattedDataType from "$lib/components/data-types/FormattedDataType.svelte"
 import { config } from "./utils";
 
 import { percentage } from "./utils"
-import { formatInteger } from "$lib/util/formatters"
+import { formatInteger, formatCompactInteger, standardTimestampFormat } from "$lib/util/formatters"
 import { CATEGORICALS, NUMERICS, TIMESTAMPS, DATA_TYPE_COLORS } from "$lib/duckdb-data-types";
 
 import Histogram from "$lib/components/viz/SmallHistogram.svelte";
@@ -25,19 +26,20 @@ export let containerWidth:number;
 
 export let indentLevel = 1;
 
-$:tailwindPad = indentLevel * 8;
-
 export let hideRight = false;
 // hide the null percentage number
 export let hideNullPercentage = false;
-export let hideSummaryPreview = false;
+export let compactBreakpoint = 350;
+export let smallSummaryGraphSize = 'medium';
 
 let active = false;
 
 export function close() {
     active = false;
 }
-
+$: exampleWidth = containerWidth > 300 ? config.exampleWidth.medium : config.exampleWidth.small;
+$: summaryWidthSize = config.summaryVizWidth[containerWidth < compactBreakpoint ? 'small' : 'medium'];
+$: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : formatCompactInteger;
 </script>
 
 <ColumnEntry
@@ -58,25 +60,23 @@ export function close() {
     
     <svelte:fragment slot="right">
 
-    {#if view==="summaries"}
-        <div class="flex gap-2">
-
-            <div  style:width={config.summaryVizWidth}>
+        <div class="flex gap-2" class:hidden={view !== 'summaries'}>
+            <div  style:width="{summaryWidthSize}px">
 
                 {#if CATEGORICALS.has(type)}
                     <BarAndLabel 
                     color={DATA_TYPE_COLORS['VARCHAR'].bgClass}
                     value={summary.cardinality / totalRows}>
-                        |{formatInteger(summary.cardinality)}|
+                        |{cardinalityFormatter(summary.cardinality)}|
                     </BarAndLabel>
                 
                 {:else if NUMERICS.has(type) && summary?.histogram}
-                    <Histogram data={summary.histogram} width={98} height={19} 
+                    <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
                         fillColor={DATA_TYPE_COLORS['DOUBLE'].vizFillClass}
                         baselineStrokeColor={DATA_TYPE_COLORS['DOUBLE'].vizStrokeClass}    
                     />
                 {:else if TIMESTAMPS.has(type) && summary?.histogram}
-                    <Histogram data={summary.histogram} width={98} height={19} 
+                    <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
                         fillColor={DATA_TYPE_COLORS['TIMESTAMP'].vizFillClass}
                         baselineStrokeColor={DATA_TYPE_COLORS['TIMESTAMP'].vizStrokeClass}    
                         />
@@ -84,7 +84,7 @@ export function close() {
 
             </div>
 
-            <div style:width={config.nullPercentageWidth} class:hidden={hideNullPercentage}>
+            <div style:width="{config.nullPercentageWidth}px" class:hidden={hideNullPercentage}>
 
                 {#if totalRows !== undefined && nullCount !== undefined}
                     <BarAndLabel
@@ -99,7 +99,15 @@ export function close() {
             </div>
 
         </div>
-    {/if}
+        <div 
+        class:hidden={view !== 'example'}
+        class="
+            pl-8 text-ellipsis overflow-hidden whitespace-nowrap text-right" style:max-width="{exampleWidth}px"
+        >
+            <FormattedDataType {type} isNull={example === null}>
+                {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example}
+                </FormattedDataType>
+        </div>
     </svelte:fragment>
 
     <svelte:fragment slot="context-button">
@@ -116,8 +124,9 @@ export function close() {
 
             {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram}
             <div class="pl-12">
+                <!-- FIXME: we have to remove a bit of pad from the right side to make this work -->
                 <NumericHistogram
-                    width={containerWidth - 32 - 20}
+                    width={containerWidth - 32 - 20 - 24}
                     height={65} 
                     data={summary.histogram}
                     min={summary.statistics.min}
@@ -131,7 +140,7 @@ export function close() {
             {:else if TIMESTAMPS.has(type)}
                 <div class="pl-14">
                     <TimestampHistogram
-                        width={containerWidth - 32 - 20}
+                        width={containerWidth - 32 - 20 - 24}
                         data={summary.histogram}
                         interval={summary.interval}
                     />

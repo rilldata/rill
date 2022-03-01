@@ -13,6 +13,10 @@ import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
 import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
 
+import ColumnProfile from "./ColumnProfile.svelte";
+
+import Spacer from "$lib/components/icons/Spacer.svelte";
+
 import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
 import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 
@@ -23,19 +27,11 @@ import Spinner from "$lib/components/Spinner.svelte";
 import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
 
 import { dropStore } from '$lib/drop-store';
-import Histogram from "$lib/components/viz/SmallHistogram.svelte";
-import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
-import {DataTypeIcon} from "$lib/components/data-types";
-import { CATEGORICALS } from "$lib/duckdb-data-types"
 
 import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
 import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/collapsible-table-summary/sort-utils"
 
 import { onClickOutside } from "$lib/util/on-click-outside";
-
-import { horizontalSlide } from "$lib/transitions";
-
-import { intervalToTimestring, formatCardinality } from "$lib/util/formatters";
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -203,8 +199,6 @@ let titleElementHovered = false;
                                     }}><MoreIcon /></ContextButton>
                                 </span>
                                 {/if}
-                                <!-- {#if !collapseGrid && sizeInBytes !== undefined}<span style="display: inline-block; text-overflow: clip; white-space: nowrap;
-                                " transition:horizontalSlide|local={{duration: 250 + sizeInBytes / 5000000 * 1.3}}>, {sizeInBytes !== undefined && $sizeTween !== NaN && sizeInBytes !== NaN ? humanFileSize($sizeTween) : ''}</span>{/if} -->
                             </span>
                         {/if}
                     </div>
@@ -227,11 +221,11 @@ let titleElementHovered = false;
         </div>
     {/if}
     {#if show}
-        <div class="pl-3 pr-5 pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
-            <div style="grid-column: 1 / -1;" class='pt-2 pb-2 flex justify-between text-gray-500'>
+        <div class="pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
+            <div  class='pl-6 pr-6 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 350}>
                 <select bind:value={sortMethod} class={classes.NATIVE_SELECT}>
                     <option value={sortByOriginalOrder}>sort by original order</option>
-                    <option value={defaultSort}>sort by cardinality</option>
+                    <option value={defaultSort}>sort by type</option>
                     <option value={sortByNullity}>sort by null %</option>
                     <option value={sortByName}>sort by name</option>
                 </select>
@@ -243,139 +237,35 @@ let titleElementHovered = false;
 
             <!-- <SummaryViewSelector bind:sortMethod bind:previewView /> -->
 
-            <div 
-                class="gap-x-4 w-full items-center grid" 
-
-                style="
-                    grid-template-columns: minmax(80px, 1fr) {
-                        !collapseGrid ?
-                        (previewView === 'example' ? "minmax(108px, 164px)" : `minmax(auto, 168px)`) :
-                        "0px"
-                    };
-                "
-            >
+            <div >
                 {#if sortedProfile}
                     {#each sortedProfile as column (column.name)}
-                    <!-- FIXME: make this element work with src/lib/components/data-types/DataTypeIcon.svelte -->
-                    <div 
-                        class="pl-3 pr-5 font-medium break-word grid gap-x-2 items-center" 
-                        style="
-                            height: 19px;
-                            grid-template-columns: max-content minmax(90px, max-content);
-                        " 
-                        bind:this={colSizer}>
-                        {#if column.summary}
-                            <DataTypeIcon type={column.type} />
-                        {:else}
-                            <div in:fade class="grid place-items-center" style="width: 16px; height: 16px;">
-                                <Spinner size=".45rem" bg="hsl(240, 1%, 70%)" />
-                            </div>
-                        {/if}
-                        <button
-                            disabled={!column.summary}
-                            title={column.name}
-                            class='text-ellipsis overflow-hidden whitespace-nowrap break-all text-left {(selectingColumns || showSummaries) ? 'hover:underline' : ''}' 
-                            class:text-gray-500={!column.summary}
-                            class:italic={!column.summary}
-                            class:font-bold={
-                                (selectingColumns && selectedColumns.includes(column.name)) ||
-                                (showSummaries && summaryColumns.includes(column.name))
-                            } 
-                            on:click={() => {
-                            if (selectingColumns) {
-                                if (selectedColumns.includes(column.name)) {
-                                    selectedColumns = selectedColumns.filter(c => c !== column.name)
-                                } else {
-                                    selectedColumns = [...selectedColumns, column.name];
-                                }
-                            } else if (showSummaries) {
-                                if (summaryColumns.includes(column.name)) {
-                                    summaryColumns = summaryColumns.filter(c => c !== column.name)
-                                } else {
-                                    summaryColumns = [...summaryColumns, column.name];
-                                }
-                            }
-                        }}>
-                            {column.name} 
-                            {#if column.conceptualType === 'TIMESTAMP' && column?.summary?.interval}<span class='text-gray-500 italic pl-2' style="font-size:11px">{ intervalToTimestring(column.summary.interval)}</span>{/if}
-                        </button>
 
-                    </div>
-                    <!-- Preview elements -->
-                    <div style:max-width="{108 + 68}px" class="justify-self-end">
-                        {#if !collapseGrid}
-                            <div  class="grid" style:grid-template-columns="max-content max-content">
-                            {#if previewView === 'summaries'}
-                            <div
-                                style:width="108px"
-                                class='overflow-hidden whitespace-nowrap justify-self-stretch text-right text-gray-500  break-all' >
-                                {#if column?.summary && (CATEGORICALS.has(column.type) || CATEGORICALS.has(column.conceptualType)) && column?.summary?.cardinality}
-                                    <BarAndLabel 
-                                    color={!CATEGORICALS.has(column.type) ? 'hsl(1,50%, 90%' : 'hsl(240, 50%, 90%'}
-                                    value={column.summary.cardinality / cardinality}>
-                                        |{formatInteger(column.summary.cardinality)}|
-                                    </BarAndLabel>
-                                {:else if column?.summary?.histogram}
-                                    <Histogram data={column.summary.histogram} width={98} height={19} color={(column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP') ? "#14b8a6" : "hsl(1,50%, 80%)"} />
-                                {/if}
-                            </div>
-                            <div
-                                style:width="68px"  
-                                class='self-stretch text-right text-gray-500 break-all overflow-hidden  whitespace-nowrap '>
-                                {#if cardinality && column.nullCount !== undefined}
-                                    <BarAndLabel
-                                        title="{column.name}: {percentage(column.nullCount / cardinality)} of the values are null"
-                                        bgColor={column.nullCount === 0 ? 'bg-white' : 'bg-gray-50'}
-                                        color={!CATEGORICALS.has(column.type) ? 'hsl(1,50%, 90%)' : 'hsl(240, 50%, 90%)'}
-                                        value={column.nullCount / cardinality || 0}>
-                                                <span class:text-gray-300={column.nullCount === 0}>∅ {percentage(column.nullCount / cardinality)}</span>
-                                    </BarAndLabel>
-                                {/if}
-                            </div>
-                            {:else}
-                                <div 
-                                    class='text-gray-500 italic text-right text-ellipsis overflow-hidden whitespace-nowrap ' 
-                                    class:hidden={collapseGrid}>
-                                    {(head[0][column.name] !== '' ? `${head[0][column.name]}` : '<empty>')}
-                                </div>
-                            {/if}
-                        </div>
-                        {/if}
-                    </div>
-                    <!-- categorical summaries -->
-                    {#if showSummaries && summaryColumns.includes(column.name)}
-                        <div style="grid-column: 1 / -1;" class='pt-3 pb-3 pl-3 pr-3' transition:slide|local={{duration: 200 }}>
+                    <ColumnProfile
+                        example={head[0][column.name]}
+                        containerWidth={containerWidth}
 
-                            {#if column?.summary && CATEGORICALS.has(column.type) || CATEGORICALS.has(column.conceptualType)}
-                            <TopKSummary 
-                                totalRows={cardinality}
-                                topK={column.summary.topK}
-                                displaySize={collapseGrid ? 'sm' : 'md'}
-                            />
-                            {/if}
+                        hideNullPercentage={containerWidth < 400}
+                        hideRight={containerWidth < 325}
 
+                        compactBreakpoint={350}
 
-                            {#if column?.summary && !(CATEGORICALS.has(column.type) || CATEGORICALS.has(column.conceptualType)) && column.conceptualType !=='TIMESTAMP' && column.type !== 'TIMESTAMP'}
-                            <div>
-                                <SummaryAndHistogram
-                                    width={containerWidth - 32 - 16}
-                                    height={65} 
-                                    data={column.summary.histogram}
-                                    min={column.summary.statistics.min}
-                                    qlow={column.summary.statistics.q25}
-                                    median={column.summary.statistics.q50}
-                                    qhigh={column.summary.statistics.q75}
-                                    mean={column.summary.statistics.mean}
-                                    max={column.summary.statistics.max}
-                                />
-                            </div>
-                            {/if}
-                            {#if column?.summary && (column.conceptualType === 'TIMESTAMP' || column.type === 'TIMESTAMP') && column?.summary?.interval}
-                                {JSON.stringify(column.summary.interval)}
-                            {/if}
-                        </div>
-                    {/if}
+                        hideSummaryPreview={false}
 
+                        view={previewView}
+
+                        name={column.name}
+                        type={column.type}
+                        summary={column.summary}
+                        totalRows={cardinality}
+                        nullCount={column.nullCount}
+                    >
+                        <svelte:fragment slot="context-button">
+                            <Spacer />
+                        </svelte:fragment>
+                    </ColumnProfile>
+
+                    
                     {/each}
                 {/if}
             </div>

@@ -10,7 +10,7 @@ export let compact = false;
 
 </script>
 
-<div class='pt-2 pb-2 pl-14 flex justify-between text-gray-500'>
+<div class='flex justify-between text-gray-500'>
     <select bind:value={sortMethod} class={classes.NATIVE_SELECT}>
         <!-- <option value={sortByOriginalOrder}>sort by original order</option> -->
         <option value={defaultSort}>sort by data type</option>
