@@ -25,8 +25,12 @@ import {
 import {
     DerivedModelEntityService
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { CommonActions } from "$common/data-modeler-state-service/CommonActions";
+import { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
 import { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import {
+    ApplicationStateService
+} from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import { CommonActions } from "$common/data-modeler-service/CommonActions";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -40,9 +44,12 @@ export function databaseServiceFactory(config: RootConfig) {
 export function dataModelerStateServiceFactory(config: RootConfig) {
     return new DataModelerStateService(
         [TableStateActions, ModelStateActions,
-            ProfileColumnStateActions, CommonActions].map(StateActionsClass => new StateActionsClass()),
-        [PersistentTableEntityService, DerivedTableEntityService,
-            PersistentModelEntityService, DerivedModelEntityService].map(EntityStateService => new EntityStateService()),
+            ProfileColumnStateActions, CommonStateActions].map(StateActionsClass => new StateActionsClass()),
+        [
+            PersistentTableEntityService, DerivedTableEntityService,
+            PersistentModelEntityService, DerivedModelEntityService,
+            ApplicationStateService,
+        ].map(EntityStateService => new EntityStateService()),
         config);
 }
 
@@ -56,8 +63,9 @@ export function dataModelerServiceFactory(config: RootConfig) {
     const tableActions = new TableActions(config, dataModelerStateService, databaseService);
     const modelActions = new ModelActions(config, dataModelerStateService, databaseService);
     const profileColumnActions = new ProfileColumnActions(config, dataModelerStateService, databaseService);
+    const commonActions = new CommonActions(config, dataModelerStateService, databaseService);
     const dataModelerService = new DataModelerService(dataModelerStateService, databaseService, notificationService,
-        [tableActions, modelActions, profileColumnActions]);
+        [tableActions, modelActions, profileColumnActions, commonActions]);
 
     return {dataModelerStateService, dataModelerService, notificationService};
 }

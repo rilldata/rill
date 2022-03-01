@@ -1,7 +1,8 @@
-import {
+import type {
     EntityRecord, EntityState, EntityStateActionArg,
-    EntityStateService, EntityType,
-    StateType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+    EntityStateService, EntityType, StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export interface PersistentModelEntity extends EntityRecord {

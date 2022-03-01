@@ -9,15 +9,27 @@ import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.sve
 import { formatCardinality } from "$lib/util/formatters";
 import * as classes from "$lib/util/component-classes";
 
-import type { AppStore } from '$lib/app-store';
+import type { ApplicationStore } from "$lib/app-store";
 
 import {format} from "d3-format";
 
 import { formatInteger } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
+import type {
+    PersistentModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type {
+    DerivedModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
+import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 
-const store = getContext('rill:app:store') as AppStore;
+const store = getContext('rill:app:store') as ApplicationStore;
+const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
+const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
+const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
+const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
 const queryHighlight = getContext('rill:app:query-highlight');
 
 const formatRollupFactor = format(',r');
@@ -53,16 +65,23 @@ let tables;
 let sourceTableReferences;
 
 let showDestination = true;
-let sourceTableNames = [];
 
-let currentQuery;
-$: if ($store?.models && $store?.activeAsset) currentQuery = $store.models.find(q => q.id === $store.activeAsset.id);
+let currentModel: PersistentModelEntity;
+$: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
+    $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
+let currentDerivedModel: DerivedModelEntity;
+$: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
+    $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 // get source table references.
-$: if (currentQuery?.sources.length) sourceTableReferences = currentQuery?.sources;
-$: if (sourceTableReferences) sourceTableNames = sourceTableReferences.length ? sourceTableReferences.map(r=>r.name) : [];
-$: if (currentQuery?.sources) tables = $store.tables.filter(source => sourceTableNames.includes(source.name));
-$: if (currentQuery?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentQuery.cardinality });
-$: if (currentQuery?.sizeInBytes && tables) compression = computeCompression(tables, { sizeInBytes: currentQuery.sizeInBytes })
+$: if (currentDerivedModel?.sources?.length) sourceTableReferences = currentDerivedModel?.sources;
+$: if (sourceTableReferences && $persistentTableStore?.entities && $derivedTableStore?.entities)
+    tables = sourceTableReferences.map(sourceTableReference => {
+        const table = $persistentTableStore.entities.find(t => sourceTableReference.name === t.tableName);
+        if (!table) return undefined;
+        return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
+    }).filter(t => !!t);
+$: if (currentDerivedModel?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentDerivedModel.cardinality });
+$: if (currentDerivedModel?.sizeInBytes && tables) compression = computeCompression(tables, { sizeInBytes: currentDerivedModel.sizeInBytes })
 
 // toggle state for inspector sections
 let showSourceTables = true;
@@ -72,8 +91,8 @@ let showSourceTables = true;
 <svelte:window bind:innerWidth />
 
   <div>
-    {#if currentQuery && currentQuery.query.trim().length}
-      {#if currentQuery.query.trim().length}
+    {#if currentModel && currentModel.query.trim().length}
+      {#if currentModel.query.trim().length}
         <div class="grid justify-items-center" style:height="var(--header-height)" >
           <button class="
             p-3 pt-1 pb-1
@@ -84,9 +103,9 @@ let showSourceTables = true;
             border-black
             transition-colors
             rounded-md" on:click={() => {
-            const exportFilename = currentQuery.name.replace('.sql', '.parquet');
-            dataModelerService.dispatch('exportToParquet', [currentQuery.id, exportFilename]);
-          }}>generate {currentQuery.name.replace('.sql', '.parquet')}</button>
+            const exportFilename = currentModel.name.replace('.sql', '.parquet');
+            dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
+          }}>generate {currentModel.name.replace('.sql', '.parquet')}</button>
         </div>
       {/if}
       {#if tables}
@@ -96,16 +115,16 @@ let showSourceTables = true;
           </div>
           <div style="color: #666; text-align:right;">
             {formatCardinality(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
-            {formatCardinality(currentQuery.cardinality)} rows
+            {formatCardinality(currentDerivedModel.cardinality)} rows
           </div>
           <div>
-            {#if currentQuery.sizeInBytes}
+            {#if currentDerivedModel.sizeInBytes}
             {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
             {:else}<button on:click={() => {}}>generate compression</button>{/if}
           </div>
           <div style="color: #666; text-align: right;">
             {formatCardinality(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
-            {#if currentQuery.sizeInBytes}{formatCardinality(currentQuery.sizeInBytes)}{:else}...{/if}
+            {#if currentDerivedModel.sizeInBytes}{formatCardinality(currentDerivedModel.sizeInBytes)}{:else}...{/if}
           </div>
         </div>
       {/if}
@@ -118,10 +137,10 @@ let showSourceTables = true;
             Source Tables
           </CollapsibleSectionTitle>
         </div>
-        {#if sourceTableReferences && showSourceTables}
+        {#if sourceTableReferences && tables && showSourceTables}
         <div transition:slide|local={{duration: 200}} class="mt-1">
-          {#each sourceTableReferences as reference}
-          {@const correspondingTableCardinality = $store?.tables.find((table => table.name === reference.name)).cardinality}
+          {#each sourceTableReferences as reference, index}
+          {@const correspondingTableCardinality = tables[index].cardinality}
             <div
               class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
               on:focus={() => {
@@ -155,16 +174,16 @@ let showSourceTables = true;
       <hr />
       
       <div class='source-tables pt-4 pb-4'>
-        {#if currentQuery?.profile}
+        {#if currentDerivedModel?.profile}
             <CollapsibleTableSummary 
               collapseWidth={240 + 120 + 16}
               name="Destination"
               path=""
               bind:show={showDestination}
-              cardinality={currentQuery?.cardinality}
-              sizeInBytes={currentQuery?.sizeInBytes}
-              profile={currentQuery.profile}
-              head={currentQuery.preview}
+              cardinality={currentDerivedModel?.cardinality}
+              sizeInBytes={currentDerivedModel?.sizeInBytes}
+              profile={currentDerivedModel.profile}
+              head={currentDerivedModel.preview}
               draggable={false}
             />
         {/if}

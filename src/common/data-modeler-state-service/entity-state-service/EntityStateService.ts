@@ -1,11 +1,13 @@
 import { writable, get } from "svelte/store";
 import type {Writable} from "svelte/store";
 import { shallowCopy } from "$common/utils/shallowCopy";
-import produce, { applyPatches, Patch } from "immer";
+import produce, { applyPatches } from "immer";
+import type {Patch} from "immer";
 
 export enum EntityType {
     Table = "Table",
     Model = "Model",
+    Application = "Application",
 }
 
 export enum StateType {
@@ -34,9 +36,13 @@ export interface EntityState<Entity extends EntityRecord> {
     lastUpdated: number;
 }
 
-export type EntityStateActionArg<Entity extends EntityRecord, Service = EntityStateService<Entity>> = {
+export type EntityStateActionArg<
+    Entity extends EntityRecord,
+    State extends EntityState<Entity> = EntityState<Entity>,
+    Service = EntityStateService<Entity>
+> = {
     stateService: Service;
-    draftState: EntityState<Entity>;
+    draftState: State;
 }
 
 /**
@@ -52,12 +58,21 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
     public readonly entityType: EntityType;
     public readonly stateType: StateType;
 
+    public constructor() {
+        // need an empty state for UI where state init is async but component init is not
+        this.init({entities: [], lastUpdated: 0});
+    }
+
     public init(initialState: EntityState<Entity>): void {
         this.store = writable(initialState);
     }
 
     public getCurrentState(): EntityState<Entity> {
         return get(this.store);
+    }
+
+    public getEmptyState(): EntityState<Entity> {
+        return {lastUpdated: 0, entities: []};
     }
 
     public updateState(draftModCallback: (draft: EntityState<Entity>) => void,

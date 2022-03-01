@@ -4,8 +4,20 @@ import type {
     EntityType,
     StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
+import type {
+    ApplicationStateActionArg
+} from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
-export class CommonActions extends StateActions {
+export class CommonStateActions extends StateActions {
+    @DataModelerActions.ApplicationAction()
+    public async setActiveAsset({draftState}: ApplicationStateActionArg,
+                                entityType: EntityType, entityId: string) {
+        draftState.activeEntity = {
+            type: entityType, id: entityId
+        };
+    }
+
     @StateActions.GenericAction()
     public addEntity({stateService, draftState}: EntityStateActionArg<any>,
                      entityType: EntityType, stateType: StateType,

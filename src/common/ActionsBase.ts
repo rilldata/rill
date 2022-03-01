@@ -42,6 +42,9 @@ export abstract class ActionsBase {
     public static DerivedModelAction() {
         return this.Action(EntityType.Model, StateType.Derived);
     }
+    public static ApplicationAction() {
+        return this.Action(EntityType.Application, StateType.Derived);
+    }
 
     /**
      * Marks a method as a generic action on a state type.

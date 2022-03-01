@@ -23,6 +23,7 @@ export/
 *.parquet
 *.csv
 *.tsv
+/*_state.json
 
 # generated content
 log

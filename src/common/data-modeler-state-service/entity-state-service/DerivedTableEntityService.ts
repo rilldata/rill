@@ -1,8 +1,8 @@
-import {
+import type {
     EntityState, EntityStateActionArg,
-    EntityStateService,
-    EntityType,
-    StateType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+    EntityStateService, EntityType, StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataProfileEntity } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 

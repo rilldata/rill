@@ -5,16 +5,12 @@ import { setContext } from "svelte";
 import { createStore } from '$lib/app-store';
 import { browser } from "$app/env";
 
-import { fade } from "svelte/transition";
-
-import AddIcon from "$lib/components/icons/AddIcon.svelte";
-import RefreshIcon from "$lib/components/icons/RefreshIcon.svelte";
-import Spinner from "$lib/components/Spinner.svelte";
-import Logo from "$lib/components/Logo.svelte";
 import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
 import notification from "$lib/components/notifications/";
 
 import { createQueryHighlightStore } from "$lib/query-highlight-store";
+import { createDerivedTableStore, createPersistentTableStore } from "$lib/tableStores.ts";
+import { createDerivedModelStore, createPersistentModelStore } from "$lib/modelStores.ts";
 
 let store;
 let queryHighlight = createQueryHighlightStore();
@@ -22,6 +18,14 @@ if (browser) {
   store = createStore();
   setContext('rill:app:store', store);
   setContext('rill:app:query-highlight', queryHighlight);
+  [
+      createPersistentTableStore, createDerivedTableStore,
+      createPersistentModelStore, createDerivedModelStore,
+  ].forEach(storeCreator => {
+      const [service, appStore] = storeCreator();
+      setContext(`rill:app:${service.stateType.toString().toLowerCase()}-` +
+          `${service.entityType.toString().toLowerCase()}-store`, appStore);
+  })
   notification.listenToSocket(store.socket);
 }
 

@@ -1,22 +1,27 @@
 <script lang="ts">
 import { getContext } from "svelte";
-import type { AppStore } from "$lib/app-store"
-import {dataModelerService} from "$lib/app-store";
+import { ApplicationStore, dataModelerService } from "$lib/app-store";
 
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
+import { PersistentModelStore } from "$lib/modelStores";
+import type {
+    PersistentModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 
-const store = getContext('rill:app:store') as AppStore;
+const store = getContext('rill:app:store') as ApplicationStore;
+const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 
 function formatModelName(str) {
     let output = str.trim().replaceAll(' ', '_');
     return output;
 }
 
-let currentModel;
-$: if ($store?.models && $store?.activeAsset) currentModel = $store.models.find(q => q.id === $store.activeAsset.id);
+let currentModel: PersistentModelEntity;
+$: if ($store?.activeEntity && $persistentModelStore?.entities)
+    currentModel = $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id);
 
 let titleInputElement;
 let editingTitle = false;

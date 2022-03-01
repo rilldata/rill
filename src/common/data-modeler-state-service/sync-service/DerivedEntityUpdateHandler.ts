@@ -27,7 +27,12 @@ export class DerivedEntityUpdateHandler extends EntityStateUpdatesHandler<DataPr
 
     private async handleModelProfiling(entity: DataProfileEntity): Promise<void> {
         if (!entity.profiled) {
-            await this.dataModelerService.dispatch(this.collectEntityInfoAction, [entity.id]);
+            // make sure to run it after a little delay
+            // we need entry in both derived and persistent states
+            // TODO: Find a better way to sync this
+            setTimeout(() => {
+                this.dataModelerService.dispatch(this.collectEntityInfoAction, [entity.id]);
+            }, this.config.state.syncInterval * 2);
         }
     }
 }

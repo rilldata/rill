@@ -1,15 +1,9 @@
 <script>
-import { getContext } from "svelte";
-
 import Workspace from "./_surfaces/workspace/index.svelte";
 import InspectorSidebar from "./_surfaces/inspector/index.svelte";
 import AssetsSidebar from "./_surfaces/assets/index.svelte";
 import PreviewDrawer from "./_surfaces/preview/index.svelte";
 import Header from "./_surfaces/header/index.svelte";
-import { tweened } from "svelte/motion";
-import { cubicOut } from "svelte/easing";
-
-const store = getContext("rill:app:store");
 </script>
 
 <div class='body'>

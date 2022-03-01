@@ -3,7 +3,7 @@ import { getContext, onMount } from "svelte";
 import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
 
-import type { AppStore } from '$lib/app-store';
+import type { ApplicationStore } from "$lib/app-store";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
@@ -14,10 +14,23 @@ import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.sve
 
 import { drag } from '$lib/drag'
 import {dataModelerService} from "$lib/app-store";
+import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
+import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import type {
+    PersistentModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-const store = getContext('rill:app:store') as AppStore;
+const store = getContext('rill:app:store') as ApplicationStore;
+const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
+const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
+const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
+const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
 
-$: activeQuery = $store && $store?.models && $store?.activeAsset ? $store.models.find(q => q.id === $store.activeAsset.id) : undefined;
+let activeModel: PersistentModelEntity;
+$: activeModel = $store && $persistentModelStore &&
+  $store?.activeEntity && $persistentModelStore?.entities ?
+    $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 let showTables = true;
 let showModels = true;
 let showMetrics = true;
@@ -73,25 +86,27 @@ onMount(() => {
           </div>
             {#if showTables}
               <div class="pb-6" transition:slide|local={{duration:200}}>
-              {#if $store && $store.tables}
-                {#each ($store.tables) as { path, tableName, cardinality, profile, head, sizeInBytes, id} (id)}
-                <div animate:flip>
-                  <CollapsibleTableSummary 
-                    icon={ParquetIcon}
-                    name={tableName}
-                    {cardinality}
-                    {profile}
-                    {head}
-                    {path}
-                    {sizeInBytes}
-                  />
-                </div>
+              {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
+                <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
+                {#each ($persistentTableStore.entities) as { path, tableName, id} (id)}
+                  {@const derivedTable = $derivedTableStore.entities.find(t => t["id"] === id)}
+                  <div animate:flip>
+                    <CollapsibleTableSummary
+                      icon={ParquetIcon}
+                      name={tableName}
+                      cardinality={derivedTable?.cardinality ?? 0}
+                      profile={derivedTable?.profile ?? []}
+                      head={derivedTable?.preview ?? []}
+                      {path}
+                      sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+                    />
+                  </div>
                 {/each}
               {/if}
             </div>
           {/if}
         
-          {#if $store && $store.models}
+          {#if $persistentModelStore && $persistentModelStore.entities}
           <div class='pl-3 pb-3 pr-5 grid justify-between' style="grid-template-columns: auto max-content;">
             <CollapsibleSectionTitle bind:active={showModels}>
                 <h4> Models</h4>
@@ -108,22 +123,23 @@ onMount(() => {
             </div>
             {#if showModels}
               <div class='pb-6 justify-self-end'  transition:slide={{duration:200}}>
-              {#each $store.models as query, i (query.id)}
-
+              <!-- TODO: fix the object property access back to m.id from m["id"] once svelte fixes it -->
+              {#each $persistentModelStore.entities as query, i (query.id)}
+                {@const derivedModel = $derivedModelStore.entities.find(m => m["id"] === query["id"])}
                 <CollapsibleTableSummary
                   on:select={() => {
-                    dataModelerService.dispatch("setActiveAsset", [query.id, 'model']);
+                    dataModelerService.dispatch("setActiveAsset", [EntityType.Model, query.id]);
                   }}
                   on:delete={() => {
                     dataModelerService.dispatch('deleteModel', [query.id]);
                   }}
                   icon={ModelIcon}
                   name={query.name}
-                  cardinality={query.cardinality}
-                  profile={query?.profile || []}
-                  head={query.preview}
-                  sizeInByptes={query?.sizeInBytes}
-                  emphasizeTitle ={query?.id === $store?.activeAsset?.id}
+                  cardinality={derivedModel?.cardinality ?? 0}
+                  profile={derivedModel?.profile ?? []}
+                  head={derivedModel?.preview ?? []}
+                  sizeInByptes={derivedModel?.sizeInBytes ?? 0}
+                  emphasizeTitle ={query?.id === $store?.activeEntity?.id}
                 />
               {/each}
               </div>

@@ -13,5 +13,4 @@ export class EntityStateUpdatesHandler<Entity extends EntityRecord> {
     public async handleEntityInit(entity: Entity): Promise<void> {}
     public async handleNewEntity(entity: Entity): Promise<void> {}
     public async handleUpdatedEntity(entity: Entity): Promise<void> {}
-    public async handleDeletedEntity(entity: Entity): Promise<void> {}
 }

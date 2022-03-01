@@ -1,15 +1,25 @@
 <script lang="ts">
 import { getContext } from "svelte";
 import { slide } from "svelte/transition";
-import type { AppStore } from '$lib/app-store';
+import type { ApplicationStore } from "$lib/app-store";
 import { cubicOut as easing } from 'svelte/easing';
 import Editor from "$lib/components/Editor.svelte";
 import {dataModelerService} from "$lib/app-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+import type {
+    PersistentModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type {
+    DerivedModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-const store = getContext("rill:app:store") as AppStore;
+const store = getContext("rill:app:store") as ApplicationStore;
 const queryHighlight = getContext("rill:app:query-highlight");
+const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
+const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
 
 let error;
 
@@ -25,25 +35,30 @@ function getErrorLineNumber(errorString) {
   return { message, lineNumber };
 };
 
-$: currentModel = $store?.activeAsset ? $store.models.find(query => query.id === $store.activeAsset.id) : undefined;
+let currentModel: PersistentModelEntity;
+$: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
+    $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
+let currentDerivedModel: DerivedModelEntity;
+$: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
+    $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 
 </script>
 
 <div class="editor-pane">
   <div>
-  {#if $store && $store.models && currentModel}
+  {#if $store && $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
     <div class="input-body p-6 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}
           name={currentModel.name}
           selections={$queryHighlight}
-          errorLineNumber={ currentModel.id === $store.activeAsset.id ? errorLineNumber : undefined }
+          errorLineNumber={ currentModel.id === $store.activeEntity.id ? errorLineNumber : undefined }
           on:down={() => { dataModelerService.dispatch('moveModelDown', [currentModel.id]); }}
           on:up={() => { dataModelerService.dispatch('moveModelUp', [currentModel.id]); }}
           on:delete={() => { dataModelerService.dispatch('deleteModel', [currentModel.id]); }}
           on:receive-focus={() => {
-              dataModelerService.dispatch('setActiveAsset', [currentModel.id, 'model']);
+              dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
               //dataModelerService.dispatch('updateQueryInformation', [{id: currentQuery.id }]);
           }}
           on:release-focus={() => {
@@ -56,17 +71,17 @@ $: currentModel = $store?.activeAsset ? $store.models.find(query => query.id ===
             dataModelerService.dispatch('updateModelName', [currentModel.id, evt.detail]);
           }}
           on:write={(evt)=> {
-              dataModelerService.dispatch('setActiveAsset', [currentModel.id, 'model']);
+              dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
               dataModelerService.dispatch('updateModelQuery', [currentModel.id, evt.detail.content ]);
               //dataModelerService.dispatch('updateQueryInformation', [{ id: currentQuery.id }]);
           }}
       />
     {/key}
-    {#if $store.activeAsset && $store.models.find(q => q.id === $store.activeAsset.id)?.error}
+    {#if currentDerivedModel?.error}
       <div transition:slide={{ duration: 200, easing }} 
         class="error p-4 m-4 rounded-lg shadow-md"
       >
-        {$store.models.find(q => q.id === $store.activeAsset.id).error}
+        {currentDerivedModel.error}
       </div>
     {/if}
     </div>
@@ -78,8 +93,8 @@ $: currentModel = $store?.activeAsset ? $store.models.find(query => query.id ===
     <button on:click={() => { showPreview = !showPreview }}>{#if showPreview}hide{:else}show{/if} preview</button>
     <div class="rounded overflow-auto border border border-gray-300 {!showPreview && 'hidden'}"
     >
-      {#if currentModel?.preview && currentModel?.profile}
-        <PreviewTable rows={currentModel.preview} columnNames={currentModel.profile} />
+      {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
+        <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
       {:else}
         <div class="p-5  grid items-center justify-center italic">no columns selected</div>
       {/if}

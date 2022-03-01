@@ -1,6 +1,5 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
-import { InfoCommand } from "$cli/InfoCommand";
 
 interface ImportTableCommandOptions {
     project?: string;
@@ -17,7 +16,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
             .option("--name <tableName>", "Optional name of the table. Defaults to file name without extension.")
             .option("--delimiter <delimiter>", "Optional name of the table. Defaults to file name without extension.")
             .action((tableSourceFile, options: ImportTableCommandOptions) => {
-                return this.run(options.project, tableSourceFile, options);
+                return this.run({projectPath: options.project}, tableSourceFile, options);
             });
     }
 

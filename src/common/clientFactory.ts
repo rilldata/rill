@@ -14,11 +14,17 @@ import {
 import {
     DerivedModelEntityService
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import {
+    ApplicationStateService
+} from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 export function dataModelerStateServiceClientFactory() {
     return new DataModelerStateService([],
-        [PersistentTableEntityService, DerivedTableEntityService,
-            PersistentModelEntityService, DerivedModelEntityService].map(EntityStateService => new EntityStateService()));
+        [
+            PersistentTableEntityService, DerivedTableEntityService,
+            PersistentModelEntityService, DerivedModelEntityService,
+            ApplicationStateService,
+        ].map(EntityStateService => new EntityStateService()));
 }
 
 export function clientFactory(config: RootConfig): {

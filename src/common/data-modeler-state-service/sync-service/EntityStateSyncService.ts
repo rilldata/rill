@@ -33,10 +33,10 @@ export class EntityStateSyncService<
             try {
                 initialState = await this.entityStateSyncStore.readFromSource();
             } catch (err) {
-                initialState = this.getEmptyState();
+                initialState = this.entityStateService.getEmptyState();
             }
         } else {
-            initialState = this.getEmptyState();
+            initialState = this.entityStateService.getEmptyState();
         }
         this.entityStateService.init(initialState);
         if (!this.config.state.autoSync) return;
@@ -65,7 +65,7 @@ export class EntityStateSyncService<
         try {
             sourceState = await this.entityStateSyncStore.readFromSource();
         } catch (err) {
-            sourceState = this.getEmptyState();
+            sourceState = this.entityStateService.getEmptyState();
         }
 
         const currentState = this.entityStateService.getCurrentState();
@@ -115,9 +115,5 @@ export class EntityStateSyncService<
 
     private async syncCurrentWithSource(): Promise<void> {
         await this.entityStateSyncStore.writeToSource(this.entityStateService.getCurrentState());
-    }
-
-    private getEmptyState(): EntityState<Entity> {
-        return {lastUpdated: 0, entities: []};
     }
 }

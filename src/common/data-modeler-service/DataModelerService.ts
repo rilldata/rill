@@ -8,12 +8,13 @@ import {getActionMethods} from "$common/ServiceBase";
 import type {DatabaseService} from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
 import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { mkdirSync } from "fs";
+import type { CommonActions } from "$common/data-modeler-service/CommonActions";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &
     ProfileColumnActions &
-    ModelActions
+    ModelActions &
+    CommonActions
 )>;
 /**
  * Style definition for data modeler actions.

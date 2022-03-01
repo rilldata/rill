@@ -23,7 +23,7 @@ import type {
     EntityRecordMapType,
     EntityStateServicesMapType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
-import type { CommonActions } from "$common/data-modeler-state-service/CommonActions";
+import type { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 
 enablePatches();
@@ -32,7 +32,7 @@ type DataModelerStateActionsClasses = PickActionFunctions<EntityStateActionArg<a
     TableStateActions &
     ModelStateActions &
     ProfileColumnStateActions &
-    CommonActions
+    CommonStateActions
 )>;
 export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<EntityStateActionArg<any>, DataModelerStateActionsClasses>;
 
@@ -91,14 +91,6 @@ export class DataModelerStateService {
     }
 
     /**
-     * Subscribe to underlying store
-     * @param subscriber
-     */
-    public subscribe(subscriber: (dataModelerState: DataModelerState) => void): void {
-        this.store.subscribe(subscriber);
-    }
-
-    /**
      * Subscribe to patch emitted by immer.
      * @param subscriber
      */
@@ -113,7 +105,7 @@ export class DataModelerStateService {
                 console.error(`Service not found. entityType=${entityType} stateType=${stateType}`);
                 return;
             }
-            service.init(state);
+            service.store.set(state);
         });
     }
 

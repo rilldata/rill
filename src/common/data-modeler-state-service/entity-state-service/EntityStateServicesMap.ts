@@ -18,6 +18,10 @@ import type {
     DerivedModelEntity,
     DerivedModelEntityService, DerivedModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type {
+    ApplicationEntity, ApplicationStateActionArg,
+    ApplicationStateService
+} from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 export type EntityStateServicesMapType = {
     [EntityType.Table]?: {
@@ -27,6 +31,10 @@ export type EntityStateServicesMapType = {
     [EntityType.Model]?: {
         [StateType.Persistent]?: PersistentModelEntityService,
         [StateType.Derived]?: DerivedModelEntityService,
+    },
+    [EntityType.Application]?: {
+        [StateType.Persistent]?: never,
+        [StateType.Derived]?: ApplicationStateService,
     },
 };
 
@@ -39,6 +47,10 @@ export type EntityRecordMapType = {
         [StateType.Persistent]: PersistentModelEntity,
         [StateType.Derived]: DerivedModelEntity,
     },
+    [EntityType.Application]: {
+        [StateType.Persistent]: never,
+        [StateType.Derived]: ApplicationEntity,
+    },
 };
 export type EntityStateActionArgMapType = {
     [EntityType.Table]: {
@@ -48,5 +60,9 @@ export type EntityStateActionArgMapType = {
     [EntityType.Model]: {
         [StateType.Persistent]: PersistentModelStateActionArg,
         [StateType.Derived]: DerivedModelStateActionArg,
+    },
+    [EntityType.Application]: {
+        [StateType.Persistent]: never,
+        [StateType.Derived]: ApplicationStateActionArg,
     },
 };

@@ -16,10 +16,11 @@ $: activeAsset = $store?.activeAsset;
 import { getContext } from "svelte";
 import ModelInspector from "./Model.svelte";
 
-import type { AppStore } from '$lib/app-store';
+import type { ApplicationStore } from "$lib/app-store";
 
-import { drag } from "$lib/drag";    
-const store = getContext('rill:app:store') as AppStore;
+import { drag } from "$lib/drag";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+const store = getContext('rill:app:store') as ApplicationStore;
 
 </script>
         
@@ -28,7 +29,7 @@ const store = getContext('rill:app:store') as AppStore;
     use:drag={{ minSize: 400 }} />
   
     <div class='inspector'>
-          {#if $store?.activeAsset?.assetType === 'model'}
+          {#if $store?.activeEntity?.type === EntityType.Model}
           <ModelInspector />
         {/if}
   </div>

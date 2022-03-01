@@ -8,7 +8,7 @@ export class DropTableCommand extends DataModelerCliCommand {
             .argument("<tableName>", "Name of the table to drop.")
             .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
             .action((tableName, {project}) => {
-                return this.run(project, tableName);
+                return this.run({ projectPath: project }, tableName);
             });
     }
 
