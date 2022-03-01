@@ -7,13 +7,19 @@ export let active = false;
 export let emphasize = false;
 export let hideRight = false;
 
+export let left = 8 // "pl-8";
+export let right = 2 // pr-2";
+
 </script>
 
 <div>
 <button 
     class="
-        pl-8 pr-2
-        select-none	flex space-between 
+        pl-{left} pr-{right}
+        select-none	
+        flex 
+        space-between 
+        gap-2
         hover:bg-gray-100 
         focus:bg-gray-100
         focus:ring-gray-500
@@ -34,9 +40,7 @@ export let hideRight = false;
     </div>
     <div class:hidden={hideRight} class="flex gap-2">
         <slot name="right" />
-        <div>
-            <slot name="context-button" />
-        </div>
+        <slot name="context-button" />
     </div>
 </button>
 <div>

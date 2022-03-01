@@ -8,7 +8,6 @@
   }
 }
 
-
 ::selection {
     background-color: black;
     color: white;
@@ -149,3 +148,4 @@ button {
     background-color: transparent;
     border-right: none;
 }
+

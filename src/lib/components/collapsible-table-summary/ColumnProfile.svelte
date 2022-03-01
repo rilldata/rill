@@ -8,12 +8,11 @@ import { config } from "./utils";
 
 import { percentage } from "./utils"
 import { formatInteger } from "$lib/util/formatters"
-import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
+import { CATEGORICALS, NUMERICS, TIMESTAMPS, DATA_TYPE_COLORS } from "$lib/duckdb-data-types";
 
 import Histogram from "$lib/components/viz/SmallHistogram.svelte";
-import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
 import TimestampHistogram from "$lib/components/viz/TimestampHistogram.svelte";
-import NumericHistogram from "$lib/components/viz/NumericHistogram.svelte"
+import NumericHistogram from "$lib/components/viz/NumericHistogram.svelte";
 
 export let name;
 export let type;
@@ -24,7 +23,14 @@ export let example;
 export let view = 'summaries'; // summaries, example
 export let containerWidth:number;
 
+export let indentLevel = 1;
+
+$:tailwindPad = indentLevel * 8;
+
 export let hideRight = false;
+// hide the null percentage number
+export let hideNullPercentage = false;
+export let hideSummaryPreview = false;
 
 let active = false;
 
@@ -51,37 +57,49 @@ export function close() {
     </svelte:fragment>
     
     <svelte:fragment slot="right">
+
+    {#if view==="summaries"}
         <div class="flex gap-2">
 
             <div  style:width={config.summaryVizWidth}>
 
                 {#if CATEGORICALS.has(type)}
                     <BarAndLabel 
-                    color={ 'hsl(240, 50%, 90%'}
+                    color={DATA_TYPE_COLORS['VARCHAR'].bgClass}
                     value={summary.cardinality / totalRows}>
                         |{formatInteger(summary.cardinality)}|
                     </BarAndLabel>
+                
                 {:else if NUMERICS.has(type) && summary?.histogram}
-                    <Histogram data={summary.histogram} width={98} height={19} color={"hsl(1,50%, 80%)"} />
+                    <Histogram data={summary.histogram} width={98} height={19} 
+                        fillColor={DATA_TYPE_COLORS['DOUBLE'].vizFillClass}
+                        baselineStrokeColor={DATA_TYPE_COLORS['DOUBLE'].vizStrokeClass}    
+                    />
                 {:else if TIMESTAMPS.has(type) && summary?.histogram}
-                    <Histogram data={summary.histogram} width={98} height={19} color={"#14b8a6"} />
+                    <Histogram data={summary.histogram} width={98} height={19} 
+                        fillColor={DATA_TYPE_COLORS['TIMESTAMP'].vizFillClass}
+                        baselineStrokeColor={DATA_TYPE_COLORS['TIMESTAMP'].vizStrokeClass}    
+                        />
                 {/if}
 
             </div>
 
-            <div style:width={config.nullPercentageWidth}>
+            <div style:width={config.nullPercentageWidth} class:hidden={hideNullPercentage}>
+
                 {#if totalRows !== undefined && nullCount !== undefined}
                     <BarAndLabel
                         title="{name}: {percentage(nullCount / totalRows)} of the values are null"
-                        bgColor={nullCount === 0 ? 'bg-white' : 'bg-gray-50'}
-                        color={'hsl(240, 50%, 90%'}
+                        showBackground={nullCount !== 0}
+                        color={DATA_TYPE_COLORS[type].bgClass}
                         value={nullCount / totalRows || 0}>
                                 <span class:text-gray-300={nullCount === 0}>∅ {percentage(nullCount / totalRows)}</span>
                     </BarAndLabel>
                 {/if}
+
             </div>
 
         </div>
+    {/if}
     </svelte:fragment>
 
     <svelte:fragment slot="context-button">
@@ -93,13 +111,13 @@ export function close() {
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3">
             {#if CATEGORICALS.has(type)}
                 <div class="pl-16">
-                    <TopKSummary {totalRows} topK={summary.topK} />
+                    <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 
             {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram}
             <div class="pl-12">
                 <NumericHistogram
-                    width={containerWidth - 32}
+                    width={containerWidth - 32 - 20}
                     height={65} 
                     data={summary.histogram}
                     min={summary.statistics.min}

@@ -1,6 +1,7 @@
 <script>
 import HistogramBase from "./HistogramBase.svelte";
 import { datePortion, timePortion, intervalToTimestring } from "$lib/util/formatters";
+import { TIMESTAMP_TOKENS } from "$lib/duckdb-data-types";
 export let data;
 export let interval;
 export let width;
@@ -12,7 +13,7 @@ let fontSize = 12;
 </script>
 
 <div class="italic pt-1 pb-2">{intervalToTimestring(interval)}</div>
-<HistogramBase separate={width > 300} color={"#14b8a6"} {data} left={0} right={0} width={effectiveWidth} {height} bottom={40}>
+<HistogramBase separate={width > 300} fillColor={TIMESTAMP_TOKENS.vizFillClass} baselineStrokeColor={TIMESTAMP_TOKENS.vizStrokeClass} {data} left={0} right={0} width={effectiveWidth} {height} bottom={40}>
     <svelte:fragment let:x let:y let:buffer>
         {@const yStart = y.range()[0] + fontSize + buffer * 1.5}
         {@const yEnd = y.range()[0] + fontSize *2 + buffer * 1.75}

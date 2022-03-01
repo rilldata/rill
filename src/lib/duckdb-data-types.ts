@@ -10,16 +10,47 @@ export const NUMERICS = new Set([
 
 export const TIMESTAMPS = new Set(['TIMESTAMP', 'TIME', 'DATETIME', 'DATE']);
 
-function setTypeTailwindStyles(list:string[], textClass: string, bgClass: string) {
+interface ColorTokens {
+    textClass: string,
+    bgClass: string,
+    vizFillClass: string,
+    vizStrokeClass: string,
+}
+
+export const CATEGORICAL_TOKENS:ColorTokens = {
+    textClass: 'text-sky-800',
+    bgClass: 'bg-sky-200',
+    vizFillClass: 'fill-sky-800',
+    vizStrokeClass: 'fill-sky-800'
+}
+
+export const NUMERIC_TOKENS: ColorTokens = {
+    textClass: 'text-red-800',
+    bgClass: 'bg-red-200',
+    vizFillClass: 'fill-red-300',
+    vizStrokeClass: 'stroke-red-300'
+}
+
+export const TIMESTAMP_TOKENS: ColorTokens = {
+    textClass: 'text-teal-800',
+    bgClass: 'bg-teal-200',
+    vizFillClass: 'fill-teal-500',
+    vizStrokeClass: "stroke-teal-500"
+}
+
+function setTypeTailwindStyles(
+        list:string[], 
+        // a tailwind class, for now.
+        colorTokens: ColorTokens
+    ) {
     return list.reduce((acc, v) => {
-        acc[v] = { textClass, bgClass };
+        acc[v] = { ...colorTokens };
         return acc;
     }, {});
 }
 
-
-export const DATA_TYPE_ICON_STYLES = {
-    ...setTypeTailwindStyles(Array.from(CATEGORICALS), 'bg-sky-800', 'bg-sky-200'),
-    ...setTypeTailwindStyles(Array.from(NUMERICS), 'bg-red-800', 'bg-red-200'),
-    ...setTypeTailwindStyles(Array.from(TIMESTAMPS), 'bg-teal-800', 'bg-teal-200'),
+export const DATA_TYPE_COLORS = {
+    ...setTypeTailwindStyles(Array.from(CATEGORICALS), CATEGORICAL_TOKENS),
+    ...setTypeTailwindStyles(Array.from(NUMERICS), NUMERIC_TOKENS),
+    ...setTypeTailwindStyles(Array.from(TIMESTAMPS), TIMESTAMP_TOKENS),
 }
