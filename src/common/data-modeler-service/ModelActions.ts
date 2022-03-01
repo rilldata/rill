@@ -19,6 +19,9 @@ export class ModelActions extends DataModelerActions {
         }
 
         const sanitizedQuery = sanitizeQuery(query);
+        if (sanitizedQuery === model.sanitizedQuery) {
+            return;
+        }
 
         this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
 
