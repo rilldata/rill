@@ -18,14 +18,10 @@ if (browser) {
   store = createStore();
   setContext('rill:app:store', store);
   setContext('rill:app:query-highlight', queryHighlight);
-  [
-      createPersistentTableStore, createDerivedTableStore,
-      createPersistentModelStore, createDerivedModelStore,
-  ].forEach(storeCreator => {
-      const [service, appStore] = storeCreator();
-      setContext(`rill:app:${service.stateType.toString().toLowerCase()}-` +
-          `${service.entityType.toString().toLowerCase()}-store`, appStore);
-  })
+  setContext(`rill:app:persistent-table-store`, createPersistentTableStore());
+  setContext(`rill:app:derived-table-store`, createDerivedTableStore());
+  setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
+  setContext(`rill:app:derived-model-store`, createDerivedModelStore());
   notification.listenToSocket(store.socket);
 }
 
