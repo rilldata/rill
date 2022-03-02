@@ -6,7 +6,7 @@ import RawJSON from "$lib/components/rawJson.svelte";
 import CollapsibleTableSummary from "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
-import { formatCardinality } from "$lib/util/formatters";
+import { formatCompactInteger } from "$lib/util/formatters";
 import * as classes from "$lib/util/component-classes";
 
 import type { ApplicationStore } from "$lib/app-store";
@@ -16,6 +16,7 @@ import {format} from "d3-format";
 import { formatInteger } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
+<<<<<<< HEAD
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
@@ -30,6 +31,11 @@ const persistentTableStore = getContext('rill:app:persistent-table-store') as Pe
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
+=======
+import ColumnProfile from "$lib/components/collapsible-table-summary/ColumnProfile.svelte";
+
+const store = getContext('rill:app:store') as AppStore;
+>>>>>>> b0e8483 (additional updates around inspector preparation)
 const queryHighlight = getContext('rill:app:query-highlight');
 
 const formatRollupFactor = format(',r');
@@ -63,8 +69,8 @@ let compression;
 let tables;
 // get source tables?
 let sourceTableReferences;
-
-let showDestination = true;
+let showColumns = true;
+let sourceTableNames = [];
 
 let currentModel: PersistentModelEntity;
 $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
@@ -114,8 +120,8 @@ let showSourceTables = true;
             {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
           </div>
           <div style="color: #666; text-align:right;">
-            {formatCardinality(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
-            {formatCardinality(currentDerivedModel.cardinality)} rows
+            {formatCompactInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
+            {formatCompactInteger(currentDerivedModel.cardinality)} rows
           </div>
           <div>
             {#if currentDerivedModel.sizeInBytes}
@@ -123,8 +129,8 @@ let showSourceTables = true;
             {:else}<button on:click={() => {}}>generate compression</button>{/if}
           </div>
           <div style="color: #666; text-align: right;">
-            {formatCardinality(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
-            {#if currentDerivedModel.sizeInBytes}{formatCardinality(currentDerivedModel.sizeInBytes)}{:else}...{/if}
+            {formatCompactInteger(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
+            {#if currentDerivedModel.sizeInBytes}{formatCompactInteger(currentDerivedModel.sizeInBytes)}{:else}...{/if}
           </div>
         </div>
       {/if}
@@ -173,30 +179,41 @@ let showSourceTables = true;
       
       <hr />
       
-      <div class='source-tables pt-4 pb-4'>
-        {#if currentDerivedModel?.profile}
-            <CollapsibleTableSummary 
-              collapseWidth={240 + 120 + 16}
-              name="Destination"
-              path=""
-              bind:show={showDestination}
-              cardinality={currentDerivedModel?.cardinality}
-              sizeInBytes={currentDerivedModel?.sizeInBytes}
-              profile={currentDerivedModel.profile}
-              head={currentDerivedModel.preview}
-              draggable={false}
-            />
-        {/if}
+      <div class="pb-4 pt-4">
+      <div class=" pl-5 pr-5">
+        <CollapsibleSectionTitle bind:active={showColumns}>
+          Selected Columns
+        </CollapsibleSectionTitle>
       </div>
-    {/if}
-    <div>
+
+        {#if currentDerivedModel?.profile && showColumns}
+        <div class='source-tables pt-4 pb-4' transition:slide|local={{duration: 200}}>
+
+          {#each currentDerivedModel.profile as column}
+            <ColumnProfile 
+              example={currentDerivedModel.preview[0][column.name]}
+              containerWidth={500}
+
+              hideNullPercentage={false}
+              hideRight={false}
+
+              compactBreakpoint={450}
+
+              name={column.name}
+              type={column.type}
+              summary={column.summary}
+              totalRows={currentDerivedModel?.cardinality}
+              nullCount={column.nullCount}
+            />
+          {/each}
+        </div>
+
+        {/if}
     </div>
+
+    {/if}
   </div>
 <style lang="postcss">
-
-.source-tables {
-  @apply grid grid-flow-row gap-2;
-}
 
 .results {
   overflow: auto;

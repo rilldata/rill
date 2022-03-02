@@ -118,7 +118,7 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
         {#if active}
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3">
             {#if CATEGORICALS.has(type)}
-                <div class="pl-16">
+                <div class="pl-16 pr-8">
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 

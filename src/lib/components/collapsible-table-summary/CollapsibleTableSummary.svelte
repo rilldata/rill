@@ -250,7 +250,6 @@ let titleElementHovered = false;
 
                         compactBreakpoint={350}
 
-                        hideSummaryPreview={false}
 
                         view={previewView}
 
