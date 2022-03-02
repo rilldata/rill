@@ -38,7 +38,7 @@ export let right = 2 // pr-2";
             <slot name="left" />
         </div>
     </div>
-    <div class:hidden={hideRight} class="flex gap-2">
+    <div class:hidden={hideRight} class="flex gap-2 items-center">
         <slot name="right" />
         <slot name="context-button" />
     </div>

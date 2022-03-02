@@ -61,8 +61,8 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
     
     <svelte:fragment slot="right">
 
-        <div class="flex gap-2" class:hidden={view !== 'summaries'}>
-            <div  style:width="{summaryWidthSize}px">
+        <div class="flex gap-2 items-center"  class:hidden={view !== 'summaries'}>
+            <div class="flex items-center"  style:width="{summaryWidthSize}px">
 
                 {#if CATEGORICALS.has(type)}
                     <BarAndLabel 

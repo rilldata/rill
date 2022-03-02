@@ -28,7 +28,7 @@ $: valueTween.set(value);
         position: absolute;
         left: 0;
         top: 0;
-        height: 1rem;
+        height: 18px;
         
         mix-blend-mode: multiply;
         pointer-events: none;
