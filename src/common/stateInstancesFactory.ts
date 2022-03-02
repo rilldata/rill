@@ -1,8 +1,20 @@
-import type {DataModelerState, Table, Model} from "$lib/types";
-import {guidGenerator} from "$lib/util/guid";
-import {sanitizeQuery as _sanitizeQuery} from "$lib/util/sanitize-query";
-import {IDLE_STATUS} from "$common/constants";
+import type { DataModelerState, Model } from "$lib/types";
+import { guidGenerator } from "$lib/util/guid";
 import { extractTableName, sanitizeTableName } from "$lib/util/extract-table-name";
+import type {
+    PersistentTableEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { EntityStatus, EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+    PersistentModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type {
+    DerivedModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { sanitizeQuery } from "$lib/util/sanitize-query";
+import type {
+    DerivedTableEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 
 let modelNumber = 0;
 
@@ -11,39 +23,50 @@ interface NewModelArguments {
     name?: string;
 }
 
-export function getNewTable(): Table {
+export function getNewTable(): PersistentTableEntity {
     return {
         id: guidGenerator(),
+        type: EntityType.Table,
         path: '',
-        profile: [],
-        cardinality: undefined,
-        sizeInBytes: undefined,
-        head: [],
-        status: IDLE_STATUS,
         lastUpdated: 0,
-    }
+    };
+}
+export function getNewDerivedTable(table: PersistentTableEntity): DerivedTableEntity {
+    return {
+        id: table.id,
+        type: EntityType.Table,
+        profile: [],
+        lastUpdated: 0,
+        status: EntityStatus.Idle,
+    };
 }
 
-export function getNewModel(params: NewModelArguments = {}): Model {
+export function getNewModel(params: NewModelArguments = {}): PersistentModelEntity {
     const query = params.query || '';
-    const sanitizedQuery = _sanitizeQuery(query);
     const name = `${params.name || `query_${modelNumber}`}.sql`;
     modelNumber += 1;
     return {
+        id: guidGenerator(),
+        type: EntityType.Model,
         query,
-        sanitizedQuery,
         name,
         tableName: sanitizeTableName(extractTableName(name)),
-        id: guidGenerator(),
-        preview: undefined,
-        sizeInBytes: undefined,
-        status: IDLE_STATUS,
-        sources: [],
+        lastUpdated: 0,
+    };
+}
+export function getNewDerivedModel(model: PersistentModelEntity): DerivedModelEntity {
+    return {
+        id: model.id,
+        type: EntityType.Model,
+        sanitizedQuery: sanitizeQuery(model.query),
+        profile: [],
+        lastUpdated: 0,
+        status: EntityStatus.Idle,
     };
 }
 
 export function getEmptyModel(): Model {
-    return getNewModel({});
+    return getNewModel({}) as any;
 }
 
 export function initialState() : DataModelerState {

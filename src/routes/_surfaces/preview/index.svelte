@@ -1,13 +1,19 @@
-<script>
+<script lang="ts">
 import { getContext } from "svelte";
 
 import { dragVertical } from "$lib/drag";
-import RowTable from "$lib/components/RowTable.svelte";
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+import { ApplicationStore } from "$lib/app-store";
+import { DerivedModelStore } from "$lib/modelStores";
+import type {
+    DerivedModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
-const store = getContext('rill:app:store');
-let currentQuery;
-$: if ($store?.queries && $store?.activeAsset) currentQuery = $store.queries.find(q => q.id === $store.activeAsset.id);
+const store = getContext('rill:app:store') as ApplicationStore;
+const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
+let currentModel: DerivedModelEntity;
+$: if ($store?.activeEntity && $derivedModelStore?.entities)
+    currentModel = $derivedModelStore?.entities.find(q => q.id === $store.activeEntity.id);
 </script>
 
 <div 
@@ -20,9 +26,9 @@ $: if ($store?.queries && $store?.activeAsset) currentQuery = $store.queries.fin
         style:height="var(--bottom-sidebar-width)"
         style:min-width="calc(100vw - var(--left-sidebar-width) - .5rem)"
         style:font-size="12px">
-        {#if currentQuery?.preview}
+        {#if currentModel?.preview}
         <!-- <RowTable data={currentQuery.preview} /> -->
-        <PreviewTable rows={currentQuery.preview} columnNames={currentQuery.profile} />
+        <PreviewTable rows={currentModel.preview} columnNames={currentModel.profile} />
         <!-- <RowTable data={currentQuery.preview} /> -->
     {/if}
     </div>

@@ -8,12 +8,12 @@ export class InfoCommand extends DataModelerCliCommand {
             .description("Displays info of a project.")
             .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
             .action(({project}) => {
-                return this.run(project);
+                return this.run({projectPath: project});
             });
     }
 
     protected async sendActions(): Promise<void> {
-        InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
+        // InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
     }
 
     public static displayProjectInfo(projectPath: string, state: DataModelerState) {

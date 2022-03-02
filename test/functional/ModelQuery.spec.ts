@@ -1,13 +1,16 @@
-import {FunctionalTestBase} from "./FunctionalTestBase";
-import type {TestDataColumns} from "../data/DataLoader.data";
-import {ModelQueryTestData, ModelQueryTestDataProvider, SingleTableQuery} from "../data/ModelQuery.data";
-import {asyncWait} from "$common/utils/waitUtils";
+import { FunctionalTestBase } from "./FunctionalTestBase";
+import type { TestDataColumns } from "../data/DataLoader.data";
+import { ModelQueryTestData, ModelQueryTestDataProvider, SingleTableQuery } from "../data/ModelQuery.data";
+import { asyncWait } from "$common/utils/waitUtils";
+import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 @FunctionalTestBase.Suite
 export class ModelQuerySpec extends FunctionalTestBase {
     @FunctionalTestBase.BeforeSuite()
     public async setupTables(): Promise<void> {
         await this.loadTestTables();
+        await this.clientDataModelerService.dispatch("addModel",
+            [{name: "query_0", query: ""}]);
     }
 
     public modelQueryTestData(): ModelQueryTestDataProvider {
@@ -16,47 +19,51 @@ export class ModelQuerySpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test("modelQueryTestData")
     public async shouldUpdateModelQuery(query: string, columns: TestDataColumns): Promise<void> {
-        const modelId = this.clientDataModelerStateService.getCurrentState().models[0].id;
-        await this.clientDataModelerService.dispatch("updateModelQuery", [modelId, query]);
+        const [model] = this.getModels("tableName", "query_0");
+        await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, query]);
         await this.waitForModels();
 
-        const model = this.clientDataModelerStateService.getCurrentState().models[0];
-        expect(model.error).toBeUndefined();
-        expect(model.query).toBe(query);
-        expect(model.cardinality).toBeGreaterThan(0);
-        expect(model.preview.length).toBeGreaterThan(0);
+        const [persistentModel, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).toBeUndefined();
+        expect(persistentModel.query).toBe(query);
+        expect(derivedModel.cardinality).toBeGreaterThan(0);
+        expect(derivedModel.preview.length).toBeGreaterThan(0);
 
-        this.assertColumns(model.profile, columns);
+        this.assertColumns(derivedModel.profile, columns);
     }
 
     @FunctionalTestBase.Test()
     public async shouldAddAndDeleteModel(): Promise<void> {
+        const service = this.clientDataModelerStateService
+            .getEntityStateService(EntityType.Model, StateType.Persistent);
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "newModel", query: SingleTableQuery}]);
+
         await asyncWait(50);
 
-        let newModel = this.clientDataModelerStateService.getCurrentState().models[1];
+        let newModel = service.getCurrentState().entities[1];
         expect(newModel.name).toBe("newModel.sql");
 
         const NEW_MODEL_UPDATE_NAME = "newModel_updated.sql";
         await this.clientDataModelerService.dispatch("updateModelName", [newModel.id, "newModel_updated"]);
         await asyncWait(50);
-        newModel = this.clientDataModelerStateService.getCurrentState().models[1];
+        newModel = service.getCurrentState().entities[1];
         expect(newModel.name).toBe(NEW_MODEL_UPDATE_NAME);
 
-        const OTHER_MODEL_NAME = "query_1.sql";
+        const OTHER_MODEL_NAME = "query_0.sql";
         await this.clientDataModelerService.dispatch("moveModelUp", [newModel.id]);
         await asyncWait(50);
-        expect(this.clientDataModelerStateService.getCurrentState().models[0].name).toBe(NEW_MODEL_UPDATE_NAME);
-        expect(this.clientDataModelerStateService.getCurrentState().models[1].name).toBe(OTHER_MODEL_NAME);
+        expect(service.getCurrentState().entities[0].name).toBe(NEW_MODEL_UPDATE_NAME);
+        expect(service.getCurrentState().entities[1].name).toBe(OTHER_MODEL_NAME);
 
         await this.clientDataModelerService.dispatch("moveModelDown", [newModel.id]);
         await asyncWait(50);
-        expect(this.clientDataModelerStateService.getCurrentState().models[0].name).toBe(OTHER_MODEL_NAME);
-        expect(this.clientDataModelerStateService.getCurrentState().models[1].name).toBe(NEW_MODEL_UPDATE_NAME);
+        expect(service.getCurrentState().entities[0].name).toBe(OTHER_MODEL_NAME);
+        expect(service.getCurrentState().entities[1].name).toBe(NEW_MODEL_UPDATE_NAME);
 
         await this.clientDataModelerService.dispatch("deleteModel", [newModel.id]);
-        expect(this.clientDataModelerStateService.getCurrentState().models.length).toBe(1);
-        expect(this.clientDataModelerStateService.getCurrentState().models[0].name).toBe(OTHER_MODEL_NAME);
+        expect(service.getCurrentState().entities.length).toBe(1);
+        expect(service.getCurrentState().entities[0].name).toBe(OTHER_MODEL_NAME);
     }
 }

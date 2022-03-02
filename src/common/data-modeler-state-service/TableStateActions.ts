@@ -1,45 +1,26 @@
 import {StateActions} from ".//StateActions";
-import type {Table} from "$lib/types";
-import type {DataModelerState} from "$lib/types";
-import type {Model} from "$lib/types";
-import {ColumnarItemType, ColumnarItemTypeMap} from "$common/data-modeler-state-service/ProfileColumnStateActions";
+import type {
+    PersistentTableEntity,
+    PersistentTableStateActionArg
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { DataProfileStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
+import type { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export class TableStateActions extends StateActions {
-    public addOrUpdateTableToState(draftState: DataModelerState, table: Table, isNew: boolean): void {
+    @StateActions.PersistentTableAction()
+    public addOrUpdateTableToState({stateService, draftState}: PersistentTableStateActionArg,
+                                   table: PersistentTableEntity, isNew: boolean): void {
         if (isNew) {
-            draftState.tables.push(table);
+            stateService.addEntity(draftState, table);
         } else {
-            const tableToUpdate = TableStateActions.getTable(draftState, table.id);
-            TableStateActions.shallowCopy(table, tableToUpdate);
+            stateService.updateEntity(draftState, table.id, table);
         }
     }
 
-    // TODO: find a better place for this
-    public setStatus(draftState: DataModelerState, status: string): void {
-        draftState.status = status;
-    }
-    public setActiveAsset(draftState: DataModelerState, id: string, assetType: string): void {
-        draftState.activeAsset = { id, assetType };
-    }
-    public unsetActiveAsset(draftState: DataModelerState): void {
-        draftState.activeAsset = undefined;
-    }
-
-    public setTableStatus(draftState: DataModelerState, columnarItemType: ColumnarItemType, columnarItemId: string, status: string): void {
-        const item: Model | Table = (draftState[ColumnarItemTypeMap[columnarItemType]] as any[])
-            .find(findItem => findItem.id === columnarItemId);
-        item.status = status;
-    }
-
-    public pruneAndDedupeTables(draftState: DataModelerState, files: Array<string>): void {
-        const filePaths = new Set(files);
-
-        const newSources = draftState.tables.filter((table, index, self) => {
-           if (!filePaths.has(table.path)) return false;
-           return index === self.findIndex(indexCheckTable => (indexCheckTable.path === table.path));
-        });
-        if (newSources.length !== draftState.tables.length) {
-            draftState.tables = newSources;
-        }
+    @StateActions.DerivedAction()
+    public setTableStatus({stateService, draftState}: DataProfileStateActionArg,
+                          entityType: EntityType, tableId: string, status: EntityStatus): void {
+        stateService.updateEntityField(draftState, tableId, "status", status);
     }
 }

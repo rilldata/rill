@@ -1,20 +1,38 @@
-import {TestBase} from "@adityahegde/typescript-test-utils";
-import {JestTestLibrary} from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
-import {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
-import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
-import {dataModelerServiceFactory} from "$common/serverFactory";
-import {asyncWait, waitUntil} from "$common/utils/waitUtils";
-import {IDLE_STATUS} from "$common/constants";
-import type {ColumnarTypeKeys, ProfileColumn} from "$lib/types";
-import type {TestDataColumns} from "../data/DataLoader.data";
-import {DataModelerSocketServiceMock} from "./DataModelerSocketServiceMock";
-import {SocketServerMock} from "./SocketServerMock";
-import {ParquetFileTestData} from "../data/DataLoader.data";
-import {DATA_FOLDER} from "../data/generator/data-constants";
-import {RootConfig} from "$common/config/RootConfig";
-import { ColumnarItemType, ColumnarItemTypeMap } from "$common/data-modeler-state-service/ProfileColumnStateActions";
+import { TestBase } from "@adityahegde/typescript-test-utils";
+import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
+import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
+import { dataModelerServiceFactory } from "$common/serverFactory";
+import { asyncWait, waitUntil } from "$common/utils/waitUtils";
+import type { ProfileColumn } from "$lib/types";
+import type { TestDataColumns } from "../data/DataLoader.data";
+import { ParquetFileTestData } from "../data/DataLoader.data";
+import { DataModelerSocketServiceMock } from "./DataModelerSocketServiceMock";
+import { SocketServerMock } from "./SocketServerMock";
+import { DATA_FOLDER } from "../data/generator/data-constants";
+import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
+import {
+    EntityRecord,
+    EntityStateService,
+    EntityStatus,
+    EntityType,
+    StateType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+    PersistentTableEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type {
+    DerivedTableEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import { dataModelerStateServiceClientFactory } from "$common/clientFactory";
+import type {
+    PersistentModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type {
+    DerivedModelEntity
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -26,18 +44,20 @@ export class FunctionalTestBase extends TestBase {
     protected socketServer: SocketServerMock;
 
     @TestBase.BeforeSuite()
-    public async setup(): Promise<void> {
-        this.clientDataModelerStateService = new DataModelerStateService([]);
+    public async setup(configOverride?: RootConfig): Promise<void> {
+        this.clientDataModelerStateService = dataModelerStateServiceClientFactory()
         this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
 
-        const serverInstances = dataModelerServiceFactory(new RootConfig({
-            database: new DatabaseConfig({ parquetFolder: "data", databaseName: ":memory:" }),
+        const config = configOverride ?? new RootConfig({
+            database: new DatabaseConfig({ databaseName: ":memory:" }),
             state: new StateConfig({ autoSync: false }),
-        }));
+            projectFolder: "temp/test",
+        });
+        const serverInstances = dataModelerServiceFactory(config);
         this.serverDataModelerStateService = serverInstances.dataModelerStateService;
         this.serverDataModelerService = serverInstances.dataModelerService;
-        this.socketServer = new SocketServerMock(this.serverDataModelerService, this.serverDataModelerStateService,
-            this.clientDataModelerService as DataModelerSocketServiceMock);
+        this.socketServer = new SocketServerMock(config, this.serverDataModelerService,
+            this.serverDataModelerStateService, this.clientDataModelerService as DataModelerSocketServiceMock);
         (this.clientDataModelerService as DataModelerSocketServiceMock).socketServerMock = this.socketServer;
 
         await this.clientDataModelerService.init();
@@ -47,6 +67,7 @@ export class FunctionalTestBase extends TestBase {
     @TestBase.AfterSuite()
     public async teardown(): Promise<void> {
         await this.serverDataModelerService?.destroy();
+        await this.socketServer?.destroy();
     }
 
     protected async loadTestTables(): Promise<void> {
@@ -57,11 +78,19 @@ export class FunctionalTestBase extends TestBase {
     }
 
     protected async waitForTables(): Promise<void> {
-        await this.waitForColumnar(ColumnarItemTypeMap[ColumnarItemType.Table]);
+        await this.waitForEntity(EntityType.Table);
+    }
+    protected async waitForModels(): Promise<void> {
+        await this.waitForEntity(EntityType.Model);
     }
 
-    protected async waitForModels(): Promise<void> {
-        await this.waitForColumnar(ColumnarItemTypeMap[ColumnarItemType.Model]);
+    protected getTables(field: string, value: any): [PersistentTableEntity, DerivedTableEntity] {
+        return this.getStatesForEntityType(EntityType.Table, field, value) as
+            [PersistentTableEntity, DerivedTableEntity];
+    }
+    protected getModels(field: string, value: any): [PersistentModelEntity, DerivedModelEntity] {
+        return this.getStatesForEntityType(EntityType.Model, field, value) as
+            [PersistentModelEntity, DerivedModelEntity];
     }
 
     protected assertColumns(profileColumns: ProfileColumn[], columns: TestDataColumns): void {
@@ -74,11 +103,28 @@ export class FunctionalTestBase extends TestBase {
         });
     }
 
-    private async waitForColumnar(columnarKey: ColumnarTypeKeys): Promise<void> {
+    private async waitForEntity(entityType: EntityType): Promise<void> {
         await asyncWait(200);
         await waitUntil(() => {
-            const currentState = this.clientDataModelerStateService.getCurrentState();
-            return (currentState[columnarKey] as any[]).every(item => item.status === IDLE_STATUS);
+            const currentState = this.clientDataModelerStateService
+                .getEntityStateService(entityType, StateType.Derived)
+                .getCurrentState();
+            return (currentState.entities as any[]).every(item => item.status === EntityStatus.Idle);
         });
+    }
+
+    private getEntityByField(entityType: EntityType, stateType: StateType,
+                             field: string, value: any): EntityRecord {
+        return (this.clientDataModelerStateService
+            .getEntityStateService(entityType, stateType) as EntityStateService<any>)
+            .getByField(field, value);
+    }
+
+    private getStatesForEntityType(entityType: EntityType, field: string, value: any): [EntityRecord, EntityRecord] {
+        const persistent = this.getEntityByField(entityType, StateType.Persistent, field, value);
+        return [
+            persistent,
+            persistent ? this.getEntityByField(entityType, StateType.Derived, "id", persistent.id) : undefined,
+        ];
     }
 }

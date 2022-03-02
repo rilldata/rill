@@ -9,4 +9,7 @@ export class DatabaseConfig extends Config<DatabaseConfig> {
 
     @Config.ConfigField("export")
     public exportFolder: string;
+
+    @Config.ConfigField(false)
+    public skipDatabase: boolean;
 }

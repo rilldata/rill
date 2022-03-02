@@ -8,7 +8,7 @@ export class InitCommand extends DataModelerCliCommand {
             .description("Initialize a new project either in the current folder or supplied folder.")
             .argument("[projectPath]", "Optional path to the project. Defaults to current directory.", process.cwd())
             .action((projectPath) => {
-                return this.run(projectPath);
+                return this.run({ projectPath });
             });
     }
 

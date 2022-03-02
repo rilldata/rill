@@ -1,19 +1,23 @@
 import type { Socket } from "socket.io";
 import type { Writable } from "svelte/store";
-import type { DataModelerState } from "./types";
 import { clientFactory } from "$common/clientFactory";
 import { RootConfig } from "$common/config/RootConfig";
 import type { DataModelerSocketService } from "$common/socket/DataModelerSocketService";
+import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
+import type {
+	EntityRecord,
+	EntityState
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+	ApplicationEntity,
+	ApplicationState
+} from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
-interface ServerToClientEvents {
-	['app-state']: (state:DataModelerState) => void;
-};
-
-interface ClientToServerEvents {
-  }
-
-export interface AppStore extends Pick<Writable<DataModelerState>, "subscribe"> {
-	socket:Socket<ServerToClientEvents, ClientToServerEvents>;
+export interface AppStore<
+	Entity extends EntityRecord = EntityRecord, State extends EntityState<Entity> = EntityState<Entity>
+> extends Pick<Writable<State>, "subscribe"> {
+	socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
 }
 
 const clientInstances = clientFactory(new RootConfig({}));
@@ -21,9 +25,12 @@ export const dataModelerService = clientInstances.dataModelerService;
 export const dataModelerStateService = clientInstances.dataModelerStateService;
 dataModelerService.init();
 
-export function createStore() : AppStore {
+export type ApplicationStore = AppStore<ApplicationEntity, ApplicationState>;
+
+export function createStore() : ApplicationStore {
 	return {
-		subscribe: dataModelerStateService.store.subscribe,
+		subscribe: dataModelerStateService
+			.getEntityStateService(EntityType.Application, StateType.Derived).store.subscribe as any,
 		// @ts-ignore
 		socket: (dataModelerService as DataModelerSocketService).getSocket(),
 	}

@@ -13,7 +13,24 @@ import {SocketServer} from "$common/socket/SocketServer";
 import {DatabaseService} from "$common/database-service/DatabaseService";
 import type {RootConfig} from "$common/config/RootConfig";
 import { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { DataModelerServerStateService } from "../server/DataModelerServerStateService";
+import {
+    PersistentTableEntityService
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import {
+    DerivedTableEntityService
+} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import {
+    PersistentModelEntityService
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import {
+    DerivedModelEntityService
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
+import { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import {
+    ApplicationStateService
+} from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import { CommonActions } from "$common/data-modeler-service/CommonActions";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -25,11 +42,15 @@ export function databaseServiceFactory(config: RootConfig) {
 }
 
 export function dataModelerStateServiceFactory(config: RootConfig) {
-    const tableStateActions = new TableStateActions();
-    const modelStateActions = new ModelStateActions();
-    const profileColumnStateActions = new ProfileColumnStateActions();
-    return new DataModelerServerStateService(
-        [tableStateActions, modelStateActions, profileColumnStateActions], config);
+    return new DataModelerStateService(
+        [TableStateActions, ModelStateActions,
+            ProfileColumnStateActions, CommonStateActions].map(StateActionsClass => new StateActionsClass()),
+        [
+            PersistentTableEntityService, DerivedTableEntityService,
+            PersistentModelEntityService, DerivedModelEntityService,
+            ApplicationStateService,
+        ].map(EntityStateService => new EntityStateService()),
+        config);
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {
@@ -39,11 +60,12 @@ export function dataModelerServiceFactory(config: RootConfig) {
 
     const notificationService = new SocketNotificationService();
 
-    const tableActions = new TableActions(dataModelerStateService, databaseService);
-    const modelActions = new ModelActions(dataModelerStateService, databaseService);
-    const profileColumnActions = new ProfileColumnActions(dataModelerStateService, databaseService);
+    const tableActions = new TableActions(config, dataModelerStateService, databaseService);
+    const modelActions = new ModelActions(config, dataModelerStateService, databaseService);
+    const profileColumnActions = new ProfileColumnActions(config, dataModelerStateService, databaseService);
+    const commonActions = new CommonActions(config, dataModelerStateService, databaseService);
     const dataModelerService = new DataModelerService(dataModelerStateService, databaseService, notificationService,
-        [tableActions, modelActions, profileColumnActions]);
+        [tableActions, modelActions, profileColumnActions, commonActions]);
 
     return {dataModelerStateService, dataModelerService, notificationService};
 }
@@ -51,7 +73,7 @@ export function dataModelerServiceFactory(config: RootConfig) {
 export function serverFactory(config: RootConfig) {
     const {dataModelerStateService, dataModelerService, notificationService} = dataModelerServiceFactory(config);
 
-    const socketServer = new SocketServer(dataModelerService, dataModelerStateService, config);
+    const socketServer = new SocketServer(config, dataModelerService, dataModelerStateService);
     notificationService.setSocketServer(socketServer.getSocketServer());
 
     return {dataModelerStateService, dataModelerService, socketServer};

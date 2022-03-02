@@ -8,12 +8,12 @@ export class StartCommand extends DataModelerCliCommand {
             .description("Starts the data-modeler UI.")
             .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
             .action(({project}) => {
-                return this.run(project);
+                return this.run({ projectPath: project, shouldInitState: false, shouldSkipDatabase: false });
             });
     }
 
     protected sendActions(): Promise<void> {
-        return new ExpressServer(this.dataModelerService, this.dataModelerStateService,
-            this.notificationService, this.config).init();
+        return new ExpressServer(this.config, this.dataModelerService, this.dataModelerStateService,
+            this.notificationService).init();
     }
 }

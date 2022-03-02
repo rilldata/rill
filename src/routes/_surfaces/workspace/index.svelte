@@ -1,12 +1,15 @@
 <script lang="ts">
 import { getContext } from "svelte";
-import type { AppStore } from '$lib/app-store';
+import type { ApplicationStore } from "$lib/app-store";
 import DropZone from "$lib/components/DropZone.svelte";
 import ModelView from "./Model.svelte";
-import MetricsDefinitionView from "./MetricsDefinition.svelte";
-import ExploreView from "./Explore.svelte";
+// import MetricsDefinitionView from "./MetricsDefinition.svelte";
+// import ExploreView from "./Explore.svelte";
 import {dataModelerService} from "$lib/app-store";
-const store = getContext("rill:app:store") as AppStore;
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { PersistentModelStore } from "$lib/modelStores";
+const store = getContext("rill:app:store") as ApplicationStore;
+const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 </script>
 
 <!-- <button 
@@ -15,16 +18,16 @@ const store = getContext("rill:app:store") as AppStore;
         store.action('unsetActiveAsset');
     }} style="font-size:12px;">✕</button> -->
 
-{#if $store?.activeAsset?.assetType === 'model'}
+{#if $store?.activeEntity?.type === EntityType.Model}
     <ModelView />
-{:else if $store?.activeAsset?.assetType === 'metricsDefinition'}
-    <MetricsDefinitionView />
-{:else if $store?.activeAsset?.assetType === 'exploreConfiguration'}
-    <ExploreView />
+<!--{:else if $store?.activeEntity?.type === 'metricsDefinition'}-->
+<!--    <MetricsDefinitionView />-->
+<!--{:else if $store?.activeEntity?.type === 'exploreConfiguration'}-->
+<!--    <ExploreView />-->
 {:else}
-<DropZone 
-    padTop={!!$store?.models?.length}
-    on:source-drop={(evt) => { 
+<DropZone
+    padTop={!!$persistentModelStore?.entities.length}
+    on:source-drop={(evt) => {
     dataModelerService.dispatch('addModel', [{ query: evt.detail.props.content, makeActive: true } ]);
     }} />
 {/if}

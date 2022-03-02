@@ -13,14 +13,15 @@ export class ExpressServer {
     private readonly server: http.Server;
     private readonly socketServer: SocketServer;
 
-    constructor(private readonly dataModelerService: DataModelerService,
+    constructor(private readonly config: RootConfig,
+                private readonly dataModelerService: DataModelerService,
                 dataModelerStateService: DataModelerStateService,
-                notificationService: SocketNotificationService, private readonly config: RootConfig) {
+                notificationService: SocketNotificationService) {
         this.app = express();
         this.server = http.createServer(this.app);
 
-        this.socketServer = new SocketServer(dataModelerService, dataModelerStateService,
-            config, this.server);
+        this.socketServer = new SocketServer(config, dataModelerService,
+            dataModelerStateService, this.server);
         notificationService.setSocketServer(this.socketServer.getSocketServer());
 
         if (config.server.serveStaticFile) {
