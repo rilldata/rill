@@ -39,6 +39,7 @@ export class ModelActions extends DataModelerActions {
             console.error(`No model found for ${modelId}`);
             return;
         }
+        this.databaseActionQueue.clearQueue(modelId);
 
         const sanitizedQuery = sanitizeQuery(query);
         if (sanitizedQuery === derivedModel.sanitizedQuery) {
@@ -71,6 +72,7 @@ export class ModelActions extends DataModelerActions {
             console.error(`No model found for ${modelId}`);
             return;
         }
+        this.databaseActionQueue.clearQueue(modelId);
 
         try {
             // create a view of the query for other analysis

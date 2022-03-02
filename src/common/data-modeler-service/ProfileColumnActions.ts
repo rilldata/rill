@@ -23,8 +23,10 @@ export class ProfileColumnActions extends DataModelerActions {
             console.error(`Entity not found. entityType=${entityType} entityId=${entityId}`);
             return;
         }
-        await Promise.all(entity.profile.map(column =>
-            this.collectColumnInfo(entityType, entityId, persistentEntity.tableName, column)));
+        try {
+            await Promise.all(entity.profile.map(column =>
+                this.collectColumnInfo(entityType, entityId, persistentEntity.tableName, column)));
+        } catch (err) {}
     }
 
     private async collectColumnInfo(entityType: EntityType, entityId: string,

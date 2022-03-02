@@ -49,6 +49,7 @@ export class ActionQueueOrchestrator<ActionsDefinition extends Record<string, Ar
 
     public clearQueue(id: string): void {
         const queuedActions = this.priorityActionQueue.clearQueue(id);
+        if (!queuedActions) return;
         queuedActions.forEach(queuedAction =>
             queuedAction[QueuedActionCallbacksIdx].promiseReject(new Error("Cancelled")));
     }

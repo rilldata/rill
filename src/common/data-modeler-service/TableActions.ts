@@ -83,6 +83,7 @@ export class TableActions extends DataModelerActions {
             console.error("No table found");
             return;
         }
+        this.databaseActionQueue.clearQueue(tableId);
 
         try {
             await this.importTableDataByType(persistentTable);
