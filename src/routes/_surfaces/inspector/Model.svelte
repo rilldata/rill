@@ -193,7 +193,7 @@ onMount(() => {
               hideNullPercentage={false}
               hideRight={false}
 
-              compactBreakpoint={450}
+              compactBreakpoint={350}
 
               name={column.name}
               type={column.type}
