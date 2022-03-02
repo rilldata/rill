@@ -43,6 +43,7 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
 </script>
 
 <ColumnEntry
+    left={indentLevel === 1 ? 8 : 3}
     {hideRight}
     {active}
     emphasize={active}
@@ -66,8 +67,8 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
                 {#if CATEGORICALS.has(type)}
                     <BarAndLabel 
                     color={DATA_TYPE_COLORS['VARCHAR'].bgClass}
-                    value={summary.cardinality / totalRows}>
-                        |{cardinalityFormatter(summary.cardinality)}|
+                    value={summary?.cardinality / totalRows}>
+                        |{cardinalityFormatter(summary?.cardinality)}|
                     </BarAndLabel>
                 
                 {:else if NUMERICS.has(type) && summary?.histogram}
@@ -118,15 +119,15 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
         {#if active}
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3">
             {#if CATEGORICALS.has(type)}
-                <div class="pl-16 pr-8">
+                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8">
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 
             {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram}
-            <div class="pl-12">
+            <div class="pl-{indentLevel === 1 ? 12 : 5}">
                 <!-- FIXME: we have to remove a bit of pad from the right side to make this work -->
                 <NumericHistogram
-                    width={containerWidth - 32 - 20 - 24}
+                    width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32)}
                     height={65} 
                     data={summary.histogram}
                     min={summary.statistics.min}
@@ -138,9 +139,9 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
                 />
             </div>
             {:else if TIMESTAMPS.has(type)}
-                <div class="pl-14">
+                <div class="pl-{indentLevel === 1 ? 14 : 5}">
                     <TimestampHistogram
-                        width={containerWidth - 32 - 20 - 24}
+                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32)}
                         data={summary.histogram}
                         interval={summary.interval}
                     />

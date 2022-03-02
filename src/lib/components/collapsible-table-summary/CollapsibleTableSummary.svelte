@@ -1,7 +1,7 @@
 <script lang="ts">
 import { SvelteComponent, tick } from "svelte/internal";
 import { onMount, createEventDispatcher } from "svelte";
-import { fade, slide, fly } from "svelte/transition";
+import { slide } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { cubicInOut as easing, cubicOut } from "svelte/easing";
 import { format } from "d3-format";
@@ -18,17 +18,12 @@ import ColumnProfile from "./ColumnProfile.svelte";
 import Spacer from "$lib/components/icons/Spacer.svelte";
 
 import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
-import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
-
-import BarAndLabel from "$lib/components/BarAndLabel.svelte";
-import Spinner from "$lib/components/Spinner.svelte";
 
 // icons
 import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
 
 import { dropStore } from '$lib/drop-store';
 
-import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
 import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/collapsible-table-summary/sort-utils"
 
 import { onClickOutside } from "$lib/util/on-click-outside";
@@ -50,7 +45,6 @@ let colSizer;
 const dispatch = createEventDispatcher();
 
 const formatInteger = format(',');
-const percentage = format('.1%');
 
 let containerWidth = 0;
 let contextMenu;
@@ -64,7 +58,6 @@ onMount(() => {
     observer.observe(container);
 });
 
-$: collapseGrid = containerWidth < collapseWidth;
 
 let cardinalityTween = tweened(cardinality, { duration: 600, easing });
 let sizeTween = tweened(sizeInBytes, { duration: 650, easing, delay: 150 });
@@ -76,33 +69,23 @@ $: sizeTween.set(sizeInBytes || 0);
 let selectingColumns = false;
 let selectedColumns = [];
 
-let showSummaries = true;
-let summaryColumns = [];
-
 let sortedProfile;
 function sortByOriginalOrder() {
     sortedProfile = profile;
 }
 
 let sortMethod = defaultSort;
+// this predicate actually is valid but typescript doesn't seem to agree.
+// @ts-ignore
 $: if (sortMethod !== sortByOriginalOrder) {
     sortedProfile = [...profile].sort(sortMethod);
 } else {
+    console.log('does this work.')
     sortedProfile = profile;
 }
 
 let previewView = 'summaries';
 
-// FIXME: replace once we work through logical types in parquet_scan
-function typeToSymbol(fieldType) {
-    if (fieldType === 'BYTE_ARRAY' || fieldType === 'VARCHAR') {
-        return {symbol: "C", text: 'categorical (BYTE_ARRAY)', color: 'red'};
-    } else {
-        return {symbol: fieldType.slice(0,1), text: fieldType, color: 'sky'};
-    }
-}
-
-// these context menu coordinates will be where the element's context menu appears.
 let menuX;
 let menuY;
 let clickOutsideListener;

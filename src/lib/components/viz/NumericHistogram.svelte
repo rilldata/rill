@@ -36,12 +36,18 @@ function transformValue(value, valueType) {
 
 let fontSize = 12;
 let buffer = 4;
+
 </script>
 
 <HistogramBase separate={width > 300} bind:buffer {top} 
     fillColor={NUMERIC_TOKENS.vizFillClass}
     baselineStrokeColor={NUMERIC_TOKENS.vizStrokeClass}
-    {data} {left} {right} width={effectiveWidth} height={height + 6 * (fontSize + buffer) + anchorBuffer * 2} bottom={ 6 * (fontSize + buffer)}>
+    {data} 
+    {left} 
+    {right} 
+    width={effectiveWidth} 
+    height={height + 6 * (fontSize + buffer + anchorBuffer) + anchorBuffer} 
+    bottom={anchorBuffer * 2 +  6 * (fontSize + buffer + anchorBuffer / 2)}>
     <svelte:fragment let:x let:y let:buffer>
         <filter id="outline-{histogramID}">
             <feMorphology in="SourceAlpha" result="DILATED" operator="dilate" radius="1"></feMorphology>
@@ -54,14 +60,20 @@ let buffer = 4;
             </feMerge>
         </filter>
         <g style:font-size="12px" class='textElements'>
-
+            <!-- lines first -->
             {#each [['min', min], ['25%', qlow], ['median', median], ['mean', mean], ['75%', qhigh], ['max', max]] as [label, value], i} 
-                {@const yi = y(0) + i * (fontSize + buffer) + anchorBuffer * 2 }
+                {@const yi = y(0) + anchorBuffer + i * (fontSize + buffer + anchorBuffer / 2) + anchorBuffer * 2 }
                 {@const anchor = x(value) < (width / 2) ? 'start' : 'end'}
-                {@const anchorPlacement = anchor === 'start' ? anchorBuffer : -anchorBuffer}
 
                 <line x1={left}  x2={width - right} y1={yi - fontSize / 4 } y2={yi - fontSize / 4 } stroke-dasharray=2,1 class="stroke-gray-300" />
                 <line x1={x(value)}  x2={x(value)} y1={yi - fontSize / 4} y2={y(0) + 4}  class="stroke-gray-300" />
+            {/each}
+
+            <!-- then everythign else -->
+            {#each [['min', min], ['25%', qlow], ['median', median], ['mean', mean], ['75%', qhigh], ['max', max]] as [label, value], i} 
+                {@const yi = y(0) + anchorBuffer + i * (fontSize + buffer + anchorBuffer / 2)  + anchorBuffer * 2 }
+                {@const anchor = x(value) < (width / 2) ? 'start' : 'end'}
+                {@const anchorPlacement = anchor === 'start' ? anchorBuffer : -anchorBuffer}
 
                 <text text-anchor="end" x={left - labelOffset} y={yi}>
                         {label}

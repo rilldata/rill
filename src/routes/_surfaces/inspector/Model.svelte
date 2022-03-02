@@ -1,10 +1,9 @@
 <script lang="ts">
-import { getContext } from "svelte";
+import { getContext, onMount } from "svelte";
 import { slide } from "svelte/transition";
-import RowTable from "$lib/components/RowTable.svelte";
-import RawJSON from "$lib/components/rawJson.svelte";
-import CollapsibleTableSummary from "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+import ColumnProfile from "$lib/components/collapsible-table-summary/ColumnProfile.svelte";
+import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
 
 import { formatCompactInteger } from "$lib/util/formatters";
 import * as classes from "$lib/util/component-classes";
@@ -16,41 +15,26 @@ import {format} from "d3-format";
 import { formatInteger } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
-<<<<<<< HEAD
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
-import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
+import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 
-const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
-=======
-import ColumnProfile from "$lib/components/collapsible-table-summary/ColumnProfile.svelte";
 
-const store = getContext('rill:app:store') as AppStore;
->>>>>>> b0e8483 (additional updates around inspector preparation)
+const store = getContext('rill:app:store') as ApplicationStore;
 const queryHighlight = getContext('rill:app:query-highlight');
 
 const formatRollupFactor = format(',r');
 
-// FIXME
-let outputView = 'row';
-let whichTable = {
-  row: RowTable,
-  json: RawJSON
-}
-
 let innerWidth;
-
-let showTables = false;
-let showOutputs = true;
 
 function tableDestinationCompute(key, table, destination) {
   return table.reduce((acc,v) => acc + v[key], 0) / destination[key];
@@ -92,11 +76,23 @@ $: if (currentDerivedModel?.sizeInBytes && tables) compression = computeCompress
 // toggle state for inspector sections
 let showSourceTables = true;
 
+
+let container;
+let containerWidth = 0;
+
+onMount(() => {
+    const observer = new ResizeObserver(entries => {
+        containerWidth = container.clientWidth;
+    });
+    observer.observe(container);
+})
+
+
 </script>
 
 <svelte:window bind:innerWidth />
 
-  <div>
+  <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length}
       {#if currentModel.query.trim().length}
         <div class="grid justify-items-center" style:height="var(--header-height)" >
@@ -188,11 +184,11 @@ let showSourceTables = true;
 
         {#if currentDerivedModel?.profile && showColumns}
         <div class='source-tables pt-4 pb-4' transition:slide|local={{duration: 200}}>
-
           {#each currentDerivedModel.profile as column}
-            <ColumnProfile 
+            <ColumnProfile
+              indentLevel={0}
               example={currentDerivedModel.preview[0][column.name]}
-              containerWidth={500}
+              containerWidth={containerWidth}
 
               hideNullPercentage={false}
               hideRight={false}
@@ -204,7 +200,11 @@ let showSourceTables = true;
               summary={column.summary}
               totalRows={currentDerivedModel?.cardinality}
               nullCount={column.nullCount}
-            />
+            >
+              <!-- <ContextButton tooltipText='remove "{column.name}" from the model' slot="context-button">
+                +
+              </ContextButton> -->
+            </ColumnProfile>
           {/each}
         </div>
 
