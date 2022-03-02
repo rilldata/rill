@@ -8,8 +8,8 @@ import type { ApplicationStore } from "$lib/app-store";
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import AddIcon from "$lib/components/icons/Add.svelte";
-import CollapsibleTableSummary from  "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
-import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
+import CollapsibleTableSummary from  "$lib/components/column-profile/CollapsibleTableSummary.svelte";
+import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'

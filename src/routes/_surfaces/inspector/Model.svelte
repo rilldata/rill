@@ -1,12 +1,11 @@
 <script lang="ts">
-import { getContext } from "svelte";
+import { getContext, onMount } from "svelte";
 import { slide } from "svelte/transition";
-import RowTable from "$lib/components/RowTable.svelte";
-import RawJSON from "$lib/components/rawJson.svelte";
-import CollapsibleTableSummary from "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
+import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 
-import { formatCardinality } from "$lib/util/formatters";
+import { formatCompactInteger } from "$lib/util/formatters";
 import * as classes from "$lib/util/component-classes";
 
 import type { ApplicationStore } from "$lib/app-store";
@@ -22,29 +21,20 @@ import type {
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
-import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
+import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 
-const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
+
+const store = getContext('rill:app:store') as ApplicationStore;
 const queryHighlight = getContext('rill:app:query-highlight');
 
 const formatRollupFactor = format(',r');
 
-// FIXME
-let outputView = 'row';
-let whichTable = {
-  row: RowTable,
-  json: RawJSON
-}
-
 let innerWidth;
-
-let showTables = false;
-let showOutputs = true;
 
 function tableDestinationCompute(key, table, destination) {
   return table.reduce((acc,v) => acc + v[key], 0) / destination[key];
@@ -63,8 +53,8 @@ let compression;
 let tables;
 // get source tables?
 let sourceTableReferences;
-
-let showDestination = true;
+let showColumns = true;
+let sourceTableNames = [];
 
 let currentModel: PersistentModelEntity;
 $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
@@ -86,11 +76,23 @@ $: if (currentDerivedModel?.sizeInBytes && tables) compression = computeCompress
 // toggle state for inspector sections
 let showSourceTables = true;
 
+
+let container;
+let containerWidth = 0;
+
+onMount(() => {
+    const observer = new ResizeObserver(entries => {
+        containerWidth = container.clientWidth;
+    });
+    observer.observe(container);
+})
+
+
 </script>
 
 <svelte:window bind:innerWidth />
 
-  <div>
+  <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length}
       {#if currentModel.query.trim().length}
         <div class="grid justify-items-center" style:height="var(--header-height)" >
@@ -114,8 +116,8 @@ let showSourceTables = true;
             {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
           </div>
           <div style="color: #666; text-align:right;">
-            {formatCardinality(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
-            {formatCardinality(currentDerivedModel.cardinality)} rows
+            {formatCompactInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
+            {formatCompactInteger(currentDerivedModel.cardinality)} rows
           </div>
           <div>
             {#if currentDerivedModel.sizeInBytes}
@@ -123,8 +125,8 @@ let showSourceTables = true;
             {:else}<button on:click={() => {}}>generate compression</button>{/if}
           </div>
           <div style="color: #666; text-align: right;">
-            {formatCardinality(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
-            {#if currentDerivedModel.sizeInBytes}{formatCardinality(currentDerivedModel.sizeInBytes)}{:else}...{/if}
+            {formatCompactInteger(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
+            {#if currentDerivedModel.sizeInBytes}{formatCompactInteger(currentDerivedModel.sizeInBytes)}{:else}...{/if}
           </div>
         </div>
       {/if}
@@ -173,30 +175,45 @@ let showSourceTables = true;
       
       <hr />
       
-      <div class='source-tables pt-4 pb-4'>
-        {#if currentDerivedModel?.profile}
-            <CollapsibleTableSummary 
-              collapseWidth={240 + 120 + 16}
-              name="Destination"
-              path=""
-              bind:show={showDestination}
-              cardinality={currentDerivedModel?.cardinality}
-              sizeInBytes={currentDerivedModel?.sizeInBytes}
-              profile={currentDerivedModel.profile}
-              head={currentDerivedModel.preview}
-              draggable={false}
-            />
-        {/if}
+      <div class="pb-4 pt-4">
+      <div class=" pl-5 pr-5">
+        <CollapsibleSectionTitle bind:active={showColumns}>
+          Selected Columns
+        </CollapsibleSectionTitle>
       </div>
-    {/if}
-    <div>
+
+        {#if currentDerivedModel?.profile && showColumns}
+        <div class='source-tables pt-4 pb-4' transition:slide|local={{duration: 200}}>
+          {#each currentDerivedModel.profile as column}
+            <ColumnProfile
+              indentLevel={0}
+              example={currentDerivedModel.preview[0][column.name]}
+              containerWidth={containerWidth}
+
+              hideNullPercentage={false}
+              hideRight={false}
+
+              compactBreakpoint={350}
+
+              name={column.name}
+              type={column.type}
+              summary={column.summary}
+              totalRows={currentDerivedModel?.cardinality}
+              nullCount={column.nullCount}
+            >
+              <!-- <ContextButton tooltipText='remove "{column.name}" from the model' slot="context-button">
+                +
+              </ContextButton> -->
+            </ColumnProfile>
+          {/each}
+        </div>
+
+        {/if}
     </div>
+
+    {/if}
   </div>
 <style lang="postcss">
-
-.source-tables {
-  @apply grid grid-flow-row gap-2;
-}
 
 .results {
   overflow: auto;

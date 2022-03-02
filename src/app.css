@@ -8,7 +8,6 @@
   }
 }
 
-
 ::selection {
     background-color: black;
     color: white;
@@ -137,9 +136,9 @@ button {
     height: 18px;
 }
 
-.pl-accordion {
+/* .pl-accordion {
     padding-left: calc(14px + .25rem);
-}
+} */
 
 .draggable:active {
     cursor: dragging;
@@ -149,3 +148,4 @@ button {
     background-color: transparent;
     border-right: none;
 }
+

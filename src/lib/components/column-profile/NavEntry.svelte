@@ -2,7 +2,7 @@
 // FIXME: we should probably rename this to AssetNavigationElement.svelte or something like that.
 import { createEventDispatcher } from "svelte";
 import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
-import ExpanderButton from "$lib/components/collapsible-table-summary/ExpanderButton.svelte";
+import ExpanderButton from "$lib/components/column-profile/ExpanderButton.svelte";
 import type { SvelteComponent } from "svelte";
 
 const dispatch = createEventDispatcher();

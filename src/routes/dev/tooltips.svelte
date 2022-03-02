@@ -1,7 +1,7 @@
 <script>
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-import SummaryAndHistogram from "$lib/components/viz/SummaryAndHistogram.svelte";
+import SummaryAndHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
 import { data01 } from "./_hist-data"
 let x = 50;
 let y = 500;
