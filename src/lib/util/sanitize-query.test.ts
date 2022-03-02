@@ -17,9 +17,13 @@ SELECT * from         whateveR;
         `, false)
         expect(output).toBe('SELECT * from whateveR')
     })
-    it("removes comments not ending in a newline", () => {
+    it("removes extraneous spaces from columns", () => {
         const output = sanitizeQuery(`
-SELECT * from         whateveR; -- inline comment`, false)
-        expect(output).toBe('SELECT * from whateveR')
+-- whatever this is
+SELECT 1, 2,     3 from         whateveR;
+-- another extraneous comment.        
+        `, false)
+        expect(output).toBe('SELECT 1,2,3 from whateveR')
     })
+
 })
