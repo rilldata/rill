@@ -32,13 +32,19 @@ export class ModelActions extends DataModelerActions {
     public async updateModelQuery({stateService}: PersistentModelStateActionArg,
                                   modelId: string, query: string): Promise<void> {
         const model = stateService.getById(modelId);
+        const derivedModel = this.dataModelerStateService
+            .getEntityById(EntityType.Model, StateType.Derived, modelId);
         if (!model) {
             console.error(`No model found for ${modelId}`);
             return;
         }
 
-        this.dataModelerStateService.dispatch("updateModelQuery",
-            [modelId, query, sanitizeQuery(query)]);
+        const sanitizedQuery = sanitizeQuery(query);
+        if (sanitizedQuery === derivedModel.sanitizedQuery) {
+            return;
+        }
+
+        this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
 
         // validate query with the original query first.
         if (!await this.validateModelQuery(model, query)) {
