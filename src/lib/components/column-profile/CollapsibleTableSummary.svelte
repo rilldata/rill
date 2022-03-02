@@ -11,20 +11,20 @@ import MenuItem from "$lib/components/menu/MenuItem.svelte";
 import * as classes from "$lib/util/component-classes";
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
-import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
+import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 
 import ColumnProfile from "./ColumnProfile.svelte";
 
 import Spacer from "$lib/components/icons/Spacer.svelte";
 
-import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
+import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
 
 // icons
 import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
 
 import { dropStore } from '$lib/drop-store';
 
-import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/collapsible-table-summary/sort-utils"
+import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/column-profile/sort-utils"
 
 import { onClickOutside } from "$lib/util/on-click-outside";
 
@@ -35,7 +35,6 @@ export let cardinality:number;
 export let profile:any;
 export let head:any; // FIXME
 export let sizeInBytes:number;
-export let collapseWidth = 200 + 120 + 16;
 export let emphasizeTitle:boolean = false;
 export let draggable = true;
 export let show = false;
@@ -205,15 +204,15 @@ let titleElementHovered = false;
     {/if}
     {#if show}
         <div class="pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
-            <div  class='pl-6 pr-6 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 350}>
+            <div  class='pl-6 pr-6 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
                 <select bind:value={sortMethod} class={classes.NATIVE_SELECT}>
-                    <option value={sortByOriginalOrder}>sort by original order</option>
+                    <option value={sortByOriginalOrder}>show original order</option>
                     <option value={defaultSort}>sort by type</option>
                     <option value={sortByNullity}>sort by null %</option>
                     <option value={sortByName}>sort by name</option>
                 </select>
-                <select bind:value={previewView} class={classes.NATIVE_SELECT}>
-                    <option value="summaries">show summaries</option>
+                <select bind:value={previewView} class={classes.NATIVE_SELECT} class:hidden={containerWidth < 325}>
+                    <option value="summaries">show summary</option>
                     <option value="example">show example</option>
                 </select>
             </div>

@@ -11,9 +11,9 @@ import { percentage } from "./utils"
 import { formatInteger, formatCompactInteger, standardTimestampFormat } from "$lib/util/formatters"
 import { CATEGORICALS, NUMERICS, TIMESTAMPS, DATA_TYPE_COLORS } from "$lib/duckdb-data-types";
 
-import Histogram from "$lib/components/viz/SmallHistogram.svelte";
-import TimestampHistogram from "$lib/components/viz/TimestampHistogram.svelte";
-import NumericHistogram from "$lib/components/viz/NumericHistogram.svelte";
+import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
+import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
+import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
 
 export let name;
 export let type;
@@ -120,11 +120,13 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3">
             {#if CATEGORICALS.has(type)}
                 <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8">
+                    <!-- pl-16 pl-8 -->
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 
             {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram}
             <div class="pl-{indentLevel === 1 ? 12 : 5}">
+                <!-- pl-12 pl-5 -->
                 <!-- FIXME: we have to remove a bit of pad from the right side to make this work -->
                 <NumericHistogram
                     width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32)}
@@ -139,9 +141,10 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
                 />
             </div>
             {:else if TIMESTAMPS.has(type)}
-                <div class="pl-{indentLevel === 1 ? 14 : 5}">
+                <div class="pl-{indentLevel === 1 ? 14 : 10}">
+                    <!-- pl-14 pl-10 -->
                     <TimestampHistogram
-                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32)}
+                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32 + 20)}
                         data={summary.histogram}
                         interval={summary.interval}
                     />

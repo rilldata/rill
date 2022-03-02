@@ -1,10 +1,10 @@
 <script>
 import { getContext, createEventDispatcher } from "svelte";
 import { slide } from "svelte/transition";
-import ColumnProfile from "$lib/components/collapsible-table-summary/ColumnProfile.svelte";
-import SummaryViewSelector from "$lib/components/collapsible-table-summary/SummaryViewSelector.svelte";
-import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte"
-import NavEntry from "$lib/components/collapsible-table-summary/NavEntry.svelte";
+import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
+import SummaryViewSelector from "$lib/components/column-profile/SummaryViewSelector.svelte";
+import ContextButton from "$lib/components/column-profile/ContextButton.svelte"
+import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
 import icon from "$lib/components/icons/List.svelte"
 const store = getContext("rill:app:store");
 

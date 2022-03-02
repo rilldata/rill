@@ -2,8 +2,8 @@
 import { getContext, onMount } from "svelte";
 import { slide } from "svelte/transition";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-import ColumnProfile from "$lib/components/collapsible-table-summary/ColumnProfile.svelte";
-import ContextButton from "$lib/components/collapsible-table-summary/ContextButton.svelte";
+import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
+import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 
 import { formatCompactInteger } from "$lib/util/formatters";
 import * as classes from "$lib/util/component-classes";

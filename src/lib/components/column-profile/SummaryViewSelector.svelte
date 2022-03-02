@@ -2,7 +2,7 @@
 import IconButton from "$lib/components/IconButton.svelte";
 import * as classes from "$lib/util/component-classes";
 
-import { defaultSort, sortByNullity, sortByName } from "$lib/components/collapsible-table-summary/sort-utils";
+import { defaultSort, sortByNullity, sortByName } from "$lib/components/column-profile/sort-utils";
 export let sortMethod = defaultSort;
 export let previewView = 'summaries';
 
