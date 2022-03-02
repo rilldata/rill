@@ -21,3 +21,13 @@ export function getActionMethods(instance: any): Array<string> {
         return prototypeMember !== "constructor" && typeof descriptor.value === "function";
     });
 }
+
+export interface ActionServiceBase<ActionsDefinition extends Record<string, Array<any>>> {
+    /**
+     * Will be called by ActionQueueOrchestrator once the action has been scheduled
+     * @param action
+     * @param args
+     */
+    dispatch<Action extends keyof ActionsDefinition>(
+        action: Action, args: ActionsDefinition[Action]): Promise<any>;
+}

@@ -1,7 +1,7 @@
 {
 	"name": "data-modeler",
 	"version": "0.1.0",
-    "type": "module",
+	"type": "module",
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build && tsc --project tsconfig.node.json",
@@ -74,6 +74,7 @@
 		"duckdb": "^0.3.2",
 		"express": "^4.17.3",
 		"glob": "^7.2.0",
+		"heap": "^0.2.7",
 		"highlight.js": "^11.4.0",
 		"immer": "^9.0.12",
 		"js-sql-parser": "^1.4.1",

@@ -16,6 +16,7 @@ import type {
     DerivedTableEntity,
     DerivedTableStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -93,17 +94,21 @@ export class TableActions extends DataModelerActions {
 
             await Promise.all([
                 async () => {
-                    newDerivedTable.profile = await this.databaseService.dispatch(
+                    newDerivedTable.profile = await this.databaseActionQueue.enqueue(
+                        {id: tableId, priority: DatabaseActionQueuePriority.TableImport},
                         "getProfileColumns", [persistentTable.tableName]);
                     newDerivedTable.profile = newDerivedTable.profile
                         .filter(row => row.name !== "duckdb_schema" && row.name !== "schema" && row.name !== "root");
                 },
-                async () => newDerivedTable.sizeInBytes =
-                    await this.databaseService.dispatch("getDestinationSize", [persistentTable.path]),
-                async () => newDerivedTable.cardinality =
-                    await this.databaseService.dispatch("getCardinalityOfTable", [persistentTable.tableName]),
-                async () => newDerivedTable.preview =
-                    await this.databaseService.dispatch("getFirstNOfTable", [persistentTable.tableName]),
+                async () => newDerivedTable.sizeInBytes = await this.databaseActionQueue.enqueue(
+                    {id: tableId, priority: DatabaseActionQueuePriority.TableProfile},
+                    "getDestinationSize", [persistentTable.path]),
+                async () => newDerivedTable.cardinality = await this.databaseActionQueue.enqueue(
+                    {id: tableId, priority: DatabaseActionQueuePriority.TableProfile},
+                    "getCardinalityOfTable", [persistentTable.tableName]),
+                async () => newDerivedTable.preview = await this.databaseActionQueue.enqueue(
+                    {id: tableId, priority: DatabaseActionQueuePriority.TableProfile},
+                    "getFirstNOfTable", [persistentTable.tableName]),
             ].map(asyncFunc => asyncFunc()));
 
             this.dataModelerStateService.dispatch("updateEntity",
@@ -138,11 +143,15 @@ export class TableActions extends DataModelerActions {
     private async importTableDataByType(table: PersistentTableEntity) {
         switch (table.sourceType) {
             case TableSourceType.ParquetFile:
-                await this.databaseService.dispatch("importParquetFile", [table.path, table.tableName]);
+                await this.databaseActionQueue.enqueue(
+                    {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
+                    "importParquetFile", [table.path, table.tableName]);
                 break;
 
             case TableSourceType.CSVFile:
-                await this.databaseService.dispatch("importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
+                await this.databaseActionQueue.enqueue(
+                    {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
+                    "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
                 break;
         }
     }
