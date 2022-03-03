@@ -86,7 +86,7 @@ let titleTooltipHover;
         <div class="flex gap-2 items-center"  class:hidden={view !== 'summaries'}>
             <div class="flex items-center"  style:width="{summaryWidthSize}px">
 
-                {#if CATEGORICALS.has(type)}
+                {#if CATEGORICALS.has(type) && summary?.cardinality && totalRows}
                     <Tooltip location="right" alignment="center" distance={8} >
                         <BarAndLabel 
                         color={DATA_TYPE_COLORS['VARCHAR'].bgClass}
@@ -125,9 +125,10 @@ let titleTooltipHover;
 
             <div style:width="{config.nullPercentageWidth}px" class:hidden={hideNullPercentage}>
 
-                {#if totalRows !== undefined && nullCount !== undefined}
+                {#if 
+                    totalRows !== undefined && 
+                    nullCount !== undefined}
                 <Tooltip location="right" alignment="center" distance={8}>
-
                     <BarAndLabel
                         showBackground={nullCount !== 0}
                         color={DATA_TYPE_COLORS[type].bgClass}
