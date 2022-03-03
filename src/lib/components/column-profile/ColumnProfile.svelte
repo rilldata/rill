@@ -59,7 +59,6 @@ let titleTooltipHover;
         if (totalRows) {
             active = !active;
         }
-        
     }}
 >
     <svelte:fragment slot="icon">
