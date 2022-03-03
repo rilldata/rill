@@ -43,7 +43,6 @@ export class ModelStateActions extends StateActions {
     public updateModelQuery({stateService, draftState}: PersistentModelStateActionArg,
                             modelId: string, query: string, sanitizedQuery: string): void {
         stateService.updateEntityField(draftState, modelId, "query", query);
-        // TODO redirect to updateModelSanitizedQuery
     }
 
     @StateActions.DerivedModelAction()
