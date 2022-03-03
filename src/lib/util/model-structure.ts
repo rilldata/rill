@@ -129,7 +129,7 @@ export function extractCTEs(query:string) : CTE[] {
     return CTEs;
 }
 
-export function getCoreQuerySelectStatements(query:string) {
+export function extractCoreSelectStatements(query:string) {
     const ctes = extractCTEs(query);
     const latest = ctes.slice(-1)[0].end;
     const restOfQuery = query.slice(latest + 1).replace(/[\s\n\t\r]/g, ' ');
@@ -138,7 +138,7 @@ export function getCoreQuerySelectStatements(query:string) {
     if (!restOfQuery.toLowerCase().trim().startsWith('select ')) {
         throw Error(`rest of query must start with select, instead with ${restOfQuery.slice(0,10)}`);
     }
-    let i = 'SELECT '.length + (startingBuffer !== -1 ? startingBuffer : 0);
+    let i = 'SELECT '.length + startingBuffer;
     let ri = i;
     let ei = ri;
     let reachedFrom = false;
@@ -170,7 +170,13 @@ export function getCoreQuerySelectStatements(query:string) {
             if (firstRealChar !== -1) {
                 start += firstRealChar;
             }
-            const end = ri - (endsWithFrom ? ' from '.length : 0);
+            let end = ri;
+            if (endsWithFrom) {
+                end -= ' from '.length;
+                // remove ` from `
+            }
+            // we need to set ri off right.
+            //const end = ri - (endsWithFrom ? ' from '.length : 0);
 
             const columnExpression = restOfQuery.slice(start, end);
 
@@ -179,13 +185,29 @@ export function getCoreQuerySelectStatements(query:string) {
             let expression;
             if (hasAs !== -1) {
                 expression = columnExpression.slice(0, hasAs);
-                name = columnExpression.slice(hasAs + 3); // remove the comma
+                name = columnExpression.slice(hasAs + 4); // remove the comma
             } else {
                 expression = columnExpression;
                 name = expression;
             }
             
-            columnSelects.push({ name, expression, start: latest + startingBuffer + start, end: latest + startingBuffer + end});
+            // look at end of name and trim the end.
+
+            function getStartAndEnd(string) {
+                let start = firstCharacterAt(string);
+                let end = firstCharacterAt(string.split('').reverse().join(''));
+                return [start, end]
+            }
+            let [_, nameEnd] = getStartAndEnd(name);
+            let [expressionStart, __] = getStartAndEnd(expression);
+            // look at the start of expression and trim the start.
+
+
+            columnSelects.push({ 
+                name: name.trim(), 
+                expression: expression.trim(), 
+                start: latest + start + 1 + expressionStart, 
+                end: latest  + end + 1 - nameEnd});
             // move ri past the comma
             ri += 1;
             ei = ri;

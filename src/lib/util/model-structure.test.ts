@@ -1,4 +1,4 @@
-import { extractCTEs, getCoreQuerySelectStatements, extractFromStatements, extractCoreWhereClauses, extractJoins } from "./model-structure";
+import { extractCTEs, extractCoreSelectStatements, extractFromStatements, extractCoreWhereClauses, extractJoins } from "./model-structure";
 
 const q1 = `
 WITH cte1 AS (
@@ -9,8 +9,8 @@ cte2 AS (
 ),
 cte3 AS (
     select created_date, count(*) from tbl2 GROUP BY created_date
-)
-SELECt 
+)   
+        SELECt    
     date_trunc('day', created_date) AS whatever,
     another_column,
     a_third as the_third_column
@@ -148,44 +148,27 @@ describe('extractFromStatements', () => {
 
         expect(extractFromStatements(selectQueries[8].input)).toEqual(selectQueries[8].output);
 
-        expect(extractFromStatements(selectQueries[9].input)).toEqual(selectQueries[9].output);
     })
 })
-        // {
-        //     input: `
-        //     WITH x as (select * from x0),
-        //     y as (select count(*) as count, category from x0 INNER JOIN y0 ON y0.id = x0.y_id GROUP BY category)
-        //     SELECT 
-        //         index, 
-        //         length(bits) AS bitlength,
-        //         created_date,
-        //         user_agent,
-        //         category,
-        //         y.count AS count
-        //     FROM x
-        //         INNER JOIN y ON y.category = x.category
-        // `,
-        // output: [
-        //     {name: 'index',expression: 'index',start: 192, end: 197},
-        //     {name: 'bitlength', expression: 'length(bits)', start: 216, end: 241},
-        //     {name: 'created_date', expression: 'created_date', start: 259, end: 271},
-        //     {name: 'user_agent', expression: 'user_agent', start: 289, end: 299},
-        //     {name: 'category', expression: 'category', start: 317, end: 325},
-        //     {name: 'count', expression: 'y.count', start: 343, end: 359}
-        // ]
-        // }
-// let whereQueries = [
-//     { 
-//         input: 'select * from table where dt < 2015', 
-//         output: [ {start: 26, end: 35, statement: 'dt < 2015'}]
-//     }
-// ]
 
-// describe('extractCoreWhereClauses', () => {
-//     it('where clause', () => {
-//         expect(extractCoreWhereClauses(whereQueries[0].input)).toEqual(whereQueries[0].output);
-//     })
-// })
+
+describe('extractCoreSelectStatements', () => {
+    it('pulls out all the source tables', () => {
+        expect(extractCoreSelectStatements(`
+            WITH x AS (select a, b, c, d, whatevewr from table)
+               select     a, b+c as   next_val,     whatever        
+               
+               
+               from x
+        
+        `)).toEqual([
+            {expression: "a" , start: 91, end: 92, name: 'a'},
+            {expression: "b+c" , start: 94, end: 111, name: 'next_val'},
+            {expression: "whatever" , start: 117, end: 125, name: 'whatever'},
+        ])
+
+    })
+})
 
 
 let joinQueries = [

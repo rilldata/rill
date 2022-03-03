@@ -1,14 +1,14 @@
 <script>
 import Editor from "$lib/components/Editor.svelte";
 import { queries } from "./_demo-queries"
-import { extractCTEs, getCoreQuerySelectStatements, extractFromStatements, extractJoins, extractSourceTables } from "$lib/util/model-structure";
+import { extractCTEs, extractCoreSelectStatements, extractFromStatements, extractJoins, extractSourceTables } from "$lib/util/model-structure";
 let whichQuery = 0;
 
 $: content = queries[whichQuery];
 let location;
 
 $: ctes = (content?.length) ? extractCTEs(content) : [];
-$: selects = (content?.length) ? getCoreQuerySelectStatements(content || '') : [];
+$: selects = (content?.length) ? extractCoreSelectStatements(content || '') : [];
 $: fromStatements = (content?.length) ? extractFromStatements(content || '') : [];
 $: sourceTables = (content.length) ? extractSourceTables(content || '') : [];
 $: console.log(sourceTables)
