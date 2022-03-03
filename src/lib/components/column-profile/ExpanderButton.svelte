@@ -6,7 +6,7 @@ export let suppressTooltip = false;
 
 </script>
 
-<Tooltip location="top" alignment="start" distance={8} pad={8} suppress={suppressTooltip || rotated}>
+<Tooltip location="top" alignment="start" distance={8} pad={8} suppress={suppressTooltip}>
 
 <button
 on:click

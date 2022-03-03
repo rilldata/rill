@@ -80,7 +80,7 @@ onMount(() => {
         <!-- <hr /> -->
 
           <div class='pl-3 pb-3 pt-3'>
-            <CollapsibleSectionTitle bind:active={showTables}>
+            <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
               <h4>Tables</h4>
             </CollapsibleSectionTitle>
           </div>
@@ -108,7 +108,7 @@ onMount(() => {
         
           {#if $persistentModelStore && $persistentModelStore.entities}
           <div class='pl-3 pb-3 pr-5 grid justify-between' style="grid-template-columns: auto max-content;">
-            <CollapsibleSectionTitle bind:active={showModels}>
+            <CollapsibleSectionTitle  tooltipText={"tables"} bind:active={showModels}>
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
               <ContextButton tooltipText="create a new model" on:click={() => {
