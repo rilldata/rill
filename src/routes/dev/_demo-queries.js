@@ -1,6 +1,14 @@
 
 export const queries = [
 `
+WITH x AS (select a, b, c, d, whatevewr from table)
+   select     a, b+c as   next_val, whatever        
+   
+   
+   from x
+
+`,
+`
 	WITH x as (select * from x0),
 	y as (select count(*) as count, category from x0 INNER JOIN y0 ON y0.id = x0.y_id GROUP BY category)
 	SELECT 

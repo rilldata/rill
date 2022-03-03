@@ -135,7 +135,7 @@ onMount(() => {
       
       <div class='pt-4 pb-4'>
         <div class=" pl-5 pr-5">
-          <CollapsibleSectionTitle bind:active={showSourceTables}>
+          <CollapsibleSectionTitle tooltipText="source tables" bind:active={showSourceTables}>
             Source Tables
           </CollapsibleSectionTitle>
         </div>
@@ -177,17 +177,17 @@ onMount(() => {
       
       <div class="pb-4 pt-4">
       <div class=" pl-5 pr-5">
-        <CollapsibleSectionTitle bind:active={showColumns}>
-          Selected Columns
+        <CollapsibleSectionTitle tooltipText="source tables" bind:active={showColumns}>
+          selected columns
         </CollapsibleSectionTitle>
       </div>
 
-        {#if currentDerivedModel?.profile && showColumns}
+        {#if currentDerivedModel?.profile && currentDerivedModel?.preview && showColumns}
         <div class='source-tables pt-4 pb-4' transition:slide|local={{duration: 200}}>
           {#each currentDerivedModel.profile as column}
             <ColumnProfile
               indentLevel={0}
-              example={currentDerivedModel.preview[0][column.name]}
+              example={currentDerivedModel?.preview[0][column.name]}
               containerWidth={containerWidth}
 
               hideNullPercentage={false}
