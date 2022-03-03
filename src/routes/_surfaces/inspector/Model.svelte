@@ -142,7 +142,7 @@ onMount(() => {
         {#if sourceTableReferences && tables && showSourceTables}
         <div transition:slide|local={{duration: 200}} class="mt-1">
           {#each sourceTableReferences as reference, index}
-          {@const correspondingTableCardinality = tables[index].cardinality}
+          {@const correspondingTableCardinality = tables[index]?.cardinality}
             <div
               class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
               on:focus={() => {
