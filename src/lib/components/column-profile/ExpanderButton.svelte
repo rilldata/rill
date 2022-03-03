@@ -1,6 +1,7 @@
 <script>
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
 export let rotated = false;
 export let suppressTooltip = false;
 
@@ -27,6 +28,9 @@ class="
     <slot />
 </button>
 <TooltipContent slot="tooltip-content">
-    {!rotated ? "show columns" : "hide columne"}
+    <!-- {!rotated ? "show columns" : "hide columne"} -->
+    <SlidingWords active={rotated}>
+        columns
+    </SlidingWords>
 </TooltipContent>
 </Tooltip>
