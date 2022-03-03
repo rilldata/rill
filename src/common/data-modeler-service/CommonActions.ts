@@ -13,7 +13,7 @@ export class CommonActions extends  DataModelerActions {
         const currentActiveAsset =
             (stateService.getCurrentState() as ApplicationState).activeEntity;
         // mark older model as inactive.
-        if (currentActiveAsset.type === EntityType.Model) {
+        if (currentActiveAsset?.type === EntityType.Model) {
             this.databaseActionQueue.updatePriority(currentActiveAsset.id,
                 DatabaseActionQueuePriority.InactiveModelProfile);
         }

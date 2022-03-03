@@ -1,4 +1,4 @@
-import Heap from "heap";
+import { Heap } from "$common/priority-action-queue/Heap";
 
 export interface ActionMetadata {
     priority: number;
@@ -24,10 +24,11 @@ const heapCompareFunc = (a: QueueEntry, b: QueueEntry) => {
 }
 
 export class PriorityActionQueue {
-    private maxHeap = new Heap(heapCompareFunc);
+    private maxHeap = new Heap<QueueEntry>([], heapCompareFunc);
     private heapEntryMap = new Map<string, QueueEntry>();
 
     public enqueue(actionMetadata: ActionMetadata, queuedAction: QueuedAction): void {
+        // console.log("enqueue", actionMetadata.priority);
         if (this.heapEntryMap.has(actionMetadata.id)) {
             const existingItem: QueueEntry = this.heapEntryMap.get(actionMetadata.id);
             existingItem.actions.push(queuedAction);
@@ -35,9 +36,10 @@ export class PriorityActionQueue {
         } else {
             const newItem: QueueEntry = {
                 metadata: actionMetadata,
-                actions: [queuedAction]
+                actions: [queuedAction],
             };
             this.maxHeap.push(newItem);
+            this.heapEntryMap.set(actionMetadata.id, newItem);
         }
     }
 
@@ -65,11 +67,14 @@ export class PriorityActionQueue {
         // remove any entry that has empty actions
         while (topItem.actions.length === 0) {
             this.maxHeap.pop();
+            this.heapEntryMap.delete(topItem.metadata.id);
             topItem = this.maxHeap.peek();
         }
         if (topItem.actions.length === 1) {
             this.maxHeap.pop();
+            this.heapEntryMap.delete(topItem.metadata.id);
         }
+        // console.log("dequeue", topItem.metadata.priority, topItem.actions[0][0], topItem.actions[0][1]);
         return topItem.actions.shift();
     }
 }

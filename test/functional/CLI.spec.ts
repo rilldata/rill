@@ -2,7 +2,6 @@ import { FunctionalTestBase } from "./FunctionalTestBase";
 import { exec } from "node:child_process";
 import {promisify} from "util"
 import { existsSync, readFileSync } from "fs";
-import type { DataModelerState } from "$lib/types";
 import { AdBidsColumnsTestData, AdImpressionColumnsTestData } from "../data/DataLoader.data";
 import type {
     DerivedTableState

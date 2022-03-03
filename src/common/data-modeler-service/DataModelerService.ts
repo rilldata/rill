@@ -60,6 +60,10 @@ export class DataModelerService {
         });
     }
 
+    public getDatabaseService(): DatabaseService {
+        return this.databaseService;
+    }
+
     public async init(): Promise<void> {
         await this.databaseService?.init();
     }
@@ -73,7 +77,7 @@ export class DataModelerService {
         action: Action, args: DataModelerActionsDefinition[Action],
     ): Promise<void> {
         if (!this.actionsMap[action]?.[action]) {
-            console.log(`${action} not found`);
+            console.error(`${action} not found`);
             return;
         }
         const actionsInstance = this.actionsMap[action];
@@ -86,8 +90,13 @@ export class DataModelerService {
 
         const stateService = this.dataModelerStateService.getEntityStateService(
             stateTypes[0] ?? args[0] as any, stateTypes[1] ?? args[1] as any);
-        await actionsInstance[action].call(actionsInstance,
-            {stateService}, ...args);
+        try {
+            await actionsInstance[action].call(actionsInstance,
+                {stateService}, ...args);
+        } catch (err) {
+            // cancelled actions will show up as errors.
+            // TODO: take care of this in better error handling task alter down the line
+        }
     }
 
     public async destroy(): Promise<void> {
