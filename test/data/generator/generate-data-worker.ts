@@ -1,12 +1,15 @@
 import "../../../src/moduleAlias";
 import {DataGeneratorWorker} from "./DataGeneratorWorker";
+import workerpool from "workerpool";
 
 const dataGeneratorWorker = new DataGeneratorWorker();
 
-module.exports.generate = function updateNewCases(
-    [type, startId]: [string, number], callback: (err: Error, rows: Array<Record<string, any>>) => void,
-) {
-    setImmediate(() => {
-        callback(null, dataGeneratorWorker.generate(type, startId));
-    });
+function updateNewCases(type: string, startId: number) {
+    return new Promise((resolve) => {
+        resolve(dataGeneratorWorker.generate(type, startId));
+    })
 }
+
+workerpool.worker({
+    generate: updateNewCases
+})

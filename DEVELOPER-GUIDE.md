@@ -52,14 +52,13 @@ npm run cli-dev -- start --project /path/to/project
 `--project` is optional. Will default to current directory if not specified.
 
 ## Local testing
-Generate local testing data using,
+Tests use pre-generated data. Run this to generate them,
 ```
 npm run generate-test-data
 ```
-Will generate AdBids, AdImpressions and User data under /data
-NOTE: this will only work by temporarily removing `"type": "module"` from package.js. This will be fixed in the future.
+csv and parquet files for AdBids, AdImpressions and User datasets are generated under /data
 
-Run for test (Contains old tests that fail right now),
+Run this for test,
 ```
 npm run test
 ```
