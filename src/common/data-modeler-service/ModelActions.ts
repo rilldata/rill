@@ -4,6 +4,7 @@ import { sanitizeQuery } from "$lib/util/sanitize-query";
 import type { NewModelParams } from "$common/data-modeler-state-service/ModelStateActions";
 import type {
     PersistentModelEntity,
+    PersistentModelEntityService,
     PersistentModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import {
@@ -15,6 +16,11 @@ import type {
     DerivedModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { getNewDerivedModel, getNewModel } from "$common/stateInstancesFactory";
+
+export enum FileExportType {
+    Parquet = "exportToParquet",
+    CSV = "exportToCsv",
+}
 
 export class ModelActions extends DataModelerActions {
     @DataModelerActions.PersistentModelAction()
@@ -129,12 +135,13 @@ export class ModelActions extends DataModelerActions {
     @DataModelerActions.PersistentModelAction()
     public async exportToParquet({stateService}: PersistentModelStateActionArg,
                                  modelId: string, exportFile: string): Promise<void> {
-        const model = stateService.getById(modelId);
-        const exportPath = await this.databaseService.dispatch("exportToParquet",
-            [sanitizeQuery(model.query), exportFile]);
-        await this.dataModelerStateService.dispatch("updateModelDestinationSize",
-          [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
-        this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"})
+        await this.exportToFile(stateService, modelId, exportFile, FileExportType.Parquet);
+    }
+
+    @DataModelerActions.PersistentModelAction()
+    public async exportToCsv({stateService}: PersistentModelStateActionArg,
+                             modelId: string, exportFile: string): Promise<void> {
+        await this.exportToFile(stateService, modelId, exportFile, FileExportType.CSV);
     }
 
     @DataModelerActions.PersistentModelAction()
@@ -183,5 +190,16 @@ export class ModelActions extends DataModelerActions {
             return false;
         }
         return true;
+    }
+
+    private async exportToFile(stateService: PersistentModelEntityService,
+                               modelId: string, exportFile: string,
+                               exportType: FileExportType) {
+        const model = stateService.getById(modelId);
+        const exportPath = await this.databaseService.dispatch(exportType,
+            [sanitizeQuery(model.query), exportFile]);
+        await this.dataModelerStateService.dispatch("updateModelDestinationSize",
+            [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
+        this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"});
     }
 }

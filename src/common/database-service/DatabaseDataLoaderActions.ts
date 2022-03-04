@@ -29,11 +29,19 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     }
 
     public async exportToParquet(metadata: DatabaseMetadata, query: string, exportFile: string): Promise<any> {
+        return this.exportToFile(query, exportFile, "FORMAT PARQUET");
+    }
+
+    public async exportToCsv(metadata: DatabaseMetadata, query: string, exportFile: string): Promise<any> {
+        return this.exportToFile(query, exportFile, "FORMAT CSV, HEADER")
+    }
+
+    private async exportToFile(query: string, exportFile: string, exportString: string): Promise<any> {
         if (!existsSync(this.databaseConfig.exportFolder)) {
             mkdirSync(this.databaseConfig.exportFolder);
         }
         const exportPath = `${this.databaseConfig.exportFolder}/${exportFile}`;
-        const exportQuery = `COPY (${query}) TO '${exportPath}' (FORMAT 'parquet')`;
+        const exportQuery = `COPY (${query}) TO '${exportPath}' (${exportString})`;
         await this.databaseClient.execute(exportQuery);
         return exportPath;
     }

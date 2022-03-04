@@ -108,6 +108,18 @@ onMount(() => {
             const exportFilename = currentModel.name.replace('.sql', '.parquet');
             dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
           }}>generate {currentModel.name.replace('.sql', '.parquet')}</button>
+          <button class="
+            p-3 pt-1 pb-1
+            m-2
+            bg-white
+            text-black
+            border
+            border-black
+            transition-colors
+            rounded-md" on:click={() => {
+            const exportFilename = currentModel.name.replace('.sql', '.csv');
+            dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
+          }}>generate {currentModel.name.replace('.sql', '.csv')}</button>
         </div>
       {/if}
       {#if tables}
