@@ -13,7 +13,8 @@ export interface PersistentModelEntity extends EntityRecord {
     tableName?: string;
 }
 export type PersistentModelState = EntityState<PersistentModelEntity>;
-export type PersistentModelStateActionArg = EntityStateActionArg<PersistentModelEntity>;
+export type PersistentModelStateActionArg = EntityStateActionArg<
+    PersistentModelEntity, PersistentModelState, PersistentModelEntityService>;
 
 export class PersistentModelEntityService extends EntityStateService<PersistentModelEntity> {
     public readonly entityType = EntityType.Model;
