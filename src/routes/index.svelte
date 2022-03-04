@@ -4,20 +4,58 @@ import InspectorSidebar from "./_surfaces/inspector/index.svelte";
 import AssetsSidebar from "./_surfaces/assets/index.svelte";
 import PreviewDrawer from "./_surfaces/preview/index.svelte";
 import Header from "./_surfaces/header/index.svelte";
+import { setContext } from "svelte";
+import { fly } from "svelte/transition";
+import { panes } from "$lib/pane-store"
+import { 
+  assetVisibilityTween, 
+  assetsVisible,
+  inspectorVisibilityTween,
+  inspectorVisible
+} from "$lib/pane-store"
+
+setContext("rill:app:panes", panes);
+
 </script>
 
 <div class='body'>
-  <div class="surface assets" style:grid-area="left-pane">
+  <div class="surface assets" style="
+    position: fixed;
+  "
+  style:left="{-$assetVisibilityTween * $panes.left}px"
+  >
     <AssetsSidebar />
-  </div>
-  <div style:grid-area="header-bar">
+  </div>  
+  
+  <div 
+    class="surface inputs bg-gray-100 fixed" 
+    style:padding-left="{($assetVisibilityTween * 80)}px"
+    style:left="{$panes.left * (1 - $assetVisibilityTween)}px" 
+    style:top="0px" 
+    style:right="{$panes.right}px">
+    {#if !$assetsVisible}
+      <button transition:fly={{duration: 500, delay: 200, x:20}} class="absolute left-5 top-5" style:font-size="12px" on:click={() => {
+        assetsVisible.set($assetsVisible ? 0 : 1);
+      }}>show assets</button>
+    {/if}
     <Header />
-  </div>
-  <div class="surface inputs bg-gray-100" style:grid-area="workspace">
     <Workspace />
   </div>
-  <div class='surface outputs transition-colors border-l hover:border-gray-300 border-transparent' style:grid-area="right-pane">
+  <div 
+    class='
+      surface outputs transition-colors border-l hover:border-gray-300 border-transparent
+      fixed
+    '
+    style:padding-right="{($inspectorVisibilityTween * 80)}px"
+    style:right="{$panes.right * (1 - $inspectorVisibilityTween)}px" 
+  >
+    {$inspectorVisibilityTween}
     <InspectorSidebar />
+    <button class="fixed" style:right="{$panes.right - 20}px" on:click={() => { 
+      inspectorVisible.set($inspectorVisible ? 0 : 1); 
+      }}>
+        HIDE
+    </button>
   </div>
   <div
     style:display="none"
@@ -32,14 +70,7 @@ import Header from "./_surfaces/header/index.svelte";
 
 .body {
     width: 100vw;
-    display: grid;
-    grid-template-columns: max-content auto var(--right-sidebar-width, 400px);
-    grid-template-rows: var(--header-height, 80px) auto var(--preview-height, 0px);
-    grid-template-areas: "left-pane header-bar right-pane"
-                          "left-pane workspace right-pane"
-                         "left-pane preview preview";
-    align-content: stretch;
-    align-items: stretch;
+    position:absolute;
     height: calc(100vh);
   }
 .inputs {

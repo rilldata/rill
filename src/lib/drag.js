@@ -1,3 +1,4 @@
+import { panes } from '$lib/pane-store';
 export function drag(node, params) {
     let minSize_ = params?.minSize || 300;
     let maxSize_ = params?.maxSize || 800;
@@ -16,12 +17,16 @@ export function drag(node, params) {
 
     function mousemove(e) {
         if (moving) {
-        const size = side_ === 'right' ? innerWidth - e.pageX : e.pageX;
-        if (size > minSize_ && size < maxSize_) {
-            xSpace = size;
-        }
-
-        document.body.style.setProperty(property, `${xSpace}px`)
+            console.log(innerWidth);
+            const size = side_ === 'right' ? innerWidth - e.pageX : e.pageX;
+            if (size > minSize_ && size < maxSize_) {
+                xSpace = size;
+            }
+            panes.update((pane) => {
+                pane[side_] = xSpace;
+                return pane;
+            })
+        //document.body.style.setProperty(property, `${xSpace}px`)
         }
     }
 

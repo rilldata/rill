@@ -1,5 +1,6 @@
 <script lang="ts">
 import { getContext, onMount } from "svelte";
+import { tweened } from "svelte/motion"
 import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
 
@@ -21,6 +22,11 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+// FIXME: make thes contextual
+import { assetVisibilityTween, assetsVisible } from "$lib/pane-store";
+
+const panes = getContext('rill:app:panes');
+
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
@@ -41,21 +47,29 @@ let view = 'assets';
 let container;
 let containerWidth = 0;
 
+
+
 onMount(() => {
     const observer = new ResizeObserver(entries => {
         containerWidth = container.clientWidth;
     });
     observer.observe(container);
 })
+let width = tweened(400, {duration : 50})
 
 </script>
 
-<div class='drawer-container flex flex-row-reverse'>
+<div class='flex flex-row-reverse fixed bg-white' style:top="0px" style:height="100vh" style:width="{$panes.left}px">
     <!-- Drawer Handler -->
     <div class='drawer-handler w-4 absolute hover:cursor-col-resize translate-x-2 body-height'
     use:drag={{ side: 'left', minSize: 300, maxSize: 500 }} />
-    <div class='assets' bind:this={container}>
 
+    <div class='assets' bind:this={container} style="width: 100%;">
+      <button on:click={() => {
+        assetsVisible.set($assetsVisible ? 0 : 1);
+      }}>
+        gooo
+      </button>
       <header class='sticky top-0'>
         <h1  class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
           <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
@@ -66,18 +80,6 @@ onMount(() => {
       </header>
 
       <div style:height="80px"></div>
-
-        <!-- <div 
-          class='grid grid-flow-col justify-items-center justify-start pb-6 pt-6 gap-x-5 pl-3'
-        >
-          <button on:click={() => { view = 'assets' }}>
-            <h3>Assets</h3>
-          </button>
-          <button disabled>
-            <h3 class="font-normal text-gray-400 cursor-not-allowed" title="coming soon!">Pipelines</h3>
-          </button>
-        </div> -->
-        <!-- <hr /> -->
 
           <div class='pl-3 pb-3 pt-3'>
             <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
@@ -151,12 +153,9 @@ onMount(() => {
 
 </div>
 <style lang="postcss">
-.drawer-container {
-  /* height: calc(100vh - var(--header-height)); */
-}
+
 
 .assets {
-  width: var(--left-sidebar-width, 400px);
   font-size: 12px;
 }
 </style>
