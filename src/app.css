@@ -17,7 +17,7 @@ body {
     font-family: "MD IO";
     margin: 0;
     padding: 0;
-    --header-height: 4.5rem;
+    --header-height: 3.5rem;
     --right-drawer-width: 400px;
 
     --left-sidebar-width: 400px;
