@@ -6,7 +6,7 @@ export let suppressTooltip = false;
 export let tooltipText:string;
 </script>
 
-<Tooltip location="right" alignment="start" distance={16} suppress={suppressTooltip || tooltipText === undefined}>
+<Tooltip location="right" alignment="middle" distance={16} suppress={suppressTooltip || tooltipText === undefined}>
     <button
     on:click
     style:width="16px"

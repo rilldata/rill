@@ -47,6 +47,8 @@ export class ModelActions extends DataModelerActions {
         }
 
         this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
+        this.dataModelerStateService.dispatch("updateModelSanitizedQuery", [modelId, sanitizedQuery]);
+
 
         // validate query with the original query first.
         if (!await this.validateModelQuery(model, query)) {

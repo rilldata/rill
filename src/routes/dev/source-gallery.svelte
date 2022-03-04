@@ -4,7 +4,7 @@
     import type { AppStore } from '$lib/app-store';
     
     import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-    import CollapsibleTableSummary from  "$lib/components/collapsible-table-summary/CollapsibleTableSummary.svelte";
+    import CollapsibleTableSummary from  "$lib/components/column-profile/CollapsibleTableSummary.svelte";
     
     let innerWidth = 0;
     const store = getContext('rill:app:store') as AppStore;

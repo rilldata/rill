@@ -6,6 +6,8 @@ const zeroPad = format('02d');
 export const formatInteger = format(',');
 const formatRate = format('.1f');
 export const standardTimestampFormat = timeFormat('%b %d, %Y %I:%M:%S');
+export const datePortion = timeFormat('%b %d, %Y');
+export const timePortion = timeFormat("%I:%M:%S");
 
 export function microsToTimestring(micros:number) {
     // to format micros, we need to translate this to hh:mm:ss.
@@ -32,7 +34,7 @@ export function intervalToTimestring(interval:Interval) {
     return `${months}${days}${time}`;
 }
 
-export function formatCardinality(n:number) {
+export function formatCompactInteger(n:number) {
     let fmt:Function;
     if (n <= 1000) {
         fmt = formatInteger;
