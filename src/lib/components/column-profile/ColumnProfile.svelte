@@ -55,7 +55,10 @@ let titleTooltipHover;
     {active}
     emphasize={active}
     on:select={() => {
-        active = !active;
+        // we should only allow activation when there are rows present.
+        if (totalRows) {
+            active = !active;
+        }
     }}
 >
     <svelte:fragment slot="icon">
@@ -68,15 +71,21 @@ let titleTooltipHover;
                 {name}
             </span>
         <TooltipContent slot="tooltip-content">
-            <SlidingWords {active} hovered={titleTooltip}>    
-                {#if CATEGORICALS.has(type)}
-                    the top 10 values
-                {:else if TIMESTAMPS.has(type)}
-                    the count(*) over time
-                {:else if NUMERICS.has(type)}
-                    the distribution of values
-                {/if}
-            </SlidingWords>
+
+            {#if totalRows}
+                <SlidingWords {active} hovered={titleTooltip}>
+                    {#if CATEGORICALS.has(type)}
+                        the top 10 values
+                    {:else if TIMESTAMPS.has(type)}
+                        the count(*) over time
+                    {:else if NUMERICS.has(type)}
+                        the distribution of values
+                    {/if}
+                </SlidingWords>
+            {:else}
+                <!-- no data is available, so let's give a useful message-->
+                no rows selected
+            {/if}
         </TooltipContent>
 </Tooltip>
     </svelte:fragment>
@@ -85,47 +94,49 @@ let titleTooltipHover;
 
         <div class="flex gap-2 items-center"  class:hidden={view !== 'summaries'}>
             <div class="flex items-center"  style:width="{summaryWidthSize}px">
-
-                {#if CATEGORICALS.has(type) && summary?.cardinality && totalRows}
-                    <Tooltip location="right" alignment="center" distance={8} >
-                        <BarAndLabel 
-                        color={DATA_TYPE_COLORS['VARCHAR'].bgClass}
-                        value={summary?.cardinality / totalRows}>
-                            |{cardinalityFormatter(summary?.cardinality)}|
-                        </BarAndLabel>
-                        <TooltipContent slot="tooltip-content" >
-                            {formatInteger(summary?.cardinality)} unique values
-                        </TooltipContent>
-                    </Tooltip>
-                
-                {:else if NUMERICS.has(type) && summary?.histogram}
-                <Tooltip location="right" alignment="center" distance={8}>
-                    <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
-                        fillColor={DATA_TYPE_COLORS['DOUBLE'].vizFillClass}
-                        baselineStrokeColor={DATA_TYPE_COLORS['DOUBLE'].vizStrokeClass}    
-                    />
-                    <TooltipContent slot="tooltip-content" >
-                        the distribution of the values of this column
-                    </TooltipContent>
-                </Tooltip>
-                {:else if TIMESTAMPS.has(type) && summary?.histogram}
-                <Tooltip location="right" alignment="center" distance={8}>
-
+                <!-- check to see if the summary has cardinality. Otherwise do not show these values.-->
+                {#if totalRows}
+                    {#if CATEGORICALS.has(type)}
+                        <Tooltip location="right" alignment="center" distance={8} >
+                            <BarAndLabel 
+                            color={DATA_TYPE_COLORS['VARCHAR'].bgClass}
+                            value={summary?.cardinality / totalRows}>
+                                |{cardinalityFormatter(summary?.cardinality)}|
+                            </BarAndLabel>
+                            <TooltipContent slot="tooltip-content" >
+                                {formatInteger(summary?.cardinality)} unique values
+                            </TooltipContent>
+                        </Tooltip>
+                    
+                    {:else if NUMERICS.has(type) && summary?.histogram }
+                    <Tooltip location="right" alignment="center" distance={8}>
                         <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
-                            fillColor={DATA_TYPE_COLORS['TIMESTAMP'].vizFillClass}
-                            baselineStrokeColor={DATA_TYPE_COLORS['TIMESTAMP'].vizStrokeClass}    
+                            fillColor={DATA_TYPE_COLORS['DOUBLE'].vizFillClass}
+                            baselineStrokeColor={DATA_TYPE_COLORS['DOUBLE'].vizStrokeClass}    
                         />
                         <TooltipContent slot="tooltip-content" >
-                            the time series
+                            the distribution of the values of this column
                         </TooltipContent>
                     </Tooltip>
-                {/if}
+                    {:else if TIMESTAMPS.has(type) && summary?.histogram}
+                    <Tooltip location="right" alignment="center" distance={8}>
 
+                            <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
+                                fillColor={DATA_TYPE_COLORS['TIMESTAMP'].vizFillClass}
+                                baselineStrokeColor={DATA_TYPE_COLORS['TIMESTAMP'].vizStrokeClass}    
+                            />
+                            <TooltipContent slot="tooltip-content" >
+                                the time series
+                            </TooltipContent>
+                        </Tooltip>
+                    {/if}
+                {/if}
             </div>
 
             <div style:width="{config.nullPercentageWidth}px" class:hidden={hideNullPercentage}>
 
-                {#if 
+                {#if
+                    totalRows !== 0 && 
                     totalRows !== undefined && 
                     nullCount !== undefined}
                 <Tooltip location="right" alignment="center" distance={8}>
