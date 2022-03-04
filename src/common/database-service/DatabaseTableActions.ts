@@ -34,8 +34,13 @@ export class DatabaseTableActions extends DatabaseActions {
      * @returns Estimated size of output table, in bytes.
      */
     public async getDestinationSize(metadata: DatabaseMetadata, table: Table, profileColumns: Array<ProfileColumn>): Promise<number> {
+        const sampleSize = 10000;
+
         const args = [];
         const sizes = [];
+
+        // We need to upscale only if the sample size is smaller than the actual table.
+        let upscale = (table.cardinality >= sampleSize) ? true : false;
 
         for (const column of profileColumns) {
             if (CATEGORICALS.has(column.type)) {
@@ -57,18 +62,26 @@ export class DatabaseTableActions extends DatabaseActions {
                 if (profile && profile.nullCount) {
                     nullCount = profile.nullCount;
                 }
-                sizes.push(SIZES[column.type] * (table.cardinality - nullCount));
+                // Store sizes in bits, since we're using the bit_length function elsewhere.
+                sizes.push(SIZES[column.type] * 8 * (table.cardinality - nullCount));
             }
         }
 
         if (args.length > 0) {
-            const [result] = await this.databaseClient.execute(`SELECT ${args} from ${table.tableName} USING SAMPLE 10000`);
+            const [result] = await this.databaseClient.execute(`SELECT ${args} from ${table.tableName} USING SAMPLE ${sampleSize}`);
             sizes.push(...Object.values(result));
         }
         const sum = sizes.reduce((a, b) => a + b, 0);
 
+        let result: number;
+        if (upscale) {
+            result = sum * (table.cardinality / sampleSize);
+        } else {
+            result = sum;
+        }
+
         // Return size in bytes.
-        return sum / 8;
+        return result / 8;
     }
 
     public async getProfileColumns(metadata: DatabaseMetadata, tableName: string): Promise<any[]> {
