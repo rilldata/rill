@@ -2,7 +2,7 @@
 import Workspace from "./_surfaces/workspace/index.svelte";
 import InspectorSidebar from "./_surfaces/inspector/index.svelte";
 import AssetsSidebar from "./_surfaces/assets/index.svelte";
-import Header from "./_surfaces/header/index.svelte";
+import Header from "./_surfaces/workspace/Header.svelte";
 import { setContext } from "svelte";
 
 import PaneExpanderIcon from "$lib/components/PaneExpanderIcon.svelte";
@@ -16,22 +16,19 @@ import {
   inspectorVisibilityTween,
   inspectorVisible
 } from "$lib/layout-store"
-import Portal from "$lib/components/Portal.svelte";
 
-setContext("rill:app:layout", layout);
 
-let leftHovered = false;
-let rightHovered = false;
-let elementHovered = false;
+let assetsHovered = false;
+let inspectorHovered = false;
 
 </script>
 
-<div class='body'>
+<div class="absolute w-screen h-screen">
 
-  <!-- left expansion button -->
+  <!-- left assets pane expansion button -->
   <!-- make this the first element to select with tab by placing it first.-->
   <SurfaceCollapseButton
-    show={(leftHovered || !$assetsVisible)}
+    show={(assetsHovered || !$assetsVisible)}
     left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) + 12 * $assetVisibilityTween}px"
     on:click={() => {
       assetsVisible.set($assetsVisible ? 0 : 1);
@@ -43,20 +40,22 @@ let elementHovered = false;
     </svelte:fragment>
   </SurfaceCollapseButton>
 
-  <div class="surface assets fixed"
+  <!-- assets sidebar component -->
+  <!-- this is where we handle navigation -->
+  <div class="box-border	 assets fixed"
     aria-hidden={!$assetsVisible}
-    on:mouseover={() => { leftHovered = true; }}
-    on:mouseleave={() => { leftHovered = false; }}
-    on:focus={() => { leftHovered = true; }}
-    on:blur={() => { leftHovered = false; }}
+    on:mouseover={() => { assetsHovered = true; }}
+    on:mouseleave={() => { assetsHovered = false; }}
+    on:focus={() => { assetsHovered = true; }}
+    on:blur={() => { assetsHovered = false; }}
     style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
   >
-
     <AssetsSidebar />
   </div>  
   
+  <!-- workspace component -->
   <div 
-    class="surface inputs bg-gray-100 fixed" 
+    class="box-border bg-gray-100 fixed" 
     style:padding-left="{($assetVisibilityTween * 80)}px"
     style:padding-right="{($inspectorVisibilityTween * 80)}px"
     style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px" 
@@ -66,9 +65,9 @@ let elementHovered = false;
     <Workspace />
   </div>
 
-  <!-- inspector  collapse button should be tabbable as if it were the first element. -->
+  <!-- inspector collapse button should be tabbable as if it were the first element of the inspector. -->
   <SurfaceCollapseButton
-    show={rightHovered || !$inspectorVisible}
+    show={inspectorHovered || !$inspectorVisible}
     right="{($layout.inspectorWidth - 12 - 24) * (1 - $inspectorVisibilityTween) + 12 * $inspectorVisibilityTween}px"
     on:click={() => {
       inspectorVisible.set($inspectorVisible ? 0 : 1);
@@ -80,57 +79,16 @@ let elementHovered = false;
     </svelte:fragment>
   </SurfaceCollapseButton>
 
+  <!-- inspector sidebar -->
   <div 
     class='fixed'
     aria-hidden={!$inspectorVisible}
-    on:mouseover={() => { rightHovered = true; }}
-    on:mouseleave={() => { rightHovered = false; }}
-    on:focus={() => { rightHovered = true; }}
-    on:blur={() => { rightHovered = false; }}
+    on:mouseover={() => { inspectorHovered = true; }}
+    on:mouseleave={() => { inspectorHovered = false; }}
+    on:focus={() => { inspectorHovered = true; }}
+    on:blur={() => { inspectorHovered = false; }}
     style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px" 
   >
     <InspectorSidebar />
   </div>
-
 </div>
-<style>
-
-.body {
-    width: 100vw;
-    position:absolute;
-    height: calc(100vh);
-  }
-.inputs {
-  --hue: 217;
-  --sat: 20%;
-  --lgt: 95%;
-  --bg: hsl(var(--hue), var(--sat), var(--lgt));
-  --bg-transparent: hsla(var(--hue), var(--sat), var(--lgt), .8);
-  /* background-color: var(--bg); */
-  overflow-y: auto;
-  height:100%;
-}
-
-.surface {
-  box-sizing: border-box;
-}
-
-.surface:first-child {
-  border-right: 1px solid #ddd;
-}
-
-.outputs {
-  overflow-y: auto;
-  height:100%;
-}
-
-.surface.outputs, .surface.assets {
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.preview-drawer {
-  overflow: hidden;
-}
-
-</style>

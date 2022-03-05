@@ -6,10 +6,10 @@ import type { ApplicationStore } from "$lib/app-store";
 
 import { drag } from "$lib/drag";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { inspectorVisibilityTween, inspectorVisible } from "$lib/layout-store";
+import { inspectorVisibilityTween, inspectorVisible, layout } from "$lib/layout-store";
 import Portal from "$lib/components/Portal.svelte";
+
 const store = getContext('rill:app:store') as ApplicationStore;
-const layout = getContext('rill:app:layout');
 
 </script>
 
@@ -27,7 +27,8 @@ const layout = getContext('rill:app:layout');
       class:pointer-events-none={!$inspectorVisible}
       style:top="0px"
       style:width="{$layout.inspectorWidth}px"
-    >    
+    > 
+    <!-- draw handler -->
     {#if $inspectorVisible}
       <Portal>
         <div 

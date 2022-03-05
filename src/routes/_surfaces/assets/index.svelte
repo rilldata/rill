@@ -24,7 +24,6 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-// FIXME: make thes contextual
 import { assetVisibilityTween, assetsVisible, layout } from "$lib/layout-store";
 
 const store = getContext('rill:app:store') as ApplicationStore;
@@ -39,8 +38,7 @@ $: activeModel = $store && $persistentModelStore &&
     $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 let showTables = true;
 let showModels = true;
-let showMetrics = true;
-let showExplores = true;
+
 
 let view = 'assets';
 
@@ -71,8 +69,8 @@ let width = tweened(400, {duration : 50})
   class:hidden={$assetVisibilityTween === 1}
   class:pointer-events-none={!$assetsVisible}
   style:top="0px" style:width="{$layout.assetsWidth}px">
-    <!-- Drawer Handler -->
-
+    
+    <!-- draw handler -->
     {#if $assetsVisible}
       <Portal>
         <div 
@@ -81,10 +79,9 @@ let width = tweened(400, {duration : 50})
         use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
       </Portal>
     {/if}
-    <!-- <div class='drawer-handler w-4 absolute hover:cursor-col-resize translate-x-2 body-height'
-    use:drag={{ side: 'assetsWidth', minSize: 300, maxSize: 500 }} /> -->
 
-    <div class='assets' bind:this={container} style="width: 100%;">
+
+    <div style:font-size="12px" class='w-full' bind:this={container}>
       <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
         <h1 class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
           <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
@@ -162,15 +159,5 @@ let width = tweened(400, {duration : 50})
               </div>
             {/if}
           {/if}
-
     </div>
-
-
 </div>
-<style lang="postcss">
-
-
-.assets {
-  font-size: 12px;
-}
-</style>
