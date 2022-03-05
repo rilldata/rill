@@ -96,7 +96,7 @@ let titleTooltipHover;
             <div class="flex items-center"  style:width="{summaryWidthSize}px">
                 <!-- check to see if the summary has cardinality. Otherwise do not show these values.-->
                 {#if totalRows}
-                    {#if CATEGORICALS.has(type)}
+                    {#if CATEGORICALS.has(type) && summary?.cardinality}
                         <Tooltip location="right" alignment="center" distance={8} >
                             <BarAndLabel 
                             color={DATA_TYPE_COLORS['VARCHAR'].bgClass}

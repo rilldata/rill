@@ -68,7 +68,7 @@ let width = tweened(400, {duration : 50})
   transition-colors
   body-height
 ' 
-  class:hidden={!$assetsVisible && $assetVisibilityTween}
+  class:hidden={$assetVisibilityTween === 1}
   class:pointer-events-none={!$assetsVisible}
   style:top="0px" style:width="{$layout.assetsWidth}px">
     <!-- Drawer Handler -->
@@ -85,8 +85,8 @@ let width = tweened(400, {duration : 50})
     use:drag={{ side: 'assetsWidth', minSize: 300, maxSize: 500 }} /> -->
 
     <div class='assets' bind:this={container} style="width: 100%;">
-      <header  style:height="var(--header-height)" class='sticky top-0 grid align-center'>
-        <h1  class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
+      <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
+        <h1 class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
           <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
             R
           </div>

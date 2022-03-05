@@ -14,10 +14,9 @@ title="{type}"
 class="
     { DATA_TYPE_COLORS[type]?.textClass || ''}
     { DATA_TYPE_COLORS[type]?.bgClass || '' }
-    text-ellipsis overflow-hidden whitespace-nowrap 
     grid place-items-center rounded" 
     style="font-size:8px; width: 16px; height: 16px;">
-    <div style="transform: translateY(.1px);">
+    <div>
         {typeToSymbol(type)}                    
     </div> 
 </div>
