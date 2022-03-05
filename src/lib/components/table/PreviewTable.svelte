@@ -62,7 +62,7 @@ function togglePin(name, type, selectedCols) {
                 {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
                 <TableHeader {name} {type}>
                  <div 
-                    style:grid-template-columns="auto max-content"
+                    style:grid-template-columns="210px max-content"
                     class="
                         grid
                         items-center
@@ -70,9 +70,14 @@ function togglePin(name, type, selectedCols) {
                         justify-stretch
                         gap-x-3">
                     <!-- <DataTypeIcon {type} /> -->
-                    <div class=" pr-5">
-                        {name}
-                    </div>
+                    <Tooltip location="top" alignment="middle" distance={16}>
+                        <div class="w-full pr-5 text-ellipsis overflow-hidden whitespace-nowrap">
+                            {name}
+                        </div>
+                        <TooltipContent slot='tooltip-content'>
+                            {name}
+                        </TooltipContent>
+                    </Tooltip>
                     <Tooltip location="top" alignment="middle" distance={16}>
                     <button 
                         class:text-gray-900={thisColumnIsPinned} 
@@ -112,19 +117,38 @@ function togglePin(name, type, selectedCols) {
         <Table>
             <TableRow>
                 {#each selectedColumns as {name, type} (name)}
-                    <TableHeader {type}>
-                        <div class="
-                        grid
-                        grid-flow-col
-                        justify-between
-                        gap-x-3">
-    
-                        <div>
-                            {name}
-                        </div>
-                        <button class="text-gray-900" on:click={() => { togglePin(name, type, selectedColumns)}}>
-                            <Pin size=".9em" />
-                        </button>
+                    {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
+                    <TableHeader {name} {type}>
+                        
+                        <div 
+                            style:grid-template-columns="210px max-content"
+                            class="
+                                grid
+                                justify-between
+                                gap-x-3
+                            "
+                        >
+                        <Tooltip location="top" alignment="middle"  distance={16}>
+                            <div class="w-full pr-5 text-ellipsis overflow-y-hidden overflow-x-auto whitespace-nowrap">
+                                {name}
+                            </div>
+                            <TooltipContent slot='tooltip-content'>
+                                {name}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip location="top" alignment="middle" distance={16}>
+                            <button 
+                                class:text-gray-900={thisColumnIsPinned} 
+                                class:text-gray-400={!thisColumnIsPinned}
+                                class="transition-colors duration-100 justify-self-end"
+                                on:click={() => { togglePin(name, type, selectedColumns)}}
+                                >
+                                <Pin size=".9em" />
+                            </button>
+                            <TooltipContent slot="tooltip-content">
+                                {thisColumnIsPinned ? 'unpin this column from the right side of the table' : 'pin this column to the right side of the table'}
+                            </TooltipContent>
+                            </Tooltip>
                     </div>
                     </TableHeader>
                 {/each}
