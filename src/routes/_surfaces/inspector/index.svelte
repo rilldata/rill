@@ -12,7 +12,7 @@ const store = getContext('rill:app:store') as ApplicationStore;
 const layout = getContext('rill:app:layout');
 
 </script>
-        
+
   <div 
       class='
         border-l 
@@ -23,6 +23,8 @@ const layout = getContext('rill:app:layout');
         transition-colors
         body-height
       ' 
+      class:hidden={$inspectorVisibilityTween === 1}
+      class:pointer-events-none={!$inspectorVisible}
       style:top="0px"
       style:width="{$layout.inspectorWidth}px"
     >    

@@ -67,14 +67,17 @@ let width = tweened(400, {duration : 50})
   hover:border-gray-200 
   transition-colors
   body-height
-' style:top="0px" style:width="{$layout.assetsWidth}px">
+' 
+  class:hidden={!$assetsVisible && $assetVisibilityTween}
+  class:pointer-events-none={!$assetsVisible}
+  style:top="0px" style:width="{$layout.assetsWidth}px">
     <!-- Drawer Handler -->
 
     {#if $assetsVisible}
       <Portal>
         <div 
         class='fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 body-height'
-        style:left="{(1- $assetVisibilityTween) * $layout.assetsWidth}px"
+        style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
         use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
       </Portal>
     {/if}

@@ -16,7 +16,7 @@ export const layout = tweened({
 
 
 export const assetVisibilityTween = tweened(0, { duration: SURFACE_SLIDE_DURATION, easing: SURFACE_SLIDE_EASING });
-export const inspectorVisibilityTween = tweened(0, { duration: SURFACE_SLIDE_DURATION * 1.4, easing: SURFACE_SLIDE_EASING });
+export const inspectorVisibilityTween = tweened(0, { duration: SURFACE_SLIDE_DURATION, easing: SURFACE_SLIDE_EASING });
 
 export const assetsVisible = writable(true);
 assetsVisible.subscribe((tf) => {
