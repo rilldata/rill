@@ -6,6 +6,8 @@ import { flip } from "svelte/animate";
 
 import type { ApplicationStore } from "$lib/app-store";
 
+import Portal from "$lib/components/Portal.svelte";
+
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import AddIcon from "$lib/components/icons/Add.svelte";
@@ -23,9 +25,7 @@ import type {
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 // FIXME: make thes contextual
-import { assetVisibilityTween, assetsVisible } from "$lib/pane-store";
-
-const panes = getContext('rill:app:panes');
+import { assetVisibilityTween, assetsVisible, layout } from "$lib/layout-store";
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
@@ -59,13 +59,30 @@ let width = tweened(400, {duration : 50})
 
 </script>
 
-<div class='flex flex-row-reverse fixed bg-white' style:top="0px" style:height="100vh" style:width="{$panes.left}px">
+<div class='
+  border-r 
+  border-transparent 
+  fixed 
+  overflow-auto 
+  hover:border-gray-200 
+  transition-colors
+  body-height
+' style:top="0px" style:width="{$layout.assetsWidth}px">
     <!-- Drawer Handler -->
-    <div class='drawer-handler w-4 absolute hover:cursor-col-resize translate-x-2 body-height'
-    use:drag={{ side: 'left', minSize: 300, maxSize: 500 }} />
+
+    {#if $assetsVisible}
+      <Portal>
+        <div 
+        class='fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 body-height'
+        style:left="{(1- $assetVisibilityTween) * $layout.assetsWidth}px"
+        use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
+      </Portal>
+    {/if}
+    <!-- <div class='drawer-handler w-4 absolute hover:cursor-col-resize translate-x-2 body-height'
+    use:drag={{ side: 'assetsWidth', minSize: 300, maxSize: 500 }} /> -->
 
     <div class='assets' bind:this={container} style="width: 100%;">
-      <header class='sticky top-0'>
+      <header  style:height="var(--header-height)" class='sticky top-0 grid align-center'>
         <h1  class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
           <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
             R

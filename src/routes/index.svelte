@@ -8,15 +8,15 @@ import Header from "./_surfaces/header/index.svelte";
 import { setContext } from "svelte";
 import { fly, fade } from "svelte/transition";
 import PaneExpanderIcon from "$lib/components/PaneExpanderIcon.svelte";
-import { panes } from "$lib/pane-store"
 import { 
+  layout,
   assetVisibilityTween, 
   assetsVisible,
   inspectorVisibilityTween,
   inspectorVisible
-} from "$lib/pane-store"
+} from "$lib/layout-store"
 
-setContext("rill:app:panes", panes);
+setContext("rill:app:layout", layout);
 
 let leftHovered = false;
 let rightHovered = false;
@@ -30,7 +30,7 @@ let elementHovered = false;
     on:mouseleave={() => { leftHovered = false; }}
     on:focus={() => { leftHovered = true; }}
     on:blur={() => { leftHovered = false; }}
-    style:left="{-$assetVisibilityTween * $panes.left}px"
+    style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
   >
     <AssetsSidebar />
   </div>  
@@ -39,9 +39,9 @@ let elementHovered = false;
     class="surface inputs bg-gray-100 fixed" 
     style:padding-left="{($assetVisibilityTween * 80)}px"
     style:padding-right="{($inspectorVisibilityTween * 80)}px"
-    style:left="{$panes.left * (1 - $assetVisibilityTween)}px" 
+    style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px" 
     style:top="0px" 
-    style:right="{$panes.right * (1 - $inspectorVisibilityTween)}px">
+    style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px">
     <Header />
     <Workspace />
   </div>
@@ -55,17 +55,17 @@ let elementHovered = false;
     on:mouseleave={() => { rightHovered = false; }}
     on:focus={() => { rightHovered = true; }}
     on:blur={() => { rightHovered = false; }}
-    style:right="{$panes.right * (1- $inspectorVisibilityTween)}px" 
+    style:right="{$layout.inspectorWidth * (1- $inspectorVisibilityTween)}px" 
   >
     <InspectorSidebar />
   </div>
 
 <div>
-    <Tooltip location="right" alignment="center" distance={12}>
+    <Tooltip location="bottom" alignment="start" distance={12}>
       <button 
         class="fixed z-40  {leftHovered || !$assetsVisible ? "opacity-100" : "opacity-0"} hover:opacity-100 transition-opacity"
-        style:left="{($panes.left - 12 - 24) * (1 - $assetVisibilityTween) + 12 * $assetVisibilityTween}px"
-        style:top="12px"
+        style:left="  {($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) + 12 * $assetVisibilityTween}px"
+        style:top="calc(var(--header-height) / 2 - 24px / 2)"
         on:click={() => {
           assetsVisible.set($assetsVisible ? 0 : 1);
       }}>
@@ -87,7 +87,7 @@ let elementHovered = false;
   <Tooltip location="left" alignment="center" distance={12}>
     <button 
     class="fixed z-40  {rightHovered || !$inspectorVisible ? "opacity-100" : "opacity-0"} hover:opacity-100 transition-opacity"
-    style:right="{($panes.right - 12 - 24) * (1 - $inspectorVisibilityTween) + 12 * $inspectorVisibilityTween}px"
+    style:right="{($layout.inspectorWidth - 12 - 24) * (1 - $inspectorVisibilityTween) + 12 * $inspectorVisibilityTween}px"
       style:top="12px"
       on:click={() => {
         inspectorVisible.set($inspectorVisible ? 0 : 1);

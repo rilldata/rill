@@ -1,6 +1,7 @@
-<script>
+<script lang="ts">
 import { tweened } from "svelte/motion";
 import { cubicOut as easing } from "svelte/easing";
+import { SURFACE_SLIDE_DURATION } from "$lib/layout-store";
 export let size = "1em";
 export let color='currentColor';
 
@@ -17,6 +18,8 @@ let H_RIGHT = 85;
 
 let STROKE_WIDTH = 12;
 
+
+
 const defaults = {
     topLeft: TOP,
     topRight: TOP,
@@ -24,7 +27,6 @@ const defaults = {
     midRight: MIDDLE,
     bottomLeft:BOTTOM,
     bottomRight: BOTTOM,
-
     leftTop: LEFT,
     leftMid: LEFT,
     leftBottom: LEFT,
@@ -33,7 +35,10 @@ const defaults = {
     rightBottom: RIGHT
 }
 
-const params = tweened(defaults, { duration: 200, easing, delay: 350 });
+const params = tweened(defaults, { 
+    duration: SURFACE_SLIDE_DURATION / 2, easing, 
+    delay: SURFACE_SLIDE_DURATION - 50 
+});
 
 $: if (mode === 'hamburger') {
     params.set({
@@ -42,7 +47,6 @@ $: if (mode === 'hamburger') {
         topLeft: TOP,
         bottomLeft: BOTTOM,
         bottomRight: BOTTOM,
-
         leftTop: H_LEFT,
         leftMid: H_LEFT,
         leftBottom: H_LEFT,

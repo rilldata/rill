@@ -42,11 +42,12 @@ function onKeydown(event) {
 
 <header 
     style:font-size='12px'
-    class="grid items-center content-stretch bg-gray-100" 
+    style:height="var(--header-height)"
+    class="grid items-center content-stretch bg-gray-100 pl-6 pr-6" 
     style:grid-template-columns="[title] auto [controls] auto">
     <div>
         {#if titleInput !== undefined && titleInput !== null}
-        <h1 style:font-size='16px' class="grid grid-flow-col justify-start items-center gap-x-1 p-6 pt-6 pb-0">
+        <h1 style:font-size="16px"  class="grid grid-flow-col justify-start items-center gap-x-1">
             <ModelIcon />
             <Tooltip distance={8} bind:active={tooltipActive} suppress={editingTitle}>
                 <input 

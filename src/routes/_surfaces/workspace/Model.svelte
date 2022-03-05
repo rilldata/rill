@@ -47,7 +47,7 @@ $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) 
 <div class="editor-pane">
   <div>
   {#if $store && $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
-    <div class="input-body p-6 overflow-auto">
+    <div class="input-body p-6 pt-0 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}
