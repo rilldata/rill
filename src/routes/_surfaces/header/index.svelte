@@ -46,7 +46,7 @@ function onKeydown(event) {
     style:grid-template-columns="[title] auto [controls] auto">
     <div>
         {#if titleInput !== undefined && titleInput !== null}
-        <h1 style:font-size='16px' class="grid grid-flow-col justify-start items-center gap-x-1 p-6">
+        <h1 style:font-size='16px' class="grid grid-flow-col justify-start items-center gap-x-1 p-6 pt-6 pb-0">
             <ModelIcon />
             <Tooltip distance={8} bind:active={tooltipActive} suppress={editingTitle}>
                 <input 

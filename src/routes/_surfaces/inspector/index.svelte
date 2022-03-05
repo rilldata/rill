@@ -11,7 +11,7 @@ const panes = getContext('rill:app:panes');
 
 </script>
         
-  <div class='drawer-container flex fixed'  style:top="0px" style:width="{$panes.right}px">    
+  <div class='flex fixed overflow-auto' style:height="100vh"  style:top="0px" style:width="{$panes.right}px">    
     <div class='drawer-handler w-4 absolute hover:cursor-col-resize -translate-x-2 body-height'
     use:drag={{ minSize: 400, side: 'right' }} />
   

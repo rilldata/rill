@@ -2,10 +2,12 @@
 import Workspace from "./_surfaces/workspace/index.svelte";
 import InspectorSidebar from "./_surfaces/inspector/index.svelte";
 import AssetsSidebar from "./_surfaces/assets/index.svelte";
-import PreviewDrawer from "./_surfaces/preview/index.svelte";
+import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import Header from "./_surfaces/header/index.svelte";
 import { setContext } from "svelte";
-import { fly } from "svelte/transition";
+import { fly, fade } from "svelte/transition";
+import PaneExpanderIcon from "$lib/components/PaneExpanderIcon.svelte";
 import { panes } from "$lib/pane-store"
 import { 
   assetVisibilityTween, 
@@ -16,13 +18,19 @@ import {
 
 setContext("rill:app:panes", panes);
 
+let leftHovered = false;
+let rightHovered = false;
+let elementHovered = false;
+
 </script>
 
 <div class='body'>
-  <div class="surface assets" style="
-    position: fixed;
-  "
-  style:left="{-$assetVisibilityTween * $panes.left}px"
+  <div class="surface assets fixed"
+    on:mouseover={() => { leftHovered = true; }}
+    on:mouseleave={() => { leftHovered = false; }}
+    on:focus={() => { leftHovered = true; }}
+    on:blur={() => { leftHovered = false; }}
+    style:left="{-$assetVisibilityTween * $panes.left}px"
   >
     <AssetsSidebar />
   </div>  
@@ -30,41 +38,76 @@ setContext("rill:app:panes", panes);
   <div 
     class="surface inputs bg-gray-100 fixed" 
     style:padding-left="{($assetVisibilityTween * 80)}px"
+    style:padding-right="{($inspectorVisibilityTween * 80)}px"
     style:left="{$panes.left * (1 - $assetVisibilityTween)}px" 
     style:top="0px" 
-    style:right="{$panes.right}px">
-    {#if !$assetsVisible}
-      <button transition:fly={{duration: 500, delay: 200, x:20}} class="absolute left-5 top-5" style:font-size="12px" on:click={() => {
-        assetsVisible.set($assetsVisible ? 0 : 1);
-      }}>show assets</button>
-    {/if}
+    style:right="{$panes.right * (1 - $inspectorVisibilityTween)}px">
     <Header />
     <Workspace />
   </div>
+
   <div 
     class='
-      surface outputs transition-colors border-l hover:border-gray-300 border-transparent
+      
       fixed
     '
-    style:padding-right="{($inspectorVisibilityTween * 80)}px"
-    style:right="{$panes.right * (1 - $inspectorVisibilityTween)}px" 
+    on:mouseover={() => { rightHovered = true; }}
+    on:mouseleave={() => { rightHovered = false; }}
+    on:focus={() => { rightHovered = true; }}
+    on:blur={() => { rightHovered = false; }}
+    style:right="{$panes.right * (1- $inspectorVisibilityTween)}px" 
   >
-    {$inspectorVisibilityTween}
     <InspectorSidebar />
-    <button class="fixed" style:right="{$panes.right - 20}px" on:click={() => { 
-      inspectorVisible.set($inspectorVisible ? 0 : 1); 
+  </div>
+
+<div>
+    <Tooltip location="right" alignment="center" distance={12}>
+      <button 
+        class="fixed z-40  {leftHovered || !$assetsVisible ? "opacity-100" : "opacity-0"} hover:opacity-100 transition-opacity"
+        style:left="{($panes.left - 12 - 24) * (1 - $assetVisibilityTween) + 12 * $assetVisibilityTween}px"
+        style:top="12px"
+        on:click={() => {
+          assetsVisible.set($assetsVisible ? 0 : 1);
       }}>
-        HIDE
+      <div 
+      class="rounded bg-transparent hover:bg-gray-300 transition-colors grid place-items-center text-gray-500 hover:text-gray-800"
+        style:width="24px" 
+        style:height="24px" 
+      >
+        <PaneExpanderIcon size="16px" mode={$assetsVisible ? "right" : 'hamburger'} />
+      </div>
     </button>
-  </div>
-  <div
-    style:display="none"
-    class='preview-drawer bg-white'
-    style:height="var(--bottom-sidebar-width, 300px)"
-    style:grid-area="preview" 
-    style:align-self="end">
-      <PreviewDrawer />
-  </div>
+  <TooltipContent slot="tooltip-content">
+    {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and tables
+  </TooltipContent>
+  </Tooltip>
+
+
+
+  <Tooltip location="left" alignment="center" distance={12}>
+    <button 
+    class="fixed z-40  {rightHovered || !$inspectorVisible ? "opacity-100" : "opacity-0"} hover:opacity-100 transition-opacity"
+    style:right="{($panes.right - 12 - 24) * (1 - $inspectorVisibilityTween) + 12 * $inspectorVisibilityTween}px"
+      style:top="12px"
+      on:click={() => {
+        inspectorVisible.set($inspectorVisible ? 0 : 1);
+    }}>
+    <div 
+      class="rounded bg-transparent hover:bg-gray-300 transition-colors grid place-items-center text-gray-500 hover:text-gray-800"
+      style:width="24px" 
+      style:height="24px" 
+
+      >
+      <PaneExpanderIcon size="16px" mode={$inspectorVisible ? "left" : 'right'} />
+    </div>
+  </button>
+<TooltipContent slot="tooltip-content">
+  {#if $inspectorVisibilityTween === 0} hide {:else} show {/if} the model inspector
+</TooltipContent>
+</Tooltip>
+
+</div>
+
 </div>
 <style>
 
@@ -90,6 +133,11 @@ setContext("rill:app:panes", panes);
 
 .surface:first-child {
   border-right: 1px solid #ddd;
+}
+
+.outputs {
+  overflow-y: auto;
+  height:100%;
 }
 
 .surface.outputs, .surface.assets {
