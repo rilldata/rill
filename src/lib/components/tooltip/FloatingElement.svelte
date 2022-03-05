@@ -2,6 +2,7 @@
 import { onMount } from "svelte";
 import { fade } from "svelte/transition"
 import { placeElement, mouseLocationToBoundingRect } from '$lib/util/place-element';
+import Portal from "../Portal.svelte";
 
 export let target;
 export let relationship = 'parent'; // parent, mouse {x, y}
@@ -69,6 +70,8 @@ onMount(() => {
 
 <svelte:window bind:scrollX bind:scrollY bind:innerHeight bind:innerWidth />
 
+<Portal>
 <div transition:fade|local={{duration: 25 }} bind:this={child} class="absolute" style:z-index="200" style:left="{left}px" style:top="{top}px">
     <slot />
 </div>
+</Portal>
