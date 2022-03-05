@@ -14,7 +14,9 @@
 }
 
 body {
+    @apply bg-gray-100;
     font-family: "MD IO";
+    font-size: 12px;
     margin: 0;
     padding: 0;
     --header-height: 3.5rem;
@@ -33,10 +35,6 @@ body {
     --error-text: hsl(1, 60%, 30%);
 
     overscroll-behavior: none;
-}
-
-.body-height {
-    height: 100vh;
 }
 
 button {

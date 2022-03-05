@@ -57,7 +57,7 @@ $: if ((location === 'left' || location === 'right') && (alignment === 'left' ||
     </div>
 </div>
 
-<div style:font-size=12px style:height="200vh" style:width="200vw" class="border border-8 border-black overflow-hidden">
+<div style:height="200vh" style:width="200vw" class="border border-8 border-black overflow-hidden">
 
     <h1 class="text-xl p-5 fixed left-2 top-2 bg-white backdrop-blur-md">Tooltip Positioning Semantics.</h1>
     <div class="mt-24" />

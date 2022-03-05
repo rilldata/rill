@@ -27,7 +27,6 @@ $: height = !active ? '1rem' : `calc(1rem + ${editorHeight}px)`;''
             {active ? 'pb-2' : ''}
             w-full ease-in {active?'':''}'
         style="
-            font-size: 12px;
             height: {height};
             transition: height 150ms;
             transform: translateY({end ? '0' : '-1rem'});"

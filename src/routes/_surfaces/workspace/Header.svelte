@@ -41,7 +41,6 @@ function onKeydown(event) {
 <svelte:window on:keydown={onKeydown} />
 
 <header 
-    style:font-size='12px'
     style:height="var(--header-height)"
     class="grid items-center content-stretch bg-gray-100 pl-6 pr-6" 
     style:grid-template-columns="[title] auto [controls] auto">

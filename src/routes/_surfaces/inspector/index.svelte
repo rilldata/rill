@@ -15,13 +15,14 @@ const store = getContext('rill:app:store') as ApplicationStore;
 
   <div 
       class='
+      bg-white
         border-l 
         border-transparent 
         fixed 
         overflow-auto 
         hover:border-gray-200 
         transition-colors
-        body-height
+        h-screen
       ' 
       class:hidden={$inspectorVisibilityTween === 1}
       class:pointer-events-none={!$inspectorVisible}
@@ -32,23 +33,17 @@ const store = getContext('rill:app:store') as ApplicationStore;
     {#if $inspectorVisible}
       <Portal>
         <div 
-          class='fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 body-height' 
+          class='fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen' 
           style:right="{(1- $inspectorVisibilityTween) * $layout.inspectorWidth}px"
           use:drag={{ minSize: 400, side: 'inspectorWidth', reverse: true }} />
       </Portal>
     {/if}
     
   
-    <div class='inspector'  style="width: 100%;">
+    <div style="width: 100%;">
       {#if $store?.activeEntity?.type === EntityType.Model}
         <ModelInspector />
       {/if}
     </div>
   </div>
-  <style lang="postcss">
-  
-  .inspector {
-    font-size: 12px;
-  }
-  
-  </style>
+ 

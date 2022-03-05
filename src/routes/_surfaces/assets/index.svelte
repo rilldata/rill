@@ -64,7 +64,8 @@ let width = tweened(400, {duration : 50})
   overflow-auto 
   hover:border-gray-200 
   transition-colors
-  body-height
+  h-screen
+  bg-white
 ' 
   class:hidden={$assetVisibilityTween === 1}
   class:pointer-events-none={!$assetsVisible}
@@ -74,14 +75,14 @@ let width = tweened(400, {duration : 50})
     {#if $assetsVisible}
       <Portal>
         <div 
-        class='fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 body-height'
+        class='fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen'
         style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
         use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
       </Portal>
     {/if}
 
 
-    <div style:font-size="12px" class='w-full' bind:this={container}>
+    <div class='w-full' bind:this={container}>
       <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
         <h1 class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
           <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
