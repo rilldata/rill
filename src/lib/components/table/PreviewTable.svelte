@@ -11,7 +11,7 @@ import { FormattedDataType, DataTypeIcon } from "$lib/components/data-types/";
 import Pin from "$lib/components/icons/Pin.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import { standardTimestampFormat } from "$lib/util/formatters"
 
 interface ColumnName {
@@ -179,7 +179,7 @@ function togglePin(name, type, selectedCols) {
     >
         <span class='font-bold pr-5'>{visualCellField}</span>
         <FormattedDataType type={visualCellType} isNull={visualCellValue === null}>
-            {visualCellType === 'TIMESTAMP' ? standardTimestampFormat(new Date(visualCellValue)) : visualCellValue}
+            {TIMESTAMPS.has(visualCellType) ? standardTimestampFormat(new Date(visualCellValue), visualCellType) : visualCellValue}
         </FormattedDataType>
 </div>
 {/if}

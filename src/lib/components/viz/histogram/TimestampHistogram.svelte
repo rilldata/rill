@@ -3,6 +3,7 @@ import HistogramBase from "./HistogramBase.svelte";
 import { datePortion, timePortion, intervalToTimestring } from "$lib/util/formatters";
 import { TIMESTAMP_TOKENS } from "$lib/duckdb-data-types";
 export let data;
+export let type;
 export let interval;
 export let width;
 export let height = 100;
@@ -12,7 +13,7 @@ $: effectiveWidth = Math.max(width - 8, 120);
 let fontSize = 12;
 </script>
 
-<div class="italic pt-1 pb-2">{intervalToTimestring(interval)}</div>
+<div class="italic pt-1 pb-2">{intervalToTimestring(type === "DATE" ? {days: interval, months: 0, micros: 0 } : interval)}</div>
 <HistogramBase separate={width > 300} fillColor={TIMESTAMP_TOKENS.vizFillClass} baselineStrokeColor={TIMESTAMP_TOKENS.vizStrokeClass} {data} left={0} right={0} width={effectiveWidth} {height} bottom={40}>
     <svelte:fragment let:x let:y let:buffer>
         {@const yStart = y.range()[0] + fontSize + buffer * 1.5}
@@ -34,6 +35,7 @@ let fontSize = 12;
             >
                 {datePortion(start)}
             </text>
+            {#if type !== 'DATE'}
             <text 
                 x={xStart} 
                 y={yEnd}
@@ -41,6 +43,7 @@ let fontSize = 12;
             >
                 {timePortion(start)}
             </text>
+            {/if}
         </g>
         <g>
             <text
@@ -52,6 +55,7 @@ let fontSize = 12;
             >
                 {datePortion(end)}
             </text>
+            {#if type !== 'DATE'}
             <text 
                 text-anchor=end 
                 x={xEnd} 
@@ -60,6 +64,8 @@ let fontSize = 12;
             >
                 {timePortion(end)}
             </text>
+            {/if}
+
         </g>
     </svelte:fragment>
 </HistogramBase>
