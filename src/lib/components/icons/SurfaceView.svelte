@@ -1,4 +1,9 @@
 <script lang="ts">
+/**
+ * This component is used in buttons that control the opening and closing of surfaces like
+ * the assets drawer and the inspector.
+ * It's our only animated stateful icon, and currently supports <, >, and {hamburger}.
+*/
 import { tweened } from "svelte/motion";
 import { cubicOut as easing } from "svelte/easing";
 import { SURFACE_SLIDE_DURATION } from "$lib/layout-store";

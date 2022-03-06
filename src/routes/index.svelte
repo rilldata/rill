@@ -3,11 +3,10 @@ import Workspace from "./_surfaces/workspace/index.svelte";
 import InspectorSidebar from "./_surfaces/inspector/index.svelte";
 import AssetsSidebar from "./_surfaces/assets/index.svelte";
 import Header from "./_surfaces/workspace/Header.svelte";
-import { setContext } from "svelte";
 
-import PaneExpanderIcon from "$lib/components/PaneExpanderIcon.svelte";
+import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
 
-import SurfaceCollapseButton from "$lib/components/SurfaceCollapseButton.svelte"
+import SurfaceControlButton from "$lib/components/SurfaceControlButton.svelte"
 
 import { 
   layout,
@@ -27,18 +26,18 @@ let inspectorHovered = false;
 
   <!-- left assets pane expansion button -->
   <!-- make this the first element to select with tab by placing it first.-->
-  <SurfaceCollapseButton
+  <SurfaceControlButton
     show={(assetsHovered || !$assetsVisible)}
     left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) + 12 * $assetVisibilityTween}px"
     on:click={() => {
       assetsVisible.set($assetsVisible ? 0 : 1);
     }}
   >
-    <PaneExpanderIcon size="16px" mode={$assetsVisible ? "right" : 'hamburger'} />
+    <SurfaceViewIcon size="16px" mode={$assetsVisible ? "right" : 'hamburger'} />
     <svelte:fragment slot="tooltip-content">
       {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and tables
     </svelte:fragment>
-  </SurfaceCollapseButton>
+  </SurfaceControlButton>
 
   <!-- assets sidebar component -->
   <!-- this is where we handle navigation -->
@@ -66,18 +65,18 @@ let inspectorHovered = false;
   </div>
 
   <!-- inspector collapse button should be tabbable as if it were the first element of the inspector. -->
-  <SurfaceCollapseButton
+  <SurfaceControlButton
     show={inspectorHovered || !$inspectorVisible}
     right="{($layout.inspectorWidth - 12 - 24) * (1 - $inspectorVisibilityTween) + 12 * $inspectorVisibilityTween}px"
     on:click={() => {
       inspectorVisible.set($inspectorVisible ? 0 : 1);
     }}
   >
-    <PaneExpanderIcon size="16px" mode={$inspectorVisible ? "left" : 'right'} />
+    <SurfaceViewIcon size="16px" mode={$inspectorVisible ? "left" : 'right'} />
     <svelte:fragment slot="tooltip-content">
       {#if $inspectorVisibilityTween === 0} hide {:else} show {/if} the model inspector
     </svelte:fragment>
-  </SurfaceCollapseButton>
+  </SurfaceControlButton>
 
   <!-- inspector sidebar -->
   <div 

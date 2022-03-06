@@ -1,5 +1,5 @@
 <script>
-import PaneExpanderIcon from "$lib/components/PaneExpanderIcon.svelte"
+import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte"
 let mode = 'hamburger;'
 </script>
 
@@ -14,9 +14,9 @@ let mode = 'hamburger;'
     right
 </button>
 
-<PaneExpanderIcon size="5rem" {mode} />
-<PaneExpanderIcon size="4rem"  {mode} />
-<PaneExpanderIcon size="3rem" {mode}  />
-<PaneExpanderIcon size="2rem"  {mode} />
-<PaneExpanderIcon size="24px"  {mode} />
-<PaneExpanderIcon size="1rem"  {mode} />
+<SurfaceViewIcon size="5rem" {mode} />
+<SurfaceViewIcon size="4rem"  {mode} />
+<SurfaceViewIcon size="3rem" {mode}  />
+<SurfaceViewIcon size="2rem"  {mode} />
+<SurfaceViewIcon size="24px"  {mode} />
+<SurfaceViewIcon size="1rem"  {mode} />
