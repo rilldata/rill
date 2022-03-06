@@ -6,7 +6,7 @@ import Header from "./_surfaces/workspace/Header.svelte";
 
 import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
 
-import SurfaceControlButton from "$lib/components/SurfaceControlButton.svelte"
+import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte"
 
 import { 
   layout,

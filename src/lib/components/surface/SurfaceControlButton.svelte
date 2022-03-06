@@ -1,4 +1,7 @@
 <script>
+/**
+ * contains the placement and styling of the surface view buttons.
+*/
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 export let show = false;
@@ -14,13 +17,13 @@ export let top = "calc(var(--header-height) / 2 - 24px / 2)";
         z-40 
         grid place-items-center
         text-white
-        focus:text-gray-700 
-        hover:text-gray-700 
+        focus:text-gray-500 
+        hover:text-gray-500 
         rounded
         bg-transparent
         hover:bg-gray-300
         focus:bg-gray-300
-        {show ? "opacity-100 text-gray-700" : "opacity-0"} 
+        {show ? "opacity-100 text-gray-500" : "opacity-0"} 
         focus:opacity-100 
         hover:opacity-100
         transition-opacity"
