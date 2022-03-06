@@ -1,6 +1,5 @@
 <script lang="ts">
-import { createEventDispatcher } from "svelte";
-const dispatch = createEventDispatcher();
+export let name:string;
 export let sticky:string = 'top';
 </script>
 <th class="
@@ -10,6 +9,7 @@ export let sticky:string = 'top';
     class:top-0={sticky === 'top'}
     class:left-0={sticky === 'left'}
     class:z-10={!!sticky}
+
 >
     <div 
         class="
