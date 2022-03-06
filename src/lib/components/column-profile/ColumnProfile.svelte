@@ -208,7 +208,7 @@ let titleTooltipHover;
                     max={summary.statistics.max}
                 />
             </div>
-            {:else if TIMESTAMPS.has(type) && summary?.interval && summary?.histogram?.length}
+            {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
                 <div class="pl-{indentLevel === 1 ? 14 : 10}">
                     <!-- pl-14 pl-10 -->
                     <TimestampHistogram

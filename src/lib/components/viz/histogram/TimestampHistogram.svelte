@@ -13,7 +13,9 @@ $: effectiveWidth = Math.max(width - 8, 120);
 let fontSize = 12;
 </script>
 
+{#if interval}
 <div class="italic pt-1 pb-2">{intervalToTimestring(type === "DATE" ? {days: interval, months: 0, micros: 0 } : interval)}</div>
+{/if}
 <HistogramBase separate={width > 300} fillColor={TIMESTAMP_TOKENS.vizFillClass} baselineStrokeColor={TIMESTAMP_TOKENS.vizStrokeClass} {data} left={0} right={0} width={effectiveWidth} {height} bottom={40}>
     <svelte:fragment let:x let:y let:buffer>
         {@const yStart = y.range()[0] + fontSize + buffer * 1.5}
