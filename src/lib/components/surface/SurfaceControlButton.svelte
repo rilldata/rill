@@ -16,17 +16,17 @@ export let top = "calc(var(--header-height) / 2 - 24px / 2)";
         fixed 
         z-40 
         grid place-items-center
-        text-white
         focus:text-gray-500 
         hover:text-gray-500 
         rounded
         bg-transparent
         hover:bg-gray-300
         focus:bg-gray-300
-        {show ? "opacity-100 text-gray-500" : "opacity-0"} 
+        {show ? "opacity-100 text-gray-500" : "opacity-0 text-white"} 
         focus:opacity-100 
         hover:opacity-100
-        transition-opacity"
+        transition-opacity
+        "
       style:width="24px"
       style:height="24px"
       style:left={left}
