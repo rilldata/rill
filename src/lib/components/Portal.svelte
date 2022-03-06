@@ -23,7 +23,7 @@ onDestroy(() => {
 </script>
 
 <div class="gp-portal" style="display: none">
-<div bind:this={ref} style="font-size:12px;">
+<div bind:this={ref}>
     {#if mounted}
     <slot />
     {/if}

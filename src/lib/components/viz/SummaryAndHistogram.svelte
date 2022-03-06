@@ -102,14 +102,14 @@
         <line x1={X(X.domain()[0])} x2={width * $tw - right - vizOffset} y1={Y(0) + 4} y2={Y(0) + 4} stroke={color} />
         </g>
         
-        <g style:font-size="12px" class='lineElements'>
+        <g class='lineElements'>
             {#each [['min', min], ['q25', qlow], ['med', median], ['mean', mean], ['q75', qhigh], ['max', max]] as [label, value], i} 
             {@const y = height + i * fontSize}
             <line x1={left}  x2={width - right} y1={y - fontSize / 4 } y2={y - fontSize / 4 } stroke-dasharray=2,1 opacity=.3 stroke={color} />
             <line x1={X(value)}  x2={X(value)} y1={y - fontSize / 4} y2={Y(0) + 4}  opacity=.3 stroke={color} />
             {/each}
         </g>
-        <g style:font-size="12px" class='textElements'>
+        <g class='textElements'>
             {#each [['min', min], ['25%', qlow], ['median', median], ['mean', mean], ['75%', qhigh], ['max', max]] as [label, value], i} 
                 {@const y = height + i * fontSize}
                 {@const anchor = X(value) < (width / 2) ? 'start' : 'end'}

@@ -102,7 +102,7 @@ let hoveredDate;
     </div>
 
 
-    <div style="font-size:12px;" style:grid-area="leaderboard-body" class="flex flex-wrap flex-col">
+    <div style:grid-area="leaderboard-body" class="flex flex-wrap flex-col">
         {#each Object.keys(currentExploreConfiguration?.preview?.dimensionBoard) as k}
             {@const board = currentExploreConfiguration?.preview?.dimensionBoard[k]}
             <div style:width="300px">
@@ -115,7 +115,6 @@ let hoveredDate;
 
 <style>
 section {
-    font-size: 12px;
     display: grid;
     grid-column-gap: 2rem;
     /* grid-template-rows: auto auto auto; */

@@ -1,18 +1,4 @@
-<!-- <script>
-import { getContext } from "svelte";
-import ModelInspectorPane from "./ModelInspectorPane.svelte";
-
-const store = getContext('rill:app:store');
-$: activeAsset = $store?.activeAsset;
-</script>
-
-{#if activeAsset?.assetType === 'model'}
-    <ModelInspectorPane />
-{/if}
- -->
-
-
- <script lang="ts">
+<script lang="ts">
 import { getContext } from "svelte";
 import ModelInspector from "./Model.svelte";
 
@@ -20,25 +6,44 @@ import type { ApplicationStore } from "$lib/app-store";
 
 import { drag } from "$lib/drag";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { inspectorVisibilityTween, inspectorVisible, layout } from "$lib/layout-store";
+import Portal from "$lib/components/Portal.svelte";
+
 const store = getContext('rill:app:store') as ApplicationStore;
 
 </script>
-        
-  <div class='drawer-container flex'>    
-    <div class='drawer-handler w-4 absolute hover:cursor-col-resize -translate-x-2 body-height'
-    use:drag={{ minSize: 400 }} />
+
+  <div 
+      class='
+      bg-white
+        border-l 
+        border-transparent 
+        fixed 
+        overflow-auto 
+        hover:border-gray-200 
+        transition-colors
+        h-screen
+      ' 
+      class:hidden={$inspectorVisibilityTween === 1}
+      class:pointer-events-none={!$inspectorVisible}
+      style:top="0px"
+      style:width="{$layout.inspectorWidth}px"
+    > 
+    <!-- draw handler -->
+    {#if $inspectorVisible}
+      <Portal>
+        <div 
+          class='fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen' 
+          style:right="{(1- $inspectorVisibilityTween) * $layout.inspectorWidth}px"
+          use:drag={{ minSize: 400, side: 'inspectorWidth', reverse: true }} />
+      </Portal>
+    {/if}
+    
   
-    <div class='inspector'>
-          {#if $store?.activeEntity?.type === EntityType.Model}
-          <ModelInspector />
-        {/if}
+    <div style="width: 100%;">
+      {#if $store?.activeEntity?.type === EntityType.Model}
+        <ModelInspector />
+      {/if}
+    </div>
   </div>
-  </div>
-  <style lang="postcss">
-  
-  .inspector {
-    width: var(--right-sidebar-width, 400px);
-    font-size: 12px;
-  }
-  
-  </style>
+ 

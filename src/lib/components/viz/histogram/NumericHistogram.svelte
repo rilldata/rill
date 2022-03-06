@@ -59,7 +59,7 @@ let buffer = 4;
                 <feMergeNode in="SourceGraphic" />
             </feMerge>
         </filter>
-        <g style:font-size="12px" class='textElements'>
+        <g class='textElements'>
             <!-- lines first -->
             {#each [['min', min], ['25%', qlow], ['median', median], ['mean', mean], ['75%', qhigh], ['max', max]] as [label, value], i} 
                 {@const yi = y(0) + anchorBuffer + i * (fontSize + buffer + anchorBuffer / 2) + anchorBuffer * 2 }

@@ -34,7 +34,6 @@ const queryHighlight = getContext('rill:app:query-highlight');
 
 const formatRollupFactor = format(',r');
 
-let innerWidth;
 
 function tableDestinationCompute(key, table, destination) {
   return table.reduce((acc,v) => acc + v[key], 0) / destination[key];
@@ -87,10 +86,8 @@ onMount(() => {
     observer.observe(container);
 })
 
-
 </script>
 
-<svelte:window bind:innerWidth />
 
   <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length}

@@ -1,6 +1,8 @@
+import { layout } from '$lib/layout-store';
 export function drag(node, params) {
     let minSize_ = params?.minSize || 300;
     let maxSize_ = params?.maxSize || 800;
+    let reverse_ = params?.reverse || false;
     
     let side_ = params?.side || 'right';
     let property = `--${side_}-sidebar-width`; //params?.property || '--left-sidebar-width';
@@ -16,12 +18,15 @@ export function drag(node, params) {
 
     function mousemove(e) {
         if (moving) {
-        const size = side_ === 'right' ? innerWidth - e.pageX : e.pageX;
-        if (size > minSize_ && size < maxSize_) {
-            xSpace = size;
-        }
-
-        document.body.style.setProperty(property, `${xSpace}px`)
+            const size = reverse_ ? innerWidth - e.pageX : e.pageX;
+            if (size > minSize_ && size < maxSize_) {
+                xSpace = size;
+            }
+            layout.update((l) => {
+                l[side_] = xSpace;
+                return l;
+            })
+        //document.body.style.setProperty(property, `${xSpace}px`)
         }
     }
 
