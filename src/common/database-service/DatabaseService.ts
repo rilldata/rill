@@ -3,8 +3,14 @@ import type {DatabaseTableActions} from "$common/database-service/DatabaseTableA
 import type {DatabaseColumnActions} from "$common/database-service/DatabaseColumnActions";
 import type {DuckDBClient} from "$common/database-service/DuckDBClient";
 import type {DatabaseActions} from "$common/database-service/DatabaseActions";
-import {ExtractActionTypeDefinitions, getActionMethods, PickActionFunctions} from "$common/ServiceBase";
+import {
+    ActionServiceBase,
+    ExtractActionTypeDefinitions,
+    getActionMethods,
+    PickActionFunctions
+} from "$common/ServiceBase";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
+import type { ActionMetadata } from "$common/priority-action-queue/PriorityActionQueue";
 
 type DatabaseActionsClasses = PickActionFunctions<DatabaseMetadata, (
     DatabaseDataLoaderActions &
@@ -22,7 +28,7 @@ export type DatabaseActionsDefinition = ExtractActionTypeDefinitions<DatabaseMet
  * Actions supported is dependent on these instances passed in the constructor.
  * One caveat to note, type definition and actual instances passed might not match.
  */
-export class DatabaseService {
+export class DatabaseService implements ActionServiceBase<DatabaseActionsDefinition> {
     private actionsMap: {
         [Action in keyof DatabaseActionsDefinition]?: DatabaseActionsClasses
     } = {};

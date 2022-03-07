@@ -2,11 +2,14 @@ import { EntityStateUpdatesHandler } from "$common/data-modeler-state-service/sy
 import type { RootConfig } from "$common/config/RootConfig";
 import type { DataModelerActionsDefinition, DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataProfileEntity } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
+import { Throttler } from "$common/utils/Throttler";
 
 /**
  * Update handler that triggers action to profile if not already profiled.
  */
 export class DerivedEntityUpdateHandler extends EntityStateUpdatesHandler<DataProfileEntity> {
+    protected collectInfoThrottler = new Throttler();
+
     public constructor(protected readonly config: RootConfig,
                        protected readonly dataModelerService: DataModelerService,
                        protected readonly collectEntityInfoAction: keyof DataModelerActionsDefinition) {
@@ -26,13 +29,22 @@ export class DerivedEntityUpdateHandler extends EntityStateUpdatesHandler<DataPr
     }
 
     private async handleModelProfiling(entity: DataProfileEntity): Promise<void> {
-        if (!entity.profiled) {
+        // if the entity is already profiled or if profiling is disabled,
+        // do not dispatch profiling action for this entity
+        if (entity.profiled || !this.config.profileWithUpdate) return;
+        // it is possible the collect info will take a long time.
+        // this code might end up running multiple time by then.
+        // add a throttler to make sure we don't call the collect info multiple times by then.
+        this.collectInfoThrottler.throttle(entity.id, () => {
             // make sure to run it after a little delay
             // we need entry in both derived and persistent states
             // TODO: Find a better way to sync this
-            setTimeout(() => {
-                this.dataModelerService.dispatch(this.collectEntityInfoAction, [entity.id]);
-            }, this.config.state.syncInterval * 2);
-        }
+            setTimeout(async () => {
+                try {
+                    await this.dataModelerService.dispatch(this.collectEntityInfoAction, [entity.id]);
+                } catch (err) {}
+                this.collectInfoThrottler.clear(entity.id);
+            }, this.config.state.syncInterval);
+        }, 5 * this.config.state.syncInterval)
     }
 }

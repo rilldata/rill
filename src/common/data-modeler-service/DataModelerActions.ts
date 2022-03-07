@@ -4,6 +4,8 @@ import type {DatabaseService} from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
 import { ActionsBase } from "$common/ActionsBase";
 import type { RootConfig } from "$common/config/RootConfig";
+import type { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
+import type { DatabaseActionsDefinition } from "$common/database-service/DatabaseService";
 
 /**
  * Class that has the actual action implementations.
@@ -11,6 +13,7 @@ import type { RootConfig } from "$common/config/RootConfig";
 export class DataModelerActions extends ActionsBase {
     protected dataModelerService: DataModelerService;
     protected notificationService: NotificationService;
+    protected databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>;
 
     constructor(protected readonly config: RootConfig,
                 protected readonly dataModelerStateService: DataModelerStateService,
@@ -24,5 +27,11 @@ export class DataModelerActions extends ActionsBase {
 
     public setNotificationService(notificationService: NotificationService): void {
         this.notificationService = notificationService;
+    }
+
+    public setDatabaseActionQueue(
+        databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>
+    ): void {
+        this.databaseActionQueue = databaseActionQueue;
     }
 }
