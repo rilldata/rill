@@ -16,6 +16,7 @@ import type {
     DerivedModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { getNewDerivedModel, getNewModel } from "$common/stateInstancesFactory";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 
 export enum FileExportType {
     Parquet = "exportToParquet",
@@ -44,6 +45,7 @@ export class ModelActions extends DataModelerActions {
             console.error(`No model found for ${modelId}`);
             return;
         }
+        this.databaseActionQueue.clearQueue(modelId);
 
         const sanitizedQuery = sanitizeQuery(query);
         if (sanitizedQuery === derivedModel.sanitizedQuery) {
@@ -78,12 +80,15 @@ export class ModelActions extends DataModelerActions {
             console.error(`No model found for ${modelId}`);
             return;
         }
+        this.databaseActionQueue.clearQueue(modelId);
 
         try {
             // create a view of the query for other analysis
             // re-sanitize query but do not remove casing, in case there is case-sensitive syntax
             // in the query e.g. strftime(dt, '%I:%M:%S')
-            await this.databaseService.dispatch("createViewOfQuery",
+            await this.databaseActionQueue.enqueue(
+                {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
+                "createViewOfQuery",
                 [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]);
         } catch (err) {
             console.error(err);
@@ -99,7 +104,9 @@ export class ModelActions extends DataModelerActions {
             // the view. This is also a good place to _test_ whether this query has any runtime errors, since
             // to get one result of the view, we'll need to run the underlying query itself.
             // FIXME: We should really start writing tests here!
-            profileColumns = await this.databaseService.dispatch("getProfileColumns", [persistentModel.tableName])
+            profileColumns = await this.databaseActionQueue.enqueue(
+                {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
+                "getProfileColumns", [persistentModel.tableName])
         } catch (error) {
             console.log(error);
             this.dataModelerStateService.dispatch("addModelError", [modelId, error.message]);
@@ -119,11 +126,17 @@ export class ModelActions extends DataModelerActions {
                 [EntityType.Model, modelId]),
             // TODO: add debouncing
             async () => this.dataModelerStateService.dispatch("updateModelPreview", [modelId,
-                await this.databaseService.dispatch("getFirstNOfTable", [persistentModel.tableName, MODEL_PREVIEW_COUNT])]),
+                await this.databaseActionQueue.enqueue(
+                    {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
+                    "getFirstNOfTable", [persistentModel.tableName, MODEL_PREVIEW_COUNT])]),
             async () => this.dataModelerStateService.dispatch("updateModelCardinality", [modelId,
-                await this.databaseService.dispatch("getCardinalityOfTable", [persistentModel.tableName])]),
+                await this.databaseActionQueue.enqueue(
+                    {id: modelId, priority: DatabaseActionQueuePriority.ActiveModelProfile},
+                    "getCardinalityOfTable", [persistentModel.tableName])]),
             async () => this.dataModelerStateService.dispatch("updateModelDestinationSize", [modelId,
-                await this.databaseService.dispatch("getDestinationSize", [persistentModel.tableName])]),
+                await this.databaseActionQueue.enqueue(
+                    {id: modelId, priority: DatabaseActionQueuePriority.ActiveModelProfile},
+                    "getDestinationSize", [persistentModel.tableName])]),
         ].map(asyncFunc => asyncFunc()));
 
         this.dataModelerStateService.dispatch("markAsProfiled",
@@ -179,9 +192,10 @@ export class ModelActions extends DataModelerActions {
 
     private async validateModelQuery(model: PersistentModelEntity, sanitizedQuery: string): Promise<boolean> {
         try {
-            await this.databaseService.dispatch("validateQuery", [sanitizedQuery]);
+            await this.databaseActionQueue.enqueue(
+                {id: model.id, priority: DatabaseActionQueuePriority.ActiveModel},
+                "validateQuery", [sanitizedQuery]);
         } catch (error) {
-            console.log(error);
             if (error.message !== 'No statement to prepare!') {
                 this.dataModelerStateService.dispatch("addModelError", [model.id, error.message]);
             }  else {

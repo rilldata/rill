@@ -51,7 +51,6 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
         await this.secondDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
         await asyncWait(100);
-        console.log("starting");
     }
 
     @FunctionalTestBase.Test()
