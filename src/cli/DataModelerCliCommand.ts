@@ -35,8 +35,7 @@ export abstract class DataModelerCliCommand {
         shouldSkipDatabase = shouldSkipDatabase ?? true;
 
         this.config = new RootConfig({
-            database: new DatabaseConfig({ databaseName: `${this.projectPath}/${DATABASE_NAME}`, skipDatabase: shouldSkipDatabase }),
-            state: new StateConfig({ savedStateFile: `${this.projectPath}/${SAVED_STATE_FILE}` }),
+            database: new DatabaseConfig({ databaseName: DATABASE_NAME, skipDatabase: shouldSkipDatabase }),
             server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
             projectFolder: this.projectPath, profileWithUpdate: false,
         });

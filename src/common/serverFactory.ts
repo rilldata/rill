@@ -33,7 +33,7 @@ import {
 import { CommonActions } from "$common/data-modeler-service/CommonActions";
 
 export function databaseServiceFactory(config: RootConfig) {
-    const duckDbClient = new DuckDBClient(config.database);
+    const duckDbClient = new DuckDBClient(config);
     const databaseDataLoaderActions = new DatabaseDataLoaderActions(config.database, duckDbClient);
     const databaseTableActions = new DatabaseTableActions(config.database, duckDbClient);
     const databaseColumnActions = new DatabaseColumnActions(config.database, duckDbClient);
