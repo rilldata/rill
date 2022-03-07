@@ -122,6 +122,12 @@ export class ModelActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("updateModelProfileColumns",
             [modelId, profileColumns]);
         await Promise.all([
+            // get the total number of rows first, since many parts of the iterative profiling
+            // require this number as the denominator (e.g. the top k and the null %s)
+            async () => this.dataModelerStateService.dispatch("updateModelCardinality", [modelId,
+                await this.databaseActionQueue.enqueue(
+                    {id: modelId, priority: DatabaseActionQueuePriority.ActiveModelProfile},
+                    "getCardinalityOfTable", [persistentModel.tableName])]),
             async () => await this.dataModelerService.dispatch("collectProfileColumns",
                 [EntityType.Model, modelId]),
             // TODO: add debouncing
@@ -129,10 +135,6 @@ export class ModelActions extends DataModelerActions {
                 await this.databaseActionQueue.enqueue(
                     {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
                     "getFirstNOfTable", [persistentModel.tableName, MODEL_PREVIEW_COUNT])]),
-            async () => this.dataModelerStateService.dispatch("updateModelCardinality", [modelId,
-                await this.databaseActionQueue.enqueue(
-                    {id: modelId, priority: DatabaseActionQueuePriority.ActiveModelProfile},
-                    "getCardinalityOfTable", [persistentModel.tableName])]),
             async () => this.dataModelerStateService.dispatch("updateModelDestinationSize", [modelId,
                 await this.databaseActionQueue.enqueue(
                     {id: modelId, priority: DatabaseActionQueuePriority.ActiveModelProfile},
