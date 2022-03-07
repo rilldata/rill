@@ -28,7 +28,6 @@ export class PriorityActionQueue {
     private heapEntryMap = new Map<string, QueueEntry>();
 
     public enqueue(actionMetadata: ActionMetadata, queuedAction: QueuedAction): void {
-        // console.log("enqueue", actionMetadata.priority);
         if (this.heapEntryMap.has(actionMetadata.id)) {
             const existingItem: QueueEntry = this.heapEntryMap.get(actionMetadata.id);
             existingItem.actions.push(queuedAction);
@@ -74,7 +73,6 @@ export class PriorityActionQueue {
             this.maxHeap.pop();
             this.heapEntryMap.delete(topItem.metadata.id);
         }
-        // console.log("dequeue", topItem.metadata.priority, topItem.actions[0][0], topItem.actions[0][1]);
         return topItem.actions.shift();
     }
 }
