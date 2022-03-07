@@ -191,7 +191,7 @@ onMount(() => {
         </CollapsibleSectionTitle>
       </div>
 
-        {#if currentDerivedModel?.profile && currentDerivedModel?.preview && showColumns}
+        {#if currentDerivedModel?.profile && showColumns}
         <div class='source-tables pt-4 pb-4' transition:slide|local={{duration: 200}}>
           {#each currentDerivedModel.profile as column}
             <ColumnProfile
