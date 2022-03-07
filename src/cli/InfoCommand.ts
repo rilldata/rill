@@ -1,6 +1,7 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
-import type { DataModelerState } from "$lib/types";
+import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export class InfoCommand extends DataModelerCliCommand {
     public getCommand(): Command {
@@ -13,14 +14,34 @@ export class InfoCommand extends DataModelerCliCommand {
     }
 
     protected async sendActions(): Promise<void> {
-        // InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService.getCurrentState());
+        InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService);
     }
 
-    public static displayProjectInfo(projectPath: string, state: DataModelerState) {
+    public static displayProjectInfo(projectPath: string, dataModelerStateService: DataModelerStateService) {
+        console.log("*** Project Info ***");
         console.log(`Project Path: ${projectPath}`);
-        console.log("Tables:");
-        state.tables.forEach(table => console.log(`${table.tableName} (${table.path})`));
+
+        this.displayTablesInfo(dataModelerStateService);
+        this.displayModelsInfo(dataModelerStateService);
+    }
+
+    private static displayTablesInfo(dataModelerStateService: DataModelerStateService) {
+        const tableState = dataModelerStateService
+            .getEntityStateService(EntityType.Table, StateType.Persistent)
+            .getCurrentState();
+        if (!tableState?.entities.length) return;
+
+        console.log("Imported Tables:");
+        tableState.entities.forEach(table => console.log(`${table.tableName} (${table.path})`));
+    }
+
+    private static displayModelsInfo(dataModelerStateService: DataModelerStateService) {
+        const modelState = dataModelerStateService
+            .getEntityStateService(EntityType.Model, StateType.Persistent)
+            .getCurrentState();
+        if (!modelState?.entities.length) return;
+
         console.log("Models:");
-        state.models.forEach(model => model.query && console.log(`${model.name}: ${model.query}`));
+        modelState.entities.forEach(model => model.query && console.log(`${model.name}: ${model.query}`));
     }
 }
