@@ -7,6 +7,7 @@
 import { createEventDispatcher } from "svelte";
 import { fade } from "svelte/transition"
 import { FormattedDataType } from "$lib/components/data-types/";
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import { standardTimestampFormat } from "$lib/util/formatters";
 export let type;
 export let value;
@@ -26,9 +27,9 @@ const dispatch = createEventDispatcher();
 
 let formattedValue;
 $: {
-    if (type === 'TIMESTAMP') {
+    if (TIMESTAMPS.has(type)) {
         // FIXME: apparently timestamp columns get returned as strings.
-        formattedValue = standardTimestampFormat(typeof value === 'string' ? new Date(value) : value);
+        formattedValue = standardTimestampFormat(typeof value === 'string' ? new Date(value) : value, type);
     } else if(value === null) {
         formattedValue = `∅ null`
     } else {

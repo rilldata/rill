@@ -108,7 +108,7 @@ let titleTooltipHover;
                             </TooltipContent>
                         </Tooltip>
                     
-                    {:else if NUMERICS.has(type) && summary?.histogram }
+                    {:else if NUMERICS.has(type) && summary?.histogram?.length}
                     <Tooltip location="right" alignment="center" distance={8}>
                         <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
                             fillColor={DATA_TYPE_COLORS['DOUBLE'].vizFillClass}
@@ -118,7 +118,7 @@ let titleTooltipHover;
                             the distribution of the values of this column
                         </TooltipContent>
                     </Tooltip>
-                    {:else if TIMESTAMPS.has(type) && summary?.histogram}
+                    {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
                     <Tooltip location="right" alignment="center" distance={8}>
 
                             <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
@@ -192,7 +192,7 @@ let titleTooltipHover;
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 
-            {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram}
+            {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram?.length}
             <div class="pl-{indentLevel === 1 ? 12 : 5}">
                 <!-- pl-12 pl-5 -->
                 <!-- FIXME: we have to remove a bit of pad from the right side to make this work -->
@@ -208,10 +208,11 @@ let titleTooltipHover;
                     max={summary.statistics.max}
                 />
             </div>
-            {:else if TIMESTAMPS.has(type)}
+            {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
                 <div class="pl-{indentLevel === 1 ? 14 : 10}">
                     <!-- pl-14 pl-10 -->
                     <TimestampHistogram
+                        {type}
                         width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32 + 20)}
                         data={summary.histogram}
                         interval={summary.interval}
