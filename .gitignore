@@ -24,6 +24,7 @@ export/
 *.csv
 *.tsv
 /*_state.json
+/state
 
 # generated content
 log

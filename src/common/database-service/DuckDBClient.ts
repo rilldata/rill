@@ -1,5 +1,5 @@
 import duckdb from "duckdb";
-import type {DatabaseConfig} from "$common/config/DatabaseConfig";
+import type { DatabaseConfig } from "$common/config/DatabaseConfig";
 
 interface DuckDB {
     // TODO: define concrete styles
