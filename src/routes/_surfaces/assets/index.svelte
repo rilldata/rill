@@ -1,9 +1,12 @@
 <script lang="ts">
 import { getContext, onMount } from "svelte";
+import { tweened } from "svelte/motion"
 import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
 
 import type { ApplicationStore } from "$lib/app-store";
+
+import Portal from "$lib/components/Portal.svelte";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import ModelIcon from "$lib/components/icons/Code.svelte";
@@ -21,6 +24,8 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+import { assetVisibilityTween, assetsVisible, layout } from "$lib/layout-store";
+
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
@@ -33,13 +38,14 @@ $: activeModel = $store && $persistentModelStore &&
     $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 let showTables = true;
 let showModels = true;
-let showMetrics = true;
-let showExplores = true;
+
 
 let view = 'assets';
 
 let container;
 let containerWidth = 0;
+
+
 
 onMount(() => {
     const observer = new ResizeObserver(entries => {
@@ -47,17 +53,38 @@ onMount(() => {
     });
     observer.observe(container);
 })
+let width = tweened(400, {duration : 50})
 
 </script>
 
-<div class='drawer-container flex flex-row-reverse'>
-    <!-- Drawer Handler -->
-    <div class='drawer-handler w-4 absolute hover:cursor-col-resize translate-x-2 body-height'
-    use:drag={{ side: 'left', minSize: 300, maxSize: 500 }} />
-    <div class='assets' bind:this={container}>
+<div class='
+  border-r 
+  border-transparent 
+  fixed 
+  overflow-auto 
+  hover:border-gray-200 
+  transition-colors
+  h-screen
+  bg-white
+' 
+  class:hidden={$assetVisibilityTween === 1}
+  class:pointer-events-none={!$assetsVisible}
+  style:top="0px" style:width="{$layout.assetsWidth}px">
+    
+    <!-- draw handler -->
+    {#if $assetsVisible}
+      <Portal>
+        <div 
+        class='fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen'
+        style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
+        use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
+      </Portal>
+    {/if}
 
-      <header class='sticky top-0'>
-        <h1  class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
+
+    <div class='w-full' bind:this={container}>
+      <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
+        <h1 class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
           <div class='grid bg-gray-400 text-white w-5 h-5 items-center justify-center rounded'>
             R
           </div>
@@ -66,18 +93,6 @@ onMount(() => {
       </header>
 
       <div style:height="80px"></div>
-
-        <!-- <div 
-          class='grid grid-flow-col justify-items-center justify-start pb-6 pt-6 gap-x-5 pl-3'
-        >
-          <button on:click={() => { view = 'assets' }}>
-            <h3>Assets</h3>
-          </button>
-          <button disabled>
-            <h3 class="font-normal text-gray-400 cursor-not-allowed" title="coming soon!">Pipelines</h3>
-          </button>
-        </div> -->
-        <!-- <hr /> -->
 
           <div class='pl-3 pb-3 pt-3'>
             <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
@@ -145,18 +160,5 @@ onMount(() => {
               </div>
             {/if}
           {/if}
-
     </div>
-
-
 </div>
-<style lang="postcss">
-.drawer-container {
-  /* height: calc(100vh - var(--header-height)); */
-}
-
-.assets {
-  width: var(--left-sidebar-width, 400px);
-  font-size: 12px;
-}
-</style>

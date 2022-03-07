@@ -25,7 +25,7 @@ $: if ($store?.activeEntity && $derivedModelStore?.entities)
         class="relative  bg-gray-50 overflow-auto border-t border-gray-300" 
         style:height="var(--bottom-sidebar-width)"
         style:min-width="calc(100vw - var(--left-sidebar-width) - .5rem)"
-        style:font-size="12px">
+        >
         {#if currentModel?.preview}
         <!-- <RowTable data={currentQuery.preview} /> -->
         <PreviewTable rows={currentModel.preview} columnNames={currentModel.profile} />

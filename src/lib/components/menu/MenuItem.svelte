@@ -48,7 +48,6 @@ let selected = false;
 <button
     bind:this={element}
     role="menuitem" 
-    style:font-size=12px
     style="--tw-ring-color: transparent"
 
     class="

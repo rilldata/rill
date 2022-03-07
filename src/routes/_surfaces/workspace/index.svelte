@@ -12,18 +12,8 @@ const store = getContext("rill:app:store") as ApplicationStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 </script>
 
-<!-- <button 
-    class="grid justify-end w-full p-3"
-    on:click={() => {
-        store.action('unsetActiveAsset');
-    }} style="font-size:12px;">✕</button> -->
-
 {#if $store?.activeEntity?.type === EntityType.Model}
     <ModelView />
-<!--{:else if $store?.activeEntity?.type === 'metricsDefinition'}-->
-<!--    <MetricsDefinitionView />-->
-<!--{:else if $store?.activeEntity?.type === 'exploreConfiguration'}-->
-<!--    <ExploreView />-->
 {:else}
 <DropZone
     padTop={!!$persistentModelStore?.entities.length}

@@ -34,7 +34,6 @@ const queryHighlight = getContext('rill:app:query-highlight');
 
 const formatRollupFactor = format(',r');
 
-let innerWidth;
 
 function tableDestinationCompute(key, table, destination) {
   return table.reduce((acc,v) => acc + v[key], 0) / destination[key];
@@ -87,15 +86,13 @@ onMount(() => {
     observer.observe(container);
 })
 
-
 </script>
 
-<svelte:window bind:innerWidth />
 
   <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length}
       {#if currentModel.query.trim().length}
-        <div class="grid justify-items-center" style:height="var(--header-height)" >
+        <div class="flex flex-row justify-center" style:height="var(--header-height)" >
           <button class="
             p-3 pt-1 pb-1
             m-2
@@ -107,7 +104,19 @@ onMount(() => {
             rounded-md" on:click={() => {
             const exportFilename = currentModel.name.replace('.sql', '.parquet');
             dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
-          }}>generate {currentModel.name.replace('.sql', '.parquet')}</button>
+          }}>export parquet</button>
+          <button class="
+            p-3 pt-1 pb-1
+            m-2
+            bg-white
+            text-black
+            border
+            border-black
+            transition-colors
+            rounded-md" on:click={() => {
+            const exportFilename = currentModel.name.replace('.sql', '.csv');
+            dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
+          }}>export csv</button>
         </div>
       {/if}
       {#if tables}
