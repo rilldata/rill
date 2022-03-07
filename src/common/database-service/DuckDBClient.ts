@@ -1,5 +1,5 @@
 import duckdb from "duckdb";
-import type { RootConfig } from "$common/config/RootConfig";
+import type { DatabaseConfig } from "$common/config/DatabaseConfig";
 
 interface DuckDB {
     // TODO: define concrete styles
@@ -7,8 +7,6 @@ interface DuckDB {
     exec: (...args: Array<any>) => any;
     prepare: (...args: Array<any>) => any;
 }
-
-const DUCK_MEMORY_DB = ":memory:";
 
 /**
  * Runs a duckdb instance. Database name can be configured {@link DatabaseConfig}
@@ -22,15 +20,12 @@ export class DuckDBClient {
     protected onCallback: () => void;
     protected offCallback: () => void;
 
-    public constructor(private readonly config: RootConfig) {}
+    public constructor(private readonly databaseConfig: DatabaseConfig) {}
 
     public async init(): Promise<void> {
-        if (this.config.database.skipDatabase) return;
+        if (this.databaseConfig.skipDatabase) return;
         // we can later on swap this over to WASM and update data loader
-        this.db = new duckdb.Database(
-            this.config.database.databaseName === DUCK_MEMORY_DB ?
-                this.config.database.databaseName:
-                `${this.config.projectFolder}/${this.config.database.databaseName}`);
+        this.db = new duckdb.Database(this.databaseConfig.databaseName);
         this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
     }
 

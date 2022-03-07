@@ -5,14 +5,12 @@ import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import type { Command } from "commander";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { StateConfig } from "$common/config/StateConfig";
 import { ServerConfig } from "$common/config/ServerConfig";
 import { execSync } from "node:child_process";
 import {
     DataModelerStateSyncService
 } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 
-const SAVED_STATE_FILE = "saved-state.json";
 const DATABASE_NAME = "stage.db";
 
 export interface CliRunArgs {

@@ -1,6 +1,6 @@
 import type { EntityState } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { readFile, writeFile } from "fs/promises";
-import type { RootConfig } from "$common/config/RootConfig";
+import type { StateConfig } from "$common/config/StateConfig";
 import type { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { existsSync } from "fs";
@@ -12,8 +12,8 @@ import { existsSync } from "fs";
 export class EntityStateSyncStore<Entity extends EntityRecord> {
     private readonly fileName: string;
 
-    constructor(config: RootConfig, entityType: EntityType, stateType: StateType) {
-        this.fileName = `${config.projectFolder}/` +
+    constructor(stateConfig: StateConfig, entityType: EntityType, stateType: StateType) {
+        this.fileName = `${stateConfig.stateFolder}/` +
             `${stateType.toLowerCase()}_${entityType.toLowerCase()}_state.json`;
     }
 

@@ -5,5 +5,12 @@ export class StateConfig extends Config<StateConfig> {
     public autoSync: boolean;
 
     @Config.ConfigField(500)
-    public syncInterval: number
+    public syncInterval: number;
+
+    @Config.ConfigField("state")
+    public stateFolder: string;
+
+    public prependProjectFolder(projectFolder: string) {
+        this.stateFolder = `${projectFolder}/${this.stateFolder}`;
+    }
 }
