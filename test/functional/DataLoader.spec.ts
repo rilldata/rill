@@ -11,9 +11,15 @@ import { extractFileExtension, extractTableName } from "$lib/util/extract-table-
 
 const AdBidsFile = "data/AdBids.parquet";
 const AdImpressionsFile = "data/AdImpressions.parquet";
+const UserFile = "data/Users.csv";
 
 @TestBase.Suite
 export class DataLoaderSpec extends FunctionalTestBase {
+    @FunctionalTestBase.BeforeEachTest()
+    public async setupTests() {
+        await this.clientDataModelerService.dispatch("clearAllTables", []);
+    }
+
     public fileImportTestData(): FileImportTestDataProvider {
         return {
             subData: [ParquetFileTestData, CSVFileTestData],
@@ -61,13 +67,13 @@ export class DataLoaderSpec extends FunctionalTestBase {
     @TestBase.Test()
     public async shouldUseTableNameFromArgs(): Promise<void> {
         await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
-          [AdBidsFile, "AdBidsTable"]);
+          [UserFile, "UsersTable"]);
         await this.waitForTables();
 
-        const [table] = this.getTables("name", "AdBidsTable");
+        const [table] = this.getTables("name", "UsersTable");
 
-        expect(table.path).toBe(AdBidsFile);
-        expect(table.name).toBe("AdBidsTable");
+        expect(table.path).toBe(UserFile);
+        expect(table.name).toBe("UsersTable");
     }
 
     @TestBase.Test()

@@ -25,6 +25,16 @@ export enum FileExportType {
 
 export class ModelActions extends DataModelerActions {
     @DataModelerActions.PersistentModelAction()
+    public async clearAllModels({stateService}: PersistentModelStateActionArg) {
+        stateService.getCurrentState().entities.forEach((table) => {
+            this.dataModelerStateService.dispatch("deleteEntity",
+                [EntityType.Model, StateType.Persistent, table.id]);
+            this.dataModelerStateService.dispatch("deleteEntity",
+                [EntityType.Model, StateType.Derived, table.id]);
+        });
+    }
+
+    @DataModelerActions.PersistentModelAction()
     public async addModel(args: PersistentModelStateActionArg, params: NewModelParams) {
         const persistentModel = getNewModel(params);
         this.dataModelerStateService.dispatch("addEntity",

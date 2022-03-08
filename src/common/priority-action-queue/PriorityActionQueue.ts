@@ -67,6 +67,7 @@ export class PriorityActionQueue {
         while (topItem.actions.length === 0) {
             this.maxHeap.pop();
             this.heapEntryMap.delete(topItem.metadata.id);
+            if (this.maxHeap.empty()) return undefined;
             topItem = this.maxHeap.peek();
         }
         if (topItem.actions.length === 1) {

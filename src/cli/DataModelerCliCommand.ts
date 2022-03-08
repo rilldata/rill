@@ -17,6 +17,7 @@ export interface CliRunArgs {
     projectPath: string;
     shouldInitState?: boolean;
     shouldSkipDatabase?: boolean;
+    profileWithUpdate?: boolean;
 }
 
 export abstract class DataModelerCliCommand {
@@ -27,15 +28,16 @@ export abstract class DataModelerCliCommand {
     protected projectPath: string;
     protected config: RootConfig;
 
-    private async init({ projectPath, shouldInitState, shouldSkipDatabase }: CliRunArgs): Promise<void> {
+    private async init({ projectPath, shouldInitState, shouldSkipDatabase, profileWithUpdate }: CliRunArgs): Promise<void> {
         this.projectPath = projectPath ?? process.cwd();
         shouldInitState = shouldInitState ?? true;
         shouldSkipDatabase = shouldSkipDatabase ?? true;
+        profileWithUpdate = profileWithUpdate ?? false;
 
         this.config = new RootConfig({
             database: new DatabaseConfig({ databaseName: DATABASE_NAME, skipDatabase: shouldSkipDatabase }),
             server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
-            projectFolder: this.projectPath, profileWithUpdate: false,
+            projectFolder: this.projectPath, profileWithUpdate,
         });
         const {dataModelerService, dataModelerStateService, notificationService} = dataModelerServiceFactory(this.config);
         execSync(`mkdir -p ${this.projectPath}`);

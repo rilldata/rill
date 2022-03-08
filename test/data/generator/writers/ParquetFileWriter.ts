@@ -4,6 +4,7 @@ import { DATA_GENERATOR_TYPE_MAP } from "../types/DataGeneratorTypeMap";
 import { BATCH_SIZE } from "../data-constants";
 import os from "os";
 import { DataWriter } from "./DataWriter";
+import { existsSync } from "fs";
 
 const CPU_COUNT = os.cpus().length;
 
@@ -12,7 +13,9 @@ export class ParquetFileWriter extends DataWriter {
 
     public async init(): Promise<void> {
         const parquetFile = `${this.outputFolder}/${this.type}.parquet`;
-        execSync(`rm ${parquetFile} | true`);
+        if (existsSync(parquetFile)) {
+            execSync(`rm ${parquetFile} | true`);
+        }
         this.parquetWriter = await parquet.ParquetWriter.openFile(
             new parquet.ParquetSchema(DATA_GENERATOR_TYPE_MAP[this.type].getParquetSchema()), parquetFile);
         this.parquetWriter.setRowGroupSize(2 * CPU_COUNT * BATCH_SIZE);

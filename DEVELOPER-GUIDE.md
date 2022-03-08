@@ -37,6 +37,8 @@ npm run cli-dev -- import-table /path/to/table/csvfile --project /path/to/projec
 ```
 `--project` is optional. Will default to current directory if not specified.
 
+Table name can be customisable using `--name` argument. By default, it uses file name without extension for table name.
+
 **File types currently supported:**
  - .parquet
  - .csv
@@ -52,14 +54,15 @@ npm run cli-dev -- start --project /path/to/project
 `--project` is optional. Will default to current directory if not specified.
 
 ## Local testing
-Generate local testing data using,
+The test suite uses pre-generated data. Thus, you will need to run the following command before running the tests:
 ```
 npm run generate-test-data
 ```
-Will generate AdBids, AdImpressions and User data under /data
-NOTE: this will only work by temporarily removing `"type": "module"` from package.js. This will be fixed in the future.
+csv and parquet files for AdBids, AdImpressions and User datasets are generated under /data
 
-Run for test (Contains old tests that fail right now),
+Check test/generator/types for schema for AdBids, AdImpressions and User.
+
+Run this command to run the test suite:
 ```
 npm run test
 ```
