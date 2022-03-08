@@ -62,7 +62,7 @@ csv and parquet files for AdBids, AdImpressions and User datasets are generated 
 
 Check test/generator/types for schema for AdBids, AdImpressions and User.
 
-Run this for test,
+Run this command to run the test suite:
 ```
 npm run test
 ```
