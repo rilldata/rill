@@ -25,6 +25,16 @@ export interface ImportTableOptions {
 
 export class TableActions extends DataModelerActions {
     @DataModelerActions.PersistentTableAction()
+    public async clearAllTables({stateService}: PersistentTableStateActionArg): Promise<void> {
+        stateService.getCurrentState().entities.forEach((table) => {
+            this.dataModelerStateService.dispatch("deleteEntity",
+                [EntityType.Table, StateType.Persistent, table.id]);
+            this.dataModelerStateService.dispatch("deleteEntity",
+                [EntityType.Table, StateType.Derived, table.id]);
+        });
+    }
+
+    @DataModelerActions.PersistentTableAction()
     public async addOrUpdateTableFromFile({stateService}: PersistentTableStateActionArg, path: string,
                                           tableName?: string, options: ImportTableOptions = {}): Promise<void> {
         const name = tableName ?? sanitizeTableName(extractTableName(path));

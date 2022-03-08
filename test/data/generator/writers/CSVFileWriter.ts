@@ -2,6 +2,7 @@ import { DataWriter } from "./DataWriter";
 import { execSync } from "node:child_process";
 import { DATA_GENERATOR_TYPE_MAP } from "../types/DataGeneratorTypeMap";
 import { FileHandle, open } from "fs/promises";
+import { existsSync } from "fs";
 
 export class CSVFileWriter extends DataWriter {
     private csvWriter: FileHandle;
@@ -10,7 +11,9 @@ export class CSVFileWriter extends DataWriter {
     public async init(): Promise<void> {
         const generator = DATA_GENERATOR_TYPE_MAP[this.type];
         const csvFile = `${this.outputFolder}/${this.type}.${generator.csvExtension}`;
-        execSync(`rm ${csvFile} | true`);
+        if (existsSync(csvFile)) {
+            execSync(`rm ${csvFile} | true`);
+        }
         this.csvWriter = await open(csvFile, "w");
         await this.writeToFile(generator.columnsOrder.join(generator.csvDelimiter) + "\n");
     }

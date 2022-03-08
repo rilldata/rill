@@ -15,11 +15,17 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
 
     public async setup() {
         await super.setup();
-        await this.clientDataModelerService.dispatch("addModel",
-            [{name: "query_0", query: ""}]);
 
         this.databaseDispatchSpy = this.sandbox.spy(
             this.serverDataModelerService.getDatabaseService(), "dispatch");
+    }
+
+    @FunctionalTestBase.BeforeEachTest()
+    public async setupTests() {
+        await this.clientDataModelerService.dispatch("clearAllTables", []);
+        await this.clientDataModelerService.dispatch("clearAllModels", []);
+        await this.clientDataModelerService.dispatch("addModel",
+            [{name: "query_0", query: ""}]);
     }
 
     @FunctionalTestBase.Test()

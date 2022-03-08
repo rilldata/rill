@@ -22,6 +22,7 @@
   "setupFilesAfterEnv": [
     "@testing-library/jest-dom/extend-expect"
   ],
+  "modulePathIgnorePatterns": ["<rootDir>/dist/"],
   "testEnvironment": "node",
   "testTimeout": 100000
 }

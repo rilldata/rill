@@ -10,7 +10,10 @@ export class StartCommand extends DataModelerCliCommand {
         )
             .action((opts, command: Command) => {
                 const {project} = command.optsWithGlobals();
-                return this.run({ projectPath: project, shouldInitState: false, shouldSkipDatabase: false });
+                return this.run({
+                    projectPath: project, shouldInitState: false,
+                    shouldSkipDatabase: false, profileWithUpdate: true,
+                });
             });
     }
 

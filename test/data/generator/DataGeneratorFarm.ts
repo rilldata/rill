@@ -1,4 +1,4 @@
-import workerFarm, {Workers} from "worker-farm";
+import workerpool from "workerpool";
 import os from "os";
 import {BATCH_SIZE, DATA_FOLDER} from "./data-constants";
 import type { DataWriter } from "./writers/DataWriter";
@@ -9,12 +9,10 @@ const OUTPUT_FOLDER = `${__dirname}/../../../${DATA_FOLDER}`;
 const CPU_COUNT = os.cpus().length;
 
 export class DataGeneratorFarm {
-    private readonly workers: Workers;
+    private readonly pool;
 
     public constructor(worker: string) {
-        this.workers = workerFarm({
-            maxConcurrentCallsPerWorker: 1,
-        }, require.resolve(worker), ["generate"]);
+        this.pool = workerpool.pool(worker);
     }
 
     public async generate(type: string, count: number): Promise<void> {
@@ -35,7 +33,7 @@ export class DataGeneratorFarm {
         for (let ids = 0; ids < count;) {
             const promises = [];
             for (let batch = 0; batch < (2 * CPU_COUNT) && ids < count; batch++, ids += BATCH_SIZE) {
-                promises.push(this.generateInWorker(type, ids).then(handleResponse));
+                promises.push(this.pool.exec("generate", [type, ids]).then(handleResponse));
             }
             await Promise.all(promises);
         }
@@ -46,15 +44,6 @@ export class DataGeneratorFarm {
     }
 
     public stop(): void {
-        workerFarm.end(this.workers);
-    }
-
-    private generateInWorker(type: string, startId: number) {
-        return new Promise((resolve, reject) => {
-            this.workers.generate([type, startId], (err, resp) => {
-                if (err) reject(err);
-                else resolve(resp);
-            });
-        });
+        this.pool.terminate();
     }
 }
