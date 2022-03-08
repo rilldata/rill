@@ -45,12 +45,13 @@ export class ModelActions extends DataModelerActions {
             console.error(`No model found for ${modelId}`);
             return;
         }
-        this.databaseActionQueue.clearQueue(modelId);
 
         const sanitizedQuery = sanitizeQuery(query);
         if (sanitizedQuery === derivedModel.sanitizedQuery) {
             return;
         }
+
+        this.databaseActionQueue.clearQueue(modelId);
 
         this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
         this.dataModelerStateService.dispatch("updateModelSanitizedQuery", [modelId, sanitizedQuery]);
