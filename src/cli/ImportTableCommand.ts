@@ -1,6 +1,7 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
 import { InfoCommand } from "$cli/InfoCommand";
+import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 interface ImportTableCommandOptions {
     project?: string;
@@ -10,14 +11,16 @@ interface ImportTableCommandOptions {
 
 export class ImportTableCommand extends DataModelerCliCommand {
     public getCommand(): Command {
-        return new Command("import-table")
-            .description("Import a table from the supplied table source file.")
+        return this.applyCommonSettings(
+            new Command("import-table"),
+            "Import a table from the supplied table source file."
+        )
             .argument("<tableSourceFile>", "File to import the table from. Supported file types: .parquet, .csv, .tsv.")
-            .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
             .option("--name <tableName>", "Optional name of the table. Defaults to file name without the folder path and extension.")
             .option("--delimiter <delimiter>", "Optional delimiter for csv and tsv files. " +
                 "This is auto detected by DuckDB, but can be forced to a different delimiter if the auto-detection is not satisfactory.")
-            .action((tableSourceFile, options: ImportTableCommandOptions) => {
+            .action((tableSourceFile, opts, command: Command) => {
+                const options: ImportTableCommandOptions = command.optsWithGlobals();
                 return this.run({projectPath: options.project}, tableSourceFile, options);
             });
     }
@@ -25,7 +28,15 @@ export class ImportTableCommand extends DataModelerCliCommand {
     protected async sendActions(tableSourceFile: string, {name, delimiter}: ImportTableCommandOptions): Promise<void> {
         await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
             [tableSourceFile, name, {csvDelimiter: delimiter}]);
-        console.log(`Successfully imported ${tableSourceFile}`);
+        const createdTable = this.dataModelerStateService
+            .getEntityStateService(EntityType.Table, StateType.Persistent)
+            .getByField("path", tableSourceFile);
+        if (createdTable) {
+            console.log(`Successfully imported ${tableSourceFile} into table ${createdTable.tableName}`);
+        } else {
+            // actual error would be printed by addOrUpdateTableFromFile
+            console.log(`Failed to import table from file ${tableSourceFile}`);
+        }
         InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService);
     }
 }

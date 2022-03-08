@@ -6,7 +6,6 @@ import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import type { Command } from "commander";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import { ServerConfig } from "$common/config/ServerConfig";
-import { execSync } from "node:child_process";
 import {
     DataModelerStateSyncService
 } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
@@ -38,7 +37,6 @@ export abstract class DataModelerCliCommand {
             projectFolder: this.projectPath, profileWithUpdate: false,
         });
         const {dataModelerService, dataModelerStateService, notificationService} = dataModelerServiceFactory(this.config);
-        execSync(`mkdir -p ${this.projectPath}`);
 
         if (shouldInitState) {
             this.dataModelerStateSyncService = new DataModelerStateSyncService(
@@ -66,6 +64,15 @@ export abstract class DataModelerCliCommand {
     }
 
     protected abstract sendActions(...args: Array<any>): Promise<void>;
-    
+
+    protected applyCommonSettings(command: Command, description: string): Command {
+        return command
+            .description(description)
+            // override default help text to add capital D for display
+            .helpOption("-h, --help", "Display help for command.")
+            // common across all commands
+            .option("--project <projectPath>", "Optional path of project. Defaults to current directory.");
+    }
+
     public abstract getCommand(): Command;
 }

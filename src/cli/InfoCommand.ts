@@ -5,10 +5,12 @@ import { EntityType, StateType } from "$common/data-modeler-state-service/entity
 
 export class InfoCommand extends DataModelerCliCommand {
     public getCommand(): Command {
-        return new Command("info")
-            .description("Displays info of a project.")
-            .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
-            .action(({project}) => {
+        return this.applyCommonSettings(
+            new Command("info"),
+            "Display information about project.",
+        )
+            .action((opts, command: Command) => {
+                const {project} = command.optsWithGlobals();
                 return this.run({projectPath: project});
             });
     }
