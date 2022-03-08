@@ -5,6 +5,12 @@ import type {
 import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
 import { CATEGORICALS, TIMESTAMPS } from "$lib/duckdb-data-types";
 import type { ProfileColumn } from "$lib/types";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+
+const ColumnProfilePriorityMap = {
+    [EntityType.Table]: DatabaseActionQueuePriority.TableProfile,
+    [EntityType.Model]: DatabaseActionQueuePriority.ActiveModelProfile,
+}
 
 export class ProfileColumnActions extends DataModelerActions {
     @DataModelerActions.DerivedAction()
@@ -17,8 +23,10 @@ export class ProfileColumnActions extends DataModelerActions {
             console.error(`Entity not found. entityType=${entityType} entityId=${entityId}`);
             return;
         }
-        await Promise.all(entity.profile.map(column =>
-            this.collectColumnInfo(entityType, entityId, persistentEntity.tableName, column)));
+        try {
+            await Promise.all(entity.profile.map(column =>
+                this.collectColumnInfo(entityType, entityId, persistentEntity.tableName, column)));
+        } catch (err) {}
     }
 
     private async collectColumnInfo(entityType: EntityType, entityId: string,
@@ -42,7 +50,9 @@ export class ProfileColumnActions extends DataModelerActions {
                                             tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary",[
             entityType, entityId, column.name,
-            await this.databaseService.dispatch("getTopKAndCardinality", [tableName, column.name]),
+            await this.databaseActionQueue.enqueue(
+                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                "getTopKAndCardinality", [tableName, column.name]),
         ]);
     }
 
@@ -50,7 +60,9 @@ export class ProfileColumnActions extends DataModelerActions {
                                           tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
-            await this.databaseService.dispatch("getNumericHistogram", [tableName, column.name, column.type]),
+            await this.databaseActionQueue.enqueue(
+                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                "getNumericHistogram", [tableName, column.name, column.type]),
         ]);
     }
 
@@ -58,7 +70,9 @@ export class ProfileColumnActions extends DataModelerActions {
                                    tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
-            await this.databaseService.dispatch("getTimeRange", [tableName, column.name]),
+            await this.databaseActionQueue.enqueue(
+                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                "getTimeRange", [tableName, column.name]),
         ]);
     }
 
@@ -66,7 +80,9 @@ export class ProfileColumnActions extends DataModelerActions {
                                                tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
-            await this.databaseService.dispatch("getDescriptiveStatistics", [tableName, column.name]),
+            await this.databaseActionQueue.enqueue(
+                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                "getDescriptiveStatistics", [tableName, column.name]),
         ]);
     }
 
@@ -74,7 +90,9 @@ export class ProfileColumnActions extends DataModelerActions {
                                    tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateNullCount", [
             entityType, entityId, column.name,
-            await this.databaseService.dispatch("getNullCount", [tableName, column.name]),
+            await this.databaseActionQueue.enqueue(
+                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                "getNullCount", [tableName, column.name]),
         ]);
     }
 }

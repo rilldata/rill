@@ -2,7 +2,6 @@ import { FunctionalTestBase } from "./FunctionalTestBase";
 import { exec } from "node:child_process";
 import {promisify} from "util"
 import { existsSync, readFileSync } from "fs";
-import type { DataModelerState } from "$lib/types";
 import { AdBidsColumnsTestData, AdImpressionColumnsTestData } from "../data/DataLoader.data";
 import type {
     DerivedTableState
@@ -14,6 +13,7 @@ import type {
 const execPromise = promisify(exec);
 
 const CLI_TEST_FOLDER = "temp/test-cli";
+const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
 const DATA_MODELER_CLI = "./node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts";
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
@@ -43,9 +43,9 @@ export class CLISpec extends FunctionalTestBase {
         await execPromise(`${DATA_MODELER_CLI} import-table data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`);
 
         const persistentState: PersistentTableState =
-            JSON.parse(readFileSync(`${CLI_TEST_FOLDER}/persistent_table_state.json`).toString());
+            JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
         const derivedState: DerivedTableState =
-            JSON.parse(readFileSync(`${CLI_TEST_FOLDER}/derived_table_state.json`).toString());
+            JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/derived_table_state.json`).toString());
         expect(persistentState.entities[0].name).toBe("AdBids");
         this.assertColumns(derivedState.entities[0].profile, AdBidsColumnsTestData);
         expect(persistentState.entities[1].name).toBe("Impressions");

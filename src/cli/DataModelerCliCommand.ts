@@ -5,14 +5,12 @@ import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import type { Command } from "commander";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { StateConfig } from "$common/config/StateConfig";
 import { ServerConfig } from "$common/config/ServerConfig";
 import { execSync } from "node:child_process";
 import {
     DataModelerStateSyncService
 } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 
-const SAVED_STATE_FILE = "saved-state.json";
 const DATABASE_NAME = "stage.db";
 
 export interface CliRunArgs {
@@ -35,8 +33,7 @@ export abstract class DataModelerCliCommand {
         shouldSkipDatabase = shouldSkipDatabase ?? true;
 
         this.config = new RootConfig({
-            database: new DatabaseConfig({ databaseName: `${this.projectPath}/${DATABASE_NAME}`, skipDatabase: shouldSkipDatabase }),
-            state: new StateConfig({ savedStateFile: `${this.projectPath}/${SAVED_STATE_FILE}` }),
+            database: new DatabaseConfig({ databaseName: DATABASE_NAME, skipDatabase: shouldSkipDatabase }),
             server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
             projectFolder: this.projectPath, profileWithUpdate: false,
         });

@@ -20,7 +20,7 @@ export class DataModelerStateSyncService {
         this.entityStateSyncServices = entityStateServices.map((entityStateService) => {
             return new EntityStateSyncService(
                 config,
-                new EntityStateSyncStore(config,
+                new EntityStateSyncStore(config.state,
                     entityStateService.entityType, entityStateService.stateType),
                 DataModelerStateSyncService.getEntityStateUpdatesHandler(config, dataModelerService,
                     entityStateService.entityType, entityStateService.stateType),

@@ -5,7 +5,13 @@ import { timeFormat } from "d3-time-format";
 const zeroPad = format('02d');
 export const formatInteger = format(',');
 const formatRate = format('.1f');
-export const standardTimestampFormat = timeFormat('%b %d, %Y %I:%M:%S');
+export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
+    let fmt = timeFormat('%b %d, %Y %I:%M:%S');
+    if (type === 'DATE') {
+        fmt = timeFormat('%b %d, %Y');
+    }
+    return fmt(v);
+}
 export const datePortion = timeFormat('%b %d, %Y');
 export const timePortion = timeFormat("%I:%M:%S");
 
