@@ -230,8 +230,7 @@ const expressionTokens = [
     ' left outer join ', ' right outer join ', 
     ' inner join ', ' outer join ',
     ' natural join ', ' right join ', ' left join ',
-    
-
+    ' limit ',
     ' join ', // make join last,
 ]
 
@@ -248,6 +247,8 @@ export function extractFromStatements(query:string) {
 
     let latest = 0;
     let restOfQuery = query.replace(/[\s\t\r\n]/g, ' ');
+    // replace -- comments here?
+    restOfQuery = restOfQuery.replace(/-- .*\n*/g, ' ')
     const finds = getAllIndexes(restOfQuery.toLowerCase(), ' from ');
     
     let sourceTables = [];
@@ -271,7 +272,6 @@ export function extractFromStatements(query:string) {
                 return expressionTokens.some(token => str.endsWith(token));
             }
             if (containsExpressionToken(seqSoFar.toLowerCase()) || char === ';' || char === ')' || ri === restOfQuery.length) {
-                
 
                 // reset seqSoFar to not include th expression token.
 
