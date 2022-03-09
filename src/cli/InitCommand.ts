@@ -3,6 +3,8 @@ import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
 
 export class InitCommand extends DataModelerCliCommand {
+    private alreadyInitialised: boolean;
+
     public getCommand(): Command {
         return this.applyCommonSettings(
             new Command("init"),
@@ -11,9 +13,11 @@ export class InitCommand extends DataModelerCliCommand {
             .action((opts, command) => {
                 const {project} = command.optsWithGlobals();
 
-                InitCommand.makeDirectoryIfNotExists(project ?? process.cwd());
+                const projectPath = project ?? process.cwd();
+                InitCommand.makeDirectoryIfNotExists(projectPath);
+                this.alreadyInitialised = existsSync(`${projectPath}/state`);
 
-                return this.run({ projectPath: project });
+                return this.run({ projectPath });
             });
     }
 
@@ -21,8 +25,10 @@ export class InitCommand extends DataModelerCliCommand {
         if (!existsSync(`${this.projectPath}/models`)) {
             mkdirSync(`${this.projectPath}/models`, {});
         }
-        console.log("\nYou have successfully initialized a new project with the Rill Data Modeler. " +
-            "This application is extremely alpha and we want to hear from you if you have any questions or ideas to share! "+
+        if (!this.alreadyInitialised) {
+            console.log("\nYou have successfully initialized a new project with the Rill Data Modeler.");
+        }
+        console.log("\nThis application is extremely alpha and we want to hear from you if you have any questions or ideas to share! "+
             "You can reach us in our Rill Community Slack at https://bit.ly/3Mig8Jr.");
     }
 
@@ -32,7 +38,7 @@ export class InitCommand extends DataModelerCliCommand {
             // Use nodejs methods instead of running commands for making directory
             // This will ensure we can create the directory on all Operating Systems
             mkdirSync(path, { recursive: true });
-        } else {
+        } else if (path !== process.cwd()) {
             console.log(`Directory ${path} already exist. Attempting to init the project.`);
         }
     }
