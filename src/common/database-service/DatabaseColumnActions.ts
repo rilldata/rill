@@ -43,12 +43,17 @@ export class DatabaseColumnActions extends DatabaseActions {
     public async getNumericHistogram(metadata: DatabaseMetadata,
                                               tableName: string, columnName: string, columnType: string): Promise<NumericSummary> {
         const sanitizedColumnName = sanitizeColumn(columnName);
-        const buckets = await this.databaseClient.execute(`SELECT count(*) as count, ${sanitizedColumnName} FROM ${tableName} WHERE ${sanitizedColumnName} IS NOT NULL GROUP BY ${sanitizedColumnName} USING SAMPLE reservoir(1000 ROWS);`)
-        const bucketSize = Math.min(40, buckets.length);
+        // use approx_count_distinct to get the immediate cardinality of this column.
+        // FIXME: we don't need to re-compute cardinality here. Instead we should be calculating it
+        // for every column by default.
+        const [buckets] = await this.databaseClient.execute(`SELECT approx_count_distinct(${sanitizedColumnName}) as count from ${tableName}`);
+        const bucketSize = Math.min(40, buckets.count);
         const result = await this.databaseClient.execute(`
           WITH data_table AS (
-            SELECT ${TIMESTAMPS.has(columnType) ? `epoch(${sanitizedColumnName})` : `${sanitizedColumnName}::DOUBLE`} as ${sanitizedColumnName} FROM ${tableName}
-          ) , S AS (
+            SELECT ${TIMESTAMPS.has(columnType) ? `epoch(${sanitizedColumnName})` : `${sanitizedColumnName}::DOUBLE`} as ${sanitizedColumnName} 
+            FROM ${tableName}
+            WHERE ${sanitizedColumnName} IS NOT NULL
+          ), S AS (
             SELECT 
               min(${sanitizedColumnName}) as minVal,
               max(${sanitizedColumnName}) as maxVal,
@@ -63,24 +68,30 @@ export class DatabaseColumnActions extends DatabaseActions {
               (range) * (select range FROM S) / ${bucketSize} + (select minVal from S) as low,
               (range + 1) * (select range FROM S) / ${bucketSize} + (select minVal from S) as high
             FROM range(0, ${bucketSize}, 1)
-          )
-          , histogram_stage AS (
-            SELECT
+          ),
+          histogram_stage AS (
+          SELECT
               bucket,
               low,
               high,
               count(values.value) as count
             FROM buckets
-            LEFT JOIN values ON values.value BETWEEN low and high
+            LEFT JOIN values ON (values.value >= low and values.value < high)
             GROUP BY bucket, low, high
             ORDER BY BUCKET
+          ),
+          -- calculate the right edge, sine in histogram_stage we don't look at the values that
+          -- might be the largest.
+          right_edge AS (
+            SELECT count(*) as c from values WHERE value = (select maxVal from S)
           )
           SELECT 
             bucket,
             low,
             high,
-            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
-            FROM histogram_stage;
+            -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
+            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
+            FROM histogram_stage
 	      `);
         return { histogram: result };
     }
