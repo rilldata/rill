@@ -7,6 +7,7 @@ import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 import FormattedDataType from "$lib/components/data-types/FormattedDataType.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
 import { config } from "./utils";
 
@@ -17,6 +18,9 @@ import { CATEGORICALS, NUMERICS, TIMESTAMPS, DATA_TYPE_COLORS } from "$lib/duckd
 import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
 import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
 import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
+import notificationStore from "$lib/components/notifications/";
+import { tweened } from "svelte/motion";
+import { cubicOut as easing } from "svelte/easing";
 
 export let name;
 export let type;
@@ -46,17 +50,43 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
 let titleTooltip;
 let titleTooltipHover;
 
+const CLICK_DURATION = 500;
+let shiftHeld = false;
+let shiftClicked = false;
+let shiftClickedTimeout;
+
+function handleKeydown(event) {
+    if (event.key === 'Shift') {
+        shiftHeld = true;
+    }
+}
+
+function handleKeyup(event) {
+    shiftHeld = false;
+}
+
 </script>
 
+<svelte:window on:keydown={handleKeydown} on:keyup={handleKeyup} />
 
     <ColumnEntry
     left={indentLevel === 1 ? 8 : 3}
     {hideRight}
     {active}
     emphasize={active}
-    on:select={() => {
+    on:select={async (event) => {
         // we should only allow activation when there are rows present.
-        if (totalRows) {
+        if (event.detail) {
+            await navigator.clipboard.writeText(name);
+
+            notificationStore.send({ message: `copied column name "${name}" to clipboard`});
+            clearTimeout(shiftClickedTimeout);
+            shiftClicked = true;
+            shiftClickedTimeout = setTimeout(() => {
+                shiftClicked = false;
+            }, CLICK_DURATION);
+
+        } else if (totalRows) {
             active = !active;
         }
     }}
@@ -67,21 +97,43 @@ let titleTooltipHover;
 
     <svelte:fragment slot="left">
         <Tooltip location="right" alignment="center" distance={8} bind:active={titleTooltip}>
-            <span >
-                {name}
-            </span>
+            <!-- Wrap in a traditional div then force the ellipsis overflow in the child element.
+                this will make the tooltip bound to the parent element while the child element can flow more freely
+                and create the ellipisis due to the overflow.
+            -->
+            <div>
+                <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+                    {name}
+                </div>
+            </div>
         <TooltipContent slot="tooltip-content">
-
+            <div class="pt-1 pb-1 font-bold">
+                {name}
+            </div>
             {#if totalRows}
-                <SlidingWords {active} hovered={titleTooltip}>
-                    {#if CATEGORICALS.has(type)}
-                        the top 10 values
-                    {:else if TIMESTAMPS.has(type)}
-                        the count(*) over time
-                    {:else if NUMERICS.has(type)}
-                        the distribution of values
-                    {/if}
-                </SlidingWords>
+                <div class="grid gap-x-6 items-baseline text-gray-200" style="grid-template-columns: auto  max-content ">
+
+                    <SlidingWords {active} hovered={titleTooltip}>
+                        {#if CATEGORICALS.has(type)}
+                            the top 10 values
+                        {:else if TIMESTAMPS.has(type)}
+                            the count(*) over time
+                        {:else if NUMERICS.has(type)}
+                            the distribution of values
+                        {/if}
+                    </SlidingWords>
+                    <div class="text-right"  style="font-size: .9em">
+                        click
+                    </div>
+
+                    <div>
+                        <span class="inline-block shiftable" class:shiftClicked>copy</span> column name to clipboard
+                    </div>
+                    <div class="text-right  shift-effect" style="font-size: .9em">
+                        <span style='font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                        '>⇧</span> + click
+                    </div>
+                </div>
             {:else}
                 <!-- no data is available, so let's give a useful message-->
                 no rows selected
@@ -224,3 +276,50 @@ let titleTooltipHover;
     </svelte:fragment>
 
 </ColumnEntry>
+
+<style>
+
+.shiftable {
+    padding-left: 2px;
+    margin-right: -2px;
+    transform: translateY(0px) translateX(-2px);
+    transition: transform 200ms;
+}
+
+/* .shiftable::after {
+    content: '';
+    display: block;
+    position: absolute;
+    background-color: transparent;
+    width: calc(100% + 1rem);
+    height: calc(1rem + .25rem);
+    transform: translateY(-1.25rem) translateX(-.5rem);
+    mix-blend-mode: screen;
+    background-blend-mode: screen;
+    transition: background-color 200ms;
+} */
+.shiftClicked {
+    animation: pulse 250ms;
+    border-radius: 2px;
+    position: relative;
+    mix-blend-mode: screen;
+    background-blend-mode: screen;
+}
+
+/* .shiftClicked::after {
+    background-color: rgba(255,255,255,.2);
+} */
+
+@keyframes pulse {
+    0%, 100% {
+        transform: translateY(0px) translateX(-2px);
+    }
+    50% {
+        transform: translateY(2px) translateX(2px);
+        box-shadow: -1px -1px 0px rgba(100,100,100,1),
+                    -2px -2px 0px rgba(75,75,75,1),
+                    -3px -3px 0px rgba(50,50,50,1);
+    }
+}
+
+</style>
