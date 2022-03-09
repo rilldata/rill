@@ -68,16 +68,25 @@ export class DatabaseColumnActions extends DatabaseActions {
               (range) * (select range FROM S) / ${bucketSize} + (select minVal from S) as low,
               (range + 1) * (select range FROM S) / ${bucketSize} + (select minVal from S) as high
             FROM range(0, ${bucketSize}, 1)
-          )
+          ),
+          histogram_stage AS (
           SELECT
               bucket,
               low,
               high,
               count(values.value) as count
             FROM buckets
-            LEFT JOIN values ON values.value BETWEEN low and high
+            LEFT JOIN values ON (values.value >= low and values.value < high)
             GROUP BY bucket, low, high
             ORDER BY BUCKET
+          )
+          SELECT 
+            bucket,
+            low,
+            high,
+            -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
+            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN (select count(*) from values WHERE value = (select maxVal from S)) ELSE count END AS count
+            FROM histogram_stage
 	      `);
         return { histogram: result };
     }
