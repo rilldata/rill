@@ -43,7 +43,7 @@ export let right = 2 // pr-2";
         <slot name="context-button" />
     </div>
 </button>
-<div>
+<div class="w-full">
     <slot name="details" />
 </div>
 

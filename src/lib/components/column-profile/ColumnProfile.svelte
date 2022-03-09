@@ -9,6 +9,8 @@ import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
+import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
+import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
 import { config } from "./utils";
 
 import { percentage } from "./utils"
@@ -85,7 +87,6 @@ function handleKeyup(event) {
             shiftClickedTimeout = setTimeout(() => {
                 shiftClicked = false;
             }, CLICK_DURATION);
-
         } else if (totalRows) {
             active = !active;
         }
@@ -122,17 +123,20 @@ function handleKeyup(event) {
                             the distribution of values
                         {/if}
                     </SlidingWords>
-                    <div class="text-right"  style="font-size: .9em">
+                    <Shortcut>
                         click
-                    </div>
+                    </Shortcut>
 
                     <div>
-                        <span class="inline-block shiftable" class:shiftClicked>copy</span> column name to clipboard
+                        <StackingWord active={shiftClicked}>
+                            copy
+                        </StackingWord>
+                        column name to clipboard
                     </div>
-                    <div class="text-right  shift-effect" style="font-size: .9em">
+                    <Shortcut>
                         <span style='font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
                         '>⇧</span> + click
-                    </div>
+                    </Shortcut>
                 </div>
             {:else}
                 <!-- no data is available, so let's give a useful message-->
@@ -237,9 +241,9 @@ function handleKeyup(event) {
 
     <svelte:fragment slot="details">
         {#if active}
-        <div transition:slide|local={{duration: 200}} class="pt-3 pb-3">
+        <div transition:slide|local={{duration: 200}} class="pt-3 pb-3  w-full">
             {#if CATEGORICALS.has(type)}
-                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8">
+                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8 w-full">
                     <!-- pl-16 pl-8 -->
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
@@ -276,50 +280,3 @@ function handleKeyup(event) {
     </svelte:fragment>
 
 </ColumnEntry>
-
-<style>
-
-.shiftable {
-    padding-left: 2px;
-    margin-right: -2px;
-    transform: translateY(0px) translateX(-2px);
-    transition: transform 200ms;
-}
-
-/* .shiftable::after {
-    content: '';
-    display: block;
-    position: absolute;
-    background-color: transparent;
-    width: calc(100% + 1rem);
-    height: calc(1rem + .25rem);
-    transform: translateY(-1.25rem) translateX(-.5rem);
-    mix-blend-mode: screen;
-    background-blend-mode: screen;
-    transition: background-color 200ms;
-} */
-.shiftClicked {
-    animation: pulse 250ms;
-    border-radius: 2px;
-    position: relative;
-    mix-blend-mode: screen;
-    background-blend-mode: screen;
-}
-
-/* .shiftClicked::after {
-    background-color: rgba(255,255,255,.2);
-} */
-
-@keyframes pulse {
-    0%, 100% {
-        transform: translateY(0px) translateX(-2px);
-    }
-    50% {
-        transform: translateY(2px) translateX(2px);
-        box-shadow: -1px -1px 0px rgba(100,100,100,1),
-                    -2px -2px 0px rgba(75,75,75,1),
-                    -3px -3px 0px rgba(50,50,50,1);
-    }
-}
-
-</style>
