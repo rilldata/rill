@@ -1,25 +1,17 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import type { SinonSpy } from "sinon";
-import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
-import { asyncWait } from "$common/utils/waitUtils";
+import { assert } from "sinon";
 import {
-    AdBidsImportActions,
-    AdBidsProfilingActions,
-    SingleQueryProfilingActions, TwoTableJoinQueryProfilingActions
-} from "../data/DatabasePriorityQueue.data";
+    SingleTableQuery,
+    SingleTableQueryColumnsTestData,
+    TwoTableJoinQuery,
+    TwoTableJoinQueryColumnsTestData
+} from "../data/ModelQuery.data";
+import { asyncWait } from "$common/utils/waitUtils";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 @FunctionalTestBase.Suite
 export class DatabasePriorityQueueSpec extends FunctionalTestBase {
-    private databaseDispatchSpy: SinonSpy;
-
-    public async setup() {
-        await super.setup();
-
-        this.databaseDispatchSpy = this.sandbox.spy(
-            this.serverDataModelerService.getDatabaseService(), "dispatch");
-    }
-
     @FunctionalTestBase.BeforeEachTest()
     public async setupTests() {
         await this.clientDataModelerService.dispatch("clearAllTables", []);
@@ -38,26 +30,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
         const modelQueryPromise = this.clientDataModelerService.dispatch(
             "updateModelQuery", [model.id, SingleTableQuery]);
 
-        await Promise.all([importPromise, modelQueryPromise]);
-        expect(this.databaseDispatchSpy.args).toStrictEqual([
-            ...AdBidsImportActions,
-            // this is where the switch to model happens
-            [
-                "createViewOfQuery",
-                [
-                    "query_0",
-                    "select count(*) as impressions,publisher,domain from 'AdBids' group by publisher,domain"
-                ]
-            ],
-            // there are some AdBids actions mixed in
-            // because of some code running within ModelActions.collectModelInfo
-            [ "getNumericHistogram", [ "AdBids", "id", "INTEGER" ] ],
-            [ "getProfileColumns", [ "query_0" ] ],
-            [ "getDescriptiveStatistics", [ "AdBids", "id" ] ],
-            ...SingleQueryProfilingActions,
-            // table profiling continues here
-            ...AdBidsProfilingActions,
-        ]);
+        await this.waitAndAssertPromiseOrder(modelQueryPromise, importPromise);
     }
 
     @FunctionalTestBase.Test()
@@ -66,7 +39,6 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
         await this.clientDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
-        this.databaseDispatchSpy.resetHistory();
 
         const [model] = this.getModels("tableName", "query_0");
         const modelQueryOnePromise = this.clientDataModelerService.dispatch(
@@ -75,42 +47,9 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
         const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
             "updateModelQuery", [model.id, SingleTableQuery]);
 
-        await Promise.all([modelQueryOnePromise, modelQueryTwoPromise]);
-        expect(this.databaseDispatchSpy.args).toStrictEqual([
-            [
-                "validateQuery",
-                [
-                    "\n" +
-                    "select count(*) as impressions, avg(bid.bid_price) as bid_price, bid.publisher, bid.domain, imp.city, imp.country\n" +
-                    "from 'AdBids' bid join 'AdImpressions' imp on bid.id = imp.id\n" +
-                    "group by bid.publisher, bid.domain, imp.city, imp.country\n"
-                ]
-            ],
-            [
-                "createViewOfQuery",
-                [
-                    "query_0",
-                    "select count(*) as impressions,avg(bid.bid_price) as bid_price,bid.publisher,bid.domain,imp.city,imp.country from 'AdBids' bid join 'AdImpressions' imp on bid.id = imp.id group by bid.publisher,bid.domain,imp.city,imp.country"
-                ]
-            ],
-            [ "getProfileColumns", [ "query_0" ] ],
-            [ "getNumericHistogram", [ "query_0", "impressions", "BIGINT" ] ],
-            [
-                "validateQuery",
-                [
-                    "select count(*) as impressions, publisher, domain from 'AdBids' group by publisher, domain"
-                ]
-            ],
-            [
-                "createViewOfQuery",
-                [
-                    "query_0",
-                    "select count(*) as impressions,publisher,domain from 'AdBids' group by publisher,domain"
-                ]
-            ],
-            [ "getProfileColumns", [ "query_0" ] ],
-            ...SingleQueryProfilingActions,
-        ]);
+        await this.waitAndAssertPromiseOrder(modelQueryOnePromise, modelQueryTwoPromise);
+        const [,derivedModel] = this.getModels("tableName", "query_0");
+        this.assertColumns(derivedModel.profile, SingleTableQueryColumnsTestData);
     }
 
     @FunctionalTestBase.Test()
@@ -121,7 +60,6 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "query_1", query: ""}]);
-        this.databaseDispatchSpy.resetHistory();
 
         const [model0] = this.getModels("tableName", "query_1");
         const modelQueryOnePromise = this.clientDataModelerService.dispatch(
@@ -136,47 +74,34 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
         await this.clientDataModelerService.dispatch("setActiveAsset",
             [EntityType.Model, model1.id]);
 
-        await Promise.all([modelQueryOnePromise, modelQueryTwoPromise]);
-        expect(this.databaseDispatchSpy.args).toStrictEqual([
-            [
-                "validateQuery",
-                [
-                    "\n" +
-                    "select count(*) as impressions, avg(bid.bid_price) as bid_price, bid.publisher, bid.domain, imp.city, imp.country\n" +
-                    "from 'AdBids' bid join 'AdImpressions' imp on bid.id = imp.id\n" +
-                    "group by bid.publisher, bid.domain, imp.city, imp.country\n"
-                ]
-            ],
-            [
-                "createViewOfQuery",
-                [
-                    "query_1",
-                    "select count(*) as impressions,avg(bid.bid_price) as bid_price,bid.publisher,bid.domain,imp.city,imp.country from 'AdBids' bid join 'AdImpressions' imp on bid.id = imp.id group by bid.publisher,bid.domain,imp.city,imp.country"
-                ]
-            ],
-            [ "getProfileColumns", [ "query_1" ] ],
-            [ "getNumericHistogram", [ "query_1", "impressions", "BIGINT" ] ],
-            [
-                "validateQuery",
-                [
-                    "select count(*) as impressions, publisher, domain from 'AdBids' group by publisher, domain"
-                ]
-            ],
-            [ "getDescriptiveStatistics", [ "query_1", "impressions" ] ],
-            [
-                "createViewOfQuery",
-                [
-                    "query_0",
-                    "select count(*) as impressions,publisher,domain from 'AdBids' group by publisher,domain"
-                ]
-            ],
-            [ "getNullCount", [ "query_1", "impressions" ] ],
-            [ "getProfileColumns", [ "query_0" ] ],
-            [ "getNumericHistogram", [ "query_1", "bid_price", "DOUBLE" ] ],
-            // single table query (query_0) is executed 1st.
-            ...SingleQueryProfilingActions,
-            // two table join query (query_0) is executed next.
-            ...TwoTableJoinQueryProfilingActions,
-        ]);
+        await this.waitAndAssertPromiseOrder(modelQueryTwoPromise, modelQueryOnePromise);
+    }
+
+    @FunctionalTestBase.Test()
+    public async shouldContinueModelProfileAfterAppendingSpaces() {
+        await this.clientDataModelerService.dispatch(
+            "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
+
+        const [model] = this.getModels("tableName", "query_0");
+        const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
+            "updateModelQuery", [model.id, TwoTableJoinQuery]);
+        await asyncWait(25);
+        const modelQueryOnePromise = this.clientDataModelerService.dispatch(
+            "updateModelQuery", [model.id, TwoTableJoinQuery + "   \n"]);
+
+        await this.waitAndAssertPromiseOrder(modelQueryOnePromise, modelQueryTwoPromise);
+        const [,derivedModel] = this.getModels("tableName", "query_0");
+        this.assertColumns(derivedModel.profile, TwoTableJoinQueryColumnsTestData);
+    }
+
+    private async waitAndAssertPromiseOrder(...promises: Array<Promise<any>>) {
+        const spies = promises.map(promise => {
+            const spy = this.sandbox.spy();
+            promise.then(spy);
+            return spy;
+        });
+
+        await Promise.all(promises);
+        assert.callOrder(...spies);
     }
 }
