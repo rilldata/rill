@@ -1,6 +1,15 @@
+import type {DataProviderData} from "@adityahegde/typescript-test-utils";
+import type { NumericHistogramBin } from "$lib/types";
 
-export const numericHistograms = [
+interface NumericHistogramTestCase {
+    name: string,
+    input: string,
+    output: NumericHistogramBin[]
+}
+
+export const numericHistograms:NumericHistogramTestCase[] = [
     {
+        name: 'three equidistant values',
         input: `
 SELECT 1 as column
 UNION ALL SELECT 4
@@ -12,6 +21,7 @@ UNION ALL SELECT 7`,
           ]
     },
     {
+    name: 'more values',
     input: `
 SELECT 1 as column
 UNION ALL SELECT 1
@@ -35,8 +45,9 @@ UNION ALL SELECT 7
 ];
 
 
-export const dateHistograms = [
+export const dateHistograms:NumericHistogramTestCase[] = [
     {
+    name: 'three DATES with more high',
         input: `
     SELECT DATE '1970-01-01'
     UNION ALL SELECT DATE '1970-01-02'
@@ -48,6 +59,7 @@ export const dateHistograms = [
           ]
     },
     {
+        name: 'three DATES with more low',
         input: `
     SELECT DATE '1970-01-01'
     UNION ALL SELECT DATE '1970-01-01'
@@ -59,6 +71,7 @@ export const dateHistograms = [
           ]
     },
     {
+        name: "many dates",
         input: `
         SELECT DATE '1970-01-01'
         UNION ALL SELECT DATE '1970-01-01'
@@ -82,6 +95,7 @@ export const dateHistograms = [
         ]
     },
     {
+        name: "many timestamps",
         input: `
         SELECT DATE '1970-01-01'
         UNION ALL SELECT TIMESTAMP '1970-01-01'
@@ -105,6 +119,7 @@ export const dateHistograms = [
         ]
     },
     {
+        name: "second-level timestamps",
         input: `
     SELECT TIMESTAMP '1970-01-01 00:00:00'
     UNION ALL SELECT TIMESTAMP '1970-01-01 00:01:00'
@@ -116,3 +131,11 @@ export const dateHistograms = [
           ]
     }
 ];
+// FIXME from Hamilton: I find the provider functionality a bit confusing and has
+// too many layers of indirection to be comprehensible. I will re-approach this 
+// at a later date. This should suffice as-is for now.
+// export type HistogramDataProvider = DataProviderData<NumericHistogramTestCase>;
+// export const numericHistogramTestData: HistogramDataProvider = {
+//     title: "Numeric Histogram Test Data",
+//     subData: numericHistograms
+// }

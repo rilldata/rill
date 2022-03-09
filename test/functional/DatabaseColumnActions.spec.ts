@@ -6,6 +6,10 @@ import { numericHistograms, dateHistograms } from "../data/HistogramSummary.data
 export class DatabaseColumns extends FunctionalTestBase {
     private databaseDispatchSpy: SinonSpy;
 
+    public fileImportTestData(): FileImportTestDataProvider {
+        return [...numericHistograms, ...dateHistograms];
+    }
+
     private async testHistogramSummary(input, output) {
         let [model] = this.getModels("tableName", "query_0");
         await this.clientDataModelerService.dispatch("updateModelQuery",
@@ -13,11 +17,6 @@ export class DatabaseColumns extends FunctionalTestBase {
         await this.waitForModels();
         let [_, derivedModel] = this.getModels("tableName", "query_0");
         expect(derivedModel.profile[0].summary.histogram).toEqual(output);
-    }
-
-    @FunctionalTestBase.BeforeSuite()
-    public async setupTables(): Promise<void> {
-        await this.loadTestTables();
     }
 
     public async setup() {
