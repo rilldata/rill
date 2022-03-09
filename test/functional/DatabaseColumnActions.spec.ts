@@ -1,14 +1,15 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import type { SinonSpy } from "sinon";
 import { numericHistograms, dateHistograms } from "../data/HistogramSummary.data";
+import { TestBase } from "@adityahegde/typescript-test-utils";
 
 @FunctionalTestBase.Suite
 export class DatabaseColumns extends FunctionalTestBase {
     private databaseDispatchSpy: SinonSpy;
 
-    public fileImportTestData(): FileImportTestDataProvider {
-        return [...numericHistograms, ...dateHistograms];
-    }
+    // public histogramTestData(): HistogramDataProvider[] {
+    //     return [...timestampHistogramTestData, ...numericHistogramTestData];
+    // }
 
     private async testHistogramSummary(input, output) {
         let [model] = this.getModels("tableName", "query_0");
@@ -33,7 +34,7 @@ export class DatabaseColumns extends FunctionalTestBase {
             [{name: "query_0", query: ""}]);
     }
 
-    @FunctionalTestBase.Test()
+    @TestBase.Test()
     public async histogramsShouldComputeFromColumn() {
             for (const item of numericHistograms) {
                 await this.testHistogramSummary(item.input, item.output);

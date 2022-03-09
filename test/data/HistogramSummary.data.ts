@@ -1,4 +1,4 @@
-import type {DataProviderData} from "@adityahegde/typescript-test-utils";
+import type { DataProviderData } from "@adityahegde/typescript-test-utils";
 import type { NumericHistogramBin } from "$lib/types";
 
 interface NumericHistogramTestCase {
@@ -137,5 +137,14 @@ export const dateHistograms:NumericHistogramTestCase[] = [
 // export type HistogramDataProvider = DataProviderData<NumericHistogramTestCase>;
 // export const numericHistogramTestData: HistogramDataProvider = {
 //     title: "Numeric Histogram Test Data",
-//     subData: numericHistograms
+//     subData: numericHistograms.map(test => ({
+//         title: test.name, args: test
+//     }))
+// }
+
+// export const timestampHistogramTestData: HistogramDataProvider = {
+//     title: "Timestamp Histogram Test Data",
+//     subData: dateHistograms.map(test => ({
+//         title: test.name, args: test
+//     }))
 // }
