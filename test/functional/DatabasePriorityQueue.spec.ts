@@ -1,4 +1,5 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
+import fs from "fs"
 import type { SinonSpy } from "sinon";
 import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
@@ -76,7 +77,8 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             "updateModelQuery", [model.id, SingleTableQuery]);
 
         await Promise.all([modelQueryOnePromise, modelQueryTwoPromise]);
-        expect(this.databaseDispatchSpy.args).toStrictEqual([
+
+        const output = [
             [
                 "validateQuery",
                 [
@@ -94,6 +96,8 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
                 ]
             ],
             [ "getProfileColumns", [ "query_0" ] ],
+            [ 'getFirstNOfTable', [ 'query_0', 25 ] ],
+            [ 'getCardinalityOfTable', [ 'query_0' ] ],
             [ "getNumericHistogram", [ "query_0", "impressions", "BIGINT" ] ],
             [
                 "validateQuery",
@@ -110,7 +114,8 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             ],
             [ "getProfileColumns", [ "query_0" ] ],
             ...SingleQueryProfilingActions,
-        ]);
+        ]
+        expect(this.databaseDispatchSpy.args).toStrictEqual(output);
     }
 
     @FunctionalTestBase.Test()
@@ -137,7 +142,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             [EntityType.Model, model1.id]);
 
         await Promise.all([modelQueryOnePromise, modelQueryTwoPromise]);
-        expect(this.databaseDispatchSpy.args).toStrictEqual([
+        const output = [
             [
                 "validateQuery",
                 [
@@ -155,13 +160,16 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
                 ]
             ],
             [ "getProfileColumns", [ "query_1" ] ],
-            [ "getNumericHistogram", [ "query_1", "impressions", "BIGINT" ] ],
+            [ 'getFirstNOfTable', [ 'query_1', 25 ] ],
+            [ 'getCardinalityOfTable', [ 'query_1' ] ],
+            [ 'getNumericHistogram', [ 'query_1', 'impressions', 'BIGINT' ] ],
             [
                 "validateQuery",
                 [
                     "select count(*) as impressions, publisher, domain from 'AdBids' group by publisher, domain"
                 ]
             ],
+            // [ "getNumericHistogram", [ "query_1", "impressions", "BIGINT" ] ],
             [ "getDescriptiveStatistics", [ "query_1", "impressions" ] ],
             [
                 "createViewOfQuery",
@@ -170,6 +178,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
                     "select count(*) as impressions,publisher,domain from 'AdBids' group by publisher,domain"
                 ]
             ],
+            // [ "getDescriptiveStatistics", [ "query_1", "impressions" ] ],
             [ "getNullCount", [ "query_1", "impressions" ] ],
             [ "getProfileColumns", [ "query_0" ] ],
             [ "getNumericHistogram", [ "query_1", "bid_price", "DOUBLE" ] ],
@@ -177,6 +186,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             ...SingleQueryProfilingActions,
             // two table join query (query_0) is executed next.
             ...TwoTableJoinQueryProfilingActions,
-        ]);
+        ]
+        expect(this.databaseDispatchSpy.args).toStrictEqual(output);
     }
 }

@@ -26,18 +26,20 @@ export const AdBidsProfilingActions = [
 ];
 
 export const SingleQueryProfilingActions = [
-    [ "getNumericHistogram", [ "query_0", "impressions", "BIGINT" ] ],
-    [ "getDescriptiveStatistics", [ "query_0", "impressions" ] ],
-    [ "getNullCount", [ "query_0", "impressions" ] ],
-    [ "getTopKAndCardinality", [ "query_0", "publisher" ] ],
-    [ "getNullCount", [ "query_0", "publisher" ] ],
-    [ "getTopKAndCardinality", [ "query_0", "domain" ] ],
-    [ "getNullCount", [ "query_0", "domain" ] ],
-    [ "getFirstNOfTable", [ "query_0", 25 ] ],
-    [ "getCardinalityOfTable", [ "query_0" ] ],
-    [ "getDestinationSize", [ "query_0" ] ],
+    [ 'getFirstNOfTable', [ 'query_0', 25 ] ],
+    [ 'getCardinalityOfTable', [ 'query_0' ] ],
+    [ 'getNumericHistogram', [ 'query_0', 'impressions', 'BIGINT' ] ],
+    [ 'getDescriptiveStatistics', [ 'query_0', 'impressions' ] ],
+    [ 'getNullCount', [ 'query_0', 'impressions' ] ],
+    [ 'getTopKAndCardinality', [ 'query_0', 'publisher' ] ],
+    [ 'getNullCount', [ 'query_0', 'publisher' ] ],
+    [ 'getTopKAndCardinality', [ 'query_0', 'domain' ] ],
+    [ 'getNullCount', [ 'query_0', 'domain' ] ],
+    [ 'getDestinationSize', [ 'query_0' ] ],
 ];
 export const TwoTableJoinQueryProfilingActions = [
+    // [ "getFirstNOfTable", [ "query_1", 25 ] ],
+    // [ "getCardinalityOfTable", [ "query_1" ] ],
     [ "getDescriptiveStatistics", [ "query_1", "bid_price" ] ],
     [ "getNullCount", [ "query_1", "bid_price" ] ],
     [ "getTopKAndCardinality", [ "query_1", "publisher" ] ],
@@ -48,7 +50,5 @@ export const TwoTableJoinQueryProfilingActions = [
     [ "getNullCount", [ "query_1", "city" ] ],
     [ "getTopKAndCardinality", [ "query_1", "country" ] ],
     [ "getNullCount", [ "query_1", "country" ] ],
-    [ "getFirstNOfTable", [ "query_1", 25 ] ],
-    [ "getCardinalityOfTable", [ "query_1" ] ],
     [ "getDestinationSize", [ "query_1" ] ]
 ]
