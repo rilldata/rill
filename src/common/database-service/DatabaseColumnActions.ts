@@ -79,13 +79,18 @@ export class DatabaseColumnActions extends DatabaseActions {
             LEFT JOIN values ON (values.value >= low and values.value < high)
             GROUP BY bucket, low, high
             ORDER BY BUCKET
+          ),
+          -- calculate the right edge, sine in histogram_stage we don't look at the values that
+          -- might be the largest.
+          right_edge AS (
+            SELECT count(*) as c from values WHERE value = (select maxVal from S)
           )
           SELECT 
             bucket,
             low,
             high,
             -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN (select count(*) from values WHERE value = (select maxVal from S)) ELSE count END AS count
+            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
 	      `);
         return { histogram: result };
