@@ -26,7 +26,7 @@ let shiftClickedTimeout;
 let CLICK_DURATION = 300;
 </script>
 
-<div class='w-full'>
+<div class='w-full select-none'>
     <div class='grid w-full' style="
         grid-template-columns: auto  max-content; 
         grid-auto-rows: 19px;
@@ -40,7 +40,9 @@ let CLICK_DURATION = 300;
                 <div class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
 
                 on:click={async (event) => {
-                    // we should only allow activation when there are rows present.
+                    // FIXME: we should standardize this for usage in ColumnProfile.svelte as well.
+                    // this implementation is just cut and paste from there but we should have one
+                    // event callback for all cases.
                     if (event.shiftKey) {
                         await navigator.clipboard.writeText(value);
             
@@ -56,8 +58,8 @@ let CLICK_DURATION = 300;
                         {printValue}
                 </div>
                 <TooltipContent slot="tooltip-content">
-                    <div>
-                    {printValue}
+                    <div class="pt-1 pb-1 italic" style:max-width="360px">
+                        {printValue}
                     </div>
                     <TooltipShortcutContainer>
                         <div>
