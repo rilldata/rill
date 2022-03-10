@@ -1,6 +1,3 @@
-git:
-  submodules: false
-
 env:
   global:
     - NAME=data-modeler
@@ -13,7 +10,7 @@ node_js:
 jobs:
   include:
     - stage: test
-      name: 'Verify build'
+      name: "Verify build"
       script:
         - npm install
 
@@ -27,3 +24,7 @@ jobs:
 
         # run all tests
         - npm run test
+
+import:
+  source: gorillio/deploy:.travis.yml
+  mode: deep_merge_append
