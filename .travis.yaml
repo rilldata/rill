@@ -1,0 +1,29 @@
+git:
+  submodules: false
+
+env:
+  global:
+    - NAME=data-modeler
+    - NAMESPACE=dash-modeler
+
+language: node_js
+node_js:
+  - 16
+
+jobs:
+  include:
+    - stage: test
+      name: 'Verify build'
+      script:
+        - npm install
+
+        # build the entire application
+        - npm run build
+
+        # verify lint of the repo
+        # - npm run lint
+        # Almost every file throws an error right now.
+        # Updating this in this PR will conflict with every open PR
+
+        # run all tests
+        - npm run test
