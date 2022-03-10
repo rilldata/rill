@@ -6,6 +6,7 @@ python:
 before_install:
   - nvm install 16
   - node --version
+  - echo "NPM Install can take up to 6-8 mins"
 
 cache:
   directories:
