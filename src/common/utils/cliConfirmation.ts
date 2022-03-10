@@ -16,7 +16,7 @@ export async function cliConfirmation(question: string,
     if (response in confirm) {
         return true;
     } else if (response in reject) {
-        return true;
+        return false;
     } else {
         throw new Error("Invalid response");
     }

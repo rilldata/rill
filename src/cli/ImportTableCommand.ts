@@ -1,7 +1,7 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { waitUntil } from "$common/utils/waitUtils";
+import { asyncWait, waitUntil } from "$common/utils/waitUtils";
 import { getTableNameFromFile } from "$lib/util/extract-table-name";
 import { cliConfirmation } from "$common/utils/cliConfirmation";
 import type {
@@ -34,10 +34,12 @@ export class ImportTableCommand extends DataModelerCliCommand {
     }
 
     protected async sendActions(tableSourceFile: string, importOptions: ImportTableCommandOptions): Promise<void> {
+        await this.waitIfClient();
         const tableName = getTableNameFromFile(tableSourceFile, importOptions.name);
         const existingTable = this.dataModelerStateService
             .getEntityStateService(EntityType.Table, StateType.Persistent)
             .getByField("tableName", tableName);
+
         if (existingTable && importOptions.force) {
             console.log(`There is already an imported table name : ${tableName}. ` +
                 "\nForce overwrite is passed." +
@@ -56,9 +58,12 @@ export class ImportTableCommand extends DataModelerCliCommand {
     private async importTable(tableSourceFile: string,
                               {name, delimiter}: ImportTableCommandOptions,
                               existingTable: PersistentTableEntity) {
+        await this.waitIfClient();
         const tableName = getTableNameFromFile(tableSourceFile, name);
         await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
             [tableSourceFile, name, {csvDelimiter: delimiter}]);
+        await this.waitIfClient();
+
         let createdTable: PersistentTableEntity;
         await waitUntil(() => {
             createdTable = this.dataModelerStateService
@@ -66,6 +71,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
                 .getByField("tableName", tableName);
             return !!createdTable;
         });
+
         if ((existingTable && createdTable &&
               existingTable.lastUpdated < createdTable.lastUpdated) ||
             (!existingTable && createdTable)) {
@@ -74,5 +80,9 @@ export class ImportTableCommand extends DataModelerCliCommand {
             // actual error would be printed by addOrUpdateTableFromFile
             console.log(`Failed to import table ${tableName} from file ${tableSourceFile}`);
         }
+    }
+
+    private async waitIfClient() {
+        if (this.isClient) await asyncWait(this.config.state.syncInterval * 2);
     }
 }

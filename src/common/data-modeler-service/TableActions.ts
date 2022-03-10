@@ -6,7 +6,6 @@ import {
     getTableNameFromFile,
     INVALID_CHARS,
 } from "$lib/util/extract-table-name";
-import { stat } from "fs/promises";
 import type {
     PersistentTableEntity,
     PersistentTableStateActionArg
@@ -62,8 +61,6 @@ export class TableActions extends DataModelerActions {
         const existingTable = stateService.getByField("tableName", name);
         const table = existingTable ? {...existingTable} : getNewTable();
 
-        const oldTablePath = existingTable?.path;
-
         table.path = path;
         table.name = name;
         table.tableName = name;
@@ -72,12 +69,6 @@ export class TableActions extends DataModelerActions {
             table.csvDelimiter = options.csvDelimiter;
         }
 
-        // get stats of the file and update only if it changed since we last saw it
-        const fileStats = await stat(path);
-        if (oldTablePath === path && fileStats.mtimeMs < table.lastUpdated) {
-            console.error("File has not changed since last import");
-            return;
-        }
         table.lastUpdated = Date.now();
 
         await this.addOrUpdateTable(table, !existingTable);

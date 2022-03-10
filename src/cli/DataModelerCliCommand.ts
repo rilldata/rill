@@ -28,6 +28,7 @@ export abstract class DataModelerCliCommand {
     protected dataModelerStateSyncService: DataModelerStateSyncService;
     protected projectPath: string;
     protected config: RootConfig;
+    protected isClient: boolean;
 
     private async init(cliRunArgs: CliRunArgs): Promise<void> {
         this.projectPath = cliRunArgs.projectPath ?? process.cwd();
@@ -54,6 +55,8 @@ export abstract class DataModelerCliCommand {
 
         await this.dataModelerStateSyncService?.init();
         await this.dataModelerService.init();
+
+        this.isClient = isServerRunning;
     }
 
     private async teardown(): Promise<void> {
