@@ -1,11 +1,7 @@
-env:
-  global:
-    - NAME=data-modeler
-    - NAMESPACE=dash-modeler
-
 language: node_js
 node_js:
   - 16
+dist: xenial
 
 jobs:
   include:
@@ -24,7 +20,3 @@ jobs:
 
         # run all tests
         - npm run test
-
-import:
-  source: gorillio/deploy:.travis.yml
-  mode: deep_merge_append
