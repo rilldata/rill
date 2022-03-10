@@ -17,6 +17,7 @@ import type {
     DerivedTableStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { existsSync } from "fs";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -38,6 +39,12 @@ export class TableActions extends DataModelerActions {
                                           tableName?: string, options: ImportTableOptions = {}): Promise<void> {
         const name = tableName ?? sanitizeTableName(extractTableName(path));
         const type = FILE_EXTENSION_TO_TABLE_TYPE[extractFileExtension(path)];
+
+        if (!existsSync(path)) {
+            console.error(`File ${path} does not exist`);
+            return;
+        }
+
         if (type === undefined) {
             // TODO: Create a error response pipeline
             console.error("Invalid file type");

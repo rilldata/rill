@@ -4,10 +4,12 @@ import { ExpressServer } from "../server/ExpressServer";
 
 export class StartCommand extends DataModelerCliCommand {
     public getCommand(): Command {
-        return new Command("start")
-            .description("Starts the data-modeler UI.")
-            .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
-            .action(({project}) => {
+        return this.applyCommonSettings(
+            new Command("start"),
+            "Start the data-modeler UI.",
+        )
+            .action((opts, command: Command) => {
+                const {project} = command.optsWithGlobals();
                 return this.run({
                     projectPath: project, shouldInitState: false,
                     shouldSkipDatabase: false, profileWithUpdate: true,

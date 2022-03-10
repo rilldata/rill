@@ -3,11 +3,13 @@ import { Command } from "commander";
 
 export class DropTableCommand extends DataModelerCliCommand {
     public getCommand(): Command {
-        return new Command("drop-table")
-            .description("Drops a table.")
+        return this.applyCommonSettings(
+            new Command("drop-table"),
+            "Drop a table.",
+        )
             .argument("<tableName>", "Name of the table to drop.")
-            .option("--project <projectPath>", "Optional path of project. Defaults to current directory.")
-            .action((tableName, {project}) => {
+            .action((tableName, opts, command: Command) => {
+                const {project} = command.optsWithGlobals();
                 return this.run({ projectPath: project }, tableName);
             });
     }
