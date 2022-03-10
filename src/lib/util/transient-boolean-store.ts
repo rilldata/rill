@@ -1,4 +1,3 @@
-
 import { writable } from "svelte/store";
 
 export default function transientBooleanStore(duration = 400) {
@@ -15,9 +14,3 @@ export default function transientBooleanStore(duration = 400) {
         }
     }
 }
-
-// clearTimeout(shiftClickedTimeout);
-// shiftClicked = true;
-// shiftClickedTimeout = setTimeout(() => {
-//     shiftClicked = false;
-// }, CLICK_DURATION);
