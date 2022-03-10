@@ -4,12 +4,12 @@ import workerpool from "workerpool";
 
 const dataGeneratorWorker = new DataGeneratorWorker();
 
-function updateNewCases(type: string, startId: number) {
+function generate(type: string, startId: number) {
     return new Promise((resolve) => {
         resolve(dataGeneratorWorker.generate(type, startId));
     })
 }
 
 workerpool.worker({
-    generate: updateNewCases
-})
+    generate
+});
