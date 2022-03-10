@@ -30,7 +30,8 @@ import { DataModelerStateService } from "$common/data-modeler-state-service/Data
 import {
     ApplicationStateService
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import { CommonActions } from "$common/data-modeler-service/CommonActions";
+import { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
+import { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -43,8 +44,11 @@ export function databaseServiceFactory(config: RootConfig) {
 
 export function dataModelerStateServiceFactory(config: RootConfig) {
     return new DataModelerStateService(
-        [TableStateActions, ModelStateActions,
-            ProfileColumnStateActions, CommonStateActions].map(StateActionsClass => new StateActionsClass()),
+        [
+            TableStateActions, ModelStateActions,
+            ProfileColumnStateActions, CommonStateActions,
+            ApplicationStateActions,
+        ].map(StateActionsClass => new StateActionsClass()),
         [
             PersistentTableEntityService, DerivedTableEntityService,
             PersistentModelEntityService, DerivedModelEntityService,
@@ -63,9 +67,9 @@ export function dataModelerServiceFactory(config: RootConfig) {
     const tableActions = new TableActions(config, dataModelerStateService, databaseService);
     const modelActions = new ModelActions(config, dataModelerStateService, databaseService);
     const profileColumnActions = new ProfileColumnActions(config, dataModelerStateService, databaseService);
-    const commonActions = new CommonActions(config, dataModelerStateService, databaseService);
+    const applicationActions = new ApplicationActions(config, dataModelerStateService, databaseService);
     const dataModelerService = new DataModelerService(dataModelerStateService, databaseService, notificationService,
-        [tableActions, modelActions, profileColumnActions, commonActions]);
+        [tableActions, modelActions, profileColumnActions, applicationActions]);
 
     return {dataModelerStateService, dataModelerService, notificationService};
 }

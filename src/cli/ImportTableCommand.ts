@@ -1,6 +1,8 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { isPortOpen } from "$common/utils/isPortOpen";
+import { waitUntil } from "$common/utils/waitUtils";
 
 interface ImportTableCommandOptions {
     project?: string;
@@ -27,9 +29,13 @@ export class ImportTableCommand extends DataModelerCliCommand {
     protected async sendActions(tableSourceFile: string, {name, delimiter}: ImportTableCommandOptions): Promise<void> {
         await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
             [tableSourceFile, name, {csvDelimiter: delimiter}]);
-        const createdTable = this.dataModelerStateService
-            .getEntityStateService(EntityType.Table, StateType.Persistent)
-            .getByField("path", tableSourceFile);
+        let createdTable;
+        await waitUntil(() => {
+            createdTable = this.dataModelerStateService
+                .getEntityStateService(EntityType.Table, StateType.Persistent)
+                .getByField("path", tableSourceFile);
+            return !!createdTable;
+        });
         if (createdTable) {
             console.log(`Successfully imported ${tableSourceFile} into table ${createdTable.tableName}`);
         } else {

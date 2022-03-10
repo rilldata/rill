@@ -18,9 +18,10 @@ export interface PersistentTableEntity extends EntityRecord {
     csvDelimiter?: string;
 }
 export type PersistentTableState = EntityState<PersistentTableEntity>;
-export type PersistentTableStateActionArg = EntityStateActionArg<PersistentTableEntity>;
+export type PersistentTableStateActionArg = EntityStateActionArg<
+    PersistentTableEntity, PersistentTableState, PersistentTableEntityService>;
 
-export class PersistentTableEntityService extends EntityStateService<PersistentTableEntity> {
+export class PersistentTableEntityService extends EntityStateService<PersistentTableEntity, PersistentTableState> {
     public readonly entityType = EntityType.Table;
     public readonly stateType = StateType.Persistent;
 }

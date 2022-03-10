@@ -103,8 +103,6 @@ export class TableActions extends DataModelerActions {
         this.databaseActionQueue.clearQueue(tableId);
 
         try {
-            await this.importTableDataByType(persistentTable);
-
             this.dataModelerStateService.dispatch("setTableStatus",
                 [EntityType.Table, tableId, EntityStatus.Profiling]);
             await this.dataModelerStateService.dispatch("clearProfileSummary",
@@ -149,6 +147,8 @@ export class TableActions extends DataModelerActions {
         }
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
             [table, isNew]);
+
+        await this.importTableDataByType(table);
 
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);

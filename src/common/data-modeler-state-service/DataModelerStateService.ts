@@ -24,7 +24,7 @@ import type {
     EntityStateServicesMapType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import type { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
-import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
+import type { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
 
 enablePatches();
 
@@ -32,7 +32,8 @@ type DataModelerStateActionsClasses = PickActionFunctions<EntityStateActionArg<a
     TableStateActions &
     ModelStateActions &
     ProfileColumnStateActions &
-    CommonStateActions
+    CommonStateActions &
+    ApplicationStateActions
 )>;
 export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<EntityStateActionArg<any>, DataModelerStateActionsClasses>;
 
@@ -105,7 +106,7 @@ export class DataModelerStateService {
                 console.error(`Service not found. entityType=${entityType} stateType=${stateType}`);
                 return;
             }
-            service.store.set(state);
+            service.store.set(state as any);
         });
     }
 
