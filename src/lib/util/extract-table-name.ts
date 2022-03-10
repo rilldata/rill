@@ -1,6 +1,10 @@
 const FILE_PATH_SPLIT_REGEX = /\//;
 export const INVALID_CHARS = /[^a-zA-Z_\d]/g;
 
+export function getTableNameFromFile(filePath: string, name: string) {
+    return name ?? extractTableName(sanitizeTableName(filePath));
+}
+
 export function extractTableName(filePath: string): string {
     const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
     const lastIndexOfDot = fileName.lastIndexOf(".");
