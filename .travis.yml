@@ -28,7 +28,5 @@ jobs:
         # Almost every file throws an error right now.
         # Updating this in this PR will conflict with every open PR
 
-        # generate data used by the tests
-        - npm run generate-test-data
         # run all tests
         - npm run test

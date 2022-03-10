@@ -26,6 +26,11 @@ export/
 /*_state.json
 /state
 
+# temporary. check in generated data files
+!/data/*.parquet
+!/data/*.csv
+!/data/*.tsv
+
 # generated content
 log
 saved-state.json

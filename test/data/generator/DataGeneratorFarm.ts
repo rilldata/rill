@@ -12,9 +12,7 @@ export class DataGeneratorFarm {
     private readonly pool;
 
     public constructor(worker: string) {
-        this.pool = workerpool.pool(worker, {
-            maxWorkers: 4,
-        });
+        this.pool = workerpool.pool(worker);
     }
 
     public async generate(type: string, count: number): Promise<void> {
@@ -29,7 +27,6 @@ export class DataGeneratorFarm {
         }
 
         const handleResponse = async (rows: Array<Record<string, any>>) => {
-            console.log("Generated", rows.length, "rows");
             await Promise.all(writers.map(writer => writer.write(rows)));
         };
 
