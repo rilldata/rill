@@ -1,7 +1,15 @@
+dist: xenial
 language: node_js
 node_js:
   - 16
-dist: xenial
+
+addons:
+  snaps:
+  - name: python36
+      
+cache:
+  directories:
+  - "$HOME/.npm"
 
 jobs:
   include:
