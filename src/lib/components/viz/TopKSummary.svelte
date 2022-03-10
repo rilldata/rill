@@ -7,8 +7,8 @@ import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
 import { format } from "d3-format";
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 import notificationStore from "$lib/components/notifications/";
+import transientBooleanStore from "$lib/util/transient-boolean-store";
 
-//const formatPercentage = format('.1%');
 const formatCount = format(',');
 
 export let displaySize:string = "md";
@@ -21,9 +21,7 @@ $: formatPercentage = smallestPercentage < 0.001 ?
     format('.2%') : 
     format('.1%');
 
-let shiftClicked = false;
-let shiftClickedTimeout;
-let CLICK_DURATION = 300;
+let shiftClicked = transientBooleanStore();
 </script>
 
 <div class='w-full select-none'>
@@ -40,18 +38,11 @@ let CLICK_DURATION = 300;
                 <div class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
 
                 on:click={async (event) => {
-                    // FIXME: we should standardize this for usage in ColumnProfile.svelte as well.
-                    // this implementation is just cut and paste from there but we should have one
-                    // event callback for all cases.
                     if (event.shiftKey) {
                         await navigator.clipboard.writeText(value);
-            
                         notificationStore.send({ message: `copied column value "${value === null ? 'NULL' : value}" to clipboard`});
-                        clearTimeout(shiftClickedTimeout);
-                        shiftClicked = true;
-                        shiftClickedTimeout = setTimeout(() => {
-                            shiftClicked = false;
-                        }, CLICK_DURATION);
+                        // update this to set the active animation in the tooltip text
+                        shiftClicked.flip();
                     }
                 }}
                 >
@@ -63,10 +54,11 @@ let CLICK_DURATION = 300;
                     </div>
                     <TooltipShortcutContainer>
                         <div>
-                            <StackingWord active={shiftClicked}>copy</StackingWord> column value to clipboard
+                            <StackingWord active={$shiftClicked}>copy</StackingWord> column value to clipboard
                         </div>
                         <Shortcut>
-                            shift + click
+                            <span style='font-family: var(--system);";
+                            '>⇧</span> + Click
                         </Shortcut>
                     </TooltipShortcutContainer>
                 </TooltipContent>

@@ -17,6 +17,9 @@ body {
     @apply bg-gray-100;
     font-family: "MD IO";
     font-size: 12px;
+
+    /* Use this for a few keyboard characters in tooltips, etc. */
+    --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     margin: 0;
     padding: 0;
     --header-height: 3.5rem;

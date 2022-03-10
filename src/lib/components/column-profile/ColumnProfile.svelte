@@ -7,7 +7,6 @@ import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 import FormattedDataType from "$lib/components/data-types/FormattedDataType.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
 import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
 import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
@@ -21,8 +20,7 @@ import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
 import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
 import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
 import notificationStore from "$lib/components/notifications/";
-import { tweened } from "svelte/motion";
-import { cubicOut as easing } from "svelte/easing";
+import transientBooleanStore from "$lib/util/transient-boolean-store";
 
 export let name;
 export let type;
@@ -52,24 +50,9 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
 let titleTooltip;
 let titleTooltipHover;
 
-const CLICK_DURATION = 500;
-let shiftHeld = false;
-let shiftClicked = false;
-let shiftClickedTimeout;
-
-function handleKeydown(event) {
-    if (event.key === 'Shift') {
-        shiftHeld = true;
-    }
-}
-
-function handleKeyup(event) {
-    shiftHeld = false;
-}
-
+let shiftClicked = transientBooleanStore();
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:keyup={handleKeyup} />
 
     <ColumnEntry
     left={indentLevel === 1 ? 8 : 3}
@@ -82,11 +65,10 @@ function handleKeyup(event) {
             await navigator.clipboard.writeText(name);
 
             notificationStore.send({ message: `copied column name "${name}" to clipboard`});
-            clearTimeout(shiftClickedTimeout);
-            shiftClicked = true;
-            shiftClickedTimeout = setTimeout(() => {
-                shiftClicked = false;
-            }, CLICK_DURATION);
+            
+            // update this to set the active animation in the tooltip text
+            shiftClicked.flip();
+
         } else if (totalRows) {
             active = !active;
         }
@@ -124,18 +106,18 @@ function handleKeyup(event) {
                         {/if}
                     </SlidingWords>
                     <Shortcut>
-                        click
+                        Click
                     </Shortcut>
 
                     <div>
-                        <StackingWord active={shiftClicked}>
+                        <StackingWord active={$shiftClicked}>
                             copy
                         </StackingWord>
                         column name to clipboard
                     </div>
                     <Shortcut>
-                        <span style='font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-                        '>⇧</span> + click
+                        <span style='font-family: var(--system);";
+                        '>⇧</span> + Click
                     </Shortcut>
                 </div>
             {:else}
@@ -242,7 +224,7 @@ function handleKeyup(event) {
     <svelte:fragment slot="details">
         {#if active}
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3  w-full">
-            {#if CATEGORICALS.has(type)}
+            {#if CATEGORICALS.has(type) && summary?.topK}
                 <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8 w-full">
                     <!-- pl-16 pl-8 -->
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />

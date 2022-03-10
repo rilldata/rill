@@ -1,3 +1,3 @@
-<div class="text-right" style="font-size: .9em">
+<div class="text-right text-gray-400">
     <slot />
 </div>
