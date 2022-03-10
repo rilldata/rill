@@ -1,0 +1,32 @@
+dist: xenial
+language: python
+python:
+  - "3.7"
+
+before_install:
+  - nvm install 16
+  - node --version
+  - echo "NPM Install can take up to 6-8 mins"
+
+cache:
+  directories:
+  - "$HOME/.npm"
+  - "$TRAVIS_BUILD_DIR/data"
+
+jobs:
+  include:
+    - stage: test
+      name: "Verify build"
+      script:
+        - npm install
+
+        # build the entire application
+        - npm run build
+
+        # verify lint of the repo
+        # - npm run lint
+        # Almost every file throws an error right now.
+        # Updating this in this PR will conflict with every open PR
+
+        # run all tests
+        - npm run test

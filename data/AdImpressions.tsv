@@ -1,0 +1,5001 @@
+id	city	country	user_id
+0	Boston	USA	12
+2000	Los Angeles	USA	
+4000	Delhi	India	
+6000		USA	
+8000	London	UK	
+2	Kolkata	India	71
+2002	Bengaluru	India	49
+8002	Los Angeles	USA	34
+6002	Boston	USA	
+4	Los Angeles	USA	
+2004	Kolkata	India	10
+4002		India	
+6	Kolkata	India	61
+8004		Ireland	
+4004	London	UK	35
+2006	New York City	USA	41
+8	New York City	USA	80
+6004	New York City	USA	
+10	Kolkata	India	96
+4006		India	
+6006	Dublin	Ireland	59
+12		India	
+4008	London	UK	9
+2008	Los Angeles	USA	25
+14	San Francisco	USA	
+4010	New York City	USA	
+6008	San Francisco	USA	
+2010		USA	35
+8006	Boston	USA	81
+16	Boston	USA	
+4012	Dublin	Ireland	
+6010	Mumbai	India	30
+2012	London	UK	
+8008		USA	
+18	Dublin	Ireland	93
+4014	Boston	USA	
+6012	Bengaluru	India	
+2014	New York City	USA	
+8010	Boston	USA	14
+20	Kolkata	India	
+4016		USA	64
+6014	Bengaluru	India	87
+2016	Boston	USA	
+8012		India	
+22	Mumbai	India	
+4018		India	
+2018	Dublin	Ireland	74
+6016	Dublin	Ireland	
+8014	Bengaluru	India	
+24	Los Angeles	USA	67
+4020	Bengaluru	India	79
+2020	San Francisco	USA	49
+6018	New York City	USA	
+8016	Boston	USA	73
+4022		USA	
+26	Mumbai	India	
+2022	Bengaluru	India	95
+6020	Delhi	India	68
+4024	Boston	USA	71
+2024	Delhi	India	
+6022		USA	
+4026	Dublin	Ireland	52
+2026		India	6
+6024		USA	61
+4028	San Francisco	USA	
+8018	New York City	USA	
+2028	London	UK	
+28	Delhi	India	
+6026	Mumbai	India	86
+4030	Delhi	India	23
+30	Bengaluru	India	29
+6028	Boston	USA	96
+8020	New York City	USA	
+4032	Bengaluru	India	
+32		UK	39
+4034	Boston	USA	
+2030	New York City	USA	
+8022		UK	79
+34		USA	89
+6030	Los Angeles	USA	
+4036	Kolkata	India	17
+2032	Delhi	India	
+8024	Bengaluru	India	
+36	London	UK	
+6032	New York City	USA	
+4038	Dublin	Ireland	98
+2034	Bengaluru	India	86
+8026	Delhi	India	63
+38	Mumbai	India	76
+6034	Los Angeles	USA	
+4040	Delhi	India	
+8028	New York City	USA	
+40	Bengaluru	India	23
+4042	San Francisco	USA	97
+6036	Dublin	Ireland	
+8030	Dublin	Ireland	
+42	London	UK	77
+4044		India	48
+6038	Delhi	India	35
+2036	Delhi	India	85
+44	Delhi	India	
+4046	Dublin	Ireland	
+6040	Boston	USA	78
+8032	Dublin	Ireland	48
+2038		USA	
+46	Mumbai	India	30
+8034	Los Angeles	USA	
+6042	San Francisco	USA	
+2040		India	13
+48	Delhi	India	14
+8036	Bengaluru	India	94
+4048	New York City	USA	13
+6044	New York City	USA	85
+8038	Delhi	India	13
+50	London	UK	
+6046	Los Angeles	USA	62
+8040		USA	1
+52	San Francisco	USA	59
+6048	Kolkata	India	26
+8042	New York City	USA	17
+54		USA	96
+4050	Boston	USA	
+6050		USA	
+2042		USA	
+8044		India	
+56	Kolkata	India	76
+4052	Mumbai	India	
+6052	Los Angeles	USA	18
+2044	Bengaluru	India	
+8046		UK	42
+58	Dublin	Ireland	
+6054	Boston	USA	6
+2046	Dublin	Ireland	93
+8048	Boston	USA	7
+60	Delhi	India	
+6056	San Francisco	USA	
+2048	Delhi	India	
+8050	Delhi	India	87
+4054		India	
+62	Los Angeles	USA	
+6058		Ireland	65
+2050	Delhi	India	
+8052	Kolkata	India	
+4056	Los Angeles	USA	49
+64		USA	45
+6060	Dublin	Ireland	
+2052		India	21
+8054	Kolkata	India	
+4058		India	
+66	San Francisco	USA	
+6062	New York City	USA	21
+2054	Bengaluru	India	86
+8056	San Francisco	USA	92
+4060	Delhi	India	
+68	London	UK	
+6064	Kolkata	India	
+2056	New York City	USA	61
+8058	Delhi	India	82
+4062		USA	
+70		India	66
+6066	San Francisco	USA	
+2058	Los Angeles	USA	34
+8060	Mumbai	India	
+4064	Delhi	India	57
+72	New York City	USA	
+6068	Kolkata	India	85
+2060	San Francisco	USA	
+8062	Boston	USA	64
+4066	San Francisco	USA	
+74	Los Angeles	USA	
+4068	Bengaluru	India	20
+2062		UK	61
+76	Bengaluru	India	
+4070	Kolkata	India	3
+2064	New York City	USA	21
+78	San Francisco	USA	14
+8064	San Francisco	USA	6
+80	Delhi	India	86
+2066	New York City	USA	50
+8066	London	UK	
+82		USA	54
+2068	New York City	USA	
+8068	Los Angeles	USA	85
+84	Delhi	India	2
+8070	Bengaluru	India	
+86	Boston	USA	
+8072		USA	
+88	Los Angeles	USA	
+8074	Bengaluru	India	
+90	Boston	USA	
+4072		USA	27
+8076	New York City	USA	
+92	Delhi	India	
+4074	London	UK	
+6070	Bengaluru	India	
+8078	Dublin	Ireland	62
+2070	Bengaluru	India	
+6072	London	UK	61
+8080	Boston	USA	
+2072	Dublin	Ireland	77
+94		USA	54
+6074	Mumbai	India	
+4076	San Francisco	USA	66
+8082	London	UK	
+2074		UK	
+96		USA	64
+6076	Bengaluru	India	
+4078		USA	
+8084		Ireland	44
+2076	Boston	USA	68
+98		USA	
+6078	Kolkata	India	74
+4080	Kolkata	India	19
+6080	Boston	USA	12
+2078	Mumbai	India	5
+4082		India	61
+6082	Delhi	India	25
+2080	Mumbai	India	14
+100	Los Angeles	USA	28
+4084	Kolkata	India	19
+8086		Ireland	
+2082	San Francisco	USA	
+102	Kolkata	India	
+6084	San Francisco	USA	53
+8088	Los Angeles	USA	6
+2084	Bengaluru	India	9
+104	Dublin	Ireland	
+8090	London	UK	72
+4086	Bengaluru	India	47
+6086	Boston	USA	
+2086	Boston	USA	72
+6088	Los Angeles	USA	37
+4088	Bengaluru	India	
+2088	Kolkata	India	91
+6090	Delhi	India	
+4090	New York City	USA	88
+106	San Francisco	USA	
+2090	Dublin	Ireland	8
+6092	Dublin	Ireland	22
+108		India	
+4092	Boston	USA	29
+8092	New York City	USA	
+110	Dublin	Ireland	
+8094	Delhi	India	90
+6094	Dublin	Ireland	47
+112		USA	
+4094		India	
+8096		India	
+6096		USA	
+114		USA	
+6098	Mumbai	India	
+4096	London	UK	
+2092	London	UK	
+8098	Delhi	India	
+116		USA	
+6100	Los Angeles	USA	
+4098	Mumbai	India	
+2094	Delhi	India	
+8100		UK	27
+118	Mumbai	India	50
+6102	Kolkata	India	
+4100	New York City	USA	36
+8102	New York City	USA	
+6104	San Francisco	USA	
+120		India	
+4102	New York City	USA	
+8104	San Francisco	USA	64
+2096	Boston	USA	81
+6106	Kolkata	India	
+122		USA	
+4104	New York City	USA	69
+8106	London	UK	
+2098	Los Angeles	USA	
+6108	Mumbai	India	
+124		USA	7
+4106		India	19
+8108	Kolkata	India	
+2100	Bengaluru	India	
+6110	Bengaluru	India	
+126	Los Angeles	USA	
+4108	Kolkata	India	
+8110		USA	44
+2102		India	
+6112		USA	
+128	Dublin	Ireland	
+4110		USA	
+8112	New York City	USA	
+2104	London	UK	62
+6114		India	
+130	Dublin	Ireland	78
+4112	Los Angeles	USA	
+6116		USA	
+132	Los Angeles	USA	23
+8114	Delhi	India	
+2106	Boston	USA	
+4114	Bengaluru	India	68
+6118		Ireland	
+134	San Francisco	USA	
+8116	London	UK	24
+2108	Kolkata	India	59
+4116	London	UK	
+136	London	UK	14
+6120		USA	
+2110	Boston	USA	80
+138		India	43
+6122		India	
+8118	Mumbai	India	55
+2112		Ireland	69
+4118	San Francisco	USA	
+140		UK	
+6124	Boston	USA	34
+8120	Mumbai	India	
+2114	London	UK	
+4120	Delhi	India	
+142		Ireland	
+6126	Dublin	Ireland	
+8122	Bengaluru	India	5
+4122		USA	
+2116		UK	
+144		India	
+6128	London	UK	
+146		USA	
+8124	Delhi	India	
+4124	New York City	USA	44
+6130	Delhi	India	
+2118		India	
+148	Mumbai	India	65
+8126	Kolkata	India	54
+4126	Delhi	India	
+6132	Delhi	India	8
+2120	Mumbai	India	22
+150	New York City	USA	1
+8128	Boston	USA	76
+4128	New York City	USA	
+6134	Los Angeles	USA	
+2122	Mumbai	India	41
+152		USA	38
+8130		USA	
+4130	Kolkata	India	
+6136	Kolkata	India	
+2124		India	
+154	Los Angeles	USA	10
+8132	New York City	USA	1
+4132	Mumbai	India	
+6138	London	UK	37
+2126	Kolkata	India	30
+156		Ireland	48
+8134	Mumbai	India	36
+4134	San Francisco	USA	64
+6140	London	UK	25
+2128	Kolkata	India	3
+158	London	UK	11
+8136	Mumbai	India	
+4136	Los Angeles	USA	
+6142	Boston	USA	
+2130	London	UK	30
+160	London	UK	78
+8138	Dublin	Ireland	58
+4138	Delhi	India	
+6144		USA	75
+2132	Bengaluru	India	74
+162		USA	
+8140	New York City	USA	76
+4140	Mumbai	India	25
+6146	San Francisco	USA	
+2134	New York City	USA	
+164		India	
+8142	Bengaluru	India	85
+4142	Kolkata	India	
+6148	Kolkata	India	
+2136	Delhi	India	54
+166	London	UK	68
+8144	San Francisco	USA	68
+4144	Kolkata	India	
+6150	New York City	USA	
+2138		UK	17
+168	Delhi	India	83
+4146	Mumbai	India	97
+2140	Mumbai	India	18
+8146	Kolkata	India	
+6152		USA	95
+170		India	13
+4148	Bengaluru	India	
+2142	Kolkata	India	
+8148	Los Angeles	USA	92
+4150	Boston	USA	
+172	Los Angeles	USA	
+8150	Bengaluru	India	
+6154	Delhi	India	67
+174	Delhi	India	
+8152	Mumbai	India	
+2144	Bengaluru	India	45
+4152	Mumbai	India	98
+6156	Los Angeles	USA	25
+176	Dublin	Ireland	25
+8154	New York City	USA	68
+2146	New York City	USA	
+6158	Los Angeles	USA	
+178		USA	83
+4154		USA	
+8156	San Francisco	USA	52
+2148	Dublin	Ireland	1
+4156	New York City	USA	
+2150	Dublin	Ireland	
+8158	Kolkata	India	36
+4158	London	UK	82
+6160	Bengaluru	India	
+2152	Kolkata	India	49
+8160	Delhi	India	49
+4160	Dublin	Ireland	85
+2154	New York City	USA	78
+8162	Delhi	India	20
+6162	Los Angeles	USA	
+180		UK	
+4162	San Francisco	USA	95
+2156	Kolkata	India	88
+8164	Kolkata	India	71
+6164	Delhi	India	32
+182	Boston	USA	
+4164	Boston	USA	38
+2158	London	UK	
+8166	Los Angeles	USA	
+6166	Mumbai	India	37
+184	Los Angeles	USA	
+4166	Kolkata	India	
+2160	Boston	USA	62
+8168	New York City	USA	71
+6168	London	UK	
+186	New York City	USA	
+4168	Delhi	India	
+2162	Delhi	India	28
+8170	Bengaluru	India	
+6170	Kolkata	India	
+2164		USA	
+8172		Ireland	14
+188		UK	34
+6172	London	UK	79
+190	Mumbai	India	98
+2166	Dublin	Ireland	
+8174	San Francisco	USA	
+4170	New York City	USA	
+6174		India	76
+192	Mumbai	India	17
+2168	Los Angeles	USA	
+4172		USA	
+8176	New York City	USA	
+6176	London	UK	35
+194		Ireland	55
+2170	Mumbai	India	
+4174	Delhi	India	33
+8178		India	37
+6178	Bengaluru	India	
+196	Los Angeles	USA	
+6180		India	
+4176	Mumbai	India	
+8180	Mumbai	India	
+198	London	UK	
+6182	London	UK	27
+2172	Mumbai	India	
+4178	Bengaluru	India	
+8182	New York City	USA	
+200	Dublin	Ireland	90
+6184	Dublin	Ireland	
+2174	Boston	USA	90
+4180	Boston	USA	
+8184	San Francisco	USA	62
+202	Mumbai	India	74
+8186	Delhi	India	65
+2176	Boston	USA	0
+4182		India	
+204	London	UK	64
+8188	London	UK	
+2178		USA	
+6186	Kolkata	India	
+4184	Bengaluru	India	89
+206		Ireland	
+8190	Kolkata	India	85
+4186	Los Angeles	USA	71
+2180	San Francisco	USA	45
+208	London	UK	57
+8192	New York City	USA	6
+6188		India	
+4188	Delhi	India	59
+2182	San Francisco	USA	75
+210	Dublin	Ireland	
+8194	Bengaluru	India	
+6190	Mumbai	India	
+4190	Mumbai	India	18
+2184	Mumbai	India	
+212	London	UK	12
+8196	Kolkata	India	68
+6192	Delhi	India	
+4192		India	20
+8198	Boston	USA	
+6194		India	
+4194	Kolkata	India	50
+8200	Boston	USA	
+214	Mumbai	India	91
+4196		Ireland	10
+6196	San Francisco	USA	
+8202	Delhi	India	
+2186	New York City	USA	3
+216	Kolkata	India	54
+4198		USA	65
+8204	London	UK	42
+6198	London	UK	60
+2188	Los Angeles	USA	71
+218	San Francisco	USA	
+4200		UK	
+8206		USA	
+6200	San Francisco	USA	3
+2190	Delhi	India	5
+6202	San Francisco	USA	
+220	Kolkata	India	14
+2192	Bengaluru	India	5
+8208	Bengaluru	India	
+4202	Kolkata	India	
+2194	Mumbai	India	31
+4204		USA	12
+6204	Boston	USA	44
+8210	San Francisco	USA	
+2196	Kolkata	India	35
+222	Los Angeles	USA	79
+4206		USA	
+6206	Delhi	India	
+8212		USA	
+2198	Bengaluru	India	
+224	London	UK	34
+4208	Los Angeles	USA	
+6208	San Francisco	USA	46
+8214	San Francisco	USA	62
+2200	Delhi	India	
+226	Bengaluru	India	31
+4210		India	44
+6210	Dublin	Ireland	
+2202	Mumbai	India	
+228		India	
+8216	Delhi	India	
+4212	Bengaluru	India	67
+6212	Los Angeles	USA	87
+2204	Los Angeles	USA	
+230	Bengaluru	India	88
+8218	Kolkata	India	34
+4214	Delhi	India	
+6214	Delhi	India	22
+2206	Mumbai	India	
+232	London	UK	68
+8220	Boston	USA	14
+234	Kolkata	India	
+6216	Dublin	Ireland	87
+8222	Delhi	India	
+236	San Francisco	USA	59
+2208	Kolkata	India	88
+4216	London	UK	
+6218	Delhi	India	90
+8224		UK	
+238	Los Angeles	USA	66
+2210	Boston	USA	19
+4218		Ireland	
+6220	San Francisco	USA	
+8226	New York City	USA	
+240		India	59
+2212	Mumbai	India	31
+4220	Kolkata	India	
+6222		Ireland	84
+8228	Mumbai	India	
+242	Boston	USA	
+6224	Kolkata	India	7
+2214	San Francisco	USA	1
+4222		India	
+8230	Mumbai	India	
+244		Ireland	
+2216	Kolkata	India	
+4224	Los Angeles	USA	
+6226	Dublin	Ireland	69
+8232	New York City	USA	53
+246	Delhi	India	2
+4226	London	UK	
+2218	Bengaluru	India	
+6228	Los Angeles	USA	
+8234	Kolkata	India	
+4228	San Francisco	USA	
+2220	Dublin	Ireland	41
+248		USA	91
+8236		India	
+4230	Kolkata	India	
+250	Boston	USA	70
+2222	Los Angeles	USA	
+8238	San Francisco	USA	2
+252	San Francisco	USA	
+6230	Mumbai	India	93
+4232	Delhi	India	
+2224	Bengaluru	India	
+8240	New York City	USA	
+254		UK	
+6232	Delhi	India	
+4234	Boston	USA	37
+2226		India	
+8242		USA	
+256	Dublin	Ireland	29
+6234	Mumbai	India	
+4236	London	UK	
+2228		Ireland	
+8244	Kolkata	India	64
+258	Dublin	Ireland	
+6236	Kolkata	India	
+4238	Delhi	India	13
+2230	Kolkata	India	
+8246	Mumbai	India	42
+260	Bengaluru	India	59
+6238	Los Angeles	USA	
+2232	San Francisco	USA	
+8248	Dublin	Ireland	
+4240	San Francisco	USA	83
+262	Kolkata	India	18
+6240	Mumbai	India	37
+2234	Boston	USA	12
+8250	Bengaluru	India	74
+4242	Mumbai	India	
+264	New York City	USA	22
+6242	Kolkata	India	44
+2236	London	UK	53
+8252	Delhi	India	
+4244	New York City	USA	26
+266	Bengaluru	India	36
+6244	Delhi	India	43
+2238	Kolkata	India	
+8254	London	UK	
+4246	Dublin	Ireland	
+268	Delhi	India	
+6246	Delhi	India	
+2240	Dublin	Ireland	25
+8256	Dublin	Ireland	
+4248	New York City	USA	45
+270		USA	
+2242	London	UK	
+8258	San Francisco	USA	3
+4250	Kolkata	India	
+8260	Los Angeles	USA	73
+272	London	UK	41
+4252	London	UK	
+8262	Boston	USA	98
+2244	Boston	USA	
+6248	Boston	USA	
+4254		USA	60
+274	Kolkata	India	
+8264	London	UK	
+2246		Ireland	
+4256	Dublin	Ireland	1
+276	Kolkata	India	
+6250	Dublin	Ireland	
+8266	New York City	USA	
+2248	Mumbai	India	
+4258	Delhi	India	
+278	Bengaluru	India	56
+6252	Los Angeles	USA	
+8268	San Francisco	USA	75
+2250	San Francisco	USA	46
+4260	Delhi	India	13
+280		USA	22
+6254	Bengaluru	India	
+8270	Kolkata	India	
+4262	New York City	USA	16
+2252	Mumbai	India	20
+282	New York City	USA	
+6256		UK	20
+8272	Kolkata	India	
+4264		UK	97
+2254	New York City	USA	
+284	New York City	USA	
+6258	Mumbai	India	60
+8274	Dublin	Ireland	61
+4266		India	
+2256	Dublin	Ireland	
+286	Delhi	India	60
+6260	New York City	USA	
+8276	Delhi	India	1
+4268		USA	5
+2258	Los Angeles	USA	96
+288	Delhi	India	
+6262	New York City	USA	98
+8278	Boston	USA	66
+4270	Mumbai	India	5
+2260	Boston	USA	
+290	Kolkata	India	50
+6264		USA	
+4272	Mumbai	India	34
+2262	San Francisco	USA	
+8280	Mumbai	India	
+292		India	
+6266	San Francisco	USA	23
+4274		USA	
+2264		USA	20
+8282	Bengaluru	India	
+294		UK	
+6268	London	UK	34
+4276	Delhi	India	
+2266	Mumbai	India	24
+8284	Kolkata	India	
+296	San Francisco	USA	
+6270	Delhi	India	
+4278	Delhi	India	7
+2268	Kolkata	India	10
+8286		USA	
+298		Ireland	
+6272	New York City	USA	
+2270	New York City	USA	26
+6274	New York City	USA	
+8288	New York City	USA	
+300	San Francisco	USA	53
+4280	Delhi	India	
+2272	Los Angeles	USA	
+6276		USA	93
+8290	Los Angeles	USA	17
+302	Delhi	India	
+4282	Delhi	India	
+2274		Ireland	
+6278	San Francisco	USA	5
+8292	San Francisco	USA	
+304	Los Angeles	USA	77
+4284	Los Angeles	USA	
+2276	Los Angeles	USA	46
+6280	London	UK	
+8294	Kolkata	India	88
+306	Boston	USA	77
+4286		India	
+2278	Los Angeles	USA	98
+6282	London	UK	
+8296	Boston	USA	2
+308		USA	
+4288	Los Angeles	USA	83
+2280		Ireland	
+6284	Kolkata	India	
+310	Kolkata	India	26
+4290	New York City	USA	41
+8298	Boston	USA	84
+2282		USA	
+6286	New York City	USA	
+312	San Francisco	USA	
+4292	Delhi	India	65
+8300	Kolkata	India	
+2284	Dublin	Ireland	20
+6288	Dublin	Ireland	78
+4294	Kolkata	India	
+314	Dublin	Ireland	31
+6290		Ireland	
+4296	New York City	USA	
+316	Kolkata	India	
+6292		Ireland	75
+2286	New York City	USA	96
+4298	Los Angeles	USA	
+8302	Dublin	Ireland	
+318	New York City	USA	30
+6294	Mumbai	India	
+4300	Dublin	Ireland	
+2288	London	UK	
+6296		India	
+8304	Boston	USA	47
+320	Bengaluru	India	
+4302	London	UK	46
+2290	London	UK	
+6298		UK	29
+8306	New York City	USA	
+322	Los Angeles	USA	
+4304	San Francisco	USA	32
+2292	New York City	USA	24
+6300	New York City	USA	
+8308	Los Angeles	USA	77
+324	New York City	USA	
+4306	Mumbai	India	0
+2294		Ireland	
+6302	San Francisco	USA	75
+8310		USA	
+326		India	
+4308	Los Angeles	USA	
+6304	London	UK	
+8312	Bengaluru	India	
+2296	Dublin	Ireland	58
+328		India	
+4310	San Francisco	USA	73
+6306	Delhi	India	
+330	Kolkata	India	14
+2298		India	
+6308	Delhi	India	
+332		USA	
+4312	Dublin	Ireland	
+8314	Dublin	Ireland	48
+334		UK	95
+2300	London	UK	
+6310		Ireland	
+336	New York City	USA	
+2302	Delhi	India	97
+4314	Mumbai	India	15
+8316	Mumbai	India	34
+6312	Bengaluru	India	
+338	Kolkata	India	
+2304	New York City	USA	
+4316	London	UK	19
+8318	Kolkata	India	27
+6314	San Francisco	USA	
+2306	Boston	USA	
+340		India	
+6316	Mumbai	India	
+342	Bengaluru	India	
+2308		India	67
+6318		USA	26
+4318	New York City	USA	
+344	Delhi	India	
+8320		USA	
+2310		India	32
+6320	Mumbai	India	
+4320	Dublin	Ireland	45
+346	Mumbai	India	
+8322	San Francisco	USA	
+2312		UK	
+6322	Delhi	India	
+4322	Bengaluru	India	34
+348		India	42
+8324	London	UK	11
+2314	Bengaluru	India	73
+6324	San Francisco	USA	80
+4324	Dublin	Ireland	31
+350	Mumbai	India	87
+8326	Los Angeles	USA	76
+2316	Mumbai	India	50
+6326	Bengaluru	India	79
+4326	London	UK	19
+352	Bengaluru	India	
+8328	Dublin	Ireland	
+2318	Los Angeles	USA	75
+6328	Boston	USA	
+4328		India	
+354	New York City	USA	
+8330	Boston	USA	
+6330	Los Angeles	USA	30
+4330	Dublin	Ireland	91
+356	San Francisco	USA	
+2320	London	UK	54
+6332		USA	40
+4332	Dublin	Ireland	5
+358	Los Angeles	USA	
+2322	San Francisco	USA	40
+8332	Dublin	Ireland	64
+6334	Los Angeles	USA	20
+4334		UK	19
+2324	Dublin	Ireland	81
+4336	Delhi	India	18
+8334	Los Angeles	USA	
+2326	London	UK	68
+6336		India	94
+4338		USA	14
+360	Delhi	India	
+6338	Mumbai	India	
+4340	Los Angeles	USA	98
+2328	Mumbai	India	64
+6340	Los Angeles	USA	
+4342	Delhi	India	27
+362		India	
+2330	London	UK	64
+8336		India	19
+6342	Kolkata	India	
+4344	Bengaluru	India	87
+364	Mumbai	India	
+2332	Los Angeles	USA	
+4346	Los Angeles	USA	2
+2334	Boston	USA	
+8338		USA	85
+4348	Kolkata	India	38
+2336		USA	44
+8340	London	UK	
+366	New York City	USA	98
+4350	Dublin	Ireland	
+6344	San Francisco	USA	
+2338	Los Angeles	USA	
+368	San Francisco	USA	
+8342	London	UK	36
+6346		Ireland	
+4352	Delhi	India	
+2340	Los Angeles	USA	
+370	New York City	USA	
+8344	Boston	USA	
+4354	Mumbai	India	23
+2342	London	UK	
+372		India	
+8346	Mumbai	India	37
+6348		India	
+4356		India	
+2344	Delhi	India	25
+6350	New York City	USA	9
+8348	San Francisco	USA	
+4358	New York City	USA	16
+6352	Kolkata	India	
+374	New York City	USA	
+8350	Los Angeles	USA	65
+2346	Dublin	Ireland	91
+4360	London	UK	32
+6354	New York City	USA	77
+376	Kolkata	India	
+8352	Boston	USA	
+2348	Dublin	Ireland	80
+4362		USA	
+6356		USA	62
+378	San Francisco	USA	
+8354	Bengaluru	India	
+2350	Dublin	Ireland	
+4364	Bengaluru	India	35
+6358	New York City	USA	
+380	San Francisco	USA	
+8356	Mumbai	India	43
+2352	Kolkata	India	82
+4366		Ireland	30
+6360	London	UK	
+382	Bengaluru	India	70
+8358	New York City	USA	
+2354	Mumbai	India	
+4368	Bengaluru	India	78
+6362	Bengaluru	India	37
+384		UK	
+2356	Bengaluru	India	74
+8360	San Francisco	USA	
+4370		India	90
+6364	Los Angeles	USA	25
+386	Dublin	Ireland	
+2358	Boston	USA	
+8362	London	UK	52
+4372	Bengaluru	India	90
+6366	Bengaluru	India	61
+388	Delhi	India	81
+2360		India	
+8364		USA	78
+4374	New York City	USA	
+6368	Dublin	Ireland	
+390		UK	58
+2362	Kolkata	India	
+8366	Mumbai	India	32
+6370	San Francisco	USA	
+4376	Kolkata	India	
+392	Kolkata	India	
+2364	London	UK	27
+8368	Delhi	India	
+6372	London	UK	90
+4378	New York City	USA	
+394	Kolkata	India	
+2366	Kolkata	India	53
+8370		USA	4
+6374	San Francisco	USA	
+4380	Boston	USA	7
+396	New York City	USA	
+2368	Dublin	Ireland	
+8372	Kolkata	India	3
+6376	Dublin	Ireland	94
+4382		India	85
+398	New York City	USA	48
+2370	Bengaluru	India	80
+8374	San Francisco	USA	
+6378	Mumbai	India	
+4384		USA	
+400	Bengaluru	India	52
+2372	Los Angeles	USA	94
+8376		USA	
+6380	Bengaluru	India	
+4386	San Francisco	USA	
+402	San Francisco	USA	12
+2374	New York City	USA	
+8378	Boston	USA	55
+6382	Boston	USA	79
+4388	London	UK	33
+404	San Francisco	USA	
+2376		UK	11
+8380	Bengaluru	India	9
+6384	Delhi	India	7
+8382	Mumbai	India	
+4390	Los Angeles	USA	
+406	Kolkata	India	25
+2378	Dublin	Ireland	
+8384	Kolkata	India	51
+4392	San Francisco	USA	84
+408	Mumbai	India	
+6386	San Francisco	USA	
+2380	Bengaluru	India	
+8386		Ireland	
+4394	New York City	USA	2
+410	Delhi	India	
+6388	Dublin	Ireland	52
+2382	Delhi	India	
+8388	Boston	USA	
+4396		USA	
+412	Delhi	India	
+2384	London	UK	
+6390	San Francisco	USA	
+414		USA	
+8390	Dublin	Ireland	39
+2386		India	33
+416	Delhi	India	
+8392	Los Angeles	USA	
+4398	Kolkata	India	59
+2388	Delhi	India	
+418	New York City	USA	26
+8394	Boston	USA	74
+4400	New York City	USA	0
+6392	New York City	USA	95
+2390	Los Angeles	USA	95
+420	London	UK	10
+8396	Kolkata	India	86
+4402		India	
+6394	Kolkata	India	86
+2392	Mumbai	India	
+422	New York City	USA	61
+8398	San Francisco	USA	
+6396		India	85
+424		India	
+2394	Delhi	India	55
+8400	Boston	USA	50
+4404	London	UK	
+6398	New York City	USA	97
+426	London	UK	
+2396	San Francisco	USA	76
+8402	Bengaluru	India	
+4406	Los Angeles	USA	32
+6400		India	59
+428	Kolkata	India	
+2398	Boston	USA	26
+8404	Los Angeles	USA	
+4408	Kolkata	India	
+6402	Bengaluru	India	
+430	Los Angeles	USA	6
+2400	London	UK	38
+8406	Delhi	India	96
+6404	San Francisco	USA	
+4410	Mumbai	India	
+432	Dublin	Ireland	
+8408	New York City	USA	68
+6406	Bengaluru	India	
+2402	Mumbai	India	30
+4412	Los Angeles	USA	
+434	Bengaluru	India	91
+8410	New York City	USA	
+6408	Boston	USA	
+2404	Bengaluru	India	12
+4414		USA	54
+436	Bengaluru	India	32
+8412	Dublin	Ireland	73
+6410	New York City	USA	
+2406		USA	
+4416	Boston	USA	26
+438	New York City	USA	43
+8414	Boston	USA	36
+440	Kolkata	India	40
+8416	Bengaluru	India	26
+2408		USA	
+4418	Bengaluru	India	38
+442	Boston	USA	
+8418	San Francisco	USA	81
+4420	London	UK	
+444	Mumbai	India	37
+6412		UK	
+8420		India	35
+4422	New York City	USA	28
+446	Boston	USA	
+2410	London	UK	81
+4424	Bengaluru	India	0
+448	London	UK	36
+8422	Bengaluru	India	47
+4426	Mumbai	India	96
+8424	Mumbai	India	
+450		India	
+8426	Kolkata	India	
+6414	New York City	USA	
+8428	London	UK	7
+2412	Mumbai	India	
+6416	Kolkata	India	14
+8430	Dublin	Ireland	
+4428	Boston	USA	
+2414	London	UK	
+452	Boston	USA	40
+6418	Boston	USA	
+8432	London	UK	
+4430	Mumbai	India	
+2416		USA	
+454	New York City	USA	
+6420		UK	35
+8434	Boston	USA	34
+4432	Delhi	India	
+2418	Kolkata	India	
+456	Dublin	Ireland	
+6422	Mumbai	India	44
+8436	London	UK	76
+4434	San Francisco	USA	
+458	Los Angeles	USA	86
+2420	Boston	USA	80
+6424	Dublin	Ireland	78
+2422	San Francisco	USA	5
+4436	Mumbai	India	
+460	Bengaluru	India	31
+2424	Kolkata	India	
+8438	Boston	USA	
+4438	San Francisco	USA	
+462		India	37
+8440	Boston	USA	59
+6426	Boston	USA	
+4440	San Francisco	USA	29
+2426		USA	
+8442	Bengaluru	India	27
+6428	Los Angeles	USA	
+4442	New York City	USA	73
+2428		USA	
+8444	Bengaluru	India	96
+464	New York City	USA	53
+6430		India	
+4444	Delhi	India	70
+2430	Los Angeles	USA	
+8446	Delhi	India	
+466	Delhi	India	41
+6432	Los Angeles	USA	
+4446	London	UK	13
+2432	Kolkata	India	
+8448	Mumbai	India	
+468	Bengaluru	India	
+6434	Kolkata	India	65
+2434	London	UK	
+4448	Dublin	Ireland	91
+8450	Boston	USA	56
+470		USA	8
+6436	Boston	USA	
+2436	Boston	USA	7
+4450	Los Angeles	USA	
+8452	Kolkata	India	
+472	Delhi	India	
+6438	San Francisco	USA	
+2438	Los Angeles	USA	
+4452	San Francisco	USA	38
+8454		USA	17
+474	Boston	USA	4
+6440	Kolkata	India	
+2440	Delhi	India	
+4454		India	
+8456	Los Angeles	USA	95
+476	Mumbai	India	72
+6442	Bengaluru	India	2
+2442	San Francisco	USA	12
+4456		USA	
+8458	Los Angeles	USA	
+478	London	UK	69
+4458	Bengaluru	India	
+2444		USA	
+480	Delhi	India	81
+6444	London	UK	
+482	Los Angeles	USA	
+8460	San Francisco	USA	55
+6446	Dublin	Ireland	66
+2446	Los Angeles	USA	86
+484	Dublin	Ireland	
+6448	Delhi	India	
+2448	New York City	USA	
+4460	San Francisco	USA	
+8462	San Francisco	USA	86
+486		India	57
+6450	Kolkata	India	
+2450		USA	13
+488	San Francisco	USA	
+6452	Kolkata	India	66
+2452		UK	
+4462		India	
+6454	New York City	USA	41
+8464	San Francisco	USA	45
+2454	Mumbai	India	57
+4464	London	UK	
+6456	Kolkata	India	
+8466	San Francisco	USA	81
+490		India	24
+2456	San Francisco	USA	
+4466	Delhi	India	41
+6458	Boston	USA	
+8468	Bengaluru	India	
+492	Kolkata	India	68
+2458	Dublin	Ireland	60
+4468	Dublin	Ireland	30
+6460		USA	
+8470	Bengaluru	India	
+2460	Mumbai	India	
+6462		Ireland	57
+494	Kolkata	India	46
+2462	Bengaluru	India	41
+6464	Los Angeles	USA	
+496	New York City	USA	
+2464	Boston	USA	38
+4470	Dublin	Ireland	13
+6466	Bengaluru	India	16
+8472		USA	79
+498	Boston	USA	
+2466	London	UK	37
+4472	Mumbai	India	5
+8474	San Francisco	USA	
+500	Bengaluru	India	28
+6468	Dublin	Ireland	86
+2468		UK	28
+4474	Dublin	Ireland	25
+8476	Kolkata	India	
+6470	London	UK	64
+2470	Mumbai	India	21
+502		India	28
+4476	Dublin	Ireland	76
+8478	London	UK	
+2472	Los Angeles	USA	
+6472	Mumbai	India	
+4478	Los Angeles	USA	6
+504	Bengaluru	India	32
+8480	London	UK	
+2474	San Francisco	USA	
+6474	Boston	USA	
+4480		India	94
+8482	Bengaluru	India	
+506	Los Angeles	USA	
+2476	Los Angeles	USA	
+6476	Delhi	India	
+8484	San Francisco	USA	
+4482		USA	
+6478	London	UK	73
+508	Delhi	India	
+8486	San Francisco	USA	
+4484	Delhi	India	
+2478	San Francisco	USA	80
+6480		USA	
+510	London	UK	66
+8488	Mumbai	India	
+4486	Delhi	India	68
+2480	Boston	USA	14
+6482	Boston	USA	2
+512	Bengaluru	India	
+8490	Dublin	Ireland	
+4488	Dublin	Ireland	
+2482		USA	1
+6484	San Francisco	USA	
+514	Boston	USA	
+8492	Mumbai	India	68
+4490	San Francisco	USA	
+2484	Bengaluru	India	63
+6486	San Francisco	USA	
+516	Boston	USA	
+2486		USA	
+6488		USA	43
+518	Los Angeles	USA	55
+8494		Ireland	
+4492	New York City	USA	68
+6490		India	
+2488	Kolkata	India	12
+520	Bengaluru	India	22
+8496	Boston	USA	
+4494	San Francisco	USA	
+6492	Delhi	India	69
+2490	San Francisco	USA	4
+522	London	UK	69
+8498	Bengaluru	India	
+524		USA	6
+6494	Bengaluru	India	
+8500	Dublin	Ireland	
+4496		India	20
+526	San Francisco	USA	
+8502	Los Angeles	USA	18
+4498	San Francisco	USA	
+528	Mumbai	India	35
+8504		USA	
+2492	Kolkata	India	51
+6496	London	UK	25
+4500	Los Angeles	USA	
+530	Kolkata	India	
+8506	Kolkata	India	
+2494	Kolkata	India	21
+6498	Kolkata	India	48
+4502	Kolkata	India	67
+6500	Mumbai	India	
+8508	New York City	USA	57
+4504		UK	
+6502		USA	
+8510	Kolkata	India	
+4506		USA	
+6504		India	
+2496	Mumbai	India	12
+8512	Boston	USA	
+4508	Bengaluru	India	32
+532		India	68
+6506	Boston	USA	
+2498	Bengaluru	India	
+534	New York City	USA	85
+4510	Dublin	Ireland	31
+6508	Kolkata	India	22
+8514	Boston	USA	
+536	New York City	USA	71
+4512		India	91
+6510	Los Angeles	USA	
+538	London	UK	61
+6512		Ireland	
+2500	Kolkata	India	32
+4514	Bengaluru	India	
+540	Bengaluru	India	
+6514	Boston	USA	33
+2502	New York City	USA	
+8516	Bengaluru	India	19
+542	Kolkata	India	60
+2504	Los Angeles	USA	27
+4516	Boston	USA	47
+6516	New York City	USA	
+8518	Boston	USA	
+544	London	UK	14
+2506		India	
+4518	Dublin	Ireland	
+8520	Delhi	India	
+546	Bengaluru	India	94
+2508	Dublin	Ireland	
+6518	Boston	USA	
+4520		USA	
+8522	Los Angeles	USA	
+548	London	UK	50
+2510	Dublin	Ireland	51
+6520		Ireland	58
+4522		UK	69
+8524	San Francisco	USA	40
+550	Boston	USA	94
+6522	New York City	USA	
+2512	San Francisco	USA	
+4524		USA	
+2514		USA	22
+552	Delhi	India	
+4526		India	47
+2516	Mumbai	India	34
+6524	San Francisco	USA	
+8526		USA	45
+6526	San Francisco	USA	77
+4528		India	32
+554	Bengaluru	India	
+2518		India	
+4530		USA	
+6528	Kolkata	India	
+8528	Delhi	India	
+556	Boston	USA	
+2520	San Francisco	USA	
+4532	Kolkata	India	
+558	Bengaluru	India	
+8530	Delhi	India	76
+6530	London	UK	69
+560	Bengaluru	India	
+2522	San Francisco	USA	
+8532	Los Angeles	USA	96
+6532	Mumbai	India	27
+4534		Ireland	
+562	Los Angeles	USA	49
+2524		UK	
+8534	Bengaluru	India	57
+6534		India	
+4536	London	UK	59
+564		USA	
+2526	Boston	USA	19
+8536	London	UK	
+6536	Los Angeles	USA	
+4538		India	28
+566	Kolkata	India	5
+2528	London	UK	98
+8538		India	
+6538	San Francisco	USA	
+4540	New York City	USA	
+568		Ireland	
+2530	London	UK	35
+8540	London	UK	
+6540	Mumbai	India	7
+4542	San Francisco	USA	60
+2532		USA	
+570	Kolkata	India	
+8542	Mumbai	India	3
+6542		USA	
+572	Delhi	India	
+8544	Los Angeles	USA	72
+2534	Delhi	India	
+8546	Delhi	India	
+4544	New York City	USA	
+2536	Dublin	Ireland	50
+8548	London	UK	
+4546	Los Angeles	USA	71
+2538	San Francisco	USA	
+8550	Los Angeles	USA	42
+4548	London	UK	
+6544	London	UK	85
+2540		India	55
+574	Mumbai	India	74
+4550	Boston	USA	30
+6546	Delhi	India	20
+576	San Francisco	USA	
+8552	Dublin	Ireland	
+6548		UK	
+578	London	UK	63
+8554	New York City	USA	
+4552	San Francisco	USA	65
+2542	New York City	USA	83
+6550	Mumbai	India	
+580		India	84
+8556	Mumbai	India	
+4554	London	UK	
+2544	Kolkata	India	3
+6552	Dublin	Ireland	79
+8558	Delhi	India	
+6554	Kolkata	India	53
+582	Mumbai	India	
+2546	Los Angeles	USA	
+8560	Mumbai	India	
+6556	Boston	USA	
+584	Kolkata	India	
+4556	New York City	USA	
+8562	Los Angeles	USA	
+2548	Dublin	Ireland	54
+6558		USA	41
+586		India	95
+4558		USA	64
+588	Delhi	India	
+2550	Delhi	India	
+4560	Delhi	India	90
+590	San Francisco	USA	24
+8564		USA	15
+6560	New York City	USA	82
+2552	Delhi	India	
+8566	Los Angeles	USA	
+6562	Bengaluru	India	
+2554	Mumbai	India	12
+8568	Los Angeles	USA	69
+6564	Los Angeles	USA	
+2556	Delhi	India	
+592	Los Angeles	USA	
+2558	Boston	USA	
+4562	Bengaluru	India	
+594	Mumbai	India	
+2560	Dublin	Ireland	72
+4564		Ireland	20
+8570		India	
+4566	Delhi	India	47
+6566	New York City	USA	
+596	San Francisco	USA	70
+8572	Delhi	India	24
+4568	Kolkata	India	
+6568		India	
+2562	Boston	USA	
+598	Mumbai	India	
+8574	London	UK	97
+4570	Mumbai	India	22
+6570	Mumbai	India	
+2564	New York City	USA	
+600	Bengaluru	India	21
+8576	Kolkata	India	38
+4572		India	
+6572	Delhi	India	78
+2566	Boston	USA	
+602	Bengaluru	India	47
+8578	New York City	USA	12
+4574	London	UK	34
+6574	New York City	USA	90
+2568		USA	82
+604	Los Angeles	USA	59
+8580	San Francisco	USA	31
+4576	Dublin	Ireland	
+6576	Boston	USA	
+2570	Dublin	Ireland	
+606	New York City	USA	
+8582		India	2
+4578	Bengaluru	India	12
+6578	Boston	USA	17
+2572	Delhi	India	
+608	London	UK	66
+8584		India	
+4580		India	
+6580	London	UK	
+2574		USA	8
+610	New York City	USA	5
+8586	Kolkata	India	64
+4582	Dublin	Ireland	
+6582		India	
+2576	London	UK	
+612	New York City	USA	54
+8588	Mumbai	India	42
+4584	Dublin	Ireland	
+8590		India	
+2578	Los Angeles	USA	65
+4586	New York City	USA	
+8592	Dublin	Ireland	
+6584		UK	
+4588	London	UK	58
+8594	Los Angeles	USA	
+2580	New York City	USA	58
+4590	Boston	USA	
+614	Kolkata	India	
+6586	Boston	USA	44
+2582	London	UK	13
+4592	San Francisco	USA	
+8596		USA	4
+616	Bengaluru	India	86
+6588	Los Angeles	USA	54
+2584		USA	
+6590	Boston	USA	55
+4594		UK	
+2586	Kolkata	India	49
+618	Dublin	Ireland	55
+8598		USA	3
+4596	Dublin	Ireland	78
+6592	New York City	USA	11
+2588	Bengaluru	India	17
+620	San Francisco	USA	30
+8600	Mumbai	India	
+4598	London	UK	
+6594	Delhi	India	0
+2590	Kolkata	India	
+622		India	59
+8602	San Francisco	USA	
+4600		USA	1
+6596		Ireland	
+2592	Dublin	Ireland	
+624	New York City	USA	
+8604	London	UK	
+4602		USA	
+6598	San Francisco	USA	
+2594	New York City	USA	
+626		India	64
+8606	San Francisco	USA	
+4604	Mumbai	India	43
+6600	Delhi	India	18
+2596	Delhi	India	
+8608	New York City	USA	
+2598		India	
+6602	Los Angeles	USA	
+8610	Mumbai	India	
+2600	Dublin	Ireland	
+4606	Delhi	India	
+8612	Bengaluru	India	41
+2602		USA	
+628	Boston	USA	54
+6604	Delhi	India	
+4608	New York City	USA	97
+2604	Kolkata	India	21
+8614	London	UK	
+630	Delhi	India	10
+6606	Kolkata	India	16
+4610	New York City	USA	
+6608		USA	88
+2606	Delhi	India	70
+8616	New York City	USA	70
+4612	Kolkata	India	29
+632	Mumbai	India	
+6610	Los Angeles	USA	
+2608		India	51
+8618	Boston	USA	
+4614		UK	45
+634	Delhi	India	
+6612		India	
+2610		India	
+8620	Boston	USA	94
+636	New York City	USA	78
+4616	Delhi	India	66
+2612	San Francisco	USA	
+8622	Los Angeles	USA	11
+638		UK	
+4618	London	UK	83
+2614	Delhi	India	
+6614		UK	
+640	San Francisco	USA	89
+4620	New York City	USA	
+8624		Ireland	
+2616	Los Angeles	USA	30
+6616		India	
+4622	Bengaluru	India	
+642		USA	31
+8626	New York City	USA	
+2618	Bengaluru	India	
+6618		India	68
+4624	Los Angeles	USA	44
+644	Los Angeles	USA	6
+8628	Los Angeles	USA	63
+2620	San Francisco	USA	
+6620	Bengaluru	India	
+4626	Dublin	Ireland	
+646		India	87
+8630	London	UK	
+2622	Delhi	India	
+6622	Dublin	Ireland	45
+4628	San Francisco	USA	
+8632		India	
+648	Dublin	Ireland	57
+2624	Delhi	India	44
+6624	London	UK	27
+650	Los Angeles	USA	28
+2626	Delhi	India	4
+652	London	UK	30
+6626	London	UK	71
+2628		USA	
+654	Dublin	Ireland	77
+6628	Delhi	India	27
+8634	Kolkata	India	91
+656		USA	
+4630	Mumbai	India	96
+658	San Francisco	USA	
+4632	Bengaluru	India	
+8636	Dublin	Ireland	
+2630	San Francisco	USA	
+4634	Bengaluru	India	
+8638		UK	1
+2632		Ireland	32
+6630	Los Angeles	USA	94
+4636	London	UK	
+660	Kolkata	India	
+2634	Boston	USA	
+4638	San Francisco	USA	73
+2636	Mumbai	India	20
+8640		India	53
+662	Boston	USA	11
+4640	Dublin	Ireland	46
+6632	Bengaluru	India	46
+2638		USA	
+8642	New York City	USA	
+664	Bengaluru	India	28
+4642	Bengaluru	India	
+6634		UK	
+2640	Mumbai	India	
+8644	Kolkata	India	
+666	Los Angeles	USA	
+4644	Dublin	Ireland	
+6636	Mumbai	India	
+2642	Los Angeles	USA	
+8646	Mumbai	India	
+668		India	
+4646		India	
+6638	Boston	USA	78
+2644	Mumbai	India	
+8648		India	
+670		Ireland	27
+4648	New York City	USA	
+6640		India	48
+2646		India	
+8650	Mumbai	India	
+672	London	UK	85
+4650	Los Angeles	USA	10
+6642		India	
+2648	Kolkata	India	
+8652		India	56
+2650	Los Angeles	USA	
+4652		USA	73
+8654	Mumbai	India	
+2652		USA	
+4654	Delhi	India	27
+8656		USA	
+2654	Boston	USA	
+4656	Delhi	India	23
+6644	Boston	USA	
+674	Bengaluru	India	30
+8658	Boston	USA	76
+6646	San Francisco	USA	3
+676	Delhi	India	42
+2656	San Francisco	USA	
+4658	Boston	USA	
+6648		India	
+678	New York City	USA	51
+2658	Mumbai	India	89
+4660	Boston	USA	64
+680	Bengaluru	India	17
+4662	London	UK	
+8660		India	3
+682	San Francisco	USA	
+4664		USA	
+8662	Delhi	India	70
+2660	Mumbai	India	24
+684	Dublin	Ireland	57
+4666		India	
+8664	Delhi	India	
+6650	Mumbai	India	18
+4668	San Francisco	USA	22
+8666	Boston	USA	
+6652		India	
+2662	Delhi	India	17
+686	Bengaluru	India	
+2664		India	59
+4670	Mumbai	India	
+2666		India	31
+688	Dublin	Ireland	
+4672		USA	7
+2668	Kolkata	India	5
+690		India	74
+8668	Kolkata	India	34
+4674	Dublin	Ireland	42
+6654	Bengaluru	India	
+692	Dublin	Ireland	20
+2670		USA	87
+694	Mumbai	India	
+4676		UK	
+6656	Kolkata	India	50
+2672		USA	19
+8670	London	UK	
+696		USA	3
+4678		Ireland	
+6658	Kolkata	India	
+2674	New York City	USA	46
+8672		USA	
+698	Kolkata	India	
+4680	Los Angeles	USA	
+2676		USA	75
+700	Boston	USA	75
+6660	Dublin	Ireland	
+8674	New York City	USA	
+4682		India	
+2678	San Francisco	USA	49
+702	Mumbai	India	
+6662	Los Angeles	USA	88
+8676	Dublin	Ireland	50
+4684	Kolkata	India	
+2680	Kolkata	India	
+704	Los Angeles	USA	66
+6664		India	40
+8678	Mumbai	India	
+4686	Kolkata	India	37
+2682	Los Angeles	USA	17
+706	Dublin	Ireland	
+6666	Delhi	India	
+708	London	UK	23
+4688	London	UK	
+6668	Boston	USA	
+710	Dublin	Ireland	
+4690		India	93
+6670	Los Angeles	USA	
+8680	Boston	USA	
+2684	Dublin	Ireland	97
+8682	Boston	USA	
+4692	Delhi	India	16
+2686	Kolkata	India	
+8684		USA	
+4694	Delhi	India	14
+2688	Los Angeles	USA	
+712	Boston	USA	60
+6672	San Francisco	USA	34
+8686	Boston	USA	8
+714	San Francisco	USA	
+6674	Delhi	India	
+8688	Bengaluru	India	68
+4696	Mumbai	India	64
+716	London	UK	76
+6676	Mumbai	India	10
+8690		India	
+718	Los Angeles	USA	72
+6678	Mumbai	India	29
+8692		USA	
+720	Kolkata	India	62
+4698	Mumbai	India	
+722	New York City	USA	25
+2690	Boston	USA	94
+8694	Boston	USA	
+4700		USA	71
+6680	Mumbai	India	
+724	Delhi	India	
+2692	Kolkata	India	62
+8696		India	88
+4702	San Francisco	USA	
+6682		USA	
+726	New York City	USA	
+2694	Dublin	Ireland	
+4704		USA	
+8698	Delhi	India	32
+6684		USA	55
+728		Ireland	
+2696		Ireland	42
+4706	Dublin	Ireland	57
+8700		USA	96
+6686	Bengaluru	India	
+730		India	
+2698		India	
+4708	London	UK	
+732	San Francisco	USA	9
+2700	Kolkata	India	9
+4710	New York City	USA	
+8702	Delhi	India	60
+734	San Francisco	USA	
+2702	Kolkata	India	67
+4712	Bengaluru	India	68
+736	Bengaluru	India	
+6688	Bengaluru	India	
+2704	Dublin	Ireland	91
+4714		UK	
+738	London	UK	38
+8704		UK	32
+6690	Kolkata	India	1
+2706	Delhi	India	
+4716	Bengaluru	India	91
+740		USA	
+8706		India	
+6692	Delhi	India	50
+2708		India	54
+4718	Bengaluru	India	
+742	San Francisco	USA	
+8708	Kolkata	India	
+2710	Boston	USA	
+6694	London	UK	
+744	Bengaluru	India	
+8710	Boston	USA	
+2712	Los Angeles	USA	
+4720	Bengaluru	India	79
+6696		USA	
+746	Kolkata	India	
+8712	London	UK	90
+2714	Boston	USA	
+4722	Delhi	India	88
+6698	New York City	USA	20
+748	Los Angeles	USA	39
+8714		USA	46
+2716	Kolkata	India	
+4724	Los Angeles	USA	24
+6700	London	UK	95
+750	New York City	USA	91
+8716	Bengaluru	India	37
+2718	New York City	USA	
+4726	Los Angeles	USA	47
+6702	San Francisco	USA	
+752	Mumbai	India	
+8718	Dublin	Ireland	26
+2720	Mumbai	India	
+4728		India	22
+6704	Kolkata	India	85
+754	Boston	USA	
+8720	San Francisco	USA	
+2722	London	UK	
+4730	Bengaluru	India	
+6706	Delhi	India	38
+756	San Francisco	USA	
+8722	Kolkata	India	91
+2724		Ireland	56
+4732		USA	87
+6708		USA	
+758		India	
+8724	Delhi	India	29
+2726	Boston	USA	1
+4734		India	
+6710		India	29
+760	Kolkata	India	9
+8726	New York City	USA	5
+2728		India	63
+4736		UK	73
+6712	London	UK	
+762	Mumbai	India	
+2730	Boston	USA	18
+4738	Delhi	India	39
+6714	San Francisco	USA	
+764	Kolkata	India	93
+4740		India	
+6716		India	
+2732	Delhi	India	
+8728	Bengaluru	India	
+766	Boston	USA	71
+4742	New York City	USA	36
+6718	Boston	USA	
+2734	New York City	USA	24
+8730	Kolkata	India	
+768	New York City	USA	
+6720	New York City	USA	
+4744	Delhi	India	
+2736	London	UK	
+8732		USA	
+770	Bengaluru	India	
+6722	Bengaluru	India	98
+2738	London	UK	
+4746		USA	
+6724	Dublin	Ireland	41
+2740		USA	
+4748	San Francisco	USA	5
+8734	Boston	USA	83
+6726	Boston	USA	
+772	Mumbai	India	12
+2742	Kolkata	India	88
+4750	Mumbai	India	
+774	Kolkata	India	71
+2744	New York City	USA	12
+4752	Delhi	India	66
+8736	Bengaluru	India	
+776	San Francisco	USA	88
+6728	San Francisco	USA	
+2746	Delhi	India	9
+4754	Boston	USA	86
+8738	San Francisco	USA	88
+778	Los Angeles	USA	
+6730	Los Angeles	USA	17
+2748		India	96
+4756		India	
+780		India	14
+8740	San Francisco	USA	68
+6732	Dublin	Ireland	
+4758	Boston	USA	
+2750	Bengaluru	India	3
+782	Bengaluru	India	53
+8742		USA	16
+6734	Los Angeles	USA	
+4760	Bengaluru	India	
+2752	Mumbai	India	95
+784	Delhi	India	6
+8744	Kolkata	India	
+6736		UK	
+2754	Mumbai	India	
+8746	Mumbai	India	
+6738	Kolkata	India	
+2756	Dublin	Ireland	
+4762	Bengaluru	India	89
+8748	New York City	USA	49
+2758		India	15
+786	Dublin	Ireland	
+8750		USA	51
+2760		Ireland	
+6740	San Francisco	USA	
+4764	San Francisco	USA	88
+6742	Bengaluru	India	
+8752	Delhi	India	44
+4766	Delhi	India	35
+6744	Delhi	India	14
+8754		USA	
+2762		India	83
+4768	San Francisco	USA	23
+6746		USA	
+4770		India	91
+6748	Delhi	India	34
+4772	Bengaluru	India	99
+6750	Dublin	Ireland	
+8756	Los Angeles	USA	
+4774	Kolkata	India	53
+6752		UK	
+788	Los Angeles	USA	54
+8758	London	UK	
+2764	San Francisco	USA	
+4776	San Francisco	USA	28
+6754	Bengaluru	India	
+790	London	UK	
+8760	Mumbai	India	48
+2766	Dublin	Ireland	8
+4778	Bengaluru	India	39
+6756	New York City	USA	27
+792	Kolkata	India	77
+8762	Kolkata	India	20
+2768		USA	32
+4780	Delhi	India	2
+6758	Bengaluru	India	63
+794	Delhi	India	
+2770	Mumbai	India	98
+4782	New York City	USA	71
+796	New York City	USA	60
+6760	San Francisco	USA	
+2772	Kolkata	India	
+798	Boston	USA	72
+8764	Dublin	Ireland	
+4784	Los Angeles	USA	12
+6762	New York City	USA	
+2774	Kolkata	India	
+800	Boston	USA	
+8766	Mumbai	India	61
+4786	Los Angeles	USA	
+6764		USA	
+2776	Delhi	India	
+802	London	UK	
+8768		UK	74
+4788	Bengaluru	India	
+2778	Bengaluru	India	46
+804		USA	90
+8770	Mumbai	India	11
+6766	Delhi	India	
+4790	San Francisco	USA	
+2780	New York City	USA	26
+8772	Los Angeles	USA	
+806	Bengaluru	India	
+4792	Bengaluru	India	
+6768	San Francisco	USA	
+2782	New York City	USA	
+8774	New York City	USA	
+808	Mumbai	India	39
+6770	Kolkata	India	
+8776	New York City	USA	56
+810	London	UK	88
+2784	San Francisco	USA	
+6772	Dublin	Ireland	5
+4794	London	UK	44
+8778	Mumbai	India	2
+812	Los Angeles	USA	
+2786	London	UK	66
+6774		USA	
+4796	Dublin	Ireland	
+8780	London	UK	
+814		India	
+2788	Delhi	India	79
+6776	Dublin	Ireland	58
+4798	New York City	USA	
+8782	Mumbai	India	91
+816	Boston	USA	91
+2790	Los Angeles	USA	
+6778		Ireland	
+4800	Kolkata	India	58
+8784	Boston	USA	2
+818	London	UK	92
+2792		USA	19
+6780	New York City	USA	
+4802	San Francisco	USA	
+8786	Kolkata	India	95
+820	Bengaluru	India	47
+2794	Bengaluru	India	84
+6782	San Francisco	USA	49
+4804		UK	
+8788	London	UK	36
+2796	London	UK	53
+822	Kolkata	India	42
+6784	Los Angeles	USA	1
+4806	London	UK	
+8790	Delhi	India	90
+2798	Bengaluru	India	
+824	Bengaluru	India	70
+6786		USA	
+4808	Bengaluru	India	59
+8792	Boston	USA	
+2800	Kolkata	India	
+826	New York City	USA	
+6788	Dublin	Ireland	
+4810	Kolkata	India	63
+8794		Ireland	
+2802	Kolkata	India	
+828		USA	74
+6790	Dublin	Ireland	
+4812		USA	86
+8796	Bengaluru	India	
+2804	Delhi	India	
+830	Kolkata	India	79
+6792		USA	
+8798	Delhi	India	
+2806	Los Angeles	USA	
+4814		USA	
+832	Mumbai	India	
+2808	New York City	USA	35
+4816	Los Angeles	USA	65
+834	San Francisco	USA	84
+4818	Bengaluru	India	31
+836	New York City	USA	45
+4820	New York City	USA	
+6794	London	UK	
+2810	Kolkata	India	85
+838	New York City	USA	
+4822	London	UK	74
+8800		USA	39
+6796	Mumbai	India	
+2812	New York City	USA	12
+840		India	31
+4824	San Francisco	USA	69
+8802	Boston	USA	
+6798	San Francisco	USA	84
+2814	San Francisco	USA	
+842	Bengaluru	India	
+4826	London	UK	38
+8804	Bengaluru	India	
+6800	New York City	USA	
+844	Kolkata	India	39
+4828		USA	
+2816	London	UK	99
+8806		USA	82
+6802	London	UK	20
+846	London	UK	
+4830	New York City	USA	
+8808	San Francisco	USA	
+6804	Dublin	Ireland	47
+4832	Kolkata	India	
+6806		USA	12
+8810	Bengaluru	India	23
+2818		USA	98
+4834	Los Angeles	USA	
+6808		USA	72
+848	Kolkata	India	
+2820	New York City	USA	21
+4836	Los Angeles	USA	14
+6810		USA	85
+8812	Delhi	India	
+850	Mumbai	India	
+2822	Delhi	India	95
+4838	San Francisco	USA	
+6812		India	39
+8814	Delhi	India	
+852	Kolkata	India	
+2824	Dublin	Ireland	4
+4840	London	UK	70
+6814		India	56
+8816	Kolkata	India	
+854	Kolkata	India	
+2826	Boston	USA	
+6816		Ireland	42
+4842	Delhi	India	
+2828	New York City	USA	
+856	Kolkata	India	
+6818	Los Angeles	USA	77
+4844	Bengaluru	India	2
+2830	Boston	USA	1
+858	Kolkata	India	93
+8818	London	UK	
+2832		India	1
+860	New York City	USA	79
+8820	Delhi	India	
+2834	London	UK	4
+862	Delhi	India	5
+8822	Delhi	India	76
+2836	San Francisco	USA	
+6820	Los Angeles	USA	
+864	Los Angeles	USA	81
+8824	Delhi	India	59
+2838	Mumbai	India	20
+6822		India	
+866	Los Angeles	USA	
+2840	London	UK	
+8826		India	
+6824	Delhi	India	
+8828	Bengaluru	India	
+868		USA	53
+6826	Mumbai	India	76
+8830	Delhi	India	67
+4846	Delhi	India	43
+6828	Mumbai	India	71
+8832	Delhi	India	26
+6830		India	
+2842	Kolkata	India	
+8834	Bengaluru	India	27
+6832	Boston	USA	86
+2844	Dublin	Ireland	
+870		India	
+8836	New York City	USA	15
+6834		USA	93
+4848	London	UK	
+8838	New York City	USA	
+872	Dublin	Ireland	
+4850	San Francisco	USA	
+874	Bengaluru	India	20
+2846	Kolkata	India	
+4852	Bengaluru	India	59
+876	Bengaluru	India	68
+8840	Los Angeles	USA	68
+2848	San Francisco	USA	
+4854	Bengaluru	India	
+6836	Dublin	Ireland	
+878	Mumbai	India	10
+8842	Los Angeles	USA	
+2850	Boston	USA	
+4856	Delhi	India	
+6838	London	UK	
+880	San Francisco	USA	
+8844	London	UK	75
+2852	Bengaluru	India	
+4858	Delhi	India	42
+6840	Boston	USA	
+882	Kolkata	India	
+8846	Mumbai	India	35
+2854	Dublin	Ireland	
+4860	New York City	USA	
+6842	Delhi	India	62
+884	Dublin	Ireland	2
+8848		USA	
+2856	Dublin	Ireland	79
+4862	Los Angeles	USA	
+6844	London	UK	
+886		India	69
+4864	Boston	USA	
+6846	Delhi	India	
+888	Dublin	Ireland	
+6848	Dublin	Ireland	
+4866	Bengaluru	India	
+890	Boston	USA	40
+6850	San Francisco	USA	
+8850	Boston	USA	29
+4868	Kolkata	India	22
+892	Los Angeles	USA	
+2858		USA	
+8852	New York City	USA	
+6852		India	
+4870		USA	94
+2860	Mumbai	India	53
+6854	Bengaluru	India	68
+8854	Dublin	Ireland	93
+894	San Francisco	USA	
+4872	San Francisco	USA	51
+2862		India	40
+6856	New York City	USA	15
+8856	Kolkata	India	
+896	Los Angeles	USA	
+4874		India	
+2864	Delhi	India	
+6858	New York City	USA	76
+8858	Boston	USA	55
+898	San Francisco	USA	
+4876	Delhi	India	29
+2866	New York City	USA	91
+6860	Delhi	India	94
+4878	Delhi	India	
+8860		India	
+2868		UK	83
+6862	Dublin	Ireland	
+4880	Boston	USA	86
+900	London	UK	18
+8862	Delhi	India	
+6864	San Francisco	USA	79
+4882		Ireland	85
+8864	Bengaluru	India	47
+4884	Boston	USA	92
+8866	Mumbai	India	68
+4886		Ireland	
+8868	London	UK	
+2870	Bengaluru	India	95
+4888	Dublin	Ireland	7
+8870	Los Angeles	USA	
+6866		India	43
+902	New York City	USA	87
+2872		USA	
+4890		UK	
+8872	Kolkata	India	54
+6868	Dublin	Ireland	
+904	London	UK	12
+2874	Mumbai	India	
+4892	Dublin	Ireland	50
+8874	Dublin	Ireland	58
+6870	Delhi	India	
+906		USA	55
+2876	London	UK	
+8876	Bengaluru	India	97
+6872		UK	45
+8878	Dublin	Ireland	47
+6874		Ireland	
+8880	Los Angeles	USA	
+6876		Ireland	27
+8882	Kolkata	India	97
+6878	Dublin	Ireland	
+8884		USA	
+908	San Francisco	USA	14
+2878	Mumbai	India	
+8886	New York City	USA	
+910	Mumbai	India	
+2880	Dublin	Ireland	
+4894	London	UK	30
+2882		India	
+8888	Dublin	Ireland	60
+4896	San Francisco	USA	
+912	New York City	USA	33
+6880	Los Angeles	USA	73
+8890	San Francisco	USA	
+2884	Bengaluru	India	3
+4898		India	
+914	Los Angeles	USA	
+6882	New York City	USA	
+2886	Delhi	India	74
+8892	Kolkata	India	77
+4900	San Francisco	USA	
+916	London	UK	54
+6884	Bengaluru	India	13
+2888	Kolkata	India	17
+8894	Kolkata	India	39
+4902	Bengaluru	India	
+918	Delhi	India	
+6886	Kolkata	India	
+8896	Mumbai	India	96
+2890	Kolkata	India	
+4904	Bengaluru	India	
+920	Mumbai	India	
+6888	Kolkata	India	
+8898		India	39
+2892		India	44
+4906		India	45
+922	London	UK	
+6890		India	
+8900	Boston	USA	
+2894	Dublin	Ireland	2
+924	Kolkata	India	44
+8902	Bengaluru	India	27
+4908		UK	32
+2896		Ireland	30
+926	Kolkata	India	
+6892	London	UK	98
+8904	Bengaluru	India	41
+4910	Bengaluru	India	
+2898		Ireland	
+928	Kolkata	India	62
+6894	Kolkata	India	70
+8906	Kolkata	India	
+4912	Kolkata	India	
+2900	San Francisco	USA	
+930	Los Angeles	USA	
+6896	New York City	USA	
+8908	San Francisco	USA	
+4914		USA	54
+2902		USA	21
+932	Los Angeles	USA	33
+6898	New York City	USA	66
+8910	Bengaluru	India	
+4916	Boston	USA	49
+2904		India	40
+6900	Mumbai	India	
+4918	Los Angeles	USA	
+8912	London	UK	94
+934	Bengaluru	India	76
+6902	Kolkata	India	41
+4920	Kolkata	India	84
+8914	Boston	USA	
+2906	Los Angeles	USA	
+936	Kolkata	India	
+6904	Boston	USA	
+4922	Mumbai	India	43
+8916	Los Angeles	USA	
+2908	New York City	USA	
+938	San Francisco	USA	
+6906	London	UK	1
+4924	New York City	USA	
+8918		India	
+2910	London	UK	21
+940	Delhi	India	29
+6908	Bengaluru	India	84
+4926		USA	
+8920		India	
+6910	Bengaluru	India	
+2912	London	UK	
+942	Los Angeles	USA	
+4928	Mumbai	India	
+8922	Kolkata	India	
+6912	Los Angeles	USA	
+2914	New York City	USA	53
+944	Boston	USA	3
+4930	Bengaluru	India	39
+8924	Kolkata	India	
+6914	San Francisco	USA	
+2916	Los Angeles	USA	
+946	Boston	USA	
+4932	Los Angeles	USA	
+8926	San Francisco	USA	
+6916	San Francisco	USA	64
+2918	Boston	USA	98
+948	Dublin	Ireland	
+4934	Boston	USA	
+8928	Dublin	Ireland	85
+6918	Dublin	Ireland	
+2920		India	40
+950	Bengaluru	India	39
+4936	Boston	USA	
+8930	Boston	USA	
+6920	San Francisco	USA	47
+2922	Mumbai	India	
+952	Los Angeles	USA	
+4938		India	
+8932	San Francisco	USA	49
+6922	London	UK	89
+2924	Boston	USA	
+6924	New York City	USA	
+4940	Mumbai	India	
+8934	Bengaluru	India	
+2926	London	UK	
+954	Boston	USA	14
+6926	London	UK	82
+4942	Delhi	India	39
+8936	New York City	USA	
+2928	Kolkata	India	0
+956		USA	76
+6928	Kolkata	India	47
+2930	Kolkata	India	
+4944		USA	6
+8938	Bengaluru	India	
+958	New York City	USA	
+6930	San Francisco	USA	75
+2932	Boston	USA	
+4946	New York City	USA	
+8940	Delhi	India	
+960	London	UK	
+6932	Bengaluru	India	
+2934	Mumbai	India	
+4948	Bengaluru	India	31
+8942	Bengaluru	India	41
+962	San Francisco	USA	77
+6934	London	UK	68
+2936	Boston	USA	51
+4950		India	3
+8944	Mumbai	India	12
+964	San Francisco	USA	
+6936	Delhi	India	
+2938	San Francisco	USA	91
+4952	Boston	USA	
+8946	Bengaluru	India	
+966	Kolkata	India	42
+6938	Los Angeles	USA	9
+2940	Delhi	India	
+4954	Kolkata	India	48
+8948		USA	41
+968	London	UK	92
+6940	Mumbai	India	35
+970	Los Angeles	USA	6
+4956		USA	
+8950	London	UK	50
+2942		USA	30
+6942		Ireland	77
+972	Boston	USA	54
+4958	Delhi	India	
+8952	Bengaluru	India	71
+2944	London	UK	
+6944		India	92
+974	San Francisco	USA	
+4960		India	58
+8954		USA	79
+6946		USA	
+2946		Ireland	17
+4962	Los Angeles	USA	2
+976	London	UK	
+8956	Delhi	India	
+6948	Kolkata	India	
+2948		India	53
+4964		India	
+978	Kolkata	India	53
+8958	Mumbai	India	
+6950	New York City	USA	42
+2950	Bengaluru	India	
+4966	Kolkata	India	38
+980		USA	52
+8960	Kolkata	India	
+6952	Bengaluru	India	46
+2952		USA	
+4968	Dublin	Ireland	9
+982	Los Angeles	USA	61
+8962		India	52
+6954		USA	
+2954	Boston	USA	33
+4970	Bengaluru	India	
+984	Kolkata	India	
+8964		India	
+6956	San Francisco	USA	
+2956	London	UK	
+4972	San Francisco	USA	75
+986		USA	14
+8966	Bengaluru	India	
+6958	Delhi	India	39
+2958	Mumbai	India	
+4974	Dublin	Ireland	
+988	London	UK	37
+8968	London	UK	
+6960	Dublin	Ireland	26
+2960	Los Angeles	USA	
+990	Bengaluru	India	
+8970	Bengaluru	India	63
+4976	Kolkata	India	37
+6962	Los Angeles	USA	
+2962	Mumbai	India	88
+992	Delhi	India	
+8972	Delhi	India	
+4978	Bengaluru	India	29
+6964	Bengaluru	India	58
+2964		USA	29
+994	Dublin	Ireland	
+8974	London	UK	
+996	Kolkata	India	
+4980	London	UK	11
+6966	Boston	USA	25
+8976	Bengaluru	India	32
+2966		USA	
+998	New York City	USA	
+4982	Mumbai	India	
+6968	Delhi	India	
+8978	London	UK	
+2968	New York City	USA	17
+1000	Boston	USA	85
+4984	London	UK	
+6970	Mumbai	India	29
+8980	Delhi	India	
+2970	Boston	USA	97
+1002	New York City	USA	
+4986	Kolkata	India	
+6972		USA	
+8982	San Francisco	USA	25
+2972	Dublin	Ireland	
+1004		USA	29
+4988	London	UK	39
+6974	Los Angeles	USA	
+8984	Delhi	India	
+2974	Dublin	Ireland	6
+1006	Boston	USA	
+4990	London	UK	
+1008	Bengaluru	India	57
+6976		India	
+4992		Ireland	37
+1010	Kolkata	India	
+2976		USA	
+4994	New York City	USA	79
+1012	San Francisco	USA	
+2978	Mumbai	India	77
+6978	London	UK	56
+4996	Mumbai	India	
+8986		USA	41
+1014	London	UK	
+2980	Kolkata	India	
+6980	San Francisco	USA	27
+8988	New York City	USA	91
+4998	Mumbai	India	
+6982	Kolkata	India	
+1016	Mumbai	India	
+8990		India	52
+2982	Dublin	Ireland	2
+6984		India	
+5000	Delhi	India	68
+8992	Kolkata	India	
+1018		USA	
+2984		India	
+6986		Ireland	42
+5002	Boston	USA	75
+8994	Kolkata	India	37
+1020	New York City	USA	71
+2986	Kolkata	India	68
+6988	Kolkata	India	58
+5004	Mumbai	India	
+8996	Kolkata	India	28
+1022	Mumbai	India	82
+2988	London	UK	
+6990	Kolkata	India	
+5006	Dublin	Ireland	69
+8998	Bengaluru	India	
+2990	London	UK	80
+1024	London	UK	
+5008	Bengaluru	India	88
+6992	London	UK	55
+2992	Bengaluru	India	
+9000	Mumbai	India	47
+1026	Los Angeles	USA	
+5010	Mumbai	India	
+6994	San Francisco	USA	
+2994		USA	
+9002		Ireland	
+1028	New York City	USA	39
+5012	San Francisco	USA	
+6996	Los Angeles	USA	
+2996	London	UK	
+9004	Mumbai	India	97
+1030	Los Angeles	USA	34
+5014	Kolkata	India	51
+9006	London	UK	92
+2998	Mumbai	India	
+1032	New York City	USA	
+6998	Kolkata	India	15
+9008	Boston	USA	
+5016		USA	
+9010	Los Angeles	USA	62
+1034	Bengaluru	India	
+7000	Mumbai	India	49
+5018	Boston	USA	68
+9012	Dublin	Ireland	
+3000	Mumbai	India	48
+1036	Dublin	Ireland	
+7002	San Francisco	USA	
+5020	Dublin	Ireland	31
+9014	London	UK	
+3002	Boston	USA	20
+1038	New York City	USA	
+7004	San Francisco	USA	13
+5022	San Francisco	USA	74
+9016	New York City	USA	94
+3004	Bengaluru	India	
+1040	Kolkata	India	
+7006	New York City	USA	70
+5024	San Francisco	USA	45
+1042	Los Angeles	USA	17
+9018	Mumbai	India	45
+3006	Kolkata	India	47
+5026	San Francisco	USA	61
+7008		India	
+1044	Boston	USA	28
+9020	Kolkata	India	
+3008	Delhi	India	47
+5028	Mumbai	India	
+7010	Mumbai	India	
+1046	London	UK	
+9022	Kolkata	India	
+3010	London	UK	83
+5030		Ireland	69
+7012	New York City	USA	
+5032	San Francisco	USA	
+9024		India	
+7014	Delhi	India	
+1048	San Francisco	USA	
+5034	Boston	USA	12
+9026	Boston	USA	95
+3012	Los Angeles	USA	
+7016	New York City	USA	36
+5036	London	UK	
+1050	Delhi	India	3
+3014	Los Angeles	USA	
+7018	Delhi	India	
+5038	New York City	USA	
+9028	Kolkata	India	91
+1052	London	UK	
+3016	New York City	USA	
+7020	London	UK	45
+5040	Bengaluru	India	74
+9030		USA	82
+1054		USA	50
+3018	London	UK	
+7022	Los Angeles	USA	11
+3020	Boston	USA	54
+9032	Dublin	Ireland	17
+7024	Boston	USA	89
+3022	Delhi	India	99
+1056	New York City	USA	
+9034		Ireland	
+7026	Bengaluru	India	
+5042	Dublin	Ireland	85
+3024	Delhi	India	35
+1058	Mumbai	India	
+9036	Los Angeles	USA	57
+7028	San Francisco	USA	
+9038	Kolkata	India	77
+3026	New York City	USA	44
+1060	Mumbai	India	75
+3028		USA	
+7030		India	
+3030		Ireland	73
+7032	London	UK	91
+3032	Dublin	Ireland	
+7034	Boston	USA	89
+3034		India	
+7036	Mumbai	India	
+3036	Los Angeles	USA	
+7038	Dublin	Ireland	69
+1062		India	39
+7040	New York City	USA	94
+1064	Dublin	Ireland	29
+7042		USA	
+9040	San Francisco	USA	
+1066	Boston	USA	
+5044	Bengaluru	India	25
+7044		USA	
+3038	Los Angeles	USA	
+9042	Delhi	India	
+1068	New York City	USA	87
+5046	San Francisco	USA	
+7046	Kolkata	India	91
+9044	San Francisco	USA	
+3040	Kolkata	India	
+1070	Los Angeles	USA	
+5048	San Francisco	USA	10
+7048	Los Angeles	USA	
+9046	Kolkata	India	
+3042	Delhi	India	6
+1072	Los Angeles	USA	77
+9048		USA	
+7050	Kolkata	India	89
+3044		USA	
+5050		USA	
+1074	New York City	USA	
+9050	New York City	USA	
+7052	Delhi	India	10
+3046	Bengaluru	India	89
+5052		Ireland	62
+1076	New York City	USA	
+9052	San Francisco	USA	
+7054	Dublin	Ireland	48
+3048		India	
+9054	Mumbai	India	77
+1078	Mumbai	India	
+7056	New York City	USA	41
+3050	Bengaluru	India	
+9056	Los Angeles	USA	4
+5054	San Francisco	USA	4
+1080	San Francisco	USA	
+7058	Los Angeles	USA	69
+3052	Delhi	India	
+9058	Dublin	Ireland	67
+5056	Kolkata	India	
+1082	Mumbai	India	
+7060	Los Angeles	USA	
+3054		USA	
+9060	Boston	USA	
+5058	Los Angeles	USA	
+1084	Dublin	Ireland	
+7062	Dublin	Ireland	35
+3056	Mumbai	India	
+9062	Delhi	India	55
+7064		India	
+1086		India	27
+9064	Mumbai	India	
+3058	New York City	USA	
+7066		USA	
+1088		UK	42
+5060	New York City	USA	
+9066	London	UK	
+3060		USA	56
+7068	San Francisco	USA	1
+1090	New York City	USA	
+5062		India	89
+9068	Los Angeles	USA	0
+7070	New York City	USA	59
+1092	Mumbai	India	
+5064	San Francisco	USA	13
+9070	Los Angeles	USA	55
+3062		Ireland	3
+7072	San Francisco	USA	85
+5066	Bengaluru	India	6
+1094		India	18
+9072		India	
+3064	San Francisco	USA	
+7074		USA	2
+5068	Boston	USA	
+1096	New York City	USA	20
+9074	San Francisco	USA	
+3066	San Francisco	USA	83
+7076		USA	
+5070	Mumbai	India	26
+7078	Boston	USA	54
+9076	Los Angeles	USA	
+3068	London	UK	
+5072	Kolkata	India	68
+1098	London	UK	
+7080	Los Angeles	USA	72
+9078	Delhi	India	84
+3070		India	81
+5074	Kolkata	India	16
+1100	New York City	USA	
+7082	London	UK	9
+9080	Boston	USA	56
+3072	London	UK	63
+5076		India	50
+1102	Dublin	Ireland	
+7084	New York City	USA	16
+9082		USA	84
+3074		India	57
+5078	Boston	USA	
+1104		India	39
+7086	San Francisco	USA	75
+9084		USA	
+3076	Boston	USA	
+9086	New York City	USA	73
+5080		India	25
+1106		UK	88
+3078	Bengaluru	India	
+7088		USA	33
+5082	Bengaluru	India	83
+9088	Delhi	India	
+1108	Los Angeles	USA	33
+3080	Los Angeles	USA	62
+7090	San Francisco	USA	
+5084	Boston	USA	47
+9090	Delhi	India	
+1110	Boston	USA	34
+3082	Delhi	India	24
+7092		USA	43
+5086	Dublin	Ireland	91
+9092	Delhi	India	
+3084	Dublin	Ireland	69
+5088		USA	
+1112	Kolkata	India	
+7094	London	UK	
+9094	Dublin	Ireland	
+5090	Dublin	Ireland	17
+1114	Dublin	Ireland	
+7096	London	UK	66
+9096	San Francisco	USA	
+3086		USA	64
+5092	Kolkata	India	
+1116		USA	62
+7098	Bengaluru	India	11
+9098		India	
+3088	New York City	USA	
+5094	New York City	USA	83
+1118	Bengaluru	India	
+7100	New York City	USA	
+3090		USA	
+5096	Bengaluru	India	
+1120	Delhi	India	90
+7102	New York City	USA	
+3092	San Francisco	USA	28
+5098	London	UK	
+9100	New York City	USA	79
+7104	Bengaluru	India	
+1122	Dublin	Ireland	
+3094	Mumbai	India	
+5100		USA	10
+9102	Boston	USA	
+7106	San Francisco	USA	
+1124	London	UK	
+3096		USA	45
+5102	Delhi	India	
+9104		Ireland	65
+7108	Bengaluru	India	67
+1126		India	69
+3098	London	UK	9
+5104	Los Angeles	USA	57
+9106	Dublin	Ireland	
+7110	Mumbai	India	25
+1128		India	60
+3100	London	UK	39
+5106	Bengaluru	India	
+9108	Bengaluru	India	20
+1130	Bengaluru	India	
+9110	Los Angeles	USA	
+3102	Delhi	India	
+1132	Bengaluru	India	81
+9112	Boston	USA	
+3104	New York City	USA	
+1134	Dublin	Ireland	87
+9114	Boston	USA	34
+3106	Dublin	Ireland	
+7112	Bengaluru	India	10
+5108	Bengaluru	India	93
+9116	Boston	USA	89
+3108	Los Angeles	USA	79
+7114	San Francisco	USA	
+1136	Los Angeles	USA	
+5110	Dublin	Ireland	1
+9118	San Francisco	USA	69
+3110	San Francisco	USA	36
+7116	New York City	USA	
+9120	Mumbai	India	86
+3112	Kolkata	India	
+5112	Dublin	Ireland	87
+7118	Bengaluru	India	44
+9122	Delhi	India	
+3114	Dublin	Ireland	3
+5114	Mumbai	India	17
+7120		India	92
+9124	Bengaluru	India	67
+1138		USA	87
+3116	Mumbai	India	20
+5116		India	
+7122	London	UK	
+9126		USA	
+1140	San Francisco	USA	89
+3118	New York City	USA	
+5118	New York City	USA	92
+7124		USA	
+9128	New York City	USA	
+1142	Delhi	India	11
+3120	London	UK	77
+5120		UK	
+7126	Bengaluru	India	13
+9130	Boston	USA	
+5122		UK	
+9132	Delhi	India	
+7128	Kolkata	India	24
+1144	Bengaluru	India	
+5124	Mumbai	India	
+3122	Dublin	Ireland	17
+9134		USA	
+7130	Los Angeles	USA	
+5126	London	UK	9
+1146	Mumbai	India	55
+9136	Boston	USA	
+7132	Dublin	Ireland	32
+3124	San Francisco	USA	
+5128		India	
+7134	London	UK	58
+3126	San Francisco	USA	
+1148	New York City	USA	
+5130	Bengaluru	India	
+7136	Los Angeles	USA	
+3128	Delhi	India	
+9138	San Francisco	USA	
+1150		USA	
+5132	Boston	USA	26
+7138	Dublin	Ireland	29
+3130	Delhi	India	83
+9140	New York City	USA	
+1152	San Francisco	USA	79
+5134	San Francisco	USA	
+7140		USA	72
+3132	Dublin	Ireland	
+1154	San Francisco	USA	
+9142	Dublin	Ireland	
+5136		India	
+7142	New York City	USA	
+3134	Kolkata	India	54
+1156	London	UK	
+9144	Los Angeles	USA	86
+5138		USA	54
+7144	Kolkata	India	
+3136	Bengaluru	India	
+1158	Delhi	India	
+9146	London	UK	
+5140	San Francisco	USA	87
+7146	Dublin	Ireland	
+3138	London	UK	82
+5142	New York City	USA	91
+1160	Los Angeles	USA	54
+3140	Delhi	India	35
+9148		USA	
+7148		USA	
+5144	Mumbai	India	
+3142	Los Angeles	USA	98
+1162	Dublin	Ireland	
+9150	Kolkata	India	11
+7150		USA	
+5146	Bengaluru	India	22
+3144	Kolkata	India	34
+1164	Mumbai	India	
+9152	Dublin	Ireland	
+7152	Bengaluru	India	8
+3146		India	6
+7154	Bengaluru	India	
+5148		USA	13
+7156	Bengaluru	India	18
+9154	Delhi	India	
+1166	Delhi	India	
+7158	Delhi	India	98
+5150	Los Angeles	USA	
+9156	Mumbai	India	
+3148	Bengaluru	India	19
+7160		India	
+1168	New York City	USA	2
+5152	Boston	USA	
+3150	Los Angeles	USA	
+9158		India	
+7162		USA	
+1170	Kolkata	India	
+5154	Los Angeles	USA	
+3152	Mumbai	India	13
+9160	Mumbai	India	97
+7164	Mumbai	India	78
+1172	San Francisco	USA	
+5156	London	UK	
+3154	Dublin	Ireland	
+1174		India	29
+9162		USA	
+3156	Bengaluru	India	12
+1176	Los Angeles	USA	69
+7166	Kolkata	India	
+9164	Kolkata	India	
+3158	Dublin	Ireland	
+1178	Dublin	Ireland	20
+5158	San Francisco	USA	
+7168	Dublin	Ireland	
+9166	Dublin	Ireland	28
+3160	Boston	USA	
+1180	Bengaluru	India	60
+5160	Kolkata	India	
+7170	Dublin	Ireland	
+9168	Delhi	India	18
+3162		India	
+1182	Los Angeles	USA	
+5162		UK	50
+7172	Mumbai	India	
+9170	New York City	USA	1
+3164	New York City	USA	
+1184	Dublin	Ireland	64
+5164	Boston	USA	
+7174		UK	72
+9172	Dublin	Ireland	55
+3166	New York City	USA	
+1186	New York City	USA	
+5166	New York City	USA	20
+7176		USA	30
+9174	Bengaluru	India	
+3168	Mumbai	India	24
+1188		UK	
+5168		India	99
+1190	San Francisco	USA	
+7178	London	UK	3
+3170	Bengaluru	India	69
+1192	San Francisco	USA	46
+7180	Bengaluru	India	9
+9176	Mumbai	India	41
+3172	Bengaluru	India	
+7182	Dublin	Ireland	
+9178	New York City	USA	
+5170	Delhi	India	
+3174	Mumbai	India	
+5172		USA	
+3176	Kolkata	India	
+9180	Bengaluru	India	
+5174	Kolkata	India	97
+1194	Los Angeles	USA	
+9182		USA	
+5176	New York City	USA	
+1196		USA	38
+9184	Los Angeles	USA	
+5178	New York City	USA	94
+7184	Delhi	India	12
+5180	Kolkata	India	
+3178	San Francisco	USA	
+1198	Los Angeles	USA	11
+9186		Ireland	
+7186	San Francisco	USA	43
+1200	Los Angeles	USA	
+5182	London	UK	
+7188	Dublin	Ireland	
+1202	San Francisco	USA	
+9188		India	
+3180	London	UK	24
+5184		USA	
+7190		India	80
+1204	Mumbai	India	28
+9190		India	
+3182	Bengaluru	India	
+5186	Los Angeles	USA	
+7192	London	UK	
+1206	Kolkata	India	74
+9192	Bengaluru	India	23
+3184		India	
+1208	Delhi	India	8
+9194	San Francisco	USA	53
+5188	London	UK	42
+7194		USA	46
+3186		USA	
+1210	Dublin	Ireland	
+9196		USA	
+5190		Ireland	0
+7196	New York City	USA	42
+3188	Delhi	India	
+1212	London	UK	88
+9198	Boston	USA	53
+5192	Boston	USA	1
+7198	Kolkata	India	
+3190	Dublin	Ireland	
+1214	Kolkata	India	
+9200	Delhi	India	
+5194	Kolkata	India	24
+3192		USA	
+7200	London	UK	42
+9202	New York City	USA	64
+5196	Delhi	India	
+1216	Kolkata	India	14
+3194		India	
+7202	London	UK	
+9204	Boston	USA	29
+5198	Bengaluru	India	8
+1218	Delhi	India	
+3196	Boston	USA	
+7204	Boston	USA	84
+3198	New York City	USA	
+5200	New York City	USA	19
+7206	Bengaluru	India	
+3200	Los Angeles	USA	70
+5202	Los Angeles	USA	28
+9206		USA	47
+1220	Kolkata	India	98
+3202	New York City	USA	84
+5204	New York City	USA	
+7208	Dublin	Ireland	
+1222	Los Angeles	USA	14
+3204		USA	3
+7210	London	UK	90
+5206	Bengaluru	India	
+1224	Mumbai	India	
+3206	New York City	USA	13
+7212	Los Angeles	USA	
+9208	Dublin	Ireland	
+5208	San Francisco	USA	
+1226	Los Angeles	USA	57
+3208		USA	
+7214	Kolkata	India	
+9210	New York City	USA	69
+5210	Kolkata	India	18
+1228	Mumbai	India	
+3210		India	27
+7216	Mumbai	India	41
+9212	Delhi	India	95
+5212	Los Angeles	USA	
+1230	London	UK	9
+3212	Kolkata	India	
+7218	Boston	USA	
+9214	San Francisco	USA	20
+5214	San Francisco	USA	94
+1232	London	UK	92
+3214	Boston	USA	
+7220	London	UK	
+9216	Kolkata	India	
+5216	Dublin	Ireland	58
+1234	Dublin	Ireland	
+3216	San Francisco	USA	20
+7222		USA	
+9218	Dublin	Ireland	45
+1236	Kolkata	India	44
+5218	Delhi	India	47
+3218	San Francisco	USA	29
+7224	Mumbai	India	46
+9220	New York City	USA	76
+1238		India	14
+5220		UK	
+3220	San Francisco	USA	
+7226		India	
+9222	Bengaluru	India	
+1240	New York City	USA	
+5222	San Francisco	USA	49
+3222	London	UK	
+7228	New York City	USA	43
+9224		USA	
+5224	Delhi	India	
+7230	Kolkata	India	
+3224	Kolkata	India	
+5226		India	56
+7232	London	UK	85
+9226	Mumbai	India	18
+3226		USA	
+1242	New York City	USA	
+5228	Dublin	Ireland	43
+7234	London	UK	
+9228	London	UK	
+3228	London	UK	
+1244	Los Angeles	USA	
+5230	Dublin	Ireland	
+7236	Dublin	Ireland	
+9230		USA	
+3230	London	UK	
+1246	Los Angeles	USA	
+5232	London	UK	30
+7238		USA	48
+9232	Kolkata	India	43
+3232	Boston	USA	91
+1248	Mumbai	India	18
+9234	London	UK	48
+5234		USA	4
+3234	Dublin	Ireland	
+7240		USA	58
+5236	Bengaluru	India	15
+9236	Delhi	India	8
+5238		India	
+9238	New York City	USA	50
+7242	Boston	USA	48
+5240	London	UK	
+1250		USA	40
+9240	Dublin	Ireland	34
+3236	Delhi	India	
+1252	London	UK	99
+7244	Delhi	India	43
+1254		USA	
+9242	Delhi	India	78
+7246	Dublin	Ireland	29
+1256	Dublin	Ireland	5
+9244	Boston	USA	
+5242		Ireland	
+7248	Boston	USA	70
+1258	Kolkata	India	
+3238	Kolkata	India	
+9246		India	
+5244	Delhi	India	
+7250	Boston	USA	
+1260		USA	20
+3240		India	
+9248	New York City	USA	
+5246	New York City	USA	
+7252	New York City	USA	
+1262	Kolkata	India	75
+3242		UK	44
+9250		Ireland	
+5248		Ireland	
+7254		USA	91
+1264	Mumbai	India	
+3244	San Francisco	USA	46
+9252	New York City	USA	86
+5250	Kolkata	India	80
+7256		India	
+1266		USA	40
+3246	Mumbai	India	
+9254		Ireland	
+5252	London	UK	
+7258		India	
+1268	Bengaluru	India	23
+7260	Boston	USA	
+3248	San Francisco	USA	
+9256		USA	
+5254	San Francisco	USA	95
+1270	New York City	USA	42
+7262	Mumbai	India	
+3250	New York City	USA	19
+9258	San Francisco	USA	51
+5256	Delhi	India	
+1272	New York City	USA	
+7264	Kolkata	India	
+9260	San Francisco	USA	29
+5258	Kolkata	India	
+3252	Bengaluru	India	33
+7266	Boston	USA	
+1274	Dublin	Ireland	7
+9262	Bengaluru	India	30
+5260	Bengaluru	India	
+3254	Delhi	India	38
+7268	Kolkata	India	74
+1276	Delhi	India	
+9264	Delhi	India	
+5262	Delhi	India	55
+3256	New York City	USA	58
+7270	Mumbai	India	56
+1278		India	
+9266		USA	
+5264	Delhi	India	
+3258	New York City	USA	80
+7272	Boston	USA	72
+1280		India	
+9268		India	
+5266	Kolkata	India	10
+3260	Bengaluru	India	
+7274	Los Angeles	USA	
+1282	Bengaluru	India	
+9270	Mumbai	India	
+5268	Bengaluru	India	
+3262	San Francisco	USA	
+7276	Boston	USA	
+1284	New York City	USA	
+9272	Mumbai	India	67
+5270	Mumbai	India	6
+3264	Bengaluru	India	
+7278	New York City	USA	
+1286	Delhi	India	94
+9274	Boston	USA	
+5272	Bengaluru	India	
+3266	Kolkata	India	61
+7280	Mumbai	India	
+9276		India	
+5274	Bengaluru	India	
+1288	Dublin	Ireland	
+3268		India	37
+7282	Boston	USA	26
+9278	London	UK	
+5276		India	
+1290		India	5
+3270		India	
+7284	London	UK	59
+5278	London	UK	
+9280	Mumbai	India	66
+3272	Mumbai	India	46
+1292	Dublin	Ireland	
+7286	Delhi	India	
+5280	Los Angeles	USA	
+3274	Boston	USA	
+9282	San Francisco	USA	77
+1294	Boston	USA	
+7288	Los Angeles	USA	27
+5282	London	UK	87
+3276	New York City	USA	
+9284	Dublin	Ireland	40
+1296		India	
+7290	Dublin	Ireland	71
+5284		USA	
+3278	Boston	USA	21
+9286	San Francisco	USA	4
+1298	Bengaluru	India	88
+7292	Bengaluru	India	
+1300		India	82
+5286	Mumbai	India	
+7294		Ireland	
+1302	San Francisco	USA	
+3280	London	UK	
+5288	Los Angeles	USA	
+7296	San Francisco	USA	71
+1304	Mumbai	India	1
+9288	Delhi	India	
+3282		India	
+5290	Delhi	India	
+7298		India	10
+1306		USA	23
+5292	Kolkata	India	59
+3284	London	UK	63
+9290		USA	
+5294	Bengaluru	India	34
+3286	New York City	USA	51
+9292	Kolkata	India	13
+5296	London	UK	10
+3288		USA	
+9294	Boston	USA	
+7300	Kolkata	India	88
+1308	New York City	USA	71
+5298		India	29
+3290		India	87
+9296	New York City	USA	
+7302	Delhi	India	
+1310	Los Angeles	USA	54
+5300	London	UK	10
+3292	Boston	USA	
+9298	London	UK	86
+7304	Kolkata	India	
+1312		Ireland	
+5302	Bengaluru	India	25
+3294	Bengaluru	India	
+9300	Delhi	India	
+7306	Dublin	Ireland	
+1314	Kolkata	India	
+5304	New York City	USA	
+3296		India	16
+9302	Delhi	India	
+5306	Mumbai	India	
+3298	Mumbai	India	51
+7308	Boston	USA	
+9304	Boston	USA	89
+5308	London	UK	67
+3300	Kolkata	India	93
+1316	Kolkata	India	
+7310	Delhi	India	
+9306	San Francisco	USA	
+5310	San Francisco	USA	85
+3302	London	UK	10
+1318	London	UK	
+7312	Dublin	Ireland	
+9308	Delhi	India	60
+5312	London	UK	
+3304		India	
+1320	London	UK	94
+7314	Boston	USA	
+9310	Kolkata	India	6
+5314	London	UK	61
+3306	New York City	USA	
+1322	Bengaluru	India	71
+7316	Boston	USA	94
+9312	London	UK	9
+5316	Delhi	India	
+3308	Boston	USA	23
+1324	Bengaluru	India	
+7318	Dublin	Ireland	
+9314	London	UK	28
+5318	Delhi	India	
+3310	Bengaluru	India	40
+1326	Mumbai	India	82
+7320	Bengaluru	India	16
+9316	Boston	USA	49
+5320	Delhi	India	
+3312	Kolkata	India	
+1328	Dublin	Ireland	
+7322	Los Angeles	USA	15
+9318	Boston	USA	
+5322	Boston	USA	
+3314	Kolkata	India	10
+1330	Kolkata	India	87
+7324	New York City	USA	
+9320	Mumbai	India	12
+5324	London	UK	10
+3316	San Francisco	USA	
+1332	Los Angeles	USA	
+7326	Kolkata	India	73
+9322	London	UK	
+5326		UK	
+3318	San Francisco	USA	
+1334	Mumbai	India	0
+7328	Boston	USA	25
+9324	Los Angeles	USA	
+5328	San Francisco	USA	91
+3320		Ireland	
+1336	Kolkata	India	
+7330	Kolkata	India	
+9326	New York City	USA	
+5330		USA	7
+3322		India	
+1338	Dublin	Ireland	
+7332	Mumbai	India	40
+9328	Dublin	Ireland	
+1340	Bengaluru	India	
+5332	Dublin	Ireland	
+3324	Delhi	India	
+7334	New York City	USA	
+9330	New York City	USA	
+1342	Mumbai	India	
+5334	Kolkata	India	
+3326		India	44
+7336		India	
+9332	Kolkata	India	
+1344	Los Angeles	USA	
+5336	Mumbai	India	
+3328	Boston	USA	60
+7338	Los Angeles	USA	45
+9334		USA	61
+5338	New York City	USA	
+1346	Los Angeles	USA	18
+3330		USA	63
+9336	Mumbai	India	10
+5340		USA	2
+7340	Dublin	Ireland	
+1348	London	UK	
+3332	Boston	USA	43
+9338	Los Angeles	USA	
+5342		India	39
+7342	San Francisco	USA	
+1350	Los Angeles	USA	
+3334	San Francisco	USA	
+9340	Delhi	India	
+5344		USA	58
+7344	San Francisco	USA	
+1352		USA	93
+3336	San Francisco	USA	28
+9342	Dublin	Ireland	94
+5346	Bengaluru	India	
+7346	Los Angeles	USA	63
+1354	Los Angeles	USA	
+3338	Kolkata	India	
+9344	London	UK	
+5348	Dublin	Ireland	23
+7348	Los Angeles	USA	
+1356		USA	86
+3340	Bengaluru	India	
+7350	San Francisco	USA	64
+1358		USA	9
+9346	Delhi	India	
+3342	Delhi	India	
+7352	London	UK	
+1360		USA	
+9348	Dublin	Ireland	9
+5350	Boston	USA	
+3344	Boston	USA	
+7354	Delhi	India	54
+1362	London	UK	
+9350	Mumbai	India	1
+5352	Delhi	India	
+3346	San Francisco	USA	77
+7356	Los Angeles	USA	1
+1364	Dublin	Ireland	66
+9352	Kolkata	India	
+3348	Los Angeles	USA	68
+5354	Kolkata	India	
+7358	Dublin	Ireland	26
+1366	Kolkata	India	72
+9354	Mumbai	India	
+3350	New York City	USA	4
+5356	Bengaluru	India	
+7360	Mumbai	India	93
+1368	Delhi	India	
+9356	New York City	USA	
+3352		Ireland	6
+5358	New York City	USA	2
+7362	Boston	USA	70
+1370		India	83
+9358	Los Angeles	USA	
+3354	New York City	USA	
+5360	Bengaluru	India	84
+7364	Mumbai	India	
+1372	New York City	USA	
+9360	Kolkata	India	98
+3356	New York City	USA	42
+5362	Kolkata	India	8
+1374	San Francisco	USA	
+7366		USA	
+9362	Boston	USA	99
+5364		USA	56
+1376	Dublin	Ireland	35
+7368	Los Angeles	USA	
+9364	Delhi	India	
+3358	Boston	USA	70
+5366	Boston	USA	12
+1378	Delhi	India	36
+7370		India	
+9366		India	
+3360		Ireland	
+5368		India	61
+1380	Delhi	India	13
+7372	Boston	USA	
+9368	Dublin	Ireland	56
+3362	Delhi	India	45
+5370	Kolkata	India	72
+1382	Kolkata	India	
+5372	Bengaluru	India	13
+7374	Los Angeles	USA	12
+9370	San Francisco	USA	
+1384		USA	
+3364	San Francisco	USA	
+5374	New York City	USA	79
+7376	Mumbai	India	
+9372	San Francisco	USA	
+1386	Boston	USA	12
+3366		USA	
+5376	New York City	USA	
+7378	Los Angeles	USA	
+9374	London	UK	
+1388	Boston	USA	
+3368	Kolkata	India	57
+5378	San Francisco	USA	7
+7380	San Francisco	USA	
+9376		India	
+1390	Kolkata	India	91
+3370	San Francisco	USA	
+5380	Los Angeles	USA	5
+7382	Kolkata	India	
+9378	Boston	USA	
+1392	Kolkata	India	30
+5382	San Francisco	USA	
+3372	Kolkata	India	
+7384	Boston	USA	96
+9380	Bengaluru	India	
+1394	New York City	USA	45
+5384	Dublin	Ireland	
+3374	Dublin	Ireland	
+7386	Dublin	Ireland	
+9382	Boston	USA	
+7388	Los Angeles	USA	
+5386	Delhi	India	
+9384		Ireland	72
+3376	New York City	USA	
+7390	San Francisco	USA	87
+5388	Delhi	India	
+1396		USA	
+9386		India	86
+3378	Dublin	Ireland	
+7392	Bengaluru	India	
+5390	Dublin	Ireland	89
+1398	San Francisco	USA	25
+3380	Dublin	Ireland	
+9388		India	
+5392	San Francisco	USA	
+7394	Mumbai	India	7
+1400	Los Angeles	USA	
+3382	Los Angeles	USA	25
+9390		USA	74
+5394	Bengaluru	India	47
+9392	London	UK	
+1402	Los Angeles	USA	62
+3384	Delhi	India	25
+5396		USA	
+7396	San Francisco	USA	93
+9394		India	
+1404	Dublin	Ireland	
+3386		India	
+5398	Delhi	India	57
+7398	Mumbai	India	26
+9396		India	
+5400	Mumbai	India	4
+7400	London	UK	37
+9398	Dublin	Ireland	
+1406	Boston	USA	
+5402	London	UK	
+3388	New York City	USA	
+7402		USA	
+9400		UK	
+1408	London	UK	61
+5404	San Francisco	USA	
+3390		Ireland	
+7404		USA	
+9402	Dublin	Ireland	
+1410		India	
+5406	London	UK	45
+3392	Delhi	India	16
+7406	Mumbai	India	99
+9404	Bengaluru	India	35
+1412	London	UK	61
+3394	New York City	USA	4
+5408	Boston	USA	77
+7408	San Francisco	USA	
+9406	London	UK	
+3396	San Francisco	USA	
+1414	Dublin	Ireland	
+5410		India	
+7410		USA	36
+9408	Los Angeles	USA	
+3398		USA	
+1416	Mumbai	India	
+5412		USA	85
+7412		India	
+5414	Kolkata	India	8
+1418	San Francisco	USA	50
+5416	Dublin	Ireland	71
+9410		India	
+7414	Dublin	Ireland	
+9412	Dublin	Ireland	
+7416		UK	
+5418	Los Angeles	USA	96
+9414		USA	40
+7418	London	UK	
+5420		USA	79
+9416	Kolkata	India	27
+3400	Bengaluru	India	
+9418	Dublin	Ireland	2
+7420	Bengaluru	India	57
+3402		India	92
+7422	Bengaluru	India	
+3404	Mumbai	India	
+9420		India	
+7424	Delhi	India	66
+9422	Kolkata	India	68
+5422	Kolkata	India	
+1420	New York City	USA	18
+7426	Dublin	Ireland	6
+3406	Delhi	India	
+9424	Bengaluru	India	49
+5424	Mumbai	India	96
+1422	Dublin	Ireland	
+7428		India	
+3408	Bengaluru	India	
+9426		India	
+5426	Mumbai	India	73
+3410		USA	50
+9428	Mumbai	India	63
+7430	Bengaluru	India	2
+5428	Boston	USA	
+3412	Boston	USA	11
+9430	Boston	USA	26
+7432	Delhi	India	96
+1424		UK	30
+5430	Kolkata	India	16
+3414		India	56
+9432		USA	21
+7434		India	
+1426	Kolkata	India	45
+5432	Boston	USA	34
+3416	Delhi	India	60
+9434	San Francisco	USA	69
+7436	San Francisco	USA	77
+1428	London	UK	89
+5434	Los Angeles	USA	
+3418	Dublin	Ireland	
+9436	Mumbai	India	67
+7438	New York City	USA	94
+1430	Mumbai	India	
+5436	Dublin	Ireland	68
+3420	Dublin	Ireland	60
+9438	London	UK	
+7440	Kolkata	India	
+1432		Ireland	
+5438	Dublin	Ireland	77
+3422	Mumbai	India	45
+9440	Boston	USA	
+7442	San Francisco	USA	20
+9442	Mumbai	India	2
+3424	Bengaluru	India	53
+5440		USA	
+7444	Los Angeles	USA	2
+9444	Delhi	India	58
+3426	Boston	USA	
+1434		USA	
+5442	Los Angeles	USA	96
+7446		USA	83
+9446	London	UK	50
+3428	San Francisco	USA	
+1436	London	UK	
+5444		USA	26
+7448	New York City	USA	
+9448	Dublin	Ireland	7
+3430		USA	73
+1438	Dublin	Ireland	
+5446		UK	13
+7450	Mumbai	India	
+9450		India	2
+3432		India	
+1440	San Francisco	USA	
+5448	Kolkata	India	14
+7452	Delhi	India	
+9452	Mumbai	India	84
+3434	Dublin	Ireland	
+1442	Mumbai	India	27
+5450		UK	74
+7454	San Francisco	USA	54
+9454	New York City	USA	
+3436	Delhi	India	2
+1444	New York City	USA	
+5452		UK	80
+7456	Bengaluru	India	
+9456		India	12
+3438		UK	
+1446	Boston	USA	40
+5454	Kolkata	India	3
+7458	Boston	USA	
+5456	Bengaluru	India	20
+3440		USA	
+7460	London	UK	
+1448	Kolkata	India	
+9458		Ireland	69
+5458	Boston	USA	48
+3442		USA	76
+7462	Bengaluru	India	25
+1450	Boston	USA	
+5460	Los Angeles	USA	
+7464	Bengaluru	India	41
+9460		USA	
+1452	Los Angeles	USA	
+3444		India	91
+5462	Dublin	Ireland	
+7466	Kolkata	India	21
+9462	Bengaluru	India	72
+1454	Delhi	India	20
+3446	New York City	USA	
+7468		India	
+9464	Dublin	Ireland	90
+5464	San Francisco	USA	
+1456	Boston	USA	
+3448	Bengaluru	India	15
+7470	Delhi	India	10
+9466		India	37
+5466	Dublin	Ireland	
+1458	San Francisco	USA	96
+3450	Boston	USA	
+7472	Mumbai	India	
+9468		USA	
+5468	Boston	USA	36
+9470	London	UK	
+3452	Boston	USA	24
+5470	Mumbai	India	60
+9472	New York City	USA	6
+7474		India	19
+3454	Delhi	India	98
+5472	Boston	USA	
+9474	Delhi	India	86
+7476	Bengaluru	India	87
+1460	Boston	USA	
+9476	Dublin	Ireland	97
+7478	Mumbai	India	51
+1462	Boston	USA	
+5474		India	20
+3456	New York City	USA	
+9478	Dublin	Ireland	27
+7480	Dublin	Ireland	
+3458	Los Angeles	USA	
+5476		USA	
+1464	Delhi	India	83
+7482	Boston	USA	
+3460		India	
+9480	Boston	USA	16
+5478	New York City	USA	
+1466	New York City	USA	
+7484		USA	
+3462	Mumbai	India	
+9482	Delhi	India	74
+5480		Ireland	58
+3464		India	4
+1468		UK	
+9484	Boston	USA	44
+5482	London	UK	24
+3466		India	53
+7486		USA	
+1470		USA	92
+9486	Delhi	India	66
+5484	Bengaluru	India	91
+3468	Dublin	Ireland	70
+7488	Bengaluru	India	88
+9488	Bengaluru	India	
+1472	San Francisco	USA	28
+5486		UK	92
+3470	Bengaluru	India	
+7490	San Francisco	USA	36
+9490	Delhi	India	69
+1474	Mumbai	India	
+5488	Kolkata	India	
+3472	London	UK	
+7492	New York City	USA	
+9492	London	UK	87
+5490	Boston	USA	
+3474	Mumbai	India	
+1476	London	UK	
+7494	Boston	USA	
+9494		India	
+5492	London	UK	
+3476	New York City	USA	19
+1478	Delhi	India	
+7496	Dublin	Ireland	
+9496	Mumbai	India	38
+5494	London	UK	71
+3478		USA	39
+1480		UK	
+7498	Dublin	Ireland	72
+9498	New York City	USA	40
+5496	Bengaluru	India	73
+3480	Bengaluru	India	
+1482	Bengaluru	India	75
+7500	Mumbai	India	
+9500		Ireland	
+5498	Mumbai	India	
+3482	Los Angeles	USA	62
+1484	Dublin	Ireland	
+9502	Kolkata	India	14
+7502	Boston	USA	27
+5500	Los Angeles	USA	
+3484	Los Angeles	USA	36
+1486	Mumbai	India	
+9504	Mumbai	India	
+7504	London	UK	
+5502	Dublin	Ireland	46
+3486	Los Angeles	USA	
+1488		USA	37
+9506	Dublin	Ireland	49
+7506	Delhi	India	
+9508	San Francisco	USA	51
+3488	Mumbai	India	
+1490	London	UK	73
+7508	Delhi	India	
+9510	Bengaluru	India	
+5504		Ireland	
+3490	Kolkata	India	56
+1492		Ireland	74
+7510	Kolkata	India	49
+3492	San Francisco	USA	13
+7512	Bengaluru	India	
+3494	San Francisco	USA	
+5506		Ireland	
+7514	Bengaluru	India	
+1494	San Francisco	USA	36
+3496	Delhi	India	13
+9512	Mumbai	India	
+5508	London	UK	
+7516	Bengaluru	India	
+1496		USA	
+3498	Los Angeles	USA	
+9514	Delhi	India	
+5510		India	
+7518	Kolkata	India	
+3500	Delhi	India	49
+1498	London	UK	
+9516	New York City	USA	
+5512	New York City	USA	54
+7520	Kolkata	India	14
+3502		Ireland	5
+1500		India	
+5514	Boston	USA	12
+7522	Delhi	India	11
+9518		India	85
+3504		India	
+1502	San Francisco	USA	
+7524	London	UK	
+5516	Boston	USA	52
+1504	Kolkata	India	
+9520	New York City	USA	
+7526	London	UK	
+3506	San Francisco	USA	78
+5518	Mumbai	India	
+1506	Kolkata	India	
+9522	Boston	USA	
+7528	Los Angeles	USA	
+3508		USA	41
+5520	Delhi	India	21
+1508		USA	
+9524	Bengaluru	India	
+7530	Delhi	India	78
+3510	Delhi	India	
+5522	New York City	USA	
+1510	Boston	USA	8
+9526		UK	
+7532	New York City	USA	
+3512	Mumbai	India	
+5524	London	UK	
+1512	San Francisco	USA	
+9528	Mumbai	India	
+3514	Los Angeles	USA	
+5526		India	
+1514	Los Angeles	USA	
+9530	New York City	USA	62
+3516	Kolkata	India	
+7534	Boston	USA	
+5528	San Francisco	USA	17
+1516		India	
+9532	Bengaluru	India	58
+3518	London	UK	19
+7536	Bengaluru	India	
+5530	Delhi	India	14
+3520	San Francisco	USA	3
+9534	London	UK	
+7538	Kolkata	India	
+1518	Dublin	Ireland	
+5532	San Francisco	USA	79
+3522	Los Angeles	USA	66
+9536		USA	
+7540	New York City	USA	
+1520	Delhi	India	
+5534	Mumbai	India	84
+3524	Boston	USA	45
+9538		Ireland	
+7542	San Francisco	USA	45
+1522	Dublin	Ireland	64
+5536	Boston	USA	
+3526	Bengaluru	India	
+9540	Los Angeles	USA	
+7544	Los Angeles	USA	
+1524	Mumbai	India	98
+5538	Delhi	India	74
+3528	San Francisco	USA	
+9542	Bengaluru	India	
+7546		USA	
+1526		Ireland	56
+5540	Mumbai	India	
+3530	New York City	USA	67
+9544	New York City	USA	
+7548	New York City	USA	31
+1528		USA	
+5542	San Francisco	USA	
+3532		Ireland	
+7550	Bengaluru	India	95
+1530	New York City	USA	49
+9546	Delhi	India	
+5544	Dublin	Ireland	30
+3534	London	UK	
+7552	London	UK	61
+1532	Los Angeles	USA	
+9548	Kolkata	India	
+5546	Los Angeles	USA	
+3536	London	UK	84
+7554	San Francisco	USA	11
+1534	Kolkata	India	87
+9550	London	UK	
+5548	Dublin	Ireland	
+3538	Kolkata	India	37
+1536	San Francisco	USA	
+5550		USA	81
+9552	New York City	USA	37
+1538	New York City	USA	
+5552	Dublin	Ireland	
+3540	New York City	USA	75
+1540	London	UK	21
+7556	London	UK	
+5554		India	28
+9554		USA	53
+3542	Mumbai	India	
+1542	Bengaluru	India	
+7558	Kolkata	India	33
+5556	Kolkata	India	
+9556	New York City	USA	
+3544	New York City	USA	84
+1544	Los Angeles	USA	42
+7560	Boston	USA	42
+5558		India	
+9558		India	
+3546	Kolkata	India	
+1546	Mumbai	India	1
+7562		USA	15
+5560	San Francisco	USA	12
+9560	Delhi	India	2
+3548		USA	
+1548	Los Angeles	USA	87
+7564		India	65
+5562	London	UK	
+9562		India	33
+3550	Los Angeles	USA	55
+1550		Ireland	97
+7566		Ireland	
+5564	New York City	USA	
+9564	London	UK	
+3552	Boston	USA	
+7568		India	
+1552		USA	
+5566	Bengaluru	India	3
+9566	Dublin	Ireland	4
+3554		India	30
+7570	Mumbai	India	
+1554	London	UK	
+5568	San Francisco	USA	
+9568	New York City	USA	
+3556	Mumbai	India	98
+7572		USA	
+1556	Delhi	India	92
+5570	London	UK	
+9570	Kolkata	India	
+3558	Mumbai	India	25
+7574	Bengaluru	India	
+1558	New York City	USA	71
+5572		USA	25
+9572	Dublin	Ireland	
+3560	Mumbai	India	30
+1560	Kolkata	India	
+5574	Mumbai	India	12
+9574	Los Angeles	USA	21
+7576	New York City	USA	82
+3562	San Francisco	USA	
+1562	London	UK	
+5576	San Francisco	USA	29
+9576	Kolkata	India	17
+7578		USA	44
+3564	New York City	USA	64
+1564	London	UK	21
+5578	Boston	USA	37
+9578	Los Angeles	USA	52
+7580	Mumbai	India	
+3566	London	UK	
+1566	Delhi	India	
+5580	Mumbai	India	33
+9580		USA	
+7582	Dublin	Ireland	
+3568	Delhi	India	2
+1568	Delhi	India	
+5582	Los Angeles	USA	
+9582	Mumbai	India	
+3570	London	UK	
+1570	Bengaluru	India	5
+7584	Kolkata	India	
+9584	Kolkata	India	92
+3572	Boston	USA	
+5584	San Francisco	USA	
+1572		India	39
+7586	Kolkata	India	32
+9586	Dublin	Ireland	55
+3574	Mumbai	India	19
+5586	London	UK	
+1574	San Francisco	USA	24
+7588	Dublin	Ireland	29
+9588	London	UK	
+3576	Kolkata	India	70
+5588	Mumbai	India	77
+1576	Kolkata	India	
+7590	San Francisco	USA	
+9590	Dublin	Ireland	78
+5590	New York City	USA	
+3578	Dublin	Ireland	75
+7592	Kolkata	India	
+1578	Boston	USA	38
+9592	San Francisco	USA	43
+5592	Dublin	Ireland	59
+3580		India	42
+7594	Bengaluru	India	
+1580	Delhi	India	
+9594	San Francisco	USA	
+5594	Dublin	Ireland	90
+3582	Boston	USA	
+7596	London	UK	40
+1582	Delhi	India	
+9596	San Francisco	USA	
+5596	Kolkata	India	54
+3584		USA	28
+7598	Bengaluru	India	7
+1584		USA	
+9598	Los Angeles	USA	
+5598	Mumbai	India	
+3586	Dublin	Ireland	12
+7600		India	24
+1586	Mumbai	India	63
+9600	London	UK	
+5600	Dublin	Ireland	51
+3588	Kolkata	India	15
+7602	Mumbai	India	33
+1588	San Francisco	USA	26
+9602	San Francisco	USA	62
+5602	Boston	USA	
+3590	New York City	USA	76
+7604		UK	
+1590	Los Angeles	USA	74
+9604	Dublin	Ireland	
+5604	London	UK	12
+3592	New York City	USA	
+7606	Boston	USA	61
+1592	Mumbai	India	49
+9606	San Francisco	USA	35
+5606	Boston	USA	43
+3594	Kolkata	India	55
+7608		India	
+1594	Boston	USA	
+9608		USA	
+5608	Boston	USA	85
+3596	Kolkata	India	
+7610	Bengaluru	India	21
+1596		UK	67
+9610	Mumbai	India	47
+5610	San Francisco	USA	13
+1598		USA	98
+9612	Kolkata	India	
+3598	Bengaluru	India	
+1600	Mumbai	India	53
+9614		USA	
+3600	Delhi	India	
+5612		India	
+7612		Ireland	
+1602		India	
+9616	Dublin	Ireland	
+3602	Boston	USA	
+5614		UK	
+7614		India	
+1604	San Francisco	USA	
+9618	San Francisco	USA	85
+3604	Kolkata	India	11
+5616	New York City	USA	1
+7616	Boston	USA	66
+1606	Mumbai	India	
+9620	Boston	USA	
+3606	Bengaluru	India	71
+5618	Bengaluru	India	
+7618	Dublin	Ireland	
+1608	London	UK	13
+9622	Boston	USA	
+3608	Los Angeles	USA	
+5620	Delhi	India	
+7620	Kolkata	India	
+1610	Bengaluru	India	
+9624		UK	10
+3610	Los Angeles	USA	18
+5622	London	UK	
+7622	Kolkata	India	41
+1612	Dublin	Ireland	6
+9626	Los Angeles	USA	
+3612	Los Angeles	USA	63
+5624	San Francisco	USA	8
+7624	New York City	USA	96
+1614	Boston	USA	1
+9628	Kolkata	India	7
+3614	Mumbai	India	31
+5626		India	94
+7626	Dublin	Ireland	
+1616	Boston	USA	
+9630	Kolkata	India	70
+5628	Dublin	Ireland	71
+3616	San Francisco	USA	
+1618	New York City	USA	15
+7628	Dublin	Ireland	
+9632	Dublin	Ireland	
+5630	Los Angeles	USA	63
+3618	Los Angeles	USA	35
+1620	Kolkata	India	
+5632	Mumbai	India	
+3620	New York City	USA	11
+7630	Bengaluru	India	
+1622	London	UK	79
+5634	Delhi	India	
+9634	San Francisco	USA	
+7632		India	81
+1624	Bengaluru	India	5
+5636	Mumbai	India	
+9636	Dublin	Ireland	62
+3622	Delhi	India	
+7634	San Francisco	USA	42
+1626	Los Angeles	USA	
+5638		Ireland	
+9638		USA	
+3624	Boston	USA	
+7636		USA	
+1628	New York City	USA	15
+5640		USA	66
+9640	London	UK	
+3626	Los Angeles	USA	46
+7638		USA	
+1630	Bengaluru	India	
+5642	Bengaluru	India	58
+9642	San Francisco	USA	
+3628	Dublin	Ireland	
+7640	Delhi	India	28
+1632	Boston	USA	87
+5644	Mumbai	India	40
+9644		USA	
+7642	Mumbai	India	79
+3630	Dublin	Ireland	83
+1634	London	UK	39
+5646	Kolkata	India	63
+9646	Boston	USA	77
+7644	Boston	USA	62
+3632		India	
+1636	Delhi	India	
+5648	New York City	USA	
+9648	Mumbai	India	
+7646	Dublin	Ireland	
+3634	Mumbai	India	
+1638	Bengaluru	India	59
+5650		UK	
+9650	London	UK	
+1640		India	
+7648	Kolkata	India	38
+5652	San Francisco	USA	62
+9652	London	UK	43
+3636	Los Angeles	USA	67
+1642	Mumbai	India	
+7650	New York City	USA	8
+5654	Dublin	Ireland	
+9654	Dublin	Ireland	
+3638		USA	
+1644	San Francisco	USA	
+7652	Bengaluru	India	29
+5656	Boston	USA	
+9656	Delhi	India	
+3640		USA	9
+1646	Bengaluru	India	84
+7654	New York City	USA	90
+5658	Delhi	India	77
+9658	Delhi	India	
+3642	Kolkata	India	10
+1648	Dublin	Ireland	
+9660	New York City	USA	
+3644	Kolkata	India	87
+1650	Delhi	India	14
+7656	New York City	USA	47
+5660	San Francisco	USA	14
+9662	Boston	USA	96
+7658	Mumbai	India	
+5662	Mumbai	India	21
+9664	Mumbai	India	
+7660	New York City	USA	82
+5664	London	UK	
+9666		USA	
+7662		India	
+1652	Dublin	Ireland	
+9668	Kolkata	India	98
+7664	San Francisco	USA	37
+3646	San Francisco	USA	2
+1654		USA	20
+9670	San Francisco	USA	
+7666		USA	10
+5666	Boston	USA	66
+3648	Delhi	India	
+1656	Los Angeles	USA	
+9672	Los Angeles	USA	
+7668	Boston	USA	11
+5668	Dublin	Ireland	
+3650	Kolkata	India	48
+1658		India	24
+9674		USA	60
+7670		India	
+5670	Bengaluru	India	12
+3652	Dublin	Ireland	
+1660	Bengaluru	India	43
+9676		India	
+1662	Boston	USA	2
+7672	Delhi	India	
+9678	Bengaluru	India	69
+1664	Mumbai	India	71
+5672	Bengaluru	India	57
+7674	London	UK	
+3654	Mumbai	India	
+9680	Dublin	Ireland	
+1666	San Francisco	USA	65
+5674	Mumbai	India	
+7676	Mumbai	India	
+3656	Kolkata	India	
+9682	London	UK	52
+1668	Bengaluru	India	
+5676	Los Angeles	USA	
+7678	San Francisco	USA	87
+3658	Mumbai	India	
+1670	Delhi	India	41
+9684	New York City	USA	
+5678	San Francisco	USA	1
+7680	Mumbai	India	55
+3660		USA	94
+9686	Boston	USA	86
+1672	Dublin	Ireland	
+5680	Kolkata	India	
+7682		UK	90
+3662	New York City	USA	
+9688		USA	44
+1674	Delhi	India	
+5682	San Francisco	USA	44
+7684		India	45
+3664	Los Angeles	USA	
+9690		USA	53
+1676	Delhi	India	
+7686	Kolkata	India	1
+9692	Dublin	Ireland	
+3666	Bengaluru	India	
+5684	New York City	USA	
+3668		USA	60
+5686	San Francisco	USA	98
+9694	Delhi	India	63
+1678	Boston	USA	
+3670	Kolkata	India	
+5688	Kolkata	India	20
+9696		USA	55
+7688	San Francisco	USA	98
+1680		USA	23
+3672	Bengaluru	India	57
+5690		UK	
+9698	Los Angeles	USA	35
+7690		USA	53
+1682	Mumbai	India	
+3674	Los Angeles	USA	88
+5692	New York City	USA	1
+9700	Dublin	Ireland	
+7692	Mumbai	India	97
+1684		India	68
+3676	New York City	USA	94
+7694	Los Angeles	USA	
+1686	Boston	USA	94
+3678		USA	93
+9702	New York City	USA	
+5694	Kolkata	India	
+1688	Boston	USA	
+7696	Dublin	Ireland	11
+3680		USA	
+9704	Kolkata	India	64
+5696	Mumbai	India	
+1690	Bengaluru	India	81
+7698	Dublin	Ireland	
+3682	London	UK	26
+9706	Bengaluru	India	93
+5698	Dublin	Ireland	35
+1692	London	UK	34
+7700	Boston	USA	
+3684		India	
+9708	Los Angeles	USA	95
+5700	Bengaluru	India	
+9710		USA	
+1694	Dublin	Ireland	28
+7702	Mumbai	India	
+5702		USA	
+3686	Los Angeles	USA	45
+9712		UK	
+1696		India	62
+7704	San Francisco	USA	
+5704	Bengaluru	India	17
+3688	Bengaluru	India	
+9714	New York City	USA	
+1698	Kolkata	India	
+7706	Delhi	India	26
+5706	Dublin	Ireland	75
+3690	London	UK	34
+9716		India	14
+1700	Boston	USA	
+7708	Los Angeles	USA	
+5708		India	
+3692	Kolkata	India	
+9718	Boston	USA	59
+1702	Mumbai	India	
+7710	Dublin	Ireland	
+5710	Bengaluru	India	53
+3694		USA	
+9720	Boston	USA	
+1704	Kolkata	India	
+7712	Bengaluru	India	
+5712	San Francisco	USA	63
+3696	New York City	USA	
+9722	Delhi	India	71
+1706	Los Angeles	USA	42
+7714	New York City	USA	
+5714	Mumbai	India	
+3698	San Francisco	USA	47
+9724	Mumbai	India	43
+1708	Los Angeles	USA	
+7716	Los Angeles	USA	21
+5716	Dublin	Ireland	
+3700	New York City	USA	
+9726	Los Angeles	USA	
+1710	New York City	USA	77
+7718	Delhi	India	
+5718		India	74
+9728	San Francisco	USA	
+7720	Bengaluru	India	54
+3702	Bengaluru	India	
+1712	Kolkata	India	90
+5720		USA	30
+9730	Mumbai	India	
+7722	San Francisco	USA	
+3704	Bengaluru	India	73
+1714	Kolkata	India	41
+5722	Los Angeles	USA	
+9732	Bengaluru	India	34
+7724	Bengaluru	India	5
+3706	Boston	USA	44
+1716	Bengaluru	India	41
+5724	Boston	USA	
+9734	Bengaluru	India	49
+7726	Kolkata	India	73
+5726	Dublin	Ireland	43
+1718	Los Angeles	USA	
+9736	Kolkata	India	57
+7728	Los Angeles	USA	
+5728	London	UK	71
+3708	Kolkata	India	21
+1720	Los Angeles	USA	90
+9738	Delhi	India	27
+7730	San Francisco	USA	
+5730	Delhi	India	
+3710	Los Angeles	USA	86
+1722	New York City	USA	
+9740	London	UK	
+7732	Delhi	India	
+5732		Ireland	
+3712	Mumbai	India	
+1724	San Francisco	USA	64
+9742	Los Angeles	USA	
+7734	Mumbai	India	87
+5734	Mumbai	India	
+3714	New York City	USA	
+9744	Kolkata	India	
+3716	London	UK	88
+9746		USA	54
+3718	Boston	USA	54
+9748	San Francisco	USA	
+1726	San Francisco	USA	
+7736	New York City	USA	
+3720	Kolkata	India	59
+9750	Kolkata	India	94
+1728	Kolkata	India	27
+7738	Dublin	Ireland	
+3722	Bengaluru	India	33
+5736	New York City	USA	
+9752	Los Angeles	USA	18
+1730		USA	64
+7740	London	UK	
+3724	New York City	USA	
+5738	London	UK	57
+9754	San Francisco	USA	
+1732	Boston	USA	
+7742	Bengaluru	India	
+3726	Dublin	Ireland	27
+5740		Ireland	
+9756	New York City	USA	33
+1734	Mumbai	India	
+7744	Bengaluru	India	13
+3728	Dublin	Ireland	69
+5742	Kolkata	India	
+9758	Dublin	Ireland	
+1736	Kolkata	India	
+7746	Bengaluru	India	5
+3730		India	
+5744	Delhi	India	
+9760		India	15
+1738	London	UK	
+7748	New York City	USA	87
+3732	New York City	USA	61
+5746	New York City	USA	
+9762	London	UK	
+1740	Dublin	Ireland	
+7750	Delhi	India	95
+3734	Kolkata	India	28
+5748	Mumbai	India	
+9764	San Francisco	USA	42
+1742	Los Angeles	USA	
+7752	Kolkata	India	23
+3736	Mumbai	India	
+5750	New York City	USA	24
+9766	Delhi	India	69
+1744	London	UK	89
+7754	Kolkata	India	8
+3738	Mumbai	India	82
+5752	Boston	USA	71
+1746	Los Angeles	USA	
+9768		USA	
+7756	Boston	USA	
+5754		USA	
+3740	Mumbai	India	
+1748	Bengaluru	India	91
+9770	Mumbai	India	
+7758	Kolkata	India	
+5756		India	
+3742	Kolkata	India	
+1750	Kolkata	India	
+9772	Kolkata	India	
+7760		India	62
+5758		USA	
+3744	San Francisco	USA	4
+1752	Delhi	India	
+9774	Boston	USA	
+7762	Delhi	India	
+5760	Bengaluru	India	19
+3746	Boston	USA	
+1754	San Francisco	USA	
+9776	Mumbai	India	79
+7764	San Francisco	USA	71
+5762	Mumbai	India	
+3748	San Francisco	USA	88
+1756	Mumbai	India	
+9778	New York City	USA	
+7766		India	19
+5764	Bengaluru	India	86
+3750	Bengaluru	India	
+1758		USA	
+9780	Bengaluru	India	
+7768	Mumbai	India	
+5766	Los Angeles	USA	25
+3752	New York City	USA	
+1760	Boston	USA	1
+5768	Los Angeles	USA	69
+9782	London	UK	
+3754		UK	61
+7770	London	UK	48
+1762	Boston	USA	64
+5770	Bengaluru	India	35
+9784	Bengaluru	India	
+3756	Dublin	Ireland	
+7772	Boston	USA	
+1764	Mumbai	India	
+5772	Mumbai	India	
+9786	New York City	USA	8
+3758	London	UK	
+7774	Bengaluru	India	45
+1766	Boston	USA	1
+5774	Delhi	India	
+9788	New York City	USA	
+3760	New York City	USA	68
+7776		Ireland	81
+1768	Los Angeles	USA	91
+5776	Bengaluru	India	
+9790	Boston	USA	50
+3762	Kolkata	India	14
+7778		India	
+1770	Dublin	Ireland	4
+5778	Los Angeles	USA	
+9792	New York City	USA	
+3764	Dublin	Ireland	32
+7780		India	1
+1772	Dublin	Ireland	
+5780		USA	
+9794	Bengaluru	India	
+3766		USA	6
+7782	San Francisco	USA	
+1774	New York City	USA	
+5782	New York City	USA	25
+9796	Boston	USA	
+3768	London	UK	78
+7784	Mumbai	India	
+3770		USA	64
+5784		India	
+7786	Bengaluru	India	26
+3772		India	99
+9798		USA	52
+5786		USA	91
+1776	Mumbai	India	
+7788	Mumbai	India	
+3774	Boston	USA	
+9800		India	
+5788	London	UK	
+1778	London	UK	54
+7790		USA	
+3776	Mumbai	India	
+9802	Los Angeles	USA	
+1780	Bengaluru	India	
+5790	Los Angeles	USA	
+3778	New York City	USA	81
+9804	Delhi	India	
+1782	New York City	USA	
+7792		USA	
+5792	London	UK	21
+3780	Boston	USA	
+9806	Los Angeles	USA	
+1784		India	
+7794	Delhi	India	
+5794		Ireland	38
+3782		USA	
+9808	Bengaluru	India	
+1786	Mumbai	India	77
+7796	Kolkata	India	87
+5796		India	
+3784	London	UK	70
+9810	San Francisco	USA	98
+1788	Mumbai	India	98
+7798	San Francisco	USA	30
+5798	Los Angeles	USA	62
+3786	London	UK	
+9812	San Francisco	USA	
+1790	San Francisco	USA	
+7800	Boston	USA	89
+5800	Boston	USA	60
+3788	Los Angeles	USA	
+9814	Dublin	Ireland	
+1792	Dublin	Ireland	23
+7802	Boston	USA	58
+5802		USA	
+1794	London	UK	
+9816	Los Angeles	USA	25
+7804	Boston	USA	
+5804	San Francisco	USA	73
+3790	Dublin	Ireland	51
+1796	Kolkata	India	1
+9818	Boston	USA	
+7806		India	67
+5806	New York City	USA	87
+3792	Kolkata	India	64
+1798	London	UK	
+9820	Los Angeles	USA	32
+7808	Bengaluru	India	
+5808	London	UK	63
+3794	San Francisco	USA	
+1800	San Francisco	USA	
+9822	Boston	USA	
+7810	Bengaluru	India	16
+5810	San Francisco	USA	92
+3796		UK	84
+1802	Los Angeles	USA	38
+9824	London	UK	
+7812		USA	
+5812		UK	
+3798	Boston	USA	4
+1804	Dublin	Ireland	
+9826	London	UK	44
+7814		UK	
+5814		India	82
+9828		India	93
+7816	Boston	USA	76
+5816	Los Angeles	USA	33
+9830	Boston	USA	
+7818	Dublin	Ireland	
+5818	San Francisco	USA	36
+9832		Ireland	
+1806	London	UK	13
+7820	Boston	USA	
+5820	San Francisco	USA	56
+9834	London	UK	
+3800	Kolkata	India	
+1808	Kolkata	India	91
+7822	Delhi	India	80
+5822	Mumbai	India	60
+9836	Dublin	Ireland	
+3802	Mumbai	India	56
+1810	Bengaluru	India	29
+7824	New York City	USA	
+5824	Dublin	Ireland	
+9838	Los Angeles	USA	
+3804	Bengaluru	India	76
+1812	Los Angeles	USA	70
+7826		USA	
+5826	Kolkata	India	4
+9840	Delhi	India	
+3806		Ireland	4
+1814	Bengaluru	India	
+7828	Mumbai	India	
+5828		UK	
+9842	San Francisco	USA	22
+3808	Boston	USA	
+1816	Kolkata	India	97
+7830	New York City	USA	
+5830	London	UK	
+9844	Dublin	Ireland	93
+3810		India	3
+1818		India	29
+7832	Mumbai	India	
+5832	New York City	USA	
+9846		UK	9
+3812	Dublin	Ireland	
+1820	Bengaluru	India	31
+7834	Mumbai	India	
+5834		India	33
+9848	Mumbai	India	89
+3814	Mumbai	India	
+1822	New York City	USA	
+7836	Delhi	India	
+5836	Kolkata	India	23
+9850	Mumbai	India	
+3816	Mumbai	India	68
+1824		India	
+7838	Dublin	Ireland	7
+9852	San Francisco	USA	44
+5838	Los Angeles	USA	
+7840	Delhi	India	21
+3818	Delhi	India	39
+1826	Bengaluru	India	61
+9854	Mumbai	India	
+5840		USA	48
+7842		India	
+3820		UK	93
+1828	Los Angeles	USA	
+9856	Los Angeles	USA	
+5842	London	UK	
+7844	Dublin	Ireland	
+3822		India	51
+9858	Kolkata	India	
+7846		India	
+1830	Mumbai	India	
+3824	Dublin	Ireland	56
+5844	Bengaluru	India	
+9860		USA	83
+7848	Mumbai	India	
+1832	Delhi	India	17
+3826	London	UK	
+5846	London	UK	50
+9862	Mumbai	India	
+7850	Bengaluru	India	
+1834	Los Angeles	USA	
+3828		India	
+5848	London	UK	
+9864	Boston	USA	43
+7852		USA	33
+1836		USA	49
+3830	Boston	USA	46
+5850	Boston	USA	99
+9866	Kolkata	India	71
+7854	Los Angeles	USA	71
+1838	Bengaluru	India	45
+3832	Delhi	India	
+5852	London	UK	83
+9868		India	80
+7856	Los Angeles	USA	
+1840	Los Angeles	USA	
+3834	Dublin	Ireland	93
+5854	Boston	USA	
+9870	New York City	USA	89
+7858	New York City	USA	
+1842	London	UK	42
+3836	New York City	USA	
+5856	Delhi	India	51
+9872	Mumbai	India	
+7860	Kolkata	India	
+1844	Boston	USA	
+3838	Mumbai	India	
+5858	Bengaluru	India	
+9874		USA	55
+7862	London	UK	53
+1846		India	53
+3840		USA	
+5860	Los Angeles	USA	
+9876		Ireland	
+7864	Kolkata	India	5
+1848		USA	94
+3842	Delhi	India	
+5862		India	
+9878	Boston	USA	
+7866	Mumbai	India	32
+1850	Mumbai	India	59
+5864	San Francisco	USA	27
+3844	New York City	USA	
+1852		USA	
+9880	London	UK	
+5866		USA	27
+7868	San Francisco	USA	76
+3846		India	87
+1854	Boston	USA	67
+9882	Dublin	Ireland	79
+5868	Dublin	Ireland	44
+7870	San Francisco	USA	
+1856	Bengaluru	India	81
+9884	Dublin	Ireland	
+3848		Ireland	58
+5870		India	75
+7872	San Francisco	USA	
+1858	New York City	USA	
+9886	Bengaluru	India	72
+3850		Ireland	64
+5872		India	37
+7874	Delhi	India	
+1860	London	UK	41
+9888	San Francisco	USA	
+3852	London	UK	
+5874	Mumbai	India	
+7876		Ireland	
+1862	San Francisco	USA	
+9890	Kolkata	India	
+3854	Los Angeles	USA	92
+5876	Boston	USA	24
+7878	New York City	USA	37
+1864	Bengaluru	India	76
+9892		India	88
+3856		India	
+5878	Bengaluru	India	
+7880		USA	
+1866	Delhi	India	79
+9894	Dublin	Ireland	25
+3858		USA	8
+5880	Kolkata	India	50
+7882	Kolkata	India	
+1868	Kolkata	India	
+9896		USA	
+3860		UK	
+5882	Dublin	Ireland	
+7884	London	UK	
+1870		USA	70
+3862	Boston	USA	89
+1872	San Francisco	USA	
+7886	Boston	USA	88
+3864	San Francisco	USA	47
+1874	Bengaluru	India	67
+9898	Los Angeles	USA	
+7888	Delhi	India	31
+3866	Los Angeles	USA	91
+5884	Bengaluru	India	
+1876	New York City	USA	
+9900	Dublin	Ireland	
+7890	New York City	USA	63
+3868	Kolkata	India	12
+5886	Kolkata	India	
+1878	Los Angeles	USA	
+9902	New York City	USA	
+7892	New York City	USA	
+3870		USA	
+5888		India	96
+1880	Dublin	Ireland	
+9904	Boston	USA	83
+7894	Delhi	India	
+3872		India	
+5890	Los Angeles	USA	72
+1882		USA	24
+9906	Delhi	India	
+7896	Kolkata	India	
+3874	Delhi	India	8
+5892	Dublin	Ireland	54
+1884	Dublin	Ireland	
+9908	San Francisco	USA	
+7898	Boston	USA	83
+3876	Kolkata	India	
+9910	Boston	USA	63
+5894	London	UK	90
+7900	New York City	USA	
+1886	Bengaluru	India	70
+3878	New York City	USA	59
+9912	San Francisco	USA	21
+5896	Kolkata	India	64
+7902		USA	71
+1888	Boston	USA	
+3880	Mumbai	India	
+9914	Bengaluru	India	37
+5898	London	UK	76
+7904	Bengaluru	India	
+1890	Kolkata	India	
+3882	San Francisco	USA	27
+9916	Los Angeles	USA	
+5900	Kolkata	India	
+7906	New York City	USA	
+9918	Los Angeles	USA	60
+3884		India	
+7908	London	UK	86
+9920	Kolkata	India	27
+3886	Mumbai	India	78
+7910	New York City	USA	
+5902	Dublin	Ireland	
+9922	Dublin	Ireland	70
+3888	San Francisco	USA	
+1892		Ireland	
+7912	Boston	USA	47
+5904	London	UK	47
+9924		Ireland	
+3890	London	UK	42
+1894	Delhi	India	
+7914	Los Angeles	USA	5
+5906	Los Angeles	USA	
+9926		Ireland	
+3892	Delhi	India	
+1896	New York City	USA	73
+7916	Kolkata	India	
+5908	Los Angeles	USA	15
+9928	Bengaluru	India	89
+3894		USA	94
+1898	New York City	USA	
+7918		Ireland	77
+5910	London	UK	
+9930	Los Angeles	USA	98
+3896	San Francisco	USA	57
+1900	Los Angeles	USA	4
+7920	San Francisco	USA	27
+5912	Delhi	India	
+3898	Boston	USA	16
+9932		USA	97
+7922	Boston	USA	44
+1902		USA	
+5914	Delhi	India	
+3900	Bengaluru	India	
+9934	London	UK	
+7924	London	UK	90
+1904	San Francisco	USA	55
+5916	San Francisco	USA	
+3902	Mumbai	India	
+9936	Mumbai	India	
+7926	Kolkata	India	
+1906	Los Angeles	USA	
+5918	New York City	USA	
+3904	Mumbai	India	14
+7928	Los Angeles	USA	17
+9938	Delhi	India	
+1908	Kolkata	India	
+5920	San Francisco	USA	
+3906	Delhi	India	61
+7930	Dublin	Ireland	
+9940	Mumbai	India	
+1910		USA	
+5922	New York City	USA	74
+3908	Bengaluru	India	
+7932	New York City	USA	23
+9942	Delhi	India	
+1912	Bengaluru	India	
+5924		USA	
+3910	Delhi	India	23
+7934	Mumbai	India	20
+9944	Dublin	Ireland	
+1914	Dublin	Ireland	
+5926	Bengaluru	India	34
+9946	Delhi	India	58
+3912	Los Angeles	USA	93
+7936	Dublin	Ireland	61
+1916	Kolkata	India	60
+5928	London	UK	14
+9948	Dublin	Ireland	
+3914	Mumbai	India	
+7938		Ireland	15
+1918	Dublin	Ireland	
+5930	Boston	USA	
+9950	Dublin	Ireland	42
+3916	Kolkata	India	
+7940	Mumbai	India	61
+1920	San Francisco	USA	50
+5932	London	UK	90
+9952	Delhi	India	
+3918	Kolkata	India	53
+7942	Los Angeles	USA	
+1922	San Francisco	USA	
+5934	San Francisco	USA	84
+9954	San Francisco	USA	45
+3920	Los Angeles	USA	
+7944		USA	15
+1924	New York City	USA	80
+5936		India	66
+9956	New York City	USA	
+3922	Bengaluru	India	77
+1926	Bengaluru	India	
+7946	Bengaluru	India	51
+5938		UK	85
+9958		UK	
+3924	Delhi	India	
+1928	Kolkata	India	24
+7948	Boston	USA	42
+5940	Bengaluru	India	32
+9960	Bengaluru	India	
+3926	Bengaluru	India	4
+1930	London	UK	79
+7950		USA	30
+5942	Los Angeles	USA	7
+9962		USA	
+3928	Kolkata	India	
+1932		India	5
+7952	Boston	USA	78
+5944	London	UK	
+9964	Delhi	India	80
+3930	Kolkata	India	94
+1934	Bengaluru	India	
+7954	London	UK	53
+5946	New York City	USA	79
+7956	Bengaluru	India	22
+3932	San Francisco	USA	28
+5948		USA	44
+7958	Delhi	India	38
+3934	Los Angeles	USA	32
+5950	London	UK	
+7960	San Francisco	USA	97
+9966		India	
+3936	Dublin	Ireland	55
+5952	San Francisco	USA	55
+7962		UK	
+9968	Bengaluru	India	36
+3938		India	
+1936		India	13
+5954	Dublin	Ireland	
+7964	Boston	USA	39
+9970	Dublin	Ireland	
+3940		UK	
+1938	Los Angeles	USA	
+9972		USA	
+3942	New York City	USA	
+5956	Los Angeles	USA	
+7966	Bengaluru	India	
+1940	Delhi	India	26
+9974	London	UK	90
+3944		India	
+5958		USA	33
+7968	Dublin	Ireland	32
+1942	London	UK	
+7970		USA	0
+9976	Delhi	India	96
+3946	London	UK	
+1944	Los Angeles	USA	
+7972		UK	63
+3948	Los Angeles	USA	51
+1946	Dublin	Ireland	
+5960	Los Angeles	USA	72
+7974	London	UK	
+3950	San Francisco	USA	
+1948	Kolkata	India	
+9978	New York City	USA	74
+5962	Boston	USA	45
+7976	Bengaluru	India	69
+3952	Delhi	India	86
+1950		USA	
+9980	San Francisco	USA	23
+5964	Los Angeles	USA	70
+7978	San Francisco	USA	
+3954		India	
+1952	Mumbai	India	
+9982	Mumbai	India	32
+5966	Boston	USA	89
+7980		India	
+3956	Dublin	Ireland	
+1954	Dublin	Ireland	
+9984	Bengaluru	India	
+5968	Los Angeles	USA	
+7982	Delhi	India	
+3958		USA	
+1956	Bengaluru	India	89
+9986	Dublin	Ireland	
+5970	Dublin	Ireland	71
+7984	Bengaluru	India	
+3960	Dublin	Ireland	
+1958	Dublin	Ireland	69
+9988		India	
+5972	London	UK	50
+7986		UK	37
+1960	New York City	USA	
+3962	Kolkata	India	
+5974	Kolkata	India	76
+9990	Bengaluru	India	80
+7988	Kolkata	India	77
+1962	Mumbai	India	
+3964		India	57
+5976		UK	88
+9992		India	67
+7990	Kolkata	India	
+1964		India	33
+3966	Bengaluru	India	80
+5978	San Francisco	USA	
+9994	Mumbai	India	38
+7992	Kolkata	India	
+1966	Dublin	Ireland	65
+3968	Mumbai	India	
+5980		India	
+9996	Bengaluru	India	
+7994	New York City	USA	41
+1968		USA	81
+3970	Dublin	Ireland	
+5982	Mumbai	India	42
+9998	Delhi	India	17
+7996	Mumbai	India	40
+3972	Dublin	Ireland	
+1970	New York City	USA	34
+5984	Delhi	India	15
+3974	San Francisco	USA	
+7998	Mumbai	India	47
+1972	Los Angeles	USA	
+5986		Ireland	97
+3976	London	UK	
+1974	Boston	USA	
+5988	Boston	USA	
+3978	New York City	USA	
+5990	Boston	USA	
+1976	San Francisco	USA	
+3980	New York City	USA	1
+5992	Dublin	Ireland	71
+1978		India	62
+3982	Delhi	India	
+5994		USA	73
+1980	London	UK	
+3984		USA	
+5996	London	UK	
+1982	London	UK	27
+3986	Bengaluru	India	40
+5998	San Francisco	USA	87
+1984		USA	81
+3988		India	
+1986	Bengaluru	India	
+3990		USA	
+1988	Dublin	Ireland	
+3992	Boston	USA	47
+1990	Los Angeles	USA	
+3994	San Francisco	USA	
+1992	London	UK	97
+3996	Dublin	Ireland	10
+1994	Kolkata	India	13
+3998	Los Angeles	USA	
+1996	San Francisco	USA	
+1998	London	UK	
