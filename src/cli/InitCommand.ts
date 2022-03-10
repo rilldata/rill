@@ -27,6 +27,8 @@ export class InitCommand extends DataModelerCliCommand {
         }
         if (!this.alreadyInitialised) {
             console.log("\nYou have successfully initialized a new project with the Rill Data Modeler.");
+        } else {
+            console.log("\nA project in this directory has already been initialized.");
         }
         console.log("\nThis application is extremely alpha and we want to hear from you if you have any questions or ideas to share! "+
             "You can reach us in our Rill Community Slack at https://bit.ly/3Mig8Jr.");

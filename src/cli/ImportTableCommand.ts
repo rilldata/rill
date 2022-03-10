@@ -1,6 +1,5 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
-import { InfoCommand } from "$cli/InfoCommand";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 interface ImportTableCommandOptions {
@@ -37,6 +36,5 @@ export class ImportTableCommand extends DataModelerCliCommand {
             // actual error would be printed by addOrUpdateTableFromFile
             console.log(`Failed to import table from file ${tableSourceFile}`);
         }
-        InfoCommand.displayProjectInfo(this.projectPath, this.dataModelerStateService);
     }
 }
