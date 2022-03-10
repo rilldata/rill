@@ -73,7 +73,7 @@ $: hideNullPercentage = width < 400;
                             {#if titleElementHovered || emphasizeTitle}
                             <!-- <span ><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span> -->
                             <span class='self-center'>
-                                <ContextButton tooltipText="delete, more..." suppressTooltip={true} 
+                                <ContextButton tooltipText="delete" suppressTooltip={true} 
                                     
                                 >tt</ContextButton>
                             </span>

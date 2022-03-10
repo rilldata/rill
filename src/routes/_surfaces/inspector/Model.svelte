@@ -4,15 +4,13 @@ import { slide } from "svelte/transition";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
 import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-
-import { formatCompactInteger } from "$lib/util/formatters";
 import * as classes from "$lib/util/component-classes";
 
 import type { ApplicationStore } from "$lib/app-store";
 
 import {format} from "d3-format";
 
-import { formatInteger } from "$lib/util/formatters"
+import { formatInteger, formatPercentage } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
 import type {
@@ -32,23 +30,16 @@ const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedM
 const store = getContext('rill:app:store') as ApplicationStore;
 const queryHighlight = getContext('rill:app:query-highlight');
 
-const formatRollupFactor = format(',r');
-
-
 function tableDestinationCompute(key, table, destination) {
-  return table.reduce((acc,v) => acc + v[key], 0) / destination[key];
+  let inputs = table.reduce((acc,v) => acc + v[key], 0)
+  return  (inputs - destination[key]) / inputs;
 }
 
 function computeRollup(table, destination) {
   return tableDestinationCompute('cardinality', table, destination);
 }
 
-function computeCompression(table, destination) {
-  return tableDestinationCompute('sizeInBytes', table, destination);
-}
-
 let rollup;
-let compression;
 let tables;
 // get source tables?
 let sourceTableReferences;
@@ -70,7 +61,6 @@ $: if (sourceTableReferences && $persistentTableStore?.entities && $derivedTable
         return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
     }).filter(t => !!t);
 $: if (currentDerivedModel?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentDerivedModel.cardinality });
-$: if (currentDerivedModel?.sizeInBytes && tables) compression = computeCompression(tables, { sizeInBytes: currentDerivedModel.sizeInBytes })
 
 // toggle state for inspector sections
 let showSourceTables = true;
@@ -92,10 +82,10 @@ onMount(() => {
   <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length}
       {#if currentModel.query.trim().length}
-        <div class="flex flex-row justify-center" style:height="var(--header-height)" >
+        <div class="flex flex-row justify-center content-center	" style:height="var(--header-height)" >
           <button class="
             p-3 pt-1 pb-1
-            m-2
+            m-3
             bg-white
             text-black
             border
@@ -107,7 +97,7 @@ onMount(() => {
           }}>export parquet</button>
           <button class="
             p-3 pt-1 pb-1
-            m-2
+            m-3
             bg-white
             text-black
             border
@@ -122,20 +112,15 @@ onMount(() => {
       {#if tables}
         <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
           <div style="font-weight: bold;">
-            {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
+                {#if rollup !== 1}
+                {formatPercentage(rollup)}
+                {:else}no
+                {/if} of source rows
+
           </div>
           <div style="color: #666; text-align:right;">
-            {formatCompactInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
-            {formatCompactInteger(currentDerivedModel.cardinality)} rows
-          </div>
-          <div>
-            {#if currentDerivedModel.sizeInBytes}
-            {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
-            {:else}<button on:click={() => {}}>generate compression</button>{/if}
-          </div>
-          <div style="color: #666; text-align: right;">
-            {formatCompactInteger(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
-            {#if currentDerivedModel.sizeInBytes}{formatCompactInteger(currentDerivedModel.sizeInBytes)}{:else}...{/if}
+            {formatInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
+            {formatInteger(currentDerivedModel.cardinality)} rows
           </div>
         </div>
       {/if}
