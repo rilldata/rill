@@ -12,7 +12,9 @@ export class DataGeneratorFarm {
     private readonly pool;
 
     public constructor(worker: string) {
-        this.pool = workerpool.pool(worker);
+        this.pool = workerpool.pool(worker, {
+            maxWorkers: 4,
+        });
     }
 
     public async generate(type: string, count: number): Promise<void> {
