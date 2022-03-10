@@ -5,7 +5,7 @@ node_js:
 
 addons:
   snaps:
-  - name: python36
+  - name: python38
       
 cache:
   directories:
