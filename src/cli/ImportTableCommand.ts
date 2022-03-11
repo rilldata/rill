@@ -42,7 +42,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
 
         if (existingTable && importOptions.force) {
             console.log(`There is already an imported table name : ${tableName}. ` +
-                "\nForce overwrite is passed." +
+                "\nnForcing an overwrite." +
                 `\nDropping the existing ${tableName} from ${existingTable.path} and importing ${tableSourceFile}`);
         } else if (existingTable && !importOptions.force) {
             const shouldOverwrite = await cliConfirmation(`There is already an imported table name : ${tableName}. ` +
