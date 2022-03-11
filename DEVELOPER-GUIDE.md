@@ -25,6 +25,17 @@ alias data-modeler="npm run cli-dev --"
 `data-modeler-dev` can be used instead to have both the globally installed data-modeler and local development separate.
 Just use `data-modeler-dev` in the below commands instead of `data-modeler`.
 
+### End User CLI Usage
+
+Install the package globally to access the cli.
+```
+npm i data-modeler -g
+```
+Run with sudo if `Error: EACCES: permission denied` is thrown with the above install.
+```
+sudo npm i data-modeler -g
+```
+
 ### Creating a project
 
 ```
