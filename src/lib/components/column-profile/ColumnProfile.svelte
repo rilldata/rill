@@ -55,7 +55,7 @@ let shiftClicked = transientBooleanStore();
 
 
     <ColumnEntry
-    left={indentLevel === 1 ? 8 : 3}
+    left={indentLevel === 1 ? 8 : 5}
     {hideRight}
     {active}
     emphasize={active}

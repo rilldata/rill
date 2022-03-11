@@ -164,7 +164,7 @@ let titleElementHovered = false;
                                 {#if titleElementHovered || emphasizeTitle}
                                 <span ><span>{cardinality !== undefined && cardinality !== NaN ? formatInteger(interimCardinality) : "no"}</span> row{#if cardinality !== 1}s{/if}</span>
                                 <span class='self-center'>
-                                    <ContextButton tooltipText="delete, more..." suppressTooltip={contextMenuOpen} on:click={async (event) => { 
+                                    <ContextButton tooltipText="delete" suppressTooltip={contextMenuOpen} on:click={async (event) => { 
                                         contextMenuOpen = !contextMenuOpen;
                                         menuX = event.clientX;
                                         menuY = event.clientY;

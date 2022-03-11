@@ -230,7 +230,7 @@ export class ModelActions extends DataModelerActions {
                                exportType: FileExportType) {
         const model = stateService.getById(modelId);
         const exportPath = await this.databaseService.dispatch(exportType,
-            [sanitizeQuery(model.query), exportFile]);
+            [sanitizeQuery(model.query, false), exportFile]);
         await this.dataModelerStateService.dispatch("updateModelDestinationSize",
             [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
         this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"});

@@ -1,18 +1,19 @@
 <script lang="ts">
 import { getContext, onMount } from "svelte";
 import { slide } from "svelte/transition";
+import { tweened } from "svelte/motion";
+import { sineOut as easing } from "svelte/easing";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
 import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-
-import { formatCompactInteger } from "$lib/util/formatters";
+import Spacer from "$lib/components/icons/Spacer.svelte";
 import * as classes from "$lib/util/component-classes";
 
 import type { ApplicationStore } from "$lib/app-store";
 
 import {format} from "d3-format";
 
-import { formatInteger } from "$lib/util/formatters"
+import { formatInteger, formatPercentage } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
 import type {
@@ -32,28 +33,27 @@ const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedM
 const store = getContext('rill:app:store') as ApplicationStore;
 const queryHighlight = getContext('rill:app:query-highlight');
 
-const formatRollupFactor = format(',r');
-
-
 function tableDestinationCompute(key, table, destination) {
-  return table.reduce((acc,v) => acc + v[key], 0) / destination[key];
+  let inputs = table.reduce((acc,v) => acc + v[key], 0)
+  return  (inputs - destination[key]) / inputs;
 }
 
 function computeRollup(table, destination) {
   return tableDestinationCompute('cardinality', table, destination);
 }
 
-function computeCompression(table, destination) {
-  return tableDestinationCompute('sizeInBytes', table, destination);
-}
-
 let rollup;
-let compression;
 let tables;
 // get source tables?
 let sourceTableReferences;
 let showColumns = true;
+let showExportOptions = true;
 let sourceTableNames = [];
+
+// interface tweens for the  big numbers
+let bigRollupNumber = tweened(0, { duration: 700, easing });
+let inputRowCardinality = tweened(0, { duration: 200, easing });
+let outputRowCardinality = tweened(0, { duration: 250, easing });
 
 let currentModel: PersistentModelEntity;
 $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
@@ -70,7 +70,13 @@ $: if (sourceTableReferences && $persistentTableStore?.entities && $derivedTable
         return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
     }).filter(t => !!t);
 $: if (currentDerivedModel?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentDerivedModel.cardinality });
-$: if (currentDerivedModel?.sizeInBytes && tables) compression = computeCompression(tables, { sizeInBytes: currentDerivedModel.sizeInBytes })
+
+// set the interface big number tweens
+$: bigRollupNumber.set(rollup);
+$: if (currentDerivedModel && currentDerivedModel?.cardinality !== 0) {
+  outputRowCardinality.set(currentDerivedModel?.cardinality || 0)
+}
+$: inputRowCardinality.set(tables.reduce((acc, v) => acc + v.cardinality, 0))
 
 // toggle state for inspector sections
 let showSourceTables = true;
@@ -90,58 +96,26 @@ onMount(() => {
 
 
   <div bind:this={container}>
-    {#if currentModel && currentModel.query.trim().length}
-      {#if currentModel.query.trim().length}
-        <div class="flex flex-row justify-center" style:height="var(--header-height)" >
-          <button class="
-            p-3 pt-1 pb-1
-            m-2
-            bg-white
-            text-black
-            border
-            border-black
-            transition-colors
-            rounded-md" on:click={() => {
-            const exportFilename = currentModel.name.replace('.sql', '.parquet');
-            dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
-          }}>export parquet</button>
-          <button class="
-            p-3 pt-1 pb-1
-            m-2
-            bg-white
-            text-black
-            border
-            border-black
-            transition-colors
-            rounded-md" on:click={() => {
-            const exportFilename = currentModel.name.replace('.sql', '.csv');
-            dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
-          }}>export csv</button>
-        </div>
-      {/if}
-      {#if tables}
-        <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
-          <div style="font-weight: bold;">
-            {#if rollup !== 1}{formatRollupFactor(rollup)}x{:else}no{/if} rollup
-          </div>
-          <div style="color: #666; text-align:right;">
-            {formatCompactInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
-            {formatCompactInteger(currentDerivedModel.cardinality)} rows
-          </div>
-          <div>
-            {#if currentDerivedModel.sizeInBytes}
-            {#if compression !== 1}{formatRollupFactor(compression)}x{:else}no{/if} compression
-            {:else}<button on:click={() => {}}>generate compression</button>{/if}
-          </div>
-          <div style="color: #666; text-align: right;">
-            {formatCompactInteger(tables.reduce((acc, v) => acc + v.sizeInBytes, 0))} ⭢
-            {#if currentDerivedModel.sizeInBytes}{formatCompactInteger(currentDerivedModel.sizeInBytes)}{:else}...{/if}
-          </div>
-        </div>
-      {/if}
 
-      <hr />
-      
+    {#if tables}
+    <div class='cost p-4 text-right' style=' font-size: 16px;'>
+      <div >
+            {#if rollup !== 0}
+            <span style="font-weight: bold;">{formatPercentage($bigRollupNumber)}</span> of source rows
+            {:else} <span style="font-weight: bold;">no change</span> in row count
+            {/if}  
+
+      </div>
+      <div style="color: #666;">
+        {formatInteger(~~$inputRowCardinality)} ⭢
+        {formatInteger(~~$outputRowCardinality)} rows
+      </div>
+    </div>
+  {/if}
+  <hr />
+
+    <div class="model-profile">
+    {#if currentModel && currentModel.query.trim().length}       
       <div class='pt-4 pb-4'>
         <div class=" pl-5 pr-5">
           <CollapsibleSectionTitle tooltipText="source tables" bind:active={showSourceTables}>
@@ -209,6 +183,9 @@ onMount(() => {
               totalRows={currentDerivedModel?.cardinality}
               nullCount={column.nullCount}
             >
+            <svelte:fragment slot="context-button">
+              <Spacer />
+          </svelte:fragment>
             </ColumnProfile>
           {/each}
         </div>
@@ -217,6 +194,7 @@ onMount(() => {
     </div>
 
     {/if}
+  </div>
   </div>
 <style lang="postcss">
 
