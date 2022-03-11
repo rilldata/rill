@@ -9,11 +9,14 @@ import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import Spacer from "$lib/components/icons/Spacer.svelte";
 import * as classes from "$lib/util/component-classes";
 
+import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+
 import type { ApplicationStore } from "$lib/app-store";
 
 import {format} from "d3-format";
 
-import { formatInteger, formatPercentage } from "$lib/util/formatters"
+import { formatInteger, formatBigNumberPercentage } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
 import type {
@@ -35,7 +38,7 @@ const queryHighlight = getContext('rill:app:query-highlight');
 
 function tableDestinationCompute(key, table, destination) {
   let inputs = table.reduce((acc,v) => acc + v[key], 0)
-  return  (inputs - destination[key]) / inputs;
+  return  (destination[key]) / inputs;
 }
 
 function computeRollup(table, destination) {
@@ -98,14 +101,24 @@ onMount(() => {
   <div bind:this={container}>
 
     {#if tables}
-    <div class='cost p-4 text-right' style=' font-size: 16px;'>
-      <div >
+    <div class='cost p-4 text-right grid  justify-end' style=' font-size: 16px;'>
+      <Tooltip location="left" alignment="center" distance={8}>
+      <div class="w-max text-right">
             {#if rollup !== 0}
-            <span style="font-weight: bold;">{formatPercentage($bigRollupNumber)}</span> of source rows
+            <span style="font-weight: bold;">{formatBigNumberPercentage($bigRollupNumber)}</span> of source rows
             {:else} <span style="font-weight: bold;">no change</span> in row count
             {/if}  
-
       </div>
+      <TooltipContent slot='tooltip-content'>
+        <div class="pt-1 pb-1 font-bold">
+          the rollup percentage
+        </div>
+        <div style:width="240px" class="pb-1">
+          the ratio of destination table rows to
+          source table rows, as a percentage
+        </div>
+      </TooltipContent>
+      </Tooltip>
       <div style="color: #666;">
         {formatInteger(~~$inputRowCardinality)} ⭢
         {formatInteger(~~$outputRowCardinality)} rows

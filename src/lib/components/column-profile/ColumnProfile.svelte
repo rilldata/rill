@@ -7,6 +7,7 @@ import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
 import FormattedDataType from "$lib/components/data-types/FormattedDataType.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte"
 import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
 import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
 import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
@@ -94,7 +95,7 @@ let shiftClicked = transientBooleanStore();
                 {name}
             </div>
             {#if totalRows}
-                <div class="grid gap-x-6 items-baseline text-gray-200" style="grid-template-columns: auto  max-content ">
+                <TooltipShortcutContainer>
 
                     <SlidingWords {active} hovered={titleTooltip}>
                         {#if CATEGORICALS.has(type)}
@@ -119,7 +120,7 @@ let shiftClicked = transientBooleanStore();
                         <span style='font-family: var(--system);";
                         '>⇧</span> + Click
                     </Shortcut>
-                </div>
+                </TooltipShortcutContainer>
             {:else}
                 <!-- no data is available, so let's give a useful message-->
                 no rows selected
