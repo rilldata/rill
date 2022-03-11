@@ -230,7 +230,7 @@ const expressionTokens = [
     ' left outer join ', ' right outer join ', 
     ' inner join ', ' outer join ',
     ' natural join ', ' right join ', ' left join ',
-    
+    ' limit ',
 
     ' join ', // make join last,
 ]
