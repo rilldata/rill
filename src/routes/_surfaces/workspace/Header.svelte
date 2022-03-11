@@ -22,7 +22,10 @@ const store = getContext('rill:app:store') as ApplicationStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 
 function formatModelName(str) {
-    let output = str.trim().replaceAll(' ', '_');
+    let output = str
+        .trim()
+        .replaceAll(' ', '_')
+        .replace(/\.sql/, '');
     return output;
 }
 
