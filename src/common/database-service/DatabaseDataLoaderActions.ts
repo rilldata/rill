@@ -42,6 +42,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
         }
         const exportPath = `${this.databaseConfig.exportFolder}/${exportFile}`;
         const exportQuery = `COPY (${query}) TO '${exportPath}' (${exportString})`;
+        const data = await this.databaseClient.execute(query);
         await this.databaseClient.execute(exportQuery);
         return exportPath;
     }

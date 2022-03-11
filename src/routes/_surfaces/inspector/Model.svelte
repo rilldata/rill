@@ -4,6 +4,7 @@ import { slide } from "svelte/transition";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
 import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+import Spacer from "$lib/components/icons/Spacer.svelte";
 import * as classes from "$lib/util/component-classes";
 
 import type { ApplicationStore } from "$lib/app-store";
@@ -44,6 +45,7 @@ let tables;
 // get source tables?
 let sourceTableReferences;
 let showColumns = true;
+let showExportOptions = true;
 let sourceTableNames = [];
 
 let currentModel: PersistentModelEntity;
@@ -80,53 +82,26 @@ onMount(() => {
 
 
   <div bind:this={container}>
-    {#if currentModel && currentModel.query.trim().length}
-      {#if currentModel.query.trim().length}
-        <div class="flex flex-row justify-center content-center	" style:height="var(--header-height)" >
-          <button class="
-            p-3 pt-1 pb-1
-            m-3
-            bg-white
-            text-black
-            border
-            border-black
-            transition-colors
-            rounded-md" on:click={() => {
-            const exportFilename = currentModel.name.replace('.sql', '.parquet');
-            dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
-          }}>export parquet</button>
-          <button class="
-            p-3 pt-1 pb-1
-            m-3
-            bg-white
-            text-black
-            border
-            border-black
-            transition-colors
-            rounded-md" on:click={() => {
-            const exportFilename = currentModel.name.replace('.sql', '.csv');
-            dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
-          }}>export csv</button>
-        </div>
-      {/if}
-      {#if tables}
-        <div class='cost p-4 grid justify-between' style='grid-template-columns: max-content max-content;'>
-          <div style="font-weight: bold;">
-                {#if rollup !== 1}
-                {formatPercentage(rollup)}
-                {:else}no
-                {/if} of source rows
 
-          </div>
-          <div style="color: #666; text-align:right;">
-            {formatInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
-            {formatInteger(currentDerivedModel.cardinality)} rows
-          </div>
-        </div>
-      {/if}
+    {#if tables}
+    <div class='cost p-4 text-right' style=' font-size: 16px;'>
+      <div style="font-weight: bold;">
+            {#if rollup !== 1}
+            {formatPercentage(rollup)}
+            {:else}no
+            {/if} of source rows
 
-      <hr />
-      
+      </div>
+      <div style="color: #666;">
+        {formatInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
+        {formatInteger(currentDerivedModel.cardinality)} rows
+      </div>
+    </div>
+  {/if}
+  <hr />
+
+    <div class="model-profile">
+    {#if currentModel && currentModel.query.trim().length}       
       <div class='pt-4 pb-4'>
         <div class=" pl-5 pr-5">
           <CollapsibleSectionTitle tooltipText="source tables" bind:active={showSourceTables}>
@@ -194,6 +169,9 @@ onMount(() => {
               totalRows={currentDerivedModel?.cardinality}
               nullCount={column.nullCount}
             >
+            <svelte:fragment slot="context-button">
+              <Spacer />
+          </svelte:fragment>
             </ColumnProfile>
           {/each}
         </div>
@@ -202,6 +180,7 @@ onMount(() => {
     </div>
 
     {/if}
+  </div>
   </div>
 <style lang="postcss">
 

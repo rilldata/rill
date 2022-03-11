@@ -1,12 +1,19 @@
 <script lang="ts">
-import { getContext } from "svelte";
+import { getContext, tick } from "svelte";
 import { ApplicationStore, dataModelerService } from "$lib/app-store";
 
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
+import MoreHorizontal from "$lib/components/icons/MoreHorizontal.svelte";
+import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte"
+import Menu from "$lib/components/menu/Menu.svelte"
+import MenuItem from "$lib/components/menu/MenuItem.svelte"
 import { PersistentModelStore } from "$lib/modelStores";
+
+import { onClickOutside } from "$lib/util/on-click-outside";
+
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
@@ -27,6 +34,16 @@ let titleInputElement;
 let editingTitle = false;
 let titleInputValue;
 let tooltipActive;
+
+let menuX;
+let menuY;
+let clickOutsideListener;
+
+$: if (!contextMenuOpen && clickOutsideListener) {
+    clickOutsideListener();
+    clickOutsideListener = undefined;
+}
+
 let titleInput = currentModel?.name;
 $: titleInput = currentModel?.name;
 
@@ -36,13 +53,17 @@ function onKeydown(event) {
         titleInputElement.blur();
     }
 }
+
+let contextMenu;
+let contextMenuOpen = false;
+
 </script>
 
 <svelte:window on:keydown={onKeydown} />
 
 <header 
     style:height="var(--header-height)"
-    class="grid items-center content-stretch bg-gray-100 pl-6 pr-6" 
+    class="grid items-center content-stretch justify-between bg-gray-100 pl-6 pr-6" 
     style:grid-template-columns="[title] auto [controls] auto">
     <div>
         {#if titleInput !== undefined && titleInput !== null}
@@ -67,10 +88,71 @@ function onKeydown(event) {
                     }
                 }} />
             <TooltipContent slot="tooltip-content">
-                <div class='flex items-center'><EditIcon size=".75em"} />Edit</div>
+                <div class='flex items-center'><EditIcon size=".75em" />Edit</div>
             </TooltipContent>
             </Tooltip>
         </h1>
         {/if}
+    </div>
+    <div>
+
+<Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
+    <button
+    bind:this={contextMenu}
+    on:click={async (event) => {
+        contextMenuOpen = !contextMenuOpen;
+        menuX = event.clientX;
+        menuY = event.clientY;
+
+        if (!clickOutsideListener) {
+            await tick();
+            clickOutsideListener = onClickOutside(() => {
+                contextMenuOpen = false;
+            }, contextMenu);
+        }
+    }}
+    style:grid-column="left-control"
+    class="
+        hover:bg-gray-300
+        transition-tranform 
+        text-gray-500
+        duration-100
+        grid
+        items-center
+        justify-center
+        border
+        border-transparent
+        rounded
+       "
+    >
+    <MoreHorizontal size="20px" />
+</button>
+    <TooltipContent slot="tooltip-content">
+        Export the model output
+    </TooltipContent>
+</Tooltip>
+
+{#if contextMenuOpen}
+<!-- place this above codemirror.-->
+<div bind:this={contextMenu}>
+    <FloatingElement relationship="mouse" target={{x: menuX, y:menuY}} location="left" alignment="start">
+        <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
+            <MenuItem on:select={() => {
+                const exportFilename = currentModel.name.replace('.sql', '.parquet');
+                dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
+            }}>
+                Export as Parquet 
+            </MenuItem>
+            <MenuItem on:select={() => {
+                const exportFilename = currentModel.name.replace('.sql', '.csv');
+                dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
+            }}>
+                Export as CSV 
+            </MenuItem>
+        </Menu>
+    </FloatingElement>
+</div>
+{/if}
+
     </div>
 </header>
