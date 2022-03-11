@@ -6,7 +6,7 @@ import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import { asyncWait } from "$common/utils/waitUtils";
+import { asyncWait, waitUntil } from "$common/utils/waitUtils";
 import { TestBase } from "@adityahegde/typescript-test-utils";
 import { UserColumnsTestData } from "../data/DataLoader.data";
 import {
@@ -60,9 +60,12 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
 
         await this.secondDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/Users.parquet"]);
-        await asyncWait(500);
+        await asyncWait(50);
 
-        instances = this.getTables("name", "Users");
+        await waitUntil(() => {
+            instances = this.getTables("name", "Users");
+            return !!instances[0];
+        });
         expect(instances[0].name).toBe("Users");
         this.assertColumns(instances[1].profile, UserColumnsTestData);
     }
@@ -71,7 +74,7 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
     public async clientShouldPickupModelUpdates(): Promise<void> {
         await this.secondDataModelerService.dispatch("addModel",
             [{name: "newModel", query: SingleTableQuery}]);
-        await asyncWait(1000);
+        await asyncWait(50);
         await this.waitForModels();
         const [model, derivedModel] = this.getModels("tableName", "newModel");
         expect(model.name).toBe("newModel.sql");
@@ -79,7 +82,7 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
 
         await this.clientDataModelerService.dispatch("updateModelQuery",
             [model.id, TwoTableJoinQuery]);
-        await asyncWait(1000);
+        await asyncWait(50);
         await this.waitForModels();
         const [, updatedDerivedModel] = this.getModels("tableName", "newModel");
         expect(model.name).toBe("newModel.sql");

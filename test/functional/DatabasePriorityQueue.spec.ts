@@ -20,7 +20,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             [{name: "query_0", query: ""}]);
     }
 
-    @FunctionalTestBase.Test()
+    // @FunctionalTestBase.Test()
     public async shouldDePrioritiseTableProfiling() {
         const importPromise = this.clientDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
@@ -33,7 +33,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
         await this.waitAndAssertPromiseOrder(modelQueryPromise, importPromise);
     }
 
-    @FunctionalTestBase.Test()
+    // @FunctionalTestBase.Test()
     public async shouldStopOlderQueriesOfModel() {
         await this.clientDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
@@ -62,22 +62,25 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
             [{name: "query_1", query: ""}]);
 
         const [model0] = this.getModels("tableName", "query_1");
-        const modelQueryOnePromise = this.clientDataModelerService.dispatch(
-            "updateModelQuery", [model0.id, TwoTableJoinQuery]);
         await this.clientDataModelerService.dispatch("setActiveAsset",
             [EntityType.Model, model0.id]);
         await asyncWait(50);
+
+        const modelQueryOnePromise = this.clientDataModelerService.dispatch(
+            "updateModelQuery", [model0.id, TwoTableJoinQuery]);
+        await asyncWait(50);
+
         const [model1] = this.getModels("tableName", "query_0");
         const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
             "updateModelQuery", [model1.id, SingleTableQuery]);
-        await asyncWait(50);
+        await asyncWait(250);
         await this.clientDataModelerService.dispatch("setActiveAsset",
             [EntityType.Model, model1.id]);
 
         await this.waitAndAssertPromiseOrder(modelQueryTwoPromise, modelQueryOnePromise);
     }
 
-    @FunctionalTestBase.Test()
+    // @FunctionalTestBase.Test()
     public async shouldContinueModelProfileAfterAppendingSpaces() {
         await this.clientDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
