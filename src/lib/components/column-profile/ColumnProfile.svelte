@@ -8,6 +8,8 @@ import FormattedDataType from "$lib/components/data-types/FormattedDataType.svel
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
+import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
+import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
 import { config } from "./utils";
 
 import { percentage } from "./utils"
@@ -17,6 +19,8 @@ import { CATEGORICALS, NUMERICS, TIMESTAMPS, DATA_TYPE_COLORS } from "$lib/duckd
 import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
 import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
 import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
+import notificationStore from "$lib/components/notifications/";
+import transientBooleanStore from "$lib/util/transient-boolean-store";
 
 export let name;
 export let type;
@@ -46,6 +50,7 @@ $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : f
 let titleTooltip;
 let titleTooltipHover;
 
+let shiftClicked = transientBooleanStore();
 </script>
 
 
@@ -54,9 +59,17 @@ let titleTooltipHover;
     {hideRight}
     {active}
     emphasize={active}
-    on:select={() => {
+    on:select={async (event) => {
         // we should only allow activation when there are rows present.
-        if (totalRows) {
+        if (event.detail) {
+            await navigator.clipboard.writeText(name);
+
+            notificationStore.send({ message: `copied column name "${name}" to clipboard`});
+            
+            // update this to set the active animation in the tooltip text
+            shiftClicked.flip();
+
+        } else if (totalRows) {
             active = !active;
         }
     }}
@@ -67,21 +80,46 @@ let titleTooltipHover;
 
     <svelte:fragment slot="left">
         <Tooltip location="right" alignment="center" distance={8} bind:active={titleTooltip}>
-            <span >
-                {name}
-            </span>
+            <!-- Wrap in a traditional div then force the ellipsis overflow in the child element.
+                this will make the tooltip bound to the parent element while the child element can flow more freely
+                and create the ellipisis due to the overflow.
+            -->
+            <div>
+                <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+                    {name}
+                </div>
+            </div>
         <TooltipContent slot="tooltip-content">
-
+            <div class="pt-1 pb-1 font-bold">
+                {name}
+            </div>
             {#if totalRows}
-                <SlidingWords {active} hovered={titleTooltip}>
-                    {#if CATEGORICALS.has(type)}
-                        the top 10 values
-                    {:else if TIMESTAMPS.has(type)}
-                        the count(*) over time
-                    {:else if NUMERICS.has(type)}
-                        the distribution of values
-                    {/if}
-                </SlidingWords>
+                <div class="grid gap-x-6 items-baseline text-gray-200" style="grid-template-columns: auto  max-content ">
+
+                    <SlidingWords {active} hovered={titleTooltip}>
+                        {#if CATEGORICALS.has(type)}
+                            the top 10 values
+                        {:else if TIMESTAMPS.has(type)}
+                            the count(*) over time
+                        {:else if NUMERICS.has(type)}
+                            the distribution of values
+                        {/if}
+                    </SlidingWords>
+                    <Shortcut>
+                        Click
+                    </Shortcut>
+
+                    <div>
+                        <StackingWord active={$shiftClicked}>
+                            copy
+                        </StackingWord>
+                        column name to clipboard
+                    </div>
+                    <Shortcut>
+                        <span style='font-family: var(--system);";
+                        '>⇧</span> + Click
+                    </Shortcut>
+                </div>
             {:else}
                 <!-- no data is available, so let's give a useful message-->
                 no rows selected
@@ -185,9 +223,9 @@ let titleTooltipHover;
 
     <svelte:fragment slot="details">
         {#if active}
-        <div transition:slide|local={{duration: 200}} class="pt-3 pb-3">
-            {#if CATEGORICALS.has(type)}
-                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8">
+        <div transition:slide|local={{duration: 200}} class="pt-3 pb-3  w-full">
+            {#if CATEGORICALS.has(type) && summary?.topK}
+                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8 w-full">
                     <!-- pl-16 pl-8 -->
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>

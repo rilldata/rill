@@ -79,7 +79,6 @@ let sortMethod = defaultSort;
 $: if (sortMethod !== sortByOriginalOrder) {
     sortedProfile = [...profile].sort(sortMethod);
 } else {
-    console.log('does this work.')
     sortedProfile = profile;
 }
 

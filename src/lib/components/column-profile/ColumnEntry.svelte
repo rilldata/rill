@@ -26,8 +26,8 @@ export let right = 2 // pr-2";
         focus:outline-gray-300
         justify-between w-full"
     class:bg-gray-50={active}
-    on:click={() => {
-        dispatch('select');
+    on:click={(event) => {
+        dispatch('select', event.shiftKey);
     }}
 >
     <div class="flex gap-2 grow overflow-hidden items-baseline">
@@ -43,7 +43,7 @@ export let right = 2 // pr-2";
         <slot name="context-button" />
     </div>
 </button>
-<div>
+<div class="w-full">
     <slot name="details" />
 </div>
 
