@@ -5,6 +5,10 @@ import type { ApplicationStore } from "$lib/app-store";
 import { cubicOut as easing } from 'svelte/easing';
 import Editor from "$lib/components/Editor.svelte";
 import {dataModelerService} from "$lib/app-store";
+import Portal from "$lib/components/Portal.svelte";
+
+import { drag } from "$lib/drag";
+import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween } from "$lib/layout-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 import type {
@@ -42,12 +46,28 @@ let currentDerivedModel: DerivedModelEntity;
 $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
     $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 
+// track innerHeight to calculate the size of the editor element.
+let innerHeight;
+
 </script>
 
-<div class="editor-pane">
-  <div>
+<svelte:window bind:innerHeight />
+
+<div
+  class="editor-pane"
+
+>
+  <!-- <div  
+  class="fixed" 
+  style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
+  style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth}px"
+  style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
+  style:top="var(--header-height)"> -->
+  <div  
+    style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px - var(--header-height))"
+  >
   {#if $store && $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
-    <div class="input-body p-6 pt-0 overflow-auto">
+    <div class="h-full grid p-6 pt-0 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}
@@ -87,16 +107,46 @@ $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) 
     </div>
   {/if}
 </div>
+
+{#if $modelPreviewVisible}
+<Portal>
+  <div 
+  class='fixed z-50 drawer-handler h-4 hover:cursor-col-resize -translate-x-2 grid items-center'
+  style:outline="1px solid black"
+  style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
+  style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
+  style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth}px"
+  use:drag={{ minSize: 200, maxSize: innerHeight - 200,  side: 'modelPreviewHeight', orientation: "vertical", reverse: true  }}>
+    <div class="border-t border-black" />
+</div>
+</Portal>
+{/if}
+
 <!-- Show the model output preview -->
 {#if currentModel}
-  <div style:font-size="12px" class="overflow-hidden h-full grid p-5" style:grid-template-rows="max-content auto">
+  <!-- <div 
+    class="fixed overflow-hidden h-full grid p-5"
+    style:bottom="0px"
+    style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
+    style:font-size="12px"  style:grid-template-rows="max-content auto"> -->
+
+    <div
+      style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight - 16}px"
+        class="p-6 overflow-auto"
+      style:outline="1px solid black"
+    >
+    
+
+
     <button on:click={() => { showPreview = !showPreview }}>{#if showPreview}hide{:else}show{/if} preview</button>
-    <div class="rounded overflow-auto border border border-gray-300 {!showPreview && 'hidden'}"
+    <div class="rounded overflow-auto border border border-gray-300 relative {!showPreview && 'hidden'}"
+    style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight - 16}px"
+
     >
       {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
         <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
       {:else}
-        <div class="p-5  grid items-center justify-center italic">no columns selected</div>
+        <div class="p-5 grid items-center justify-center italic">no columns selected</div>
       {/if}
     </div>
   </div>
@@ -105,8 +155,8 @@ $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) 
 <style>
 
 .editor-pane {
-  display: grid;
-  grid-template-rows: auto 400px;
+  /* display: grid; */
+  /* grid-template-rows: auto 400px; */
   height: calc(100vh - var(--header-height));
 }
 .error {

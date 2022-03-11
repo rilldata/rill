@@ -10,6 +10,7 @@ export const SURFACE_DRAG_DURATION = 50;
 export const layout = tweened({
     assetsWidth: 400,
     inspectorWidth: 400,
+    modelPreviewHeight: 400,
   }, { duration: SURFACE_DRAG_DURATION }
 );
 
@@ -17,6 +18,7 @@ export const layout = tweened({
 
 export const assetVisibilityTween = tweened(0, { duration: SURFACE_SLIDE_DURATION, easing: SURFACE_SLIDE_EASING });
 export const inspectorVisibilityTween = tweened(0, { duration: SURFACE_SLIDE_DURATION, easing: SURFACE_SLIDE_EASING });
+export const modelPreviewVisibilityTween = tweened(0, { duration: SURFACE_SLIDE_DURATION, easing: SURFACE_SLIDE_EASING });
 
 export const assetsVisible = writable(true);
 assetsVisible.subscribe((tf) => {
@@ -28,3 +30,7 @@ inspectorVisible.subscribe((tf) => {
     inspectorVisibilityTween.set(tf ? 0 : 1);
 })
 
+export const modelPreviewVisible = writable(true);
+modelPreviewVisible.subscribe((tf) => {
+    modelPreviewVisibilityTween.set(tf ? 0 : 1);
+})

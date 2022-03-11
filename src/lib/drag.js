@@ -3,11 +3,12 @@ export function drag(node, params) {
     let minSize_ = params?.minSize || 300;
     let maxSize_ = params?.maxSize || 800;
     let reverse_ = params?.reverse || false;
+    let orientation_ = params?.orientation || 'horizontal';
     
     let side_ = params?.side || 'right';
     let property = `--${side_}-sidebar-width`; //params?.property || '--left-sidebar-width';
     let moving = false;
-    let xSpace = minSize_;
+    let space = minSize_;
 
     node.style.cursor = "move";
     node.style.userSelect = "none";
@@ -18,12 +19,17 @@ export function drag(node, params) {
 
     function mousemove(e) {
         if (moving) {
-            const size = reverse_ ? innerWidth - e.pageX : e.pageX;
+            let size;
+            if (orientation_ === 'horizontal') {
+                size = reverse_ ? innerWidth - e.pageX : e.pageX;
+            } else if (orientation_ === 'vertical') {
+                size = reverse_ ? innerHeight - e.pageY : e.pageY;
+            }
             if (size > minSize_ && size < maxSize_) {
-                xSpace = size;
+                space = size;
             }
             layout.update((l) => {
-                l[side_] = xSpace;
+                l[side_] = space;
                 return l;
             })
         //document.body.style.setProperty(property, `${xSpace}px`)
@@ -66,8 +72,11 @@ export function dragVertical(node, params) {
         if (size > minSize_ && size < maxSize_) {
             xSpace = size;
         }
-
-        document.body.style.setProperty(property, `${xSpace}px`)
+        layout.update((l) => {
+            l[side_] = xSpace;
+            return l;
+        })
+        //document.body.style.setProperty(property, `${xSpace}px`)
         }
     }
 
