@@ -1,6 +1,8 @@
 <script lang="ts">
 import { getContext, onMount } from "svelte";
 import { slide } from "svelte/transition";
+import { tweened } from "svelte/motion";
+import { sineOut as easing } from "svelte/easing";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
 import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
@@ -48,6 +50,11 @@ let showColumns = true;
 let showExportOptions = true;
 let sourceTableNames = [];
 
+// interface tweens for the  big numbers
+let bigRollupNumber = tweened(0, { duration: 700, easing });
+let inputRowCardinality = tweened(0, { duration: 200, easing });
+let outputRowCardinality = tweened(0, { duration: 250, easing });
+
 let currentModel: PersistentModelEntity;
 $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
     $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
@@ -63,6 +70,13 @@ $: if (sourceTableReferences && $persistentTableStore?.entities && $derivedTable
         return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
     }).filter(t => !!t);
 $: if (currentDerivedModel?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentDerivedModel.cardinality });
+
+// set the interface big number tweens
+$: bigRollupNumber.set(rollup);
+$: if (currentDerivedModel && currentDerivedModel?.cardinality !== 0) {
+  outputRowCardinality.set(currentDerivedModel?.cardinality || 0)
+}
+$: inputRowCardinality.set(tables.reduce((acc, v) => acc + v.cardinality, 0))
 
 // toggle state for inspector sections
 let showSourceTables = true;
@@ -85,16 +99,16 @@ onMount(() => {
 
     {#if tables}
     <div class='cost p-4 text-right' style=' font-size: 16px;'>
-      <div style="font-weight: bold;">
-            {#if rollup !== 1}
-            {formatPercentage(rollup)}
-            {:else}no
-            {/if} of source rows
+      <div >
+            {#if rollup !== 0}
+            <span style="font-weight: bold;">{formatPercentage($bigRollupNumber)}</span> of source rows
+            {:else} <span style="font-weight: bold;">no change</span> in row count
+            {/if}  
 
       </div>
       <div style="color: #666;">
-        {formatInteger(tables.reduce((acc, v) => acc + v.cardinality, 0))} ⭢
-        {formatInteger(currentDerivedModel.cardinality)} rows
+        {formatInteger(~~$inputRowCardinality)} ⭢
+        {formatInteger(~~$outputRowCardinality)} rows
       </div>
     </div>
   {/if}

@@ -39,7 +39,6 @@ $: activeModel = $store && $persistentModelStore &&
 let showTables = true;
 let showModels = true;
 
-$: console.log($store)
 let view = 'assets';
 
 let container;
