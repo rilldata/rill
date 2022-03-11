@@ -9,6 +9,8 @@ import { ServerConfig } from "$common/config/ServerConfig";
 import {
     DataModelerStateSyncService
 } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
+import { clientFactory } from "$common/clientFactory";
+import { isPortOpen } from "$common/utils/isPortOpen";
 
 const DATABASE_NAME = "stage.db";
 
@@ -26,18 +28,43 @@ export abstract class DataModelerCliCommand {
     protected dataModelerStateSyncService: DataModelerStateSyncService;
     protected projectPath: string;
     protected config: RootConfig;
+    protected isClient: boolean;
 
-    private async init({ projectPath, shouldInitState, shouldSkipDatabase, profileWithUpdate }: CliRunArgs): Promise<void> {
-        this.projectPath = projectPath ?? process.cwd();
-        shouldInitState = shouldInitState ?? true;
-        shouldSkipDatabase = shouldSkipDatabase ?? true;
-        profileWithUpdate = profileWithUpdate ?? false;
+    private async init(cliRunArgs: CliRunArgs): Promise<void> {
+        this.projectPath = cliRunArgs.projectPath ?? process.cwd();
+        cliRunArgs.shouldInitState ??= true;
+        cliRunArgs.shouldSkipDatabase ??= true;
+        cliRunArgs.profileWithUpdate ??= false;
 
         this.config = new RootConfig({
-            database: new DatabaseConfig({ databaseName: DATABASE_NAME, skipDatabase: shouldSkipDatabase }),
+            database: new DatabaseConfig({ databaseName: DATABASE_NAME, skipDatabase: cliRunArgs.shouldSkipDatabase }),
             server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
-            projectFolder: this.projectPath, profileWithUpdate,
+            projectFolder: this.projectPath, profileWithUpdate: cliRunArgs.profileWithUpdate,
         });
+
+        const isServerRunning = await isPortOpen(this.config.server.socketPort);
+
+        if (isServerRunning) {
+            await this.initClientInstances();
+        } else {
+            // database should be started when server is not running.
+            // We can write to database in this case
+            this.config.database.skipDatabase = false;
+            await this.initServerInstances(cliRunArgs);
+        }
+
+        await this.dataModelerStateSyncService?.init();
+        await this.dataModelerService.init();
+
+        this.isClient = isServerRunning;
+    }
+
+    private async teardown(): Promise<void> {
+        await this.dataModelerStateSyncService?.destroy();
+        await this.dataModelerService.destroy();
+    }
+
+    private async initServerInstances({ shouldInitState }: CliRunArgs) {
         const {dataModelerService, dataModelerStateService, notificationService} = dataModelerServiceFactory(this.config);
 
         if (shouldInitState) {
@@ -45,18 +72,17 @@ export abstract class DataModelerCliCommand {
                 this.config, dataModelerStateService.entityStateServices,
                 dataModelerService, dataModelerStateService,
             );
-            await this.dataModelerStateSyncService.init();
         }
-        await dataModelerService.init();
 
         this.dataModelerService = dataModelerService;
         this.dataModelerStateService = dataModelerStateService;
         this.notificationService = notificationService;
     }
 
-    private async teardown(): Promise<void> {
-        await this.dataModelerStateService.destroy();
-        await this.dataModelerStateSyncService?.destroy();
+    private async initClientInstances() {
+        const {dataModelerService, dataModelerStateService} = clientFactory(this.config);
+        this.dataModelerService = dataModelerService;
+        this.dataModelerStateService = dataModelerStateService;
     }
 
     protected async run(cliRunArgs: CliRunArgs, ...args: Array<any>): Promise<void> {

@@ -43,28 +43,6 @@ export class DataLoaderSpec extends FunctionalTestBase {
     }
 
     @TestBase.Test()
-    public async shouldOnlyReloadNewFiles(): Promise<void> {
-        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [AdBidsFile]);
-        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [AdImpressionsFile]);
-        await this.waitForTables();
-
-        const [adBidTable] = this.getTables("name", "AdBids");
-        const [adImpressionTable] = this.getTables("name", "AdImpressions");
-
-        execSync(`touch ${AdBidsFile}`);
-
-        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [AdBidsFile]);
-        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [AdImpressionsFile]);
-        await this.waitForTables();
-
-        const [newAdBidTable] = this.getTables("name", "AdBids");
-        const [newAdImpressionTable] = this.getTables("name", "AdImpressions");
-
-        expect(adBidTable.lastUpdated).toBeLessThan(newAdBidTable.lastUpdated);
-        expect(adImpressionTable.lastUpdated).toBe(newAdImpressionTable.lastUpdated);
-    }
-
-    @TestBase.Test()
     public async shouldUseTableNameFromArgs(): Promise<void> {
         await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
           [UserFile, "UsersTable"]);

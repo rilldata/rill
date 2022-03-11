@@ -15,9 +15,10 @@ export interface DerivedModelEntity extends DataProfileEntity {
     sources?: SourceTable[];
 }
 export type DerivedModelState = EntityState<DerivedModelEntity>;
-export type DerivedModelStateActionArg = EntityStateActionArg<DerivedModelEntity>;
+export type DerivedModelStateActionArg = EntityStateActionArg<
+    DerivedModelEntity, DerivedModelState, DerivedModelEntityService>;
 
-export class DerivedModelEntityService extends EntityStateService<DerivedModelEntity> {
+export class DerivedModelEntityService extends EntityStateService<DerivedModelEntity, DerivedModelState> {
     public readonly entityType = EntityType.Model;
     public readonly stateType = StateType.Derived;
 }

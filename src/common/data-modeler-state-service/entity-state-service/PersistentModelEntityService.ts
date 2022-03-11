@@ -16,7 +16,7 @@ export type PersistentModelState = EntityState<PersistentModelEntity>;
 export type PersistentModelStateActionArg = EntityStateActionArg<
     PersistentModelEntity, PersistentModelState, PersistentModelEntityService>;
 
-export class PersistentModelEntityService extends EntityStateService<PersistentModelEntity> {
+export class PersistentModelEntityService extends EntityStateService<PersistentModelEntity, PersistentModelState> {
     public readonly entityType = EntityType.Model;
     public readonly stateType = StateType.Persistent;
 }

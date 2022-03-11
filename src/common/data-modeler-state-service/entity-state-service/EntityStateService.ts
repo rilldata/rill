@@ -39,7 +39,7 @@ export interface EntityState<Entity extends EntityRecord> {
 export type EntityStateActionArg<
     Entity extends EntityRecord,
     State extends EntityState<Entity> = EntityState<Entity>,
-    Service = EntityStateService<Entity>
+    Service extends EntityStateService<Entity, State> = EntityStateService<Entity, State>
 > = {
     stateService: Service;
     draftState: State;
@@ -52,30 +52,33 @@ export type EntityStateActionArg<
  *
  * Has CRUD methods. Can be overridden later on to fetch from a DB or an API.
  */
-export abstract class EntityStateService<Entity extends EntityRecord> {
-    public store: Writable<EntityState<Entity>>;
+export abstract class EntityStateService<
+    Entity extends EntityRecord,
+    State extends EntityState<Entity> = EntityState<Entity>,
+> {
+    public store: Writable<State>;
 
     public readonly entityType: EntityType;
     public readonly stateType: StateType;
 
     public constructor() {
         // need an empty state for UI where state init is async but component init is not
-        this.init({entities: [], lastUpdated: 0});
+        this.init({entities: [], lastUpdated: 0} as State);
     }
 
-    public init(initialState: EntityState<Entity>): void {
+    public init(initialState: State): void {
         this.store = writable(initialState);
     }
 
-    public getCurrentState(): EntityState<Entity> {
+    public getCurrentState(): State {
         return get(this.store);
     }
 
-    public getEmptyState(): EntityState<Entity> {
-        return {lastUpdated: 0, entities: []};
+    public getEmptyState(): State {
+        return {lastUpdated: 0, entities: []} as State;
     }
 
-    public updateState(draftModCallback: (draft: EntityState<Entity>) => void,
+    public updateState(draftModCallback: (draft: State) => void,
                        pathCallback: (patches: Array<Patch>) => void): void {
         this.store.set(produce(this.getCurrentState(), (draft) => {
             draftModCallback(draft as any);
@@ -86,16 +89,16 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         this.store.set(applyPatches(this.getCurrentState(), patches));
     }
 
-    public getById(id: string, state = this.getCurrentState()): Entity {
+    public getById(id: string, state: State = this.getCurrentState()): Entity {
         return state.entities.find(entity => entity.id === id);
     }
 
     public getByField<Field extends keyof Entity>(field: Field, value: Entity[Field],
-                                                  state = this.getCurrentState()): Entity {
+                                                  state: State = this.getCurrentState()): Entity {
         return state.entities.find(entity => entity[field] === value);
     }
 
-    public addEntity(draftState: EntityState<Entity>, newEntity: Entity, atIndex?: number): void {
+    public addEntity(draftState: State, newEntity: Entity, atIndex?: number): void {
         // TODO: validate id conflicts
         if (atIndex) {
             draftState.entities.splice(atIndex, 0, newEntity);
@@ -105,7 +108,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         }
     }
 
-    public updateEntity(draftState: EntityState<Entity>, id: string, newEntity: Entity): void {
+    public updateEntity(draftState: State, id: string, newEntity: Entity): void {
         const entity = this.getById(id, draftState);
         if (!entity) {
             console.error(`Record not found. entityType=${this.entityType} stateType=${this.stateType} id=${id}`);
@@ -114,7 +117,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         entity.lastUpdated = Date.now();
     }
 
-    public updateEntityField<Field extends keyof Entity>(draftState: EntityState<Entity>,
+    public updateEntityField<Field extends keyof Entity>(draftState: State,
                                                          id: string, field: Field, value: Entity[Field]): void {
         const entity = this.getById(id, draftState);
         if (!entity) {
@@ -124,7 +127,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         entity.lastUpdated = Date.now();
     }
 
-    public deleteEntity(draftState: EntityState<Entity>, id: string): void {
+    public deleteEntity(draftState: State, id: string): void {
         const index = draftState.entities.findIndex(entity => entity.id === id);
         if (index === -1) {
             console.error(`Record not found. entityType=${this.entityType} stateType=${this.stateType} id=${id}`);
@@ -132,7 +135,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
         draftState.entities.splice(index, 1);
     }
 
-    public moveEntityDown(draftState: EntityState<Entity>, id: string): void {
+    public moveEntityDown(draftState: State, id: string): void {
         const index = draftState.entities.findIndex(entity => entity.id === id);
         if (index === -1 || index === draftState.entities.length - 1) return;
 
@@ -142,7 +145,7 @@ export abstract class EntityStateService<Entity extends EntityRecord> {
             [draftState.entities[index + 1], draftState.entities[index]];
     }
 
-    public moveEntityUp(draftState: EntityState<Entity>, id: string): void {
+    public moveEntityUp(draftState: State, id: string): void {
         const index = draftState.entities.findIndex(entity => entity.id === id);
         if (index === -1 || index === 0) return;
 

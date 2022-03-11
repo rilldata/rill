@@ -17,10 +17,11 @@ export interface ActiveEntity {
 export interface ApplicationEntity extends DerivedEntityRecord {}
 export interface ApplicationState extends EntityState<ApplicationEntity> {
     activeEntity: ActiveEntity;
+    databasePaused: boolean;
 }
 export type ApplicationStateActionArg = EntityStateActionArg<ApplicationEntity, ApplicationState>;
 
-export class ApplicationStateService extends EntityStateService<ApplicationEntity> {
+export class ApplicationStateService extends EntityStateService<ApplicationEntity, ApplicationState> {
     public readonly entityType = EntityType.Application;
     public readonly stateType = StateType.Derived;
 }

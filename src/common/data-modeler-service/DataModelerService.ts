@@ -8,14 +8,14 @@ import {getActionMethods} from "$common/ServiceBase";
 import type { DatabaseActionsDefinition, DatabaseService } from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
 import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { CommonActions } from "$common/data-modeler-service/CommonActions";
+import type { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &
     ProfileColumnActions &
     ModelActions &
-    CommonActions
+    ApplicationActions
 )>;
 /**
  * Style definition for data modeler actions.

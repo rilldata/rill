@@ -1,8 +1,11 @@
 import { DataModelerActions } from ".//DataModelerActions";
 import { FILE_EXTENSION_TO_TABLE_TYPE, TableSourceType } from "$lib/types";
 import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
-import { extractFileExtension, extractTableName, INVALID_CHARS, sanitizeTableName } from "$lib/util/extract-table-name";
-import { stat } from "fs/promises";
+import {
+    extractFileExtension,
+    getTableNameFromFile,
+    INVALID_CHARS,
+} from "$lib/util/extract-table-name";
 import type {
     PersistentTableEntity,
     PersistentTableStateActionArg
@@ -37,7 +40,7 @@ export class TableActions extends DataModelerActions {
     @DataModelerActions.PersistentTableAction()
     public async addOrUpdateTableFromFile({stateService}: PersistentTableStateActionArg, path: string,
                                           tableName?: string, options: ImportTableOptions = {}): Promise<void> {
-        const name = tableName ?? sanitizeTableName(extractTableName(path));
+        const name = getTableNameFromFile(path, tableName);
         const type = FILE_EXTENSION_TO_TABLE_TYPE[extractFileExtension(path)];
 
         if (!existsSync(path)) {
@@ -55,18 +58,8 @@ export class TableActions extends DataModelerActions {
             return;
         }
 
-        const existingTable = stateService.getByField("path", path);
+        const existingTable = stateService.getByField("tableName", name);
         const table = existingTable ? {...existingTable} : getNewTable();
-
-        if (existingTable && existingTable.tableName !== name) {
-            console.error("New table name doesnt match existing. Renaming is not supported at the moment.");
-            return;
-        }
-        const existingByName = stateService.getByField("tableName", name);
-        if (existingByName && existingByName.path !== path) {
-            console.error(`Another table with ${name} already exists.`);
-            return;
-        }
 
         table.path = path;
         table.name = name;
@@ -76,9 +69,6 @@ export class TableActions extends DataModelerActions {
             table.csvDelimiter = options.csvDelimiter;
         }
 
-        // get stats of the file and update only if it changed since we last saw it
-        const fileStats = await stat(path);
-        if (fileStats.mtimeMs < table.lastUpdated) return;
         table.lastUpdated = Date.now();
 
         await this.addOrUpdateTable(table, !existingTable);
@@ -103,8 +93,6 @@ export class TableActions extends DataModelerActions {
         this.databaseActionQueue.clearQueue(tableId);
 
         try {
-            await this.importTableDataByType(persistentTable);
-
             this.dataModelerStateService.dispatch("setTableStatus",
                 [EntityType.Table, tableId, EntityStatus.Profiling]);
             await this.dataModelerStateService.dispatch("clearProfileSummary",
@@ -149,6 +137,8 @@ export class TableActions extends DataModelerActions {
         }
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
             [table, isNew]);
+
+        await this.importTableDataByType(table);
 
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
