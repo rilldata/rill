@@ -101,10 +101,10 @@ onMount(() => {
   <div bind:this={container}>
 
     {#if tables}
-    <div class='cost p-4 text-right grid  justify-end' style=' font-size: 16px;'>
+    <div class='cost p-4 text-right grid justify-items-end justify-end' style=' font-size: 16px;'>
       <Tooltip location="left" alignment="center" distance={8}>
       <div class="w-max text-right">
-            {#if rollup !== 0}
+            {#if rollup !== 1}
             <span style="font-weight: bold;">{formatBigNumberPercentage($bigRollupNumber)}</span> of source rows
             {:else} <span style="font-weight: bold;">no change</span> in row count
             {/if}  
@@ -119,7 +119,7 @@ onMount(() => {
         </div>
       </TooltipContent>
       </Tooltip>
-      <div style="color: #666;">
+      <div class='text-gray-500'>
         {formatInteger(~~$inputRowCardinality)} ⭢
         {formatInteger(~~$outputRowCardinality)} rows
       </div>
