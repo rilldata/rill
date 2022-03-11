@@ -5,6 +5,8 @@
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build && tsc --project tsconfig.node.json",
+		"prepack": "./build-tools/replace_package_type.sh module commonjs",
+		"postpack": "./build-tools/replace_package_type.sh commonjs module",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
@@ -49,7 +51,6 @@
 		"prettier": "^2.5.1",
 		"prettier-plugin-svelte": "^2.6.0",
 		"sinon": "^13.0.1",
-		"svelte": "^3.46.4",
 		"svelte-check": "^2.4.3",
 		"svelte-jester": "^2.3.1",
 		"svelte-preprocess": "^4.10.2",
@@ -82,6 +83,19 @@
 		"module-alias": "^2.2.2",
 		"piscina": "^3.2.0",
 		"socket.io": "^4.4.1",
-		"socket.io-client": "^4.4.1"
-	}
+		"socket.io-client": "^4.4.1",
+		"svelte": "^3.46.4"
+	},
+	"bin": {
+		"data-modeler": "./dist/cli/data-modeler-cli.js"
+	},
+	"files": [
+		"dist",
+		"build",
+		"static",
+		"package.json",
+		"package-lock.json",
+		"LICENSE.md",
+		"README.md"
+	]
 }
