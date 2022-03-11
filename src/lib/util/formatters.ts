@@ -6,7 +6,23 @@ const zeroPad = format('02d');
 export const formatInteger = format(',');
 const formatRate = format('.1f');
 
-export const formatPercentage = format('.2%');
+/**
+ * changes precision depending on the 
+ */
+export function formatBigNumberPercentage(v) {
+    if (v < .0001) {
+        const f = format('.4%')(v);
+        if (f === '0.0000%') {
+            return "~ 0%"
+        } else {
+            return f
+        }
+    } else {
+        return format('.2%')(v);
+    }
+}
+
+//export const formatPercentage = format('.2%');
 
 export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
     let fmt = timeFormat('%b %d, %Y %I:%M:%S');
