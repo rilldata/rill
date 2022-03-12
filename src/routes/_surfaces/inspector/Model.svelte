@@ -143,8 +143,6 @@ onMount(() => {
       </TooltipContent>
       </Tooltip>
       <div class='text-gray-500'  class:text-gray-300={currentDerivedModel?.error}>
-        <!-- {formatInteger(~~$inputRowCardinality)} ⭢
-        {formatInteger(~~$outputRowCardinality)} rows -->
         {#if inputRowCardinalityValue > 0}
         {formatInteger(inputRowCardinalityValue)} ⭢
           {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
