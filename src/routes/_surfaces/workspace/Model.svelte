@@ -8,7 +8,7 @@ import {dataModelerService} from "$lib/app-store";
 import Portal from "$lib/components/Portal.svelte";
 
 import { drag } from "$lib/drag";
-import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween } from "$lib/layout-store";
+import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/layout-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 import type {
@@ -102,13 +102,14 @@ let innerHeight;
 {#if $modelPreviewVisible}
 <Portal>
   <div 
-  class='fixed z-50 drawer-handler h-4 hover:cursor-col-resize -translate-x-2 grid items-center'
-  style:outline="1px solid black"
+  class='fixed z-50 drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2'
   style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
   style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
-  style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth}px"
+  style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth + 16}px"
+  style:padding-left="{($assetVisibilityTween * SIDE_PAD)}px"
+  style:padding-right="{($inspectorVisibilityTween * SIDE_PAD)}px"
   use:drag={{ minSize: 200, maxSize: innerHeight - 200,  side: 'modelPreviewHeight', orientation: "vertical", reverse: true  }}>
-    <div class="border-t border-black" />
+    <div class="border-t border-gray-300" />
 </div>
 </Portal>
 {/if}
@@ -118,12 +119,7 @@ let innerHeight;
       style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
       class="p-6"
     >
-    
-
-
-    <div class="rounded overflow-auto border border border-gray-300 h-full  {!showPreview && 'hidden'}"
-
-    >
+    <div class="rounded overflow-auto border border border-gray-300 h-full  {!showPreview && 'hidden'}" >
       {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
         <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
       {:else}

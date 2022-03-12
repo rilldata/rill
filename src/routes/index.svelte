@@ -13,7 +13,8 @@ import {
   assetVisibilityTween, 
   assetsVisible,
   inspectorVisibilityTween,
-  inspectorVisible
+  inspectorVisible,
+  SIDE_PAD
 } from "$lib/layout-store"
 
 
@@ -55,8 +56,8 @@ let inspectorHovered = false;
   <!-- workspace component -->
   <div 
     class="box-border bg-gray-100 fixed" 
-    style:padding-left="{($assetVisibilityTween * 80)}px"
-    style:padding-right="{($inspectorVisibilityTween * 80)}px"
+    style:padding-left="{($assetVisibilityTween * SIDE_PAD)}px"
+    style:padding-right="{($inspectorVisibilityTween * SIDE_PAD)}px"
     style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px" 
     style:top="0px" 
     style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px">
