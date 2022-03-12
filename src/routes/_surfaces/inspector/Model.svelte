@@ -63,31 +63,37 @@ let currentDerivedModel: DerivedModelEntity;
 $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
     $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 // get source table references.
-$: if (currentDerivedModel?.sources?.length) sourceTableReferences = currentDerivedModel?.sources;
-$: if (sourceTableReferences && $persistentTableStore?.entities && $derivedTableStore?.entities)
+$: if (currentDerivedModel?.sources) {
+  sourceTableReferences = currentDerivedModel?.sources;
+}
+
+// map and filter these source tables.
+$: if (sourceTableReferences?.length) {
     tables = sourceTableReferences.map(sourceTableReference => {
         const table = $persistentTableStore.entities.find(t => sourceTableReference.name === t.tableName);
         if (!table) return undefined;
         return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
     }).filter(t => !!t);
+  } else {
+    tables = [];
+  }
+
 
 $: outputRowCardinalityValue = currentDerivedModel?.cardinality
-// $: if (currentDerivedModel && outputRowCardinalityValue !== 0) {
-//   outputRowCardinality.set(outputRowCardinalityValue)
-// }
-$: inputRowCardinalityValue = tables ? tables.reduce((acc, v) => acc + v.cardinality, 0) : undefined;
-//$: if (inputRowCardinalityValue) inputRowCardinality.set(inputRowCardinalityValue)
+$: if (outputRowCardinalityValue !== 0 && outputRowCardinalityValue !== undefined) {
+  outputRowCardinality.set(outputRowCardinalityValue)
+}
+$: inputRowCardinalityValue = tables?.length ? tables.reduce((acc, v) => acc + v.cardinality, 0) : 0;
 $: if (inputRowCardinalityValue !== undefined && outputRowCardinalityValue !== undefined) {
   rollup = outputRowCardinalityValue / inputRowCardinalityValue;
 }
 
 function validRollup(number) {
   return rollup !== Infinity && rollup !== -Infinity &&
-            !isNaN(rollup)
+            !isNaN(number)
 }
 
-$: if (rollup) bigRollupNumber.set(rollup);
-
+$: if (rollup !== undefined && !isNaN(rollup)) bigRollupNumber.set(rollup);
 
 // toggle state for inspector sections
 let showSourceTables = true;
@@ -113,16 +119,17 @@ onMount(() => {
           {#if validRollup(rollup)}
                 {#if isNaN(rollup)}
                   sdd
+                {:else if rollup === 0 }
+                  no rows selected
                 {:else if rollup !== 1}
                             <span style="font-weight: bold;">
-                                {formatBigNumberPercentage(rollup)}
-                            
+                                {formatBigNumberPercentage($bigRollupNumber)}
                             </span> of source rows
                 {:else} <span style="font-weight: bold;">no change</span> in row count
 
                 {/if}  
-            {:else}
-              &nbsp;
+            {:else if rollup === Infinity}
+              &nbsp; {outputRowCardinalityValue} row{#if outputRowCardinalityValue !== 1}s{/if} selected
           {/if}
       </div>
       <TooltipContent slot='tooltip-content'>
@@ -138,8 +145,12 @@ onMount(() => {
       <div class='text-gray-500'  class:text-gray-300={currentDerivedModel?.error}>
         <!-- {formatInteger(~~$inputRowCardinality)} ⭢
         {formatInteger(~~$outputRowCardinality)} rows -->
+        {#if inputRowCardinalityValue > 0}
         {formatInteger(inputRowCardinalityValue)} ⭢
-        {formatInteger(~~outputRowCardinalityValue)} rows
+          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+        {:else}
+          &nbsp;
+        {/if}
       </div>
     </div>
   {/if}
@@ -153,37 +164,43 @@ onMount(() => {
             Source Tables
           </CollapsibleSectionTitle>
         </div>
-        {#if sourceTableReferences && tables && showSourceTables}
-        <div transition:slide|local={{duration: 200}} class="mt-1">
-          {#each sourceTableReferences as reference, index}
-          {@const correspondingTableCardinality = tables[index]?.cardinality}
-            <div
-              class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
-              on:focus={() => {
-                queryHighlight.set(reference.tables);
+        {#if showSourceTables}
+          {#if sourceTableReferences.length && tables}
+          <div transition:slide|local={{duration: 200}} class="mt-1">
+            {#each sourceTableReferences as reference, index (reference.name)}
+            {@const correspondingTableCardinality = tables[index]?.cardinality}
+              <div
+                class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
+                on:focus={() => {
+                  queryHighlight.set(reference.tables);
+                }}
+                on:mouseover={() => {
+                  queryHighlight.set(reference.tables);
               }}
-              on:mouseover={() => {
-                queryHighlight.set(reference.tables);
-            }}
-              on:mouseleave={() => {
-                queryHighlight.set(undefined)
-              }}
-              on:blur={() => {
-                queryHighlight.set(undefined);
-              }}
-            >
-            <div>
-              {reference.name}
+                on:mouseleave={() => {
+                  queryHighlight.set(undefined)
+                }}
+                on:blur={() => {
+                  queryHighlight.set(undefined);
+                }}
+              >
+              <div>
+                {reference.name}
+              </div>
+              <div class="text-gray-500 italic">
+                <!-- is there a source table with this name and cardinality established? -->
+                {#if correspondingTableCardinality}
+                  {`${formatInteger(correspondingTableCardinality)} rows` || ''}
+                {/if}
+              </div>
             </div>
-            <div class="text-gray-500 italic">
-              <!-- is there a source table with this name and cardinality established? -->
-              {#if correspondingTableCardinality}
-                {`${formatInteger(correspondingTableCardinality)} rows` || ''}
-              {/if}
-            </div>
+            {/each}
           </div>
-          {/each}
-        </div>
+          {:else}
+            <div class='pl-5 pr-5 p-1 italic text-gray-400'>
+            none selected
+            </div>
+          {/if}
         {/if}
       </div>
       
