@@ -107,7 +107,7 @@ onMount(() => {
 {#key currentModel?.id}
   <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length && tables}
-    <div class:text-gray-300={currentDerivedModel?.error} class='cost p-4 text-right grid justify-items-end justify-end' style=' font-size: 16px;'>
+    <div class:text-gray-300={currentDerivedModel?.error} class='cost p-4 text-right grid justify-items-end justify-end' >
       <Tooltip location="left" alignment="center" distance={8}>
       <div class="w-max text-right">
           {#if validRollup(rollup)}
