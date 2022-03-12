@@ -23,7 +23,7 @@ npm run cli-dev -- init
 
 ```
 # init in /path/to/project folder
-npm run cli-dev -- init /path/to/project
+npm run cli-dev -- init --project /path/to/project
 ```
 
 ### Importing a table from a file
