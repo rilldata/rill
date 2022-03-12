@@ -42,7 +42,10 @@ const store = getContext('rill:app:store') as ApplicationStore;
   
     <div style="width: 100%;">
       {#if $store?.activeEntity?.type === EntityType.Model}
-        <ModelInspector />
+          <!-- re-render if the id changes. -->
+          {#key $store?.activeEntity?.id}
+            <ModelInspector />
+          {/key}
       {/if}
     </div>
   </div>

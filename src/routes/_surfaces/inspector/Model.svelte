@@ -14,8 +14,6 @@ import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
 import type { ApplicationStore } from "$lib/app-store";
 
-import {format} from "d3-format";
-
 import { formatInteger, formatBigNumberPercentage } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
@@ -72,14 +70,24 @@ $: if (sourceTableReferences && $persistentTableStore?.entities && $derivedTable
         if (!table) return undefined;
         return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
     }).filter(t => !!t);
-$: if (currentDerivedModel?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentDerivedModel.cardinality });
 
-// set the interface big number tweens
-$: bigRollupNumber.set(rollup);
-$: if (currentDerivedModel && currentDerivedModel?.cardinality !== 0) {
-  outputRowCardinality.set(currentDerivedModel?.cardinality || 0)
+$: outputRowCardinalityValue = currentDerivedModel?.cardinality
+// $: if (currentDerivedModel && outputRowCardinalityValue !== 0) {
+//   outputRowCardinality.set(outputRowCardinalityValue)
+// }
+$: inputRowCardinalityValue = tables ? tables.reduce((acc, v) => acc + v.cardinality, 0) : undefined;
+//$: if (inputRowCardinalityValue) inputRowCardinality.set(inputRowCardinalityValue)
+$: if (inputRowCardinalityValue !== undefined && outputRowCardinalityValue !== undefined) {
+  rollup = outputRowCardinalityValue / inputRowCardinalityValue;
 }
-$: inputRowCardinality.set(tables.reduce((acc, v) => acc + v.cardinality, 0))
+
+function validRollup(number) {
+  return rollup !== Infinity && rollup !== -Infinity &&
+            !isNaN(rollup)
+}
+
+$: if (rollup) bigRollupNumber.set(rollup);
+
 
 // toggle state for inspector sections
 let showSourceTables = true;
@@ -94,20 +102,28 @@ onMount(() => {
     });
     observer.observe(container);
 })
-
 </script>
 
-
+{#key currentModel?.id}
   <div bind:this={container}>
-
-    {#if tables}
-    <div class='cost p-4 text-right grid justify-items-end justify-end' style=' font-size: 16px;'>
+    {#if currentModel && currentModel.query.trim().length && tables}
+    <div class:text-gray-300={currentDerivedModel?.error} class='cost p-4 text-right grid justify-items-end justify-end' style=' font-size: 16px;'>
       <Tooltip location="left" alignment="center" distance={8}>
       <div class="w-max text-right">
-            {#if rollup !== 1}
-            <span style="font-weight: bold;">{formatBigNumberPercentage($bigRollupNumber)}</span> of source rows
-            {:else} <span style="font-weight: bold;">no change</span> in row count
-            {/if}  
+          {#if validRollup(rollup)}
+                {#if isNaN(rollup)}
+                  sdd
+                {:else if rollup !== 1}
+                            <span style="font-weight: bold;">
+                                {formatBigNumberPercentage(rollup)}
+                            
+                            </span> of source rows
+                {:else} <span style="font-weight: bold;">no change</span> in row count
+
+                {/if}  
+            {:else}
+              &nbsp;
+          {/if}
       </div>
       <TooltipContent slot='tooltip-content'>
         <div class="pt-1 pb-1 font-bold">
@@ -119,9 +135,11 @@ onMount(() => {
         </div>
       </TooltipContent>
       </Tooltip>
-      <div class='text-gray-500'>
-        {formatInteger(~~$inputRowCardinality)} ⭢
-        {formatInteger(~~$outputRowCardinality)} rows
+      <div class='text-gray-500'  class:text-gray-300={currentDerivedModel?.error}>
+        <!-- {formatInteger(~~$inputRowCardinality)} ⭢
+        {formatInteger(~~$outputRowCardinality)} rows -->
+        {formatInteger(inputRowCardinalityValue)} ⭢
+        {formatInteger(~~outputRowCardinalityValue)} rows
       </div>
     </div>
   {/if}
@@ -209,6 +227,7 @@ onMount(() => {
     {/if}
   </div>
   </div>
+{/key}
 <style lang="postcss">
 
 .results {
