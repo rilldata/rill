@@ -88,13 +88,6 @@ let innerHeight;
           }}
       />
     {/key}
-    {#if currentDerivedModel?.error}
-      <div transition:slide={{ duration: 200, easing }} 
-        class="error p-4 m-4 rounded-lg shadow-md"
-      >
-        {currentDerivedModel.error}
-      </div>
-    {/if}
     </div>
   {/if}
 </div>
@@ -120,7 +113,12 @@ let innerHeight;
       class="p-6"
     >
     <div class="rounded overflow-auto border border border-gray-300 h-full  {!showPreview && 'hidden'}" >
-      {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
+      {#if currentDerivedModel?.error}
+      <div transition:slide={{ duration: 200, easing }} 
+      >
+        {currentDerivedModel.error}
+      </div>
+      {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
         <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
       {:else}
         <div class="grid items-center justify-center italic">no columns selected</div>
@@ -128,6 +126,17 @@ let innerHeight;
     </div>
   </div>
   {/if}
+  <!-- {#if currentDerivedModel?.error}
+  <div transition:slide={{ duration: 200, easing }} 
+    class="z-50 error p-4 m-4 rounded-lg shadow-md fixed bottom-0 p-5"
+    style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
+    style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth + 16}px"
+    style:margin-left="{($assetVisibilityTween * SIDE_PAD)}px"
+    style:margin-right="{($inspectorVisibilityTween * SIDE_PAD)}px"
+  >
+    {currentDerivedModel.error}
+  </div>
+{/if} -->
 </div>
 <style>
 
