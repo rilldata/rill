@@ -53,16 +53,7 @@ let innerHeight;
 
 <svelte:window bind:innerHeight />
 
-<div
-  class="editor-pane"
-
->
-  <!-- <div  
-  class="fixed" 
-  style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
-  style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth}px"
-  style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
-  style:top="var(--header-height)"> -->
+<div class="editor-pane">
   <div  
     style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px - var(--header-height))"
   >
@@ -122,31 +113,21 @@ let innerHeight;
 </Portal>
 {/if}
 
-<!-- Show the model output preview -->
 {#if currentModel}
-  <!-- <div 
-    class="fixed overflow-hidden h-full grid p-5"
-    style:bottom="0px"
-    style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
-    style:font-size="12px"  style:grid-template-rows="max-content auto"> -->
-
     <div
-      style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight - 16}px"
-        class="p-6 overflow-auto"
-      style:outline="1px solid black"
+      style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
+      class="p-6"
     >
     
 
 
-    <button on:click={() => { showPreview = !showPreview }}>{#if showPreview}hide{:else}show{/if} preview</button>
-    <div class="rounded overflow-auto border border border-gray-300 relative {!showPreview && 'hidden'}"
-    style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight - 16}px"
+    <div class="rounded overflow-auto border border border-gray-300 h-full  {!showPreview && 'hidden'}"
 
     >
       {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
         <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
       {:else}
-        <div class="p-5 grid items-center justify-center italic">no columns selected</div>
+        <div class="grid items-center justify-center italic">no columns selected</div>
       {/if}
     </div>
   </div>
@@ -155,8 +136,6 @@ let innerHeight;
 <style>
 
 .editor-pane {
-  /* display: grid; */
-  /* grid-template-rows: auto 400px; */
   height: calc(100vh - var(--header-height));
 }
 .error {
