@@ -163,7 +163,7 @@ onMount(() => {
           </CollapsibleSectionTitle>
         </div>
         {#if showSourceTables}
-          {#if sourceTableReferences.length && tables}
+          {#if sourceTableReferences?.length && tables}
           <div transition:slide|local={{duration: 200}} class="mt-1">
             {#each sourceTableReferences as reference, index (reference.name)}
             {@const correspondingTableCardinality = tables[index]?.cardinality}
