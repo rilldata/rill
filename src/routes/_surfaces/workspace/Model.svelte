@@ -94,7 +94,7 @@ let innerHeight;
 
 {#if $modelPreviewVisible}
 <Portal>
-  <div 
+  <div
   class='fixed z-50 drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2'
   style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
   style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
@@ -103,6 +103,9 @@ let innerHeight;
   style:padding-right="{($inspectorVisibilityTween * SIDE_PAD)}px"
   use:drag={{ minSize: 200, maxSize: innerHeight - 200,  side: 'modelPreviewHeight', orientation: "vertical", reverse: true  }}>
     <div class="border-t border-gray-300" />
+    <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
+      <div class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2" />
+    </div>
 </div>
 </Portal>
 {/if}
@@ -112,9 +115,14 @@ let innerHeight;
       style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
       class="p-6"
     >
-    <div class="rounded overflow-auto border border border-gray-300 h-full  {!showPreview && 'hidden'}" >
+    <div class="rounded overflow-auto  h-full  {!showPreview && 'hidden'}"
+     class:border={!!!currentDerivedModel?.error}
+    class:border-gray-300={!!!currentDerivedModel?.error}
+     >
       {#if currentDerivedModel?.error}
-      <div transition:slide={{ duration: 200, easing }} 
+      <div 
+        transition:slide={{ duration: 200, easing }} 
+        class="font-bold rounded-lg p-5 pt-0 text-gray-700"
       >
         {currentDerivedModel.error}
       </div>
@@ -126,17 +134,6 @@ let innerHeight;
     </div>
   </div>
   {/if}
-  <!-- {#if currentDerivedModel?.error}
-  <div transition:slide={{ duration: 200, easing }} 
-    class="z-50 error p-4 m-4 rounded-lg shadow-md fixed bottom-0 p-5"
-    style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
-    style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth + 16}px"
-    style:margin-left="{($assetVisibilityTween * SIDE_PAD)}px"
-    style:margin-right="{($inspectorVisibilityTween * SIDE_PAD)}px"
-  >
-    {currentDerivedModel.error}
-  </div>
-{/if} -->
 </div>
 <style>
 
