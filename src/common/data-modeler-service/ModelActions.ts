@@ -69,6 +69,7 @@ export class ModelActions extends DataModelerActions {
 
         // validate query with the original query first.
         if (!await this.validateModelQuery(model, query)) {
+            this.dataModelerStateService.dispatch("clearSourceTables", [modelId])
             return;
         }
         this.dataModelerStateService.dispatch("clearModelError", [model.id]);
