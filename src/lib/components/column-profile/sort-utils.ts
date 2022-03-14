@@ -1,4 +1,4 @@
-import { CATEGORICALS } from "$lib/duckdb-data-types";
+import { BOOLEANS, CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
 
 export function sortByCardinality(a,b) {
     if (a.summary && b.summary) {
@@ -7,10 +7,10 @@ export function sortByCardinality(a,b) {
         } else if (a.summary.cardinality > b.summary.cardinality) {
             return -1;
         } else {
-            return sortByName(a,b);
+            return sortByType(a,b);
         }
     } else {
-        return 0;
+        return sortByType(a, b);
     }
 }
 
@@ -31,14 +31,18 @@ export function sortByNullity(a,b) {
 }
 
 export function sortByType(a,b) {
-    if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)) return 1;
-    if (!CATEGORICALS.has(a.type) && CATEGORICALS.has(b.type)) return -1;
-    if ((a.conceptualType === 'TIMESTAMP' || a.type === 'TIMESTAMP') && (b.conceptualType !== 'TIMESTAMP' && b.type !== 'TIMESTAMP')) {
+    if (BOOLEANS.has(a.type) && !BOOLEANS.has(b.type)) return 1;
+    else if (!BOOLEANS.has(a.type) && BOOLEANS.has(b.type)) return -1;
+    else if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)) return 1;
+    else if (!CATEGORICALS.has(a.type) && CATEGORICALS.has(b.type)) return -1;
+    else if (NUMERICS.has(a.type) && !NUMERICS.has(b.type)) return 1;
+    else if (!NUMERICS.has(a.type) && NUMERICS.has(b.type)) return -1;
+    else if (TIMESTAMPS.has(a.type) && TIMESTAMPS.has(b.type)) {
                 return -1;
-    } else if ((a.conceptualType !== 'TIMESTAMP' && a.type !== 'TIMESTAMP') && (b.conceptualType === 'TIMESTAMP' || b.type ==='TIMESTAMP')) {
+    } else if (!TIMESTAMPS.has(a.type) && TIMESTAMPS.has(b.type)) {
         return 1;
     }
-    return 0;
+    return 0;//sortByName(a, b);
 }
 
 export function sortByName(a,b) {
@@ -48,6 +52,8 @@ export function sortByName(a,b) {
 export function defaultSort(a, b) {
     const byType = sortByType(a,b);
     if (byType !== 0) return byType;
-    if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)) return sortByNullity(b,a);
+    if (
+        CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)
+    ) return sortByNullity(b,a);
     return sortByCardinality(a,b);
 }

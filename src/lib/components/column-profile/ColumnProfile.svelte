@@ -15,7 +15,7 @@ import { config } from "./utils";
 
 import { percentage } from "./utils"
 import { formatInteger, formatCompactInteger, standardTimestampFormat } from "$lib/util/formatters"
-import { CATEGORICALS, NUMERICS, TIMESTAMPS, DATA_TYPE_COLORS } from "$lib/duckdb-data-types";
+import { CATEGORICALS, NUMERICS, TIMESTAMPS, DATA_TYPE_COLORS, BOOLEANS } from "$lib/duckdb-data-types";
 
 import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
 import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
@@ -49,7 +49,6 @@ $: summaryWidthSize = config.summaryVizWidth[containerWidth < compactBreakpoint 
 $: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : formatCompactInteger;
 
 let titleTooltip;
-let titleTooltipHover;
 
 let shiftClicked = transientBooleanStore();
 </script>
@@ -135,7 +134,7 @@ let shiftClicked = transientBooleanStore();
             <div class="flex items-center"  style:width="{summaryWidthSize}px">
                 <!-- check to see if the summary has cardinality. Otherwise do not show these values.-->
                 {#if totalRows}
-                    {#if CATEGORICALS.has(type) && summary?.cardinality}
+                    {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.cardinality}
                         <Tooltip location="right" alignment="center" distance={8} >
                             <BarAndLabel 
                             color={DATA_TYPE_COLORS['VARCHAR'].bgClass}
@@ -225,7 +224,7 @@ let shiftClicked = transientBooleanStore();
     <svelte:fragment slot="details">
         {#if active}
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3  w-full">
-            {#if CATEGORICALS.has(type) && summary?.topK}
+            {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.topK}
                 <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8 w-full">
                     <!-- pl-16 pl-8 -->
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />

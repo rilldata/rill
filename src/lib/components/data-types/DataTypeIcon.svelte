@@ -1,5 +1,5 @@
 <script lang="ts">
-import { DATA_TYPE_COLORS, CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
+import { DATA_TYPE_COLORS, CATEGORICALS, NUMERICS, TIMESTAMPS, BOOLEANS } from "$lib/duckdb-data-types";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
@@ -18,6 +18,8 @@ function typeToSymbol(fieldType:string) {
         return NumericType;
     } else if (TIMESTAMPS.has(fieldType)) {
         return TimestampType;
+    } else if (BOOLEANS.has(fieldType)) {
+        return BooleanType;
     }
 }
 </script>
