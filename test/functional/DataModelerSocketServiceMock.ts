@@ -29,7 +29,7 @@ export class DataModelerSocketServiceMock extends DataModelerService {
 
     public async dispatch<Action extends keyof DataModelerActionsDefinition>(
         action: Action, args: DataModelerActionsDefinition[Action],
-    ): Promise<void> {
+    ): Promise<any> {
         return this.socketServerMock.dispatch(action, args);
     }
 }

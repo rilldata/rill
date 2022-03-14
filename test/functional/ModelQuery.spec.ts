@@ -3,6 +3,8 @@ import type { TestDataColumns } from "../data/DataLoader.data";
 import { ModelQueryTestData, ModelQueryTestDataProvider, SingleTableQuery } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 @FunctionalTestBase.Suite
 export class ModelQuerySpec extends FunctionalTestBase {
@@ -65,5 +67,17 @@ export class ModelQuerySpec extends FunctionalTestBase {
         await this.clientDataModelerService.dispatch("deleteModel", [newModel.id]);
         expect(service.getCurrentState().entities.length).toBe(1);
         expect(service.getCurrentState().entities[0].name).toBe(OTHER_MODEL_NAME);
+    }
+
+    @FunctionalTestBase.Test()
+    public async shouldReturnModelQueryError(): Promise<void> {
+        const [model] = this.getModels("tableName", "query_0");
+        // invalid query
+        const response = await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, "slect * from AdBids"]);
+        await this.waitForModels();
+
+        expect(response.status).toBe(ActionStatus.Failure);
+        expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
     }
 }

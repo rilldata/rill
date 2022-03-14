@@ -17,6 +17,9 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { getNewDerivedModel, getNewModel } from "$common/stateInstancesFactory";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { ModelQueryError } from "$common/errors/ModelQueryError";
 
 export enum FileExportType {
     Parquet = "exportToParquet",
@@ -47,13 +50,12 @@ export class ModelActions extends DataModelerActions {
 
     @DataModelerActions.PersistentModelAction()
     public async updateModelQuery({stateService}: PersistentModelStateActionArg,
-                                  modelId: string, query: string): Promise<void> {
+                                  modelId: string, query: string): Promise<ActionResponse> {
         const model = stateService.getById(modelId);
         const derivedModel = this.dataModelerStateService
             .getEntityById(EntityType.Model, StateType.Derived, modelId);
         if (!model) {
-            console.error(`No model found for ${modelId}`);
-            return;
+            return ActionResponseFactory.getEntityError(`No model found for ${modelId}`);
         }
 
         const sanitizedQuery = sanitizeQuery(query);
@@ -66,12 +68,9 @@ export class ModelActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
         this.dataModelerStateService.dispatch("updateModelSanitizedQuery", [modelId, sanitizedQuery]);
 
-
         // validate query with the original query first.
-        if (!await this.validateModelQuery(model, query)) {
-            return;
-        }
-        this.dataModelerStateService.dispatch("clearModelError", [model.id]);
+        const validationResponse = await this.validateModelQuery(model, query);
+        if (validationResponse) return validationResponse;
 
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectModelInfo", [modelId]);
@@ -83,13 +82,12 @@ export class ModelActions extends DataModelerActions {
 
     @DataModelerActions.DerivedModelAction()
     public async collectModelInfo({stateService}: DerivedModelStateActionArg,
-                                  modelId: string): Promise<void> {
+                                  modelId: string): Promise<ActionResponse> {
         const persistentModel = this.dataModelerStateService
             .getEntityById(EntityType.Model, StateType.Persistent, modelId);
         const model = stateService.getById(modelId);
         if (!model) {
-            console.error(`No model found for ${modelId}`);
-            return;
+            return ActionResponseFactory.getEntityError(`No model found for ${modelId}`);
         }
         this.databaseActionQueue.clearQueue(modelId);
 
@@ -101,9 +99,8 @@ export class ModelActions extends DataModelerActions {
                 {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
                 "createViewOfQuery",
                 [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]);
-        } catch (err) {
-            console.error(err);
-            return;
+        } catch (error) {
+            return ActionResponseFactory.getModelQueryError(error.message);
         }
 
         this.dataModelerStateService.dispatch("setTableStatus",
@@ -119,9 +116,7 @@ export class ModelActions extends DataModelerActions {
                 {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
                 "getProfileColumns", [persistentModel.tableName])
         } catch (error) {
-            console.log(error);
-            this.dataModelerStateService.dispatch("addModelError", [modelId, error.message]);
-            return;
+            return ActionResponseFactory.getModelQueryError(error.message);
         }
         // clear any model error if we get this far.
         this.dataModelerStateService.dispatch("clearModelError", [modelId]);
@@ -156,7 +151,9 @@ export class ModelActions extends DataModelerActions {
                         {id: modelId, priority: DatabaseActionQueuePriority.ActiveModelProfile},
                         "getDestinationSize", [persistentModel.tableName])]),
             ].map(asyncFunc => asyncFunc()));
-        } catch (err) {}
+        } catch (err) {
+            return ActionResponseFactory.getErrorResponse(err);
+        }
 
         this.dataModelerStateService.dispatch("markAsProfiled",
             [EntityType.Model, modelId, true]);
@@ -209,20 +206,19 @@ export class ModelActions extends DataModelerActions {
             [EntityType.Model, StateType.Derived, modelId]);
     }
 
-    private async validateModelQuery(model: PersistentModelEntity, sanitizedQuery: string): Promise<boolean> {
+    private async validateModelQuery(model: PersistentModelEntity, sanitizedQuery: string): Promise<ActionResponse> {
         try {
             await this.databaseActionQueue.enqueue(
                 {id: model.id, priority: DatabaseActionQueuePriority.ActiveModel},
                 "validateQuery", [sanitizedQuery]);
         } catch (error) {
-            if (error.message !== 'No statement to prepare!') {
-                this.dataModelerStateService.dispatch("addModelError", [model.id, error.message]);
+            if (error.message !== "No statement to prepare!") {
+                return ActionResponseFactory.getModelQueryError(error.message);
             }  else {
                 this.dataModelerStateService.dispatch("clearModelProfile", [model.id]);
             }
-            return false;
         }
-        return true;
+        return undefined;
     }
 
     private async exportToFile(stateService: PersistentModelEntityService,

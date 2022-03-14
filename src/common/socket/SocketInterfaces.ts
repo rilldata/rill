@@ -3,6 +3,7 @@ import type { DataModelerActionsDefinition } from "$common/data-modeler-service/
 import type { Notification } from "$common/notifications/NotificationService";
 import type { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityTypeAndStates } from "$common/data-modeler-state-service/DataModelerStateService";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 
 export interface ServerToClientEvents {
   patch: (entityType: EntityType, stateType: StateType, patches: Array<Patch>) => void;
@@ -12,6 +13,7 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   action: <Action extends keyof DataModelerActionsDefinition>(
-    action: Action, args: DataModelerActionsDefinition[Action]
+    action: Action, args: DataModelerActionsDefinition[Action],
+    callback: (response: ActionResponse) => void
   ) => void;
 }
