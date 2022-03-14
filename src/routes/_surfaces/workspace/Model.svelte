@@ -1,39 +1,31 @@
 <script lang="ts">
-import { getContext } from "svelte";
-import { slide } from "svelte/transition";
-import type { ApplicationStore } from "$lib/app-store";
-import { cubicOut as easing } from 'svelte/easing';
-import Editor from "$lib/components/Editor.svelte";
-import {dataModelerService} from "$lib/app-store";
+    import { getContext } from "svelte";
+    import { slide } from "svelte/transition";
+    import type { ApplicationStore } from "$lib/app-store";
+    import { dataModelerService } from "$lib/app-store";
+    import { cubicOut as easing } from "svelte/easing";
+    import Editor from "$lib/components/Editor.svelte";
 
-import PreviewTable from "$lib/components/table/PreviewTable.svelte";
-import type {
-    PersistentModelEntity
-} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type {
-    DerivedModelEntity
-} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+    import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+    import type {
+        PersistentModelEntity
+    } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+    import type {
+        DerivedModelEntity
+    } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+    import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+    import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+    import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+    import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 
-const store = getContext("rill:app:store") as ApplicationStore;
+    const store = getContext("rill:app:store") as ApplicationStore;
 const queryHighlight = getContext("rill:app:query-highlight");
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
 
-let error;
-
 let errorLineNumber;
-let errorMessage;
 
 let showPreview = true;
-
-function getErrorLineNumber(errorString) {
-  if (!errorString.includes('LINE')) return { message: errorString };
-  const [message, linePortion] = errorString.split('LINE ');
-  const lineNumber = parseInt(linePortion.split(':')[0]);
-  return { message, lineNumber };
-};
 
 let currentModel: PersistentModelEntity;
 $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
@@ -41,6 +33,24 @@ $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
 let currentDerivedModel: DerivedModelEntity;
 $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
     $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
+let error: string;
+
+async function handleModelQueryUpdate(query: string) {
+    dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
+    const response = await dataModelerService.dispatch(
+        'updateModelQuery', [currentModel.id, query ]);
+    if (response?.status !== ActionStatus.Failure) {
+        error = "";
+        return;
+    }
+
+    const errorMessage = response.messages[0];
+    if (errorMessage.errorType === ActionErrorType.QueryCancelled) {
+        error = "";
+        return;
+    }
+    error = errorMessage.message;
+}
 
 </script>
 
@@ -59,7 +69,7 @@ $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) 
           on:delete={() => { dataModelerService.dispatch('deleteModel', [currentModel.id]); }}
           on:receive-focus={() => {
               dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
-              //dataModelerService.dispatch('updateQueryInformation', [{id: currentQuery.id }]);
+              error = "";
           }}
           on:release-focus={() => {
             //dataModelerService.dispatch('releaseActiveQueryFocus', [{ id: q.id }]);
@@ -70,18 +80,16 @@ $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) 
           on:rename={(evt) => {
             dataModelerService.dispatch('updateModelName', [currentModel.id, evt.detail]);
           }}
-          on:write={(evt)=> {
-              dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
-              dataModelerService.dispatch('updateModelQuery', [currentModel.id, evt.detail.content ]);
-              //dataModelerService.dispatch('updateQueryInformation', [{ id: currentQuery.id }]);
+          on:write={(evt) => {
+              handleModelQueryUpdate(evt.detail.content);
           }}
       />
     {/key}
-    {#if currentDerivedModel?.error}
+    {#if error}
       <div transition:slide={{ duration: 200, easing }} 
         class="error p-4 m-4 rounded-lg shadow-md"
       >
-        {currentDerivedModel.error}
+        {error}
       </div>
     {/if}
     </div>
