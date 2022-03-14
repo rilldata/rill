@@ -12,6 +12,7 @@ cache:
   directories:
   - "$HOME/.npm"
   - "$TRAVIS_BUILD_DIR/data"
+  - "node_modules"
 
 jobs:
   include:
