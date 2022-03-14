@@ -65,6 +65,12 @@ export class ModelStateActions extends StateActions {
     }
 
     @StateActions.DerivedModelAction()
+    public clearSourceTables({stateService, draftState}: DerivedModelStateActionArg,
+        modelId: string): void {
+        stateService.updateEntityField(draftState, modelId, "sources", []);
+    }
+
+    @StateActions.DerivedModelAction()
     public updateModelPreview({stateService, draftState}: DerivedModelStateActionArg,
                               modelId: string, preview: Array<any>): void {
         stateService.updateEntityField(draftState, modelId, "preview", preview);

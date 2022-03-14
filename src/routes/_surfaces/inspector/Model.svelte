@@ -14,8 +14,6 @@ import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
 import type { ApplicationStore } from "$lib/app-store";
 
-import {format} from "d3-format";
-
 import { formatInteger, formatBigNumberPercentage } from "$lib/util/formatters"
 
 import {dataModelerService} from "$lib/app-store";
@@ -65,21 +63,37 @@ let currentDerivedModel: DerivedModelEntity;
 $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
     $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 // get source table references.
-$: if (currentDerivedModel?.sources?.length) sourceTableReferences = currentDerivedModel?.sources;
-$: if (sourceTableReferences && $persistentTableStore?.entities && $derivedTableStore?.entities)
+$: if (currentDerivedModel?.sources) {
+  sourceTableReferences = currentDerivedModel?.sources;
+}
+
+// map and filter these source tables.
+$: if (sourceTableReferences?.length) {
     tables = sourceTableReferences.map(sourceTableReference => {
         const table = $persistentTableStore.entities.find(t => sourceTableReference.name === t.tableName);
         if (!table) return undefined;
         return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
     }).filter(t => !!t);
-$: if (currentDerivedModel?.cardinality && tables) rollup = computeRollup(tables, {cardinality: currentDerivedModel.cardinality });
+  } else {
+    tables = [];
+  }
 
-// set the interface big number tweens
-$: bigRollupNumber.set(rollup);
-$: if (currentDerivedModel && currentDerivedModel?.cardinality !== 0) {
-  outputRowCardinality.set(currentDerivedModel?.cardinality || 0)
+
+$: outputRowCardinalityValue = currentDerivedModel?.cardinality
+$: if (outputRowCardinalityValue !== 0 && outputRowCardinalityValue !== undefined) {
+  outputRowCardinality.set(outputRowCardinalityValue)
 }
-$: inputRowCardinality.set(tables.reduce((acc, v) => acc + v.cardinality, 0))
+$: inputRowCardinalityValue = tables?.length ? tables.reduce((acc, v) => acc + v.cardinality, 0) : 0;
+$: if (inputRowCardinalityValue !== undefined && outputRowCardinalityValue !== undefined) {
+  rollup = outputRowCardinalityValue / inputRowCardinalityValue;
+}
+
+function validRollup(number) {
+  return rollup !== Infinity && rollup !== -Infinity &&
+            !isNaN(number)
+}
+
+$: if (rollup !== undefined && !isNaN(rollup)) bigRollupNumber.set(rollup);
 
 // toggle state for inspector sections
 let showSourceTables = true;
@@ -94,20 +108,29 @@ onMount(() => {
     });
     observer.observe(container);
 })
-
 </script>
 
-
+{#key currentModel?.id}
   <div bind:this={container}>
-
-    {#if tables}
-    <div class='cost p-4 text-right grid justify-items-end justify-end' style=' font-size: 16px;'>
+    {#if currentModel && currentModel.query.trim().length && tables}
+    <div class:text-gray-300={currentDerivedModel?.error} class='cost p-4 text-right grid justify-items-end justify-end' >
       <Tooltip location="left" alignment="center" distance={8}>
       <div class="w-max text-right">
-            {#if rollup !== 1}
-            <span style="font-weight: bold;">{formatBigNumberPercentage($bigRollupNumber)}</span> of source rows
-            {:else} <span style="font-weight: bold;">no change</span> in row count
-            {/if}  
+          {#if validRollup(rollup)}
+                {#if isNaN(rollup)}
+                  sdd
+                {:else if rollup === 0 }
+                  no rows selected
+                {:else if rollup !== 1}
+                            <span style="font-weight: bold;">
+                                {formatBigNumberPercentage($bigRollupNumber)}
+                            </span> of source rows
+                {:else} <span style="font-weight: bold;">no change</span> in row count
+
+                {/if}  
+            {:else if rollup === Infinity}
+              &nbsp; {outputRowCardinalityValue} row{#if outputRowCardinalityValue !== 1}s{/if} selected
+          {/if}
       </div>
       <TooltipContent slot='tooltip-content'>
         <div class="pt-1 pb-1 font-bold">
@@ -119,9 +142,13 @@ onMount(() => {
         </div>
       </TooltipContent>
       </Tooltip>
-      <div class='text-gray-500'>
-        {formatInteger(~~$inputRowCardinality)} ⭢
-        {formatInteger(~~$outputRowCardinality)} rows
+      <div class='text-gray-500'  class:text-gray-300={currentDerivedModel?.error}>
+        {#if inputRowCardinalityValue > 0}
+        {formatInteger(inputRowCardinalityValue)} ⭢
+          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+        {:else}
+          &nbsp;
+        {/if}
       </div>
     </div>
   {/if}
@@ -135,37 +162,43 @@ onMount(() => {
             Source Tables
           </CollapsibleSectionTitle>
         </div>
-        {#if sourceTableReferences && tables && showSourceTables}
-        <div transition:slide|local={{duration: 200}} class="mt-1">
-          {#each sourceTableReferences as reference, index}
-          {@const correspondingTableCardinality = tables[index]?.cardinality}
-            <div
-              class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
-              on:focus={() => {
-                queryHighlight.set(reference.tables);
+        {#if showSourceTables}
+          {#if sourceTableReferences?.length && tables}
+          <div transition:slide|local={{duration: 200}} class="mt-1">
+            {#each sourceTableReferences as reference, index (reference.name)}
+            {@const correspondingTableCardinality = tables[index]?.cardinality}
+              <div
+                class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
+                on:focus={() => {
+                  queryHighlight.set(reference.tables);
+                }}
+                on:mouseover={() => {
+                  queryHighlight.set(reference.tables);
               }}
-              on:mouseover={() => {
-                queryHighlight.set(reference.tables);
-            }}
-              on:mouseleave={() => {
-                queryHighlight.set(undefined)
-              }}
-              on:blur={() => {
-                queryHighlight.set(undefined);
-              }}
-            >
-            <div>
-              {reference.name}
+                on:mouseleave={() => {
+                  queryHighlight.set(undefined)
+                }}
+                on:blur={() => {
+                  queryHighlight.set(undefined);
+                }}
+              >
+              <div>
+                {reference.name}
+              </div>
+              <div class="text-gray-500 italic">
+                <!-- is there a source table with this name and cardinality established? -->
+                {#if correspondingTableCardinality}
+                  {`${formatInteger(correspondingTableCardinality)} rows` || ''}
+                {/if}
+              </div>
             </div>
-            <div class="text-gray-500 italic">
-              <!-- is there a source table with this name and cardinality established? -->
-              {#if correspondingTableCardinality}
-                {`${formatInteger(correspondingTableCardinality)} rows` || ''}
-              {/if}
-            </div>
+            {/each}
           </div>
-          {/each}
-        </div>
+          {:else}
+            <div class='pl-5 pr-5 p-1 italic text-gray-400'>
+            none selected
+            </div>
+          {/if}
         {/if}
       </div>
       
@@ -209,6 +242,7 @@ onMount(() => {
     {/if}
   </div>
   </div>
+{/key}
 <style lang="postcss">
 
 .results {

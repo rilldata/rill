@@ -19,7 +19,6 @@ import { getNewDerivedModel, getNewModel } from "$common/stateInstancesFactory";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import { ModelQueryError } from "$common/errors/ModelQueryError";
 
 export enum FileExportType {
     Parquet = "exportToParquet",
@@ -70,7 +69,10 @@ export class ModelActions extends DataModelerActions {
 
         // validate query with the original query first.
         const validationResponse = await this.validateModelQuery(model, query);
-        if (validationResponse) return validationResponse;
+        if (validationResponse) {
+            this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
+            return validationResponse;
+        }
 
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectModelInfo", [modelId]);
