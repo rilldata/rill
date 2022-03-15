@@ -34,6 +34,25 @@ export class ModelQuerySpec extends FunctionalTestBase {
     }
 
     @FunctionalTestBase.Test()
+    public async shouldClearAnyErrorsIfQueryBecomesEmpty(): Promise<void> {
+        const [model] = this.getModels("tableName", "query_0");
+        await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, `asdf`]);
+        await this.waitForModels();
+
+        let [persistentModel, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).not.toBeUndefined();
+        expect(persistentModel.query).toBe(`asdf`);
+
+        await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, ``]);
+         await this.waitForModels();
+        [persistentModel, derivedModel] = this.getModels("tableName", "query_0");
+         expect(derivedModel.error).toBeUndefined();
+         expect(persistentModel.query).toBe(``);
+    }
+
+    @FunctionalTestBase.Test()
     public async shouldAddAndDeleteModel(): Promise<void> {
         const service = this.clientDataModelerStateService
             .getEntityStateService(EntityType.Model, StateType.Persistent);
