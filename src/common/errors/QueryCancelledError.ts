@@ -4,6 +4,6 @@ export class QueryCancelledError extends Error {
     public readonly errorType = ActionErrorType.QueryCancelled;
 
     constructor() {
-        super("Query cancelled");
+        super("Query canceled");
     }
 }
