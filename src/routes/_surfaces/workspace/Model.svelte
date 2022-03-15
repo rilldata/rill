@@ -95,13 +95,6 @@ let innerHeight;
           }}
       />
     {/key}
-    {#if error}
-      <div transition:slide={{ duration: 200, easing }} 
-        class="error p-4 m-4 rounded-lg shadow-md"
-      >
-        {error}
-      </div>
-    {/if}
     </div>
   {/if}
 </div>
@@ -130,15 +123,15 @@ let innerHeight;
       class="p-6"
     >
     <div class="rounded overflow-auto  h-full  {!showPreview && 'hidden'}"
-     class:border={!currentDerivedModel?.error}
-    class:border-gray-300={!currentDerivedModel?.error}
+     class:border={!!error}
+    class:border-gray-300={!!error}
      >
-      {#if currentDerivedModel?.error}
+      {#if error}
       <div 
         transition:slide={{ duration: 200, easing }} 
         class="error font-bold rounded-lg p-5 pt-0 text-gray-700"
       >
-        {currentDerivedModel.error}
+        {error}
       </div>
       {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
         <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
@@ -153,11 +146,5 @@ let innerHeight;
 
 .editor-pane {
   height: calc(100vh - var(--header-height));
-}
-.error {
-  background-color: var(--error-bg);
-  color: var(--error-text);
-  font-size: 13px;
-  align-self: bottom;
 }
 </style>
