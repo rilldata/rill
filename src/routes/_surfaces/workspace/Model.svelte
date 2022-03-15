@@ -47,8 +47,9 @@ async function handleModelQueryUpdate(query: string) {
         return;
     }
 
-    const errorMessage = response.messages[0];
-    if (errorMessage.errorType === ActionErrorType.QueryCancelled) {
+    const errorMessage = response.messages
+        .find(message => message.errorType !== ActionErrorType.QueryCancelled);
+    if (!errorMessage) {
         error = "";
         return;
     }

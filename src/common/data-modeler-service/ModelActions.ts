@@ -59,6 +59,9 @@ export class ModelActions extends DataModelerActions {
 
         const sanitizedQuery = sanitizeQuery(query);
         if (sanitizedQuery === derivedModel.sanitizedQuery) {
+            if (derivedModel.error) {
+                return ActionResponseFactory.getModelQueryError(derivedModel.error);
+            }
             return;
         }
 
@@ -71,11 +74,14 @@ export class ModelActions extends DataModelerActions {
         const validationResponse = await this.validateModelQuery(model, query);
         if (validationResponse) {
             this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
+            this.dataModelerStateService.dispatch("addModelError",
+                [modelId, validationResponse.messages[0].message]);
             return validationResponse;
         }
+        this.dataModelerStateService.dispatch("clearModelError", [modelId]);
 
         if (this.config.profileWithUpdate) {
-            await this.dataModelerService.dispatch("collectModelInfo", [modelId]);
+            return await this.dataModelerService.dispatch("collectModelInfo", [modelId]);
         } else {
             this.dataModelerStateService.dispatch("markAsProfiled",
                 [EntityType.Model, modelId, false]);

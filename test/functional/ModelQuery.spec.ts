@@ -71,12 +71,19 @@ export class ModelQuerySpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldReturnModelQueryError(): Promise<void> {
+        const INVALID_QUERY = "slect * from AdBids";
+
         const [model] = this.getModels("tableName", "query_0");
         // invalid query
-        const response = await this.clientDataModelerService.dispatch("updateModelQuery",
-            [model.id, "slect * from AdBids"]);
+        let response = await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, INVALID_QUERY]);
         await this.waitForModels();
+        expect(response.status).toBe(ActionStatus.Failure);
+        expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
 
+        response = await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, INVALID_QUERY + " "]);
+        await this.waitForModels();
         expect(response.status).toBe(ActionStatus.Failure);
         expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
     }
