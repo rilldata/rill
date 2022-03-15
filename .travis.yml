@@ -12,6 +12,7 @@ cache:
   directories:
   - "$HOME/.npm"
   - "$TRAVIS_BUILD_DIR/data"
+  - "node_modules"
 
 jobs:
   include:
@@ -19,6 +20,8 @@ jobs:
       name: "Verify build"
       script:
         - npm install
+        # install browser for UI tests
+        - npx playwright install
 
         # build the entire application
         - npm run build
