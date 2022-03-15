@@ -62,6 +62,7 @@ export class ModelActions extends DataModelerActions {
         }
 
         this.databaseActionQueue.clearQueue(modelId);
+        await this.setModelStatus(modelId, EntityStatus.Validating);
 
         this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query, sanitizedQuery]);
         this.dataModelerStateService.dispatch("updateModelSanitizedQuery", [modelId, sanitizedQuery]);
@@ -69,7 +70,8 @@ export class ModelActions extends DataModelerActions {
 
         // validate query with the original query first.
         if (!await this.validateModelQuery(model, query)) {
-            this.dataModelerStateService.dispatch("clearSourceTables", [modelId])
+            await this.setModelStatus(modelId, EntityStatus.Idle);
+            this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
             return;
         }
         this.dataModelerStateService.dispatch("clearModelError", [model.id]);
@@ -77,6 +79,7 @@ export class ModelActions extends DataModelerActions {
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectModelInfo", [modelId]);
         } else {
+            await this.setModelStatus(modelId, EntityStatus.Idle);
             this.dataModelerStateService.dispatch("markAsProfiled",
                 [EntityType.Model, modelId, false]);
         }
@@ -104,11 +107,11 @@ export class ModelActions extends DataModelerActions {
                 [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]);
         } catch (err) {
             console.error(err);
+            await this.setModelStatus(modelId, EntityStatus.Idle);
             return;
         }
 
-        this.dataModelerStateService.dispatch("setTableStatus",
-            [EntityType.Model, modelId, EntityStatus.Profiling]);
+        await this.setModelStatus(modelId, EntityStatus.Profiling);
 
         let profileColumns;
         try {
@@ -121,6 +124,7 @@ export class ModelActions extends DataModelerActions {
                 "getProfileColumns", [persistentModel.tableName])
         } catch (error) {
             console.log(error);
+            await this.setModelStatus(modelId, EntityStatus.Idle);
             this.dataModelerStateService.dispatch("addModelError", [modelId, error.message]);
             return;
         }
@@ -161,7 +165,7 @@ export class ModelActions extends DataModelerActions {
 
         this.dataModelerStateService.dispatch("markAsProfiled",
             [EntityType.Model, modelId, true]);
-        this.dataModelerStateService.dispatch("setTableStatus",
+        this.dataModelerStateService.dispatch("setEntityStatus",
             [EntityType.Model, modelId, EntityStatus.Idle]);
     }
 
@@ -230,10 +234,17 @@ export class ModelActions extends DataModelerActions {
                                modelId: string, exportFile: string,
                                exportType: FileExportType) {
         const model = stateService.getById(modelId);
+        await this.setModelStatus(modelId, EntityStatus.Exporting);
         const exportPath = await this.databaseService.dispatch(exportType,
             [sanitizeQuery(model.query, false), exportFile]);
         await this.dataModelerStateService.dispatch("updateModelDestinationSize",
             [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
         this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"});
+        await this.setModelStatus(modelId, EntityStatus.Idle);
+    }
+
+    private setModelStatus(modelId: string, status: EntityStatus) {
+        return this.dataModelerStateService.dispatch("setEntityStatus",
+            [EntityType.Model, modelId, status]);
     }
 }

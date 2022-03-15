@@ -24,8 +24,10 @@ export interface EntityRecord {
 
 export enum EntityStatus {
     Idle,
+    Importing,
+    Validating,
     Profiling,
-    Syncing
+    Exporting,
 }
 export interface DerivedEntityRecord extends EntityRecord {
     status: EntityStatus;

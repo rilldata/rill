@@ -93,7 +93,7 @@ export class TableActions extends DataModelerActions {
         this.databaseActionQueue.clearQueue(tableId);
 
         try {
-            this.dataModelerStateService.dispatch("setTableStatus",
+            this.dataModelerStateService.dispatch("setEntityStatus",
                 [EntityType.Table, tableId, EntityStatus.Profiling]);
             await this.dataModelerStateService.dispatch("clearProfileSummary",
                 [EntityType.Table, tableId]);
@@ -121,16 +121,20 @@ export class TableActions extends DataModelerActions {
                 [EntityType.Table, StateType.Derived, newDerivedTable])
             await this.dataModelerService.dispatch("collectProfileColumns",
                 [EntityType.Table, tableId]);
-            this.dataModelerStateService.dispatch("setTableStatus",
+            this.dataModelerStateService.dispatch("setEntityStatus",
                 [EntityType.Table, tableId, EntityStatus.Idle]);
             this.dataModelerStateService.dispatch("markAsProfiled",
                 [EntityType.Table, tableId, true]);
         } catch (err) {
+            this.dataModelerStateService.dispatch("setEntityStatus",
+                [EntityType.Table, tableId, EntityStatus.Idle]);
             console.error(err);
         }
     }
 
     private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<void> {
+        this.dataModelerStateService.dispatch("setEntityStatus",
+            [EntityType.Table, table.id, EntityStatus.Importing]);
         if (isNew) {
             this.dataModelerStateService.dispatch("addEntity",
                 [EntityType.Table, StateType.Derived, getNewDerivedTable(table)]);
@@ -140,6 +144,8 @@ export class TableActions extends DataModelerActions {
 
         await this.importTableDataByType(table);
 
+        this.dataModelerStateService.dispatch("setEntityStatus",
+            [EntityType.Table, table.id, EntityStatus.Idle]);
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
         } else {

@@ -17,10 +17,4 @@ export class TableStateActions extends StateActions {
             stateService.updateEntity(draftState, table.id, table);
         }
     }
-
-    @StateActions.DerivedAction()
-    public setTableStatus({stateService, draftState}: DataProfileStateActionArg,
-                          entityType: EntityType, tableId: string, status: EntityStatus): void {
-        stateService.updateEntityField(draftState, tableId, "status", status);
-    }
 }
