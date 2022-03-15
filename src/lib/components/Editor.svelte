@@ -119,7 +119,7 @@ onMount(() => {
 
 </script>
 
-<div bind:this={componentContainer}>
+<div bind:this={componentContainer} class=" h-full">
     <div class='editor-container border h-full' bind:this={editorContainer}>
         <div bind:this={editorContainerComponent} />
     </div>
@@ -130,6 +130,9 @@ onMount(() => {
     padding: .5rem;
     background-color: white;
     border-radius: .25rem;
-    min-height: 400px;
+    /* min-height: 400px; */
+    min-height: 100%;
+    display: grid;
+    align-items: stretch;
 }
 </style>

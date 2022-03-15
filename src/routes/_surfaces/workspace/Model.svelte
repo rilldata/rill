@@ -5,6 +5,10 @@ import type { ApplicationStore } from "$lib/app-store";
 import { cubicOut as easing } from 'svelte/easing';
 import Editor from "$lib/components/Editor.svelte";
 import {dataModelerService} from "$lib/app-store";
+import Portal from "$lib/components/Portal.svelte";
+
+import { drag } from "$lib/drag";
+import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/layout-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 import type {
@@ -42,12 +46,19 @@ let currentDerivedModel: DerivedModelEntity;
 $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
     $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 
+// track innerHeight to calculate the size of the editor element.
+let innerHeight;
+
 </script>
 
+<svelte:window bind:innerHeight />
+
 <div class="editor-pane">
-  <div>
+  <div  
+    style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px - var(--header-height))"
+  >
   {#if $store && $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
-    <div class="input-body p-6 pt-0 overflow-auto">
+    <div class="h-full grid p-6 pt-0 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}
@@ -77,26 +88,48 @@ $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) 
           }}
       />
     {/key}
-    {#if currentDerivedModel?.error}
-      <div transition:slide={{ duration: 200, easing }} 
-        class="error p-4 m-4 rounded-lg shadow-md"
-      >
-        {currentDerivedModel.error}
-      </div>
-    {/if}
     </div>
   {/if}
 </div>
-<!-- Show the model output preview -->
+
+{#if $modelPreviewVisible}
+<Portal>
+  <div
+  class='fixed z-50 drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2'
+  style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
+  style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
+  style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth + 16}px"
+  style:padding-left="{($assetVisibilityTween * SIDE_PAD)}px"
+  style:padding-right="{($inspectorVisibilityTween * SIDE_PAD)}px"
+  use:drag={{ minSize: 200, maxSize: innerHeight - 200,  side: 'modelPreviewHeight', orientation: "vertical", reverse: true  }}>
+    <div class="border-t border-gray-300" />
+    <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
+      <div class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2" />
+    </div>
+</div>
+</Portal>
+{/if}
+
 {#if currentModel}
-  <div style:font-size="12px" class="overflow-hidden h-full grid p-5" style:grid-template-rows="max-content auto">
-    <button on:click={() => { showPreview = !showPreview }}>{#if showPreview}hide{:else}show{/if} preview</button>
-    <div class="rounded overflow-auto border border border-gray-300 {!showPreview && 'hidden'}"
+    <div
+      style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
+      class="p-6"
     >
-      {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
+    <div class="rounded overflow-auto  h-full  {!showPreview && 'hidden'}"
+     class:border={!!!currentDerivedModel?.error}
+    class:border-gray-300={!!!currentDerivedModel?.error}
+     >
+      {#if currentDerivedModel?.error}
+      <div 
+        transition:slide={{ duration: 200, easing }} 
+        class="error font-bold rounded-lg p-5 pt-0 text-gray-700"
+      >
+        {currentDerivedModel.error}
+      </div>
+      {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
         <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
       {:else}
-        <div class="p-5  grid items-center justify-center italic">no columns selected</div>
+        <div class="grid items-center justify-center italic">no columns selected</div>
       {/if}
     </div>
   </div>
@@ -105,8 +138,6 @@ $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) 
 <style>
 
 .editor-pane {
-  display: grid;
-  grid-template-rows: auto 400px;
   height: calc(100vh - var(--header-height));
 }
 .error {
