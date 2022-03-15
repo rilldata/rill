@@ -46,15 +46,15 @@ export let icon:SvelteComponent;
             text-left 
             grid  gap-2
             items-center
-            p-0 pr-1"
+            p-0"
         >
-        {#if icon}
+        <!-- {#if icon}
             <div 
                 style:grid-column="icon" 
                 class="text-gray-400">
                 <svelte:component this={icon} size=14px />
             </div>
-        {/if}
+        {/if} -->
         <div
             style:grid-column="text"
             class="
