@@ -122,7 +122,7 @@ let innerHeight;
       {#if currentDerivedModel?.error}
       <div 
         transition:slide={{ duration: 200, easing }} 
-        class="font-bold rounded-lg p-5 pt-0 text-gray-700"
+        class="error font-bold rounded-lg p-5 pt-0 text-gray-700"
       >
         {currentDerivedModel.error}
       </div>
