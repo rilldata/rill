@@ -140,10 +140,5 @@ let innerHeight;
 .editor-pane {
   height: calc(100vh - var(--header-height));
 }
-.error {
-  background-color: var(--error-bg);
-  color: var(--error-text);
-  font-size: 13px;
-  align-self: bottom;
-}
+
 </style>
