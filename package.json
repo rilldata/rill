@@ -19,7 +19,7 @@
 		"test": "jest",
 		"test:watch": "npm run test -- --watch",
 		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
-		"cli-dev": "ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
+		"cli": "ts-node-dev --silent --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
 	},
 	"devDependencies": {
 		"@adityahegde/typescript-test-utils": "^1.3.2",

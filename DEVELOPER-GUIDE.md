@@ -1,40 +1,20 @@
 This is prototype-quality code, subject to radical change as we figure out what we need to build. Best of luck!
 
-# Getting started
-
-Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).
-
-Run `npm run server` to start the backend server.<br>
-Run `npm run dev` to start the UI dev server. UI will be available on http://localhost:3000
-
-
 # CLI
 
-Interacting with a project currently is only supported through a cli.
+Initializing a project, adding datasets as tables, and starting a project are currently only supported through our CLI.
 
-### Developer CLI Usage
+### Installing
 
-During development use an alias for `data-modeler` to `npm run cli-dev --`.
-This will ensure that the same signature below in the cli docs can be used, but run the local code.
+Download and install nodejs 16+ from https://nodejs.org/en/download/.
 
-Adding an alias entry in .zshrc or .bashrc would be a good idea.
+Run the following script from checkout directory to install the command globally:
 ```
-alias data-modeler="npm run cli-dev --"
+# This will take about 10mins to finish when run for the first time.
+# It will also ask for password halfway through while installing the package globally. 
+./build-tools/package_and_install.sh
 ```
-
-`data-modeler-dev` can be used instead to have both the globally installed data-modeler and local development separate.
-Just use `data-modeler-dev` in the below commands instead of `data-modeler`.
-
-### End User CLI Usage
-
-Install the package globally to access the cli.
-```
-npm i data-modeler -g
-```
-Run with sudo if `Error: EACCES: permission denied` is thrown with the above install.
-```
-sudo npm i data-modeler -g
-```
+If installing globally is not desired follow the Getting Started and CLI usage in Developer Guide section below.
 
 ### Creating a project
 
@@ -46,6 +26,7 @@ data-modeler init
 # init in /path/to/project directory
 # directory will be created if it doesnt exist
 data-modeler init --project /path/to/project
+# Data modeler UI will be available at http://localhost:8080
 ```
 
 Note: This is not explicitly necessary.
@@ -71,16 +52,37 @@ Table name can be customisable using `--name` argument. By default, it uses file
 
 ### Starting the UI
 ```
-# build the UI so that the server can server the built static files
-# This is only needed for running in developer mode.
-npm run build
 # start the UI using info from project under /path/to/project
 data-modeler start --project /path/to/project
 ```
 `--project` is optional. Will default to current directory if not specified.
 
+# Developer Guide
 
-# Local testing
+## Getting started
+
+Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).<br>
+Run `npm build` to build the application.
+
+## Starting a dev server
+
+Run `npm run server` to start the backend server.<br>
+Run `npm run dev` to start the UI dev server. UI will be available on http://localhost:3000
+
+## CLI Usage
+
+During development use an alias for `data-modeler` to `npm run cli --`.
+This will ensure that the same signature in the cli usage docs can be used, but run the local code.
+
+Adding an alias entry in .zshrc or .bashrc would be a good idea.
+```
+alias data-modeler="npm run cli --silent --"
+```
+
+`data-modeler-dev` can be used instead to have both the globally installed data-modeler and local development separate.
+Just use `data-modeler-dev` in the below commands instead of `data-modeler`.
+
+## Local testing
 
 The test suite uses pre-generated data. Thus, you will need to run the following command before running the tests:
 ```
