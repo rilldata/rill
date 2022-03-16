@@ -94,9 +94,6 @@ let shiftClicked = transientBooleanStore();
 
             <DataTypeTitle {name} {type} />
 
-            <!-- <div class="pt-1 pb-1 font-bold">
-                {name}
-            </div> -->
             {#if totalRows}
                 <TooltipShortcutContainer>
 
