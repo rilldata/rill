@@ -38,18 +38,18 @@ If you want to go beyond this example, you can also create a project using your 
 ## Initialize Your Project
 Initialize your project in the data-modeler-prototype directory.
 ```
-npm run cli -- init
+npm run cli-dev -- init
 ```
 ## Import Your Data
 Import datasets of interest into the Rill Data Modeler's duckDB database to make them available. We currently support .parquet and .csv.
 ```
-npm run cli -- import-table /path/to/data_1.parquet
-npm run cli -- import-table /path/to/data_2.csv
+npm run cli-dev -- import-table /path/to/data_1.parquet
+npm run cli-dev -- import-table /path/to/data_2.csv
 ```
 ## Start Your Project
 Start the User Interface to see your imported tables and revisit models you have created.
 ```
-npm run cli -- start
+npm run cli-dev -- start
 ```
 The Data Modeler UI will be available at http://localhost:8080
 
@@ -61,22 +61,22 @@ The data modeler will be evolving quickly! If you want an updated version of the
 ```
 git pull origin main
 npm run build
-npm run cli -- start
+npm run cli-dev -- start
 ```
 # Helpful Hints
 You can specify a new project folder by including the --project option.
 ```
-npm run cli -- init --project /path/to/a/new/project
-npm run cli -- import-table /path/to/data_1.parquet --project /path/to/a/new/project
-npm run cli -- start --project /path/to/a/new/project
+npm run cli-dev -- init --project /path/to/a/new/project
+npm run cli-dev -- import-table /path/to/data_1.parquet --project /path/to/a/new/project
+npm run cli-dev -- start --project /path/to/a/new/project
 ```
 By default the table name will be a sanitized version of the dataset name. You can specify a specific name using the --name option.
 ```
-npm run cli -- import-table  /path/to/data_1.parquet --name my_dataset
+npm run cli-dev -- import-table  /path/to/data_1.parquet --name my_dataset
 ```
 If you have a dataset that is delimited by a character other than a comma, you can use the --delimiter option.
 ```
-npm run cli -- import-table /path/to/data_3.txt --delimiter "|"
+npm run cli-dev -- import-table /path/to/data_3.txt --delimiter "|"
 ```
 
 # Application Developers
