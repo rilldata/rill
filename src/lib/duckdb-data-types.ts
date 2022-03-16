@@ -2,17 +2,20 @@
  * Provides mappings from duckdb's data types to conceptual types we use in the application:
  * CATEGORICALS, NUMERICS, and TIMESTAMPS.
  */
-export const CATEGORICALS = new Set(['BYTE_ARRAY', 'VARCHAR', "CHAR", "BPCHAR", "TEXT", "STRING"]);
 
-export const NUMERICS = new Set([
-    'DOUBLE', 'DECIMAL', 'BIGINT', 'HUGEINT', 'SMALLINT', 'INTEGER', 'TINYINT', 'UBIGINT', 'UINTEGER', 'UTINYINT', 'INT1', 'FLOAT8', 'NUMERIC',
-    'INT4', 'INT', 'SIGNED', 'SHORT', 'FLOAT']);
-
-export const BOOLEANS = new Set([
-    "BOOLEAN", "BOOL", "LOGICAL"
+export const INTEGERS = new Set([
+    'BIGINT', 'HUGEINT', 'SMALLINT', 'INTEGER', 'TINYINT', 'UBIGINT', 'UINTEGER', 'UTINYINT', 'INT1',
+    'INT4', 'INT', 'SIGNED', 'SHORT',
 ])
 
+export const FLOATS = new Set([
+    'DOUBLE', 'DECIMAL',  'FLOAT8', 'NUMERIC', 'FLOAT'
+])
+
+export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
+export const BOOLEANS = new Set([ "BOOLEAN", "BOOL", "LOGICAL" ]);
 export const TIMESTAMPS = new Set(['TIMESTAMP', 'TIME', 'DATETIME', 'DATE']);
+export const CATEGORICALS = new Set(['BYTE_ARRAY', 'VARCHAR', "CHAR", "BPCHAR", "TEXT", "STRING"]);
 
 interface ColorTokens {
     textClass: string,

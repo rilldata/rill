@@ -1,4 +1,4 @@
-import { BOOLEANS, CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
+import { BOOLEANS, CATEGORICALS, INTEGERS, FLOATS, TIMESTAMPS } from "$lib/duckdb-data-types";
 
 export function sortByCardinality(a,b) {
     if (a.summary && b.summary) {
@@ -35,8 +35,10 @@ export function sortByType(a,b) {
     else if (!BOOLEANS.has(a.type) && BOOLEANS.has(b.type)) return -1;
     else if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)) return 1;
     else if (!CATEGORICALS.has(a.type) && CATEGORICALS.has(b.type)) return -1;
-    else if (NUMERICS.has(a.type) && !NUMERICS.has(b.type)) return 1;
-    else if (!NUMERICS.has(a.type) && NUMERICS.has(b.type)) return -1;
+    else if (FLOATS.has(a.type) && !FLOATS.has(b.type)) return 1;
+    else if (!FLOATS.has(a.type) && FLOATS.has(b.type)) return -1;
+    else if (INTEGERS.has(a.type) && !INTEGERS.has(b.type)) return 1;
+    else if (!INTEGERS.has(a.type) && INTEGERS.has(b.type)) return -1;
     else if (TIMESTAMPS.has(a.type) && TIMESTAMPS.has(b.type)) {
                 return -1;
     } else if (!TIMESTAMPS.has(a.type) && TIMESTAMPS.has(b.type)) {
