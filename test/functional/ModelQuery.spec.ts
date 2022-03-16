@@ -80,11 +80,23 @@ export class ModelQuerySpec extends FunctionalTestBase {
         await this.waitForModels();
         expect(response.status).toBe(ActionStatus.Failure);
         expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
+        let [, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).toBe(response.messages[0].message);
 
         response = await this.clientDataModelerService.dispatch("updateModelQuery",
             [model.id, INVALID_QUERY + " "]);
         await this.waitForModels();
         expect(response.status).toBe(ActionStatus.Failure);
         expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
+        [, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).toBe(response.messages[0].message);
+
+        // clearing query should clear the error
+        response = await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, ""]);
+        expect(response.status).toBe(ActionStatus.Success);
+        expect(response.messages.length).toBe(0);
+        [, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).toBeUndefined();
     }
 }

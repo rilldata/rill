@@ -18,7 +18,9 @@ import type {
 import { getNewDerivedModel, getNewModel } from "$common/stateInstancesFactory";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 
 export enum FileExportType {
     Parquet = "exportToParquet",
@@ -74,9 +76,7 @@ export class ModelActions extends DataModelerActions {
         const validationResponse = await this.validateModelQuery(model, query);
         if (validationResponse) {
             this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
-            this.dataModelerStateService.dispatch("addModelError",
-                [modelId, validationResponse.messages[0].message]);
-            return validationResponse;
+            return this.setModelError(modelId, validationResponse);
         }
         this.dataModelerStateService.dispatch("clearModelError", [modelId]);
 
@@ -108,7 +108,8 @@ export class ModelActions extends DataModelerActions {
                 "createViewOfQuery",
                 [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]);
         } catch (error) {
-            return ActionResponseFactory.getModelQueryError(error.message);
+            return this.setModelError(modelId,
+                ActionResponseFactory.getModelQueryError(error.message));
         }
 
         this.dataModelerStateService.dispatch("setTableStatus",
@@ -124,7 +125,8 @@ export class ModelActions extends DataModelerActions {
                 {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
                 "getProfileColumns", [persistentModel.tableName])
         } catch (error) {
-            return ActionResponseFactory.getModelQueryError(error.message);
+            return this.setModelError(modelId,
+                ActionResponseFactory.getModelQueryError(error.message));
         }
         // clear any model error if we get this far.
         this.dataModelerStateService.dispatch("clearModelError", [modelId]);
@@ -160,7 +162,8 @@ export class ModelActions extends DataModelerActions {
                         "getDestinationSize", [persistentModel.tableName])]),
             ].map(asyncFunc => asyncFunc()));
         } catch (err) {
-            return ActionResponseFactory.getErrorResponse(err);
+            return this.setModelError(modelId,
+                ActionResponseFactory.getErrorResponse(err));
         }
 
         this.dataModelerStateService.dispatch("markAsProfiled",
@@ -224,6 +227,7 @@ export class ModelActions extends DataModelerActions {
                 return ActionResponseFactory.getModelQueryError(error.message);
             }  else {
                 this.dataModelerStateService.dispatch("clearModelProfile", [model.id]);
+                return ActionResponseFactory.getSuccessResponse();
             }
         }
         return undefined;
@@ -238,5 +242,17 @@ export class ModelActions extends DataModelerActions {
         await this.dataModelerStateService.dispatch("updateModelDestinationSize",
             [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
         this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"});
+    }
+
+    private async setModelError(modelId: string, response: ActionResponse) {
+        if (response.status === ActionStatus.Failure &&
+            response.messages[0]?.errorType === ActionErrorType.ModelQuery) {
+            // store only model errors. other errors are not to be seen by the user
+            this.dataModelerStateService.dispatch("addModelError",
+                [modelId, response.messages[0].message]);
+        } else {
+            this.dataModelerStateService.dispatch("clearModelError", [modelId]);
+        }
+        return response;
     }
 }

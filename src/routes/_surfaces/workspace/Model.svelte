@@ -17,8 +17,6 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 import Portal from "$lib/components/Portal.svelte";
 
 const store = getContext("rill:app:store") as ApplicationStore;
@@ -36,25 +34,6 @@ $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
 let currentDerivedModel: DerivedModelEntity;
 $: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
     $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
-let error: string;
-
-async function handleModelQueryUpdate(query: string) {
-    dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
-    const response = await dataModelerService.dispatch(
-        'updateModelQuery', [currentModel.id, query ]);
-    if (response?.status !== ActionStatus.Failure) {
-        error = "";
-        return;
-    }
-
-    const errorMessage = response.messages
-        .find(message => message.errorType !== ActionErrorType.QueryCancelled);
-    if (!errorMessage) {
-        error = "";
-        return;
-    }
-    error = errorMessage.message;
-}
 
 // track innerHeight to calculate the size of the editor element.
 let innerHeight;
@@ -80,7 +59,6 @@ let innerHeight;
           on:delete={() => { dataModelerService.dispatch('deleteModel', [currentModel.id]); }}
           on:receive-focus={() => {
               dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
-              error = "";
           }}
           on:release-focus={() => {
             //dataModelerService.dispatch('releaseActiveQueryFocus', [{ id: q.id }]);
@@ -92,7 +70,8 @@ let innerHeight;
             dataModelerService.dispatch('updateModelName', [currentModel.id, evt.detail]);
           }}
           on:write={(evt) => {
-              handleModelQueryUpdate(evt.detail.content);
+              dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
+              dataModelerService.dispatch('updateModelQuery', [currentModel.id, evt.detail.content])
           }}
       />
     {/key}
@@ -124,15 +103,15 @@ let innerHeight;
       class="p-6"
     >
     <div class="rounded overflow-auto  h-full  {!showPreview && 'hidden'}"
-     class:border={!!error}
-    class:border-gray-300={!!error}
+     class:border={!!currentDerivedModel?.error}
+    class:border-gray-300={!!currentDerivedModel?.error}
      >
-      {#if error}
+      {#if currentDerivedModel?.error}
       <div 
         transition:slide={{ duration: 200, easing }} 
         class="error font-bold rounded-lg p-5 text-gray-700"
       >
-        {error}
+        {currentDerivedModel.error}
       </div>
       {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
         <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
