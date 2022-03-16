@@ -7,6 +7,7 @@ import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
 import MoreHorizontal from "$lib/components/icons/MoreHorizontal.svelte";
+import Export from "$lib/components/icons/Export.svelte"
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte"
 import Menu from "$lib/components/menu/Menu.svelte"
 import MenuItem from "$lib/components/menu/MenuItem.svelte"
@@ -121,18 +122,22 @@ let contextMenuOpen = false;
         transition-tranform 
         text-gray-500
         duration-100
-        grid
         items-center
         justify-center
         border
         border-transparent
         rounded
+        flex flex-row gap-x-2
+        pl-2 pr-2
+        pt-1 pb-1
        "
     >
-    <MoreHorizontal size="20px" />
+    export
+    <Export size="16px" />
+    <!-- <MoreHorizontal size="20px" /> -->
 </button>
     <TooltipContent slot="tooltip-content">
-        Export the model output
+        export this model as a dataset
     </TooltipContent>
 </Tooltip>
 

@@ -113,19 +113,32 @@ onMount(() => {
 {#key currentModel?.id}
   <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length && tables}
-    <div class:text-gray-300={currentDerivedModel?.error} class='cost p-4 text-right grid justify-items-end justify-end' >
+    <div 
+      style:height="var(--header-height)"
+      class:text-gray-300={currentDerivedModel?.error} 
+      class='cost text-right grid justify-items-end justify-end content-center pl-4 pr-4' 
+      >
+      <div class='text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
+        {#if inputRowCardinalityValue > 0}
+        <!-- {formatInteger(inputRowCardinalityValue)} ⭢ -->
+
+          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+          {currentDerivedModel?.profile?.length} columns
+        {:else}
+          &nbsp;
+        {/if}
+      </div>
       <Tooltip location="left" alignment="center" distance={8}>
-      <div class="w-max text-right">
+      <div class="w-max text-right italic text-gray-500">
           {#if validRollup(rollup)}
                 {#if isNaN(rollup)}
-                  sdd
+                  ~
                 {:else if rollup === 0 }
                   no rows selected
                 {:else if rollup !== 1}
-                            <span style="font-weight: bold;">
                                 {formatBigNumberPercentage($bigRollupNumber)}
-                            </span> of source rows
-                {:else} <span style="font-weight: bold;">no change</span> in row count
+                             of source table rows
+                {:else}no change in row count
 
                 {/if}  
             {:else if rollup === Infinity}
@@ -142,14 +155,7 @@ onMount(() => {
         </div>
       </TooltipContent>
       </Tooltip>
-      <div class='text-gray-500'  class:text-gray-300={currentDerivedModel?.error}>
-        {#if inputRowCardinalityValue > 0}
-        {formatInteger(inputRowCardinalityValue)} ⭢
-          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
-        {:else}
-          &nbsp;
-        {/if}
-      </div>
+      
     </div>
   {/if}
   <hr />
