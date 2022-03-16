@@ -168,7 +168,8 @@ onMount(() => {
             {#each sourceTableReferences as reference, index (reference.name)}
             {@const correspondingTableCardinality = tables[index]?.cardinality}
               <div
-                class="flex justify-between  {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
+                class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
+                style:grid-template-columns="auto max-content"
                 on:focus={() => {
                   queryHighlight.set(reference.tables);
                 }}
@@ -182,7 +183,7 @@ onMount(() => {
                   queryHighlight.set(undefined);
                 }}
               >
-              <div>
+              <div class="text-ellipsis overflow-hidden whitespace-nowrap">
                 {reference.name}
               </div>
               <div class="text-gray-500 italic">
