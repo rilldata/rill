@@ -1,6 +1,6 @@
 Thank you for trying the Rill Data Modeler tech preview! This application is extremely alpha. 
 
-We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at  https://bit.ly/35ijZG4.
+We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4.
 
 # Prerequisites
 Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
