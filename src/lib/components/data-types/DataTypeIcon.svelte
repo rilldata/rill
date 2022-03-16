@@ -14,8 +14,9 @@ import TimestampType from "../icons/TimestampType.svelte";
 import BooleanType from "../icons/BooleanType.svelte";
 import IntegerType from "../icons/IntegerType.svelte";
 import FloatType from "../icons/FloatType.svelte";
-
+export let color = 'text-gray-400';
 export let type;
+export let suppressTooltip = false;
 
 function typeToSymbol(fieldType:string) {
     if (INTEGERS.has(fieldType)) {
@@ -31,11 +32,11 @@ function typeToSymbol(fieldType:string) {
     }
 }
 </script>
-<Tooltip location="left" distance={16}>
+<Tooltip location="left" distance={16} suppress={suppressTooltip}>
 <div
 title="{type}"
 class="
-    text-gray-400
+    {color}
     grid place-items-center rounded" 
     style="width: 16px; height: 16px;">
     <div>

@@ -11,6 +11,8 @@ import { FormattedDataType, DataTypeIcon } from "$lib/components/data-types/";
 import Pin from "$lib/components/icons/Pin.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+import DataTypeTitle from "$lib/components/tooltip/DataTypeTitle.svelte";
+import PreviewTableHeader from "./PreviewTableHeader.svelte";
 import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import { standardTimestampFormat } from "$lib/util/formatters"
 
@@ -60,7 +62,15 @@ function togglePin(name, type, selectedCols) {
         <TableRow>
             {#each columnNames as {name, type} (name)}
                 {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-                <TableHeader {name} {type}>
+                <PreviewTableHeader 
+                    {name} 
+                    {type} 
+                    pinned={thisColumnIsPinned} 
+                    on:pin={() => {
+                        togglePin(name, type, selectedColumns);
+                    }}
+                />
+                <!-- <TableHeader {name} {type}>
                  <div 
                     style:grid-template-columns="210px max-content"
                     class="
@@ -69,13 +79,16 @@ function togglePin(name, type, selectedCols) {
                         justify-items-start
                         justify-stretch
                         gap-x-3">
-                    <!-- <DataTypeIcon {type} /> -->
+            
                     <Tooltip location="top" alignment="middle" distance={16}>
-                        <div class="w-full pr-5 text-ellipsis overflow-hidden whitespace-nowrap">
-                            {name}
+                        <div class="w-full pr-5  flex flex-row gap-x-2 items-center">
+                            <DataTypeIcon suppressTooltip color={'text-gray-500'} {type} /> 
+                            <span class="text-ellipsis overflow-hidden whitespace-nowrap">
+                                {name}
+                            </span>
                         </div>
                         <TooltipContent slot='tooltip-content'>
-                            {name}
+                            <DataTypeTitle {name} {type} />
                         </TooltipContent>
                     </Tooltip>
                     <Tooltip location="top" alignment="middle" distance={16}>
@@ -92,7 +105,7 @@ function togglePin(name, type, selectedCols) {
                     </TooltipContent>
                     </Tooltip>
                 </div>
-                 </TableHeader>
+                 </TableHeader> -->
             {/each}
         </TableRow>
         <!-- values -->
@@ -118,7 +131,15 @@ function togglePin(name, type, selectedCols) {
             <TableRow>
                 {#each selectedColumns as {name, type} (name)}
                     {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-                    <TableHeader {name} {type}>
+                    <PreviewTableHeader 
+                        {name} 
+                        {type} 
+                        pinned={thisColumnIsPinned} 
+                        on:pin={() => {
+                            togglePin(name, type, selectedColumns);
+                        }}
+                    />
+                    <!-- <TableHeader {name} {type}>
                         
                         <div 
                             style:grid-template-columns="210px max-content"
@@ -130,7 +151,7 @@ function togglePin(name, type, selectedCols) {
                         >
                         <Tooltip location="top" alignment="middle"  distance={16}>
                             <div class="w-full pr-5 text-ellipsis overflow-y-hidden overflow-x-auto whitespace-nowrap">
-                                {name}
+                                <DataTypeIcon {type} /> {name}
                             </div>
                             <TooltipContent slot='tooltip-content'>
                                 {name}
@@ -150,7 +171,7 @@ function togglePin(name, type, selectedCols) {
                             </TooltipContent>
                             </Tooltip>
                     </div>
-                    </TableHeader>
+                    </TableHeader> -->
                 {/each}
             </TableRow>
                 {#each rows as row, index}
