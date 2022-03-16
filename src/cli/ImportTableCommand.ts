@@ -7,6 +7,7 @@ import { cliConfirmation } from "$common/utils/cliConfirmation";
 import type {
     PersistentTableEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 interface ImportTableCommandOptions {
     project?: string;
@@ -60,8 +61,15 @@ export class ImportTableCommand extends DataModelerCliCommand {
                               existingTable: PersistentTableEntity) {
         await this.waitIfClient();
         const tableName = getTableNameFromFile(tableSourceFile, name);
-        await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
+        const response = await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
             [tableSourceFile, name, {csvDelimiter: delimiter}]);
+
+        if (response.status === ActionStatus.Failure) {
+            response.messages.forEach(message => console.log(message.message));
+            console.log(`Failed to import table ${tableName} from file ${tableSourceFile}`);
+            return;
+        }
+
         await this.waitIfClient();
 
         let createdTable: PersistentTableEntity;
@@ -70,14 +78,13 @@ export class ImportTableCommand extends DataModelerCliCommand {
                 .getEntityStateService(EntityType.Table, StateType.Persistent)
                 .getByField("tableName", tableName);
             return !!createdTable;
-        });
+        }, this.config.state.syncInterval * 5);
 
         if ((existingTable && createdTable &&
               existingTable.lastUpdated < createdTable.lastUpdated) ||
             (!existingTable && createdTable)) {
             console.log(`Successfully imported ${tableSourceFile} into table ${createdTable.tableName}`);
         } else {
-            // actual error would be printed by addOrUpdateTableFromFile
             console.log(`Failed to import table ${tableName} from file ${tableSourceFile}`);
         }
     }
