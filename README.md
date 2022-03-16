@@ -2,13 +2,17 @@ Thank you for trying the Rill Data Modeler tech preview! This application is ext
 
 We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at  https://bit.ly/35ijZG4.
 
-## Prerequisites
+# Prerequisites
 Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
 ```
 node -v
 ```
+Clone this repository to your local machine:
+```
+git clone https://github.com/gorillio/data-modeler-prototype
+```
 
-## Install Locally
+# Install Locally
 Change directories to the Rill Data Modeler Prototype
 ```
 cd /path/to/data-modeler-prototype
@@ -30,7 +34,7 @@ npm run cli-dev -- start --project ../data-modeler-example
 ```
 
 # Creating Your Own Project
-
+If you want to go beyond this example, you can also create a project using your own data.
 ## Initialize Your Project
 Initialize your project in the data-modeler-prototype directory.
 ```
