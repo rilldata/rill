@@ -7,6 +7,7 @@
 		"build": "svelte-kit build && tsc --project tsconfig.node.json",
 		"prepack": "./build-tools/replace_package_type.sh module commonjs",
 		"postpack": "./build-tools/replace_package_type.sh commonjs module",
+		"install-and-build": "npm install && npm run build",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
@@ -19,7 +20,7 @@
 		"test": "jest",
 		"test:watch": "npm run test -- --watch",
 		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
-		"cli": "ts-node-dev --silent --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
+		"cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
 	},
 	"devDependencies": {
 		"@adityahegde/typescript-test-utils": "^1.3.2",
