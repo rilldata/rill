@@ -11,6 +11,8 @@ import { FormattedDataType, DataTypeIcon } from "$lib/components/data-types/";
 import Pin from "$lib/components/icons/Pin.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+import DataTypeTitle from "$lib/components/tooltip/DataTypeTitle.svelte";
+import PreviewTableHeader from "./PreviewTableHeader.svelte";
 import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import { standardTimestampFormat } from "$lib/util/formatters"
 
@@ -60,39 +62,14 @@ function togglePin(name, type, selectedCols) {
         <TableRow>
             {#each columnNames as {name, type} (name)}
                 {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-                <TableHeader {name} {type}>
-                 <div 
-                    style:grid-template-columns="210px max-content"
-                    class="
-                        grid
-                        items-center
-                        justify-items-start
-                        justify-stretch
-                        gap-x-3">
-                    <!-- <DataTypeIcon {type} /> -->
-                    <Tooltip location="top" alignment="middle" distance={16}>
-                        <div class="w-full pr-5 text-ellipsis overflow-hidden whitespace-nowrap">
-                            {name}
-                        </div>
-                        <TooltipContent slot='tooltip-content'>
-                            {name}
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip location="top" alignment="middle" distance={16}>
-                    <button 
-                        class:text-gray-900={thisColumnIsPinned} 
-                        class:text-gray-400={!thisColumnIsPinned}
-                        class="transition-colors duration-100 justify-self-end"
-                        on:click={() => { togglePin(name, type, selectedColumns)}}
-                        >
-                        <Pin size=".9em" />
-                    </button>
-                    <TooltipContent slot="tooltip-content">
-                        {thisColumnIsPinned ? 'unpin this column from the right side of the table' : 'pin this column to the right side of the table'}
-                    </TooltipContent>
-                    </Tooltip>
-                </div>
-                 </TableHeader>
+                <PreviewTableHeader 
+                    {name} 
+                    {type} 
+                    pinned={thisColumnIsPinned} 
+                    on:pin={() => {
+                        togglePin(name, type, selectedColumns);
+                    }}
+                />
             {/each}
         </TableRow>
         <!-- values -->
@@ -118,39 +95,14 @@ function togglePin(name, type, selectedCols) {
             <TableRow>
                 {#each selectedColumns as {name, type} (name)}
                     {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-                    <TableHeader {name} {type}>
-                        
-                        <div 
-                            style:grid-template-columns="210px max-content"
-                            class="
-                                grid
-                                justify-between
-                                gap-x-3
-                            "
-                        >
-                        <Tooltip location="top" alignment="middle"  distance={16}>
-                            <div class="w-full pr-5 text-ellipsis overflow-y-hidden overflow-x-auto whitespace-nowrap">
-                                {name}
-                            </div>
-                            <TooltipContent slot='tooltip-content'>
-                                {name}
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip location="top" alignment="middle" distance={16}>
-                            <button 
-                                class:text-gray-900={thisColumnIsPinned} 
-                                class:text-gray-400={!thisColumnIsPinned}
-                                class="transition-colors duration-100 justify-self-end"
-                                on:click={() => { togglePin(name, type, selectedColumns)}}
-                                >
-                                <Pin size=".9em" />
-                            </button>
-                            <TooltipContent slot="tooltip-content">
-                                {thisColumnIsPinned ? 'unpin this column from the right side of the table' : 'pin this column to the right side of the table'}
-                            </TooltipContent>
-                            </Tooltip>
-                    </div>
-                    </TableHeader>
+                    <PreviewTableHeader 
+                        {name} 
+                        {type} 
+                        pinned={thisColumnIsPinned} 
+                        on:pin={() => {
+                            togglePin(name, type, selectedColumns);
+                        }}
+                    />
                 {/each}
             </TableRow>
                 {#each rows as row, index}
