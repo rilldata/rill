@@ -41,10 +41,11 @@ Initialize your project in the data-modeler-prototype directory.
 npm run cli --silent -- init
 ```
 ## Import Your Data
-Import datasets of interest into the Rill Data Modeler's duckDB database to make them available. We currently support .parquet and .csv.
+Import datasets of interest into the Rill Data Modeler's duckDB database to make them available. We currently support .parquet, .csv, and .tsv.
 ```
 npm run cli --silent -- import-table /path/to/data_1.parquet
 npm run cli --silent -- import-table /path/to/data_2.csv
+npm run cli --silent -- import-table /path/to/data_3.csv
 ```
 ## Start Your Project
 Start the User Interface to see your imported tables and revisit models you have created.
@@ -74,9 +75,13 @@ By default the table name will be a sanitized version of the dataset file name. 
 ```
 npm run cli --silent -- import-table  /path/to/data_1.parquet --name my_dataset
 ```
-If you have a dataset that is delimited by a character other than a comma, you can use the --delimiter option.
+If you have a dataset that is delimited by a character other than a comma, you can use the --delimiter option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
 ```
-npm run cli --silent -- import-table /path/to/data_3.txt --delimiter "|"
+npm run cli --silent -- import-table /path/to/data_4.txt --delimiter "|"
+```
+If you would like to see information on all of the available CLI commands, you can use the help option.
+```
+npm run cli --silent -- --help
 ```
 
 # Application Developers
