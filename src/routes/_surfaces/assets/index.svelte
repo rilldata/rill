@@ -138,7 +138,6 @@ let width = tweened(400, {duration : 50})
                 id={'create-model-button'}
                 tooltipText="create a new model" on:click={async () => {
                 // create the new model.
-                console.log('hello.')
                 let response = await dataModelerService.dispatch("addModel", [{}]);
                 // change the active asset to the new model.
                 dataModelerService.dispatch("setActiveAsset", [EntityType.Model, response.id]);

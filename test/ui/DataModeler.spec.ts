@@ -164,7 +164,6 @@ LINE 1: SELECT * FROM xyz
     const newModelCount = await page.locator("#assets-model-list > div").count();
     expect(newModelCount).toBe(oldModelCount + 1);
 
-
     // get the text of the last model and compare to the title element in the workspace.
     const modelName = await page.locator("#assets-model-list > div").last().textContent();
 
