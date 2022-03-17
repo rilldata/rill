@@ -194,10 +194,22 @@ export class ModelActions extends DataModelerActions {
     @DataModelerActions.PersistentModelAction()
     public async deleteModel(args: PersistentModelStateActionArg,
                              modelId: string): Promise<void> {
+        // get the next available model.
+        const entities = args.stateService.getCurrentState().entities;
+        const index = entities.findIndex(entity => entity.id === modelId);
+        let nextModel;
+        if (index === 0) {
+            nextModel = entities[index+1].id;
+        } else if (index !== -1) {
+            nextModel = entities[index-1].id;
+        }
         this.dataModelerStateService.dispatch("deleteEntity",
             [EntityType.Model, StateType.Persistent, modelId]);
         this.dataModelerStateService.dispatch("deleteEntity",
             [EntityType.Model, StateType.Derived, modelId]);
+        // set the active entity to be the nextModel.
+        this.dataModelerService.dispatch('setActiveAsset', [EntityType.Model, nextModel]);
+
     }
 
     @DataModelerActions.PersistentModelAction()
