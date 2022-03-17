@@ -134,8 +134,14 @@ let width = tweened(400, {duration : 50})
             <CollapsibleSectionTitle  tooltipText={"tables"} bind:active={showModels}>
                 <h4> Models</h4>
               </CollapsibleSectionTitle>
-              <ContextButton tooltipText="create a new model" on:click={() => {
-                dataModelerService.dispatch("addModel", [{}]);
+              <ContextButton 
+                id={'create-model-button'}
+                tooltipText="create a new model" on:click={async () => {
+                // create the new model.
+                let response = await dataModelerService.dispatch("addModel", [{}]);
+                // change the active asset to the new model.
+                dataModelerService.dispatch("setActiveAsset", [EntityType.Model, response.id]);
+                // if the models are not visible in the assets list, show them.
                 if (!showModels) {
                   showModels = true;
                 }
@@ -145,7 +151,7 @@ let width = tweened(400, {duration : 50})
 
             </div>
             {#if showModels}
-              <div class='pb-6 justify-self-end'  transition:slide={{duration:200}}>
+              <div class='pb-6 justify-self-end'  transition:slide={{duration:200}} id="assets-model-list">
               <!-- TODO: fix the object property access back to m.id from m["id"] once svelte fixes it -->
               {#each $persistentModelStore.entities as query, i (query.id)}
                 {@const derivedModel = $derivedModelStore.entities.find(m => m["id"] === query["id"])}

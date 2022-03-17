@@ -151,6 +151,27 @@ LINE 1: SELECT * FROM xyz
     expect(actualCost).toEqual(expectedCost);
   }
 
+  @TestBase.Test()
+  public async testNewModelCreation({ page }: PlaywrightTestArgs) {
+    await page.goto(URL);
+
+    const oldModelCount = await page.locator('#assets-model-list > div').count();
+
+    await page.click('button#create-model-button');
+
+    await this.delay(300);
+
+    const newModelCount = await page.locator("#assets-model-list > div").count();
+    expect(newModelCount).toBe(oldModelCount + 1);
+
+    // get the text of the last model and compare to the title element in the workspace.
+    const modelName = await page.locator("#assets-model-list > div").last().textContent();
+
+    // check the modelName against the model title input element.
+    const modelTitleElement = await page.inputValue('input#model-title-input');
+    expect(modelName.includes(modelTitleElement)).toBeTruthy();
+  }
+
   @TestBase.Test('errorDataProvider')
   public async testInvalidSql(query: string, result: string, { page }: PlaywrightTestArgs) {
     await page.goto(URL);

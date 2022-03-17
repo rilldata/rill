@@ -47,6 +47,7 @@ export class ModelActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("addEntity",
             [EntityType.Model, StateType.Derived,
                 getNewDerivedModel(persistentModel), params.at]);
+        return persistentModel;
     }
 
     @DataModelerActions.PersistentModelAction()
