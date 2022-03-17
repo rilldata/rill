@@ -70,6 +70,31 @@ export class ModelQuerySpec extends FunctionalTestBase {
     }
 
     @FunctionalTestBase.Test()
+    public async deletingModelShouldSelectNextAvailableOne(): Promise<void> {
+        //
+        const service = this.clientDataModelerStateService
+            .getEntityStateService(EntityType.Model, StateType.Persistent);
+
+        await this.clientDataModelerService.dispatch("addModel",
+            [{name: "newModel1", query: SingleTableQuery}]);
+        let [model1, model2] = service.getCurrentState().entities;
+        // set the first entry and delete it.
+        this.clientDataModelerService.dispatch('setActiveAsset', [EntityType.Model, model2.id]);
+        this.clientDataModelerService.dispatch('deleteModel', [model2.id]);
+
+        // the active moel should now be the last one
+        expect(this.getActiveEntity().activeEntity.id).toBe(model1.id);
+
+        // try adding another, selecting it and deleting the the latest;
+        await this.clientDataModelerService.dispatch("addModel",
+            [{name: "newModel2", query: SingleTableQuery}]);
+        let [_, model3] = service.getCurrentState().entities;
+        this.clientDataModelerService.dispatch('setActiveAsset', [EntityType.Model, model3.id]);
+        this.clientDataModelerService.dispatch('deleteModel', [model3.id]);
+        expect(this.getActiveEntity().activeEntity.id).toBe(model1.id);
+    }
+
+    @FunctionalTestBase.Test()
     public async shouldReturnModelQueryError(): Promise<void> {
         const INVALID_QUERY = "slect * from AdBids";
 

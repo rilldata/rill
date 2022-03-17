@@ -93,6 +93,10 @@ export class FunctionalTestBase extends TestBase {
             [PersistentModelEntity, DerivedModelEntity];
     }
 
+    protected getActiveEntity(): any {
+        return this.clientDataModelerStateService.getEntityStateService(EntityType.Application, StateType.Derived).getCurrentState();
+    }
+
     protected assertColumns(profileColumns: ProfileColumn[], columns: TestDataColumns): void {
         profileColumns.forEach((profileColumn, idx) => {
             expect(profileColumn.name).toBe(columns[idx].name);
