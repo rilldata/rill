@@ -21,6 +21,8 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { existsSync } from "fs";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -39,23 +41,22 @@ export class TableActions extends DataModelerActions {
 
     @DataModelerActions.PersistentTableAction()
     public async addOrUpdateTableFromFile({stateService}: PersistentTableStateActionArg, path: string,
-                                          tableName?: string, options: ImportTableOptions = {}): Promise<void> {
+                                          tableName?: string, options: ImportTableOptions = {}): Promise<ActionResponse> {
         const name = getTableNameFromFile(path, tableName);
         const type = FILE_EXTENSION_TO_TABLE_TYPE[extractFileExtension(path)];
 
         if (!existsSync(path)) {
-            console.error(`File ${path} does not exist`);
-            return;
+            return ActionResponseFactory.getImportTableError(
+                `File ${path} does not exist`);
         }
 
         if (type === undefined) {
-            // TODO: Create a error response pipeline
-            console.error("Invalid file type");
-            return;
+            return ActionResponseFactory.getImportTableError(
+                `Invalid file type`);
         }
         if (tableName && INVALID_CHARS.test(tableName)) {
-            console.error("Input table name has invalid characters");
-            return;
+            return ActionResponseFactory.getImportTableError(
+                `Input table name has invalid characters`);
         }
 
         const existingTable = stateService.getByField("tableName", name);
@@ -75,7 +76,7 @@ export class TableActions extends DataModelerActions {
     }
 
     @DataModelerActions.DerivedTableAction()
-    public async collectTableInfo({stateService}: DerivedTableStateActionArg, tableId: string): Promise<void> {
+    public async collectTableInfo({stateService}: DerivedTableStateActionArg, tableId: string): Promise<ActionResponse> {
         const persistentTable = this.dataModelerStateService
             .getEntityById(EntityType.Table, StateType.Persistent, tableId);
         const newDerivedTable: DerivedTableEntity = {
@@ -87,8 +88,7 @@ export class TableActions extends DataModelerActions {
         };
 
         if (!persistentTable) {
-            console.error("No table found");
-            return;
+            return ActionResponseFactory.getEntityError(`No table found for ${tableId}`);
         }
         this.databaseActionQueue.clearQueue(tableId);
 
@@ -128,7 +128,7 @@ export class TableActions extends DataModelerActions {
         } catch (err) {
             this.dataModelerStateService.dispatch("setEntityStatus",
                 [EntityType.Table, tableId, EntityStatus.Idle]);
-            console.error(err);
+            return ActionResponseFactory.getErrorResponse(err);
         }
     }
 

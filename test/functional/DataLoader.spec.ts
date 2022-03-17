@@ -6,11 +6,10 @@ import {
     TestDataColumns,
 } from "../data/DataLoader.data";
 import {DATA_FOLDER} from "../data/generator/data-constants";
-import {execSync} from "node:child_process";
 import { extractFileExtension, extractTableName } from "$lib/util/extract-table-name";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 
-const AdBidsFile = "data/AdBids.parquet";
-const AdImpressionsFile = "data/AdImpressions.parquet";
 const UserFile = "data/Users.csv";
 
 @TestBase.Suite
@@ -56,12 +55,14 @@ export class DataLoaderSpec extends FunctionalTestBase {
 
     @TestBase.Test()
     public async shouldNotLoadInvalidTable(): Promise<void> {
-        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
+        const response = await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
           ["data/AdBids", "AdBidsTableInvalid"]);
         await this.waitForTables();
 
         const [table] = this.getTables("name", "AdBidsTableInvalid");
 
         expect(table).toBeUndefined();
+        expect(response.status).toBe(ActionStatus.Failure);
+        expect(response.messages[0].errorType).toBe(ActionErrorType.ImportTable);
     }
 }

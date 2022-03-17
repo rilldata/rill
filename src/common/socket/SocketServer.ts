@@ -42,8 +42,8 @@ export class SocketServer {
         this.server.on("connection", (socket) => {
             console.log("New connection", socket.id);
             socket.emit("initialState", this.dataModelerStateService.getCurrentStates());
-            socket.on("action", async (action, args) => {
-                await this.dataModelerService.dispatch(action, args);
+            socket.on("action", async (action, args, callback) => {
+                callback(await this.dataModelerService.dispatch(action, args));
             });
         });
     }

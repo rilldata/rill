@@ -3,6 +3,8 @@ import type { TestDataColumns } from "../data/DataLoader.data";
 import { ModelQueryTestData, ModelQueryTestDataProvider, SingleTableQuery } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 @FunctionalTestBase.Suite
 export class ModelQuerySpec extends FunctionalTestBase {
@@ -65,5 +67,36 @@ export class ModelQuerySpec extends FunctionalTestBase {
         await this.clientDataModelerService.dispatch("deleteModel", [newModel.id]);
         expect(service.getCurrentState().entities.length).toBe(1);
         expect(service.getCurrentState().entities[0].name).toBe(OTHER_MODEL_NAME);
+    }
+
+    @FunctionalTestBase.Test()
+    public async shouldReturnModelQueryError(): Promise<void> {
+        const INVALID_QUERY = "slect * from AdBids";
+
+        const [model] = this.getModels("tableName", "query_0");
+        // invalid query
+        let response = await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, INVALID_QUERY]);
+        await this.waitForModels();
+        expect(response.status).toBe(ActionStatus.Failure);
+        expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
+        let [, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).toBe(response.messages[0].message);
+
+        response = await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, INVALID_QUERY + " "]);
+        await this.waitForModels();
+        expect(response.status).toBe(ActionStatus.Failure);
+        expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
+        [, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).toBe(response.messages[0].message);
+
+        // clearing query should clear the error
+        response = await this.clientDataModelerService.dispatch("updateModelQuery",
+            [model.id, ""]);
+        expect(response.status).toBe(ActionStatus.Success);
+        expect(response.messages.length).toBe(0);
+        [, derivedModel] = this.getModels("tableName", "query_0");
+        expect(derivedModel.error).toBeUndefined();
     }
 }
