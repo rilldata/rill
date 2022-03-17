@@ -45,20 +45,20 @@ Import datasets of interest into the Rill Data Modeler's duckDB database to make
 ```
 npm run cli --silent -- import-table /path/to/data_1.parquet
 npm run cli --silent -- import-table /path/to/data_2.csv
-npm run cli --silent -- import-table /path/to/data_3.csv
+npm run cli --silent -- import-table /path/to/data_3.tsv
 ```
 ## Start Your Project
-Start the User Interface to see your imported tables and revisit models you have created.
+Start the User Interface to interact with your imported tables and revisit projects you have created.
 ```
 npm run cli --silent -- start
 ```
-The Data Modeler UI will be available at http://localhost:8080
+The Data Modeler UI will be available at http://localhost:8080.
 
 # Data Modeler SQL Dialect
 The Data Modeler is powered by duckDB. Please visit their documentation for insight into their dialect of SQL to facilitate data modeling at https://duckdb.org/docs/sql/introduction.
 
 # Updating the Data Modeler
-The data modeler will be evolving quickly! If you want an updated version of the Data Modeler you can pull in the latest version of main and rebuild the application. Once you have rebuilt the application you can restart your project to see the new experience.
+The Data Modeler will be evolving quickly! If you want an updated version, you can pull in the latest changes and rebuild the application. Once you have rebuilt the application you can restart your project to see the new experience.
 ```
 git pull origin main
 npm run build
@@ -71,11 +71,11 @@ npm run cli --silent -- init --project /path/to/a/new/project
 npm run cli --silent -- import-table /path/to/data_1.parquet --project /path/to/a/new/project
 npm run cli --silent -- start --project /path/to/a/new/project
 ```
-By default the table name will be a sanitized version of the dataset file name. You can specify a specific name using the --name option.
+By default the table name will be a sanitized version of the dataset file name. You can specify a name using the --name option.
 ```
 npm run cli --silent -- import-table  /path/to/data_1.parquet --name my_dataset
 ```
-If you have a dataset that is delimited by a character other than a comma, you can use the --delimiter option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
+If you have a dataset that is delimited by a character other than a comma or tab, you can use the --delimiter option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
 ```
 npm run cli --silent -- import-table /path/to/data_4.txt --delimiter "|"
 ```
