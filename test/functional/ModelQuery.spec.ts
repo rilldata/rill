@@ -99,4 +99,39 @@ export class ModelQuerySpec extends FunctionalTestBase {
         [, derivedModel] = this.getModels("tableName", "query_0");
         expect(derivedModel.error).toBeUndefined();
     }
+
+    @FunctionalTestBase.Test()
+    public async shouldSwitchActiveEntityOnDelete() {
+        for (let i = 1; i <= 5; i++) {
+            await this.clientDataModelerService.dispatch("addModel",
+                [{name: `query_${i}`, query: ""}]);
+            await asyncWait(50);
+        }
+
+        const ids = [];
+        for (let i = 0; i < 5; i++) {
+            const [model] = this.getModels("name", `query_${i}.sql`);
+            ids.push(model.id);
+        }
+
+        await this.clientDataModelerService.dispatch(
+            "setActiveAsset", [EntityType.Model, ids[1]]);
+        await asyncWait(100);
+        expect(this.getActiveEntity().id).toBe(ids[1]);
+
+        await this.clientDataModelerService.dispatch(
+            "deleteModel", [ids[2]]);
+        await asyncWait(100);
+        expect(this.getActiveEntity().id).toBe(ids[1]);
+
+        await this.clientDataModelerService.dispatch(
+            "deleteModel", [ids[1]]);
+        await asyncWait(100);
+        expect(this.getActiveEntity().id).toBe(ids[0]);
+
+        await this.clientDataModelerService.dispatch(
+            "deleteModel", [ids[0]]);
+        await asyncWait(100);
+        expect(this.getActiveEntity().id).toBe(ids[3]);
+    }
 }
