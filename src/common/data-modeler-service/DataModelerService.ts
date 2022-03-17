@@ -15,6 +15,7 @@ import type { ActionResponse } from "$common/data-modeler-service/response/Actio
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
+import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &
@@ -95,7 +96,7 @@ export class DataModelerService {
         }
         if (this.runningCount === 0) {
             this.dataModelerStateService.dispatch(
-                "setApplicationStatus", [EntityStatus.Running]);
+                "setApplicationStatus", [ApplicationStatus.Running]);
         }
         this.runningCount++;
 
@@ -113,7 +114,7 @@ export class DataModelerService {
         this.runningCount--;
         if (this.runningCount === 0) {
             this.dataModelerStateService.dispatch(
-                "setApplicationStatus", [EntityStatus.Idle]);
+                "setApplicationStatus", [ApplicationStatus.Idle]);
         }
         return returnResponse;
     }

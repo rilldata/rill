@@ -4,7 +4,7 @@ import type {
     ApplicationStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 export class ApplicationStateActions extends StateActions {
     @DataModelerActions.ApplicationAction()
@@ -17,7 +17,7 @@ export class ApplicationStateActions extends StateActions {
 
     @DataModelerActions.ApplicationAction()
     public async setApplicationStatus({draftState}: ApplicationStateActionArg,
-                                      status: EntityStatus) {
+                                      status: ApplicationStatus) {
         draftState.status = status;
     }
 }

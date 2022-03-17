@@ -4,11 +4,11 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { SinonSandbox, SinonStub } from "sinon";
-import { asyncWait } from "$common/utils/waitUtils";
+import type { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 export class EntityStatusTracker {
     private statusChangeOrder: Array<EntityStatus>;
-    private applicationStatusChangeOrder: Array<EntityStatus>;
+    private applicationStatusChangeOrder: Array<ApplicationStatus>;
     private stateSpyTimer: NodeJS.Timer;
     private originalStateService;
     private stateServiceSpy: SinonStub;

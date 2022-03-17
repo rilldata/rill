@@ -3,6 +3,7 @@ import { EntityStatus, EntityType } from "$common/data-modeler-state-service/ent
 import { EntityStatusTracker } from "../utils/EntityStatusTracker";
 import { asyncWait } from "$common/utils/waitUtils";
 import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
+import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 @FunctionalTestBase.Suite
 export class EntityStatusSpec extends FunctionalTestBase {
@@ -36,9 +37,9 @@ export class EntityStatusSpec extends FunctionalTestBase {
             EntityStatus.Idle,
         ]);
         expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
-            EntityStatus.Idle,
-            EntityStatus.Running,
-            EntityStatus.Idle,
+            ApplicationStatus.Idle,
+            ApplicationStatus.Running,
+            ApplicationStatus.Idle,
         ]);
     }
 
@@ -66,9 +67,9 @@ export class EntityStatusSpec extends FunctionalTestBase {
             EntityStatus.Idle,
         ]);
         expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
-            EntityStatus.Idle,
-            EntityStatus.Running,
-            EntityStatus.Idle,
+            ApplicationStatus.Idle,
+            ApplicationStatus.Running,
+            ApplicationStatus.Idle,
         ]);
     }
 
@@ -97,9 +98,9 @@ export class EntityStatusSpec extends FunctionalTestBase {
             EntityStatus.Idle,
         ]);
         expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
-            EntityStatus.Idle,
-            EntityStatus.Running,
-            EntityStatus.Idle,
+            ApplicationStatus.Idle,
+            ApplicationStatus.Running,
+            ApplicationStatus.Idle,
         ]);
     }
 
@@ -131,9 +132,9 @@ export class EntityStatusSpec extends FunctionalTestBase {
         await asyncWait(50);
 
         expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
-            EntityStatus.Idle,
-            EntityStatus.Running,
-            EntityStatus.Idle,
+            ApplicationStatus.Idle,
+            ApplicationStatus.Running,
+            ApplicationStatus.Idle,
         ]);
     }
 

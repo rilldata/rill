@@ -15,10 +15,14 @@ export interface ActiveEntity {
     id: string;
 }
 
+export enum ApplicationStatus {
+    Idle,
+    Running,
+}
 export interface ApplicationEntity extends DerivedEntityRecord {}
 export interface ApplicationState extends EntityState<ApplicationEntity> {
     activeEntity?: ActiveEntity;
-    status: EntityStatus;
+    status: ApplicationStatus;
 }
 export type ApplicationStateActionArg = EntityStateActionArg<ApplicationEntity, ApplicationState>;
 
@@ -27,6 +31,6 @@ export class ApplicationStateService extends EntityStateService<ApplicationEntit
     public readonly stateType = StateType.Derived;
 
     public getEmptyState(): ApplicationState {
-        return {lastUpdated: 0, entities: [], status: EntityStatus.Idle};
+        return {lastUpdated: 0, entities: [], status: ApplicationStatus.Idle};
     }
 }
