@@ -5,6 +5,9 @@
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build && tsc --project tsconfig.node.json",
+		"prepack": "./build-tools/replace_package_type.sh module commonjs",
+		"postpack": "./build-tools/replace_package_type.sh commonjs module",
+		"install-and-build": "npm install && npm run build",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
@@ -18,7 +21,7 @@
 		"test:ui": "jest --detectOpenHandles test/ui",
 		"test:watch": "npm run test -- --watch",
 		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
-		"cli-dev": "ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
+		"cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
 	},
 	"devDependencies": {
 		"@adityahegde/typescript-test-utils": "^1.3.2",
@@ -53,7 +56,6 @@
 		"prettier-plugin-svelte": "^2.6.0",
 		"should": "^13.2.3",
 		"sinon": "^13.0.1",
-		"svelte": "^3.46.4",
 		"svelte-check": "^2.4.3",
 		"svelte-jester": "^2.3.1",
 		"svelte-preprocess": "^4.10.2",
@@ -87,6 +89,19 @@
 		"module-alias": "^2.2.2",
 		"piscina": "^3.2.0",
 		"socket.io": "^4.4.1",
-		"socket.io-client": "^4.4.1"
-	}
+		"socket.io-client": "^4.4.1",
+		"svelte": "^3.46.4"
+	},
+	"bin": {
+		"data-modeler": "./dist/cli/data-modeler-cli.js"
+	},
+	"files": [
+		"dist",
+		"build",
+		"static",
+		"package.json",
+		"package-lock.json",
+		"LICENSE.md",
+		"README.md"
+	]
 }

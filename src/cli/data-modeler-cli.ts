@@ -1,4 +1,4 @@
-#!/usr/bin/env node --type "commonjs"
+#!/usr/bin/env node
 import "../moduleAlias";
 import { Command } from "commander";
 import { InitCommand } from "$cli/InitCommand";

@@ -6,6 +6,7 @@ import {
 import type {
     ActionMetadata
 } from "$common/priority-action-queue/PriorityActionQueue";
+import { QueryCancelledError } from "$common/errors/QueryCancelledError";
 
 export class ActionQueueOrchestrator<ActionsDefinition extends Record<string, Array<any>>> {
     private actionService: ActionServiceBase<ActionsDefinition>;
@@ -53,7 +54,7 @@ export class ActionQueueOrchestrator<ActionsDefinition extends Record<string, Ar
         const queuedActions = this.priorityActionQueue.clearQueue(id);
         if (!queuedActions) return;
         queuedActions.forEach(queuedAction =>
-            queuedAction[QueuedActionCallbacksIdx].promiseReject(new Error("Cancelled")));
+            queuedAction[QueuedActionCallbacksIdx].promiseReject(new QueryCancelledError()));
     }
 
     public updatePriority(id: string, priority: number): void {

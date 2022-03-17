@@ -2,13 +2,20 @@
  * Provides mappings from duckdb's data types to conceptual types we use in the application:
  * CATEGORICALS, NUMERICS, and TIMESTAMPS.
  */
-export const CATEGORICALS = new Set(['BYTE_ARRAY', 'VARCHAR', "CHAR", "BPCHAR", "TEXT", "STRING", "BOOLEAN"]);
 
-export const NUMERICS = new Set([
-    'DOUBLE', 'DECIMAL', 'BIGINT', 'HUGEINT', 'SMALLINT', 'INTEGER', 'TINYINT', 'UBIGINT', 'UINTEGER', 'UTINYINT', 'INT1', 'FLOAT8', 'NUMERIC',
-    'INT4', 'INT', 'SIGNED', 'SHORT', 'FLOAT']);
+export const INTEGERS = new Set([
+    'BIGINT', 'HUGEINT', 'SMALLINT', 'INTEGER', 'TINYINT', 'UBIGINT', 'UINTEGER', 'UTINYINT', 'INT1',
+    'INT4', 'INT', 'SIGNED', 'SHORT',
+])
 
+export const FLOATS = new Set([
+    'DOUBLE', 'DECIMAL',  'FLOAT8', 'NUMERIC', 'FLOAT'
+])
+
+export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
+export const BOOLEANS = new Set([ "BOOLEAN", "BOOL", "LOGICAL" ]);
 export const TIMESTAMPS = new Set(['TIMESTAMP', 'TIME', 'DATETIME', 'DATE']);
+export const CATEGORICALS = new Set(['BYTE_ARRAY', 'VARCHAR', "CHAR", "BPCHAR", "TEXT", "STRING"]);
 
 interface ColorTokens {
     textClass: string,
@@ -53,4 +60,5 @@ export const DATA_TYPE_COLORS = {
     ...setTypeTailwindStyles(Array.from(CATEGORICALS), CATEGORICAL_TOKENS),
     ...setTypeTailwindStyles(Array.from(NUMERICS), NUMERIC_TOKENS),
     ...setTypeTailwindStyles(Array.from(TIMESTAMPS), TIMESTAMP_TOKENS),
+    ...setTypeTailwindStyles(Array.from(BOOLEANS), CATEGORICAL_TOKENS),
 }

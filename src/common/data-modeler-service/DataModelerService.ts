@@ -10,6 +10,10 @@ import type { NotificationService } from "$common/notifications/NotificationServ
 import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { QueryCancelledError } from "$common/errors/QueryCancelledError";
+import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &
@@ -75,27 +79,28 @@ export class DataModelerService {
      */
     public async dispatch<Action extends keyof DataModelerActionsDefinition>(
         action: Action, args: DataModelerActionsDefinition[Action],
-    ): Promise<void> {
+    ): Promise<ActionResponse> {
         if (!this.actionsMap[action]?.[action]) {
-            console.error(`${action} not found`);
-            return;
+            return ActionResponseFactory.getErrorResponse(
+                new ActionDefinitionError(`${action} not found`));
         }
         const actionsInstance = this.actionsMap[action];
         const stateTypes = (actionsInstance?.constructor as typeof DataModelerActions)
             .actionToStateTypesMap[action];
         if (!stateTypes) {
-            console.error(`No state types defined for ${action}`);
-            return;
+            return ActionResponseFactory.getErrorResponse(
+                new ActionDefinitionError(`No state types defined for ${action}`));
         }
 
         const stateService = this.dataModelerStateService.getEntityStateService(
             stateTypes[0] ?? args[0] as any, stateTypes[1] ?? args[1] as any);
         try {
-            await actionsInstance[action].call(actionsInstance,
+            const response = await actionsInstance[action].call(actionsInstance,
                 {stateService}, ...args);
+            if (!response) return ActionResponseFactory.getSuccessResponse();
+            return response;
         } catch (err) {
-            // cancelled actions will show up as errors.
-            // TODO: take care of this in better error handling task alter down the line
+            return ActionResponseFactory.getErrorResponse(err);
         }
     }
 

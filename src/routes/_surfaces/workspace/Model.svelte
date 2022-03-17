@@ -2,11 +2,9 @@
 import { getContext } from "svelte";
 import { slide } from "svelte/transition";
 import type { ApplicationStore } from "$lib/app-store";
-import { cubicOut as easing } from 'svelte/easing';
+import { dataModelerService } from "$lib/app-store";
+import { cubicOut as easing } from "svelte/easing";
 import Editor from "$lib/components/Editor.svelte";
-import {dataModelerService} from "$lib/app-store";
-import Portal from "$lib/components/Portal.svelte";
-
 import { drag } from "$lib/drag";
 import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/layout-store";
 
@@ -19,25 +17,16 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import Portal from "$lib/components/Portal.svelte";
 
 const store = getContext("rill:app:store") as ApplicationStore;
 const queryHighlight = getContext("rill:app:query-highlight");
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
 const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
 
-let error;
-
 let errorLineNumber;
-let errorMessage;
 
 let showPreview = true;
-
-function getErrorLineNumber(errorString) {
-  if (!errorString.includes('LINE')) return { message: errorString };
-  const [message, linePortion] = errorString.split('LINE ');
-  const lineNumber = parseInt(linePortion.split(':')[0]);
-  return { message, lineNumber };
-};
 
 let currentModel: PersistentModelEntity;
 $: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
@@ -70,7 +59,6 @@ let innerHeight;
           on:delete={() => { dataModelerService.dispatch('deleteModel', [currentModel.id]); }}
           on:receive-focus={() => {
               dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
-              //dataModelerService.dispatch('updateQueryInformation', [{id: currentQuery.id }]);
           }}
           on:release-focus={() => {
             //dataModelerService.dispatch('releaseActiveQueryFocus', [{ id: q.id }]);
@@ -81,10 +69,9 @@ let innerHeight;
           on:rename={(evt) => {
             dataModelerService.dispatch('updateModelName', [currentModel.id, evt.detail]);
           }}
-          on:write={(evt)=> {
+          on:write={(evt) => {
               dataModelerService.dispatch('setActiveAsset', [EntityType.Model, currentModel.id]);
-              dataModelerService.dispatch('updateModelQuery', [currentModel.id, evt.detail.content ]);
-              //dataModelerService.dispatch('updateQueryInformation', [{ id: currentQuery.id }]);
+              dataModelerService.dispatch('updateModelQuery', [currentModel.id, evt.detail.content])
           }}
       />
     {/key}
@@ -116,13 +103,13 @@ let innerHeight;
       class="p-6"
     >
     <div class="rounded overflow-auto  h-full  {!showPreview && 'hidden'}"
-     class:border={!!!currentDerivedModel?.error}
-    class:border-gray-300={!!!currentDerivedModel?.error}
+     class:border={!!currentDerivedModel?.error}
+    class:border-gray-300={!!currentDerivedModel?.error}
      >
       {#if currentDerivedModel?.error}
       <div 
         transition:slide={{ duration: 200, easing }} 
-        class="error font-bold rounded-lg p-5 pt-0 text-gray-700"
+        class="error font-bold rounded-lg p-5 text-gray-700"
       >
         {currentDerivedModel.error}
       </div>
@@ -140,5 +127,4 @@ let innerHeight;
 .editor-pane {
   height: calc(100vh - var(--header-height));
 }
-
 </style>

@@ -5,6 +5,7 @@ import type { Socket } from "socket.io-client";
 import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
 import type {ServerConfig} from "$common/config/ServerConfig";
 import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 
 /**
  * {@link DataModelerService} implementation that sits on the client side.
@@ -34,8 +35,9 @@ export class DataModelerSocketService extends DataModelerService {
 
     public async dispatch<Action extends keyof DataModelerActionsDefinition>(
         action: Action, args: DataModelerActionsDefinition[Action],
-    ): Promise<void> {
-        this.socket.emit("action", action, args);
+    ): Promise<ActionResponse> {
+        return new Promise(resolve =>
+            this.socket.emit("action", action, args, resolve))
     }
 
     public async destroy(): Promise<void> {
