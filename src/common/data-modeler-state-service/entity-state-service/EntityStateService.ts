@@ -24,6 +24,8 @@ export interface EntityRecord {
 
 export enum EntityStatus {
     Idle,
+    Running,
+
     Importing,
     Validating,
     Profiling,

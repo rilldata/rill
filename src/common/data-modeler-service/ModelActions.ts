@@ -21,6 +21,7 @@ import type { ActionResponse } from "$common/data-modeler-service/response/Actio
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import { mkdirSync } from "fs";
 
 export enum FileExportType {
     Parquet = "exportToParquet",

@@ -1,18 +1,19 @@
-import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
-import type {TableActions} from "$common/data-modeler-service/TableActions";
-import type {ExtractActionTypeDefinitions, PickActionFunctions} from "$common/ServiceBase";
-import type {DataModelerActions} from "$common/data-modeler-service/DataModelerActions";
-import type {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnActions";
-import type {ModelActions} from "$common/data-modeler-service/ModelActions";
-import {getActionMethods} from "$common/ServiceBase";
+import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import type { TableActions } from "$common/data-modeler-service/TableActions";
+import type { ExtractActionTypeDefinitions, PickActionFunctions } from "$common/ServiceBase";
+import { getActionMethods } from "$common/ServiceBase";
+import type { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
+import type { ProfileColumnActions } from "$common/data-modeler-service/ProfileColumnActions";
+import type { ModelActions } from "$common/data-modeler-service/ModelActions";
 import type { DatabaseActionsDefinition, DatabaseService } from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
 import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import { QueryCancelledError } from "$common/errors/QueryCancelledError";
 import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
@@ -47,6 +48,7 @@ export class DataModelerService {
     private actionsMap: {
         [Action in keyof DataModelerActionsDefinition]?: DataModelerActionsClasses
     } = {};
+    private runningCount = 0;
 
     public constructor(protected readonly dataModelerStateService: DataModelerStateService,
                        private readonly databaseService: DatabaseService,
@@ -91,17 +93,29 @@ export class DataModelerService {
             return ActionResponseFactory.getErrorResponse(
                 new ActionDefinitionError(`No state types defined for ${action}`));
         }
+        if (this.runningCount === 0) {
+            this.dataModelerStateService.dispatch(
+                "setApplicationStatus", [EntityStatus.Running]);
+        }
+        this.runningCount++;
 
         const stateService = this.dataModelerStateService.getEntityStateService(
             stateTypes[0] ?? args[0] as any, stateTypes[1] ?? args[1] as any);
+        let returnResponse: ActionResponse;
         try {
-            const response = await actionsInstance[action].call(actionsInstance,
+            returnResponse = await actionsInstance[action].call(actionsInstance,
                 {stateService}, ...args);
-            if (!response) return ActionResponseFactory.getSuccessResponse();
-            return response;
+            if (!returnResponse) returnResponse = ActionResponseFactory.getSuccessResponse();
         } catch (err) {
-            return ActionResponseFactory.getErrorResponse(err);
+            returnResponse = ActionResponseFactory.getErrorResponse(err);
         }
+
+        this.runningCount--;
+        if (this.runningCount === 0) {
+            this.dataModelerStateService.dispatch(
+                "setApplicationStatus", [EntityStatus.Idle]);
+        }
+        return returnResponse;
     }
 
     public async destroy(): Promise<void> {

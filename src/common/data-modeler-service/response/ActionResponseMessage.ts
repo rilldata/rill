@@ -15,5 +15,6 @@ export enum ActionErrorType {
 export interface ActionResponseMessage {
     type: ActionResponseMessageType;
     errorType?: ActionErrorType;
+    stack?: string;
     message: string;
 }

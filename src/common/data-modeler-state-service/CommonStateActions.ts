@@ -45,7 +45,7 @@ export class CommonStateActions extends StateActions {
 
     @StateActions.DerivedAction()
     public setEntityStatus({stateService, draftState}: DataProfileStateActionArg,
-                           entityType: EntityType, tableId: string, status: EntityStatus): void {
-        stateService.updateEntityField(draftState, tableId, "status", status);
+                           entityType: EntityType, entityId: string, status: EntityStatus): void {
+        stateService.updateEntityField(draftState, entityId, "status", status);
     }
 }

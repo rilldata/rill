@@ -10,6 +10,6 @@ export class SocketNotificationService implements NotificationService {
     }
 
     public notify(notification: Notification): void {
-        this.server.emit("notification", notification);
+        this.server?.emit("notification", notification);
     }
 }
