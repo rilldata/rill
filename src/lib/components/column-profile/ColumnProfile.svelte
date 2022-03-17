@@ -86,7 +86,7 @@ let shiftClicked = transientBooleanStore();
                 and create the ellipisis due to the overflow.
             -->
             <div>
-                <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+                <div class="column-profile-name text-ellipsis overflow-hidden whitespace-nowrap">
                     {name}
                 </div>
             </div>
