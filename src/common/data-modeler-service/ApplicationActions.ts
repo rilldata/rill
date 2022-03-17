@@ -4,14 +4,11 @@ import type {
     ApplicationStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import {
-    EntityRecord,
+    EntityRecord, EntityStateActionArg,
     EntityType,
     StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
-import type {
-    DerivedModelStateActionArg
-} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
 export class ApplicationActions extends  DataModelerActions {
     @DataModelerActions.ApplicationAction()
@@ -27,8 +24,8 @@ export class ApplicationActions extends  DataModelerActions {
         this.dataModelerStateService.dispatch("setActiveAsset", [entityType, entityId]);
     }
 
-    @DataModelerActions.DerivedModelAction()
-    public async deleteEntity({stateService}: DerivedModelStateActionArg,
+    @DataModelerActions.PersistentAction()
+    public async deleteEntity({stateService}: EntityStateActionArg<any>,
                               entityType: EntityType, entityId: string) {
         const applicationState = this.dataModelerStateService
             .getEntityStateService(EntityType.Application, StateType.Derived)
