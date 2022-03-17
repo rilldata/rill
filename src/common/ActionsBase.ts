@@ -1,5 +1,5 @@
 import {
-    EntityStateActionArg,
+    EntityStateActionArg, EntityStatus,
     EntityType,
     StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -19,12 +19,12 @@ export abstract class ActionsBase {
     public static Action<
         EntityTypeArg extends EntityType,
         StateTypeArg extends StateType,
-    >(entityType: EntityTypeArg, stateType: StateTypeArg) {
+        >(entityType: EntityTypeArg, stateType: StateTypeArg) {
         return (target: ActionsBase, propertyKey: string,
                 // make sure the decorator and the state action arg match using this
                 descriptor: TypedPropertyDescriptor<
                     (stateArg: EntityStateActionArgMapType[EntityTypeArg][StateTypeArg], ...args: any[]) => any
-                >) => {
+                    >) => {
             this.addStateAction(target.constructor as typeof ActionsBase, propertyKey, entityType, stateType);
         };
     }
@@ -56,7 +56,7 @@ export abstract class ActionsBase {
                 // make sure the decorator and the state action arg match using this
                 descriptor: TypedPropertyDescriptor<
                     (stateArg: EntityStateActionArg<any>, entityType: EntityType, ...args: any[]) => any
-                >) => {
+                    >) => {
             this.addStateAction(target.constructor as typeof ActionsBase, propertyKey,
                 undefined, stateType);
         };
@@ -79,7 +79,7 @@ export abstract class ActionsBase {
                 descriptor: TypedPropertyDescriptor<
                     (stateArg: EntityStateActionArg<any>, entityType: EntityType,
                      stateType: StateType, ...args: any[]) => any
-                >) => {
+                    >) => {
             this.addStateAction(target.constructor as typeof ActionsBase, propertyKey,
                 undefined, undefined);
         };
@@ -91,5 +91,33 @@ export abstract class ActionsBase {
             clazz.actionToStateTypesMap = {...clazz.actionToStateTypesMap};
         }
         clazz.actionToStateTypesMap[propertyKey] = [entityType, stateType];
+    }
+
+    /**
+     * Resets state to idle for the entity on exit
+     */
+    public static ResetStateToIdle(entityType: EntityType) {
+        return (target: ActionsBase, propertyKey: string,
+                // make sure the decorator and the state action arg match using this
+                descriptor: TypedPropertyDescriptor<
+                    (stateArg: EntityStateActionArg<any>, entityId: string,
+                     ...args: any[]) => any
+                    >) => {
+            const previousMethod = descriptor.value;
+            descriptor.value = async function(stateArg: EntityStateActionArg<any>,
+                                              entityId: string, ...args: any[]): Promise<any> {
+                try {
+                    const resp = await previousMethod.call(this, stateArg, entityId, ...args);
+                    this.dataModelerStateService.dispatch("setEntityStatus",
+                        [entityType, entityId, EntityStatus.Idle]);
+                    return resp;
+                } catch (err) {
+                    this.dataModelerStateService.dispatch("setEntityStatus",
+                        [entityType, entityId, EntityStatus.Idle]);
+                    throw err;
+                }
+            }
+            return descriptor;
+        }
     }
 }

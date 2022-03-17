@@ -1,5 +1,4 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
-import type { SinonSpy } from "sinon";
 import { assert } from "sinon";
 import {
     SingleTableQuery,

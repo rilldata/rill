@@ -50,6 +50,7 @@ export class ModelActions extends DataModelerActions {
     }
 
     @DataModelerActions.PersistentModelAction()
+    @DataModelerActions.ResetStateToIdle(EntityType.Model)
     public async updateModelQuery({stateService}: PersistentModelStateActionArg,
                                   modelId: string, query: string): Promise<ActionResponse> {
         const model = stateService.getById(modelId);
@@ -76,7 +77,6 @@ export class ModelActions extends DataModelerActions {
         // validate query with the original query first.
         const validationResponse = await this.validateModelQuery(model, query);
         if (validationResponse) {
-            await this.setModelStatus(modelId, EntityStatus.Idle);
             this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
             return this.setModelError(modelId, validationResponse);
         }
@@ -85,13 +85,13 @@ export class ModelActions extends DataModelerActions {
         if (this.config.profileWithUpdate) {
             return await this.dataModelerService.dispatch("collectModelInfo", [modelId]);
         } else {
-            await this.setModelStatus(modelId, EntityStatus.Idle);
             this.dataModelerStateService.dispatch("markAsProfiled",
                 [EntityType.Model, modelId, false]);
         }
     }
 
     @DataModelerActions.DerivedModelAction()
+    @DataModelerActions.ResetStateToIdle(EntityType.Model)
     public async collectModelInfo({stateService}: DerivedModelStateActionArg,
                                   modelId: string): Promise<ActionResponse> {
         const persistentModel = this.dataModelerStateService
@@ -111,7 +111,6 @@ export class ModelActions extends DataModelerActions {
                 "createViewOfQuery",
                 [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]);
         } catch (error) {
-            await this.setModelStatus(modelId, EntityStatus.Idle);
             return this.setModelError(modelId,
                 ActionResponseFactory.getModelQueryError(error.message));
         }
@@ -128,7 +127,6 @@ export class ModelActions extends DataModelerActions {
                 {id: modelId, priority: DatabaseActionQueuePriority.ActiveModel},
                 "getProfileColumns", [persistentModel.tableName])
         } catch (error) {
-            await this.setModelStatus(modelId, EntityStatus.Idle);
             return this.setModelError(modelId,
                 ActionResponseFactory.getModelQueryError(error.message));
         }
@@ -172,17 +170,17 @@ export class ModelActions extends DataModelerActions {
 
         this.dataModelerStateService.dispatch("markAsProfiled",
             [EntityType.Model, modelId, true]);
-        this.dataModelerStateService.dispatch("setEntityStatus",
-            [EntityType.Model, modelId, EntityStatus.Idle]);
     }
 
     @DataModelerActions.PersistentModelAction()
+    @DataModelerActions.ResetStateToIdle(EntityType.Model)
     public async exportToParquet({stateService}: PersistentModelStateActionArg,
                                  modelId: string, exportFile: string): Promise<void> {
         await this.exportToFile(stateService, modelId, exportFile, FileExportType.Parquet);
     }
 
     @DataModelerActions.PersistentModelAction()
+    @DataModelerActions.ResetStateToIdle(EntityType.Model)
     public async exportToCsv({stateService}: PersistentModelStateActionArg,
                              modelId: string, exportFile: string): Promise<void> {
         await this.exportToFile(stateService, modelId, exportFile, FileExportType.CSV);
@@ -247,7 +245,6 @@ export class ModelActions extends DataModelerActions {
         await this.dataModelerStateService.dispatch("updateModelDestinationSize",
             [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
         this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"});
-        await this.setModelStatus(modelId, EntityStatus.Idle);
     }
 
     private setModelStatus(modelId: string, status: EntityStatus) {
