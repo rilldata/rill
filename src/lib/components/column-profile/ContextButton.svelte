@@ -4,11 +4,14 @@ import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 export let rotated = false;
 export let suppressTooltip = false;
 export let tooltipText:string;
+// utilize the ID for easier UI testing.
+export let id:string;
 </script>
 
 <Tooltip location="right" alignment="middle" distance={16} suppress={suppressTooltip || tooltipText === undefined}>
     <button
     on:click
+    {id}
     style:width="16px"
     style:height="16px"
     style:grid-column="left-control"

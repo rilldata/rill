@@ -74,6 +74,7 @@ let contextMenuOpen = false;
             <ModelIcon />
             <Tooltip distance={8} bind:active={tooltipActive} suppress={editingTitle}>
                 <input 
+                id="model-title-input"
                 bind:this={titleInputElement} 
                 on:input={(evt) => {
                     titleInputValue = evt.target.value;
