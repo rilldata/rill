@@ -3,6 +3,7 @@ import type { NonFunctionProperties } from "$common/utils/Config";
 import {ServerConfig} from "$common/config/ServerConfig";
 import {DatabaseConfig} from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
+import { MetricsConfig } from "$common/config/MetricsConfig";
 
 export class RootConfig extends Config<RootConfig> {
     @Config.SubConfig(ServerConfig)
@@ -13,6 +14,9 @@ export class RootConfig extends Config<RootConfig> {
 
     @Config.SubConfig(StateConfig)
     public state: StateConfig;
+
+    @Config.SubConfig(MetricsConfig)
+    public metrics: MetricsConfig;
 
     @Config.ConfigField(".")
     public projectFolder: string;
