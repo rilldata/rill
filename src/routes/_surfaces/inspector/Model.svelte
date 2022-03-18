@@ -8,6 +8,7 @@ import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
 import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import Spacer from "$lib/components/icons/Spacer.svelte";
 import * as classes from "$lib/util/component-classes";
+import Export from "$lib/components/icons/Export.svelte";
 
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -101,6 +102,8 @@ let showSourceTables = true;
 
 let container;
 let containerWidth = 0;
+let contextMenu;
+let contextMenuOpen = false;
 
 onMount(() => {
     const observer = new ResizeObserver(entries => {
@@ -112,15 +115,55 @@ onMount(() => {
 
 {#key currentModel?.id}
   <div bind:this={container}>
+
     {#if currentModel && currentModel.query.trim().length && tables}
     <div 
       style:height="var(--header-height)"
       class:text-gray-300={currentDerivedModel?.error} 
       class='cost text-right grid justify-items-end justify-end content-center pl-4 pr-4' 
       >
+
+    <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
+    <button
+    bind:this={contextMenu}
+    on:click={async (event) => {
+        contextMenuOpen = !contextMenuOpen;
+        menuX = event.clientX;
+        menuY = event.clientY;
+
+        if (!clickOutsideListener) {
+            await tick();
+            clickOutsideListener = onClickOutside(() => {
+                contextMenuOpen = false;
+            }, contextMenu);
+        }
+    }}
+    style:grid-column="left-control"
+    class="
+        hover:bg-gray-300
+        transition-tranform 
+        text-gray-500
+        duration-100
+        items-center
+        justify-center
+        border
+        border-transparent
+        rounded
+        flex flex-row gap-x-2
+        pl-2 pr-2
+        pt-1 pb-1
+       "
+    >
+    export
+    <Export size="16px" />
+</button>
+    <TooltipContent slot="tooltip-content">
+        export this model as a dataset
+    </TooltipContent>
+</Tooltip>
+
       <div class='text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
         {#if inputRowCardinalityValue > 0}
-        <!-- {formatInteger(inputRowCardinalityValue)} ⭢ -->
 
           {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
           {currentDerivedModel?.profile?.length} columns
@@ -158,6 +201,7 @@ onMount(() => {
       
     </div>
   {/if}
+
   <hr />
 
     <div class="model-profile">

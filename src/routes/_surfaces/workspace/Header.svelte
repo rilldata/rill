@@ -63,7 +63,19 @@ function onKeydown(event) {
 let contextMenu;
 let contextMenuOpen = false;
 
-$: applicationStatus = ($store?.status as unknown) as EntityStatus;
+// debounce the application status to resolve any quick flickers that
+// may occur from quick changes to the application status.
+let applicationStatus = 0;
+let asTimer;
+function debounceStatus(status:EntityStatus) {
+    clearTimeout(asTimer);
+    asTimer = setTimeout(() => {
+        applicationStatus = status;
+    }, 100);
+
+}
+
+$: debounceStatus(($store?.status as unknown) as EntityStatus);
 
 </script>
 
@@ -106,7 +118,7 @@ $: applicationStatus = ($store?.status as unknown) as EntityStatus;
     <div>
     <div class="text-gray-400">
         <Tooltip>
-            <Spinner status={applicationStatus || EntityStatus.Idle}  />
+            <Spinner status={applicationStatus || EntityStatus.Idle} size="24px" />
         <TooltipContent slot="tooltip-content">
             {#if applicationStatus === EntityStatus.Idle}
                 idle
