@@ -11,13 +11,15 @@ import Export from "$lib/components/icons/Export.svelte"
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte"
 import Menu from "$lib/components/menu/Menu.svelte"
 import MenuItem from "$lib/components/menu/MenuItem.svelte"
-import { PersistentModelStore } from "$lib/modelStores";
+import type { PersistentModelStore } from "$lib/modelStores";
 
 import { onClickOutside } from "$lib/util/on-click-outside";
 
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import Spinner from "$lib/components/Spinner.svelte";
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
@@ -61,6 +63,8 @@ function onKeydown(event) {
 let contextMenu;
 let contextMenuOpen = false;
 
+$: applicationStatus = ($store?.status as unknown) as EntityStatus;
+
 </script>
 
 <svelte:window on:keydown={onKeydown} />
@@ -100,8 +104,26 @@ let contextMenuOpen = false;
         {/if}
     </div>
     <div>
-
-<Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
+    <div class="text-gray-400">
+        <Tooltip>
+            <Spinner status={applicationStatus || EntityStatus.Idle}  />
+        <TooltipContent slot="tooltip-content">
+            {#if applicationStatus === EntityStatus.Idle}
+                idle
+            {:else if applicationStatus === EntityStatus.Running}
+                running
+            {:else if applicationStatus === EntityStatus.Exporting}
+                exporting a model resultset
+            {:else if applicationStatus === EntityStatus.Importing}
+                importing a table
+            {:else if applicationStatus === EntityStatus.Profiling}
+                profiling
+            {/if}
+        </TooltipContent>
+        </Tooltip>
+    </div>
+    
+<!-- <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
     <button
     bind:this={contextMenu}
     on:click={async (event) => {
@@ -134,12 +156,11 @@ let contextMenuOpen = false;
     >
     export
     <Export size="16px" />
-    <!-- <MoreHorizontal size="20px" /> -->
 </button>
     <TooltipContent slot="tooltip-content">
         export this model as a dataset
     </TooltipContent>
-</Tooltip>
+</Tooltip> -->
 
 {#if contextMenuOpen}
 <!-- place this above codemirror.-->
