@@ -194,10 +194,8 @@ export class ModelActions extends DataModelerActions {
     @DataModelerActions.PersistentModelAction()
     public async deleteModel(args: PersistentModelStateActionArg,
                              modelId: string): Promise<void> {
-        this.dataModelerStateService.dispatch("deleteEntity",
-            [EntityType.Model, StateType.Persistent, modelId]);
-        this.dataModelerStateService.dispatch("deleteEntity",
-            [EntityType.Model, StateType.Derived, modelId]);
+        await this.dataModelerService.dispatch(
+            "deleteEntity", [EntityType.Model, modelId])
     }
 
     @DataModelerActions.PersistentModelAction()
