@@ -33,6 +33,7 @@ import type {
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { ActiveEntity } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -101,6 +102,12 @@ export class FunctionalTestBase extends TestBase {
             // TODO: assert summary
             // console.log(profileColumn.name, profileColumn.summary);
         });
+    }
+
+    protected getActiveEntity(): ActiveEntity {
+        return this.clientDataModelerStateService
+            .getEntityStateService(EntityType.Application, StateType.Derived)
+            .getCurrentState().activeEntity;
     }
 
     private async waitForEntity(entityType: EntityType): Promise<void> {

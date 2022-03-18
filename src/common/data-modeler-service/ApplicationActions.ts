@@ -3,7 +3,11 @@ import type {
     ApplicationState,
     ApplicationStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+    EntityRecord, EntityStateActionArg,
+    EntityType,
+    StateType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 
 export class ApplicationActions extends  DataModelerActions {
@@ -18,5 +22,37 @@ export class ApplicationActions extends  DataModelerActions {
                 DatabaseActionQueuePriority.InactiveModelProfile);
         }
         this.dataModelerStateService.dispatch("setActiveAsset", [entityType, entityId]);
+    }
+
+    @DataModelerActions.PersistentAction()
+    public async deleteEntity({stateService}: EntityStateActionArg<any>,
+                              entityType: EntityType, entityId: string) {
+        const applicationState = this.dataModelerStateService
+            .getEntityStateService(EntityType.Application, StateType.Derived)
+            .getCurrentState();
+        if (applicationState.activeEntity?.id === entityId &&
+            applicationState.activeEntity?.type === entityType) {
+            const newEntityId = this.getNextEntityId(
+                stateService.getCurrentState().entities, entityId);
+            if (newEntityId) {
+                await this.dataModelerService.dispatch(
+                    "setActiveAsset", [entityType, newEntityId]);
+            }
+        }
+
+        this.dataModelerStateService.dispatch("deleteEntity",
+            [entityType, StateType.Persistent, entityId]);
+        this.dataModelerStateService.dispatch("deleteEntity",
+            [entityType, StateType.Derived, entityId]);
+    }
+
+    private getNextEntityId(entities: Array<EntityRecord>, entityId: string): string {
+        if (entities.length === 1) return undefined;
+        const idx = entities.findIndex(entity => entity.id === entityId);
+        if (idx === 0) {
+            return entities[idx + 1].id;
+        } else {
+            return entities[idx - 1].id;
+        }
     }
 }
