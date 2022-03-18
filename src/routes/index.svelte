@@ -66,7 +66,7 @@ let inspectorHovered = false;
   </div>
 
   <!-- inspector collapse button should be tabbable as if it were the first element of the inspector. -->
-  <SurfaceControlButton
+  <!-- <SurfaceControlButton
     show={inspectorHovered || !$inspectorVisible}
     right="{($layout.inspectorWidth - 12 - 24) * (1 - $inspectorVisibilityTween) + 12 * $inspectorVisibilityTween}px"
     on:click={() => {
@@ -77,7 +77,7 @@ let inspectorHovered = false;
     <svelte:fragment slot="tooltip-content">
       {#if $inspectorVisibilityTween === 0} hide {:else} show {/if} the model inspector
     </svelte:fragment>
-  </SurfaceControlButton>
+  </SurfaceControlButton> -->
 
   <!-- inspector sidebar -->
   <div 

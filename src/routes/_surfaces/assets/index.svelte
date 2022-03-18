@@ -44,8 +44,6 @@ let view = 'assets';
 let container;
 let containerWidth = 0;
 
-$: console.log($store)
-
 onMount(() => {
     const observer = new ResizeObserver(entries => {
         containerWidth = container.clientWidth;

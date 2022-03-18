@@ -1,5 +1,5 @@
 <script lang="ts">
-import { getContext, onMount } from "svelte";
+import { getContext, onMount, tick } from "svelte";
 import { slide } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { sineOut as easing } from "svelte/easing";
@@ -9,6 +9,9 @@ import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import Spacer from "$lib/components/icons/Spacer.svelte";
 import * as classes from "$lib/util/component-classes";
 import Export from "$lib/components/icons/Export.svelte";
+import { onClickOutside } from "$lib/util/on-click-outside";
+import Menu from "$lib/components/menu/Menu.svelte"
+import MenuItem from "$lib/components/menu/MenuItem.svelte"
 
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -26,6 +29,7 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
 import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
@@ -104,6 +108,13 @@ let container;
 let containerWidth = 0;
 let contextMenu;
 let contextMenuOpen = false;
+let menuX;
+let menuY;
+let clickOutsideListener;
+$: if (!contextMenuOpen && clickOutsideListener) {
+    clickOutsideListener();
+    clickOutsideListener = undefined;
+}
 
 onMount(() => {
     const observer = new ResizeObserver(entries => {
@@ -115,45 +126,47 @@ onMount(() => {
 
 {#key currentModel?.id}
   <div bind:this={container}>
-
     {#if currentModel && currentModel.query.trim().length && tables}
-    <div 
+    <div
       style:height="var(--header-height)"
       class:text-gray-300={currentDerivedModel?.error} 
-      class='cost text-right grid justify-items-end justify-end content-center pl-4 pr-4' 
+      class='cost pl-4 pr-4 flex flex-row items-center gap-x-2'
       >
 
-    <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
-    <button
-    bind:this={contextMenu}
-    on:click={async (event) => {
-        contextMenuOpen = !contextMenuOpen;
-        menuX = event.clientX;
-        menuY = event.clientY;
 
-        if (!clickOutsideListener) {
-            await tick();
-            clickOutsideListener = onClickOutside(() => {
-                contextMenuOpen = false;
-            }, contextMenu);
-        }
-    }}
-    style:grid-column="left-control"
-    class="
-        hover:bg-gray-300
-        transition-tranform 
-        text-gray-500
-        duration-100
-        items-center
-        justify-center
-        border
-        border-transparent
-        rounded
-        flex flex-row gap-x-2
-        pl-2 pr-2
-        pt-1 pb-1
-       "
-    >
+
+    <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
+      <button
+      bind:this={contextMenu}
+      on:click={async (event) => {
+          contextMenuOpen = !contextMenuOpen;
+          menuX = event.clientX;
+          menuY = event.clientY;
+          if (!clickOutsideListener) {
+              await tick();
+              clickOutsideListener = onClickOutside(() => {
+                  contextMenuOpen = false;
+              }, contextMenu);
+          }
+      }}
+      style:grid-column="left-control"
+      class="
+          hover:bg-gray-300
+          hover:border-gray-300
+          border-black
+          transition-tranform 
+          text-gray-500
+          duration-100
+          items-center
+          justify-center
+          border
+          border-transparent
+          rounded
+          flex flex-row gap-x-2
+          pl-4 pr-4
+          pt-1 pb-1
+        "
+      >
     export
     <Export size="16px" />
 </button>
@@ -162,6 +175,7 @@ onMount(() => {
     </TooltipContent>
 </Tooltip>
 
+    <div class="grow text-right">
       <div class='text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
         {#if inputRowCardinalityValue > 0}
 
@@ -172,22 +186,22 @@ onMount(() => {
         {/if}
       </div>
       <Tooltip location="left" alignment="center" distance={8}>
-      <div class="w-max text-right italic text-gray-500">
-          {#if validRollup(rollup)}
-                {#if isNaN(rollup)}
-                  ~
-                {:else if rollup === 0 }
-                  no rows selected
-                {:else if rollup !== 1}
-                                {formatBigNumberPercentage($bigRollupNumber)}
-                             of source table rows
-                {:else}no change in row count
+        <div class="italic text-gray-500" >
+            {#if validRollup(rollup)}
+                  {#if isNaN(rollup)}
+                    ~
+                  {:else if rollup === 0 }
+                    no rows selected
+                  {:else if rollup !== 1}
+                                  {formatBigNumberPercentage($bigRollupNumber)}
+                              of source table rows
+                  {:else}no change in row count
 
-                {/if}  
-            {:else if rollup === Infinity}
-              &nbsp; {outputRowCardinalityValue} row{#if outputRowCardinalityValue !== 1}s{/if} selected
-          {/if}
-      </div>
+                  {/if}  
+              {:else if rollup === Infinity}
+                &nbsp; {outputRowCardinalityValue} row{#if outputRowCardinalityValue !== 1}s{/if} selected
+            {/if}
+        </div>
       <TooltipContent slot='tooltip-content'>
         <div class="pt-1 pb-1 font-bold">
           the rollup percentage
@@ -198,7 +212,7 @@ onMount(() => {
         </div>
       </TooltipContent>
       </Tooltip>
-      
+    </div>
     </div>
   {/if}
 
@@ -294,6 +308,31 @@ onMount(() => {
   </div>
   </div>
 {/key}
+
+
+
+{#if contextMenuOpen}
+<!-- place this above codemirror.-->
+<div bind:this={contextMenu}>
+    <FloatingElement relationship="mouse" target={{x: menuX, y:menuY}} location="left" alignment="start">
+        <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
+            <MenuItem on:select={() => {
+                const exportFilename = currentModel.name.replace('.sql', '.parquet');
+                dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
+            }}>
+                Export as Parquet 
+            </MenuItem>
+            <MenuItem on:select={() => {
+                const exportFilename = currentModel.name.replace('.sql', '.csv');
+                dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
+            }}>
+                Export as CSV 
+            </MenuItem>
+        </Menu>
+    </FloatingElement>
+</div>
+{/if}
+
 <style lang="postcss">
 
 .results {
