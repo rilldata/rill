@@ -1,11 +1,7 @@
 import { DataModelerActions } from ".//DataModelerActions";
 import { FILE_EXTENSION_TO_TABLE_TYPE, TableSourceType } from "$lib/types";
 import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
-import {
-    extractFileExtension,
-    getTableNameFromFile,
-    INVALID_CHARS,
-} from "$lib/util/extract-table-name";
+import { extractFileExtension, getTableNameFromFile, INVALID_CHARS } from "$lib/util/extract-table-name";
 import type {
     PersistentTableEntity,
     PersistentTableStateActionArg
@@ -76,6 +72,7 @@ export class TableActions extends DataModelerActions {
     }
 
     @DataModelerActions.DerivedTableAction()
+    @DataModelerActions.ResetStateToIdle(EntityType.Table)
     public async collectTableInfo({stateService}: DerivedTableStateActionArg, tableId: string): Promise<ActionResponse> {
         const persistentTable = this.dataModelerStateService
             .getEntityById(EntityType.Table, StateType.Persistent, tableId);
@@ -93,7 +90,7 @@ export class TableActions extends DataModelerActions {
         this.databaseActionQueue.clearQueue(tableId);
 
         try {
-            this.dataModelerStateService.dispatch("setTableStatus",
+            this.dataModelerStateService.dispatch("setEntityStatus",
                 [EntityType.Table, tableId, EntityStatus.Profiling]);
             await this.dataModelerStateService.dispatch("clearProfileSummary",
                 [EntityType.Table, tableId]);
@@ -121,8 +118,6 @@ export class TableActions extends DataModelerActions {
                 [EntityType.Table, StateType.Derived, newDerivedTable])
             await this.dataModelerService.dispatch("collectProfileColumns",
                 [EntityType.Table, tableId]);
-            this.dataModelerStateService.dispatch("setTableStatus",
-                [EntityType.Table, tableId, EntityStatus.Idle]);
             this.dataModelerStateService.dispatch("markAsProfiled",
                 [EntityType.Table, tableId, true]);
         } catch (err) {
@@ -132,8 +127,13 @@ export class TableActions extends DataModelerActions {
 
     private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<void> {
         if (isNew) {
+            const derivedTable = getNewDerivedTable(table);
+            derivedTable.status = EntityStatus.Importing;
             this.dataModelerStateService.dispatch("addEntity",
-                [EntityType.Table, StateType.Derived, getNewDerivedTable(table)]);
+                [EntityType.Table, StateType.Derived, derivedTable]);
+        } else {
+            this.dataModelerStateService.dispatch("setEntityStatus",
+                [EntityType.Table, table.id, EntityStatus.Importing]);
         }
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
             [table, isNew]);
@@ -146,6 +146,8 @@ export class TableActions extends DataModelerActions {
             this.dataModelerStateService.dispatch("markAsProfiled",
                 [EntityType.Table, table.id, false]);
         }
+        this.dataModelerStateService.dispatch("setEntityStatus",
+            [EntityType.Table, table.id, EntityStatus.Idle]);
     }
 
     private async importTableDataByType(table: PersistentTableEntity) {

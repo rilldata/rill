@@ -18,7 +18,9 @@ export class ActionResponseFactory {
     public static getErrorResponse(error: Error): ActionResponse {
         return {
             messages: [{
-                type: ActionResponseMessageType.Error, message: error.message,
+                type: ActionResponseMessageType.Error,
+                message: error.message,
+                stack: error.stack,
                 errorType: (error as any).errorType,
             }],
             status: ActionStatus.Failure,

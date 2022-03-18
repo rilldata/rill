@@ -4,6 +4,8 @@ import type {
     EntityType,
     StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { DataProfileStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 
 export class CommonStateActions extends StateActions {
     @StateActions.GenericAction()
@@ -39,5 +41,11 @@ export class CommonStateActions extends StateActions {
                         entityType: EntityType, stateType: StateType,
                         entityId: string): void {
         stateService.moveEntityUp(draftState, entityId);
+    }
+
+    @StateActions.DerivedAction()
+    public setEntityStatus({stateService, draftState}: DataProfileStateActionArg,
+                           entityType: EntityType, entityId: string, status: EntityStatus): void {
+        stateService.updateEntityField(draftState, entityId, "status", status);
     }
 }

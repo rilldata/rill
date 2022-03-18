@@ -1,11 +1,12 @@
 import type {
-    DerivedEntityRecord, EntityState
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type {
-    EntityStateActionArg,
+    DerivedEntityRecord,
+    EntityState,
+    EntityStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
-    EntityStateService, EntityType,
+    EntityStateService,
+    EntityStatus,
+    EntityType,
     StateType
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
@@ -14,14 +15,22 @@ export interface ActiveEntity {
     id: string;
 }
 
+export enum ApplicationStatus {
+    Idle,
+    Running,
+}
 export interface ApplicationEntity extends DerivedEntityRecord {}
 export interface ApplicationState extends EntityState<ApplicationEntity> {
-    activeEntity: ActiveEntity;
-    databasePaused: boolean;
+    activeEntity?: ActiveEntity;
+    status: ApplicationStatus;
 }
 export type ApplicationStateActionArg = EntityStateActionArg<ApplicationEntity, ApplicationState>;
 
 export class ApplicationStateService extends EntityStateService<ApplicationEntity, ApplicationState> {
     public readonly entityType = EntityType.Application;
     public readonly stateType = StateType.Derived;
+
+    public getEmptyState(): ApplicationState {
+        return {lastUpdated: 0, entities: [], status: ApplicationStatus.Idle};
+    }
 }
