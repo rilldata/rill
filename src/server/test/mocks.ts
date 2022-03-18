@@ -54,8 +54,8 @@ export const mockState = () : DataModelerState => ({
             path: './scripts/test.parquet',
             head: [],
             profile: [ 
-                { name: 'test-field-01', type: 'BYTE_ARRAY', conceptualType: 'string' },
-                { name: 'test-field-02', type: 'DOUBLE', conceptualType: 'double' }
+                { name: 'test-field-01', type: 'BYTE_ARRAY', },
+                { name: 'test-field-02', type: 'DOUBLE', }
              ]
         }
     ],
