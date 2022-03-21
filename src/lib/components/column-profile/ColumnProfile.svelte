@@ -80,12 +80,12 @@ let shiftClicked = transientBooleanStore();
     </svelte:fragment>
 
     <svelte:fragment slot="left">
-        <Tooltip location="right" alignment="center" distance={8} bind:active={titleTooltip}>
+        <Tooltip location="right" alignment="center" distance={40} bind:active={titleTooltip}>
             <!-- Wrap in a traditional div then force the ellipsis overflow in the child element.
                 this will make the tooltip bound to the parent element while the child element can flow more freely
                 and create the ellipisis due to the overflow.
             -->
-            <div>
+            <div style:width="100%">
                 <div class="column-profile-name text-ellipsis overflow-hidden whitespace-nowrap">
                     {name}
                 </div>
@@ -209,11 +209,24 @@ let shiftClicked = transientBooleanStore();
             pl-8 text-ellipsis overflow-hidden whitespace-nowrap text-right" style:max-width="{exampleWidth}px"
         >
                 <FormattedDataType {type} isNull={example === null}>
-                    {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example}
+                    {#if TIMESTAMPS.has(type)}
+                        {standardTimestampFormat(new Date(example))}
+                    {:else if CATEGORICALS.has(type) && example === ''}
+                        <span class="text-gray-400 italic">{"<"}empty string{">"}</span>
+                    {:else}
+                        {example}
+                    {/if}
+                    <!-- {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example} -->
                 </FormattedDataType>
         </div>
         <TooltipContent slot="tooltip-content" >
-            {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : `${example}`.slice(0, 50)}
+            {#if TIMESTAMPS.has(type)}
+                {standardTimestampFormat(new Date(example))}
+            {:else if CATEGORICALS.has(type) && example === ''}
+                <span>{"<"}empty string{">"}</span>
+            {:else}
+                {example}
+            {/if}
         </TooltipContent>
         </Tooltip>
     </svelte:fragment>
@@ -227,7 +240,7 @@ let shiftClicked = transientBooleanStore();
         {#if active}
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3  w-full">
             {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.topK}
-                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-10 w-full">
+                <div class="pl-{indentLevel ===  1 ? 16 : 10} pr-4 w-full">
                     <!-- pl-16 pl-8 -->
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>

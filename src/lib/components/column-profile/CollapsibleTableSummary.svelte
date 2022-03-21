@@ -209,8 +209,9 @@ let titleElementHovered = false;
 
     {#if show}
         <div class="pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
-            <div  class='pl-9 pr-5 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
-                <select style:transform="translateX(-1px)" bind:value={sortMethod} class={classes.NATIVE_SELECT}>
+            <!-- pl-16 -->
+            <div  class='pl-{indentLevel === 1 ? '16' : '10'} pr-5 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
+                <select style:transform="translateX(-4px)" bind:value={sortMethod} class={classes.NATIVE_SELECT}>
                     <option value={sortByOriginalOrder}>show original order</option>
                     <option value={defaultSort}>sort by type</option>
                     <option value={sortByNullity}>sort by null %</option>
@@ -223,12 +224,11 @@ let titleElementHovered = false;
             </div>
 
             <div>
-                {#if sortedProfile}
+                {#if sortedProfile && sortedProfile.length && head.length}
                     {#each sortedProfile as column (column.name)}
-
                     <ColumnProfile
                         {indentLevel}
-                        example={head[0][column.name]}
+                        example={head[0][column.name] || ''}
                         containerWidth={containerWidth}
 
                         hideNullPercentage={containerWidth < 400}
