@@ -41,18 +41,6 @@ let showModels = true;
 
 let view = 'assets';
 
-let container;
-let containerWidth = 0;
-
-onMount(() => {
-    const observer = new ResizeObserver(entries => {
-        containerWidth = container.clientWidth;
-    });
-    observer.observe(container);
-})
-let width = tweened(400, {duration : 50})
-
-
 </script>
 
 <div class='
@@ -80,7 +68,7 @@ let width = tweened(400, {duration : 50})
     {/if}
 
 
-    <div class='w-full' bind:this={container}>
+    <div class='w-full'>
       <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
         <h1 class='grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center'>
           <div class='grid  text-white w-5 h-5 items-center justify-center rounded bg-gray-500' style:width="16px" style:height="16px"></div>
@@ -103,6 +91,8 @@ let width = tweened(400, {duration : 50})
                   {@const derivedTable = $derivedTableStore.entities.find(t => t["id"] === id)}
                   <div animate:flip>
                     <CollapsibleTableSummary
+                      indentLevel={1}
+
                       icon={ParquetIcon}
                       name={tableName}
                       cardinality={derivedTable?.cardinality ?? 0}

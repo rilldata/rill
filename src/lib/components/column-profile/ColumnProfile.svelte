@@ -45,9 +45,9 @@ let active = false;
 export function close() {
     active = false;
 }
-$: exampleWidth = containerWidth > 300 ? config.exampleWidth.medium : config.exampleWidth.small;
+$: exampleWidth = containerWidth > config.mediumCutoff ? config.exampleWidth.medium : config.exampleWidth.small;
 $: summaryWidthSize = config.summaryVizWidth[containerWidth < compactBreakpoint ? 'small' : 'medium'];
-$: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : formatCompactInteger;
+$: cardinalityFormatter = containerWidth > config.compactBreakpoint ? formatInteger : formatCompactInteger;
 
 let titleTooltip;
 
@@ -242,7 +242,7 @@ let shiftClicked = transientBooleanStore();
             {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.topK}
                 <div class="pl-{indentLevel ===  1 ? 16 : 10} pr-4 w-full">
                     <!-- pl-16 pl-8 -->
-                    <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
+                    <TopKSummary {containerWidth} color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 
             {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram?.length}

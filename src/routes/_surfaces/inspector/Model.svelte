@@ -32,6 +32,8 @@ import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
+import { config } from "$lib/components/column-profile/utils"
+
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
@@ -181,7 +183,9 @@ onMount(() => {
         {#if inputRowCardinalityValue > 0}
 
           {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+          {#if containerWidth > config.hideRight}
           {currentDerivedModel?.profile?.length} columns
+          {/if}
         {:else}
           &nbsp;
         {/if}
@@ -196,7 +200,7 @@ onMount(() => {
                   {:else if rollup !== 1}
                                   {formatBigNumberPercentage($bigRollupNumber)}
                               of source table rows
-                  {:else}no change in row count
+                  {:else}no change in row {#if containerWidth > config.hideRight}count{:else}ct.{/if}
 
                   {/if}  
               {:else if rollup === Infinity}
@@ -289,28 +293,6 @@ onMount(() => {
               head={currentDerivedModel?.preview ?? []}
               emphasizeTitle ={currentModel?.id === $store?.activeEntity?.id}
             />
-
-          <!-- {#each currentDerivedModel.profile as column}
-            <ColumnProfile
-              indentLevel={0}
-              containerWidth={containerWidth}
-
-              hideNullPercentage={false}
-              hideRight={false}
-
-              compactBreakpoint={350}
-
-              name={column.name}
-              type={column.type}
-              summary={column.summary}
-              totalRows={currentDerivedModel?.cardinality}
-              nullCount={column.nullCount}
-            >
-            <svelte:fragment slot="context-button">
-              <Spacer />
-          </svelte:fragment>
-            </ColumnProfile>
-          {/each} -->
         </div>
 
         {/if}

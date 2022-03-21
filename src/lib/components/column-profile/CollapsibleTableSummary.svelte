@@ -27,6 +27,7 @@ import { dropStore } from '$lib/drop-store';
 import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/column-profile/sort-utils"
 
 import { onClickOutside } from "$lib/util/on-click-outside";
+import { config } from "./utils";
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -43,7 +44,7 @@ export let showContextButton = true;
 export let indentLevel = 0;
 
 let colSizer;
-
+$: console.log(indentLevel)
 const dispatch = createEventDispatcher();
 
 const formatInteger = format(',');
@@ -210,7 +211,7 @@ let titleElementHovered = false;
     {#if show}
         <div class="pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
             <!-- pl-16 -->
-            <div  class='pl-{indentLevel === 1 ? '16' : '10'} pr-5 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
+            <div  class='pl-{indentLevel === 1 ? '10' : '4'} pr-5 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
                 <select style:transform="translateX(-4px)" bind:value={sortMethod} class={classes.NATIVE_SELECT}>
                     <option value={sortByOriginalOrder}>show original order</option>
                     <option value={defaultSort}>sort by type</option>
@@ -231,9 +232,9 @@ let titleElementHovered = false;
                         example={head[0][column.name] || ''}
                         containerWidth={containerWidth}
 
-                        hideNullPercentage={containerWidth < 400}
-                        hideRight={containerWidth < 325}
-                        compactBreakpoint={350}
+                        hideNullPercentage={containerWidth < config.hideNullPercentage}
+                        hideRight={containerWidth < config.hideRight}
+                        compactBreakpoint={config.compactBreakpoint}
                         view={previewView}
                         name={column.name}
                         type={column.type}
