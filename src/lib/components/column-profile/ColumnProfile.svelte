@@ -253,7 +253,7 @@ let shiftClicked = transientBooleanStore();
                     <!-- pl-14 pl-10 -->
                     <TimestampHistogram
                         {type}
-                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 44 ): 32 + 20)}
+                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 54 ): 32 + 20)}
                         data={summary.histogram}
                         interval={summary.interval}
                     />

@@ -150,6 +150,7 @@ let width = tweened(400, {duration : 50})
                   on:delete={() => {
                     dataModelerService.dispatch('deleteModel', [query.id]);
                   }}
+                  indentLevel={1}
                   icon={ModelIcon}
                   name={query.name}
                   cardinality={derivedModel?.cardinality ?? 0}

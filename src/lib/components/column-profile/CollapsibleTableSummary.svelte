@@ -38,6 +38,9 @@ export let sizeInBytes:number;
 export let emphasizeTitle:boolean = false;
 export let draggable = true;
 export let show = false;
+export let showTitle = true;
+export let showContextButton = true;
+export let indentLevel = 0;
 
 let colSizer;
 
@@ -98,6 +101,7 @@ let titleElementHovered = false;
 </script>
 
 <div bind:this={container}>
+    {#if showTitle}
     <div {draggable} 
         class="active:cursor-grabbing"
         on:dragstart={(evt) => {
@@ -201,6 +205,8 @@ let titleElementHovered = false;
             </FloatingElement>
         </div>
     {/if}
+    {/if}
+
     {#if show}
         <div class="pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
             <div  class='pl-9 pr-5 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
@@ -221,6 +227,7 @@ let titleElementHovered = false;
                     {#each sortedProfile as column (column.name)}
 
                     <ColumnProfile
+                        {indentLevel}
                         example={head[0][column.name]}
                         containerWidth={containerWidth}
 
@@ -234,8 +241,8 @@ let titleElementHovered = false;
                         totalRows={cardinality}
                         nullCount={column.nullCount}
                     >
-                        <button  slot="context-button">
-                            <Spacer size="16px" />
+                        <button slot="context-button" class:hidden={!showContextButton}>
+                                <Spacer size="16px" />
                         </button>
                     </ColumnProfile>
 

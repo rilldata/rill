@@ -30,6 +30,7 @@ import type {
 import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
 import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
@@ -277,8 +278,19 @@ onMount(() => {
       </div>
 
         {#if currentDerivedModel?.profile && showColumns}
-        <div class='source-tables pt-4 pb-4' transition:slide|local={{duration: 200}}>
-          {#each currentDerivedModel.profile as column}
+        <div  transition:slide|local={{duration: 200}}>
+            <CollapsibleTableSummary
+              showTitle={false}
+              showContextButton={false}
+              show={showColumns}
+              name={currentModel.name}
+              cardinality={currentDerivedModel?.cardinality ?? 0}
+              profile={currentDerivedModel?.profile ?? []}
+              head={currentDerivedModel?.preview ?? []}
+              emphasizeTitle ={currentModel?.id === $store?.activeEntity?.id}
+            />
+
+          <!-- {#each currentDerivedModel.profile as column}
             <ColumnProfile
               indentLevel={0}
               containerWidth={containerWidth}
@@ -298,7 +310,7 @@ onMount(() => {
               <Spacer />
           </svelte:fragment>
             </ColumnProfile>
-          {/each}
+          {/each} -->
         </div>
 
         {/if}
