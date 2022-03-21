@@ -117,8 +117,8 @@ $: debounceStatus(($store?.status as unknown) as EntityStatus);
     </div>
     <div>
     <div class="text-gray-400">
-        <Tooltip>
-            <Spinner status={applicationStatus || EntityStatus.Idle} size="24px" />
+        <Tooltip location="left" alignment="center" distance={16}>
+            <Spinner status={applicationStatus || EntityStatus.Idle} size="20px" />
         <TooltipContent slot="tooltip-content">
             {#if applicationStatus === EntityStatus.Idle}
                 idle
@@ -134,46 +134,6 @@ $: debounceStatus(($store?.status as unknown) as EntityStatus);
         </TooltipContent>
         </Tooltip>
     </div>
-    
-<!-- <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
-    <button
-    bind:this={contextMenu}
-    on:click={async (event) => {
-        contextMenuOpen = !contextMenuOpen;
-        menuX = event.clientX;
-        menuY = event.clientY;
-
-        if (!clickOutsideListener) {
-            await tick();
-            clickOutsideListener = onClickOutside(() => {
-                contextMenuOpen = false;
-            }, contextMenu);
-        }
-    }}
-    style:grid-column="left-control"
-    class="
-        hover:bg-gray-300
-        transition-tranform 
-        text-gray-500
-        duration-100
-        items-center
-        justify-center
-        border
-        border-transparent
-        rounded
-        flex flex-row gap-x-2
-        pl-2 pr-2
-        pt-1 pb-1
-       "
-    >
-    export
-    <Export size="16px" />
-</button>
-    <TooltipContent slot="tooltip-content">
-        export this model as a dataset
-    </TooltipContent>
-</Tooltip> -->
-
 
     </div>
 </header>

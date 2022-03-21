@@ -8,7 +8,7 @@ export let emphasize = false;
 export let hideRight = false;
 
 export let left = 8 // "pl-8";
-export let right = 2 // pr-2";
+export let right = 4 // pr-2";
 
 </script>
 

@@ -47,7 +47,7 @@ let innerHeight;
     style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px - var(--header-height))"
   >
   {#if $store && $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
-    <div class="h-full grid p-6 pt-0 overflow-auto">
+    <div class="h-full grid p-5 pt-0 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}

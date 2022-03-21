@@ -82,7 +82,7 @@ let width = tweened(400, {duration : 50})
 
     <div class='w-full' bind:this={container}>
       <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
-        <h1 class='grid grid-flow-col justify-start gap-x-3 p-3 items-center content-center'>
+        <h1 class='grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center'>
           <div class='grid  text-white w-5 h-5 items-center justify-center rounded bg-gray-500' style:width="16px" style:height="16px"></div>
           <div class='font-bold'>Data Modeler Prototype</div>
         </h1>
@@ -90,7 +90,7 @@ let width = tweened(400, {duration : 50})
 
       <!-- <div style:height="80px"></div> -->
 
-          <div class='pl-3 pb-3 pt-3'>
+          <div class='pl-4 pb-3 pt-5'>
             <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
               <h4>Tables</h4>
             </CollapsibleSectionTitle>
@@ -118,7 +118,7 @@ let width = tweened(400, {duration : 50})
           {/if}
         
           {#if $persistentModelStore && $persistentModelStore.entities}
-          <div class='pl-3 pb-3 pr-5 grid justify-between' style="grid-template-columns: auto max-content;">
+          <div class='pl-3 pb-3 pr-4 grid justify-between' style="grid-template-columns: auto max-content;">
             <CollapsibleSectionTitle  tooltipText={"tables"} bind:active={showModels}>
                 <h4> Models</h4>
               </CollapsibleSectionTitle>

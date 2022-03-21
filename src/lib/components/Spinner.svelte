@@ -31,10 +31,14 @@ export let bg = 'linear-gradient(to left, hsla(300, 100%, 50%, .5), hsla(1, 100%
 		height: 100%;
 		opacity: 0;
 		border-radius: 0px;
-		transition: opacity var(--status-transition),  border-radius var(--status-transition), transform var(--status-transition);;
+		transition: opacity var(--status-transition),  border-radius var(--status-transition), transform var(--status-transition);
 		background: var(--background);
 		/* transform: rotate(0deg); */
+		
+	}
 
+	div::after {
+		content: ' ';
 	}
 
 	.running {

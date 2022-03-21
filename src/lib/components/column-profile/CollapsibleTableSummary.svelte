@@ -203,22 +203,20 @@ let titleElementHovered = false;
     {/if}
     {#if show}
         <div class="pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
-            <div  class='pl-6 pr-6 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
-                <select bind:value={sortMethod} class={classes.NATIVE_SELECT}>
+            <div  class='pl-9 pr-5 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
+                <select style:transform="translateX(-1px)" bind:value={sortMethod} class={classes.NATIVE_SELECT}>
                     <option value={sortByOriginalOrder}>show original order</option>
                     <option value={defaultSort}>sort by type</option>
                     <option value={sortByNullity}>sort by null %</option>
                     <option value={sortByName}>sort by name</option>
                 </select>
-                <select bind:value={previewView} class={classes.NATIVE_SELECT} class:hidden={containerWidth < 325}>
-                    <option value="summaries">show summary</option>
+                <select style:transform="translateX(4px)" bind:value={previewView} class={classes.NATIVE_SELECT} class:hidden={containerWidth < 325}>
+                    <option value="summaries">show summary&nbsp;</option>
                     <option value="example">show example</option>
                 </select>
             </div>
 
-            <!-- <SummaryViewSelector bind:sortMethod bind:previewView /> -->
-
-            <div >
+            <div>
                 {#if sortedProfile}
                     {#each sortedProfile as column (column.name)}
 
@@ -228,21 +226,17 @@ let titleElementHovered = false;
 
                         hideNullPercentage={containerWidth < 400}
                         hideRight={containerWidth < 325}
-
                         compactBreakpoint={350}
-
-
                         view={previewView}
-
                         name={column.name}
                         type={column.type}
                         summary={column.summary}
                         totalRows={cardinality}
                         nullCount={column.nullCount}
                     >
-                        <svelte:fragment slot="context-button">
-                            <Spacer />
-                        </svelte:fragment>
+                        <button  slot="context-button">
+                            <Spacer size="16px" />
+                        </button>
                     </ColumnProfile>
 
                     

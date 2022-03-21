@@ -54,9 +54,9 @@ let titleTooltip;
 let shiftClicked = transientBooleanStore();
 </script>
 
-
+    <!-- pl-10 -->
     <ColumnEntry
-    left={indentLevel === 1 ? 8 : 5}
+    left={indentLevel === 1 ? 10 : 4}
     {hideRight}
     {active}
     emphasize={active}
@@ -219,24 +219,25 @@ let shiftClicked = transientBooleanStore();
     </svelte:fragment>
 
     <svelte:fragment slot="context-button">
-        <slot name="context-button"></slot>
+        <slot name="context-button">
+        </slot>
     </svelte:fragment>
 
     <svelte:fragment slot="details">
         {#if active}
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3  w-full">
             {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.topK}
-                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8 w-full">
+                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-10 w-full">
                     <!-- pl-16 pl-8 -->
                     <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 
             {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram?.length}
-            <div class="pl-{indentLevel === 1 ? 12 : 5}">
+            <div class="pl-{indentLevel === 1 ? 12 : 4}">
                 <!-- pl-12 pl-5 -->
                 <!-- FIXME: we have to remove a bit of pad from the right side to make this work -->
                 <NumericHistogram
-                    width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32)}
+                    width={containerWidth - (indentLevel === 1 ? (20 + 24 + 44 ): 32)}
                     height={65} 
                     data={summary.histogram}
                     min={summary.statistics.min}
@@ -248,11 +249,11 @@ let shiftClicked = transientBooleanStore();
                 />
             </div>
             {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
-                <div class="pl-{indentLevel === 1 ? 14 : 10}">
+                <div class="pl-{indentLevel === 1 ? 16 : 10}">
                     <!-- pl-14 pl-10 -->
                     <TimestampHistogram
                         {type}
-                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32 + 20)}
+                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 44 ): 32 + 20)}
                         data={summary.histogram}
                         interval={summary.interval}
                     />
