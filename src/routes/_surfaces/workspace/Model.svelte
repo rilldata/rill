@@ -100,9 +100,9 @@ let innerHeight;
 {#if currentModel}
     <div
       style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
-      class="p-6"
+      class="p-6 "
     >
-    <div class="rounded overflow-auto  h-full  {!showPreview && 'hidden'}"
+    <div class="rounded border border-gray-200 border-2  overflow-auto  h-full  {!showPreview && 'hidden'}"
      class:border={!!currentDerivedModel?.error}
     class:border-gray-300={!!currentDerivedModel?.error}
      >
