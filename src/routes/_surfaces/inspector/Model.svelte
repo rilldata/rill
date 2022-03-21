@@ -199,7 +199,7 @@ onMount(() => {
                     no rows selected
                   {:else if rollup !== 1}
                                   {formatBigNumberPercentage($bigRollupNumber)}
-                              row reduction
+                              row {#if rollup > 1}expansion{:else}reduction{/if}
                   {:else}no change in row {#if containerWidth > config.hideRight}count{:else}ct.{/if}
 
                   {/if}  
