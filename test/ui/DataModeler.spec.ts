@@ -80,19 +80,19 @@ export class DataModelerTest extends TestBase {
     const LimitZeroQuery = 'SELECT * FROM AdBids LIMIT 0';
     // FIXME the first query loaded doesn't seem to show the cost correctly, this could be a bug in the
     // UI.
-    const LimitZeroQueryResult: CostOutput = encodeURI('0 rows 5 columns');
+    const LimitZeroQueryResult: CostOutput = encodeURI('0 rows, 5 columns');
     const LimitZeroQueryTestData: Args = [LimitZeroQuery, LimitZeroQueryResult];
 
     const LimitTenQuery = 'SELECT * FROM AdBids LIMIT 10';
-    const LimitTenQueryResult: CostOutput = encodeURI('10 rows 5 columns');
+    const LimitTenQueryResult: CostOutput = encodeURI('10 rows, 5 columns');
     const LimitTenQueryTestData: Args = [LimitTenQuery, LimitTenQueryResult];
 
     const LimitRandomQuery = 'SELECT * FROM AdBids LIMIT 1234';
-    const LimitRandomQueryResult: CostOutput = encodeURI('1,234 rows 5 columns');
+    const LimitRandomQueryResult: CostOutput = encodeURI('1,234 rows, 5 columns');
     const LimitRandomQueryTestData: Args = [LimitRandomQuery, LimitRandomQueryResult];
 
     const FullSelectQuery = 'SELECT * FROM AdBids';
-    const FullSelectResult: CostOutput = encodeURI('10,000 rows 5 columns')
+    const FullSelectResult: CostOutput = encodeURI('10,000 rows, 5 columns')
     const FullSelectQueryTestData: Args = [FullSelectQuery, FullSelectResult];
 
     return {
