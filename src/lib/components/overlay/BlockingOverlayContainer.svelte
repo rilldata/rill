@@ -23,16 +23,5 @@ setTimeout(() => setInterval(() => {
         <div>
             <slot name="text" />
         </div>
-        <!-- {#if onoff === EntityStatus.Running}
-        <div class="font-bold pt-3">IMPORTING TABLE...</div>
-        <div style:font-size="12px">
-         a-very-long-file-name-that-keeps-going-and-going.parquet
-        </div>
-        {:else}
-        <div class="font-bold pt-3">EXPORTING DATASET...</div>
-        <div>
-         test_export.parquet
-        </div>
-        {/if} -->
     </div>
 </Overlay>

@@ -43,8 +43,6 @@ export let showTitle = true;
 export let showContextButton = true;
 export let indentLevel = 0;
 
-let colSizer;
-$: console.log(indentLevel)
 const dispatch = createEventDispatcher();
 
 const formatInteger = format(',');
