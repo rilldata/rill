@@ -71,7 +71,7 @@ const dispatch = createEventDispatcher();
            class="transition-colors duration-100 justify-self-end"
            on:click={() => {  dispatch("pin" )}}
            >
-           <Pin  />
+           <Pin size="16px" />
        </button>
        <TooltipContent slot="tooltip-content">
            {pinned ? 'unpin this column from the right side of the table' : 'pin this column to the right side of the table'}
