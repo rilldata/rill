@@ -136,8 +136,6 @@ onMount(() => {
       class='cost pl-4 pr-4 flex flex-row items-center gap-x-2'
       >
 
-
-
     <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
       <button
       bind:this={contextMenu}
@@ -179,9 +177,8 @@ onMount(() => {
 </Tooltip>
 
     <div class="grow text-right">
-      <div class='text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
+      <div class='cost-estimate text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
         {#if inputRowCardinalityValue > 0}
-
           {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
           {#if containerWidth > config.hideRight}
           {currentDerivedModel?.profile?.length} columns
