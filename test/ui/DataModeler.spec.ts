@@ -80,19 +80,19 @@ export class DataModelerTest extends TestBase {
     const LimitZeroQuery = 'SELECT * FROM AdBids LIMIT 0';
     // FIXME the first query loaded doesn't seem to show the cost correctly, this could be a bug in the
     // UI.
-    const LimitZeroQueryResult: CostOutput = encodeURI('no rows selected  10,000 ⭢\n          0 rows');
+    const LimitZeroQueryResult: CostOutput = encodeURI('0 rows, 5 columns');
     const LimitZeroQueryTestData: Args = [LimitZeroQuery, LimitZeroQueryResult];
 
     const LimitTenQuery = 'SELECT * FROM AdBids LIMIT 10';
-    const LimitTenQueryResult: CostOutput = encodeURI('0.10% of source rows  10,000 ⭢\n          10 rows');
+    const LimitTenQueryResult: CostOutput = encodeURI('10 rows, 5 columns');
     const LimitTenQueryTestData: Args = [LimitTenQuery, LimitTenQueryResult];
 
     const LimitRandomQuery = 'SELECT * FROM AdBids LIMIT 1234';
-    const LimitRandomQueryResult: CostOutput = encodeURI('12.34% of source rows  10,000 ⭢\n          1,234 rows');
+    const LimitRandomQueryResult: CostOutput = encodeURI('1,234 rows, 5 columns');
     const LimitRandomQueryTestData: Args = [LimitRandomQuery, LimitRandomQueryResult];
 
     const FullSelectQuery = 'SELECT * FROM AdBids';
-    const FullSelectResult: CostOutput = encodeURI('no change in row count  10,000 ⭢\n          10,000 rows')
+    const FullSelectResult: CostOutput = encodeURI('10,000 rows, 5 columns')
     const FullSelectQueryTestData: Args = [FullSelectQuery, FullSelectResult];
 
     return {
@@ -143,7 +143,7 @@ LINE 1: SELECT * FROM xyz
 
     await this.execute(page, query);
 
-    const cost = page.locator('.cost');
+    const cost = page.locator('.cost-estimate');
 
     await this.execute(page, query);
     const actualCost = encodeURI(await cost.textContent());
@@ -212,8 +212,8 @@ LINE 1: SELECT * FROM xyz
 
     // Click add model button, and select model, if editor is not already visible.
     // TODO this would be more future-proof if the UI added IDs for buttons.
-    await page.locator('button >> nth=9').click();
-    await page.locator('text=query_0.sql').click();
+    await page.locator('button#create-model-button').click();
+    await page.locator('text=query_0.sql >> nth=1').click();
 
     await activeLine.fill(sql);
 

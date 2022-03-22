@@ -7,16 +7,19 @@ import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
 import MoreHorizontal from "$lib/components/icons/MoreHorizontal.svelte";
+import Export from "$lib/components/icons/Export.svelte"
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte"
 import Menu from "$lib/components/menu/Menu.svelte"
 import MenuItem from "$lib/components/menu/MenuItem.svelte"
-import { PersistentModelStore } from "$lib/modelStores";
+import type { PersistentModelStore } from "$lib/modelStores";
 
 import { onClickOutside } from "$lib/util/on-click-outside";
 
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import Spinner from "$lib/components/Spinner.svelte";
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
@@ -60,6 +63,20 @@ function onKeydown(event) {
 let contextMenu;
 let contextMenuOpen = false;
 
+// debounce the application status to resolve any quick flickers that
+// may occur from quick changes to the application status.
+let applicationStatus = 0;
+let asTimer;
+function debounceStatus(status:EntityStatus) {
+    clearTimeout(asTimer);
+    asTimer = setTimeout(() => {
+        applicationStatus = status;
+    }, 100);
+
+}
+
+$: debounceStatus(($store?.status as unknown) as EntityStatus);
+
 </script>
 
 <svelte:window on:keydown={onKeydown} />
@@ -99,64 +116,24 @@ let contextMenuOpen = false;
         {/if}
     </div>
     <div>
-
-<Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
-    <button
-    bind:this={contextMenu}
-    on:click={async (event) => {
-        contextMenuOpen = !contextMenuOpen;
-        menuX = event.clientX;
-        menuY = event.clientY;
-
-        if (!clickOutsideListener) {
-            await tick();
-            clickOutsideListener = onClickOutside(() => {
-                contextMenuOpen = false;
-            }, contextMenu);
-        }
-    }}
-    style:grid-column="left-control"
-    class="
-        hover:bg-gray-300
-        transition-tranform 
-        text-gray-500
-        duration-100
-        grid
-        items-center
-        justify-center
-        border
-        border-transparent
-        rounded
-       "
-    >
-    <MoreHorizontal size="20px" />
-</button>
-    <TooltipContent slot="tooltip-content">
-        Export the model output
-    </TooltipContent>
-</Tooltip>
-
-{#if contextMenuOpen}
-<!-- place this above codemirror.-->
-<div bind:this={contextMenu}>
-    <FloatingElement relationship="mouse" target={{x: menuX, y:menuY}} location="left" alignment="start">
-        <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
-            <MenuItem on:select={() => {
-                const exportFilename = currentModel.name.replace('.sql', '.parquet');
-                dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
-            }}>
-                Export as Parquet 
-            </MenuItem>
-            <MenuItem on:select={() => {
-                const exportFilename = currentModel.name.replace('.sql', '.csv');
-                dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
-            }}>
-                Export as CSV 
-            </MenuItem>
-        </Menu>
-    </FloatingElement>
-</div>
-{/if}
+    <div class="text-gray-400">
+        <Tooltip location="left" alignment="center" distance={16}>
+            <Spinner status={applicationStatus || EntityStatus.Idle} size="20px" />
+        <TooltipContent slot="tooltip-content">
+            {#if applicationStatus === EntityStatus.Idle}
+                idle
+            {:else if applicationStatus === EntityStatus.Running}
+                running
+            {:else if applicationStatus === EntityStatus.Exporting}
+                exporting a model resultset
+            {:else if applicationStatus === EntityStatus.Importing}
+                importing a table
+            {:else if applicationStatus === EntityStatus.Profiling}
+                profiling
+            {/if}
+        </TooltipContent>
+        </Tooltip>
+    </div>
 
     </div>
 </header>

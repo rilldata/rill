@@ -1,5 +1,5 @@
 <script lang="ts">
-import { getContext, onMount } from "svelte";
+import { getContext, onMount, tick } from "svelte";
 import { slide } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { sineOut as easing } from "svelte/easing";
@@ -8,6 +8,10 @@ import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
 import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import Spacer from "$lib/components/icons/Spacer.svelte";
 import * as classes from "$lib/util/component-classes";
+import Export from "$lib/components/icons/Export.svelte";
+import { onClickOutside } from "$lib/util/on-click-outside";
+import Menu from "$lib/components/menu/Menu.svelte"
+import MenuItem from "$lib/components/menu/MenuItem.svelte"
 
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -25,6 +29,10 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
 import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
+
+import { config } from "$lib/components/column-profile/utils"
 
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
 const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
@@ -101,6 +109,15 @@ let showSourceTables = true;
 
 let container;
 let containerWidth = 0;
+let contextMenu;
+let contextMenuOpen = false;
+let menuX;
+let menuY;
+let clickOutsideListener;
+$: if (!contextMenuOpen && clickOutsideListener) {
+    clickOutsideListener();
+    clickOutsideListener = undefined;
+}
 
 onMount(() => {
     const observer = new ResizeObserver(entries => {
@@ -113,25 +130,77 @@ onMount(() => {
 {#key currentModel?.id}
   <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length && tables}
-    <div class:text-gray-300={currentDerivedModel?.error} class='cost p-4 text-right grid justify-items-end justify-end' >
-      <Tooltip location="left" alignment="center" distance={8}>
-      <div class="w-max text-right">
-          {#if validRollup(rollup)}
-                {#if isNaN(rollup)}
-                  sdd
-                {:else if rollup === 0 }
-                  no rows selected
-                {:else if rollup !== 1}
-                            <span style="font-weight: bold;">
-                                {formatBigNumberPercentage($bigRollupNumber)}
-                            </span> of source rows
-                {:else} <span style="font-weight: bold;">no change</span> in row count
+    <div
+      style:height="var(--header-height)"
+      class:text-gray-300={currentDerivedModel?.error} 
+      class='cost pl-4 pr-4 flex flex-row items-center gap-x-2'
+      >
 
-                {/if}  
-            {:else if rollup === Infinity}
-              &nbsp; {outputRowCardinalityValue} row{#if outputRowCardinalityValue !== 1}s{/if} selected
+    <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
+      <button
+      bind:this={contextMenu}
+      on:click={async (event) => {
+          contextMenuOpen = !contextMenuOpen;
+          menuX = event.clientX;
+          menuY = event.clientY;
+          if (!clickOutsideListener) {
+              await tick();
+              clickOutsideListener = onClickOutside(() => {
+                  contextMenuOpen = false;
+              }, contextMenu);
+          }
+      }}
+      style:grid-column="left-control"
+      class="
+          hover:bg-gray-300
+          hover:border-gray-300
+          border-black
+          transition-tranform 
+          duration-100
+          items-center
+          justify-center
+          border
+          border-transparent
+          rounded
+          flex flex-row gap-x-2
+          pl-4 pr-4
+          pt-2 pb-2
+        "
+      >
+    export
+    <Export size="16px" />
+</button>
+    <TooltipContent slot="tooltip-content">
+        export this model as a dataset
+    </TooltipContent>
+</Tooltip>
+
+    <div class="grow text-right">
+      <div class='cost-estimate text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
+        {#if inputRowCardinalityValue > 0}
+          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > config.hideRight}, {currentDerivedModel?.profile?.length} columns
           {/if}
+        {:else}
+          &nbsp;
+        {/if}
       </div>
+      <Tooltip location="left" alignment="center" distance={8}>
+        <div class=" text-gray-500" >
+            {#if validRollup(rollup)}
+                  {#if isNaN(rollup)}
+                    ~
+                  {:else if rollup === 0 }
+                    no rows selected
+                  {:else if rollup !== 1}
+                                  {formatBigNumberPercentage($bigRollupNumber)}
+                              of source rows
+                  {:else}no change in row {#if containerWidth > config.hideRight}count{:else}ct.{/if}
+
+                  {/if}  
+              {:else if rollup === Infinity}
+                &nbsp; {outputRowCardinalityValue} row{#if outputRowCardinalityValue !== 1}s{/if} selected
+            {/if}
+        </div>
       <TooltipContent slot='tooltip-content'>
         <div class="pt-1 pb-1 font-bold">
           the rollup percentage
@@ -142,22 +211,16 @@ onMount(() => {
         </div>
       </TooltipContent>
       </Tooltip>
-      <div class='text-gray-500'  class:text-gray-300={currentDerivedModel?.error}>
-        {#if inputRowCardinalityValue > 0}
-        {formatInteger(inputRowCardinalityValue)} ⭢
-          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
-        {:else}
-          &nbsp;
-        {/if}
-      </div>
+    </div>
     </div>
   {/if}
+
   <hr />
 
     <div class="model-profile">
     {#if currentModel && currentModel.query.trim().length}       
       <div class='pt-4 pb-4'>
-        <div class=" pl-5 pr-5">
+        <div class=" pl-4 pr-4">
           <CollapsibleSectionTitle tooltipText="source tables" bind:active={showSourceTables}>
             Source Tables
           </CollapsibleSectionTitle>
@@ -168,7 +231,7 @@ onMount(() => {
             {#each sourceTableReferences as reference, index (reference.name)}
             {@const correspondingTableCardinality = tables[index]?.cardinality}
               <div
-                class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-5 pr-5"
+                class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
                 on:focus={() => {
                   queryHighlight.set(reference.tables);
@@ -196,7 +259,7 @@ onMount(() => {
             {/each}
           </div>
           {:else}
-            <div class='pl-5 pr-5 p-1 italic text-gray-400'>
+            <div class='pl-4 pr-5 p-1 italic text-gray-400'>
             none selected
             </div>
           {/if}
@@ -206,35 +269,24 @@ onMount(() => {
       <hr />
       
       <div class="pb-4 pt-4">
-      <div class=" pl-5 pr-5">
+      <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle tooltipText="source tables" bind:active={showColumns}>
           selected columns
         </CollapsibleSectionTitle>
       </div>
 
         {#if currentDerivedModel?.profile && showColumns}
-        <div class='source-tables pt-4 pb-4' transition:slide|local={{duration: 200}}>
-          {#each currentDerivedModel.profile as column}
-            <ColumnProfile
-              indentLevel={0}
-              containerWidth={containerWidth}
-
-              hideNullPercentage={false}
-              hideRight={false}
-
-              compactBreakpoint={350}
-
-              name={column.name}
-              type={column.type}
-              summary={column.summary}
-              totalRows={currentDerivedModel?.cardinality}
-              nullCount={column.nullCount}
-            >
-            <svelte:fragment slot="context-button">
-              <Spacer />
-          </svelte:fragment>
-            </ColumnProfile>
-          {/each}
+        <div  transition:slide|local={{duration: 200}}>
+            <CollapsibleTableSummary
+              showTitle={false}
+              showContextButton={false}
+              show={showColumns}
+              name={currentModel.name}
+              cardinality={currentDerivedModel?.cardinality ?? 0}
+              profile={currentDerivedModel?.profile ?? []}
+              head={currentDerivedModel?.preview ?? []}
+              emphasizeTitle ={currentModel?.id === $store?.activeEntity?.id}
+            />
         </div>
 
         {/if}
@@ -244,6 +296,31 @@ onMount(() => {
   </div>
   </div>
 {/key}
+
+
+
+{#if contextMenuOpen}
+<!-- place this above codemirror.-->
+<div bind:this={contextMenu}>
+    <FloatingElement relationship="mouse" target={{x: menuX, y:menuY}} location="left" alignment="start">
+        <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
+            <MenuItem on:select={() => {
+                const exportFilename = currentModel.name.replace('.sql', '.parquet');
+                dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
+            }}>
+                Export as Parquet 
+            </MenuItem>
+            <MenuItem on:select={() => {
+                const exportFilename = currentModel.name.replace('.sql', '.csv');
+                dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
+            }}>
+                Export as CSV 
+            </MenuItem>
+        </Menu>
+    </FloatingElement>
+</div>
+{/if}
+
 <style lang="postcss">
 
 .results {

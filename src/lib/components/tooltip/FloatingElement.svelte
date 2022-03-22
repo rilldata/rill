@@ -58,12 +58,8 @@ onMount(() => {
         })
         if (firstParentElement) {
             observer.observe(firstParentElement, config);
-        }
-        
+        }   
     }
-    
-
-
 })
 
 </script>
