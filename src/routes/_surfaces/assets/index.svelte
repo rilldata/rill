@@ -80,7 +80,8 @@ let view = 'assets';
 
           <div class='pl-4 pb-3 pt-5'>
             <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
-              <h4>Tables</h4>
+              <h4 class='flex flex-row items-center gap-x-2'><ParquetIcon size="16px" /> Tables</h4>
+
             </CollapsibleSectionTitle>
           </div>
             {#if showTables}
@@ -108,9 +109,9 @@ let view = 'assets';
           {/if}
         
           {#if $persistentModelStore && $persistentModelStore.entities}
-          <div class='pl-3 pb-3 pr-4 grid justify-between' style="grid-template-columns: auto max-content;">
+          <div class='pl-4 pb-3 pr-4 grid justify-between' style="grid-template-columns: auto max-content;">
             <CollapsibleSectionTitle  tooltipText={"tables"} bind:active={showModels}>
-                <h4> Models</h4>
+                <h4 class='flex flex-row items-center gap-x-2'><ModelIcon size="16px" /> Models</h4>
               </CollapsibleSectionTitle>
               <ContextButton 
                 id={'create-model-button'}
