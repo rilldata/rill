@@ -164,5 +164,6 @@ export class TableActions extends DataModelerActions {
                     "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
                 break;
         }
+        this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
     }
 }

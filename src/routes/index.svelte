@@ -1,12 +1,21 @@
-<script>
+<script lang="ts">
+import { getContext } from "svelte";
 import Workspace from "./_surfaces/workspace/index.svelte";
 import InspectorSidebar from "./_surfaces/inspector/index.svelte";
 import AssetsSidebar from "./_surfaces/assets/index.svelte";
 import Header from "./_surfaces/workspace/Header.svelte";
 
 import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
-
 import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte"
+
+import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
+import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
+
+
+import type { PersistentModelStore, DerivedModelStore } from "$lib/modelStores";
+import type { PersistentTableStore, DerivedTableStore } from "$lib/tableStores";
+
+import { config } from "$lib/app-store";
 
 import { 
   layout,
@@ -16,14 +25,32 @@ import {
   inspectorVisible,
   SIDE_PAD
 } from "$lib/layout-store"
+import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 
 let assetsHovered = false;
 let inspectorHovered = false;
 
+const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
+const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
+const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
+const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
+
+// get any importing tables
+$: derivedImportedTable = $derivedTableStore?.entities?.find(table => table.status === EntityStatus.Importing);
+$: persistentImportedTable = $persistentTableStore?.entities?.find(table => table.id === derivedImportedTable?.id);
+// get any exporting datasets.
+$: derivedExportedModel = $derivedModelStore?.entities?.find(model => model.status === EntityStatus.Exporting);
+$: persistentExportedModel = $persistentModelStore?.entities?.find(model => model.id === derivedExportedModel?.id);
 </script>
 
-<div class="absolute w-screen h-screen">
+{#if derivedExportedModel && persistentExportedModel}
+  <ExportingDataset tableName={persistentExportedModel.name} path={`${config.database.exportFolder}/`} />
+{:else if derivedImportedTable && persistentImportedTable}
+  <ImportingTable importName={persistentImportedTable.path} tableName={persistentImportedTable.name} />
+{/if}
+
+<div class="absolute w-screen h-screen bg-gray-100">
 
   <!-- left assets pane expansion button -->
   <!-- make this the first element to select with tab by placing it first.-->

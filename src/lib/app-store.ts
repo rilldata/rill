@@ -20,7 +20,9 @@ export interface AppStore<
 	socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
 }
 
-const clientInstances = clientFactory(new RootConfig({}));
+export const config = new RootConfig({});
+
+const clientInstances = clientFactory(config);
 export const dataModelerService = clientInstances.dataModelerService;
 export const dataModelerStateService = clientInstances.dataModelerStateService;
 dataModelerService.init();

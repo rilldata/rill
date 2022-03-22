@@ -42,7 +42,7 @@ let innerHeight;
 
 <svelte:window bind:innerHeight />
 
-<div class="editor-pane">
+<div class="editor-pane bg-gray-100">
   <div  
     style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px - var(--header-height))"
   >
@@ -80,7 +80,7 @@ let innerHeight;
 </div>
 
 {#if $modelPreviewVisible}
-<Portal>
+<Portal target=".body">
   <div
   class='fixed z-50 drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2'
   style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"

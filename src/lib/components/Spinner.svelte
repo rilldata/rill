@@ -3,6 +3,7 @@ import { EntityStatus } from "$common/data-modeler-state-service/entity-state-se
 export let size = '1em';
 export let status:EntityStatus = EntityStatus.Idle;
 export let bg = 'linear-gradient(to left, hsla(300, 100%, 50%, .5), hsla(1, 100%, 50%, .5))';
+export let duration = 500;
 </script>
 
 <div 
@@ -10,7 +11,7 @@ export let bg = 'linear-gradient(to left, hsla(300, 100%, 50%, .5), hsla(1, 100%
 	class:running={status === EntityStatus.Running}
 	class:idle={status === EntityStatus.Idle}
 	style="
-		--status-transition: 400ms;
+		--status-transition: {duration}ms;
 		--background: {bg};
 		--size: {size};
 		width: {size}; height: {size};" />
@@ -20,7 +21,7 @@ export let bg = 'linear-gradient(to left, hsla(300, 100%, 50%, .5), hsla(1, 100%
 		border-radius: 0px;
 		transition: border-radius var(--status-transition), border-color var(--status-transition);
 		border: .125rem solid rgba(0,0,0,0);
-		animation: spin 1s infinite;
+		animation: spin calc(var(--status-transition) * 2) infinite;
 		background-color: transparent;
 	}
 
