@@ -156,7 +156,6 @@ onMount(() => {
           hover:border-gray-300
           border-black
           transition-tranform 
-          text-gray-500
           duration-100
           items-center
           justify-center
@@ -165,7 +164,7 @@ onMount(() => {
           rounded
           flex flex-row gap-x-2
           pl-4 pr-4
-          pt-1 pb-1
+          pt-2 pb-2
         "
       >
     export
@@ -179,16 +178,14 @@ onMount(() => {
     <div class="grow text-right">
       <div class='cost-estimate text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
         {#if inputRowCardinalityValue > 0}
-          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
-          {#if containerWidth > config.hideRight}
-          {currentDerivedModel?.profile?.length} columns
+          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > config.hideRight}, {currentDerivedModel?.profile?.length} columns
           {/if}
         {:else}
           &nbsp;
         {/if}
       </div>
       <Tooltip location="left" alignment="center" distance={8}>
-        <div class="italic text-gray-500" >
+        <div class=" text-gray-500" >
             {#if validRollup(rollup)}
                   {#if isNaN(rollup)}
                     ~
@@ -196,7 +193,7 @@ onMount(() => {
                     no rows selected
                   {:else if rollup !== 1}
                                   {formatBigNumberPercentage($bigRollupNumber)}
-                              row {#if rollup > 1}expansion{:else}reduction{/if}
+                              of source rows
                   {:else}no change in row {#if containerWidth > config.hideRight}count{:else}ct.{/if}
 
                   {/if}  
