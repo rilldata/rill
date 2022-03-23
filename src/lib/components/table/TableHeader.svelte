@@ -2,7 +2,7 @@
 export let name:string;
 export let sticky:string = 'top';
 </script>
-<div class="
+<td class="
     p-0
 "
     class:sticky={!!sticky}
@@ -28,4 +28,4 @@ export let sticky:string = 'top';
     >
         <slot />
     </div>
-</div>
+</td>

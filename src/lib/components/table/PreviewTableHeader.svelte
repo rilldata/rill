@@ -23,8 +23,8 @@ const dispatch = createEventDispatcher();
 
 <TableHeader {name} {type}>
     <div 
-       style:grid-template-columns="auto max-content"
-       on:click={async (event) => {
+        style:grid-template-columns="160px max-content"
+        on:click={async (event) => {
            if (event.shiftKey) {
             await navigator.clipboard.writeText(name);
             notificationStore.send({ message: `copied column name "${name}" to clipboard`});
@@ -38,10 +38,10 @@ const dispatch = createEventDispatcher();
            justify-items-start
            justify-stretch
            select-none
-           gap-x-3">
+           gap-x-2">
 
        <Tooltip location="top" alignment="middle" distance={16}>
-           <div class="w-full pr-5  flex flex-row gap-x-2 items-center">
+           <div class="w-full flex flex-row gap-x-2 items-center">
                <DataTypeIcon suppressTooltip color={'text-gray-500'} {type} /> 
                <span class="text-ellipsis overflow-hidden whitespace-nowrap ">
                    {name}
