@@ -11,6 +11,7 @@ import {
 } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import { clientFactory } from "$common/clientFactory";
 import { isPortOpen } from "$common/utils/isPortOpen";
+import type { MetricsService } from "$common/metrics/MetricsService";
 
 const DATABASE_NAME = "stage.db";
 
@@ -25,6 +26,7 @@ export abstract class DataModelerCliCommand {
     protected dataModelerService: DataModelerService;
     protected dataModelerStateService: DataModelerStateService;
     protected notificationService: SocketNotificationService;
+    protected metricsService: MetricsService;
     protected dataModelerStateSyncService: DataModelerStateSyncService;
     protected projectPath: string;
     protected config: RootConfig;
@@ -65,7 +67,8 @@ export abstract class DataModelerCliCommand {
     }
 
     private async initServerInstances({ shouldInitState }: CliRunArgs) {
-        const {dataModelerService, dataModelerStateService, notificationService} = dataModelerServiceFactory(this.config);
+        const {dataModelerService, dataModelerStateService,
+            notificationService, metricsService} = dataModelerServiceFactory(this.config);
 
         if (shouldInitState) {
             this.dataModelerStateSyncService = new DataModelerStateSyncService(
@@ -77,12 +80,14 @@ export abstract class DataModelerCliCommand {
         this.dataModelerService = dataModelerService;
         this.dataModelerStateService = dataModelerStateService;
         this.notificationService = notificationService;
+        this.metricsService = metricsService;
     }
 
     private async initClientInstances() {
-        const {dataModelerService, dataModelerStateService} = clientFactory(this.config);
+        const {dataModelerService, dataModelerStateService, metricsService} = clientFactory(this.config);
         this.dataModelerService = dataModelerService;
         this.dataModelerStateService = dataModelerStateService;
+        this.metricsService = metricsService;
     }
 
     protected async run(cliRunArgs: CliRunArgs, ...args: Array<any>): Promise<void> {

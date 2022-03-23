@@ -122,7 +122,7 @@ export class DataModelerService {
     public async fireEvent<Event extends keyof MetricsActionDefinition>(
         event: Event, args: MetricsActionDefinition[Event],
     ): Promise<void> {
-        await this.metricsService.dispatch(event, args);
+        await this.metricsService?.dispatch(event, args);
     }
 
     public async destroy(): Promise<void> {

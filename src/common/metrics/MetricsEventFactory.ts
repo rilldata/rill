@@ -5,9 +5,9 @@ import type { CommonFields } from "$common/metrics/MetricsTypes";
 export class MetricsEventFactory {
     public constructor(protected readonly config: RootConfig) {}
 
-    protected getBaseMetricsEvent(commonFields: CommonFields,
-                                  commonUserFields: CommonUserFields,
-                                  eventType: string): MetricsEvent {
+    protected getBaseMetricsEvent(eventType: string,
+                                  commonFields: CommonFields,
+                                  commonUserFields: CommonUserFields): MetricsEvent {
         return {
             ...commonUserFields,
             ...commonFields,

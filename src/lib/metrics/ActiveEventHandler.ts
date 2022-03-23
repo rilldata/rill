@@ -10,14 +10,12 @@ export class ActiveEventHandler {
     public constructor(private metricsService: MetricsService,
                        private commonUserMetrics: CommonUserFields) {
         window.addEventListener("blur", () => {
-            console.log("lost focus");
             this.isInFocus = false;
             if (this.previousInFocusTime) {
                 this.focusDuration += Date.now() - this.previousInFocusTime;
             }
         });
         window.addEventListener("focus", () => {
-            console.log("gained focus");
             this.isInFocus = true;
             this.focusCount++;
             this.previousInFocusTime = Date.now();
