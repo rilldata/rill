@@ -1,12 +1,18 @@
 <script lang="ts">
 import { getContext } from "svelte";
 import { slide } from "svelte/transition";
+
+import Header from "./Header.svelte";
+
 import type { ApplicationStore } from "$lib/app-store";
 import { dataModelerService } from "$lib/app-store";
 import { cubicOut as easing } from "svelte/easing";
 import Editor from "$lib/components/Editor.svelte";
+import ModelIcon from "$lib/components/icons/Code.svelte";
+
 import { drag } from "$lib/drag";
 import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/layout-store";
+
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 import type {
@@ -41,6 +47,8 @@ let innerHeight;
 </script>
 
 <svelte:window bind:innerHeight />
+
+<Header currentEntity={currentModel} icon={ModelIcon} />
 
 <div class="editor-pane bg-gray-100">
   <div  

@@ -12,6 +12,7 @@ export let content;
 export let componentContainer;
 export let editorHeight = 0;
 export let selections = [];
+export let editable = true;
 
 $: editorHeight = componentContainer?.offsetHeight || 0;
 
@@ -89,6 +90,7 @@ onMount(() => {
             sql(),
             keymap.of([indentWithTab]),
             breakpointGutter,
+            EditorView.editable.of(editable),
             EditorView.updateListener.of((v)=> {
                 const candidateLocation = v.state.selection.ranges[0].head;
                 if (candidateLocation !== cursorLocation) {

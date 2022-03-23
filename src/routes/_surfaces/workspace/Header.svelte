@@ -2,7 +2,6 @@
 import { getContext, tick } from "svelte";
 import { ApplicationStore, dataModelerService } from "$lib/app-store";
 
-import ModelIcon from "$lib/components/icons/Code.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
@@ -32,9 +31,12 @@ function formatModelName(str) {
     return output;
 }
 
-let currentModel: PersistentModelEntity;
-$: if ($store?.activeEntity && $persistentModelStore?.entities)
-    currentModel = $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id);
+export let currentEntity;
+export let icon;
+
+// let currentModel: PersistentModelEntity;
+// $: if ($store?.activeEntity && $persistentModelStore?.entities)
+//     currentModel = $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id);
 
 let titleInputElement;
 let editingTitle = false;
@@ -50,8 +52,8 @@ $: if (!contextMenuOpen && clickOutsideListener) {
     clickOutsideListener = undefined;
 }
 
-let titleInput = currentModel?.name;
-$: titleInput = currentModel?.name;
+let titleInput = currentEntity?.name;
+$: titleInput = currentEntity?.name;
 
 
 function onKeydown(event) {
@@ -75,6 +77,7 @@ function debounceStatus(status:EntityStatus) {
 
 }
 
+
 $: debounceStatus(($store?.status as unknown) as EntityStatus);
 
 </script>
@@ -88,7 +91,7 @@ $: debounceStatus(($store?.status as unknown) as EntityStatus);
     <div>
         {#if titleInput !== undefined && titleInput !== null}
         <h1 style:font-size="16px"  class="grid grid-flow-col justify-start items-center gap-x-1">
-            <ModelIcon />
+            <svelte:component this={icon} />
             <Tooltip distance={8} bind:active={tooltipActive} suppress={editingTitle}>
                 <input 
                 id="model-title-input"
@@ -97,15 +100,17 @@ $: debounceStatus(($store?.status as unknown) as EntityStatus);
                     titleInputValue = evt.target.value;
                     editingTitle = true;
                 }}
-
-                class="bg-gray-100 border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
+                disabled={currentEntity.type !== 'Model'}
+                class="bg-gray-100 border border-transparent border-2 {currentEntity.type === 'Model' ? "hover:border-gray-400" : ""} rounded pl-2 pr-2 cursor-pointer"
                 class:font-bold={editingTitle === false}
                 on:blur={() => { editingTitle = false; }}
                 value={titleInput} 
                 size={Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1} 
                 on:change={(e) => { 
-                    if (currentModel?.id) {
-                        dataModelerService.dispatch('updateModelName', [currentModel?.id, formatModelName(e.target.value)]);
+                    if (currentEntity?.id) {
+                        if (currentEntity.type === "Model") {
+                            dataModelerService.dispatch('updateModelName', [currentEntity?.id, formatModelName(e.target.value)]);
+                        }
                     }
                 }} />
             <TooltipContent slot="tooltip-content">

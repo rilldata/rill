@@ -53,7 +53,7 @@ let activeCell = false;
         p-2
         pl-4
         pr-4
-        border
+        border-b border-r
         border-gray-200
         {activeCell && 'bg-gray-200'}
     "

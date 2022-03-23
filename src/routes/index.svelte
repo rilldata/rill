@@ -3,7 +3,6 @@ import { getContext } from "svelte";
 import Workspace from "./_surfaces/workspace/index.svelte";
 import InspectorSidebar from "./_surfaces/inspector/index.svelte";
 import AssetsSidebar from "./_surfaces/assets/index.svelte";
-import Header from "./_surfaces/workspace/Header.svelte";
 
 import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
 import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte"
@@ -87,7 +86,6 @@ $: persistentExportedModel = $persistentModelStore?.entities?.find(model => mode
     style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px" 
     style:top="0px" 
     style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px">
-    <Header />
     <Workspace />
   </div>
 

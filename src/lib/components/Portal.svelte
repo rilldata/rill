@@ -26,7 +26,13 @@ onMount(() => {
 
 onDestroy(() => {
     if (browser) {
-    document.body.removeChild(portal);
+        console.log('removing!', target);
+        if (!target) {
+            targetEntity = document.body;
+        } else {
+            targetEntity = document.querySelector(target);
+        }
+        targetEntity.removeChild(portal);
     }
 });
 </script>
