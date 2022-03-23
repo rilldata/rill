@@ -1,11 +1,13 @@
 <script>
 export let hovered = false;
 </script>
-<tr
+<div
+
     class="
+        flex flex-row
         hover:bg-gray-100
         {hovered && 'bg-gray-100'}
     "    
 >
     <slot />
-</tr>
+</div>

@@ -2,7 +2,7 @@
 export let name:string;
 export let sticky:string = 'top';
 </script>
-<th class="
+<div class="
     p-0
 "
     class:sticky={!!sticky}
@@ -12,6 +12,8 @@ export let sticky:string = 'top';
 
 >
     <div 
+    style:width="var(--table-column-width-{name}, 210px)"
+
         class="
             p-3
             pl-4
@@ -26,4 +28,4 @@ export let sticky:string = 'top';
     >
         <slot />
     </div>
-</th>
+</div>

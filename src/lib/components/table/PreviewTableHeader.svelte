@@ -23,7 +23,7 @@ const dispatch = createEventDispatcher();
 
 <TableHeader {name} {type}>
     <div 
-       style:grid-template-columns="210px max-content"
+       style:grid-template-columns="auto max-content"
        on:click={async (event) => {
            if (event.shiftKey) {
             await navigator.clipboard.writeText(name);

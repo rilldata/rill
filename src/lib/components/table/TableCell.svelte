@@ -42,7 +42,7 @@ let activeCell = false;
 
 </script>
 
-<td
+<div
     on:mouseover={() => { dispatch('inspect', index); activeCell = true; }}
     on:mouseout={() => { activeCell = false; }}
     on:focus={() => { dispatch('inspect', index); activeCell = true; }}
@@ -58,7 +58,6 @@ let activeCell = false;
         {activeCell && 'bg-gray-200'}
     "
     style:width="var(--table-column-width-{name}, 210px)"
-    style:max-width="var(--table-column-width-{name}, 210px)"
 >
     {#if value !== undefined}
     <span transition:fade|local={{duration: 75}}>
@@ -67,4 +66,4 @@ let activeCell = false;
         </FormattedDataType>
     </span>
     {/if}
-</td>
+</div>
