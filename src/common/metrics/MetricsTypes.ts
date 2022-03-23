@@ -1,4 +1,13 @@
-export interface CommonMetricsFields {
+export interface CommonFields {
+    app_name: string;
+    install_id: string;
+    build_id: string;
+    version: string;
+    project_id: string;
+    model_id: string;
+}
+
+export interface CommonUserFields {
     country_code: string;
     city: string;
     locale: string;
@@ -6,16 +15,10 @@ export interface CommonMetricsFields {
     os: string;
     device_model: string;
 }
-export interface MetricsEvent extends CommonMetricsFields {
-    install_id: string;
+
+export interface MetricsEvent extends CommonFields, CommonUserFields {
     event_datetime: number;
     event_type: string;
-    app_name: string;
-    build_id: string;
-    version: string;
-
-    project_id: string;
-    model_id: string;
 }
 
 export interface ActiveEvent extends MetricsEvent {

@@ -7,6 +7,7 @@
 		"build": "svelte-kit build && tsc --project tsconfig.node.json",
 		"prepack": "./build-tools/replace_package_type.sh module commonjs",
 		"postpack": "./build-tools/replace_package_type.sh commonjs module",
+		"postinstall": "ts-node-dev --quiet --project tsconfig.node.json src/cli/post-install.ts",
 		"install-and-build": "npm install && npm run build",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",

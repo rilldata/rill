@@ -6,7 +6,7 @@ export class RillIntakeClient {
     public constructor(private readonly config: RootConfig) {}
 
     public async fireEvent(event: MetricsEvent) {
-        console.log(event);
+        console.log("RillIntakeClient", event);
         // return axios.post(this.config.metrics.rillIntakeUrl, event);
     }
 }

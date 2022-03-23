@@ -22,6 +22,7 @@ export interface AppStore<
 
 const clientInstances = clientFactory(new RootConfig({}));
 export const dataModelerService = clientInstances.dataModelerService;
+export const metricsService = clientInstances.metricsService;
 export const dataModelerStateService = clientInstances.dataModelerStateService;
 dataModelerService.init();
 

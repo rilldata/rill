@@ -1,10 +1,10 @@
-import { metricsFactory } from "$lib/metrics/metricsFactory";
-import { RootConfig } from "$common/config/RootConfig";
 import { ActiveEventHandler } from "$lib/metrics/ActiveEventHandler";
+import { metricsService } from "$lib/app-store";
+import { collectCommonUserFields } from "$lib/metrics/collectCommonUserFields";
 
 export let actionEvent: ActiveEventHandler;
 
-export function initMetrics() {
-    const metricsService = metricsFactory(new RootConfig({}));
-    actionEvent = new ActiveEventHandler(metricsService);
+export async function initMetrics() {
+    const commonUserMetrics = await collectCommonUserFields();
+    actionEvent = new ActiveEventHandler(metricsService, commonUserMetrics);
 }

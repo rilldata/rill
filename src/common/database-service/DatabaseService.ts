@@ -10,7 +10,6 @@ import {
     PickActionFunctions
 } from "$common/ServiceBase";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
-import type { ActionMetadata } from "$common/priority-action-queue/PriorityActionQueue";
 
 type DatabaseActionsClasses = PickActionFunctions<DatabaseMetadata, (
     DatabaseDataLoaderActions &

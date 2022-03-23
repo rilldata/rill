@@ -17,6 +17,8 @@ import {
 import {
     ApplicationStateService
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type { MetricsService } from "$common/metrics/MetricsService";
+import { MetricsSocketService } from "$common/socket/MetricsSocketService";
 
 export function dataModelerStateServiceClientFactory() {
     return new DataModelerStateService([],
@@ -29,10 +31,12 @@ export function dataModelerStateServiceClientFactory() {
 
 export function clientFactory(config: RootConfig): {
     dataModelerStateService: DataModelerStateService,
+    metricsService: MetricsService,
     dataModelerService: DataModelerService,
 } {
     const dataModelerStateService = dataModelerStateServiceClientFactory();
-    const dataModelerService = new DataModelerSocketService(dataModelerStateService, config.server);
+    const metricsService = new MetricsSocketService(config);
+    const dataModelerService = new DataModelerSocketService(dataModelerStateService, metricsService, config.server);
 
-    return {dataModelerStateService, dataModelerService};
+    return {dataModelerStateService, metricsService, dataModelerService};
 }

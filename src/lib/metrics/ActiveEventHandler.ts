@@ -1,4 +1,5 @@
 import type { MetricsService } from "$common/metrics/MetricsService";
+import type { CommonUserFields } from "$common/metrics/MetricsTypes";
 
 export class ActiveEventHandler {
     private isInFocus = true;
@@ -6,7 +7,8 @@ export class ActiveEventHandler {
     private focusCount = 0;
     private previousInFocusTime = 0;
 
-    public constructor(private metricsService: MetricsService) {
+    public constructor(private metricsService: MetricsService,
+                       private commonUserMetrics: CommonUserFields) {
         window.addEventListener("blur", () => {
             console.log("lost focus");
             this.isInFocus = false;
@@ -36,7 +38,7 @@ export class ActiveEventHandler {
         }
 
         this.metricsService.dispatch("activeEvent",
-            [this.focusDuration, this.focusCount]);
+            [this.commonUserMetrics, this.focusDuration, this.focusCount]);
 
         this.focusCount = 0;
         this.focusDuration = 0;

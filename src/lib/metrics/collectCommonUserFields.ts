@@ -1,7 +1,7 @@
-import type { CommonMetricsFields } from "$common/metrics/MetricsTypes";
 import UAParser from "ua-parser-js";
+import type { CommonUserFields } from "$common/metrics/MetricsTypes";
 
-export async function collectCommonMetricsFields(): Promise<CommonMetricsFields> {
+export async function collectCommonUserFields(): Promise<CommonUserFields> {
     const parser = new UAParser();
     const result = parser.getResult();
     return {
