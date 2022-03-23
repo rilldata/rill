@@ -93,7 +93,9 @@ let view = 'assets';
                   <div animate:flip>
                     <CollapsibleTableSummary
                       indentLevel={1}
-
+                      on:select={() => {
+                        dataModelerService.dispatch("setActiveAsset", [EntityType.Table, id]);
+                      }}
                       icon={ParquetIcon}
                       name={tableName}
                       cardinality={derivedTable?.cardinality ?? 0}

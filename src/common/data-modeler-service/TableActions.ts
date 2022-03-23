@@ -19,6 +19,7 @@ import { DatabaseActionQueuePriority } from "$common/priority-action-queue/Datab
 import { existsSync } from "fs";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { MODEL_PREVIEW_COUNT } from "$common/constants";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -111,7 +112,7 @@ export class TableActions extends DataModelerActions {
                     "getCardinalityOfTable", [persistentTable.tableName]),
                 async () => newDerivedTable.preview = await this.databaseActionQueue.enqueue(
                     {id: tableId, priority: DatabaseActionQueuePriority.TableProfile},
-                    "getFirstNOfTable", [persistentTable.tableName]),
+                    "getFirstNOfTable", [persistentTable.tableName, MODEL_PREVIEW_COUNT]),
             ].map(asyncFunc => asyncFunc()));
 
             this.dataModelerStateService.dispatch("updateEntity",

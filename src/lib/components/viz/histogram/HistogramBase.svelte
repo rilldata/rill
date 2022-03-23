@@ -70,20 +70,27 @@
 
     let histogramID = guidGenerator();
     </script>
+    
+    
     <svg {width} height={height} >
         <!-- histogram -->
         <g shape-rendering=crispEdges>
             {#each data as {low, high, count}, i}
-
+                {@const y      = Y(0) * (1-$tw) +  Y(count) * $tw} -->
+                {@const height = Math.min(Y(0), Y(0) * ($tw)   -  Y(count) * ($tw))}
                 {@const x      = X(low)  + separateQuantity}
                 {@const width  = X(high) - X(low) - separateQuantity * 2}
-                {@const y      = Y(0) * (1-$tw) +  Y(count) * $tw}
-                {@const height = Math.min(Y(0), Y(0) * ($tw)   -  Y(count) * ($tw))}
+                <!-- {@const y      = Y(count) }
+                {@const height = Math.min(Y(0), Y(0) - Y(count))} -->
                 
                 <rect x={x} {width} {y} {height} class={fillColor} />
 
             {/each}
             <line 
+                x1={left + vizOffset} 
+                x2={width * $tw - right - vizOffset} y1={Y(0) + buffer} y2={Y(0) + buffer} 
+                class={baselineStrokeColor} />
+                <line 
                 x1={left + vizOffset} 
                 x2={width * $tw - right - vizOffset} y1={Y(0) + buffer} y2={Y(0) + buffer} 
                 class={baselineStrokeColor} />

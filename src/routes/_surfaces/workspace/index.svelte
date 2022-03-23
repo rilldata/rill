@@ -3,6 +3,7 @@ import { getContext } from "svelte";
 import type { ApplicationStore } from "$lib/app-store";
 import DropZone from "$lib/components/DropZone.svelte";
 import ModelView from "./Model.svelte";
+import TableView from "./Table.svelte";
 // import MetricsDefinitionView from "./MetricsDefinition.svelte";
 // import ExploreView from "./Explore.svelte";
 import {dataModelerService} from "$lib/app-store";
@@ -14,6 +15,8 @@ const persistentModelStore = getContext('rill:app:persistent-model-store') as Pe
 
 {#if $store?.activeEntity?.type === EntityType.Model}
     <ModelView />
+{:else if $store?.activeEntity?.type === EntityType.Table}
+    <TableView />
 {:else}
 <DropZone
     padTop={!!$persistentModelStore?.entities.length}

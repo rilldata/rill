@@ -1,6 +1,7 @@
 <script lang="ts">
 import { getContext } from "svelte";
 import ModelInspector from "./Model.svelte";
+import TableInspector from "./Table.svelte";
 
 import type { ApplicationStore } from "$lib/app-store";
 
@@ -46,7 +47,11 @@ const store = getContext('rill:app:store') as ApplicationStore;
           {#key $store?.activeEntity?.id}
             <ModelInspector />
           {/key}
+      {:else if $store?.activeEntity?.type === EntityType.Table}
+        <TableInspector />
       {/if}
+
+      
     </div>
   </div>
  
