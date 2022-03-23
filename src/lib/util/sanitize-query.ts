@@ -1,4 +1,4 @@
-export function sanitizeQuery(query:string, toLower = true) {
+export function sanitizeQuery(query: string, toLower = true) {
     // remove comments;
     let noComments = query
         .replace(/--.*/g, ' ');
@@ -11,6 +11,10 @@ export function sanitizeQuery(query:string, toLower = true) {
     if (toLower) {
         output = output.toLowerCase();
     }
+    // disallow anything other than SELECT and CTEs.
+    if (!(output.match(/^SELECT/i) || output.match(/^WITH/i))) {
+        output = '';
+    }
     return output;
-    
+
 }

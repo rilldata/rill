@@ -25,5 +25,14 @@ SELECT 1, 2,     3 from         whateveR;
         `, false)
         expect(output).toBe('SELECT 1,2,3 from whateveR')
     })
+    it("disallows anything other than SELECT or WITH", () => {
+        const output = sanitizeQuery(`
+-- whatever this is
+CREATE TABLE test AS SELECT 1, 2
+-- another extraneous comment.        
+        `, false)
+        expect(output).toBe('')
+    })
+
 
 })
