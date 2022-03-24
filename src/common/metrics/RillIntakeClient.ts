@@ -3,10 +3,24 @@ import type { RootConfig } from "$common/config/RootConfig";
 import type { MetricsEvent } from "$common/metrics/MetricsTypes";
 
 export class RillIntakeClient {
-    public constructor(private readonly config: RootConfig) {}
+    private readonly authHeader: string;
+
+    public constructor(private readonly config: RootConfig) {
+        // this is the format rill-intake expects.
+        this.authHeader = "Basic " +
+            Buffer.from(`${config.metrics.rillIntakeUser}:${config.metrics.rillIntakePassword}`)
+                .toString("base64");
+    }
 
     public async fireEvent(event: MetricsEvent) {
-        console.log("RillIntakeClient", event);
-        // return axios.post(this.config.metrics.rillIntakeUrl, event);
+        try {
+            await axios.post(this.config.metrics.rillIntakeUrl, event, {
+                headers: {
+                    "Authorization": this.authHeader,
+                },
+            });
+        } catch (err) {
+            console.error(`Failed to send ${event.event_type}. ${err.message}`);
+        }
     }
 }

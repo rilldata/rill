@@ -1,5 +1,6 @@
 import type { MetricsService } from "$common/metrics/MetricsService";
 import type { CommonUserFields } from "$common/metrics/MetricsTypes";
+import type { RootConfig } from "$common/config/RootConfig";
 
 export class ActiveEventHandler {
     private isInFocus = true;
@@ -7,13 +8,15 @@ export class ActiveEventHandler {
     private focusCount = 0;
     private previousInFocusTime = 0;
 
-    public constructor(private metricsService: MetricsService,
-                       private commonUserMetrics: CommonUserFields) {
+    public constructor(private readonly config: RootConfig,
+                       private readonly metricsService: MetricsService,
+                       private readonly commonUserMetrics: CommonUserFields) {
         window.addEventListener("blur", () => {
             this.isInFocus = false;
             if (this.previousInFocusTime) {
                 this.focusDuration += Date.now() - this.previousInFocusTime;
             }
+            this.previousInFocusTime = 0;
         });
         window.addEventListener("focus", () => {
             this.isInFocus = true;
@@ -25,21 +28,22 @@ export class ActiveEventHandler {
         setTimeout(() => {
             setInterval(() => {
                 this.fireEvent();
-            }, 60 * 1000);
+            }, this.config.metrics.activeEventInterval * 1000);
         }, (60 - new Date().getSeconds()) * 1000);
     }
 
     private fireEvent() {
-        if (this.focusCount === 0) return;
         if (this.previousInFocusTime) {
             this.focusDuration += Date.now() - this.previousInFocusTime;
         }
 
-        this.metricsService.dispatch("activeEvent",
-            [this.commonUserMetrics, this.focusDuration, this.focusCount]);
+        if (this.focusCount > 0) {
+            this.metricsService.dispatch("activeEvent",
+                [this.commonUserMetrics, this.focusDuration, this.focusCount]);
+        }
 
         this.focusCount = 0;
         this.focusDuration = 0;
-        this.previousInFocusTime = 0;
+        this.previousInFocusTime = Date.now();
     }
 }
