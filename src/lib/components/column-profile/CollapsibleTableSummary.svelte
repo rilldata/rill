@@ -27,6 +27,7 @@ import { dropStore } from '$lib/drop-store';
 import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/column-profile/sort-utils"
 
 import { onClickOutside } from "$lib/util/on-click-outside";
+import { config } from "./utils";
 
 export let icon:SvelteComponent;
 export let name:string;
@@ -38,8 +39,9 @@ export let sizeInBytes:number;
 export let emphasizeTitle:boolean = false;
 export let draggable = true;
 export let show = false;
-
-let colSizer;
+export let showTitle = true;
+export let showContextButton = true;
+export let indentLevel = 0;
 
 const dispatch = createEventDispatcher();
 
@@ -98,6 +100,7 @@ let titleElementHovered = false;
 </script>
 
 <div bind:this={container}>
+    {#if showTitle}
     <div {draggable} 
         class="active:cursor-grabbing"
         on:dragstart={(evt) => {
@@ -201,48 +204,45 @@ let titleElementHovered = false;
             </FloatingElement>
         </div>
     {/if}
+    {/if}
+
     {#if show}
         <div class="pt-1 pb-3 pl-accordion" transition:slide|local={{duration: 120 }}>
-            <div  class='pl-6 pr-6 pt-2 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
-                <select bind:value={sortMethod} class={classes.NATIVE_SELECT}>
+            <!-- pl-16 -->
+            <div  class='pl-{indentLevel === 1 ? '10' : '4'} pr-5 pb-2 flex justify-between text-gray-500' class:flex-col={containerWidth < 325}>
+                <select style:transform="translateX(-4px)" bind:value={sortMethod} class={classes.NATIVE_SELECT}>
                     <option value={sortByOriginalOrder}>show original order</option>
                     <option value={defaultSort}>sort by type</option>
                     <option value={sortByNullity}>sort by null %</option>
                     <option value={sortByName}>sort by name</option>
                 </select>
-                <select bind:value={previewView} class={classes.NATIVE_SELECT} class:hidden={containerWidth < 325}>
-                    <option value="summaries">show summary</option>
+                <select style:transform="translateX(4px)" bind:value={previewView} class={classes.NATIVE_SELECT} class:hidden={containerWidth < 325}>
+                    <option value="summaries">show summary&nbsp;</option>
                     <option value="example">show example</option>
                 </select>
             </div>
 
-            <!-- <SummaryViewSelector bind:sortMethod bind:previewView /> -->
-
-            <div >
-                {#if sortedProfile}
+            <div>
+                {#if sortedProfile && sortedProfile.length && head.length}
                     {#each sortedProfile as column (column.name)}
-
                     <ColumnProfile
-                        example={head[0][column.name]}
+                        {indentLevel}
+                        example={head[0][column.name] || ''}
                         containerWidth={containerWidth}
 
-                        hideNullPercentage={containerWidth < 400}
-                        hideRight={containerWidth < 325}
-
-                        compactBreakpoint={350}
-
-
+                        hideNullPercentage={containerWidth < config.hideNullPercentage}
+                        hideRight={containerWidth < config.hideRight}
+                        compactBreakpoint={config.compactBreakpoint}
                         view={previewView}
-
                         name={column.name}
                         type={column.type}
                         summary={column.summary}
                         totalRows={cardinality}
                         nullCount={column.nullCount}
                     >
-                        <svelte:fragment slot="context-button">
-                            <Spacer />
-                        </svelte:fragment>
+                        <button slot="context-button" class:hidden={!showContextButton}>
+                                <Spacer size="16px" />
+                        </button>
                     </ColumnProfile>
 
                     

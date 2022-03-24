@@ -7,8 +7,8 @@ export let active = false;
 export let emphasize = false;
 export let hideRight = false;
 
-export let left = 8 // "pl-8";
-export let right = 2 // pr-2";
+export let left = 8 // "pl-8 pl-10";
+export let right = 4 // pr-2";
 
 </script>
 
@@ -23,18 +23,18 @@ export let right = 2 // pr-2";
         hover:bg-gray-100 
         focus:bg-gray-100
         focus:ring-gray-500
-        focus:outline-gray-300
+        focus:outline-gray-300 flex-1
         justify-between w-full"
     class:bg-gray-50={active}
     on:click={(event) => {
         dispatch('select', event.shiftKey);
     }}
 >
-    <div class="flex gap-2 grow overflow-hidden items-baseline">
+    <div class="flex gap-2 grow items-baseline flex-1" style:min-width="0px">
         <div class="self-center flex items-center">
             <slot name="icon"></slot>
         </div>
-        <div class:font-bold={emphasize} class="text-ellipsis overflow-hidden whitespace-nowrap">
+        <div class:font-bold={emphasize} class="justify-items-stretch shrink w-full text-left flex-1" style:min-width="0px">
             <slot name="left" />
         </div>
     </div>

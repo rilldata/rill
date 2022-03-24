@@ -21,6 +21,7 @@ export let id:string;
         text-gray-500
         duration-100
         grid
+        p-0
         items-center
         justify-center
         border

@@ -45,18 +45,18 @@ let active = false;
 export function close() {
     active = false;
 }
-$: exampleWidth = containerWidth > 300 ? config.exampleWidth.medium : config.exampleWidth.small;
+$: exampleWidth = containerWidth > config.mediumCutoff ? config.exampleWidth.medium : config.exampleWidth.small;
 $: summaryWidthSize = config.summaryVizWidth[containerWidth < compactBreakpoint ? 'small' : 'medium'];
-$: cardinalityFormatter = containerWidth > compactBreakpoint ? formatInteger : formatCompactInteger;
+$: cardinalityFormatter = containerWidth > config.compactBreakpoint ? formatInteger : formatCompactInteger;
 
 let titleTooltip;
 
 let shiftClicked = transientBooleanStore();
 </script>
 
-
+    <!-- pl-10 -->
     <ColumnEntry
-    left={indentLevel === 1 ? 8 : 5}
+    left={indentLevel === 1 ? 10 : 4}
     {hideRight}
     {active}
     emphasize={active}
@@ -80,12 +80,12 @@ let shiftClicked = transientBooleanStore();
     </svelte:fragment>
 
     <svelte:fragment slot="left">
-        <Tooltip location="right" alignment="center" distance={8} bind:active={titleTooltip}>
+        <Tooltip location="right" alignment="center" distance={40} bind:active={titleTooltip}>
             <!-- Wrap in a traditional div then force the ellipsis overflow in the child element.
                 this will make the tooltip bound to the parent element while the child element can flow more freely
                 and create the ellipisis due to the overflow.
             -->
-            <div>
+            <div style:width="100%">
                 <div class="column-profile-name text-ellipsis overflow-hidden whitespace-nowrap">
                     {name}
                 </div>
@@ -209,34 +209,48 @@ let shiftClicked = transientBooleanStore();
             pl-8 text-ellipsis overflow-hidden whitespace-nowrap text-right" style:max-width="{exampleWidth}px"
         >
                 <FormattedDataType {type} isNull={example === null}>
-                    {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example}
+                    {#if TIMESTAMPS.has(type)}
+                        {standardTimestampFormat(new Date(example))}
+                    {:else if CATEGORICALS.has(type) && example === ''}
+                        <span class="text-gray-400 italic">{"<"}empty string{">"}</span>
+                    {:else}
+                        {example}
+                    {/if}
+                    <!-- {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example} -->
                 </FormattedDataType>
         </div>
         <TooltipContent slot="tooltip-content" >
-            {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : `${example}`.slice(0, 50)}
+            {#if TIMESTAMPS.has(type)}
+                {standardTimestampFormat(new Date(example))}
+            {:else if CATEGORICALS.has(type) && example === ''}
+                <span>{"<"}empty string{">"}</span>
+            {:else}
+                {example}
+            {/if}
         </TooltipContent>
         </Tooltip>
     </svelte:fragment>
 
     <svelte:fragment slot="context-button">
-        <slot name="context-button"></slot>
+        <slot name="context-button">
+        </slot>
     </svelte:fragment>
 
     <svelte:fragment slot="details">
         {#if active}
         <div transition:slide|local={{duration: 200}} class="pt-3 pb-3  w-full">
             {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.topK}
-                <div class="pl-{indentLevel ===  1 ? 16 : 8} pr-8 w-full">
+                <div class="pl-{indentLevel ===  1 ? 16 : 10} pr-4 w-full">
                     <!-- pl-16 pl-8 -->
-                    <TopKSummary color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
+                    <TopKSummary {containerWidth} color={DATA_TYPE_COLORS['VARCHAR'].bgClass} {totalRows} topK={summary.topK} />
                 </div>
 
             {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram?.length}
-            <div class="pl-{indentLevel === 1 ? 12 : 5}">
+            <div class="pl-{indentLevel === 1 ? 12 : 4}">
                 <!-- pl-12 pl-5 -->
                 <!-- FIXME: we have to remove a bit of pad from the right side to make this work -->
                 <NumericHistogram
-                    width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32)}
+                    width={containerWidth - (indentLevel === 1 ? (20 + 24 + 44 ): 32)}
                     height={65} 
                     data={summary.histogram}
                     min={summary.statistics.min}
@@ -248,11 +262,11 @@ let shiftClicked = transientBooleanStore();
                 />
             </div>
             {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
-                <div class="pl-{indentLevel === 1 ? 14 : 10}">
+                <div class="pl-{indentLevel === 1 ? 16 : 10}">
                     <!-- pl-14 pl-10 -->
                     <TimestampHistogram
                         {type}
-                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 32 ): 32 + 20)}
+                        width={containerWidth - (indentLevel === 1 ? (20 + 24 + 54 ): 32 + 20)}
                         data={summary.histogram}
                         interval={summary.interval}
                     />

@@ -55,7 +55,8 @@ function togglePin(name, type, selectedCols) {
 
 </script>
 
-<div class='flex relative bg-gray-100'>
+<div 
+    class='flex relative'>
     
     <Table on:mouseleave={() => { visualCellValue = undefined; }}>
         <!-- headers -->

@@ -13,8 +13,11 @@
     color: white;
 }
 
+html {
+    @apply bg-gray-400;
+}
+
 body {
-    @apply bg-gray-100;
     font-family: "MD IO";
     font-size: 12px;
 
@@ -38,6 +41,10 @@ body {
     --error-text: hsl(1, 60%, 30%);
 
     overscroll-behavior: none;
+}
+
+.body {
+    background-color: blue;
 }
 
 button {

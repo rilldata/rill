@@ -35,7 +35,7 @@ const store = getContext('rill:app:store') as ApplicationStore;
         <div 
           class='fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen' 
           style:right="{(1- $inspectorVisibilityTween) * $layout.inspectorWidth}px"
-          use:drag={{ minSize: 400, side: 'inspectorWidth', reverse: true }} />
+          use:drag={{ minSize: 300, side: 'inspectorWidth', reverse: true }} />
       </Portal>
     {/if}
     

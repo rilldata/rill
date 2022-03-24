@@ -42,12 +42,12 @@ let innerHeight;
 
 <svelte:window bind:innerHeight />
 
-<div class="editor-pane">
+<div class="editor-pane bg-gray-100">
   <div  
     style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px - var(--header-height))"
   >
   {#if $store && $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
-    <div class="h-full grid p-6 pt-0 overflow-auto">
+    <div class="h-full grid p-5 pt-0 overflow-auto">
       {#key currentModel?.id}
         <Editor 
           content={currentModel.query}
@@ -80,7 +80,7 @@ let innerHeight;
 </div>
 
 {#if $modelPreviewVisible}
-<Portal>
+<Portal target=".body">
   <div
   class='fixed z-50 drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2'
   style:bottom="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
@@ -100,9 +100,9 @@ let innerHeight;
 {#if currentModel}
     <div
       style:height="{(1 - $modelPreviewVisibilityTween) * $layout.modelPreviewHeight}px"
-      class="p-6"
+      class="p-6 "
     >
-    <div class="rounded overflow-auto  h-full  {!showPreview && 'hidden'}"
+    <div class="rounded border border-gray-200 border-2  overflow-auto  h-full  {!showPreview && 'hidden'}"
      class:border={!!currentDerivedModel?.error}
     class:border-gray-300={!!currentDerivedModel?.error}
      >

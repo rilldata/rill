@@ -23,10 +23,10 @@ export let icon:SvelteComponent;
         {selected ? 'bg-gray-100' : 'bg-transparent'}
         grid
         grid-flow-col
-        gap-1
+        gap-2
         items-center
         hover:bg-gray-200
-        pl-3 pr-5 
+        pl-4 pr-4 
     "
 >
     {#if expandable}
@@ -44,17 +44,10 @@ export let icon:SvelteComponent;
             w-full 
             justify-start
             text-left 
-            grid  gap-2
+            grid 
             items-center
-            p-0 pr-1"
+            p-0"
         >
-        {#if icon}
-            <div 
-                style:grid-column="icon" 
-                class="text-gray-400">
-                <svelte:component this={icon} size=14px />
-            </div>
-        {/if}
         <div
             style:grid-column="text"
             class="
