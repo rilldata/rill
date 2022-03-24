@@ -72,7 +72,12 @@ export function metricsServiceFactory(config: RootConfig, dataModelerStateServic
 
 export function dataModelerServiceFactory(config: RootConfig) {
     if (existsSync(LocalConfigFile)) {
-        config.local = JSON.parse(readFileSync(LocalConfigFile).toString());;
+        config.local = JSON.parse(readFileSync(LocalConfigFile).toString());
+    }
+    try {
+        config.local.version = JSON.parse(readFileSync("package.json").toString()).version;
+    } catch (err) {
+        console.error(err);
     }
 
     const databaseService = databaseServiceFactory(config);

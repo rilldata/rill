@@ -53,8 +53,8 @@ export class MetricsService implements ActionServiceBase<MetricsActionDefinition
         return {
             app_name: this.config.metrics.appName,
             install_id: this.config.local.installId,
-            build_id: "",
-            version: "",
+            build_id: this.config.local.version,
+            version: this.config.local.version,
             project_id: applicationState.projectId,
             model_id: applicationState.activeEntity?.type === EntityType.Model ?
                 applicationState.activeEntity.id : "",
