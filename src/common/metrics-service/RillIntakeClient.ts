@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { RootConfig } from "$common/config/RootConfig";
-import type { MetricsEvent } from "$common/metrics/MetricsTypes";
+import type { MetricsEvent } from "$common/metrics-service/MetricsTypes";
 
 export class RillIntakeClient {
     private readonly authHeader: string;

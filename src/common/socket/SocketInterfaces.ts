@@ -4,7 +4,7 @@ import type { Notification } from "$common/notifications/NotificationService";
 import type { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityTypeAndStates } from "$common/data-modeler-state-service/DataModelerStateService";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
-import type { MetricsActionDefinition } from "$common/metrics/MetricsService";
+import type { MetricsActionDefinition } from "$common/metrics-service/MetricsService";
 
 export interface ServerToClientEvents {
   patch: (entityType: EntityType, stateType: StateType, patches: Array<Patch>) => void;

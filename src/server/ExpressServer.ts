@@ -5,7 +5,7 @@ import { SocketServer } from "$common/socket/SocketServer";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import type { MetricsService } from "$common/metrics/MetricsService";
+import type { MetricsService } from "$common/metrics-service/MetricsService";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 

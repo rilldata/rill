@@ -6,7 +6,7 @@ import type {DataModelerStateService} from "$common/data-modeler-state-service/D
 import type {ServerConfig} from "$common/config/ServerConfig";
 import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
-import type { MetricsActionDefinition } from "$common/metrics/MetricsService";
+import type { MetricsActionDefinition } from "$common/metrics-service/MetricsService";
 import type { MetricsSocketService } from "$common/socket/MetricsSocketService";
 
 /**

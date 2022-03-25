@@ -32,9 +32,9 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
-import { ProductHealthEventFactory } from "$common/metrics/ProductHealthEventFactory";
-import { MetricsService } from "$common/metrics/MetricsService";
-import { RillIntakeClient } from "$common/metrics/RillIntakeClient";
+import { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
+import { MetricsService } from "$common/metrics-service/MetricsService";
+import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { LocalConfig} from "$common/config/LocalConfig";
 import { existsSync, readFileSync } from "fs";
 import { LocalConfigFile } from "$common/config/ConfigFolders";

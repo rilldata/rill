@@ -6,12 +6,12 @@ import { TestBase } from "@adityahegde/typescript-test-utils";
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import type { SinonStub } from "sinon";
 import { assert, useFakeTimers } from "sinon";
-import { RillIntakeClient } from "$common/metrics/RillIntakeClient";
+import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { RootConfig } from "$common/config/RootConfig";
 import { ActiveEventHandler } from "$lib/metrics/ActiveEventHandler";
 import { dataModelerStateServiceFactory, metricsServiceFactory } from "$common/serverFactory";
 import { asyncWait } from "$common/utils/waitUtils";
-import type { ActiveEvent } from "$common/metrics/MetricsTypes";
+import type { ActiveEvent } from "$common/metrics-service/MetricsTypes";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
@@ -142,7 +142,8 @@ export class ActiveEventHandlerSpec extends TestBase {
             build_id: "",
             version: "",
             project_id: applicationState.projectId,
-            model_id,
+            entity_type: model_id ? "Model" : "",
+            entity_id: model_id,
             event_type: "active",
             duration_sec,
             total_in_focus,

@@ -1,5 +1,5 @@
-import type { MetricsService } from "$common/metrics/MetricsService";
-import type { CommonUserFields } from "$common/metrics/MetricsTypes";
+import type { MetricsService } from "$common/metrics-service/MetricsService";
+import type { CommonUserFields } from "$common/metrics-service/MetricsTypes";
 import type { RootConfig } from "$common/config/RootConfig";
 
 export class ActiveEventHandler {

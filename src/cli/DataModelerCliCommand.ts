@@ -11,7 +11,7 @@ import {
 } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import { clientFactory } from "$common/clientFactory";
 import { isPortOpen } from "$common/utils/isPortOpen";
-import type { MetricsService } from "$common/metrics/MetricsService";
+import type { MetricsService } from "$common/metrics-service/MetricsService";
 
 const DATABASE_NAME = "stage.db";
 

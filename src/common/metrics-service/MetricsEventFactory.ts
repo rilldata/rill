@@ -1,6 +1,6 @@
 import type { RootConfig } from "$common/config/RootConfig";
-import type { CommonUserFields, MetricsEvent } from "$common/metrics/MetricsTypes";
-import type { CommonFields } from "$common/metrics/MetricsTypes";
+import type { CommonUserFields, MetricsEvent } from "$common/metrics-service/MetricsTypes";
+import type { CommonFields } from "$common/metrics-service/MetricsTypes";
 
 export class MetricsEventFactory {
     public constructor(protected readonly config: RootConfig) {}

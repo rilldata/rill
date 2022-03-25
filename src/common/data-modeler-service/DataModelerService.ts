@@ -14,7 +14,7 @@ import type { ActionResponse } from "$common/data-modeler-service/response/Actio
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
 import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import type { MetricsActionDefinition, MetricsService } from "$common/metrics/MetricsService";
+import type { MetricsActionDefinition, MetricsService } from "$common/metrics-service/MetricsService";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &

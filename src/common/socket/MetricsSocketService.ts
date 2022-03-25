@@ -1,5 +1,5 @@
-import { MetricsService } from "$common/metrics/MetricsService";
-import type { MetricsActionDefinition } from "$common/metrics/MetricsService";
+import { MetricsService } from "$common/metrics-service/MetricsService";
+import type { MetricsActionDefinition } from "$common/metrics-service/MetricsService";
 import type { Socket } from "socket.io-client";
 import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
 import type { RootConfig } from "$common/config/RootConfig";

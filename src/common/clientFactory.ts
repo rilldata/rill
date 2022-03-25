@@ -17,7 +17,7 @@ import {
 import {
     ApplicationStateService
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import type { MetricsService } from "$common/metrics/MetricsService";
+import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { MetricsSocketService } from "$common/socket/MetricsSocketService";
 
 export function dataModelerStateServiceClientFactory() {

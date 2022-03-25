@@ -1,11 +1,11 @@
 import type { ActionServiceBase, ExtractActionTypeDefinitions, PickActionFunctions } from "$common/ServiceBase";
 import { getActionMethods } from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
-import type { MetricsEventFactory } from "$common/metrics/MetricsEventFactory";
-import type { ProductHealthEventFactory } from "$common/metrics/ProductHealthEventFactory";
-import type { RillIntakeClient } from "$common/metrics/RillIntakeClient";
+import type { MetricsEventFactory } from "$common/metrics-service/MetricsEventFactory";
+import type { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
+import type { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import type { CommonFields, MetricsEvent } from "$common/metrics/MetricsTypes";
+import type { CommonFields, MetricsEvent } from "$common/metrics-service/MetricsTypes";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 /**
@@ -53,11 +53,11 @@ export class MetricsService implements ActionServiceBase<MetricsActionDefinition
         return {
             app_name: this.config.metrics.appName,
             install_id: this.config.local.installId,
-            build_id: this.config.local.version,
-            version: this.config.local.version,
+            build_id: this.config.local.version ?? "",
+            version: this.config.local.version ?? "",
             project_id: applicationState.projectId,
-            model_id: applicationState.activeEntity?.type === EntityType.Model ?
-                applicationState.activeEntity.id : "",
-        }
+            entity_type: applicationState.activeEntity?.type ?? "",
+            entity_id: applicationState.activeEntity?.id ?? "",
+        };
     }
 }

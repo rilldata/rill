@@ -1,5 +1,5 @@
-import { MetricsEventFactory } from "$common/metrics/MetricsEventFactory";
-import type { ActiveEvent, CommonFields, CommonUserFields } from "$common/metrics/MetricsTypes";
+import { MetricsEventFactory } from "$common/metrics-service/MetricsEventFactory";
+import type { ActiveEvent, CommonFields, CommonUserFields } from "$common/metrics-service/MetricsTypes";
 
 export class ProductHealthEventFactory extends MetricsEventFactory {
     public activeEvent(commonFields: CommonFields, commonUserFields: CommonUserFields,

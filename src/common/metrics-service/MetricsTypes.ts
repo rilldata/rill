@@ -4,7 +4,8 @@ export interface CommonFields {
     build_id: string;
     version: string;
     project_id: string;
-    model_id: string;
+    entity_type: string;
+    entity_id: string;
 }
 
 export interface CommonUserFields {
