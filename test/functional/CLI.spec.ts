@@ -35,7 +35,6 @@ export class CLISpec extends FunctionalTestBase {
         expect(existsSync(`${CLI_TEST_FOLDER}/stage.db`));
     }
 
-    // @FunctionalTestBase.Test()
     public async shouldAddTables(): Promise<void> {
         await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
         await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
