@@ -8,10 +8,12 @@ import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/Je
 import { PlaywrightSuiteSetup } from "@adityahegde/typescript-test-utils/dist/playwright/PlaywrightSuiteSetup";
 import { DataProviderData, TestBase, TestSuiteSetup, TestSuiteParameter } from "@adityahegde/typescript-test-utils";
 import { waitUntil } from "$common/utils/waitUtils";
+import { isPortOpen } from "$common/utils/isPortOpen";
 
 const execPromise = promisify(exec);
 
 const PORT = 8080;
+const DEV_PORT = 3000;
 const URL = `http://localhost:${PORT}/`;
 const CLI_TEST_FOLDER = 'temp/test-ui';
 const DATA_MODELER_CLI = './node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts';
@@ -34,6 +36,14 @@ class ServerSetup extends TestSuiteSetup {
   }
 
   public async setupSuite(testSuiteParameter: TestSuiteParameter): Promise<void> {
+    // Test to see if server is already running on PORT.
+    [PORT, DEV_PORT].forEach(async port => {
+      if (await isPortOpen(port)) {
+        console.error(`Cannot run UI tests, server is already running on ${port}`);
+        process.exit(1);
+      }
+    });
+
     await execPromise(`mkdir -p ${CLI_TEST_FOLDER}`);
     await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
 
