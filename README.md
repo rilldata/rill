@@ -84,6 +84,11 @@ If you would like to see information on all of the available CLI commands, you c
 npm run cli --silent -- --help
 ```
 
+# Legal
+
+By downloading and using our application you are agreeing to the Rill [Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
+
+
 # Application Developers
 If you are a developer helping us build the application, please visit our [DEVELOPER-GUIDE.md](https://github.com/gorillio/data-modeler-prototype/blob/main/DEVELOPER-GUIDE.md).
 
