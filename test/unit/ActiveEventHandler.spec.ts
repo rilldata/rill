@@ -17,8 +17,6 @@ import { EntityType, StateType } from "$common/data-modeler-state-service/entity
 
 const CommonUserMetricsData = {
     browser: "chrome",
-    city: "bangalore",
-    country_code: "IN",
     device_model: "mac",
     os: "macos",
     locale: "en-US",

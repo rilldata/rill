@@ -9,8 +9,6 @@ export interface CommonFields {
 }
 
 export interface CommonUserFields {
-    country_code: string;
-    city: string;
     locale: string;
     browser: string;
     os: string;

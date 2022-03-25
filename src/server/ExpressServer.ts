@@ -29,6 +29,12 @@ export class ExpressServer {
         if (config.server.serveStaticFile) {
             this.app.use(express.static(STATIC_FILES));
         }
+
+        this.app.get("/ip-lookup", (req, res) => {
+            console.log(req.headers['x-forwarded-for'] ||
+                req.socket.remoteAddress);
+            res.send("OK");
+        });
     }
 
     public async init(): Promise<void> {
