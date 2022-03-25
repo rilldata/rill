@@ -5,6 +5,7 @@ import { InitCommand } from "$cli/InitCommand";
 import { ImportTableCommand } from "$cli/ImportTableCommand";
 import { StartCommand } from "$cli/StartCommand";
 import { InfoCommand } from "$cli/InfoCommand";
+import { DropTableCommand } from "$cli/DropTableCommand";
 
 const program = new Command();
 
@@ -17,7 +18,7 @@ program
     // common across all commands
     .option("--project <projectPath>", "Optional path of project. Defaults to current directory.");
 
-[InitCommand, ImportTableCommand, StartCommand, InfoCommand].forEach(
+[InitCommand, ImportTableCommand, StartCommand, DropTableCommand, InfoCommand].forEach(
     CommandClass => program.addCommand(new CommandClass().getCommand())
 );
 

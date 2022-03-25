@@ -55,6 +55,13 @@ npm run cli --silent -- start --project /path/to/project
 ```
 `--project` is optional. Will default to current directory if not specified.
 
+### Dropping a table
+```
+# Drop a table 'tableToDrop' from project under /path/to/project
+npm run cli --silent -- drop-table tableToDrop --project /path/to/project
+```
+`--project` is optional. Will default to current directory if not specified.
+
 # Developer Guide
 
 ## Getting started
