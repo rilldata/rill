@@ -29,7 +29,6 @@ export class CLISpec extends FunctionalTestBase {
         await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
     }
 
-    // @FunctionalTestBase.Test()
     public async shouldInitProject(): Promise<void> {
         await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
         expect(existsSync(`${CLI_TEST_FOLDER}/persistent_table_state.json`));
