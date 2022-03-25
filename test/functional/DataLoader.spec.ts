@@ -9,6 +9,8 @@ import {DATA_FOLDER} from "../data/generator/data-constants";
 import { extractFileExtension, extractTableName } from "$lib/util/extract-table-name";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
+import { asyncWait } from "$common/utils/waitUtils";
 
 const UserFile = "data/Users.csv";
 
@@ -64,5 +66,32 @@ export class DataLoaderSpec extends FunctionalTestBase {
         expect(table).toBeUndefined();
         expect(response.status).toBe(ActionStatus.Failure);
         expect(response.messages[0].errorType).toBe(ActionErrorType.ImportTable);
+    }
+
+    @TestBase.Test()
+    public async shouldDropTable(): Promise<void> {
+        await Promise.all([
+            this.clientDataModelerService.dispatch(
+                "addOrUpdateTableFromFile", ["data/AdBids.csv"]),
+            this.clientDataModelerService.dispatch(
+                "addOrUpdateTableFromFile", ["data/AdImpressions.csv"]),
+        ])
+        await this.clientDataModelerService.dispatch("addModel",
+            [{name: "query_0", query: SingleTableQuery}]);
+        await this.waitForTables();
+        await this.waitForModels();
+
+        await this.clientDataModelerService.dispatch(
+            "dropTable", ["AdImpressions"]);
+        await asyncWait(100);
+
+        const [table, derivedTable] = this.getTables("tableName", "AdImpressions");
+        expect(table).toBeUndefined();
+        expect(derivedTable).toBeUndefined();
+
+        const [model] = this.getModels("tableName", "query_0");
+        const response = await this.clientDataModelerService.dispatch(
+            "updateModelQuery", [model.id, TwoTableJoinQuery]);
+        expect(response.status).toBe(ActionStatus.Failure);
     }
 }

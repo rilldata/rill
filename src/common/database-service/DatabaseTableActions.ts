@@ -38,4 +38,8 @@ export class DatabaseTableActions extends DatabaseActions {
     public async validateQuery(metadata: DatabaseMetadata, query: string): Promise<void> {
         return this.databaseClient.prepare(query);
     }
+
+    public async dropTable(metadata: DatabaseMetadata, tableName: string): Promise<any> {
+        await this.databaseClient.execute(`DROP TABLE ${tableName}`);
+    }
 }

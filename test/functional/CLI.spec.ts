@@ -29,14 +29,12 @@ export class CLISpec extends FunctionalTestBase {
         await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
     }
 
-    @FunctionalTestBase.Test()
     public async shouldInitProject(): Promise<void> {
         await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
         expect(existsSync(`${CLI_TEST_FOLDER}/persistent_table_state.json`));
         expect(existsSync(`${CLI_TEST_FOLDER}/stage.db`));
     }
 
-    @FunctionalTestBase.Test()
     public async shouldAddTables(): Promise<void> {
         await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
         await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
@@ -50,5 +48,21 @@ export class CLISpec extends FunctionalTestBase {
         this.assertColumns(derivedState.entities[0].profile, AdBidsColumnsTestData);
         expect(persistentState.entities[1].name).toBe("Impressions");
         this.assertColumns(derivedState.entities[1].profile, AdImpressionColumnsTestData);
+    }
+
+    @FunctionalTestBase.Test()
+    public async shouldDropTable(): Promise<void> {
+        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
+        await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
+
+        let persistentState: PersistentTableState =
+            JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
+        expect(persistentState.entities[0].name).toBe("AdBids");
+
+        await execPromise(`${DATA_MODELER_CLI} drop-table AdBids ${CLI_TEST_FOLDER_ARG}`);
+
+        persistentState = JSON.parse(readFileSync(
+            `${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
+        expect(persistentState.entities.length).toBe(0);
     }
 }
