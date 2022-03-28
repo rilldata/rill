@@ -1,4 +1,4 @@
-Thank you for trying the Rill Developer Tech Preview! 
+Thank you for trying the Rill Developer tech preview! 
 
 We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
@@ -24,11 +24,10 @@ npm run build
 ```
 
 # Quick Start Example
-If you are looking for a fast way to get started you can run our quick start example script. This script initializes a project, downloads an OpenSky Network dataset at https://zenodo.org/record/6325961#.YjDFvhDMI0Q, imports the data, and launches Rill Developer.
+If you are looking for a fast way to get started you can run our quick start example script. This script initializes a project, downloads an OpenSky Network dataset at https://zenodo.org/record/6325961#.YjDFvhDMI0Q, and imports the data. The Rill Developer UI will be available at http://localhost:8080.
 ```
 bash scripts/example-project.sh
 ```
-Rill Developer UI will be available at http://localhost:8080.
 
 If you close the example project and want to restart it, you can do so by running:
 ```
@@ -43,7 +42,7 @@ Initialize your project in the Rill Developer directory.
 npm run cli --silent -- init
 ```
 ## Import Your Data
-Import datasets of interest into the Rill Developer duckDB database to make them available. We currently support .parquet, .csv, and .tsv.
+Import datasets of interest into the Rill Developer [duckDB](https://duckdb.org/docs/sql/introduction) database to make them available. We currently support .parquet, .csv, and .tsv.
 ```
 npm run cli --silent -- import-table /path/to/data_1.parquet
 npm run cli --silent -- import-table /path/to/data_2.csv
