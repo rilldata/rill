@@ -1,6 +1,6 @@
-Thank you for trying the Rill Tech Preview! 
+Thank you for trying the Rill Developer Tech Preview! 
 
-We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4.
+We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 # Prerequisites
 Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
@@ -9,13 +9,13 @@ node -v
 ```
 Clone this repository to your local machine:
 ```
-git clone https://github.com/rilldata/data-modeler-prototype.git
+git clone https://github.com/rilldata/rill-developer.git
 ```
 
 # Install Locally
-Change directories to the local Rill repository
+Change directories to the local Rill Developer repository
 ```
-cd /path/to/rill
+cd /path/to/rill-developer
 ```
 Run npm to install dependencies and build the application. This will take ~5 minutes to complete.
 ```
@@ -24,26 +24,26 @@ npm run build
 ```
 
 # Quick Start Example
-If you are looking for a fast way to get started you can run our quick start example script. This script initializes a project, downloads an OpenSky Network dataset at https://zenodo.org/record/6325961#.YjDFvhDMI0Q, imports the data, and launches the data modeler.
+If you are looking for a fast way to get started you can run our quick start example script. This script initializes a project, downloads an OpenSky Network dataset at https://zenodo.org/record/6325961#.YjDFvhDMI0Q, imports the data, and launches Rill Developer.
 ```
 bash scripts/example-project.sh
 ```
-The Data Modeler UI will be available at http://localhost:8080.
+Rill Developer UI will be available at http://localhost:8080.
 
 If you close the example project and want to restart it, you can do so by running:
 ```
-npm run cli --silent -- start --project ../rill-example
+npm run cli --silent -- start --project ../rill-developer-example
 ```
 
 # Creating Your Own Project
 If you want to go beyond this example, you can also create a project using your own data.
 ## Initialize Your Project
-Initialize your project in the Rill directory.
+Initialize your project in the Rill Developer directory.
 ```
 npm run cli --silent -- init
 ```
 ## Import Your Data
-Import datasets of interest into the Rill Data Modeler's duckDB database to make them available. We currently support .parquet, .csv, and .tsv.
+Import datasets of interest into the Rill Developer duckDB database to make them available. We currently support .parquet, .csv, and .tsv.
 ```
 npm run cli --silent -- import-table /path/to/data_1.parquet
 npm run cli --silent -- import-table /path/to/data_2.csv
@@ -54,13 +54,13 @@ Start the User Interface to interact with your imported tables and revisit proje
 ```
 npm run cli --silent -- start
 ```
-The Data Modeler UI will be available at http://localhost:8080.
+The Rill Developer UI will be available at http://localhost:8080.
 
-# Data Modeler SQL Dialect
-The Data Modeler is powered by duckDB. Please visit their documentation for insight into their dialect of SQL to facilitate data modeling at https://duckdb.org/docs/sql/introduction.
+# Rill Developer SQL Dialect
+Rill Developer is powered by duckDB. Please visit their documentation for insight into their dialect of SQL to facilitate your queries at https://duckdb.org/docs/sql/introduction.
 
-# Updating the Data Modeler
-The Data Modeler will be evolving quickly! If you want an updated version, you can pull in the latest changes and rebuild the application. Once you have rebuilt the application you can restart your project to see the new experience.
+# Updating the Rill Developer
+Rill Developer will be evolving quickly! If you want an updated version, you can pull in the latest changes and rebuild the application. Once you have rebuilt the application you can restart your project to see the new experience.
 ```
 git pull origin main
 npm run build
@@ -92,5 +92,4 @@ By downloading and using our application you are agreeing to the Rill [Terms of 
 
 
 # Application Developers
-If you are a developer helping us build the application, please visit our [DEVELOPER-GUIDE.md](https://github.com/rilldata/data-modeler-prototype/blob/main/DEVELOPER-GUIDE.md).
-
+If you are a developer helping us build the application, please visit our [DEVELOPER-GUIDE.md](https://github.com/rilldata/rill-developer/blob/main/DEVELOPER-GUIDE.md).
