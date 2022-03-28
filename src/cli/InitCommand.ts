@@ -29,7 +29,7 @@ export class InitCommand extends DataModelerCliCommand {
             // add a single model.
             this.dataModelerService.dispatch("addModel", [{}]);
             // make that model active.
-            console.log("\nYou have successfully initialized a new project with the Rill Data Modeler.");
+            console.log("\nYou have successfully initialized a new project with the Rill Developer.");
         } else {
             console.log("\nA project in this directory has already been initialized.");
         }
