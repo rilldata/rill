@@ -44,7 +44,7 @@ export type EntityTypeAndStates = Array<[
 ]>;
 
 /**
- * Lower order actions that update the data modeler state directly and somewhat atomically.
+ * Lower order actions that update the Rill Developer state directly and somewhat atomically.
  * Use dispatch for taking actions.
  *
  * Takes an array of {@link StateActions} instances.

@@ -1,7 +1,7 @@
 /**
  * The goal of this test suite is to have coverage for the 
  * state transformations that result from dataset API calls.
- * We mock the API calls here & check that the correct part of the data modeler
+ * We mock the API calls here & check that the correct part of the Rill Developer
  * state is updated.
  */
 import { getByID, createDatasetActions } from "../dataset"

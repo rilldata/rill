@@ -30,7 +30,7 @@ import { ApplicationConfigFolder, LocalConfigFile } from "$common/config/ConfigF
 
     // We should instead move this to UI
     // configObject.sendTelemetryData = await cliConfirmation(
-    //     "We collect usage info to improve the data modeler. " +
+    //     "We collect usage info to improve Rill Developer. " +
     //     "Send anonymous tracking data? (y/N)");
 
     writeFileSync(LocalConfigFile, JSON.stringify(configObject));
