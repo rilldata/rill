@@ -101,6 +101,7 @@ export class ModelActions extends DataModelerActions {
         if (!model) {
             return ActionResponseFactory.getEntityError(`No model found for ${modelId}`);
         }
+        if (!model.sanitizedQuery) return;
         this.databaseActionQueue.clearQueue(modelId);
 
         try {
