@@ -7,6 +7,7 @@
 		"build": "svelte-kit build && tsc --project tsconfig.node.json",
 		"prepack": "./build-tools/replace_package_type.sh module commonjs",
 		"postpack": "./build-tools/replace_package_type.sh commonjs module",
+		"postinstall": "ts-node-dev --quiet --project tsconfig.node.json src/cli/post-install.ts",
 		"install-and-build": "npm install && npm run build",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
@@ -17,7 +18,8 @@
 		"start": "electron ./electron.cjs",
 		"duckdb": "node ./server/server.duckdb.js",
 		"server": "ts-node-dev --project tsconfig.node.json -- src/server/server.ts",
-		"test": "jest --testPathIgnorePatterns test/ui; npm run test:ui",
+		"test": "npm run test:backend; npm run test:ui",
+		"test:backend": "jest --testPathIgnorePatterns test/ui",
 		"test:ui": "jest --detectOpenHandles test/ui",
 		"test:watch": "npm run test -- --watch",
 		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
@@ -66,6 +68,7 @@
 		"ts-node-dev": "^1.1.8",
 		"tslib": "^2.3.1",
 		"typescript": "^4.5.5",
+		"ua-parser-js": "^1.0.2",
 		"workerpool": "^6.2.0"
 	},
 	"dependencies": {
@@ -73,6 +76,7 @@
 		"@codemirror/lang-sql": "^0.19.4",
 		"@codemirror/state": "^0.19.6",
 		"@codemirror/view": "^0.19.42",
+		"axios": "^0.26.1",
 		"chokidar": "^3.5.3",
 		"commander": "^9.0.0",
 		"d3-format": "^3.1.0",

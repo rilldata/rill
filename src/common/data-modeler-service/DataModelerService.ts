@@ -8,14 +8,13 @@ import type { ModelActions } from "$common/data-modeler-service/ModelActions";
 import type { DatabaseActionsDefinition, DatabaseService } from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
 import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
 import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type { MetricsActionDefinition, MetricsService } from "$common/metrics-service/MetricsService";
 
 type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, (
     TableActions &
@@ -54,6 +53,7 @@ export class DataModelerService {
     public constructor(protected readonly dataModelerStateService: DataModelerStateService,
                        private readonly databaseService: DatabaseService,
                        private readonly notificationService: NotificationService,
+                       protected readonly metricsService: MetricsService,
                        private readonly dataModelerActions: Array<DataModelerActions>) {
         const databaseActionQueue =
             new ActionQueueOrchestrator<DatabaseActionsDefinition>(databaseService);
@@ -117,6 +117,12 @@ export class DataModelerService {
                 "setApplicationStatus", [ApplicationStatus.Idle]);
         }
         return returnResponse;
+    }
+
+    public async fireEvent<Event extends keyof MetricsActionDefinition>(
+        event: Event, args: MetricsActionDefinition[Event],
+    ): Promise<void> {
+        await this.metricsService?.dispatch(event, args);
     }
 
     public async destroy(): Promise<void> {

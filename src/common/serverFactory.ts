@@ -32,6 +32,12 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
+import { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
+import { MetricsService } from "$common/metrics-service/MetricsService";
+import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
+import { LocalConfig} from "$common/config/LocalConfig";
+import { existsSync, readFileSync } from "fs";
+import { LocalConfigFile } from "$common/config/ConfigFolders";
 
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
@@ -57,10 +63,28 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
         config);
 }
 
+export function metricsServiceFactory(config: RootConfig, dataModelerStateService: DataModelerStateService) {
+    const productHealthEventFactory = new ProductHealthEventFactory(config);
+
+    return new MetricsService(config, dataModelerStateService,
+        new RillIntakeClient(config), [productHealthEventFactory]);
+}
+
 export function dataModelerServiceFactory(config: RootConfig) {
+    if (existsSync(LocalConfigFile)) {
+        config.local = JSON.parse(readFileSync(LocalConfigFile).toString());
+    }
+    try {
+        config.local.version = JSON.parse(readFileSync("package.json").toString()).version;
+    } catch (err) {
+        console.error(err);
+    }
+
     const databaseService = databaseServiceFactory(config);
 
     const dataModelerStateService = dataModelerStateServiceFactory(config);
+
+    const metricsService = metricsServiceFactory(config, dataModelerStateService);
 
     const notificationService = new SocketNotificationService();
 
@@ -68,16 +92,18 @@ export function dataModelerServiceFactory(config: RootConfig) {
     const modelActions = new ModelActions(config, dataModelerStateService, databaseService);
     const profileColumnActions = new ProfileColumnActions(config, dataModelerStateService, databaseService);
     const applicationActions = new ApplicationActions(config, dataModelerStateService, databaseService);
-    const dataModelerService = new DataModelerService(dataModelerStateService, databaseService, notificationService,
+    const dataModelerService = new DataModelerService(dataModelerStateService, databaseService,
+        notificationService, metricsService,
         [tableActions, modelActions, profileColumnActions, applicationActions]);
 
-    return {dataModelerStateService, dataModelerService, notificationService};
+    return {dataModelerStateService, dataModelerService, notificationService, metricsService};
 }
 
 export function serverFactory(config: RootConfig) {
-    const {dataModelerStateService, dataModelerService, notificationService} = dataModelerServiceFactory(config);
+    const {dataModelerStateService, dataModelerService, notificationService, metricsService} =
+        dataModelerServiceFactory(config);
 
-    const socketServer = new SocketServer(config, dataModelerService, dataModelerStateService);
+    const socketServer = new SocketServer(config, dataModelerService, dataModelerStateService, metricsService);
     notificationService.setSocketServer(socketServer.getSocketServer());
 
     return {dataModelerStateService, dataModelerService, socketServer};

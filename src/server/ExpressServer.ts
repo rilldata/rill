@@ -5,6 +5,7 @@ import { SocketServer } from "$common/socket/SocketServer";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
+import type { MetricsService } from "$common/metrics-service/MetricsService";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -16,17 +17,24 @@ export class ExpressServer {
     constructor(private readonly config: RootConfig,
                 private readonly dataModelerService: DataModelerService,
                 dataModelerStateService: DataModelerStateService,
-                notificationService: SocketNotificationService) {
+                notificationService: SocketNotificationService,
+                metricsService: MetricsService) {
         this.app = express();
         this.server = http.createServer(this.app);
 
         this.socketServer = new SocketServer(config, dataModelerService,
-            dataModelerStateService, this.server);
+            dataModelerStateService, metricsService, this.server);
         notificationService.setSocketServer(this.socketServer.getSocketServer());
 
         if (config.server.serveStaticFile) {
             this.app.use(express.static(STATIC_FILES));
         }
+
+        this.app.get("/ip-lookup", (req, res) => {
+            console.log(req.headers['x-forwarded-for'] ||
+                req.socket.remoteAddress);
+            res.send("OK");
+        });
     }
 
     public async init(): Promise<void> {
