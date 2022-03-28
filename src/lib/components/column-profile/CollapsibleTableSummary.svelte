@@ -144,7 +144,13 @@ let titleElementHovered = false;
             dispatch('expand');
         }}
         {icon} >
-        <span class:font-bold={emphasizeTitle} class:italic={selectingColumns}>
+        <!-- note: the classes in this span are also used for UI tests. -->
+        <span
+            class='collapsible-table-summary-title'
+            class:is-active={emphasizeTitle}
+            class:font-bold={emphasizeTitle} 
+            class:italic={selectingColumns}
+            >
             {#if name.split('.').length > 1}
                 {name.split('.').slice(0, -1).join('.')}<span class='text-gray-500 italic pl-1'>.{name.split('.').slice(-1).join('.')}</span>
             {:else}

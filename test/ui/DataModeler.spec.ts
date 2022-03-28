@@ -147,6 +147,21 @@ LINE 1: SELECT * FROM xyz
     }
   }
 
+  @TestBase.Test()
+  public async testActiveInitializeModel({ page }: PlaywrightTestArgs) {
+    await page.goto(URL);
+    const defaultActiveModel = page.locator("#assets-model-list .collapsible-table-summary-title")
+    const modelName = await defaultActiveModel.textContent();
+    const count = await defaultActiveModel.count();
+    
+    // we start with one model.
+    expect(count).toBe(1);
+
+    // the model is the selected one.
+    const modelTitleElement = await page.inputValue('input#model-title-input');
+    expect(modelName.includes(modelTitleElement)).toBeTruthy();
+  }
+
   @TestBase.Test('queryDataProvider')
   public async testCostEstimates(query: string, result: string, { page }: PlaywrightTestArgs) {
     await page.goto(URL);
