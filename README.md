@@ -1,4 +1,4 @@
-Thank you for trying the Rill Data Modeler tech preview! This application is extremely alpha. 
+Thank you for trying the Rill Tech Preview! 
 
 We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4.
 
@@ -13,9 +13,9 @@ git clone https://github.com/rilldata/data-modeler-prototype.git
 ```
 
 # Install Locally
-Change directories to the Rill Data Modeler Prototype
+Change directories to the local Rill repository
 ```
-cd /path/to/data-modeler-prototype
+cd /path/to/rill
 ```
 Run npm to install dependencies and build the application. This will take ~5 minutes to complete.
 ```
@@ -32,13 +32,13 @@ The Data Modeler UI will be available at http://localhost:8080.
 
 If you close the example project and want to restart it, you can do so by running:
 ```
-npm run cli --silent -- start --project ../data-modeler-example
+npm run cli --silent -- start --project ../rill-example
 ```
 
 # Creating Your Own Project
 If you want to go beyond this example, you can also create a project using your own data.
 ## Initialize Your Project
-Initialize your project in the data-modeler-prototype directory.
+Initialize your project in the Rill directory.
 ```
 npm run cli --silent -- init
 ```
