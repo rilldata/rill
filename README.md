@@ -9,7 +9,7 @@ node -v
 ```
 Clone this repository to your local machine:
 ```
-git clone https://github.com/gorillio/data-modeler-prototype
+git clone https://github.com/rilldata/data-modeler-prototype.git
 ```
 
 # Install Locally
@@ -28,6 +28,8 @@ If you are looking for a fast way to get started you can run our quick start exa
 ```
 bash scripts/example-project.sh
 ```
+The Data Modeler UI will be available at http://localhost:8080.
+
 If you close the example project and want to restart it, you can do so by running:
 ```
 npm run cli --silent -- start --project ../data-modeler-example
@@ -90,5 +92,5 @@ By downloading and using our application you are agreeing to the Rill [Terms of 
 
 
 # Application Developers
-If you are a developer helping us build the application, please visit our [DEVELOPER-GUIDE.md](https://github.com/gorillio/data-modeler-prototype/blob/main/DEVELOPER-GUIDE.md).
+If you are a developer helping us build the application, please visit our [DEVELOPER-GUIDE.md](https://github.com/rilldata/data-modeler-prototype/blob/main/DEVELOPER-GUIDE.md).
 
