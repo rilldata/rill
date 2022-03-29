@@ -1,11 +1,20 @@
-# Welcome
+# Rill Developer
+
+[Join the Rill Community Slack!](https://bit.ly/35ijZG4)
+
 Thank you for trying the Rill Developer tech preview! 
 
-Rill Developer helps data practitioners build data intuition to optimize the datasets that power downstream decision support tools or dashboards. Our tool takes a new approach to exploring data by increasing the observability of common patterns of analytical questions. We do this by using cutting edge technologies that support data inquiry at the speed of conversation. When we can explore data as fast as we can ask the next question we are increasing cognitive flow and productivity in data work in a way that few tools do today.
+Rill Developer is a tool that makes it effortless to transform data with SQL. It's not just a SQL GUI! Rill Developer also does these things:
+- it helps you build intuition about your dataset & SQL query – no more analysis "side-quests"
+- it automaticallly responds to queries by re-profiling on each keystroke – no "run query button" needed
+- it exports your transformations so you can continue the party elsewhere – Parquet or CSV
+- it's conversation-fast, not wait-ten-seconds-for-result-set fast – powered by DuckDB
 
-We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
+It's best to show and not tell, so here's a little preview of Rill Developer:
 
 ![RillDeveloper](https://user-images.githubusercontent.com/5587788/160640657-2b68a230-9dcb-4236-a6c8-df5263c33443.gif)
+
+We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our [Rill Community Slack](https://bit.ly/35ijZG4). Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 # Prerequisites
 Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
