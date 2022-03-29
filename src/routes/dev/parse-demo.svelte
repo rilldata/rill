@@ -11,7 +11,6 @@ $: ctes = (content?.length) ? extractCTEs(content) : [];
 $: selects = (content?.length) ? extractCoreSelectStatements(content || '') : [];
 $: fromStatements = (content?.length) ? extractFromStatements(content || '') : [];
 $: sourceTables = (content.length) ? extractSourceTables(content || '') : [];
-$: console.log(sourceTables)
 
 $: joins = (content?.length) ? extractJoins(content || '') : [];
 let currentSelection;

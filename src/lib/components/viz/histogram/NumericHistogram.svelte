@@ -21,7 +21,6 @@ export let max:number;
 
 export let anchorBuffer = 8;
 export let labelOffset = 16;
-export let vizOffset = 0;
 
 let histogramID = guidGenerator();
 
