@@ -8,7 +8,7 @@ export const SURFACE_SLIDE_EASING = easing;
 export const SURFACE_DRAG_DURATION = 50;
 
 export const layout = tweened({
-    assetsWidth: 400,
+    assetsWidth: 440,
     inspectorWidth: 400,
     modelPreviewHeight: 400,
   }, { duration: SURFACE_DRAG_DURATION }
