@@ -10,7 +10,7 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 
-export class ApplicationActions extends  DataModelerActions {
+export class ApplicationActions extends DataModelerActions {
     @DataModelerActions.ApplicationAction()
     public async setActiveAsset({stateService}: ApplicationStateActionArg,
                                 entityType: EntityType, entityId: string) {

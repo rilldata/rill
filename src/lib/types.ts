@@ -190,7 +190,7 @@ export interface ExploreConfiguration {
 }
 
 /**
- * The entire state object for the data modeler.
+ * The entire state object for the Rill Developer.
  */
 export interface DataModelerState {
     activeAsset?: Asset;

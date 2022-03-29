@@ -1,7 +1,7 @@
 <script>
 import "../fonts.css";
 import "../app.css";
-import { setContext } from "svelte";
+import { onMount, setContext } from "svelte";
 import { createStore } from '$lib/app-store';
 import { browser } from "$app/env";
 
@@ -11,6 +11,7 @@ import notification from "$lib/components/notifications/";
 import { createQueryHighlightStore } from "$lib/query-highlight-store";
 import { createDerivedTableStore, createPersistentTableStore } from "$lib/tableStores.ts";
 import { createDerivedModelStore, createPersistentModelStore } from "$lib/modelStores.ts";
+import { initMetrics } from "$lib/metrics/initMetrics";
 
 let store;
 let queryHighlight = createQueryHighlightStore();
@@ -25,6 +26,9 @@ if (browser) {
   notification.listenToSocket(store.socket);
 }
 
+onMount(() => {
+    initMetrics();
+});
 
 let dbRunState = 'disconnected';
 let runstateTimer;

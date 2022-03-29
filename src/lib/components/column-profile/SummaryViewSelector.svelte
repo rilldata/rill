@@ -6,8 +6,6 @@ import { defaultSort, sortByNullity, sortByName } from "$lib/components/column-p
 export let sortMethod = defaultSort;
 export let previewView = 'summaries';
 
-export let compact = false;
-
 </script>
 
 <div class='flex justify-between text-gray-500'>

@@ -72,7 +72,7 @@ let view = 'assets';
       <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
         <h1 class='grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center'>
           <div class='grid  text-white w-5 h-5 items-center justify-center rounded bg-gray-500' style:width="16px" style:height="16px"></div>
-          <div class='font-bold'>Data Modeler Prototype</div>
+          <div class='font-bold'>Rill Developer</div>
         </h1>
       </header>
 

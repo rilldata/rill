@@ -24,6 +24,7 @@ export const config = new RootConfig({});
 
 const clientInstances = clientFactory(config);
 export const dataModelerService = clientInstances.dataModelerService;
+export const metricsService = clientInstances.metricsService;
 export const dataModelerStateService = clientInstances.dataModelerStateService;
 dataModelerService.init();
 

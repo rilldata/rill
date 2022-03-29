@@ -11,7 +11,6 @@ export let expanded = true;
 export let expandable = true;
 export let selected = false;
 export let hovered = false;
-export let icon:SvelteComponent;
 </script>
 
 <div

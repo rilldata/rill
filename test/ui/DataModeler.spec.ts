@@ -8,10 +8,12 @@ import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/Je
 import { PlaywrightSuiteSetup } from "@adityahegde/typescript-test-utils/dist/playwright/PlaywrightSuiteSetup";
 import { DataProviderData, TestBase, TestSuiteSetup, TestSuiteParameter } from "@adityahegde/typescript-test-utils";
 import { waitUntil } from "$common/utils/waitUtils";
+import { isPortOpen } from "$common/utils/isPortOpen";
 
 const execPromise = promisify(exec);
 
 const PORT = 8080;
+const DEV_PORT = 3000;
 const URL = `http://localhost:${PORT}/`;
 const CLI_TEST_FOLDER = 'temp/test-ui';
 const DATA_MODELER_CLI = './node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts';
@@ -34,6 +36,14 @@ class ServerSetup extends TestSuiteSetup {
   }
 
   public async setupSuite(testSuiteParameter: TestSuiteParameter): Promise<void> {
+    // Test to see if server is already running on PORT.
+    [PORT, DEV_PORT].forEach(async port => {
+      if (await isPortOpen(port)) {
+        console.error(`Cannot run UI tests, server is already running on ${port}`);
+        process.exit(1);
+      }
+    });
+
     await execPromise(`mkdir -p ${CLI_TEST_FOLDER}`);
     await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
 
@@ -42,7 +52,7 @@ class ServerSetup extends TestSuiteSetup {
     await execPromise(`${DATA_MODELER_CLI} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdImpressions.parquet`);
     await execPromise(`${DATA_MODELER_CLI} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdBids.parquet`);
 
-    // Run data modeler in the background, logging to stdout.
+    // Run Rill Developer in the background, logging to stdout.
     this.child = exec(`${DATA_MODELER_CLI} start ${CLI_TEST_FOLDER_ARG}`);
     this.child.stdout.pipe(process.stdout);
     // Watch for server startup in output.
@@ -137,6 +147,21 @@ LINE 1: SELECT * FROM xyz
     }
   }
 
+  @TestBase.Test()
+  public async testActiveInitializeModel({ page }: PlaywrightTestArgs) {
+    await page.goto(URL);
+    const defaultActiveModel = page.locator("#assets-model-list .collapsible-table-summary-title")
+    const modelName = await defaultActiveModel.textContent();
+    const count = await defaultActiveModel.count();
+    
+    // we start with one model.
+    expect(count).toBe(1);
+
+    // the model is the selected one.
+    const modelTitleElement = await page.inputValue('input#model-title-input');
+    expect(modelName.includes(modelTitleElement)).toBeTruthy();
+  }
+
   @TestBase.Test('queryDataProvider')
   public async testCostEstimates(query: string, result: string, { page }: PlaywrightTestArgs) {
     await page.goto(URL);
@@ -199,12 +224,12 @@ LINE 1: SELECT * FROM xyz
   }
 
   /**
-   * Execute SQL using the data modeler UI.
+   * Execute SQL using the Rill Developer UI.
    *
    * This simulates user input by changing the value of a `contenteditable` DIV provided by CodeMirror.
    * TODO: Simulate a virtual keyboard: https://playwright.dev/docs/api/class-keyboard
    *
-   * @param page {Page} - Loaded data modeler page.
+   * @param page {Page} - Loaded Rill Developer page.
    * @param sql {string} - SQL to execute.
    */
   private async execute(page: Page, sql: string) {
