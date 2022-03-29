@@ -134,6 +134,8 @@ export class TableActions extends DataModelerActions {
         }
 
         await this.databaseService.dispatch("dropTable", [table.tableName]);
+        this.notificationService.notify({ message: `dropped table ${table.tableName}`, type: "info"});
+
         await this.dataModelerService.dispatch("deleteEntity",
             [EntityType.Table, table.id]);
     }
