@@ -3,6 +3,9 @@ Thank you for trying the Rill Developer tech preview!
 
 Rill Developer helps data practitioners build data intuition to optimize the datasets that power downstream decision support tools or dashboards. Our tool takes a new approach to exploring data by increasing the observability of common patterns of analytical questions. We do this by using cutting edge technologies that support data inquiry at the speed of conversation. When we can explore data as fast as we can ask the next question we are increasing cognitive flow and productivity in data work in a way that few tools do today.
 
+![RillDeveloper](https://user-images.githubusercontent.com/5587788/160640657-2b68a230-9dcb-4236-a6c8-df5263c33443.gif)
+
+
 We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 # Prerequisites
