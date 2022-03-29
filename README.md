@@ -1,4 +1,7 @@
+# Welcome
 Thank you for trying the Rill Developer tech preview! 
+
+Rill Developer helps data practitioners build data intuition to optimize the datasets that power downstream decision support tools or dashboards. Our tool takes a new approach to exploring data by increasing the observability of common patterns of analytical questions. We do this by using cutting edge technologies that support data inquiry at the speed of conversation. When we can explore data as fast as we can ask the next question we are increasing cognitive flow and productivity in data work in a way that few tools do today.
 
 We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our Rill Community Slack at https://bit.ly/35ijZG4. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
@@ -24,7 +27,7 @@ npm run build
 ```
 
 # Quick Start Example
-If you are looking for a fast way to get started you can run our quick start example script. This script initializes a project, downloads an OpenSky Network dataset at https://zenodo.org/record/6325961#.YjDFvhDMI0Q, and imports the data. The Rill Developer UI will be available at http://localhost:8080.
+If you are looking for a fast way to get started you can run our quick start example script. This script initializes a project, downloads an [OpenSky Network dataset](https://zenodo.org/record/6325961#.YjDFvhDMI0Q), and imports the data. The Rill Developer UI will be available at http://localhost:8080.
 ```
 bash scripts/example-project.sh
 ```
@@ -58,13 +61,14 @@ The Rill Developer UI will be available at http://localhost:8080.
 # Rill Developer SQL Dialect
 Rill Developer is powered by duckDB. Please visit their documentation for insight into their dialect of SQL to facilitate your queries at https://duckdb.org/docs/sql/introduction.
 
-# Updating the Rill Developer
+# Updating Rill Developer
 Rill Developer will be evolving quickly! If you want an updated version, you can pull in the latest changes and rebuild the application. Once you have rebuilt the application you can restart your project to see the new experience.
 ```
 git pull origin main
 npm run build
 npm run cli --silent -- start
 ```
+
 # Helpful Hints
 You can specify a new project folder by including the --project option.
 ```
@@ -74,7 +78,11 @@ npm run cli --silent -- start --project /path/to/a/new/project
 ```
 By default the table name will be a sanitized version of the dataset file name. You can specify a name using the --name option.
 ```
-npm run cli --silent -- import-table  /path/to/data_1.parquet --name my_dataset
+npm run cli --silent -- import-table  /path/to/data_1.parquet --name my_table
+```
+If you have added a table to Rill Developer that you want to drop, you can do so using the --drop-table option.
+```
+npm run cli --silent -- drop-table my_table
 ```
 If you have a dataset that is delimited by a character other than a comma or tab, you can use the --delimiter option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
 ```
@@ -86,9 +94,7 @@ npm run cli --silent -- --help
 ```
 
 # Legal
-
 By downloading and using our application you are agreeing to the Rill [Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
-
 
 # Application Developers
 If you are a developer helping us build the application, please visit our [DEVELOPER-GUIDE.md](https://github.com/rilldata/rill-developer/blob/main/DEVELOPER-GUIDE.md).
