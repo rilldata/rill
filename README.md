@@ -1,14 +1,12 @@
-# Rill Developer
+# Rill Developer **_(tech preview)_**
 
 [Join the Rill Community Slack!](https://bit.ly/35ijZG4)
 
-Thank you for trying the Rill Developer tech preview! 
-
-Rill Developer is a tool that makes it effortless to transform data with SQL. It's not just a SQL GUI! Rill Developer also does these things:
-- it helps you build intuition about your dataset & SQL query – no more analysis "side-quests"
-- it automaticallly responds to queries by re-profiling on each keystroke – no "run query button" needed
-- it exports your transformations so you can continue the party elsewhere – Parquet or CSV
-- it's conversation-fast, not wait-ten-seconds-for-result-set fast – powered by DuckDB
+Rill Developer is a tool that makes it effortless to transform your datasets with SQL. It's not just a SQL GUI! Rill Developer follows a few guiding principles:
+- *no more data analysis "side-quests"* – helps you build intuition about your dataset through automatic profiling
+- *no "run query" button required* – responds to each keystroke by re-profiling the resulting dataset
+- *works with your local datasets* – imports and exports Parquet and CSV
+- *feels good to use* – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
 
 It's best to show and not tell, so here's a little preview of Rill Developer:
 
