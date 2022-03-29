@@ -35,7 +35,7 @@ export class InitCommand extends DataModelerCliCommand {
             // make that model active.
             await this.dataModelerService.dispatch("setActiveAsset",
                 [EntityType.Model, addedModel.id]);
-            console.log("\nYou have successfully initialized a new project with the Rill Data Modeler.");
+            console.log("\nYou have successfully initialized a new project with Rill Developer.");
         } else {
             console.log("\nA project in this directory has already been initialized.");
         }

@@ -52,7 +52,7 @@ class ServerSetup extends TestSuiteSetup {
     await execPromise(`${DATA_MODELER_CLI} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdImpressions.parquet`);
     await execPromise(`${DATA_MODELER_CLI} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdBids.parquet`);
 
-    // Run data modeler in the background, logging to stdout.
+    // Run Rill Developer in the background, logging to stdout.
     this.child = exec(`${DATA_MODELER_CLI} start ${CLI_TEST_FOLDER_ARG}`);
     this.child.stdout.pipe(process.stdout);
     // Watch for server startup in output.
@@ -224,12 +224,12 @@ LINE 1: SELECT * FROM xyz
   }
 
   /**
-   * Execute SQL using the data modeler UI.
+   * Execute SQL using the Rill Developer UI.
    *
    * This simulates user input by changing the value of a `contenteditable` DIV provided by CodeMirror.
    * TODO: Simulate a virtual keyboard: https://playwright.dev/docs/api/class-keyboard
    *
-   * @param page {Page} - Loaded data modeler page.
+   * @param page {Page} - Loaded Rill Developer page.
    * @param sql {string} - SQL to execute.
    */
   private async execute(page: Page, sql: string) {

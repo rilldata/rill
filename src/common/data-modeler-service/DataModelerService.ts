@@ -23,13 +23,13 @@ type DataModelerActionsClasses = PickActionFunctions<EntityStateActionArg<any>, 
     ApplicationActions
 )>;
 /**
- * Style definition for data modeler actions.
+ * Style definition for Rill Developer actions.
  * Action => [...args]
  */
 export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<EntityStateActionArg<any>, DataModelerActionsClasses>;
 
 /**
- * Higher order / compound actions within data modeler that can call multiple state updates and other actions within Data Modeler Service
+ * Higher order / compound actions within Rill Developer that can call multiple state updates and other actions within Rill Developer Service
  * Maps 1-1 with actions taken by the interface, either a UI or CLI.
  * Examples: addModel, updateModelQuery etc.
  * Use dispatch for taking actions.

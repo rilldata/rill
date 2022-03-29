@@ -10,8 +10,8 @@ import { DropTableCommand } from "$cli/DropTableCommand";
 const program = new Command();
 
 program
-    .name("data-modeler")
-    .description("Data Modeler CLI.")
+    .name("rill-developer")
+    .description("Rill Developer CLI.")
     // Override help to add a capital D for display.
     .helpOption("-h, --help", "Display help for command.")
     .addHelpCommand("help [command]", "Display help for command.")
