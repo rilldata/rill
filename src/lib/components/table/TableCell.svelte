@@ -28,9 +28,8 @@ const dispatch = createEventDispatcher();
 let formattedValue;
 $: {
     if (TIMESTAMPS.has(type)) {
-        // FIXME: apparently timestamp columns get returned as strings.
-        formattedValue = standardTimestampFormat(typeof value === 'string' ? new Date(value) : value, type);
-    } else if (value === null) {
+        formattedValue = standardTimestampFormat(value, type);
+    } else if(value === null) {
         formattedValue = `∅ null`
     } else {
         if (typeof value === 'string' && !value.length) {
