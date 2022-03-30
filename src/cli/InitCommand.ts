@@ -45,7 +45,7 @@ export class InitCommand extends DataModelerCliCommand {
 
     private static makeDirectoryIfNotExists(path: string) {
         if (!existsSync(path)) {
-            console.log(`Directory ${path} doest exist. Creating the directory.`);
+            console.log(`Directory ${path} doesn't exist. Creating the directory.`);
             // Use nodejs methods instead of running commands for making directory
             // This will ensure we can create the directory on all Operating Systems
             mkdirSync(path, { recursive: true });
