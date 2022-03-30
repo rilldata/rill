@@ -3,6 +3,7 @@ import { getContext, onMount } from "svelte";
 import { tweened } from "svelte/motion"
 import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
+import { SURFACE_SLIDE_DURATION } from "$lib/layout-store";
 
 import type { ApplicationStore } from "$lib/app-store";
 
@@ -90,10 +91,9 @@ let view = 'assets';
                 <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
                 {#each ($persistentTableStore.entities) as { path, tableName, id} (id)}
                   {@const derivedTable = $derivedTableStore.entities.find(t => t["id"] === id)}
-                  <div animate:flip>
+                  <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
                     <CollapsibleTableSummary
                       indentLevel={1}
-
                       icon={ParquetIcon}
                       name={tableName}
                       cardinality={derivedTable?.cardinality ?? 0}
@@ -101,6 +101,9 @@ let view = 'assets';
                       head={derivedTable?.preview ?? []}
                       {path}
                       sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+                      on:delete={() => {
+                        dataModelerService.dispatch('dropTable', [tableName]);
+                      }}
                     />
                   </div>
                 {/each}
@@ -109,7 +112,7 @@ let view = 'assets';
           {/if}
         
           {#if $persistentModelStore && $persistentModelStore.entities}
-          <div class='pl-4 pb-3 pr-4 grid justify-between' style="grid-template-columns: auto max-content;">
+          <div class='pl-4 pb-3 pr-4 grid justify-between' style="grid-template-columns: auto max-content;"  out:slide={{ duration: 200} }>
             <CollapsibleSectionTitle  tooltipText={"tables"} bind:active={showModels}>
                 <h4 class='flex flex-row items-center gap-x-2'><ModelIcon size="16px" /> Models</h4>
               </CollapsibleSectionTitle>
