@@ -208,7 +208,7 @@ let shiftClicked = transientBooleanStore();
         class="
             pl-8 text-ellipsis overflow-hidden whitespace-nowrap text-right" style:max-width="{exampleWidth}px"
         >
-                <FormattedDataType {type} isNull={example === null}>
+                <FormattedDataType {type} isNull={example === null || example === ''}>
                     {#if TIMESTAMPS.has(type)}
                         {standardTimestampFormat(new Date(example))}
                     {:else if CATEGORICALS.has(type) && example === ''}
@@ -220,13 +220,16 @@ let shiftClicked = transientBooleanStore();
                 </FormattedDataType>
         </div>
         <TooltipContent slot="tooltip-content" >
-            {#if TIMESTAMPS.has(type)}
-                {standardTimestampFormat(new Date(example))}
-            {:else if CATEGORICALS.has(type) && example === ''}
-                <span>{"<"}empty string{">"}</span>
-            {:else}
-                {example}
-            {/if}
+                <FormattedDataType {type} isNull={example === null || example === ''} dark>
+                    {#if TIMESTAMPS.has(type)}
+                        {standardTimestampFormat(new Date(example))}
+                    {:else if CATEGORICALS.has(type) && example === ''}
+                        <span class="text-gray-400 italic">{"<"}empty string{">"}</span>
+                    {:else}
+                        {example}
+                    {/if}
+                    <!-- {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example} -->
+                </FormattedDataType>
         </TooltipContent>
         </Tooltip>
     </svelte:fragment>
