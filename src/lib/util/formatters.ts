@@ -22,6 +22,10 @@ export function formatBigNumberPercentage(v) {
     }
 }
 
+export function removeTimezoneOffset(dt) {
+    return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000)
+}
+
 //export const formatPercentage = format('.2%');
 
 export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
@@ -29,7 +33,7 @@ export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
     if (type === 'DATE') {
         fmt = timeFormat('%b %d, %Y');
     }
-    return fmt(v);
+    return fmt(removeTimezoneOffset(new Date(v)));
 }
 export const datePortion = timeFormat('%b %d, %Y');
 export const timePortion = timeFormat("%I:%M:%S");
