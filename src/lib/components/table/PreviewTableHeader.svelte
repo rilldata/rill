@@ -7,30 +7,27 @@ import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte"
 import Pin from "$lib/components/icons/Pin.svelte";
 
-import transientBooleanStore from "$lib/util/transient-boolean-store";
 import notificationStore from "$lib/components/notifications/";
 import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
 import Shortcut from "../tooltip/Shortcut.svelte";
 import StackingWord from "../tooltip/StackingWord.svelte";
+import { createShiftClickAction } from "$lib/util/shift-click-action";
 
 export let name:string;
 export let type:string;
 export let pinned = false;
 
-let shiftClicked = transientBooleanStore();
 const dispatch = createEventDispatcher();
+const { shiftClickAction } = createShiftClickAction();
 </script>
 
 <TableHeader {name} {type}>
     <div 
        style:grid-template-columns="210px max-content"
-       on:click={async (event) => {
-           if (event.shiftKey) {
+       use:shiftClickAction
+       on:shift-click={async () => {
             await navigator.clipboard.writeText(name);
             notificationStore.send({ message: `copied column name "${name}" to clipboard`});
-            // update this to set the active animation in the tooltip text
-            shiftClicked.flip();
-           }
        }}
        class="
            grid
@@ -59,7 +56,7 @@ const dispatch = createEventDispatcher();
                <TooltipShortcutContainer>
 
                 <div>
-                    <StackingWord active={$shiftClicked}>
+                    <StackingWord>
                         copy
                     </StackingWord>
                     column name to clipboard

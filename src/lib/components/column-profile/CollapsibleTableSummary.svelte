@@ -22,7 +22,6 @@ import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
 import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
 
 import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
-import transientBooleanStore from "$lib/util/transient-boolean-store";
 import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
 import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
 import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
@@ -58,7 +57,6 @@ let contextMenu;
 let contextMenuOpen = false;
 let container;
 
-let clicked = transientBooleanStore();
 
 onMount(() => {
     const observer = new ResizeObserver(entries => {
@@ -142,14 +140,12 @@ let titleElementHovered = false;
         expanded={show}
         selected={emphasizeTitle}
         bind:hovered={titleElementHovered}
+        on:shift-click={async () => {
+            await navigator.clipboard.writeText(name);
+            notificationStore.send({ message: `copied "${name}" to clipboard`});
+        }}
         on:select-body={async (event) => { 
-                if (event.detail) {
-                    await navigator.clipboard.writeText(name);
-                    notificationStore.send({ message: `copied "${name}" to clipboard`});
-                    clicked.flip();
-                } else {
-                    dispatch('select');
-                }
+            dispatch('select');
         }}
         on:expand={() => {
             show = !show;
@@ -174,7 +170,7 @@ let titleElementHovered = false;
                     click
                 </Shortcut>
                 <div>
-                    <StackingWord active={$clicked}>copy</StackingWord> to clipboard
+                    <StackingWord>copy</StackingWord> to clipboard
                 </div>
                 <Shortcut>
                     shift + click

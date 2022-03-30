@@ -1,7 +1,9 @@
 <script>
 import { createEventDispatcher } from "svelte";
+import { createShiftClickAction } from "$lib/util/shift-click-action"
 
 const dispatch = createEventDispatcher();
+const { shiftClickAction } = createShiftClickAction();
 
 export let active = false;
 export let emphasize = false;
@@ -26,9 +28,9 @@ export let right = 4 // pr-2";
         focus:outline-gray-300 flex-1
         justify-between w-full"
     class:bg-gray-50={active}
-    on:click={(event) => {
-        dispatch('select', event.shiftKey);
-    }}
+    use:shiftClickAction
+    on:shift-click
+    on:click={(event) => { dispatch('select'); }}
 >
     <div class="flex gap-2 grow items-baseline flex-1" style:min-width="0px">
         <div class="self-center flex items-center">

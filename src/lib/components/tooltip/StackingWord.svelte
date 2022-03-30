@@ -1,8 +1,11 @@
 <script>
-export let active = false;
+import { getContext } from "svelte";
+import { writable } from "svelte/store";
+const transientBoolean = getContext("rill:app:ui:shift-click") || writable(false);
+
 </script>
 
-<span class="inline-block shiftable" class:shiftClicked={active}><slot /></span>
+<span class="inline-block shiftable" class:shiftClicked={$transientBoolean}><slot /></span>
 
 <style>
 

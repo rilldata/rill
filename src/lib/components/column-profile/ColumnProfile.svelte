@@ -21,7 +21,6 @@ import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
 import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
 import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
 import notificationStore from "$lib/components/notifications/";
-import transientBooleanStore from "$lib/util/transient-boolean-store";
 import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 
 export let name;
@@ -51,7 +50,6 @@ $: cardinalityFormatter = containerWidth > config.compactBreakpoint ? formatInte
 
 let titleTooltip;
 
-let shiftClicked = transientBooleanStore();
 </script>
 
     <!-- pl-10 -->
@@ -60,17 +58,13 @@ let shiftClicked = transientBooleanStore();
     {hideRight}
     {active}
     emphasize={active}
+    on:shift-click={async () => {
+        await navigator.clipboard.writeText(name);
+        notificationStore.send({ message: `copied column name "${name}" to clipboard`});
+    }}
     on:select={async (event) => {
         // we should only allow activation when there are rows present.
-        if (event.detail) {
-            await navigator.clipboard.writeText(name);
-
-            notificationStore.send({ message: `copied column name "${name}" to clipboard`});
-            
-            // update this to set the active animation in the tooltip text
-            shiftClicked.flip();
-
-        } else if (totalRows) {
+        if (totalRows) {
             active = !active;
         }
     }}
@@ -119,7 +113,7 @@ let shiftClicked = transientBooleanStore();
                     </Shortcut>
 
                     <div>
-                        <StackingWord active={$shiftClicked}>
+                        <StackingWord>
                             copy
                         </StackingWord>
                         column name to clipboard

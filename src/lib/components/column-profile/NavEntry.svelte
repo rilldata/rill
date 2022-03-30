@@ -5,11 +5,10 @@ import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
 import ExpanderButton from "$lib/components/column-profile/ExpanderButton.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
-import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
-import transientBooleanStore from "$lib/util/transient-boolean-store";
-import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
 
+import { createShiftClickAction } from "$lib/util/shift-click-action";
+
+const { shiftClickAction } = createShiftClickAction();
 const dispatch = createEventDispatcher();
 
 export let expanded = true;
@@ -17,7 +16,6 @@ export let expandable = true;
 export let selected = false;
 export let hovered = false;
 
-let clicked = transientBooleanStore();
 
 </script>
 
@@ -43,10 +41,11 @@ let clicked = transientBooleanStore();
     {/if}
     <Tooltip location="right">
         <button 
+            use:shiftClickAction
+            on:shift-click
             on:click={(evt) => { 
-                dispatch('select-body', evt.shiftKey);
-                clicked.flip();
-         }}
+                dispatch('select-body');
+            }}
             on:focus={() => { hovered = true; }}
             on:blur={() => { hovered = false; }}
             style:grid-column="body"
