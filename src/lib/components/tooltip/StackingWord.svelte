@@ -1,11 +1,18 @@
 <script>
 import { getContext } from "svelte";
-import { writable } from "svelte/store";
-const transientBoolean = getContext("rill:app:ui:shift-click") || writable(false);
+import transientBooleanStore from "$lib/util/transient-boolean-store";
+const callbacks = getContext('rill:app:ui:shift-click-action-callbacks');
+let shiftClicked = transientBooleanStore();
+
+// if a parent component upstream triggers the shift-click action,
+// let's flip our transientBooleanStore to create the animation.
+callbacks.addCallback(() => {
+    shiftClicked.flip();
+})
 
 </script>
 
-<span class="inline-block shiftable" class:shiftClicked={$transientBoolean}><slot /></span>
+<span class="inline-block shiftable" class:shiftClicked={$shiftClicked}><slot /></span>
 
 <style>
 
