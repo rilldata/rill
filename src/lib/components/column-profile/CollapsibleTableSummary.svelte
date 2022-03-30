@@ -21,9 +21,15 @@ import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
 
 import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
 
+import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
+import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
+import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
+import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
+
 import { dropStore } from '$lib/drop-store';
 
-import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/column-profile/sort-utils"
+import { defaultSort, sortByNullity, sortByName } from "$lib/components/column-profile/sort-utils"
+import notificationStore from "$lib/components/notifications/";
 
 import { onClickOutside } from "$lib/util/on-click-outside";
 import { config } from "./utils";
@@ -50,6 +56,7 @@ let containerWidth = 0;
 let contextMenu;
 let contextMenuOpen = false;
 let container;
+
 
 onMount(() => {
     const observer = new ResizeObserver(entries => {
@@ -128,13 +135,16 @@ let titleElementHovered = false;
             }
             dropStore.set(undefined);
         }}>
+
     <NavEntry
         expanded={show}
         selected={emphasizeTitle}
         bind:hovered={titleElementHovered}
-        on:select-body={() => { 
-            // show = !show; 
-            // pass up select body
+        on:shift-click={async () => {
+            await navigator.clipboard.writeText(name);
+            notificationStore.send({ message: `copied "${name}" to clipboard`});
+        }}
+        on:select-body={async (event) => { 
             dispatch('select');
         }}
         on:expand={() => {
@@ -143,9 +153,33 @@ let titleElementHovered = false;
             dispatch('expand');
         }}
         {icon} >
+        <svelte:fragment slot='tooltip-content'>
+            <TooltipTitle>
+                <svelte:fragment slot="name">
+                    {name}
+                </svelte:fragment>
+                <svelte:fragment slot="description">
+                    
+                </svelte:fragment>
+            </TooltipTitle>
+            <TooltipShortcutContainer>
+                <div>
+                    open in workspace
+                </div>
+                <Shortcut>
+                    click
+                </Shortcut>
+                <div>
+                    <StackingWord>copy</StackingWord> to clipboard
+                </div>
+                <Shortcut>
+                    shift + click
+                </Shortcut>
+            </TooltipShortcutContainer>
+        </svelte:fragment>
         <!-- note: the classes in this span are also used for UI tests. -->
         <span
-            class='collapsible-table-summary-title'
+            class='collapsible-table-summary-title w-full'
             class:is-active={emphasizeTitle}
             class:font-bold={emphasizeTitle} 
             class:italic={selectingColumns}

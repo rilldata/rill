@@ -1,5 +1,4 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
@@ -8,8 +7,9 @@ import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
 import { format } from "d3-format";
 import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 import notificationStore from "$lib/components/notifications/";
-import transientBooleanStore from "$lib/util/transient-boolean-store";
-import { config } from "$lib/components/column-profile/utils"
+import { config } from "$lib/components/column-profile/utils";
+
+import { createShiftClickAction } from "$lib/util/shift-click-action";
 
 export let displaySize:string = "md";
 export let totalRows:number;
@@ -17,15 +17,14 @@ export let topK:any; // FIXME
 export let color:string;
 export let containerWidth:number;
 
+const { shiftClickAction } = createShiftClickAction();
+
 $: smallestPercentage = Math.min(...topK.slice(0,5).map(entry => entry.count / totalRows))
 $: formatPercentage = smallestPercentage < 0.01 ? 
     format('0.2%') : 
     format('0.1%');
 
 $: formatCount = format(',');
-
-
-let shiftClicked = transientBooleanStore();
 
 // time to create a single way to get the width of an element.
 
@@ -43,14 +42,10 @@ let shiftClicked = transientBooleanStore();
             {@const printValue = value === null ? ' null ∅' : value }
                 <Tooltip location="right" alignment="center"  distance={16}>
                 <div class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
-
-                on:click={async (event) => {
-                    if (event.shiftKey) {
-                        await navigator.clipboard.writeText(value);
-                        notificationStore.send({ message: `copied column value "${value === null ? 'NULL' : value}" to clipboard`});
-                        // update this to set the active animation in the tooltip text
-                        shiftClicked.flip();
-                    }
+                use:shiftClickAction
+                on:shift-click={async () => {
+                    await navigator.clipboard.writeText(value);
+                    notificationStore.send({ message: `copied column value "${value === null ? 'NULL' : value}" to clipboard`});
                 }}
                 >
                         {printValue}
@@ -61,7 +56,7 @@ let shiftClicked = transientBooleanStore();
                     </div>
                     <TooltipShortcutContainer>
                         <div>
-                            <StackingWord active={$shiftClicked}>copy</StackingWord> column value to clipboard
+                            <StackingWord>copy</StackingWord> column value to clipboard
                         </div>
                         <Shortcut>
                             <span style='font-family: var(--system);";
@@ -74,13 +69,10 @@ let shiftClicked = transientBooleanStore();
                 {@const percentage = negligiblePercentage ? '<.01%' : formatPercentage(count / totalRows)}
                 <Tooltip location="right" alignment="center" distance={16}>
                     <div
-                    on:click={async (event) => {
-                        if (event.shiftKey) {
-                            await navigator.clipboard.writeText(count);
-                            notificationStore.send({ message: `copied column value "${count === null ? 'NULL' : count}" to clipboard`});
-                            // update this to set the active animation in the tooltip text
-                            shiftClicked.flip();
-                        }
+                    use:shiftClickAction
+                    on:shift-click={async () => {
+                        await navigator.clipboard.writeText(count);
+                        notificationStore.send({ message: `copied column value "${count === null ? 'NULL' : count}" to clipboard`});
                     }}
                     >
                     <BarAndLabel value={count / totalRows} {color}>
@@ -98,7 +90,7 @@ let shiftClicked = transientBooleanStore();
                         </div>
                         <TooltipShortcutContainer>
                             <div>
-                                <StackingWord active={$shiftClicked}>copy</StackingWord> {count} to clipboard
+                                <StackingWord>copy</StackingWord> {count} to clipboard
                             </div>
                             <Shortcut>
                                 <span style='font-family: var(--system);";
