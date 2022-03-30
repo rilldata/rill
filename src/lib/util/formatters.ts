@@ -29,16 +29,11 @@ export function removeTimezoneOffset(dt) {
 //export const formatPercentage = format('.2%');
 
 export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
-    let dt = new Date(v);
-    if (dt.getTimezoneOffset() !== 0) {
-        dt = removeTimezoneOffset(dt);
-    }
-    
     let fmt = timeFormat('%b %d, %Y %I:%M:%S');
     if (type === 'DATE') {
         fmt = timeFormat('%b %d, %Y');
     }
-    return fmt(dt);
+    return fmt(removeTimezoneOffset(new Date(v)));
 }
 export const datePortion = timeFormat('%b %d, %Y');
 export const timePortion = timeFormat("%I:%M:%S");
