@@ -4,7 +4,7 @@ import DataTypeIcon from "$lib/components/data-types/DataTypeIcon.svelte";
 import TableHeader from "./TableHeader.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-import DataTypeTitle from "$lib/components/tooltip/DataTypeTitle.svelte"
+import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte"
 import Pin from "$lib/components/icons/Pin.svelte";
 
 import transientBooleanStore from "$lib/util/transient-boolean-store";
@@ -48,7 +48,14 @@ const dispatch = createEventDispatcher();
                </span>
            </div>
            <TooltipContent slot='tooltip-content'>
-               <DataTypeTitle {name} {type} />
+            <TooltipTitle>
+                <svelte:fragment slot="name">
+                    {name}
+                </svelte:fragment>
+                <svelte:fragment slot="description">
+                        {type}
+                </svelte:fragment>
+            </TooltipTitle>
                <TooltipShortcutContainer>
 
                 <div>

@@ -22,7 +22,7 @@ import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram
 import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
 import notificationStore from "$lib/components/notifications/";
 import transientBooleanStore from "$lib/util/transient-boolean-store";
-import DataTypeTitle from "../tooltip/DataTypeTitle.svelte";
+import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 
 export let name;
 export let type;
@@ -92,7 +92,15 @@ let shiftClicked = transientBooleanStore();
             </div>
         <TooltipContent slot="tooltip-content">
 
-            <DataTypeTitle {name} {type} />
+            <TooltipTitle>
+                <svelte:fragment slot="name">
+                    {name}
+                </svelte:fragment>
+                <svelte:fragment slot="description">
+                        {type}
+                </svelte:fragment>
+            </TooltipTitle>
+
 
             {#if totalRows}
                 <TooltipShortcutContainer>

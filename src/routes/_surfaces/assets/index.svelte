@@ -93,7 +93,6 @@ let view = 'assets';
                   <div animate:flip>
                     <CollapsibleTableSummary
                       indentLevel={1}
-
                       icon={ParquetIcon}
                       name={tableName}
                       cardinality={derivedTable?.cardinality ?? 0}
