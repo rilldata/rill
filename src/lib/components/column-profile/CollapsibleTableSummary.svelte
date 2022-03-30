@@ -29,7 +29,7 @@ import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 
 import { dropStore } from '$lib/drop-store';
 
-import { defaultSort, sortByNullity, sortByCardinality, sortByName } from "$lib/components/column-profile/sort-utils"
+import { defaultSort, sortByNullity, sortByName } from "$lib/components/column-profile/sort-utils"
 import notificationStore from "$lib/components/notifications/";
 
 import { onClickOutside } from "$lib/util/on-click-outside";
@@ -184,7 +184,6 @@ let titleElementHovered = false;
         <!-- note: the classes in this span are also used for UI tests. -->
         <span
             class='collapsible-table-summary-title w-full'
-            style:outline="1px solid black"
             class:is-active={emphasizeTitle}
             class:font-bold={emphasizeTitle} 
             class:italic={selectingColumns}
