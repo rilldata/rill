@@ -38,7 +38,6 @@ $: {
         } else {
             formattedValue = value;
         }
-        
     }
 }
 
