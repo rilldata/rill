@@ -19,7 +19,6 @@ import Spacer from "$lib/components/icons/Spacer.svelte";
 
 import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
 
-// icons
 import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
 
 import { dropStore } from '$lib/drop-store';

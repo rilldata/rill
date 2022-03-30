@@ -1,7 +1,6 @@
 <script lang="ts">
-import { DATA_TYPE_COLORS, 
+import { 
     CATEGORICALS, 
-    NUMERICS, 
     TIMESTAMPS,
     INTEGERS,
     FLOATS, 
@@ -17,6 +16,7 @@ import FloatType from "../icons/FloatType.svelte";
 export let color = 'text-gray-400';
 export let type;
 export let suppressTooltip = false;
+
 
 function typeToSymbol(fieldType:string) {
     if (INTEGERS.has(fieldType)) {

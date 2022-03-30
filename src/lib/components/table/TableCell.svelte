@@ -30,10 +30,16 @@ $: {
     if (TIMESTAMPS.has(type)) {
         // FIXME: apparently timestamp columns get returned as strings.
         formattedValue = standardTimestampFormat(typeof value === 'string' ? new Date(value) : value, type);
-    } else if(value === null) {
+    } else if (value === null) {
         formattedValue = `∅ null`
     } else {
-        formattedValue = value//`val: ${value}`
+        if (typeof value === 'string' && !value.length) {
+            // replace with a whitespace chracter to preserve the cell height when we have an empty string
+            formattedValue = '&nbsp;'
+        } else {
+            formattedValue = value;
+        }
+        
     }
 }
 
@@ -63,7 +69,7 @@ let activeCell = false;
     {#if value !== undefined}
     <span transition:fade|local={{duration: 75}}>
         <FormattedDataType {type} {isNull} inTable>
-            {formattedValue}
+            {@html formattedValue}
         </FormattedDataType>
     </span>
     {/if}
