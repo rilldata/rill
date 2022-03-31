@@ -31,7 +31,7 @@ let activeIndex;
 function setActiveElement(value, name, index) {
     visualCellValue = value; 
     visualCellField = name;
-    visualCellType = columnNames.find(column => column.name === visualCellField).type
+    visualCellType = columnNames.find(column => column.name === visualCellField)?.type
     activeIndex = index;
 }
 
@@ -54,7 +54,7 @@ function togglePin(name, type, selectedCols) {
 <div 
     class='flex relative'>
     
-    <Table on:mouseleave={() => { visualCellValue = undefined; }}>
+    <Table on:mouseleave={() => { visualCellValue = undefined; setActiveElement(undefined, undefined, undefined) }}>
         <!-- headers -->
         <TableRow>
             {#each columnNames as {name, type} (name)}
@@ -71,7 +71,7 @@ function togglePin(name, type, selectedCols) {
         </TableRow>
         <!-- values -->
         {#each rows as row, index}
-            <TableRow hovered={activeIndex === index}>
+            <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
                 {#each columnNames as { name, type } (index+name)}
                     <TableCell
                         on:inspect={() => { setActiveElement(row[name], name, index) }} 
@@ -103,7 +103,7 @@ function togglePin(name, type, selectedCols) {
                 {/each}
             </TableRow>
                 {#each rows as row, index}
-                <TableRow hovered={activeIndex === index}>
+                <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
                     {#each selectedColumns as { name, type }}
                         <TableCell 
                             on:inspect={() => { setActiveElement(row[name], name, index) }}
