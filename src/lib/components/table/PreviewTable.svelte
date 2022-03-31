@@ -6,12 +6,8 @@
  * and provide the interactions needed to do things with the table.
 */
 import { slide } from "svelte/transition";
-import { Table, TableRow, TableHeader, TableCell } from "$lib/components/table/";
-import { FormattedDataType, DataTypeIcon } from "$lib/components/data-types/";
-import Pin from "$lib/components/icons/Pin.svelte";
-import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-import DataTypeTitle from "$lib/components/tooltip/DataTypeTitle.svelte";
+import { Table, TableRow, TableCell } from "$lib/components/table/";
+import { FormattedDataType } from "$lib/components/data-types/";
 import PreviewTableHeader from "./PreviewTableHeader.svelte";
 import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import { standardTimestampFormat } from "$lib/util/formatters"
@@ -35,7 +31,7 @@ let activeIndex;
 function setActiveElement(value, name, index) {
     visualCellValue = value; 
     visualCellField = name;
-    visualCellType = columnNames.find(column => column.name === visualCellField).type
+    visualCellType = columnNames.find(column => column.name === visualCellField)?.type
     activeIndex = index;
 }
 
@@ -58,7 +54,7 @@ function togglePin(name, type, selectedCols) {
 <div 
     class='flex relative'>
     
-    <Table on:mouseleave={() => { visualCellValue = undefined; }}>
+    <Table on:mouseleave={() => { visualCellValue = undefined; setActiveElement(undefined, undefined, undefined) }}>
         <!-- headers -->
         <TableRow>
             {#each columnNames as {name, type} (name)}
@@ -75,7 +71,7 @@ function togglePin(name, type, selectedCols) {
         </TableRow>
         <!-- values -->
         {#each rows as row, index}
-            <TableRow hovered={activeIndex === index}>
+            <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
                 {#each columnNames as { name, type } (index+name)}
                     <TableCell
                         on:inspect={() => { setActiveElement(row[name], name, index) }} 
@@ -107,7 +103,7 @@ function togglePin(name, type, selectedCols) {
                 {/each}
             </TableRow>
                 {#each rows as row, index}
-                <TableRow hovered={activeIndex === index}>
+                <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
                     {#each selectedColumns as { name, type }}
                         <TableCell 
                             on:inspect={() => { setActiveElement(row[name], name, index) }}

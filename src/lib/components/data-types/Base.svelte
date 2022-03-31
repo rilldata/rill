@@ -1,9 +1,12 @@
 <script>
 export let classes = "";
 export let isNull = false;
+export let dark  = false;
+$: color = dark ? 'text-gray-100' : 'text-gray-700';
+$: nullColor = dark ? 'text-gray-300' : 'text-gray-400'
 </script>
 
-<span class={isNull ?  'text-gray-400 italic' : `text-gray-700  ${classes}`}>
+<span class={isNull ?  `${nullColor} italic` : `${color}  ${classes}`}>
     {#if isNull} ∅ null
     {:else}
         <slot />

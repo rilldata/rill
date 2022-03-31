@@ -1,6 +1,6 @@
 <script>
 import HistogramBase from "./HistogramBase.svelte";
-import { datePortion, timePortion, intervalToTimestring } from "$lib/util/formatters";
+import { datePortion, timePortion, intervalToTimestring, removeTimezoneOffset } from "$lib/util/formatters";
 import { TIMESTAMP_TOKENS } from "$lib/duckdb-data-types";
 export let data;
 export let type;
@@ -22,8 +22,8 @@ let fontSize = 12;
         {@const yEnd = y.range()[0] + fontSize *2 + buffer * 1.75}
         {@const xStart = x.range()[0]}
         {@const xEnd = x.range()[1]}
-        {@const start = new Date(x.domain()[0] * 1000)}
-        {@const end = new Date(x.domain()[1] * 1000)}
+        {@const start = removeTimezoneOffset(new Date(x.domain()[0] * 1000))}
+        {@const end = removeTimezoneOffset(new Date(x.domain()[1] * 1000))}
         {@const isSameDay = 
             start.getFullYear() === end.getFullYear() &&
             start.getMonth() === end.getMonth() &&

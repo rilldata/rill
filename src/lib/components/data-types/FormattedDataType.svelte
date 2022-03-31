@@ -7,6 +7,7 @@ import Timestamp from "./Timestamp.svelte";
 export let type = 'VARCHAR';
 export let isNull = false;
 export let inTable = false;
+export let dark = false;
 
 let dataType = Varchar;
 $: {
@@ -21,6 +22,6 @@ $: {
 }
 </script>
 
-<svelte:component this={dataType} {isNull} {inTable}>
+<svelte:component this={dataType} {isNull} {inTable} {dark}>
     <slot />
 </svelte:component>
