@@ -135,7 +135,7 @@ onMount(() => {
       class:text-gray-300={currentDerivedModel?.error} 
       class='cost pl-4 pr-4 flex flex-row items-center gap-x-2'
       >
-      {#if  !currentDerivedModel?.error}
+      {#if !currentDerivedModel?.error && (rollup && rollup !== Infinity && rollup !== -Infinity)}
     <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
       <button
       bind:this={contextMenu}
