@@ -1,6 +1,6 @@
+import { INTERVALS, INTEGERS, FLOATS, CATEGORICALS, TIMESTAMPS, BOOLEANS } from "$lib/duckdb-data-types";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
-
 
 const zeroPad = format('02d');
 export const formatInteger = format(',');
@@ -71,5 +71,21 @@ export function formatCompactInteger(n:number) {
     } else {
         fmt = format('.3s');
         return fmt(n);
+    }
+}
+
+export function formatDataType(value:any, type:string) {
+    if (INTEGERS.has(type)) {
+        return value;
+    } else if (FLOATS.has(type)) {
+        return value;
+    } else if (CATEGORICALS.has(type)) {
+        return value;
+    } else if (TIMESTAMPS.has(type)) {
+        return standardTimestampFormat(value);
+    } else if (INTERVALS.has(type)) {
+        return intervalToTimestring(value);
+    } else if (BOOLEANS.has(type)) {
+        return value;
     }
 }

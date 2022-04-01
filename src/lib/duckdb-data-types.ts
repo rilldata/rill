@@ -15,6 +15,7 @@ export const FLOATS = new Set([
 export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
 export const BOOLEANS = new Set([ "BOOLEAN", "BOOL", "LOGICAL" ]);
 export const TIMESTAMPS = new Set(['TIMESTAMP', 'TIME', 'DATETIME', 'DATE']);
+export const INTERVALS = new Set(['INTERVAL'])
 export const CATEGORICALS = new Set(['BYTE_ARRAY', 'VARCHAR', "CHAR", "BPCHAR", "TEXT", "STRING"]);
 
 interface ColorTokens {
@@ -45,6 +46,8 @@ export const TIMESTAMP_TOKENS: ColorTokens = {
     vizStrokeClass: "stroke-teal-500"
 }
 
+export const INTERVAL_TOKENS: ColorTokens = TIMESTAMP_TOKENS;
+
 function setTypeTailwindStyles(
         list:string[], 
         // a tailwind class, for now.
@@ -60,5 +63,6 @@ export const DATA_TYPE_COLORS = {
     ...setTypeTailwindStyles(Array.from(CATEGORICALS), CATEGORICAL_TOKENS),
     ...setTypeTailwindStyles(Array.from(NUMERICS), NUMERIC_TOKENS),
     ...setTypeTailwindStyles(Array.from(TIMESTAMPS), TIMESTAMP_TOKENS),
+    ...setTypeTailwindStyles(Array.from(INTERVALS), INTERVAL_TOKENS),
     ...setTypeTailwindStyles(Array.from(BOOLEANS), CATEGORICAL_TOKENS),
 }

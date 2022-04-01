@@ -127,8 +127,6 @@ function togglePin(name, type, selectedCols) {
         style:box-shadow="0 -4px 2px 0 rgb(0 0 0 / 0.05)"
     >
         <span class='font-bold pr-5'>{visualCellField}</span>
-        <FormattedDataType type={visualCellType} isNull={visualCellValue === null}>
-            {TIMESTAMPS.has(visualCellType) ? standardTimestampFormat(new Date(visualCellValue), visualCellType) : visualCellValue}
-        </FormattedDataType>
+        <FormattedDataType value={visualCellValue} type={visualCellType} isNull={visualCellValue === null} />
 </div>
 {/if}
