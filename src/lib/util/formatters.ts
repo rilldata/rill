@@ -3,6 +3,7 @@ import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
 
 const zeroPad = format('02d');
+const msPad = format('03d')
 export const formatInteger = format(',');
 const formatRate = format('.1f');
 
@@ -38,14 +39,23 @@ export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
 export const datePortion = timeFormat('%b %d, %Y');
 export const timePortion = timeFormat("%I:%M:%S");
 
-export function microsToTimestring(micros:number) {
+export function microsToTimestring(microseconds:number) {
     // to format micros, we need to translate this to hh:mm:ss.
     // start with hours/
+    let sign = Math.sign(microseconds);
+    let micros = Math.abs(microseconds);
     const hours = ~~(micros / 1000 / 1000 / 60 / 60);
     let remaining = micros - (hours * 1000 * 1000 * 60 * 60);
     const minutes = ~~(remaining / 1000/ 1000 / 60);
-    const seconds = (remaining - (minutes * 1000 * 1000 * 60)) / 1000 / 1000;
-    return `${zeroPad(hours)}:${zeroPad(minutes)}:${zeroPad(seconds)}`
+    //const seconds = (remaining - (minutes * 1000 * 1000 * 60)) / 1000 / 1000;
+    remaining -= (minutes * 1000 * 1000 * 60);
+    const seconds = ~~(remaining / 1000 / 1000);
+    remaining -= (seconds * 1000 * 1000);
+    const ms = ~~(remaining / 1000);
+    if (hours === 0 && minutes === 0 && seconds === 0 && ms > 0) {
+        return `${sign == 1 ? '' : '-'}${ms}ms`
+    }
+    return `${sign == 1 ? '' : '-'}${zeroPad(hours)}:${zeroPad(minutes)}:${zeroPad(seconds)}.${msPad(ms)}`
 }
 
 interface Interval {
@@ -82,7 +92,7 @@ export function formatDataType(value:any, type:string) {
     } else if (CATEGORICALS.has(type)) {
         return value;
     } else if (TIMESTAMPS.has(type)) {
-        return standardTimestampFormat(value);
+        return standardTimestampFormat(value, type);
     } else if (INTERVALS.has(type)) {
         return intervalToTimestring(value);
     } else if (BOOLEANS.has(type)) {

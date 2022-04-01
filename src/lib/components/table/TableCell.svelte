@@ -8,7 +8,7 @@ import { createEventDispatcher } from "svelte";
 import { fade } from "svelte/transition"
 import { FormattedDataType } from "$lib/components/data-types/";
 import { INTERVALS, TIMESTAMPS } from "$lib/duckdb-data-types";
-import { standardTimestampFormat } from "$lib/util/formatters";
+import { formatDataType, standardTimestampFormat } from "$lib/util/formatters";
 import Tooltip from "../tooltip/Tooltip.svelte";
 import TooltipContent from "../tooltip/TooltipContent.svelte";
 import notificationStore from "../notifications";
@@ -80,7 +80,8 @@ let activeCell = false;
         on:shift-click={async (event) => {
             let exportedValue = value;
             if (INTERVALS.has(type)) {
-                exportedValue = `INTERVAL ${value.days} DAY ${value.micros ? `INTERVAL ${value.micros} MICRO` : ''}`
+                exportedValue = formatDataType(value, type);
+
             } else if (TIMESTAMPS.has(type)) {
                 exportedValue =  `TIMESTAMP '${value}'`;
             }

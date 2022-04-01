@@ -28,7 +28,7 @@ $: {
 }
 </script>
 
-<svelte:component this={dataType} {isNull} {inTable} {dark}>
+<svelte:component this={dataType} isNull={isNull || (value === null)} {inTable} {dark}>
     {#if value === undefined}
         <slot />
     {:else}
