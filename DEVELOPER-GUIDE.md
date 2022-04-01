@@ -1,68 +1,6 @@
 This is prototype-quality code, subject to radical change as we figure out what we need to build. Best of luck!
 
-# CLI
-
-Initializing a project, adding datasets as tables, and starting a project are currently only supported through our CLI.
-
-### Installing
-
-Download and install nodejs 16+ from https://nodejs.org/en/download/.
-
-Run the following script from checkout directory to install the command globally:
-```
-# This will take about 5mins to finish when run for the first time.
-npm run install-and-build
-```
-
-### Creating a project
-
-```
-# init in current directory
-npm run cli --silent -- init
-```
-```
-# init in /path/to/project directory
-# directory will be created if it doesnt exist
-npm run cli --silent -- init --project /path/to/project
-# Data modeler UI will be available at http://localhost:8080
-```
-
-Note: This is not explicitly necessary.
-Running the other commands on a non-existing directory or a fresh directory will automatically initialize the project.
-
-### Importing a table from a file
-```
-# import table from /path/to/table/file into project under /path/to/project
-npm run cli --silent -- import-table /path/to/table/file --project /path/to/project
-
-# Optionally pass a delimiter to override auto detected delimiter by duckdb.
-# Only applies to a csv file
-npm run cli --silent -- import-table /path/to/table/csvfile --project /path/to/project --delimiter "|"
-```
-`--project` is optional. Will default to current directory if not specified.
-
-Table name can be customisable using `--name` argument. By default, it uses file name without extension for table name.
-
-**File types currently supported:**
- - .parquet
- - .csv
- - .tsv
-
-### Starting the UI
-```
-# start the UI using info from project under /path/to/project
-npm run cli --silent -- start --project /path/to/project
-```
-`--project` is optional. Will default to current directory if not specified.
-
-### Dropping a table
-```
-# Drop a table 'tableToDrop' from project under /path/to/project
-npm run cli --silent -- drop-table tableToDrop --project /path/to/project
-```
-`--project` is optional. Will default to current directory if not specified.
-
-# Developer Guide
+# Local Developer Setup
 
 ## Getting started
 
@@ -92,4 +30,10 @@ npm run test
 Run individual test files by running jest directly:
 ```
 npx jest /path/to/test/file
+```
+
+# Docker Usage (WIP)
+
+```
+
 ```
