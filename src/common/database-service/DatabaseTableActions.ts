@@ -1,6 +1,7 @@
 import {DatabaseActions} from "./DatabaseActions";
 import {guidGenerator} from "$lib/util/guid";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
+import type {DuckDBTableSummary} from "$common/duckdbTypes";
 
 export class DatabaseTableActions extends DatabaseActions {
     public async createViewOfQuery(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {
@@ -41,5 +42,9 @@ export class DatabaseTableActions extends DatabaseActions {
 
     public async dropTable(metadata: DatabaseMetadata, tableName: string): Promise<any> {
         await this.databaseClient.execute(`DROP TABLE ${tableName}`);
+    }
+
+    public async getTableSummary(metadata: DatabaseMetadata, tableName: string): Promise<DuckDBTableSummary> {
+        return await this.databaseClient.execute(`SUMMARIZE ${tableName}`);
     }
 }

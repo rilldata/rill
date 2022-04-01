@@ -108,7 +108,7 @@ export class DatabaseColumnActions extends DatabaseActions {
         return ranges;
     }
 
-    private async getTopKOfColumn(metadata: DatabaseMetadata,
+    public async getTopKOfColumn(metadata: DatabaseMetadata,
                           tableName: string, columnName: string, func = "count(*)"): Promise<any> {
         const sanitizedColumnName = sanitizeColumn(columnName);
         return this.databaseClient.execute(`
@@ -119,7 +119,7 @@ export class DatabaseColumnActions extends DatabaseActions {
         `);
     }
 
-    private async getCardinalityOfColumn(metadata: DatabaseMetadata,
+    public async getCardinalityOfColumn(metadata: DatabaseMetadata,
                                  tableName: string, columnName: string): Promise<number> {
         const sanitizedColumnName = sanitizeColumn(columnName);
         const [results] = await this.databaseClient.execute(
