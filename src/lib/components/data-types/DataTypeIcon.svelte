@@ -3,6 +3,7 @@ import {
     CATEGORICALS, 
     TIMESTAMPS,
     INTEGERS,
+    INTERVALS,
     FLOATS, 
     BOOLEANS } from "$lib/duckdb-data-types";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
@@ -25,7 +26,7 @@ function typeToSymbol(fieldType:string) {
         return FloatType;
     } else if (CATEGORICALS.has(fieldType)) {
         return CategoricalType;
-    } else if (TIMESTAMPS.has(fieldType)) {
+    } else if (TIMESTAMPS.has(fieldType) ||  INTERVALS.has(type)) {
         return TimestampType;
     } else if (BOOLEANS.has(fieldType)) {
         return BooleanType;

@@ -210,28 +210,10 @@ let titleTooltip;
         class="
             pl-8 text-ellipsis overflow-hidden whitespace-nowrap text-right" style:max-width="{exampleWidth}px"
         >
-                <FormattedDataType {type} isNull={example === null || example === ''}>
-                    {#if TIMESTAMPS.has(type)}
-                        {standardTimestampFormat(new Date(example))}
-                    {:else if CATEGORICALS.has(type) && example === ''}
-                        <span class="text-gray-400 italic">{"<"}empty string{">"}</span>
-                    {:else}
-                        {example}
-                    {/if}
-                    <!-- {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example} -->
-                </FormattedDataType>
+                <FormattedDataType {type} isNull={example === null || example === ''} value={example} />
         </div>
         <TooltipContent slot="tooltip-content" >
-                <FormattedDataType {type} isNull={example === null || example === ''} dark>
-                    {#if TIMESTAMPS.has(type)}
-                        {standardTimestampFormat(new Date(example))}
-                    {:else if CATEGORICALS.has(type) && example === ''}
-                        <span class="text-gray-400 italic">{"<"}empty string{">"}</span>
-                    {:else}
-                        {example}
-                    {/if}
-                    <!-- {TIMESTAMPS.has(type) ? standardTimestampFormat(new Date(example)) : example} -->
-                </FormattedDataType>
+                <FormattedDataType value={example} {type} isNull={example === null || example === ''} dark />
         </TooltipContent>
         </Tooltip>
     </svelte:fragment>
