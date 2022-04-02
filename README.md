@@ -1,7 +1,4 @@
 # Rill Developer **_(tech preview)_**
-
-[Join the Rill Community Slack!](https://bit.ly/35ijZG4)
-
 Rill Developer is a tool that makes it effortless to transform your datasets with SQL. It's not just a SQL GUI! Rill Developer follows a few guiding principles:
 - *no more data analysis "side-quests"* – helps you build intuition about your dataset through automatic profiling
 - *no "run query" button required* – responds to each keystroke by re-profiling the resulting dataset
@@ -12,7 +9,9 @@ It's best to show and not tell, so here's a little preview of Rill Developer:
 
 ![RillDeveloper](https://user-images.githubusercontent.com/5587788/160640657-2b68a230-9dcb-4236-a6c8-df5263c33443.gif)
 
-We want to hear from you if you have any questions or ideas to share. You can file an issue directly in this repository or reach us in our [Rill Community Slack](https://bit.ly/35ijZG4). Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
+
+## We want to hear from you if you have any questions or ideas to share.
+You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill Community](https://bit.ly/35ijZG4) channel. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 # Prerequisites
 Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
