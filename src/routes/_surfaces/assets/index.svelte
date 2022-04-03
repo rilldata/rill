@@ -161,9 +161,11 @@ let view = 'assets';
       </div>
       <!-- assets pane footer. -->
       <div class='p-3 italic text-gray-800 bg-gray-50 flex items-center text-center justify-center' style:height="var(--header-height)">
+        <div class='text-left'>
         Bugs, complaints, feedback? &nbsp;
+        </div>
         <a 
-          class="not-italic font-bold text-blue-600"
+          class="inline not-italic font-bold text-blue-600 text-right"
           href="https://discord.com/channels/959796421832343562/959796422281138247"> Ask us on Discord 💬
         </a>
       </div>
