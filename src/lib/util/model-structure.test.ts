@@ -134,7 +134,6 @@ select something, count(*) from       table
             output: [{ name: 'table', start: 39, end: 44}]
         },
 
-                // check wraps for ?
                 {
                     input: `
         select something, count(*) from       table    abc    
