@@ -309,11 +309,12 @@ export function extractFromStatements(query:string) {
                 }
                 
                 const finalSeq = restOfQuery.slice(ei + leftCorrection, ri - rightCorrection);
-                
+                const [name, ...remainder] = finalSeq.split(' ');
+                let remainingChars = remainder.join(' ');
                 sourceTables.push({
-                    name: finalSeq,
+                    name: name.trim(),
                     start: ei  + latest + leftCorrection,
-                    end: ri - rightCorrection + latest
+                    end: ri - rightCorrection + latest - (remainingChars.length ? (remainingChars.length + 1): 0)
                 });
 
                 break;
