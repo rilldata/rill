@@ -59,6 +59,7 @@ npm run cli --silent -- import-table /path/to/data_1.parquet
 npm run cli --silent -- import-table /path/to/data_2.csv
 npm run cli --silent -- import-table /path/to/data_3.tsv
 ```
+
 ## Start Your Project
 Start the User Interface to interact with your imported tables and revisit projects you have created.
 ```
