@@ -135,7 +135,7 @@ onMount(() => {
       class:text-gray-300={currentDerivedModel?.error} 
       class='cost pl-4 pr-4 flex flex-row items-center gap-x-2'
       >
-      {#if !currentDerivedModel?.error && (rollup && rollup !== Infinity && rollup !== -Infinity)}
+      {#if !currentDerivedModel?.error && (rollup !== undefined && rollup !== Infinity && rollup !== -Infinity)}
     <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
       <button
       bind:this={contextMenu}
@@ -180,6 +180,8 @@ onMount(() => {
         {#if inputRowCardinalityValue > 0}
           {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > config.hideRight}, {currentDerivedModel?.profile?.length} columns
           {/if}
+        {:else if inputRowCardinalityValue === 0}
+          no rows selected
         {:else}
           &nbsp;
         {/if}
@@ -190,7 +192,8 @@ onMount(() => {
                   {#if isNaN(rollup)}
                     ~
                   {:else if rollup === 0 }
-                    no rows selected
+                    <!-- show no additional text. -->
+                    resultset is empty
                   {:else if rollup !== 1}
                                   {formatBigNumberPercentage(rollup < .0005 ? rollup :( $bigRollupNumber || 0))}
                               of source rows
