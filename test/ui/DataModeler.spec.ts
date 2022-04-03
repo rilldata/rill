@@ -87,10 +87,10 @@ export class DataModelerTest extends TestBase {
   public queryDataProvider(): DataProviderData<[string, CostOutput]> {
     type Args = [string, CostOutput];
 
-    const LimitZeroQuery = 'SELECT * FROM AdBids LIMIT 0';
+    const LimitZeroQuery = 'SELECT * FROM AdBids LIMIT 1';
     // FIXME the first query loaded doesn't seem to show the cost correctly, this could be a bug in the
     // UI.
-    const LimitZeroQueryResult: CostOutput = encodeURI('0 rows, 5 columns');
+    const LimitZeroQueryResult: CostOutput = encodeURI('1 row, 5 columns');
     const LimitZeroQueryTestData: Args = [LimitZeroQuery, LimitZeroQueryResult];
 
     const LimitTenQuery = 'SELECT * FROM AdBids LIMIT 10';
