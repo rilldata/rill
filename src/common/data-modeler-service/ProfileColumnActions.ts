@@ -56,13 +56,13 @@ export class ProfileColumnActions extends DataModelerActions {
         ]);
     }
 
-    private async estimateTimeGrain(entityType: EntityType, entityId: string,
+    private async estimateSmallesTimeGrain(entityType: EntityType, entityId: string,
                                             tableName: string, column: ProfileColumn): Promise<void> {
             this.dataModelerStateService.dispatch("updateColumnSummary",[
             entityType, entityId, column.name,
             await this.databaseActionQueue.enqueue(
             {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
-            "estimateTimeGrain", [tableName, column.name]),
+            "estimateSmallestTimeGrain", [tableName, column.name]),
         ]);
     }
 
