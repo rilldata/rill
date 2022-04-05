@@ -32,12 +32,12 @@ $: timeLength = interval ? intervalToTimestring(type === "DATE" ? {days: interva
     </Tooltip>
     {#if estimatedSmallestTimeGrain}
     <Tooltip location="top" distance={16}>
-        <div class="justify-self-end text-gray-500 text-right">
-            smallest time grain – <span class='italic'>{estimatedSmallestTimeGrain}</span>
+        <div class="justify-self-end text-gray-500 text-right leading-4">
+            time grain in <span class='italic'>{estimatedSmallestTimeGrain}</span>
         </div>
     <TooltipContent slot='tooltip-content'>
         <div style:width="240px">
-            The smallest estimated time granularity of this column is at the <span class='italic'>{estimatedSmallestTimeGrain}</span> level.
+            The smallest estimated time grain of this column is at the <span class='italic'>{estimatedSmallestTimeGrain}</span> level.
         </div>
     </TooltipContent>
     </Tooltip>
@@ -47,7 +47,7 @@ $: timeLength = interval ? intervalToTimestring(type === "DATE" ? {days: interva
 <HistogramBase separate={width > 300} fillColor={TIMESTAMP_TOKENS.vizFillClass} baselineStrokeColor={TIMESTAMP_TOKENS.vizStrokeClass} {data} left={0} right={0} width={effectiveWidth} {height} bottom={40}>
     <svelte:fragment let:x let:y let:buffer>
         {@const yStart = y.range()[0] + fontSize + buffer * 1.5}
-        {@const yEnd = y.range()[0] + fontSize *2 + buffer * 1.75}
+        {@const yEnd = y.range()[0] + fontSize * 2 + buffer * 1.75}
         {@const xStart = x.range()[0]}
         {@const xEnd = x.range()[1]}
         {@const start = removeTimezoneOffset(new Date(x.domain()[0] * 1000))}

@@ -7,14 +7,14 @@ import {TIMESTAMPS} from "$lib/duckdb-data-types";
 const TOP_K_COUNT = 50;
 
 export enum TimeGrain {
-  ms = "ms",
-  second = "second",
-  minute = "minute",
-  hour = "hour",
-  day = "day",
-  week = "week",
-  month = "month",
-  year = "year"
+  milliseconds = "milliseconds",
+  seconds = "seconds",
+  minutes = "minutes",
+  hours = "hours",
+  days = "days",
+  weeks = "weeks",
+  months = "months",
+  years = "years"
 }
 
 /**
@@ -113,17 +113,17 @@ export class DatabaseColumnActions extends DatabaseActions {
       )
       SELECT 
         COALESCE(
-            case WHEN ms > 1 THEN 'ms' else NULL END,
-            CASE WHEN second > 1 THEN 'second' else NULL END,
-            CASE WHEN minute > 1 THEN 'minute' else null END,
-            CASE WHEN hour > 1 THEN 'hour' else null END,
+            case WHEN ms > 1 THEN 'milliseconds' else NULL END,
+            CASE WHEN second > 1 THEN 'seconds' else NULL END,
+            CASE WHEN minute > 1 THEN 'minutes' else null END,
+            CASE WHEN hour > 1 THEN 'hours' else null END,
             -- cases above, if equal to 1, then we have some candidates for
             -- bigger time grains. We need to reverse from here
             -- years, months, weeks, days.
-            CASE WHEN dayofyear = 1 and year > 1 THEN 'year' else null END,
-            CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'month' else null END,
-            CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'week' else null END,
-            CASE WHEN hour = 1 THEN 'day' else null END
+            CASE WHEN dayofyear = 1 and year > 1 THEN 'years' else null END,
+            CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'months' else null END,
+            CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'weeks' else null END,
+            CASE WHEN hour = 1 THEN 'days' else null END
         ) as estimatedSmallestTimeGrain
       FROM time_grains
       `);

@@ -17,7 +17,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
                 start: '2021-01-01 01:30:00',
                 end: '2021-01-01 02:00:00',
                 interval: '4 millisecond',
-                expectedTimeGrain: TimeGrain.ms
+                expectedTimeGrain: TimeGrain.milliseconds
             }]}
         ]
     },
@@ -28,7 +28,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
                 start: '2021-01-01 23:30:00',
                 end: '2021-01-02 23:30:00',
                 interval: '4 millisecond',
-                expectedTimeGrain: TimeGrain.ms
+                expectedTimeGrain: TimeGrain.milliseconds
             }]}]
     },
     {
@@ -38,7 +38,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01 12:30:00',
             end: '2021-01-01 13:30:00',
             interval: '2 seconds',
-            expectedTimeGrain: TimeGrain.second
+            expectedTimeGrain: TimeGrain.seconds
         }]}]
     },
     {
@@ -48,7 +48,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01 01:04:04',
             end: '2021-01-01 09:04:04',
             interval: '47 minutes',
-            expectedTimeGrain: TimeGrain.minute
+            expectedTimeGrain: TimeGrain.minutes
         }]}]
     },
     {
@@ -58,7 +58,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01',
             end: '2022-01-01',
             interval: '2 hours',
-            expectedTimeGrain: TimeGrain.hour
+            expectedTimeGrain: TimeGrain.hours
         }]}]
     },
     {
@@ -68,7 +68,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01',
             end: '2025-01-01',
             interval: '3 days',
-            expectedTimeGrain: TimeGrain.day
+            expectedTimeGrain: TimeGrain.days
         }]}]
     },
     {
@@ -78,7 +78,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '2000-01-01',
             interval: '7 day',
-            expectedTimeGrain: TimeGrain.week
+            expectedTimeGrain: TimeGrain.weeks
         }]}]
     },
     {
@@ -88,7 +88,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '1900-03-01',
             interval: '7 day',
-            expectedTimeGrain: TimeGrain.week
+            expectedTimeGrain: TimeGrain.weeks
         }]}]
     },
     {
@@ -98,7 +98,17 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '2000-01-01',
             interval: '7 day',
-            expectedTimeGrain: TimeGrain.week
+            expectedTimeGrain: TimeGrain.weeks
+        }]}]
+    },
+    {
+        title: "once every two months, 100 years",
+        subData: [{ args: [{
+            table:'ts_months_01',
+            start: '1900-01-01',
+            end: '2000-01-01',
+            interval: '2 month',
+            expectedTimeGrain: TimeGrain.months
         }]}]
     },
     {
@@ -108,7 +118,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '2000-01-01',
             interval: '1 year',
-            expectedTimeGrain: TimeGrain.year
+            expectedTimeGrain: TimeGrain.years
         }]}]
     },
 ]}
