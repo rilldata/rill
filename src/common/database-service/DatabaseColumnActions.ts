@@ -40,12 +40,59 @@ export class DatabaseColumnActions extends DatabaseActions {
         return { statistics: results };
     }
 
+    public async estimateTimeGrain(metadata: DatabaseMetadata,
+                                                tableName: string, columnName: string, sampleSize = 500000): Promise<any> {
+      const [total] = await this.databaseClient.execute(`
+        SELECT count(*) as c from "${tableName}"
+      `)
+      const totalRows = total.c;
+      // only sample when you have a lot of data.
+      const useSample = sampleSize > totalRows ? '' : `USING SAMPLE ${(100 * sampleSize / totalRows)}%`
+
+      const [ timeGrain ] = await this.databaseClient.execute(`
+      WITH cleaned_column AS (
+          SELECT "${columnName}" as cd
+          from ${tableName}
+          ${useSample}
+      ),
+      time_grains as (
+      SELECT 
+          approx_count_distinct(extract('years' from cd)) as year,
+          approx_count_distinct(extract('months' from cd)) as month,
+          approx_count_distinct(extract('dayofyear' from cd)) as dayofyear,
+          approx_count_distinct(extract('dayofmonth' from cd)) as dayofmonth,
+          min(cd = last_day(cd)) = TRUE as lastdayofmonth,
+          approx_count_distinct(extract('weekofyear' from cd)) as weekofyear,
+          approx_count_distinct(extract('dayofweek' from cd)) as dayofweek,
+          approx_count_distinct(extract('hour' from cd)) as hour,
+          approx_count_distinct(extract('minute' from cd)) as minute,
+          approx_count_distinct(extract('second' from cd)) as second,
+          approx_count_distinct(extract('millisecond' from cd) - extract('seconds' from cd) * 1000) as ms
+      FROM cleaned_column
+      )
+      SELECT 
+        COALESCE(
+            case WHEN ms > 1 THEN 'ms' else NULL END,
+            CASE WHEN second > 1 THEN 'second' else NULL END,
+            CASE WHEN minute > 1 THEN 'minute' else null END,
+            CASE WHEN hour > 1 THEN 'hour' else null END,
+            -- cases above, if equal to 1, then we have some candidates for
+            -- bigger time grains. We need to reverse from here
+            -- years, months, weeks, days.
+            CASE WHEN dayofyear = 1 and year > 1 THEN 'year' else null END,
+            CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'month' else null END,
+            CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'week' else null END,
+            CASE WHEN hour = 1 THEN 'day' else null END
+        ) as timeGrain
+      FROM time_grains
+      `);
+      return timeGrain;
+    }
+
     public async getNumericHistogram(metadata: DatabaseMetadata,
                                               tableName: string, columnName: string, columnType: string): Promise<NumericSummary> {
         const sanitizedColumnName = sanitizeColumn(columnName);
         // use approx_count_distinct to get the immediate cardinality of this column.
-        // FIXME: we don't need to re-compute cardinality here. Instead we should be calculating it
-        // for every column by default.
         const [buckets] = await this.databaseClient.execute(`SELECT approx_count_distinct(${sanitizedColumnName}) as count from ${tableName}`);
         const bucketSize = Math.min(40, buckets.count);
         const result = await this.databaseClient.execute(`
