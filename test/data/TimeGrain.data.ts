@@ -1,4 +1,4 @@
-import type { DataProviderData } from "@adityahegde/typescript-test-utils";=
+import type { DataProviderData } from "@adityahegde/typescript-test-utils";
 import { TimeGrain } from "$common/database-service/DatabaseColumnActions";
 
 export interface GeneratedTimeseriesTestCase {

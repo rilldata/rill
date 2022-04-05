@@ -17,6 +17,11 @@ export enum TimeGrain {
   year = "year"
 }
 
+/**
+ * All database column actions return javascript objects that get folded 
+ * into a `summary` field in the derived table. Thus any action in this file must
+ * return an object.
+ */
 export class DatabaseColumnActions extends DatabaseActions {
     public async getTopKAndCardinality(metadata: DatabaseMetadata, tableName: string, columnName: string,
                                        func = "count(*)"): Promise<CategoricalSummary> {
@@ -51,8 +56,33 @@ export class DatabaseColumnActions extends DatabaseActions {
         return { statistics: results };
     }
 
-    public async estimateTimeGrain(metadata: DatabaseMetadata,
-                                                tableName: string, columnName: string, sampleSize = 500000): Promise<TimeGrain> {
+    /**
+     * Estimates the smallest time grain present in the column.
+     * The "smallest time grain" is the smallest value that we believe the user
+     * can reliably roll up. In other words, if the data is reported daily, this
+     * action will return "day", since that's the smallest rollup grain we can
+     * rely on.
+     * 
+     * This function can only focus on some common time grains. It will operate on
+     * - ms
+     * - second
+     * - minute
+     * - hour
+     * - day
+     * - week
+     * - month
+     * - year
+     * 
+     * It will not estimate any more nuanced or difficult-to-measure time grains, such as
+     * quarters, once-a-month, etc.
+     * 
+     * It accomplishes its goal by sampling 500k values of a column and then estimating the cardinality
+     * of each. If there are < 500k samples, the action will use all of the column's data.
+     * We're not sure all the ways this heuristic will fail, but it seems pretty resilient to the tests
+     * we've thrown at it.
+     */
+    public async estimateSmallestTimeGrain(metadata: DatabaseMetadata,
+                                                tableName: string, columnName: string, sampleSize = 500000): Promise<{ estimatedSmallestTimeGrain: TimeGrain }> {
       const [total] = await this.databaseClient.execute(`
         SELECT count(*) as c from "${tableName}"
       `)
@@ -94,10 +124,10 @@ export class DatabaseColumnActions extends DatabaseActions {
             CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'month' else null END,
             CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'week' else null END,
             CASE WHEN hour = 1 THEN 'day' else null END
-        ) as timeGrain
+        ) as estimatedSmallestTimeGrain
       FROM time_grains
       `);
-      return timeGrainResult.timeGrain;
+      return timeGrainResult;
     }
 
     public async getNumericHistogram(metadata: DatabaseMetadata,

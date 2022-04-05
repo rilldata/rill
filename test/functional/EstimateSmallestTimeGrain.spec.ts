@@ -1,4 +1,4 @@
-import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";=
+import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import type { DatabaseService } from "$common/database-service/DatabaseService";
 import type { TimeGrain } from "$common/database-service/DatabaseColumnActions";
@@ -41,10 +41,9 @@ export class StateSyncServiceSpec extends FunctionalTestBase  {
 
     @TestBase.Test("seriesGeneratedTimegrainData")
     public async shouldIdentifyTimegrain(args:GeneratedTimeseriesTestCase) {
-        // generate the temporary table.
         // @ts-ignore
         await this.databaseService.databaseClient.execute(generateSeries(args.table, args.start, args.end, args.interval));
-        const timeGrain = await this.databaseService.dispatch("estimateTimeGrain", [args.table, "ts"]) as TimeGrain;
-        expect(args.expectedTimeGrain).toBe(timeGrain);
+        const result = await this.databaseService.dispatch("estimateSmallestTimeGrain", [args.table, "ts"]) as { estimatedSmallestTimeGrain: TimeGrain };
+        expect(args.expectedTimeGrain).toBe(result.estimatedSmallestTimeGrain);
     }
 }

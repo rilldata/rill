@@ -56,6 +56,16 @@ export class ProfileColumnActions extends DataModelerActions {
         ]);
     }
 
+    private async estimateTimeGrain(entityType: EntityType, entityId: string,
+                                            tableName: string, column: ProfileColumn): Promise<void> {
+            this.dataModelerStateService.dispatch("updateColumnSummary",[
+            entityType, entityId, column.name,
+            await this.databaseActionQueue.enqueue(
+            {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+            "estimateTimeGrain", [tableName, column.name]),
+        ]);
+    }
+
     private async collectNumericHistogram(entityType: EntityType, entityId: string,
                                           tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary", [
