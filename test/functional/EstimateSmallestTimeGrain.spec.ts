@@ -21,7 +21,7 @@ function generateSeries(table:string, start:string, end:string, interval:string)
 }
 
 @FunctionalTestBase.Suite
-export class StateSyncServiceSpec extends FunctionalTestBase  {
+export class EstimateSmallestTimeGrainSpec extends FunctionalTestBase  {
     protected databaseService: DatabaseService;
 
     public async setup(): Promise<void> {

@@ -26,18 +26,18 @@ $: timeLength = interval ? intervalToTimestring(type === "DATE" ? {days: interva
     </div>
     <TooltipContent slot="tooltip-content">
         <div style:width="240px">
-            This column represents {timeLength} of data.
+            This column represents <span class='italic'>{timeLength}</span> of data.
         </div>
     </TooltipContent>
     </Tooltip>
     {#if estimatedSmallestTimeGrain}
     <Tooltip location="top" distance={16}>
-        <div class="justify-self-end">
-            min grain: {estimatedSmallestTimeGrain}
+        <div class="justify-self-end text-gray-500 text-right">
+            smallest time grain – <span class='italic'>{estimatedSmallestTimeGrain}</span>
         </div>
     <TooltipContent slot='tooltip-content'>
         <div style:width="240px">
-            The smallest estimated time granularity of this column is at the <b>{estimatedSmallestTimeGrain}</b> level.
+            The smallest estimated time granularity of this column is at the <span class='italic'>{estimatedSmallestTimeGrain}</span> level.
         </div>
     </TooltipContent>
     </Tooltip>
