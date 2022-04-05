@@ -1,4 +1,6 @@
-<script>
+<script lang="ts">
+import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import HistogramBase from "./HistogramBase.svelte";
 import { datePortion, timePortion, intervalToTimestring, removeTimezoneOffset } from "$lib/util/formatters";
 import { TIMESTAMP_TOKENS } from "$lib/duckdb-data-types";
@@ -7,14 +9,40 @@ export let type;
 export let interval;
 export let width;
 export let height = 100;
+export let estimatedSmallestTimeGrain:string;
 
 $: effectiveWidth = Math.max(width - 8, 120);
 
 let fontSize = 12;
+
+$: timeLength = interval ? intervalToTimestring(type === "DATE" ? {days: interval, months: 0, micros: 0 } : interval) : undefined;
 </script>
 
 {#if interval}
-<div class="italic pt-1 pb-2">{intervalToTimestring(type === "DATE" ? {days: interval, months: 0, micros: 0 } : interval)}</div>
+<div class="grid space-between grid-cols-2 items-baseline pr-6">
+    <Tooltip location="top" distance={16}>
+    <div class="italic pt-1 pb-2">
+        {timeLength}
+    </div>
+    <TooltipContent slot="tooltip-content">
+        <div style:width="240px">
+            This column represents {timeLength} of data.
+        </div>
+    </TooltipContent>
+    </Tooltip>
+    {#if estimatedSmallestTimeGrain}
+    <Tooltip location="top" distance={16}>
+        <div class="justify-self-end">
+            min grain: {estimatedSmallestTimeGrain}
+        </div>
+    <TooltipContent slot='tooltip-content'>
+        <div style:width="240px">
+            The smallest estimated time granularity of this column is at the <b>{estimatedSmallestTimeGrain}</b> level.
+        </div>
+    </TooltipContent>
+    </Tooltip>
+    {/if}
+</div>
 {/if}
 <HistogramBase separate={width > 300} fillColor={TIMESTAMP_TOKENS.vizFillClass} baselineStrokeColor={TIMESTAMP_TOKENS.vizStrokeClass} {data} left={0} right={0} width={effectiveWidth} {height} bottom={40}>
     <svelte:fragment let:x let:y let:buffer>

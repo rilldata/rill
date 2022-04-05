@@ -256,6 +256,7 @@ let titleTooltip;
                         width={containerWidth - (indentLevel === 1 ? (20 + 24 + 54 ): 32 + 20)}
                         data={summary.histogram}
                         interval={summary.interval}
+                        estimatedSmallestTimeGrain={summary?.estimatedSmallestTimeGrain}
                     />
                 </div>
             {/if}
