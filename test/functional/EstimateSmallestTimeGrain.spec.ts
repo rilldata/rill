@@ -41,7 +41,6 @@ export class EstimateSmallestTimeGrainSpec extends FunctionalTestBase  {
 
     @TestBase.Test("seriesGeneratedTimegrainData")
     public async shouldIdentifyTimegrain(args:GeneratedTimeseriesTestCase) {
-        // @ts-ignore
         await this.databaseService.databaseClient.execute(generateSeries(args.table, args.start, args.end, args.interval));
         const result = await this.databaseService.dispatch("estimateSmallestTimeGrain", [args.table, "ts"]) as { estimatedSmallestTimeGrain: TimeGrain };
         expect(args.expectedTimeGrain).toBe(result.estimatedSmallestTimeGrain);

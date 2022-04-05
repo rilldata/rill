@@ -32,7 +32,7 @@ export class DatabaseService implements ActionServiceBase<DatabaseActionsDefinit
         [Action in keyof DatabaseActionsDefinition]?: DatabaseActionsClasses
     } = {};
 
-    public constructor(private readonly databaseClient: DuckDBClient,
+    public constructor(public readonly databaseClient: DuckDBClient,
                        private readonly databaseActions: Array<DatabaseActions>) {
         databaseActions.forEach((actions) => {
             getActionMethods(actions).forEach(action => {
