@@ -32,7 +32,7 @@ export class DatabaseService implements ActionServiceBase<DatabaseActionsDefinit
         [Action in keyof DatabaseActionsDefinition]?: DatabaseActionsClasses
     } = {};
 
-    public constructor(public readonly databaseClient: DuckDBClient,
+    public constructor(private readonly databaseClient: DuckDBClient,
                        private readonly databaseActions: Array<DatabaseActions>) {
         databaseActions.forEach((actions) => {
             getActionMethods(actions).forEach(action => {
@@ -43,6 +43,10 @@ export class DatabaseService implements ActionServiceBase<DatabaseActionsDefinit
 
     public async init(): Promise<void> {
         await this.databaseClient?.init();
+    }
+
+    public getDatabaseClient(): DuckDBClient {
+        return this.databaseClient;
     }
 
     /**
