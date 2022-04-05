@@ -6,6 +6,17 @@ import {TIMESTAMPS} from "$lib/duckdb-data-types";
 
 const TOP_K_COUNT = 50;
 
+export enum TimeGrain {
+  ms = "ms",
+  second = "second",
+  minute = "minute",
+  hour = "hour",
+  day = "day",
+  week = "week",
+  month = "month",
+  year = "year"
+}
+
 export class DatabaseColumnActions extends DatabaseActions {
     public async getTopKAndCardinality(metadata: DatabaseMetadata, tableName: string, columnName: string,
                                        func = "count(*)"): Promise<CategoricalSummary> {
@@ -41,7 +52,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     }
 
     public async estimateTimeGrain(metadata: DatabaseMetadata,
-                                                tableName: string, columnName: string, sampleSize = 500000): Promise<any> {
+                                                tableName: string, columnName: string, sampleSize = 500000): Promise<TimeGrain> {
       const [total] = await this.databaseClient.execute(`
         SELECT count(*) as c from "${tableName}"
       `)
@@ -49,7 +60,7 @@ export class DatabaseColumnActions extends DatabaseActions {
       // only sample when you have a lot of data.
       const useSample = sampleSize > totalRows ? '' : `USING SAMPLE ${(100 * sampleSize / totalRows)}%`
 
-      const [ timeGrain ] = await this.databaseClient.execute(`
+      const [ timeGrainResult ] = await this.databaseClient.execute(`
       WITH cleaned_column AS (
           SELECT "${columnName}" as cd
           from ${tableName}
@@ -86,7 +97,7 @@ export class DatabaseColumnActions extends DatabaseActions {
         ) as timeGrain
       FROM time_grains
       `);
-      return timeGrain;
+      return timeGrainResult.timeGrain;
     }
 
     public async getNumericHistogram(metadata: DatabaseMetadata,
