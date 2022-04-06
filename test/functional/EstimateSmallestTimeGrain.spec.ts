@@ -32,7 +32,6 @@ export class EstimateSmallestTimeGrainSpec extends FunctionalTestBase  {
             state: new StateConfig({ autoSync: true, syncInterval: 50 }),
             projectFolder: SYNC_TEST_FOLDER, profileWithUpdate: false,
         });
-        await super.setup(config);
         const secondServerInstances = dataModelerServiceFactory(config);
         this.databaseService = secondServerInstances.dataModelerService.getDatabaseService();
         await this.databaseService.init();
