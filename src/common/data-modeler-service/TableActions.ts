@@ -19,6 +19,7 @@ import { DatabaseActionQueuePriority } from "$common/priority-action-queue/Datab
 import { existsSync } from "fs";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -153,8 +154,14 @@ export class TableActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
             [table, isNew]);
 
-        await this.importTableDataByType(table);
-
+        const response = await this.importTableDataByType(table);
+        if (response.status === ActionStatus.Failure) {
+            this.dataModelerStateService.dispatch("setEntityStatus",
+                [EntityType.Table, table.id, EntityStatus.Idle]);
+            this.notificationService.notify({ message: `failed to import ${table.tableName}`, type: "error"});
+            throw response.messages[0].message;
+        }
+        
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
         } else {
@@ -166,19 +173,25 @@ export class TableActions extends DataModelerActions {
     }
 
     private async importTableDataByType(table: PersistentTableEntity) {
-        switch (table.sourceType) {
-            case TableSourceType.ParquetFile:
-                await this.databaseActionQueue.enqueue(
-                    {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
-                    "importParquetFile", [table.path, table.tableName]);
-                break;
-
-            case TableSourceType.CSVFile:
-                await this.databaseActionQueue.enqueue(
-                    {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
-                    "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
-                break;
+        try {
+            switch (table.sourceType) {
+                case TableSourceType.ParquetFile:
+                    await this.databaseActionQueue.enqueue(
+                        {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
+                        "importParquetFile", [table.path, table.tableName]);
+                    break;
+    
+                case TableSourceType.CSVFile:
+                    await this.databaseActionQueue.enqueue(
+                        {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
+                        "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
+                    break;
+            }
+            this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
+        } catch (err) {
+            return ActionResponseFactory.getErrorResponse(err);
         }
-        this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
+        
+        
     }
 }
