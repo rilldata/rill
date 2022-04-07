@@ -32,6 +32,18 @@ Run individual test files by running jest directly:
 npx jest /path/to/test/file
 ```
 
+If you're working on the UI and want to make changes to UI tests, you can run 
+
+```
+npm run test:ui
+```
+
+The UI tests utilize [Playwright](https://github.com/microsoft/playwright/blob/main/LICENSE). Thus you can easily add common flags. For instance, if you need to run the visual / code debugger, run
+
+```
+PWDEBUG=1 npm run test:ui
+```
+
 # Docker Usage
 
 Run the rill-developer image,

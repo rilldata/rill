@@ -7,8 +7,8 @@
 import { createEventDispatcher } from "svelte";
 import { fade } from "svelte/transition"
 import { FormattedDataType } from "$lib/components/data-types/";
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
-import { standardTimestampFormat } from "$lib/util/formatters";
+import { INTERVALS, TIMESTAMPS } from "$lib/duckdb-data-types";
+import { formatDataType, standardTimestampFormat } from "$lib/util/formatters";
 import Tooltip from "../tooltip/Tooltip.svelte";
 import TooltipContent from "../tooltip/TooltipContent.svelte";
 import notificationStore from "../notifications";
@@ -78,17 +78,21 @@ let activeCell = false;
         class="text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
         use:shiftClickAction
         on:shift-click={async (event) => {
-            await navigator.clipboard.writeText(name);
-            let rep = name.toString().slice(0,10)
+            let exportedValue = value;
+            if (INTERVALS.has(type)) {
+                exportedValue = formatDataType(value, type);
+
+            } else if (TIMESTAMPS.has(type)) {
+                exportedValue =  `TIMESTAMP '${value}'`;
+            }
+            await navigator.clipboard.writeText(exportedValue);
             notificationStore.send({ message: `copied value to clipboard`});
             // update this to set the active animation in the tooltip text
         }}
     >
     {#if value !== undefined}
     <span transition:fade|local={{duration: 75}}>
-        <FormattedDataType {type} {isNull} inTable>
-            {@html formattedValue}
-        </FormattedDataType>
+        <FormattedDataType value={value} {type} {isNull} inTable />
     </span>
     {/if}
     </button>
@@ -96,7 +100,7 @@ let activeCell = false;
 <TooltipContent slot='tooltip-content'>
     <TooltipTitle>
         <svelte:fragment slot='name'>
-            {value}
+            <FormattedDataType {value} {type} dark />
         </svelte:fragment>
     </TooltipTitle>
     <TooltipShortcutContainer>

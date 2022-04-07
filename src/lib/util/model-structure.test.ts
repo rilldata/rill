@@ -133,6 +133,13 @@ select something, count(*) from       table
     LEFT JOIN cruds ON cruds.id = table.id;`,
             output: [{ name: 'table', start: 39, end: 44}]
         },
+
+                {
+                    input: `
+        select something, count(*) from       table    abc    
+            LEFT JOIN cruds ON cruds.id = table.id;`,
+                    output: [{ name: 'table', start: 39, end: 44}]
+                },
 ]
 
 describe('extractFromStatements', () => {
@@ -147,6 +154,7 @@ describe('extractFromStatements', () => {
         expect(extractFromStatements(selectQueries[7].input)).toEqual(selectQueries[7].output);
 
         expect(extractFromStatements(selectQueries[8].input)).toEqual(selectQueries[8].output);
+        expect(extractFromStatements(selectQueries[8].input)).toEqual(selectQueries[9].output);
 
     })
 })

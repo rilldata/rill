@@ -38,6 +38,7 @@ export class ProfileColumnActions extends DataModelerActions {
             promises.push(this.collectNumericHistogram(entityType, entityId, tableName, column));
             if (TIMESTAMPS.has(column.type)) {
                 promises.push(this.collectTimeRange(entityType, entityId, tableName, column));
+                promises.push(this.collectSmallestTimegrainEstimate(entityType, entityId, tableName, column));
             } else {
                 promises.push(this.collectDescriptiveStatistics(entityType, entityId, tableName, column));
             }
@@ -53,6 +54,16 @@ export class ProfileColumnActions extends DataModelerActions {
             await this.databaseActionQueue.enqueue(
                 {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
                 "getTopKAndCardinality", [tableName, column.name]),
+        ]);
+    }
+
+    private async collectSmallestTimegrainEstimate(entityType: EntityType, entityId: string,
+                                            tableName: string, column: ProfileColumn): Promise<void> {
+            this.dataModelerStateService.dispatch("updateColumnSummary",[
+            entityType, entityId, column.name,
+            await this.databaseActionQueue.enqueue(
+            {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+            "estimateSmallestTimeGrain", [tableName, column.name]),
         ]);
     }
 

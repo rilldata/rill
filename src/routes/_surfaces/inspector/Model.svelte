@@ -135,7 +135,7 @@ onMount(() => {
       class:text-gray-300={currentDerivedModel?.error} 
       class='cost pl-4 pr-4 flex flex-row items-center gap-x-2'
       >
-
+      {#if !currentDerivedModel?.error && (rollup !== undefined && rollup !== Infinity && rollup !== -Infinity)}
     <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
       <button
       bind:this={contextMenu}
@@ -180,6 +180,8 @@ onMount(() => {
         {#if inputRowCardinalityValue > 0}
           {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > config.hideRight}, {currentDerivedModel?.profile?.length} columns
           {/if}
+        {:else if inputRowCardinalityValue === 0}
+          no rows selected
         {:else}
           &nbsp;
         {/if}
@@ -190,15 +192,16 @@ onMount(() => {
                   {#if isNaN(rollup)}
                     ~
                   {:else if rollup === 0 }
-                    no rows selected
+                    <!-- show no additional text. -->
+                    resultset is empty
                   {:else if rollup !== 1}
-                                  {formatBigNumberPercentage($bigRollupNumber)}
+                                  {formatBigNumberPercentage(rollup < .0005 ? rollup :( $bigRollupNumber || 0))}
                               of source rows
                   {:else}no change in row {#if containerWidth > config.hideRight}count{:else}ct.{/if}
 
                   {/if}  
               {:else if rollup === Infinity}
-                &nbsp; {outputRowCardinalityValue} row{#if outputRowCardinalityValue !== 1}s{/if} selected
+                &nbsp; {formatInteger(outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if} selected
             {/if}
         </div>
       <TooltipContent slot='tooltip-content'>
@@ -212,6 +215,7 @@ onMount(() => {
       </TooltipContent>
       </Tooltip>
     </div>
+    {/if}
     </div>
   {/if}
 
@@ -226,8 +230,9 @@ onMount(() => {
           </CollapsibleSectionTitle>
         </div>
         {#if showSourceTables}
-          {#if sourceTableReferences?.length && tables}
           <div transition:slide|local={{duration: 200}} class="mt-1">
+            {#if sourceTableReferences?.length && tables}
+
             {#each sourceTableReferences as reference, index (reference.name)}
             {@const correspondingTableCardinality = tables[index]?.cardinality}
               <div
@@ -257,12 +262,12 @@ onMount(() => {
               </div>
             </div>
             {/each}
-          </div>
-          {:else}
+            {:else}
             <div class='pl-4 pr-5 p-1 italic text-gray-400'>
             none selected
             </div>
           {/if}
+          </div>
         {/if}
       </div>
       

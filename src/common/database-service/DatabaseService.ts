@@ -45,6 +45,10 @@ export class DatabaseService implements ActionServiceBase<DatabaseActionsDefinit
         await this.databaseClient?.init();
     }
 
+    public getDatabaseClient(): DuckDBClient {
+        return this.databaseClient;
+    }
+
     /**
      * Forwards action to the appropriate class.
      * @param action
