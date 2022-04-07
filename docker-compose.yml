@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+
+  app:
+    build:
+      context: .
+      target: app
+    image: rilldata/rill-developer:${TAG:-latest}
+    ports:
+      - 8080:8080

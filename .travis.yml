@@ -24,7 +24,7 @@ jobs:
         - npx playwright install
 
         # build the entire application
-        - travis_wait 60 npm run build:ci
+        - npm run build
 
         # verify lint of the repo
         # - npm run lint
