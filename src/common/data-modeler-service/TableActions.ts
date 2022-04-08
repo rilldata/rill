@@ -193,7 +193,6 @@ export class TableActions extends DataModelerActions {
                 this.dataModelerStateService.dispatch("updateEntity",
                     [EntityType.Table, StateType.Persistent, originalPersistentTable]);
                 // Reset entity status to idle in the case where the table already exists.
-                // nothing has updated here I think?
                 this.dataModelerStateService.dispatch("setEntityStatus",
                     [EntityType.Table, table.id, EntityStatus.Idle]);
             }
