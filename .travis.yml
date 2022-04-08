@@ -24,7 +24,7 @@ jobs:
         - npx playwright install
 
         # build the entire application
-        - npm run build
+        - npm run build:ci
 
         # verify lint of the repo
         # - npm run lint

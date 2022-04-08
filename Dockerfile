@@ -1,4 +1,4 @@
-FROM node:16
+FROM rilldata/duckdb
 
 WORKDIR /app
 
