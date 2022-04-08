@@ -10,8 +10,5 @@ export class QueryParserSpec extends TestBase {
     public shouldParseQuery() {
         const parser = new QueryParser();
         const tree = parser.parse(NestedQuery);
-        console.log(tree.root.tables.map(t => t.alias));
-        console.log(tree.root.columns.map(c =>
-            `${c.alias} (${c.columnRefs.map(cr => cr.fullName)})` ));
     }
 }

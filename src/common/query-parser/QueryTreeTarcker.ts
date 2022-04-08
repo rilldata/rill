@@ -1,6 +1,7 @@
-import type { SelectFromStatement, FromTable, FromStatement, SelectedColumn, ExprRef } from "pgsql-ast-parser";
+import type { SelectFromStatement, FromTable, FromStatement, SelectedColumn, ExprRef, WithStatement, WithRecursiveStatement, WithStatementBinding } from "pgsql-ast-parser";
 import { ColumnNode } from "./tree/ColumnNode";
 import { ColumnRefNode } from "./tree/ColumnRefNode";
+import { CTENode } from "./tree/CTENode";
 import { NodeStack } from "./tree/NodeStack";
 import type { QueryTree } from "./tree/QueryTree";
 import type { QueryTreeNode } from "./tree/QueryTreeNode";
@@ -10,6 +11,7 @@ import { TableNode } from "./tree/TableNode";
 export class QueryTreeTracker {
     private readonly fullStack = new NodeStack<QueryTreeNode>();
     private readonly selectStack = new NodeStack<SelectNode>();
+    private readonly cteStack = new NodeStack<CTENode>();
     private readonly tableStack = new NodeStack<TableNode>();
     private readonly columnStack = new NodeStack<ColumnNode>();
 
@@ -19,6 +21,7 @@ export class QueryTreeTracker {
 
     public exitNode() {
         this.selectStack.exitNode(this.fullStack.currentNode as SelectNode);
+        this.cteStack.exitNode(this.fullStack.currentNode as CTENode);
         this.tableStack.exitNode(this.fullStack.currentNode as TableNode);
         this.columnStack.exitNode(this.fullStack.currentNode as ColumnNode);
 
@@ -32,8 +35,24 @@ export class QueryTreeTracker {
             this.queryTree.root = selectNode;
         }
 
+        if (this.isAtCTE() && !this.cteStack.currentNode.select) {
+            this.cteStack.currentNode.select = selectNode;
+        }
+
         this.selectStack.enterNode(selectNode);
         this.fullStack.enterNode(selectNode);
+        return selectNode;
+    }
+
+    public enterCTE(withStatement: WithStatement | WithRecursiveStatement) {
+        const cteNode = new CTENode(withStatement._location);
+        if (!this.queryTree.root) {
+            this.queryTree.root = cteNode;
+        }
+
+        this.cteStack.enterNode(cteNode);
+        this.fullStack.enterNode(cteNode);
+        return cteNode;
     }
 
     public enterTable(table: FromTable) {
@@ -42,12 +61,21 @@ export class QueryTreeTracker {
         tableNode.alias = table.name.alias ?? table.name.name;
 
         this.handleTableNode(tableNode);
+        return tableNode;
     }
     public enterSubQuery(fromStatement: FromStatement) {
         const tableNode = new TableNode(fromStatement._location);
         tableNode.alias = fromStatement.alias;
 
         this.handleTableNode(tableNode);
+        return tableNode;
+    }
+    public enterCTETable(cteTableName: string, statement: WithStatementBinding) {
+        const tableNode = new TableNode(statement._location);
+        tableNode.alias = cteTableName;
+
+        this.handleTableNode(tableNode);
+        return tableNode;
     }
 
     public exitTable() {
@@ -68,6 +96,7 @@ export class QueryTreeTracker {
 
         this.columnStack.enterNode(columnNode);
         this.fullStack.enterNode(columnNode);
+        return columnNode;
     }
 
     public handleRef(ref: ExprRef) {
@@ -84,7 +113,9 @@ export class QueryTreeTracker {
             this.tableMap.get(name).push(tableNode);
         }
 
-        if (this.isAtSelect()) {
+        if (this.isAtCTE()) {
+            this.cteStack.currentNode.tables.push(tableNode);
+        } else if (this.isAtSelect()) {
             this.selectStack.currentNode.tables.push(tableNode);
         }
 
@@ -109,13 +140,16 @@ export class QueryTreeTracker {
         this.columnStack.currentNode.columnRefs.push(colRefNode);
     }
 
-    private isAtColumn() {
-        return this.columnStack.currentNode === this.fullStack.currentNode;
+    private isAtSelect() {
+        return this.selectStack.currentNode === this.fullStack.currentNode;
+    }
+    private isAtCTE() {
+        return this.cteStack.currentNode === this.fullStack.currentNode;
     }
     private isAtTable() {
         return this.tableStack.currentNode === this.fullStack.currentNode;
     }
-    private isAtSelect() {
-        return this.selectStack.currentNode === this.fullStack.currentNode;
+    private isAtColumn() {
+        return this.columnStack.currentNode === this.fullStack.currentNode;
     }
 }

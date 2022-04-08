@@ -1,4 +1,4 @@
-import {astVisitor, ExprRef, FromStatement, FromTable, IAstVisitor, parse, SelectedColumn, SelectFromStatement} from "pgsql-ast-parser";
+import {astVisitor, ExprRef, FromStatement, FromTable, IAstVisitor, parse, SelectedColumn, SelectFromStatement, WithRecursiveStatement, WithStatement} from "pgsql-ast-parser";
 import { QueryTreeTracker } from "./QueryTreeTarcker";
 import { QueryTree } from "./tree/QueryTree";
 
@@ -10,6 +10,13 @@ export class QueryParser {
         const visitor = astVisitor(map => ({
             selection: sel => {
                 this.handleSelection(map, sel);
+            },
+
+            with: w => {
+                this.handleCTE(map, w);
+            },
+            withRecursive: wr => {
+                this.handleRecursiveCTE(map, wr);
             },
 
             fromTable: ft => {
@@ -47,10 +54,26 @@ export class QueryParser {
         visitor.super().fromTable(fromTable);
         this.queryTreeTracker.exitNode();
     }
-
     private handleSubQuery(visitor: IAstVisitor, fromStatement: FromStatement) {
         this.queryTreeTracker.enterSubQuery(fromStatement);
         visitor.super().fromStatement(fromStatement);
+        this.queryTreeTracker.exitNode();
+    }
+
+    private handleCTE(visitor: IAstVisitor, withStatement: WithStatement) {
+        this.queryTreeTracker.enterCTE(withStatement);
+        withStatement.bind.forEach((bind) => {
+            this.queryTreeTracker.enterCTETable(bind.alias.name, bind.statement);
+            visitor.super().statement(bind.statement);
+            this.queryTreeTracker.exitNode();
+        });
+        visitor.super().statement(withStatement.in);
+        this.queryTreeTracker.exitNode();
+    }
+    private handleRecursiveCTE(visitor: IAstVisitor, withStatement: WithRecursiveStatement) {
+        this.queryTreeTracker.enterCTE(withStatement);
+        // TODO
+        visitor.super().statement(withStatement.in);
         this.queryTreeTracker.exitNode();
     }
 
