@@ -144,7 +144,6 @@ export class TableActions extends DataModelerActions {
     }
 
     private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<ActionResponse> {
-        // produce the next possible table.
         let derivedTable:DerivedTableEntity;
         if (isNew) {
             derivedTable = getNewDerivedTable(table);
@@ -181,8 +180,6 @@ export class TableActions extends DataModelerActions {
             return response;
         }
 
-        // update the table name here.
-
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
         } else {
@@ -209,7 +206,7 @@ export class TableActions extends DataModelerActions {
                 break;
         }
         if (response) {
-            console.log('importTableByDataType', response)
+            this.notificationService.notify({ message: `failed to import ${table.name} from ${table.path}`, type: "error"});
             return response;
         } else {
             this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
