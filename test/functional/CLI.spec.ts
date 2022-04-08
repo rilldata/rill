@@ -73,7 +73,17 @@ export class CLISpec extends FunctionalTestBase {
         // check to see if the sources are the same.
         persistentState =
             JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
-        expect(persistentState.entities.find(entity => entity.tableName === 'AdBids')).toEqual(adBids);
+
+        const newAdBids = persistentState.entities.find(entity => entity.tableName === 'AdBids');
+        const oldStateObject = {... adBids};
+
+        const oldStateUpdateTime = oldStateObject.lastUpdated;
+        delete oldStateObject.lastUpdated;
+        // check the newAdBids field minus the lastUpdated time stamp.
+        expect(newAdBids).toEqual(
+            expect.objectContaining(oldStateObject)
+        );
+        expect(newAdBids.lastUpdated > oldStateUpdateTime).toBeTruthy();
 
     }
 

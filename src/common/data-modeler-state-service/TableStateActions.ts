@@ -11,10 +11,10 @@ export class TableStateActions extends StateActions {
     @StateActions.PersistentTableAction()
     public addOrUpdateTableToState({stateService, draftState}: PersistentTableStateActionArg,
                                    table: PersistentTableEntity, isNew: boolean): void {
-        if (isNew) {
-            stateService.addEntity(draftState, table);
-        } else {
-            stateService.updateEntity(draftState, table.id, table);
-        }
+        // if (isNew) {
+        //     stateService.addEntity(draftState, table);
+        // } else {
+        //     stateService.updateEntity(draftState, table.id, table);
+        // }
     }
 }

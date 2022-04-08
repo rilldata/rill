@@ -143,7 +143,28 @@ export class TableActions extends DataModelerActions {
             [EntityType.Table, table.id]);
     }
 
+    
     private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<ActionResponse> {
+        
+        // get the original Table state if not new.
+        let originalPersistentTable:PersistentTableEntity;
+        if (!isNew) {
+            originalPersistentTable = this.dataModelerStateService
+            .getEntityStateService(EntityType.Table, StateType.Persistent)
+            .getByField("tableName", table.name)
+        }
+
+        // update the new state
+        if (isNew) {
+            this.dataModelerStateService.dispatch("addEntity",
+                [EntityType.Table, StateType.Persistent, table]);
+        } else {
+            this.dataModelerStateService.dispatch("updateEntity",
+                [EntityType.Table, StateType.Persistent, table]);
+            //stateService.updateEntity(draftState, table.id, table);
+        }
+
+
         let derivedTable:DerivedTableEntity;
         if (isNew) {
             derivedTable = getNewDerivedTable(table);
@@ -171,7 +192,8 @@ export class TableActions extends DataModelerActions {
                 this.dataModelerStateService.dispatch("deleteEntity",
                 [EntityType.Table, StateType.Persistent, existingTable.id]);
             } else {
-                
+                this.dataModelerStateService.dispatch("updateEntity",
+                [EntityType.Table, StateType.Persistent, originalPersistentTable]);
                 // Reset entity status to idle in the case where the table already exists.
                 // nothing has updated here I think?
                 this.dataModelerStateService.dispatch("setEntityStatus",
