@@ -161,9 +161,7 @@ export class TableActions extends DataModelerActions {
         } else {
             this.dataModelerStateService.dispatch("updateEntity",
                 [EntityType.Table, StateType.Persistent, table]);
-            //stateService.updateEntity(draftState, table.id, table);
         }
-
 
         let derivedTable:DerivedTableEntity;
         if (isNew) {
@@ -190,14 +188,14 @@ export class TableActions extends DataModelerActions {
                     .getEntityStateService(EntityType.Table, StateType.Persistent)
                     .getByField("tableName", table.name);
                 this.dataModelerStateService.dispatch("deleteEntity",
-                [EntityType.Table, StateType.Persistent, existingTable.id]);
+                    [EntityType.Table, StateType.Persistent, existingTable.id]);
             } else {
                 this.dataModelerStateService.dispatch("updateEntity",
-                [EntityType.Table, StateType.Persistent, originalPersistentTable]);
+                    [EntityType.Table, StateType.Persistent, originalPersistentTable]);
                 // Reset entity status to idle in the case where the table already exists.
                 // nothing has updated here I think?
                 this.dataModelerStateService.dispatch("setEntityStatus",
-                [EntityType.Table, table.id, EntityStatus.Idle]);
+                    [EntityType.Table, table.id, EntityStatus.Idle]);
             }
             return response;
         }
