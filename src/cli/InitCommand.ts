@@ -40,7 +40,7 @@ export class InitCommand extends DataModelerCliCommand {
             console.log("\nA project in this directory has already been initialized.");
         }
         console.log("\nThis application is extremely alpha and we want to hear from you if you have any questions or ideas to share! "+
-            "You can reach us in our Rill Community Slack at https://bit.ly/3Mig8Jr.");
+            "You can reach us in our Rill Discord Channel at https://bit.ly/3NSMKdT.");
     }
 
     private static makeDirectoryIfNotExists(path: string) {
