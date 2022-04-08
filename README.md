@@ -11,7 +11,7 @@ It's best to show and not tell, so here's a little preview of Rill Developer:
 
 
 ## We want to hear from you if you have any questions or ideas to share.
-You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill Community](https://bit.ly/35ijZG4) channel. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
+You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill Discord](https://bit.ly/3unvA05) channel. Please abide by the [Rill Community Policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 # Prerequisites
 Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
