@@ -63,7 +63,6 @@ export class ImportTableCommand extends DataModelerCliCommand {
         const tableName = getTableNameFromFile(tableSourceFile, name);
         const response = await this.dataModelerService.dispatch("addOrUpdateTableFromFile",
             [tableSourceFile, name, {csvDelimiter: delimiter}]);
-
         if (response.status === ActionStatus.Failure) {
             response.messages.forEach(message => console.log(message.message));
             console.log(`Failed to import table ${tableName} from file ${tableSourceFile}`);
@@ -79,7 +78,6 @@ export class ImportTableCommand extends DataModelerCliCommand {
                 .getByField("tableName", tableName);
             return !!createdTable;
         }, this.config.state.syncInterval * 5);
-
         if ((existingTable && createdTable &&
               existingTable.lastUpdated < createdTable.lastUpdated) ||
             (!existingTable && createdTable)) {

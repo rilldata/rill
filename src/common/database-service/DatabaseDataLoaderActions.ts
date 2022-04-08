@@ -1,22 +1,46 @@
 import {DatabaseActions} from "./DatabaseActions";
 import { existsSync, mkdirSync } from "fs";
 import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 
 /**
  * Abstraction around loading data into duck db.
  * WASM version will change how the file is read.
  */
 export class DatabaseDataLoaderActions extends DatabaseActions {
-    public async importParquetFile(metadata: DatabaseMetadata, parquetFile: string, tableName: string): Promise<any> {
-        await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
-        return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM '${parquetFile}';`);
-    }
+    private async createTableWithQuery(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {
+        // check if table exists.
+        const tables = await this.databaseClient.execute('SHOW TABLES');
+        
+        const tableIsPresent = tables.some(table => table.name === tableName);
 
+        // if table does exist, let's put it in a temporary place during import.
+        // if there is an error, we should rename the temp table back to its original one.
+        if (tableIsPresent) {
+            await this.databaseClient.execute(`ALTER TABLE ${tableName} RENAME TO ${tableName}___;`);    
+        }
+        const outcome = await this.databaseClient.execute(`CREATE TABLE ${tableName} AS ${query};`)
+            .then(async () => {
+                if (tableIsPresent) {
+                    await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName}___;`);
+                }
+            }).catch(async (error) => {
+                if (tableIsPresent) {
+                    await this.databaseClient.execute(`ALTER TABLE ${tableName}___ RENAME TO ${tableName};`);
+                }
+                return ActionResponseFactory.getEntityError(error);
+            });
+        return outcome;
+    }
+    
+    public async importParquetFile(metadata: DatabaseMetadata, parquetFile: string, tableName: string): Promise<any> {
+        return this.createTableWithQuery(metadata, tableName, `SELECT * FROM '${parquetFile}'`)
+    }
+    
     public async importCSVFile(metadata: DatabaseMetadata, csvFile: string,
                                tableName: string, delimiter: string): Promise<void> {
-        await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName};`);
-        return await this.databaseClient.execute(`CREATE TABLE ${tableName} AS SELECT * FROM ` +
-            `read_csv_auto('${csvFile}', header=true ${delimiter ? `,delim='${delimiter}'`: ""});`);
+        return this.createTableWithQuery(metadata, tableName, `SELECT * FROM 
+        read_csv_auto('${csvFile}', header=true ${delimiter ? `,delim='${delimiter}'`: ""})`);
     }
 
     public async getDestinationSize(metadata: DatabaseMetadata, path: string): Promise<number> {

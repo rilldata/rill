@@ -18,7 +18,7 @@ import type {
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { existsSync } from "fs";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponse, ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -68,7 +68,10 @@ export class TableActions extends DataModelerActions {
 
         table.lastUpdated = Date.now();
 
-        await this.addOrUpdateTable(table, !existingTable);
+        const response = await this.addOrUpdateTable(table, !existingTable);
+        if (response?.status !== undefined && response?.status === ActionStatus.Failure) {
+            return response;
+        }
     }
 
     @DataModelerActions.DerivedTableAction()
@@ -140,9 +143,11 @@ export class TableActions extends DataModelerActions {
             [EntityType.Table, table.id]);
     }
 
-    private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<void> {
+    private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<ActionResponse> {
+        // produce the next possible table.
+        let derivedTable:DerivedTableEntity;
         if (isNew) {
-            const derivedTable = getNewDerivedTable(table);
+            derivedTable = getNewDerivedTable(table);
             derivedTable.status = EntityStatus.Importing;
             this.dataModelerStateService.dispatch("addEntity",
                 [EntityType.Table, StateType.Derived, derivedTable]);
@@ -153,7 +158,30 @@ export class TableActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
             [table, isNew]);
 
-        await this.importTableDataByType(table);
+        const response = await this.importTableDataByType(table);
+        if (response?.status !== undefined && (response?.status === ActionStatus.Failure)) {
+            if (isNew) {
+                // Delete the table entirely.
+                this.dataModelerStateService.dispatch("deleteEntity",
+                [EntityType.Table, StateType.Derived, derivedTable.id]);
+                // Fetch the persistent table in this instance
+                // and delete
+                const existingTable = this.dataModelerStateService
+                    .getEntityStateService(EntityType.Table, StateType.Persistent)
+                    .getByField("tableName", table.name);
+                this.dataModelerStateService.dispatch("deleteEntity",
+                [EntityType.Table, StateType.Persistent, existingTable.id]);
+            } else {
+                
+                // Reset entity status to idle in the case where the table already exists.
+                // nothing has updated here I think?
+                this.dataModelerStateService.dispatch("setEntityStatus",
+                [EntityType.Table, table.id, EntityStatus.Idle]);
+            }
+            return response;
+        }
+
+        // update the table name here.
 
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
@@ -165,20 +193,28 @@ export class TableActions extends DataModelerActions {
             [EntityType.Table, table.id, EntityStatus.Idle]);
     }
 
-    private async importTableDataByType(table: PersistentTableEntity) {
+    private async importTableDataByType(table: PersistentTableEntity) : Promise<ActionResponse> {
+        let response:ActionResponse;
         switch (table.sourceType) {
             case TableSourceType.ParquetFile:
-                await this.databaseActionQueue.enqueue(
+                response = await this.databaseActionQueue.enqueue(
                     {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
                     "importParquetFile", [table.path, table.tableName]);
                 break;
 
             case TableSourceType.CSVFile:
-                await this.databaseActionQueue.enqueue(
+                response = await this.databaseActionQueue.enqueue(
                     {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
                     "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
                 break;
         }
-        this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
+        if (response) {
+            console.log('importTableByDataType', response)
+            return response;
+        } else {
+            this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
+        }
+            
+
     }
 }
