@@ -11,7 +11,6 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     private async createTableWithQuery(metadata: DatabaseMetadata, tableName: string, query: string): Promise<any> {
         // check if table exists.
         const tables = await this.databaseClient.execute('SHOW TABLES');
-        
         const tableIsPresent = tables.some(table => table.name === tableName);
 
         // if table does exist, let's put it in a temporary place during import.
@@ -19,17 +18,18 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
         if (tableIsPresent) {
             await this.databaseClient.execute(`ALTER TABLE ${tableName} RENAME TO ${tableName}___;`);    
         }
-        const outcome = await this.databaseClient.execute(`CREATE TABLE ${tableName} AS ${query};`)
-            .then(async () => {
-                if (tableIsPresent) {
-                    await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName}___;`);
-                }
-            }).catch(async (error) => {
-                if (tableIsPresent) {
-                    await this.databaseClient.execute(`ALTER TABLE ${tableName}___ RENAME TO ${tableName};`);
-                }
-                return ActionResponseFactory.getEntityError(error);
-            });
+        let outcome;
+        try {
+            outcome = await this.databaseClient.execute(`CREATE TABLE ${tableName} AS ${query};`);
+            if (tableIsPresent) {
+                await this.databaseClient.execute(`DROP TABLE IF EXISTS ${tableName}___;`);
+            }
+        } catch (error) {
+            if (tableIsPresent) {
+                await this.databaseClient.execute(`ALTER TABLE ${tableName}___ RENAME TO ${tableName};`);
+            }
+            return ActionResponseFactory.getEntityError(error);
+        }
         return outcome;
     }
     
