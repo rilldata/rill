@@ -8,10 +8,10 @@ import { QueryTreeNodeType } from "$common/query-parser/tree/QueryTreeNodeType";
 import type { SelectNodeJSON } from "$common/query-parser/tree/SelectNode";
 import type { TableNodeJSON } from "$common/query-parser/tree/TableNode";
 
-export function expectedQueryTree(root: QueryTreeNodeJSON, tables: Array<TableNodeJSON>): QueryTreeJSON {
+export function expectedQueryTree(root: QueryTreeNodeJSON, sourceTables: Array<TableNodeJSON>): QueryTreeJSON {
     return {
         root,
-        tables,
+        sourceTables,
     };
 }
 
@@ -36,13 +36,21 @@ export function expectedTable(tableName: string, alias?: string): TableNodeJSON 
         type: QueryTreeNodeType.Table,
         tableName,
         alias: alias ?? tableName,
+        isSourceTable: false,
     };
+}
+export function expectedSourceTable(tableName: string, alias?: string): TableNodeJSON {
+    return {
+        ...expectedTable(tableName, alias),
+        isSourceTable: true,
+    }
 }
 export function expectedNestedSelect(select: SelectNodeJSON, alias: string): NestedSelectNodeJSON {
     return {
         type: QueryTreeNodeType.NestedSelect,
         select,
         alias,
+        isSourceTable: false,
     };
 }
 

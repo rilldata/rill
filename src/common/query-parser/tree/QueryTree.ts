@@ -5,21 +5,21 @@ import type { TableNode, TableNodeJSON } from "./TableNode";
 
 export interface QueryTreeJSON {
     root: QueryTreeNodeJSON;
-    tables: Array<TableNodeJSON>;
+    sourceTables: Array<TableNodeJSON>;
 }
 
 export class QueryTree {
     public root: SelectNode | CTENode;
-    public tables = new Array<TableNode>();
+    public sourceTables = new Array<TableNode>();
 
     public addTable(tableNode: TableNode) {
-        this.tables.push(tableNode);
+        this.sourceTables.push(tableNode);
     }
 
     public toJSON(): QueryTreeJSON {
         return {
             root: this.root.toJSON(),
-            tables: this.tables.map(table => table.toJSON()),
+            sourceTables: this.sourceTables.map(table => table.toJSON()),
         };
     }
 }

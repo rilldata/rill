@@ -18,6 +18,7 @@ export class QueryTreeTracker {
     private readonly columnStack = new NodeStack<ColumnNode>();
 
     public tableMap = new Map<string, Array<TableNode>>();
+    public temporaryTables = new Set<string>();
 
     public constructor(private readonly queryTree: QueryTree) {}
 
@@ -63,6 +64,7 @@ export class QueryTreeTracker {
         const tableNode = new TableNode(table._location);
         tableNode.tableName = table.name.name;
         tableNode.alias = table.name.alias ?? table.name.name;
+        tableNode.isSourceTable = !this.temporaryTables.has(tableNode.tableName);
 
         this.handleTableNode(tableNode);
         return tableNode;
@@ -77,6 +79,7 @@ export class QueryTreeTracker {
     public enterCTETable(cteTableName: string, statement: WithStatementBinding) {
         const tableNode = new NestedSelectNode(statement._location);
         tableNode.alias = cteTableName;
+        this.temporaryTables.add(cteTableName);
 
         this.handleTableNode(tableNode);
         return tableNode;
@@ -125,7 +128,10 @@ export class QueryTreeTracker {
 
         this.tableStack.enterNode(tableNode);
         this.fullStack.enterNode(tableNode);
-        this.queryTree.addTable(tableNode);
+
+        if (tableNode.isSourceTable) {
+            this.queryTree.addTable(tableNode);
+        }
     }
 
     private handleColumnRef(ref: ExprRef) {

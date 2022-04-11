@@ -1,8 +1,8 @@
-import { expectedQueryTree, expectedSelect, expectedTable, expectedColumn, expectedNestedSelect, expectedCTE } from "../utils/expectedQueryTreeFactory";
+import { expectedQueryTree, expectedSelect, expectedColumn, expectedNestedSelect, expectedCTE, expectedSourceTable } from "../utils/expectedQueryTreeFactory";
 
-const AdBidsAliased = expectedTable("adbids", "bid");
-const AdImpressionsAliased = expectedTable("adimpressions", "imp");
-const UsersAliased = expectedTable("users", "u");
+const AdBidsAliased = expectedSourceTable("adbids", "bid");
+const AdImpressionsAliased = expectedSourceTable("adimpressions", "imp");
+const UsersAliased = expectedSourceTable("users", "u");
 
 const AdBidsJoinImpressionsColumns = [
     expectedColumn(["bid.bid_price"], "bid_price"),
@@ -14,14 +14,14 @@ const AdBidsJoinImpressionsColumns = [
 
 export const SingleTableQueryTree = expectedQueryTree(
     expectedSelect(
-        [expectedTable("adbids")],
+        [expectedSourceTable("adbids")],
         [
             expectedColumn(["*"], "impressions"),
             expectedColumn(["publisher"]),
             expectedColumn(["domain"]),
         ],
     ),
-    [expectedTable("adbids")],
+    [expectedSourceTable("adbids")],
 );
 
 export const TwoTableJoinQueryTree = expectedQueryTree(
@@ -57,14 +57,13 @@ export const NestedQueryTree = expectedQueryTree(
             expectedColumn(["imp.country"], "indian"),
         ],
     ),
-    [AdBidsAliased, NestedImpressionJoinUsers, AdImpressionsAliased, UsersAliased],
+    [AdBidsAliased, AdImpressionsAliased, UsersAliased],
 );
 
 const CTEUserImpressions = expectedNestedSelect(
     NestedImpressionJoinUsersSelect,
     "userimpression",
 );
-const UserImpressionAliased = expectedTable("userimpression", "uimp");
 export const CTEQueryTree = expectedQueryTree(
     expectedCTE([CTEUserImpressions], expectedSelect(
         [AdBidsAliased, AdImpressionsAliased],
@@ -76,7 +75,7 @@ export const CTEQueryTree = expectedQueryTree(
         ],
     )),
     [
-        CTEUserImpressions, AdImpressionsAliased, UsersAliased,
-        AdBidsAliased, AdImpressionsAliased, UserImpressionAliased,
+        AdImpressionsAliased, UsersAliased,
+        AdBidsAliased, AdImpressionsAliased,
     ],
 );

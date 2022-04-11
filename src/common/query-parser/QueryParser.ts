@@ -1,5 +1,5 @@
 import {astVisitor, ExprRef, FromStatement, FromTable, IAstVisitor, parse, SelectedColumn, SelectFromStatement, WithRecursiveStatement, WithStatement} from "pgsql-ast-parser";
-import { QueryTreeTracker } from "./QueryTreeTarcker";
+import { QueryTreeTracker } from "./QueryTreeTracker";
 import { QueryTree } from "./tree/QueryTree";
 
 export class QueryParser {
