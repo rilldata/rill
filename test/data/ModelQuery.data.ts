@@ -73,3 +73,19 @@ from
     on bid.id = imp.id
 group by bid.publisher, bid.domain, imp.city, imp.country
 `;
+
+export const CTE = `
+with
+    UserImpression as (
+        select
+            imp.id, imp.city, imp.country, u.name
+        from AdImpressions imp join Users u on imp.user_id=u.id
+    )
+    select
+        count(*) as impressions,
+        avg(bid.bid_price) as bid_price,
+        bid.publisher, bid.domain, imp.city, imp.country,
+        (select uimp.name from UserImpression uimp where uimp.city=imp.city) as users
+    from AdBids bid join AdImpressions imp on bid.id = imp.id
+    group by bid.publisher, bid.domain, imp.city, imp.country
+`

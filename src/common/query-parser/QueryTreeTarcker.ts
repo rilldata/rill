@@ -2,9 +2,11 @@ import type { SelectFromStatement, FromTable, FromStatement, SelectedColumn, Exp
 import { ColumnNode } from "./tree/ColumnNode";
 import { ColumnRefNode } from "./tree/ColumnRefNode";
 import { CTENode } from "./tree/CTENode";
+import { NestedSelectNode } from "./tree/NestedSelectNode";
 import { NodeStack } from "./tree/NodeStack";
 import type { QueryTree } from "./tree/QueryTree";
 import type { QueryTreeNode } from "./tree/QueryTreeNode";
+import { QueryTreeNodeType } from "./tree/QueryTreeNodeType";
 import { SelectNode } from "./tree/SelectNode";
 import { TableNode } from "./tree/TableNode";
 
@@ -37,6 +39,8 @@ export class QueryTreeTracker {
 
         if (this.isAtCTE() && !this.cteStack.currentNode.select) {
             this.cteStack.currentNode.select = selectNode;
+        } else if (this.isAtTable() && this.tableStack.currentNode.type === QueryTreeNodeType.NestedSelect) {
+            (this.tableStack.currentNode as NestedSelectNode).select = selectNode;
         }
 
         this.selectStack.enterNode(selectNode);
@@ -64,14 +68,14 @@ export class QueryTreeTracker {
         return tableNode;
     }
     public enterSubQuery(fromStatement: FromStatement) {
-        const tableNode = new TableNode(fromStatement._location);
+        const tableNode = new NestedSelectNode(fromStatement._location);
         tableNode.alias = fromStatement.alias;
 
         this.handleTableNode(tableNode);
         return tableNode;
     }
     public enterCTETable(cteTableName: string, statement: WithStatementBinding) {
-        const tableNode = new TableNode(statement._location);
+        const tableNode = new NestedSelectNode(statement._location);
         tableNode.alias = cteTableName;
 
         this.handleTableNode(tableNode);
@@ -141,15 +145,19 @@ export class QueryTreeTracker {
     }
 
     private isAtSelect() {
-        return this.selectStack.currentNode === this.fullStack.currentNode;
+        return this.selectStack.currentNode &&
+            this.selectStack.currentNode === this.fullStack.currentNode;
     }
     private isAtCTE() {
-        return this.cteStack.currentNode === this.fullStack.currentNode;
+        return this.cteStack.currentNode &&
+            this.cteStack.currentNode === this.fullStack.currentNode;
     }
     private isAtTable() {
-        return this.tableStack.currentNode === this.fullStack.currentNode;
+        return this.tableStack.currentNode &&
+            this.tableStack.currentNode === this.fullStack.currentNode;
     }
     private isAtColumn() {
-        return this.columnStack.currentNode === this.fullStack.currentNode;
+        return this.columnStack.currentNode &&
+            this.columnStack.currentNode === this.fullStack.currentNode;
     }
 }

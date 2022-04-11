@@ -1,9 +1,22 @@
-import type { ColumnRefNode } from "./ColumnRefNode";
-import { QueryTreeNode } from "./QueryTreeNode";
-import type { TableNode } from "./TableNode";
+import type { ColumnRefNode, ColumnRefNodeJSON } from "./ColumnRefNode";
+import { QueryTreeNode, QueryTreeNodeJSON } from "./QueryTreeNode";
+import { QueryTreeNodeType } from "./QueryTreeNodeType";
+
+export interface ColumnNodeJSON extends QueryTreeNodeJSON {
+    refs: Array<ColumnRefNodeJSON>;
+    alias?: string;
+}
 
 export class ColumnNode extends QueryTreeNode {
-    public table: TableNode;
+    public readonly type = QueryTreeNodeType.Column;
     public columnRefs = new Array<ColumnRefNode>();
     public alias: string;
+
+    public toJSON(includeLocation = false): ColumnNodeJSON {
+        return {
+            ...super.toJSON(includeLocation),
+            refs: this.columnRefs.map(columnRef => columnRef.toJSON()),
+            ...this.alias ? {alias : this.alias} : {},
+        };
+    }
 }
