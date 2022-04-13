@@ -20,4 +20,12 @@ export class ApplicationStateActions extends StateActions {
                                       status: ApplicationStatus) {
         draftState.status = status;
     }
+
+    @DataModelerActions.ApplicationAction()
+    public async setDuckDbPath(
+        {draftState}: ApplicationStateActionArg,
+        duckDbPath: string,
+    ) {
+        draftState.duckDbPath = duckDbPath;
+    }
 }

@@ -11,6 +11,7 @@ export class InitCommand extends DataModelerCliCommand {
             new Command("init"),
             "Initialize a new project either in the current folder or supplied folder.",
         )
+            .option("--duckdb <duckDbPath>", "Optional path to existing duckdb database file.")
             .action((opts, command) => {
                 const {project} = command.optsWithGlobals();
 
@@ -18,7 +19,7 @@ export class InitCommand extends DataModelerCliCommand {
                 InitCommand.makeDirectoryIfNotExists(projectPath);
                 this.alreadyInitialised = existsSync(`${projectPath}/state`);
 
-                return this.run({ projectPath });
+                return this.run({ projectPath, duckDbPath: opts.duckdb });
             });
     }
 

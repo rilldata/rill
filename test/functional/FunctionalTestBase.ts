@@ -106,8 +106,7 @@ export class FunctionalTestBase extends TestBase {
 
     protected getActiveEntity(): ActiveEntity {
         return this.clientDataModelerStateService
-            .getEntityStateService(EntityType.Application, StateType.Derived)
-            .getCurrentState().activeEntity;
+            .getApplicationState().activeEntity;
     }
 
     private async waitForEntity(entityType: EntityType): Promise<void> {

@@ -38,7 +38,6 @@ export class ExpressServer {
     }
 
     public async init(): Promise<void> {
-        await this.dataModelerService.init();
         await this.socketServer.init();
         this.server.listen(this.config.server.serverPort);
         console.log(`Server started at ${this.config.server.serverUrl}`);

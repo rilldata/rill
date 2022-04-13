@@ -25,6 +25,7 @@ export class EntityStateSyncService<
                        private readonly entityStateService: StateService) {}
 
     public async init(): Promise<void> {
+        console.log(this.entityStateService.entityType, this.entityStateService.stateType);
         execSync(`mkdir -p ${this.config.state.stateFolder}`);
 
         let initialState: EntityState<Entity>;

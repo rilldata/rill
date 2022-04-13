@@ -19,8 +19,8 @@ export class SocketServerMock {
     }
 
     public async init(): Promise<void> {
-        await this.dataModelerService.init();
         await this.dataModelerStateSyncService.init();
+        await this.dataModelerService.init();
 
         this.dataModelerStateService.subscribePatches((entityType, stateType, patches) => {
             this.dataModelerSocketServiceMock.applyPatches(entityType, stateType, patches);

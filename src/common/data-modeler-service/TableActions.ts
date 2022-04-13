@@ -71,6 +71,19 @@ export class TableActions extends DataModelerActions {
         await this.addOrUpdateTable(table, !existingTable);
     }
 
+    @DataModelerActions.PersistentTableAction()
+    public async addOrSyncTableFromDB(
+        {stateService}: PersistentTableStateActionArg, tableName?: string
+    ) {
+        const existingTable = stateService.getByField("tableName", tableName);
+        const table = existingTable ? {...existingTable} : getNewTable();
+
+        table.name = table.tableName = tableName;
+        table.sourceType = TableSourceType.DuckDB;
+
+        await this.addOrUpdateTable(table, !existingTable);
+    }
+
     @DataModelerActions.DerivedTableAction()
     @DataModelerActions.ResetStateToIdle(EntityType.Table)
     public async collectTableInfo({stateService}: DerivedTableStateActionArg, tableId: string): Promise<ActionResponse> {
@@ -177,6 +190,10 @@ export class TableActions extends DataModelerActions {
                 await this.databaseActionQueue.enqueue(
                     {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
                     "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
+                break;
+
+            case TableSourceType.DuckDB:
+                // table already exists. nothing to do here
                 break;
         }
         this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
