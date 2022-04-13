@@ -13,6 +13,7 @@ import { dataModelerServiceFactory } from "./serverFactory";
  * To be used on the server only.
  */
 export class RillDeveloper {
+    private readonly duckDbConnection: DuckDbConnection;
     public constructor(
         public readonly config: RootConfig,
         public readonly dataModelerService: DataModelerService,
@@ -20,7 +21,13 @@ export class RillDeveloper {
         public readonly dataModelerStateSyncService: DataModelerStateSyncService,
         public readonly metricsService: MetricsService,
         public readonly notificationService: NotificationService,
-    ) {}
+    ) {
+        this.duckDbConnection = new DuckDbConnection(
+            this.config, this.dataModelerService,
+            this.dataModelerStateService,
+            this.dataModelerService.getDatabaseService().getDatabaseClient(),
+        );
+    }
 
     public async init(): Promise<void> {
         const alreadyInitialized = existsSync(this.config.state.stateFolder);
@@ -38,16 +45,13 @@ export class RillDeveloper {
         if (!alreadyInitialized && this.config.project.duckDbPath) {
             this.dataModelerStateService.dispatch(
                 "setDuckDbPath", [this.config.project.duckDbPath]);
-            await new DuckDbConnection(
-                this.config, this.dataModelerService,
-                this.dataModelerStateService,
-                this.dataModelerService.getDatabaseService().getDatabaseClient(),
-            ).init();
         }
+        await this.duckDbConnection.init();
     }
 
     public async destroy() {
         await this.dataModelerStateSyncService.destroy();
+        await this.duckDbConnection.destroy();
         await this.dataModelerService.destroy();
     }
 

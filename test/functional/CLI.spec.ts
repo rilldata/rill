@@ -9,12 +9,13 @@ import type {
 import type {
     PersistentTableState
 } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import {getCliCommand} from "../utils/getCliCommand";
 
 const execPromise = promisify(exec);
 
 const CLI_TEST_FOLDER = "temp/test-cli";
 const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
-const DATA_MODELER_CLI = "npm run cli --";
+const DATA_MODELER_CLI = getCliCommand();
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 @FunctionalTestBase.Suite

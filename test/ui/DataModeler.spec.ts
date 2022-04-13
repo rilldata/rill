@@ -9,6 +9,7 @@ import { PlaywrightSuiteSetup } from "@adityahegde/typescript-test-utils/dist/pl
 import { DataProviderData, TestBase, TestSuiteSetup, TestSuiteParameter } from "@adityahegde/typescript-test-utils";
 import { waitUntil } from "$common/utils/waitUtils";
 import { isPortOpen } from "$common/utils/isPortOpen";
+import {getCliCommand} from "../utils/getCliCommand";
 
 const execPromise = promisify(exec);
 
@@ -16,7 +17,7 @@ const PORT = 8080;
 const DEV_PORT = 3000;
 const URL = `http://localhost:${PORT}/`;
 const CLI_TEST_FOLDER = 'temp/test-ui';
-const DATA_MODELER_CLI = './node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts';
+const DATA_MODELER_CLI = getCliCommand();
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 let serverStarted = false;

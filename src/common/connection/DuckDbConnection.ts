@@ -1,6 +1,8 @@
 import type { RootConfig } from "$common/config/RootConfig";
+import { DATA_CONNECTION_INTERVAL } from "$common/constants";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import { DataConnection } from "./DataConnection";
 
@@ -10,6 +12,8 @@ import { DataConnection } from "./DataConnection";
  * Periodically syncs
  */
 export class DuckDbConnection extends DataConnection {
+    private syncTimer: NodeJS.Timer;
+
     public constructor(
         protected readonly config: RootConfig,
         protected readonly dataModelerService: DataModelerService,
@@ -20,14 +24,38 @@ export class DuckDbConnection extends DataConnection {
     }
 
     public async init(): Promise<void> {
-        const tables = await this.duckDbClient.execute("SHOW TABLES");
-        for (const table of tables) {
-            await this.dataModelerService.dispatch("addOrSyncTableFromDB", [table.name]);
-        }
-        console.log(`Imported tables: ${tables.map(table => table.name).join(", ")}`);
+        await this.sync();
+
+        this.syncTimer = setInterval(() => {
+            this.sync();
+        }, DATA_CONNECTION_INTERVAL);
     }
 
     public async sync(): Promise<void> {
-        // TODO
+        const tables = await this.duckDbClient.execute("SHOW TABLES");
+        const persistentTables = this.dataModelerStateService
+            .getEntityStateService(EntityType.Table, StateType.Persistent)
+            .getCurrentState().entities;
+
+        const existingTables = new Set<string>();
+        persistentTables.forEach(persistentTable =>
+            existingTables.add(persistentTable.tableName));
+
+        for (const table of tables) {
+            const tableName = table.name;
+            if (existingTables.has(tableName)) {
+                // TODO: check column name/count and row count
+                existingTables.delete(tableName);
+            } else {
+                await this.dataModelerService.dispatch("addOrSyncTableFromDB", [tableName]);
+            }
+        }
+        for (const removedTable of existingTables.values()) {
+            await this.dataModelerService.dispatch("dropTable", [removedTable, true]);
+        }
+    }
+
+    public async destroy(): Promise<void> {
+        if (this.syncTimer) clearInterval(this.syncTimer);
     }
 }

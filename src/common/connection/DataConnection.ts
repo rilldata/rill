@@ -11,4 +11,5 @@ export abstract class DataConnection {
 
     public abstract init(): Promise<void>;
     public abstract sync(): Promise<void>;
+    public abstract destroy(): Promise<void>;
 }

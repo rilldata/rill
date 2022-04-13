@@ -140,13 +140,17 @@ export class TableActions extends DataModelerActions {
 
     @DataModelerActions.PersistentTableAction()
     public async dropTable({stateService}: PersistentTableStateActionArg,
-                           tableName: string): Promise<ActionResponse> {
+                           tableName: string, removeOnly = false): Promise<ActionResponse> {
         const table = stateService.getByField("tableName", tableName);
         if (!table) {
             return ActionResponseFactory.getEntityError(`No table found for ${tableName}`);
         }
 
-        await this.databaseService.dispatch("dropTable", [table.tableName]);
+        if (!removeOnly) {
+            await this.databaseActionQueue.enqueue(
+                {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
+                "dropTable", [table.tableName]);
+        }
         this.notificationService.notify({ message: `dropped table ${table.tableName}`, type: "info"});
 
         await this.dataModelerService.dispatch("deleteEntity",
