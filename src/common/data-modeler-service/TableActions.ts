@@ -68,10 +68,7 @@ export class TableActions extends DataModelerActions {
 
         table.lastUpdated = Date.now();
 
-        const response = await this.addOrUpdateTable(table, !existingTable);
-        if (response?.status !== undefined && response?.status === ActionStatus.Failure) {
-            return response;
-        }
+        return await this.addOrUpdateTable(table, !existingTable);
     }
 
     @DataModelerActions.DerivedTableAction()
@@ -224,13 +221,12 @@ export class TableActions extends DataModelerActions {
                     "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
                 break;
         }
-        if (response) {
+        if (response?.status === ActionStatus.Failure) {
             this.notificationService.notify({ message: `failed to import ${table.name} from ${table.path}`, type: "error"});
-            return response;
         } else {
             this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
         }
-            
+        return response;
 
     }
 }
