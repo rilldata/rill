@@ -19,6 +19,11 @@ export class InitCommand extends DataModelerCliCommand {
                 InitCommand.makeDirectoryIfNotExists(projectPath);
                 this.alreadyInitialised = existsSync(`${projectPath}/state`);
 
+                if (!InitCommand.verifyDuckDbPath(opts.duckdb)) {
+                    console.log(`Failed to initialize project under ${projectPath}`);
+                    return;
+                }
+
                 return this.run({ projectPath, duckDbPath: opts.duckdb });
             });
     }
@@ -53,5 +58,19 @@ export class InitCommand extends DataModelerCliCommand {
         } else if (path !== process.cwd()) {
             console.log(`Directory ${path} already exist. Attempting to init the project.`);
         }
+    }
+
+    private static verifyDuckDbPath(duckDbPath: string): boolean {
+        if (!duckDbPath) return true;
+
+        if (!existsSync(duckDbPath)) {
+            console.log(`Duckdb database path provided ${duckDbPath} doesnt exist.`);
+            return false;
+        }
+
+        console.log(`Importing tables from Duckdb database : ${duckDbPath} .\n` +
+            `Make sure to close any write connections to this database before running this.`);
+        
+        return true;
     }
 }

@@ -14,7 +14,7 @@ const execPromise = promisify(exec);
 
 const CLI_TEST_FOLDER = "temp/test-cli";
 const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
-const DATA_MODELER_CLI = "./node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts";
+const DATA_MODELER_CLI = "npm run cli --";
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 @FunctionalTestBase.Suite
@@ -25,18 +25,19 @@ export class CLISpec extends FunctionalTestBase {
 
     @FunctionalTestBase.BeforeEachTest()
     public async setupTests(): Promise<void> {
-        await execPromise(`mkdir -p ${CLI_TEST_FOLDER}`);
-        await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
+        await execPromise(`rm -rf ${CLI_TEST_FOLDER}`);
     }
 
+    @FunctionalTestBase.Test()
     public async shouldInitProject(): Promise<void> {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
+        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
         expect(existsSync(`${CLI_TEST_FOLDER}/persistent_table_state.json`));
         expect(existsSync(`${CLI_TEST_FOLDER}/stage.db`));
     }
 
+    @FunctionalTestBase.Test()
     public async shouldAddTables(): Promise<void> {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
+        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
         await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
         await execPromise(`${DATA_MODELER_CLI} import-table data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`);
 
@@ -52,7 +53,7 @@ export class CLISpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldDropTable(): Promise<void> {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
+        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
         await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
 
         let persistentState: PersistentTableState =

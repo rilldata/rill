@@ -2,7 +2,6 @@ import { TestBase } from "@adityahegde/typescript-test-utils";
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import { dataModelerServiceFactory } from "$common/serverFactory";
 import { asyncWait, waitUntil } from "$common/utils/waitUtils";
 import type { ProfileColumn } from "$lib/types";
 import type { TestDataColumns } from "../data/DataLoader.data";
@@ -34,6 +33,7 @@ import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { ActiveEntity } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import { RillDeveloper } from "$common/RillDeveloper";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -43,6 +43,7 @@ export class FunctionalTestBase extends TestBase {
     protected serverDataModelerStateService: DataModelerStateService;
     protected serverDataModelerService: DataModelerService;
     protected socketServer: SocketServerMock;
+    protected rillDeveloper: RillDeveloper;
 
     @TestBase.BeforeSuite()
     public async setup(configOverride?: RootConfig): Promise<void> {
@@ -54,20 +55,23 @@ export class FunctionalTestBase extends TestBase {
             state: new StateConfig({ autoSync: false }),
             projectFolder: "temp/test",
         });
-        const serverInstances = dataModelerServiceFactory(config);
-        this.serverDataModelerStateService = serverInstances.dataModelerStateService;
-        this.serverDataModelerService = serverInstances.dataModelerService;
-        this.socketServer = new SocketServerMock(config, this.serverDataModelerService,
-            this.serverDataModelerStateService, this.clientDataModelerService as DataModelerSocketServiceMock);
+        this.rillDeveloper = RillDeveloper.getRillDeveloper(config);
+        this.serverDataModelerStateService = this.rillDeveloper.dataModelerStateService;
+        this.serverDataModelerService = this.rillDeveloper.dataModelerService;
+        this.socketServer = new SocketServerMock(
+            this.serverDataModelerService, this.serverDataModelerStateService,
+            this.clientDataModelerService as DataModelerSocketServiceMock,
+        );
         (this.clientDataModelerService as DataModelerSocketServiceMock).socketServerMock = this.socketServer;
 
+        await this.rillDeveloper.init();
         await this.clientDataModelerService.init();
         await this.socketServer.init();
     }
 
     @TestBase.AfterSuite()
     public async teardown(): Promise<void> {
-        await this.serverDataModelerService?.destroy();
+        await this.rillDeveloper?.destroy();
         await this.socketServer?.destroy();
     }
 

@@ -29,10 +29,8 @@ export class DataModelerStateSyncService {
     }
 
     public async init(): Promise<void> {
-        console.log("..");
         await Promise.all(this.entityStateSyncServices.map(
             entityStateSyncService => entityStateSyncService.init()));
-        console.log(".");
     }
 
     public async destroy(): Promise<void> {

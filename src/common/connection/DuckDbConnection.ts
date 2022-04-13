@@ -24,6 +24,7 @@ export class DuckDbConnection extends DataConnection {
         for (const table of tables) {
             await this.dataModelerService.dispatch("addOrSyncTableFromDB", [table.name]);
         }
+        console.log(`Imported tables: ${tables.map(table => table.name).join(", ")}`);
     }
 
     public async sync(): Promise<void> {
