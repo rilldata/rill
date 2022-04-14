@@ -1,7 +1,7 @@
-import { DataModelerActions } from ".//DataModelerActions";
-import { FILE_EXTENSION_TO_TABLE_TYPE, TableSourceType } from "$lib/types";
-import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
-import { extractFileExtension, getTableNameFromFile, INVALID_CHARS } from "$lib/util/extract-table-name";
+import {DataModelerActions} from ".//DataModelerActions";
+import {FILE_EXTENSION_TO_TABLE_TYPE, ProfileColumn, TableSourceType} from "$lib/types";
+import {getNewDerivedTable, getNewTable} from "$common/stateInstancesFactory";
+import {extractFileExtension, getTableNameFromFile, INVALID_CHARS} from "$lib/util/extract-table-name";
 import type {
     PersistentTableEntity,
     PersistentTableStateActionArg
@@ -15,10 +15,10 @@ import type {
     DerivedTableEntity,
     DerivedTableStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
-import { existsSync } from "fs";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import {DatabaseActionQueuePriority} from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import {existsSync} from "fs";
+import {ActionResponseFactory} from "$common/data-modeler-service/response/ActionResponseFactory";
+import type {ActionResponse} from "$common/data-modeler-service/response/ActionResponse";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -155,6 +155,44 @@ export class TableActions extends DataModelerActions {
 
         await this.dataModelerService.dispatch("deleteEntity",
             [EntityType.Table, table.id]);
+    }
+
+    @DataModelerActions.DerivedTableAction()
+    @DataModelerActions.ResetStateToIdle(EntityType.Table)
+    public async syncTable({stateService}: DerivedTableStateActionArg, tableId: string) {
+        const derivedTable = stateService.getById(tableId);
+        const persistentTable = this.dataModelerStateService
+            .getEntityStateService(EntityType.Table, StateType.Persistent)
+            .getById(tableId);
+        if (!derivedTable || !persistentTable) {
+            return ActionResponseFactory.getEntityError(`No table found for ${tableId}`);
+        }
+        this.dataModelerStateService.dispatch("setEntityStatus",
+            [EntityType.Table, tableId, EntityStatus.Profiling]);
+
+        // check row count
+        const newCardinality = await this.databaseActionQueue.enqueue(
+            {id: tableId, priority: DatabaseActionQueuePriority.TableProfile},
+            "getCardinalityOfTable", [persistentTable.tableName]);
+        if (newCardinality === derivedTable.cardinality) return;
+
+        // check column count and names
+        const newProfiles: Array<ProfileColumn> = await this.databaseActionQueue.enqueue(
+            {id: tableId, priority: DatabaseActionQueuePriority.TableImport},
+            "getProfileColumns", [persistentTable.tableName]);
+        if (newProfiles.length === derivedTable.profile.length) {
+            const existingColumns = new Map<string, ProfileColumn>();
+            derivedTable.profile.forEach(column => existingColumns.set(column.name, column));
+
+            if (newProfiles.every(newProfileColumn =>
+                existingColumns.has(newProfileColumn.name) &&
+                existingColumns.get(newProfileColumn.name).type === newProfileColumn.type
+            )) {
+                return;
+            }
+        }
+
+        await this.dataModelerService.dispatch("collectTableInfo", [tableId]);
     }
 
     private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<void> {

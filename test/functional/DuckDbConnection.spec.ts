@@ -7,7 +7,8 @@ import {promisify} from "util";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import {getCliCommand} from "../utils/getCliCommand";
 
-const execPromise = promisify(exec);
+const execP = promisify(exec);
+const execPromise = async (cmd) => console.log((await execP(cmd)).stdout);
 
 const CLI_TEST_FOLDER = "temp/test-duckdb-import";
 const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
@@ -77,6 +78,37 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
             `${CLI_STATE_DUCKDB_FOLDER}/persistent_table_state.json`).toString());
         expect(persistentState.entities[0].name).toBe("Users");
         expect(persistentState.entities[1].name).toBe("AdBids");
+    }
+
+    @FunctionalTestBase.Test()
+    public async shouldUpdateProfilingData() {
+        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG} ` +
+            `--db ${CLI_TEST_DUCKDB_FILE}`);
+        // update tables in a different function to auto close connection to db
+        await execPromise(`ts-node-dev --project tsconfig.node.json -- ` +
+            `test/utils/modify-db.ts ${CLI_TEST_DUCKDB_FILE}`);
+        // trigger sync
+        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
+
+        // verify tables are reflected in connected project
+        const persistentState = JSON.parse(readFileSync(
+            `${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
+        const derivedState = JSON.parse(readFileSync(
+            `${CLI_STATE_FOLDER}/derived_table_state.json`).toString());
+        expect(persistentState.entities[0].name).toBe("AdBids");
+        this.assertColumns(derivedState.entities[0].profile, [
+            ...AdBidsColumnsTestData.slice(0, 3),
+            ...AdBidsColumnsTestData.slice(4),
+        ]);
+        expect(persistentState.entities[1].name).toBe("Impressions");
+        this.assertColumns(derivedState.entities[1].profile, [
+            ...AdImpressionColumnsTestData.slice(0, 2),
+            {
+                ...AdImpressionColumnsTestData[2],
+                name: "r_country",
+            },
+            ...AdImpressionColumnsTestData.slice(3),
+        ]);
     }
 
     @FunctionalTestBase.Test()

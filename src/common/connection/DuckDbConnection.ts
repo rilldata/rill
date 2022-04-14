@@ -5,6 +5,9 @@ import type { DataModelerStateService } from "$common/data-modeler-state-service
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import { DataConnection } from "./DataConnection";
+import type {
+    PersistentTableEntity
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 /**
  * Connects to an existing duck db.
@@ -37,21 +40,22 @@ export class DuckDbConnection extends DataConnection {
             .getEntityStateService(EntityType.Table, StateType.Persistent)
             .getCurrentState().entities;
 
-        const existingTables = new Set<string>();
+        const existingTables = new Map<string, PersistentTableEntity>();
         persistentTables.forEach(persistentTable =>
-            existingTables.add(persistentTable.tableName));
+            existingTables.set(persistentTable.tableName, persistentTable));
 
         for (const table of tables) {
             const tableName = table.name;
             if (existingTables.has(tableName)) {
-                // TODO: check column name/count and row count
+                await this.dataModelerService.dispatch("syncTable",
+                    [existingTables.get(tableName).id]);
                 existingTables.delete(tableName);
             } else {
                 await this.dataModelerService.dispatch("addOrSyncTableFromDB", [tableName]);
             }
         }
         for (const removedTable of existingTables.values()) {
-            await this.dataModelerService.dispatch("dropTable", [removedTable, true]);
+            await this.dataModelerService.dispatch("dropTable", [removedTable.tableName, true]);
         }
     }
 

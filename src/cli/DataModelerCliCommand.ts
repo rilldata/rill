@@ -61,7 +61,7 @@ export abstract class DataModelerCliCommand {
 
     private async teardown(): Promise<void> {
         if (this.isClient) {
-            this.dataModelerService.destroy();
+            await this.dataModelerService.destroy();
         } else {
             await this.rillDeveloper.destroy();
         }
