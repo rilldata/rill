@@ -69,7 +69,8 @@ let view = 'assets';
     {/if}
 
 
-    <div class='w-full'>
+    <div class='w-full flex flex-col h-full'>
+      <div class='grow' style:outline="1px solid black">
       <header style:height="var(--header-height)" class='sticky top-0 grid align-center bg-white z-50'>
         <h1 class='grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center'>
           <div class='grid  text-white w-5 h-5 items-center justify-center rounded bg-gray-500' style:width="16px" style:height="16px"></div>
@@ -157,5 +158,17 @@ let view = 'assets';
               </div>
             {/if}
           {/if}
+      </div>
+      <!-- assets pane footer. -->
+      <div class='p-3 italic text-gray-800 bg-gray-50 flex items-center text-center justify-center' style:height="var(--header-height)">
+        <div class='text-left'>
+        Bugs, complaints, feedback? &nbsp;
+        </div>
+        <a
+          target="_blank" 
+          class="inline not-italic font-bold text-blue-600 text-right"
+          href="http://bit.ly/3jg4IsF"> Ask us on Discord 💬
+        </a>
+      </div>
     </div>
 </div>
