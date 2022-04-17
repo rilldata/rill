@@ -164,9 +164,10 @@ let view = 'assets';
         <div class='text-left'>
         Bugs, complaints, feedback? &nbsp;
         </div>
-        <a 
+        <a
+          target="_blank" 
           class="inline not-italic font-bold text-blue-600 text-right"
-          href="https://discord.com/channels/959796421832343562/959796422281138247"> Ask us on Discord 💬
+          href="http://bit.ly/3jg4IsF"> Ask us on Discord 💬
         </a>
       </div>
     </div>
