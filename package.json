@@ -91,6 +91,7 @@
 		"js-sql-parser": "^1.4.1",
 		"js-yaml": "^4.1.0",
 		"module-alias": "^2.2.2",
+		"pgsql-ast-parser": "^10.0.2",
 		"piscina": "^3.2.0",
 		"socket.io": "^4.4.1",
 		"socket.io-client": "^4.4.1",
