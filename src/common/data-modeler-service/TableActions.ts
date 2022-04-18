@@ -15,10 +15,10 @@ import type {
     DerivedTableEntity,
     DerivedTableStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import {DatabaseActionQueuePriority} from "$common/priority-action-queue/DatabaseActionQueuePriority";
-import {existsSync} from "fs";
-import {ActionResponseFactory} from "$common/data-modeler-service/response/ActionResponseFactory";
-import type {ActionResponse} from "$common/data-modeler-service/response/ActionResponse";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { existsSync } from "fs";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { ActionResponse, ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 export interface ImportTableOptions {
     csvDelimiter?: string;
@@ -68,7 +68,7 @@ export class TableActions extends DataModelerActions {
 
         table.lastUpdated = Date.now();
 
-        await this.addOrUpdateTable(table, !existingTable);
+        return await this.addOrUpdateTable(table, !existingTable);
     }
 
     @DataModelerActions.PersistentTableAction()
@@ -195,9 +195,28 @@ export class TableActions extends DataModelerActions {
         await this.dataModelerService.dispatch("collectTableInfo", [tableId]);
     }
 
-    private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<void> {
+    private async addOrUpdateTable(table: PersistentTableEntity, isNew: boolean): Promise<ActionResponse> {
+        
+        // get the original Table state if not new.
+        let originalPersistentTable:PersistentTableEntity;
+        if (!isNew) {
+            originalPersistentTable = this.dataModelerStateService
+            .getEntityStateService(EntityType.Table, StateType.Persistent)
+            .getByField("tableName", table.name)
+        }
+
+        // update the new state
         if (isNew) {
-            const derivedTable = getNewDerivedTable(table);
+            this.dataModelerStateService.dispatch("addEntity",
+                [EntityType.Table, StateType.Persistent, table]);
+        } else {
+            this.dataModelerStateService.dispatch("updateEntity",
+                [EntityType.Table, StateType.Persistent, table]);
+        }
+
+        let derivedTable:DerivedTableEntity;
+        if (isNew) {
+            derivedTable = getNewDerivedTable(table);
             derivedTable.status = EntityStatus.Importing;
             this.dataModelerStateService.dispatch("addEntity",
                 [EntityType.Table, StateType.Derived, derivedTable]);
@@ -208,7 +227,28 @@ export class TableActions extends DataModelerActions {
         this.dataModelerStateService.dispatch("addOrUpdateTableToState",
             [table, isNew]);
 
-        await this.importTableDataByType(table);
+        const response = await this.importTableDataByType(table);
+        if (response?.status !== undefined && (response?.status === ActionStatus.Failure)) {
+            if (isNew) {
+                // Delete the table entirely.
+                this.dataModelerStateService.dispatch("deleteEntity",
+                [EntityType.Table, StateType.Derived, derivedTable.id]);
+                // Fetch the persistent table in this instance
+                // and delete
+                const existingTable = this.dataModelerStateService
+                    .getEntityStateService(EntityType.Table, StateType.Persistent)
+                    .getByField("tableName", table.name);
+                this.dataModelerStateService.dispatch("deleteEntity",
+                    [EntityType.Table, StateType.Persistent, existingTable.id]);
+            } else {
+                this.dataModelerStateService.dispatch("updateEntity",
+                    [EntityType.Table, StateType.Persistent, originalPersistentTable]);
+                // Reset entity status to idle in the case where the table already exists.
+                this.dataModelerStateService.dispatch("setEntityStatus",
+                    [EntityType.Table, table.id, EntityStatus.Idle]);
+            }
+            return response;
+        }
 
         if (this.config.profileWithUpdate) {
             await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
@@ -220,16 +260,17 @@ export class TableActions extends DataModelerActions {
             [EntityType.Table, table.id, EntityStatus.Idle]);
     }
 
-    private async importTableDataByType(table: PersistentTableEntity) {
+    private async importTableDataByType(table: PersistentTableEntity) : Promise<ActionResponse> {
+        let response:ActionResponse;
         switch (table.sourceType) {
             case TableSourceType.ParquetFile:
-                await this.databaseActionQueue.enqueue(
+                response = await this.databaseActionQueue.enqueue(
                     {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
                     "importParquetFile", [table.path, table.tableName]);
                 break;
 
             case TableSourceType.CSVFile:
-                await this.databaseActionQueue.enqueue(
+                response = await this.databaseActionQueue.enqueue(
                     {id: table.id, priority: DatabaseActionQueuePriority.TableImport},
                     "importCSVFile", [table.path, table.tableName, table.csvDelimiter]);
                 break;
@@ -238,6 +279,12 @@ export class TableActions extends DataModelerActions {
                 // table already exists. nothing to do here
                 break;
         }
-        this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
+        if (response?.status === ActionStatus.Failure) {
+            this.notificationService.notify({ message: `failed to import ${table.name} from ${table.path}`, type: "error"});
+        } else {
+            this.notificationService.notify({ message: `imported ${table.name}`, type: "info"});
+        }
+        return response;
+
     }
 }
