@@ -5,14 +5,13 @@ import { readFileSync } from "fs";
 import { AdBidsColumnsTestData, AdImpressionColumnsTestData, UserColumnsTestData } from "../data/DataLoader.data";
 import {promisify} from "util";
 import { FunctionalTestBase } from "./FunctionalTestBase";
-import {getCliCommand} from "../utils/getCliCommand";
+import {CLI_COMMAND} from "../utils/getCliCommand";
 
 const execP = promisify(exec);
 const execPromise = async (cmd) => console.log((await execP(cmd)).stdout);
 
 const CLI_TEST_FOLDER = "temp/test-duckdb-import";
 const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
-const DATA_MODELER_CLI = getCliCommand();
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 const CLI_TEST_DUCKDB_FOLDER = "temp/test-duckdb";
@@ -32,14 +31,14 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
         await execPromise(`rm -rf ${CLI_TEST_DUCKDB_FOLDER}`);
 
         // initially import 2 tables in source
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/AdImpressions.parquet --name Impressions ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/AdBids.parquet ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/AdImpressions.parquet --name Impressions ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
     }
 
     @FunctionalTestBase.Test()
     public async shouldLoadTablesFromDB() {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG} ` +
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
             `--db ${CLI_TEST_DUCKDB_FILE}`);
         let persistentState: PersistentTableState = JSON.parse(readFileSync(
             `${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
@@ -51,10 +50,10 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
         this.assertColumns(derivedState.entities[1].profile, AdImpressionColumnsTestData);
 
         // drop a table and import another in source
-        await execPromise(`${DATA_MODELER_CLI} drop-table AdBids ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/Users.csv ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} drop-table AdBids ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/Users.csv ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
         // trigger sync
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
 
         // verify tables are reflected in connected project
         persistentState = JSON.parse(readFileSync(
@@ -67,10 +66,10 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
         this.assertColumns(derivedState.entities[1].profile, UserColumnsTestData);
 
         // drop a table and import another in connected project
-        await execPromise(`${DATA_MODELER_CLI} drop-table Impressions ${CLI_TEST_FOLDER_ARG}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} drop-table Impressions ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`);
         // trigger sync
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
 
         // verify tables are reflected in source project
         // this happens without explicitly connecting during init
@@ -82,13 +81,13 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldUpdateProfilingData() {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG} ` +
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
             `--db ${CLI_TEST_DUCKDB_FILE}`);
         // update tables in a different function to auto close connection to db
         await execPromise(`ts-node-dev --project tsconfig.node.json -- ` +
             `test/utils/modify-db.ts ${CLI_TEST_DUCKDB_FILE}`);
         // trigger sync
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
 
         // verify tables are reflected in connected project
         const persistentState = JSON.parse(readFileSync(
@@ -113,7 +112,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldCopyDBToLocalDB() {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG} ` +
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
             `--db ${CLI_TEST_DUCKDB_FILE} --copy`);
         let persistentState: PersistentTableState = JSON.parse(readFileSync(
             `${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
@@ -121,10 +120,10 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
         expect(persistentState.entities[1].name).toBe("Impressions");
 
         // drop a table and import another in source
-        await execPromise(`${DATA_MODELER_CLI} drop-table AdBids ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/Users.csv ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} drop-table AdBids ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/Users.csv ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
         // trigger sync
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
 
         // verify tables are not updated in copied project
         persistentState = JSON.parse(readFileSync(
@@ -133,11 +132,11 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
         expect(persistentState.entities[1].name).toBe("Impressions");
 
         // drop a table and import another in copied project
-        await execPromise(`${DATA_MODELER_CLI} drop-table Impressions ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} drop-table Impressions ${CLI_TEST_FOLDER_ARG}`);
         // Why does this statement hang!?
-        // await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`);
+        // await execPromise(`${CLI_COMMAND} import-table data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`);
         // trigger sync
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
 
         // verify tables are not touched in source project
         persistentState = JSON.parse(readFileSync(

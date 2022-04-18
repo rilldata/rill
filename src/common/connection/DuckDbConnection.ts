@@ -1,5 +1,5 @@
 import type { RootConfig } from "$common/config/RootConfig";
-import { DATA_CONNECTION_INTERVAL } from "$common/constants";
+import { DATABASE_POLLING_INTERVAL } from "$common/constants";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -31,7 +31,7 @@ export class DuckDbConnection extends DataConnection {
 
         this.syncTimer = setInterval(() => {
             this.sync();
-        }, DATA_CONNECTION_INTERVAL);
+        }, DATABASE_POLLING_INTERVAL);
     }
 
     public async sync(): Promise<void> {

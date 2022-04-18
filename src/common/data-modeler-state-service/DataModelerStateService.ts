@@ -13,11 +13,13 @@ import {getActionMethods} from "$common/ServiceBase";
 import type {PickActionFunctions} from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
 import {
-    EntityState,
-    EntityStateActionArg,
     EntityStateService,
     EntityType,
     StateType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+    EntityState,
+    EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {
     EntityRecordMapType,

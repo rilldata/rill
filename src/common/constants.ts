@@ -3,4 +3,4 @@ export const IDLE_STATUS = "idle";
 
 export const MODEL_PREVIEW_COUNT = 25;
 
-export const DATA_CONNECTION_INTERVAL = 500;
+export const DATABASE_POLLING_INTERVAL = 500;
