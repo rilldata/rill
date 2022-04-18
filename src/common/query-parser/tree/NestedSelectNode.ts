@@ -10,10 +10,10 @@ export class NestedSelectNode extends TableNode {
     public readonly type = QueryTreeNodeType.NestedSelect;
     public select: SelectNode;
 
-    public toJSON(includeLocation = false): NestedSelectNodeJSON {
+    public toJSON(): NestedSelectNodeJSON {
         return {
-            ...super.toJSON(includeLocation),
-            select: this.select.toJSON(includeLocation),
+            ...super.toJSON(),
+            select: this.select.toJSON(),
         }
     }
 }

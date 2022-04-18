@@ -13,17 +13,15 @@ export class QueryTreeNode {
     public readonly end: number;
 
     public constructor(location: NodeLocation) {
-        this.start = location?.start ?? -1;
-        this.end = location?.end ?? -1;
+        this.start = location?.start ?? undefined;
+        this.end = location?.end ?? undefined;
     }
 
-    public toJSON(includeLocation = false): QueryTreeNodeJSON {
+    public toJSON(): QueryTreeNodeJSON {
         return {
             type: this.type,
-            ...includeLocation ? {
-                start: this.start,
-                end: this.end,
-            } : {},
+            start: this.start,
+            end: this.end,
         };
     }
 }

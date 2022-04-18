@@ -1,8 +1,8 @@
 export enum QueryTreeNodeType {
-    Select,
-    CTE,
-    Table,
-    NestedSelect,
-    Column,
-    ColumnRef,
+    Select = "Select",
+    CTE = "CTE",
+    Table = "Table",
+    NestedSelect = "NestedSelect",
+    Column = "Column",
+    ColumnRef = "ColumnRef",
 }

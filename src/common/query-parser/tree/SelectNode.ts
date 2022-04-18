@@ -13,9 +13,9 @@ export class SelectNode extends QueryTreeNode {
     public tables = new Array<TableNode>();
     public columns = new Array<ColumnNode>();
 
-    public toJSON(includeLocation = false): SelectNodeJSON {
+    public toJSON(): SelectNodeJSON {
         return {
-            ...super.toJSON(includeLocation),
+            ...super.toJSON(),
             tables: this.tables.map(table => table.toJSON()),
             columns: this.columns.map(column => column.toJSON()),
         };

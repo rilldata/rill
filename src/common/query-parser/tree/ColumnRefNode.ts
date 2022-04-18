@@ -12,9 +12,9 @@ export class ColumnRefNode extends QueryTreeNode {
     public name: string;
     public fullName: string;
 
-    public toJSON(includeLocation = false): ColumnRefNodeJSON {
+    public toJSON(): ColumnRefNodeJSON {
         return {
-            ...super.toJSON(includeLocation),
+            ...super.toJSON(),
             fullName: this.fullName,
         };
     }

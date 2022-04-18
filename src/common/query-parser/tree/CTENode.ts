@@ -13,11 +13,11 @@ export class CTENode extends QueryTreeNode {
     public tables = new Array<TableNode>();
     public select: SelectNode;
 
-    public toJSON(includeLocation = false) {
+    public toJSON() {
         return {
-            ...super.toJSON(includeLocation),
-            tables: this.tables.map(table => table.toJSON(includeLocation)),
-            ...this.select ? {select: this.select.toJSON(includeLocation)} : {},
+            ...super.toJSON(),
+            tables: this.tables.map(table => table.toJSON()),
+            ...this.select ? {select: this.select.toJSON()} : {},
         }
     }
 }

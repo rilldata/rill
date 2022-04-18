@@ -29,6 +29,21 @@ export class QueryParserSpec extends TestBase {
     @TestBase.Test("queryParseData")
     public shouldParseQuery(query: string, expectedJson: Record<string, QueryTreeJSON>) {
         const parser = new QueryParser();
-        expect(parser.parse(query).toJSON()).toEqual(expectedJson);
+        expect(this.stripOffLocation(parser.parse(query).toJSON())).toEqual(expectedJson);
+    }
+
+    // it is not practical to include locations in assertion
+    // as any change would need tedious updating of the expected locations
+    private stripOffLocation(json) {
+        if ("start" in json) delete json.start;
+        if ("end" in json) delete json.end;
+
+        for (const key in json) {
+            if (typeof json[key] === "object") {
+                json[key] = this.stripOffLocation(json[key]);
+            }
+        }
+
+        return json;
     }
 }

@@ -12,9 +12,9 @@ export class ColumnNode extends QueryTreeNode {
     public columnRefs = new Array<ColumnRefNode>();
     public alias: string;
 
-    public toJSON(includeLocation = false): ColumnNodeJSON {
+    public toJSON(): ColumnNodeJSON {
         return {
-            ...super.toJSON(includeLocation),
+            ...super.toJSON(),
             refs: this.columnRefs.map(columnRef => columnRef.toJSON()),
             ...this.alias ? {alias : this.alias} : {},
         };

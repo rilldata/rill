@@ -15,9 +15,9 @@ export class TableNode extends QueryTreeNode {
     public availableColumns = new Array<ColumnNode>();
     public isSourceTable = false;
 
-    public toJSON(includeLocation = false): TableNodeJSON {
+    public toJSON(): TableNodeJSON {
         return {
-            ...super.toJSON(includeLocation),
+            ...super.toJSON(),
             ...this.tableName ? {tableName: this.tableName} : {},
             ...this.alias ? {alias: this.alias} : {},
             isSourceTable: this.isSourceTable,

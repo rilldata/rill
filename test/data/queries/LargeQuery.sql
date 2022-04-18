@@ -1,4 +1,4 @@
--- Found on quorra. Cannot find the exact source.
+-- Found on Quora. Cannot find the exact source.
 SELECT
        Max("NEW126"."Parent1") AS "Parent1", Max("NEW126"."Parent2") AS "Parent2",
        Max("NEW126"."Child1") AS "Child1", Max("NEW126"."Child2") AS "Child2", Max("NEW126"."Child3") AS "Child3",
