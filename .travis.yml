@@ -38,4 +38,3 @@ jobs:
       name: "Verify docker build"
       script:
         - npm run build
-
