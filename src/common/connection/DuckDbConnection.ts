@@ -35,7 +35,10 @@ export class DuckDbConnection extends DataConnection {
     }
 
     public async sync(): Promise<void> {
-        const tables = await this.duckDbClient.execute("SHOW TABLES");
+        const tables = await this.duckDbClient.execute(
+            "SELECT table_name FROM information_schema.tables " +
+            "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW';"
+        );
         const persistentTables = this.dataModelerStateService
             .getEntityStateService(EntityType.Table, StateType.Persistent)
             .getCurrentState().entities;
@@ -45,7 +48,7 @@ export class DuckDbConnection extends DataConnection {
             existingTables.set(persistentTable.tableName, persistentTable));
 
         for (const table of tables) {
-            const tableName = table.name;
+            const tableName = table.table_name;
             if (existingTables.has(tableName)) {
                 await this.dataModelerService.dispatch("syncTable",
                     [existingTables.get(tableName).id]);

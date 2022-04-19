@@ -108,6 +108,8 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
             },
             ...AdImpressionColumnsTestData.slice(3),
         ]);
+        // temporary tables and views are not pulled
+        expect(persistentState.entities.length).toBe(2);
     }
 
     @FunctionalTestBase.Test()
