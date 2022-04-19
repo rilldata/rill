@@ -38,4 +38,4 @@ jobs:
     - stage: test
       name: "Verify docker build"
       script:
-        - npm run build:ci
+        - travis_wait 30 npm run build:ci
