@@ -14,6 +14,10 @@ cache:
   - "$TRAVIS_BUILD_DIR/data"
   - "node_modules"
 
+env:
+  global:
+  - DOCKER_IMAGE=rilldata/rill-developer
+
 jobs:
   include:
     - stage: test
@@ -38,4 +42,4 @@ jobs:
     - stage: test
       name: "Verify docker build"
       script:
-        - docker build -t rilldata/rill-developer .
+        - docker build -t ${DOCKER_IMAGE} .

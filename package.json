@@ -5,7 +5,6 @@
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "./build-tools/build.sh && tsc --project tsconfig.node.json",
-		"build:ci": "npm run build; docker build -t \"rilldata/rill-developer\" .;",
 		"prepack": "./build-tools/replace_package_type.sh module commonjs",
 		"postpack": "./build-tools/replace_package_type.sh commonjs module",
 		"postinstall": "ts-node-dev --quiet --project tsconfig.node.json src/cli/post-install.ts",
