@@ -18,6 +18,7 @@ jobs:
   include:
     - stage: test
       name: "Verify build"
+      install: docker --version
       script:
         - npm install
         # install browser for UI tests
@@ -37,4 +38,4 @@ jobs:
     - stage: test
       name: "Verify docker build"
       script:
-        - npm run build
+        - npm run build:ci
