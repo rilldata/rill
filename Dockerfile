@@ -10,7 +10,7 @@ COPY build-tools build-tools/
 COPY src src/
 
 RUN echo "Installing npm dependencies..." && \
-    npm install
+    npm install -d
 
 COPY static static/
 RUN echo "Compiling the code..." && \
