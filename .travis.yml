@@ -38,4 +38,4 @@ jobs:
     - stage: test
       name: "Verify docker build"
       script:
-        - travis_wait 30 npm run build:ci
+        - docker build -t rilldata/rill-developer .
