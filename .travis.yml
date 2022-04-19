@@ -24,7 +24,7 @@ jobs:
         - npx playwright install
 
         # build the entire application
-        - npm run build:ci
+        - npm run build
 
         # verify lint of the repo
         # - npm run lint
@@ -33,3 +33,9 @@ jobs:
 
         # run all tests
         - npm run test
+
+    - stage: test
+      name: "Verify docker build"
+      script:
+        - npm run build
+

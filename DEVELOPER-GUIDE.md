@@ -43,19 +43,3 @@ The UI tests utilize [Playwright](https://github.com/microsoft/playwright/blob/m
 ```
 PWDEBUG=1 npm run test:ui
 ```
-
-# Docker Usage
-
-Run the rill-developer image,
-```
-docker run -d --name rill-developer -p 8080:8080/tcp -it "rilldata/rill-developer"
-# UI will be available on 8080
-```
-
-Copy over any file to import into the container and run import command,
-```
-docker cp /path/to/file rill-developer:/app/<fileName>
-docker exec -it rill-developer /bin/bash
-# rill-developer is an alias to the cli
-rill-developer import /app/<fileName>
-```

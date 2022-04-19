@@ -5,16 +5,22 @@ WORKDIR /app
 COPY package.json package-lock.json \
      tsconfig.json tsconfig.node.json tsconfig.build.json \
      svelte.config.js tailwind.config.cjs postcss.config.cjs .babelrc ./
-COPY src src/
-COPY static static/
-COPY data data/
+
 COPY build-tools build-tools/
+COPY src src/
 
-RUN npm install
-RUN npm run build
-RUN ./build-tools/replace_package_type.sh module commonjs
-RUN echo 'alias rill-developer="node dist/cli/data-modeler-cli.js"' >> ~/.bashrc
+RUN echo "Installing npm dependencies..." && \
+    npm install
 
-EXPOSE 8080/tcp
+COPY static static/
+RUN echo "Compiling the code..." && \
+    npm run build
 
-ENTRYPOINT node dist/cli/data-modeler-cli.js start
+RUN echo "CommonJS vodoo" && \
+    /app/build-tools/replace_package_type.sh module commonjs
+
+RUN echo '#!/bin/bash\nnode dist/cli/data-modeler-cli.js "$@"' > /usr/bin/rill-developer && \
+    chmod +x /usr/bin/rill-developer
+
+COPY scripts/entrypoint.sh /entrypoint.sh
+ENTRYPOINT /entrypoint.sh

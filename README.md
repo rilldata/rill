@@ -47,6 +47,7 @@ npm run cli --silent -- start --project ../rill-developer-example
 
 # Creating Your Own Project
 If you want to go beyond this example, you can also create a project using your own data.
+
 ## Initialize Your Project
 Initialize your project in the Rill Developer directory.
 ```
@@ -101,6 +102,31 @@ If you would like to see information on all of the available CLI commands, you c
 ```
 npm run cli --silent -- --help
 ```
+
+# Using Docker
+
+1. Build the rill-developer using docker compose, if any changes.
+    ```
+    docker compose build
+    ```
+
+1. Run the rill-developer using docker compose.
+    ```
+    docker compose up
+    ```
+    
+    Check [http://localhost:8080/](http://localhost:8080/)
+    
+    By default, it will create a project `rill-developer-example` under `./projects`
+    To create a new project, update `PROJECT` in docker-compose.yml.
+
+1. Copy over any file to import into `./projects/${PROJECT}/data/`
+    ```
+    docker exec -it rill-developer /bin/bash
+    
+    rill-developer import-table ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
+        --project ${PROJECT_BASE}/${PROJECT} 
+    ```
 
 # Legal
 By downloading and using our application you are agreeing to the Rill [Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
