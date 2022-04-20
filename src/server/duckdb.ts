@@ -5,8 +5,8 @@
 
 // @ts-nocheck
 import fs from "fs";
-import duckdb from 'duckdb';
-import { default as glob } from 'glob';
+import duckdb from "duckdb";
+import { default as glob } from "glob";
 // we will use d3's binning for now until we can
 // debug my histogram query
 import { bin } from "d3-array";
