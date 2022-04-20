@@ -8,7 +8,9 @@ services:
     environment:
       PROJECT: rill-developer-example
       PROJECT_BASE: /app/projects/
+      INIT_SCRIPT: /app/example-project.sh
     ports:
       - 8080:8080
     volumes:
       - ./projects:/app/projects
+      - ./scripts/example-project.sh:/app/example-project.sh
