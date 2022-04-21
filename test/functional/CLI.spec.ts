@@ -9,12 +9,12 @@ import type {
 import type {
     PersistentTableState
 } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import {CLI_COMMAND} from "../utils/getCliCommand";
 
 const execPromise = promisify(exec);
 
 const CLI_TEST_FOLDER = "temp/test-cli";
 const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
-const DATA_MODELER_CLI = "./node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts";
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 @FunctionalTestBase.Suite
@@ -25,20 +25,21 @@ export class CLISpec extends FunctionalTestBase {
 
     @FunctionalTestBase.BeforeEachTest()
     public async setupTests(): Promise<void> {
-        await execPromise(`mkdir -p ${CLI_TEST_FOLDER}`);
-        await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
+        await execPromise(`rm -rf ${CLI_TEST_FOLDER}`);
     }
 
+    @FunctionalTestBase.Test()
     public async shouldInitProject(): Promise<void> {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
         expect(existsSync(`${CLI_TEST_FOLDER}/persistent_table_state.json`));
         expect(existsSync(`${CLI_TEST_FOLDER}/stage.db`));
     }
 
+    @FunctionalTestBase.Test()
     public async shouldAddTables(): Promise<void> {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`);
 
         const persistentState: PersistentTableState =
             JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
@@ -89,14 +90,14 @@ export class CLISpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldDropTable(): Promise<void> {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
 
         let persistentState: PersistentTableState =
             JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
         expect(persistentState.entities[0].name).toBe("AdBids");
 
-        await execPromise(`${DATA_MODELER_CLI} drop-table AdBids ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} drop-table AdBids ${CLI_TEST_FOLDER_ARG}`);
 
         persistentState = JSON.parse(readFileSync(
             `${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());

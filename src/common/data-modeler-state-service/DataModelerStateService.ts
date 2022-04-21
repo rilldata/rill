@@ -12,12 +12,14 @@ import {initialState} from "../stateInstancesFactory";
 import {getActionMethods} from "$common/ServiceBase";
 import type {PickActionFunctions} from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
-import type {
-    EntityState,
-    EntityStateActionArg,
+import {
     EntityStateService,
     EntityType,
     StateType
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+    EntityState,
+    EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {
     EntityRecordMapType,
@@ -25,6 +27,7 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import type { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
 import type { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
+import type { ApplicationState } from "./entity-state-service/ApplicationEntityService";
 
 enablePatches();
 
@@ -147,6 +150,10 @@ export class DataModelerStateService {
         entityType: EntityTypeArg, stateType: StateTypeArg,
     ): EntityStateServicesMapType[EntityTypeArg][StateTypeArg] {
         return this.entityStateServicesMap[entityType][stateType];
+    }
+    public getApplicationState(): ApplicationState {
+        return this.getEntityStateService(
+            EntityType.Application, StateType.Derived).getCurrentState();
     }
 
     public getEntityById<EntityTypeArg extends EntityType, StateTypeArg extends StateType>(

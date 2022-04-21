@@ -35,7 +35,6 @@ import { ApplicationStateActions } from "$common/data-modeler-state-service/Appl
 import { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
 import { MetricsService } from "$common/metrics-service/MetricsService";
 import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
-import { LocalConfig} from "$common/config/LocalConfig";
 import { existsSync, readFileSync } from "fs";
 import { LocalConfigFile } from "$common/config/ConfigFolders";
 

@@ -52,6 +52,8 @@ export interface Model extends ColumnarItem {
 export enum TableSourceType {
     ParquetFile,
     CSVFile,
+    // table is loaded from an existing duckdb table
+    DuckDB,
 }
 export const FILE_EXTENSION_TO_TABLE_TYPE = {
     "parquet": TableSourceType.ParquetFile,

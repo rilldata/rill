@@ -1,22 +1,21 @@
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import { dataModelerServiceFactory } from "$common/serverFactory";
 import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import type { Command } from "commander";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import { ServerConfig } from "$common/config/ServerConfig";
-import {
-    DataModelerStateSyncService
-} from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import { clientFactory } from "$common/clientFactory";
 import { isPortOpen } from "$common/utils/isPortOpen";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
+import { RillDeveloper } from "$common/RillDeveloper";
+import { ProjectConfig } from "$common/config/ProjectConfig";
 
 const DATABASE_NAME = "stage.db";
 
 export interface CliRunArgs {
     projectPath: string;
+    duckDbPath?: string;
     shouldInitState?: boolean;
     shouldSkipDatabase?: boolean;
     profileWithUpdate?: boolean;
@@ -27,10 +26,11 @@ export abstract class DataModelerCliCommand {
     protected dataModelerStateService: DataModelerStateService;
     protected notificationService: SocketNotificationService;
     protected metricsService: MetricsService;
-    protected dataModelerStateSyncService: DataModelerStateSyncService;
     protected projectPath: string;
     protected config: RootConfig;
     protected isClient: boolean;
+
+    protected rillDeveloper: RillDeveloper;
 
     private async init(cliRunArgs: CliRunArgs): Promise<void> {
         this.projectPath = cliRunArgs.projectPath ?? process.cwd();
@@ -41,6 +41,7 @@ export abstract class DataModelerCliCommand {
         this.config = new RootConfig({
             database: new DatabaseConfig({ databaseName: DATABASE_NAME, skipDatabase: cliRunArgs.shouldSkipDatabase }),
             server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
+            project: new ProjectConfig({duckDbPath: cliRunArgs.duckDbPath}),
             projectFolder: this.projectPath, profileWithUpdate: cliRunArgs.profileWithUpdate,
         });
 
@@ -52,35 +53,30 @@ export abstract class DataModelerCliCommand {
             // database should be started when server is not running.
             // We can write to database in this case
             this.config.database.skipDatabase = false;
-            await this.initServerInstances(cliRunArgs);
+            await this.initServerInstances();
         }
-
-        await this.dataModelerStateSyncService?.init();
-        await this.dataModelerService.init();
 
         this.isClient = isServerRunning;
     }
 
     private async teardown(): Promise<void> {
-        await this.dataModelerStateSyncService?.destroy();
-        await this.dataModelerService.destroy();
+        if (this.isClient) {
+            await this.dataModelerService.destroy();
+        } else {
+            await this.rillDeveloper.destroy();
+        }
     }
 
-    private async initServerInstances({ shouldInitState }: CliRunArgs) {
-        const {dataModelerService, dataModelerStateService,
-            notificationService, metricsService} = dataModelerServiceFactory(this.config);
+    private async initServerInstances() {
+        this.rillDeveloper = RillDeveloper.getRillDeveloper(this.config);
 
-        if (shouldInitState) {
-            this.dataModelerStateSyncService = new DataModelerStateSyncService(
-                this.config, dataModelerStateService.entityStateServices,
-                dataModelerService, dataModelerStateService,
-            );
-        }
+        this.dataModelerService = this.rillDeveloper.dataModelerService;
+        this.dataModelerStateService = this.rillDeveloper.dataModelerStateService;
+        this.notificationService =
+            this.rillDeveloper.notificationService as SocketNotificationService;
+        this.metricsService = this.rillDeveloper.metricsService;
 
-        this.dataModelerService = dataModelerService;
-        this.dataModelerStateService = dataModelerStateService;
-        this.notificationService = notificationService;
-        this.metricsService = metricsService;
+        await this.rillDeveloper.init();
     }
 
     private async initClientInstances() {
@@ -88,6 +84,7 @@ export abstract class DataModelerCliCommand {
         this.dataModelerService = dataModelerService;
         this.dataModelerStateService = dataModelerStateService;
         this.metricsService = metricsService;
+        await dataModelerService.init();
     }
 
     protected async run(cliRunArgs: CliRunArgs, ...args: Array<any>): Promise<void> {

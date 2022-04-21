@@ -29,16 +29,9 @@ export class ExpressServer {
         if (config.server.serveStaticFile) {
             this.app.use(express.static(STATIC_FILES));
         }
-
-        this.app.get("/ip-lookup", (req, res) => {
-            console.log(req.headers['x-forwarded-for'] ||
-                req.socket.remoteAddress);
-            res.send("OK");
-        });
     }
 
     public async init(): Promise<void> {
-        await this.dataModelerService.init();
         await this.socketServer.init();
         this.server.listen(this.config.server.serverPort);
         console.log(`Server started at ${this.config.server.serverUrl}`);

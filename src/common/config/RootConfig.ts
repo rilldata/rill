@@ -5,6 +5,7 @@ import {DatabaseConfig} from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import { MetricsConfig } from "$common/config/MetricsConfig";
 import { LocalConfig } from "$common/config/LocalConfig";
+import { ProjectConfig } from "./ProjectConfig";
 
 export class RootConfig extends Config<RootConfig> {
     @Config.SubConfig(ServerConfig)
@@ -21,6 +22,9 @@ export class RootConfig extends Config<RootConfig> {
 
     @Config.SubConfig(LocalConfig)
     public local: LocalConfig;
+
+    @Config.SubConfig(ProjectConfig)
+    public project: ProjectConfig;
 
     @Config.ConfigField(".")
     public projectFolder: string;

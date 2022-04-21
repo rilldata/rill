@@ -1,6 +1,6 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, copyFileSync } from "fs";
 import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export class InitCommand extends DataModelerCliCommand {
@@ -11,6 +11,8 @@ export class InitCommand extends DataModelerCliCommand {
             new Command("init"),
             "Initialize a new project either in the current folder or supplied folder.",
         )
+            .option("--db <duckDbPath>", "Optional path to connect to an existing duckdb database.")
+            .option("--copy", "Optionally copy the duckdb database instead of directly modifying it.")
             .action((opts, command) => {
                 const {project} = command.optsWithGlobals();
 
@@ -18,7 +20,12 @@ export class InitCommand extends DataModelerCliCommand {
                 InitCommand.makeDirectoryIfNotExists(projectPath);
                 this.alreadyInitialised = existsSync(`${projectPath}/state`);
 
-                return this.run({ projectPath });
+                if (!InitCommand.verifyDuckDbPath(opts.db, opts.copy, projectPath)) {
+                    console.log(`Failed to initialize project under ${projectPath}`);
+                    return;
+                }
+
+                return this.run({ projectPath, duckDbPath: opts.copy ? undefined : opts.db });
             });
     }
 
@@ -52,5 +59,26 @@ export class InitCommand extends DataModelerCliCommand {
         } else if (path !== process.cwd()) {
             console.log(`Directory ${path} already exist. Attempting to init the project.`);
         }
+    }
+
+    private static verifyDuckDbPath(duckDbPath: string, copy: boolean, projectPath: string): boolean {
+        if (!duckDbPath) return true;
+
+        if (!existsSync(duckDbPath)) {
+            console.log(`Duckdb database path provided ${duckDbPath} doesnt exist.`);
+            return false;
+        }
+
+        console.log(`Importing tables from Duckdb database : ${duckDbPath} .\n` +
+            `Make sure to close any write connections to this database before running this.`);
+
+        if (copy) {
+            copyFileSync(duckDbPath, `${projectPath}/stage.db`);
+            console.log("Copied over the database file. Any changes in one wont be reflected in the other database.");
+        } else {
+            console.log(`Note: Any table imports and drops will directly import/drop from this connected database.`);
+        }
+        
+        return true;
     }
 }

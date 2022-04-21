@@ -38,9 +38,7 @@ export class EntityStatusTracker {
                 this.statusChangeOrder.push(entity.status);
             }
 
-            const applicationState = this.dataModelerStateService
-                .getEntityStateService(EntityType.Application, StateType.Derived)
-                .getCurrentState();
+            const applicationState = this.dataModelerStateService.getApplicationState();
             if (this.applicationStatusChangeOrder[this.applicationStatusChangeOrder.length - 1] !== applicationState.status) {
                 this.applicationStatusChangeOrder.push(applicationState.status);
             }
