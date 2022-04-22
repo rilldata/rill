@@ -75,7 +75,7 @@ export function dataModelerServiceFactory(config: RootConfig) {
         config.local = JSON.parse(readFileSync(LocalConfigFile).toString());
     }
     try {
-        config.local.version = JSON.parse(readFileSync("package.json").toString()).version;
+        config.local.version = JSON.parse(readFileSync(__dirname + "/../../package.json").toString()).version;
     } catch (err) {
         console.error(err);
     }

@@ -7,7 +7,7 @@
 		"build": "./build-tools/build.sh && tsc --project tsconfig.node.json",
 		"prepack": "./build-tools/replace_package_type.sh module commonjs",
 		"postpack": "./build-tools/replace_package_type.sh commonjs module",
-		"postinstall": "ts-node-dev --quiet --project tsconfig.node.json src/cli/post-install.ts",
+		"postinstall": "./build-tools/post_install.sh",
 		"install-and-build": "npm install && npm run build",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
@@ -24,7 +24,7 @@
 		"test:watch": "npm run test -- --watch",
 		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
 		"cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts",
-    	"bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
+		"bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
 		"manual-publish": "./build-tools/npm_publish.sh"
 	},
 	"devDependencies": {
@@ -87,7 +87,7 @@
 		"d3-shape": "^3.1.0",
 		"d3-time": "^3.0.0",
 		"d3-time-format": "^4.1.0",
-		"duckdb": "^0.3.2",
+		"duckdb": "0.3.2",
 		"express": "^4.17.3",
 		"glob": "^7.2.0",
 		"highlight.js": "^11.5.0",
@@ -101,10 +101,11 @@
 		"svelte": "^3.46.4"
 	},
 	"bin": {
-		"data-modeler": "./dist/cli/data-modeler-cli.js"
+		"rill-developer": "./dist/cli/data-modeler-cli.js"
 	},
 	"files": [
 		"dist",
+		"build-tools/post_install.sh",
 		"build",
 		"static",
 		"package.json",
