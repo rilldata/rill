@@ -9,6 +9,7 @@ import { PlaywrightSuiteSetup } from "@adityahegde/typescript-test-utils/dist/pl
 import { DataProviderData, TestBase, TestSuiteSetup, TestSuiteParameter } from "@adityahegde/typescript-test-utils";
 import { waitUntil } from "$common/utils/waitUtils";
 import { isPortOpen } from "$common/utils/isPortOpen";
+import {CLI_COMMAND} from "../utils/getCliCommand";
 
 const execPromise = promisify(exec);
 
@@ -16,7 +17,6 @@ const PORT = 8080;
 const DEV_PORT = 3000;
 const URL = `http://localhost:${PORT}/`;
 const CLI_TEST_FOLDER = 'temp/test-ui';
-const DATA_MODELER_CLI = './node_modules/.bin/ts-node-dev --project tsconfig.node.json -- src/cli/data-modeler-cli.ts';
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 let serverStarted = false;
@@ -47,13 +47,13 @@ class ServerSetup extends TestSuiteSetup {
     await execPromise(`mkdir -p ${CLI_TEST_FOLDER}`);
     await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
 
-    await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER_ARG}`);
-    await execPromise(`${DATA_MODELER_CLI} import-table  ${CLI_TEST_FOLDER_ARG} ./data/Users.parquet`);
-    await execPromise(`${DATA_MODELER_CLI} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdImpressions.parquet`);
-    await execPromise(`${DATA_MODELER_CLI} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdBids.parquet`);
+    await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
+    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./data/Users.parquet`);
+    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdImpressions.parquet`);
+    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdBids.parquet`);
 
     // Run Rill Developer in the background, logging to stdout.
-    this.child = exec(`${DATA_MODELER_CLI} start ${CLI_TEST_FOLDER_ARG}`);
+    this.child = exec(`${CLI_COMMAND} start ${CLI_TEST_FOLDER_ARG}`);
     this.child.stdout.pipe(process.stdout);
     // Watch for server startup in output.
     this.child.stdout.on('data', (data) => {

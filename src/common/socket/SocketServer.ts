@@ -4,9 +4,6 @@ import type {DataModelerStateService} from "$common/data-modeler-state-service/D
 import type { RootConfig } from "$common/config/RootConfig";
 import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
 import type http from "http";
-import {
-    DataModelerStateSyncService
-} from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 
 /**
@@ -14,7 +11,6 @@ import type { MetricsService } from "$common/metrics-service/MetricsService";
  */
 export class SocketServer {
     private readonly server: Server<ClientToServerEvents, ServerToClientEvents>;
-    private readonly dataModelerStateSyncService: DataModelerStateSyncService;
 
     constructor(private readonly config: RootConfig,
                 private readonly dataModelerService: DataModelerService,
@@ -24,9 +20,6 @@ export class SocketServer {
         this.server = new Server(server ?? {
             cors: { origin: this.config.server.serverUrl, methods: ["GET", "POST"] },
         });
-        this.dataModelerStateSyncService = new DataModelerStateSyncService(
-            config, dataModelerStateService.entityStateServices,
-            dataModelerService, dataModelerStateService);
     }
 
     public getSocketServer() {
@@ -34,9 +27,6 @@ export class SocketServer {
     }
 
     public async init(): Promise<void> {
-        await this.dataModelerService.init();
-        await this.dataModelerStateSyncService.init();
-
         this.dataModelerStateService.subscribePatches((entityType, stateType, patches) => {
             this.server.emit("patch", entityType, stateType, patches);
         });
@@ -55,7 +45,6 @@ export class SocketServer {
     }
 
     public async destroy(): Promise<void> {
-        await this.dataModelerStateSyncService.destroy();
         this.server.close();
     }
 }

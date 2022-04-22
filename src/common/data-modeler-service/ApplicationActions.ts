@@ -27,9 +27,7 @@ export class ApplicationActions extends DataModelerActions {
     @DataModelerActions.PersistentAction()
     public async deleteEntity({stateService}: EntityStateActionArg<any>,
                               entityType: EntityType, entityId: string) {
-        const applicationState = this.dataModelerStateService
-            .getEntityStateService(EntityType.Application, StateType.Derived)
-            .getCurrentState();
+        const applicationState = this.dataModelerStateService.getApplicationState();
         if (applicationState.activeEntity?.id === entityId &&
             applicationState.activeEntity?.type === entityType) {
             const newEntityId = this.getNextEntityId(

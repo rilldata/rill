@@ -47,9 +47,7 @@ export class MetricsService implements ActionServiceBase<MetricsActionDefinition
     }
 
     private getCommonFields(): CommonFields {
-        const applicationState = this.dataModelerStateService
-            .getEntityStateService(EntityType.Application, StateType.Derived)
-            .getCurrentState();
+        const applicationState = this.dataModelerStateService.getApplicationState();
         return {
             app_name: this.config.metrics.appName,
             install_id: this.config.local.installId,

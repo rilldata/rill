@@ -130,9 +130,7 @@ export class ActiveEventHandlerSpec extends TestBase {
     private getExpectedActiveEvent(dataModelerStateService: DataModelerStateService,
                                    event_datetime: number, model_id: string,
                                    duration_sec: number, total_in_focus: number): ActiveEvent {
-        const applicationState = dataModelerStateService
-            .getEntityStateService(EntityType.Application, StateType.Derived)
-            .getCurrentState();
+        const applicationState = dataModelerStateService.getApplicationState();
         return {
             ...CommonUserMetricsData,
             app_name: this.config.metrics.appName,

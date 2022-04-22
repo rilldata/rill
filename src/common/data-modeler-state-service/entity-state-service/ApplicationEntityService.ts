@@ -24,6 +24,7 @@ export interface ApplicationState extends EntityState<ApplicationEntity> {
     activeEntity?: ActiveEntity;
     status: ApplicationStatus;
     projectId?: string;
+    duckDbPath?: string;
 }
 export type ApplicationStateActionArg = EntityStateActionArg<ApplicationEntity, ApplicationState>;
 
