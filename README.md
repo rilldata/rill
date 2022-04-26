@@ -23,6 +23,11 @@ Clone this repository to your local machine:
 git clone https://github.com/rilldata/rill-developer.git
 ```
 
+On Ubuntu, you'll also need to make sure you have `g++` installed in order to compile DuckDB from source during the installation steps below (please note that compiling DuckDB may take a while):
+```
+sudo apt install g++
+```
+
 # Install Locally
 Change directories to the local Rill Developer repository
 ```
