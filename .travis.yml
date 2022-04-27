@@ -23,7 +23,7 @@ jobs:
     - stage: test
       name: "Verify build"
       script:
-        - apt-get install libc6
+        - sudo apt-get install libc6
         - npm install
         # install browser for UI tests
         - npx playwright install
