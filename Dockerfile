@@ -1,4 +1,4 @@
-FROM rilldata/duckdb:0.3.3
+FROM rilldata/duckdb:0.3.4
 
 WORKDIR /app
 

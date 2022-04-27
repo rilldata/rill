@@ -2,4 +2,4 @@ FROM node:16
 
 WORKDIR /app
 
-RUN npm install duckdb
+RUN npm install duckdb@0.3.4
