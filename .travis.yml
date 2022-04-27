@@ -22,8 +22,8 @@ jobs:
   include:
     - stage: test
       name: "Verify build"
-      install: docker --version
       script:
+        - apt-get install libc6
         - npm install
         # install browser for UI tests
         - npx playwright install
@@ -41,6 +41,7 @@ jobs:
 
     - stage: test
       name: "Verify docker build"
+      install: docker --version
       script:
         - docker build -t ${DOCKER_IMAGE} .
 
