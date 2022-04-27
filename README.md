@@ -105,6 +105,8 @@ npm run cli --silent -- --help
 
 # Using Docker
 
+https://hub.docker.com/r/rilldata/rill-developer
+
 1. Build the rill-developer using docker compose, if any changes.
     ```
     docker compose build
