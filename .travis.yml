@@ -14,10 +14,15 @@ cache:
   - "$TRAVIS_BUILD_DIR/data"
   - "node_modules"
 
+env:
+  global:
+  - DOCKER_IMAGE=rilldata/rill-developer
+
 jobs:
   include:
     - stage: test
       name: "Verify build"
+      install: docker --version
       script:
         - npm install
         # install browser for UI tests
@@ -33,3 +38,8 @@ jobs:
 
         # run all tests
         - npm run test
+
+    - stage: test
+      name: "Verify docker build"
+      script:
+        - docker build -t ${DOCKER_IMAGE} .
