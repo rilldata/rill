@@ -43,3 +43,12 @@ jobs:
       name: "Verify docker build"
       script:
         - docker build -t ${DOCKER_IMAGE} .
+
+    - stage: publish
+      name: "Build & Publish"
+      if: (tag IS NOT present AND branch = main) OR commit_message =~ ^test-publish
+      script:
+      - SHORT_SHA=$(git rev-parse --short HEAD)
+      - echo ${DOCKERHUB_CRED} | docker login --username ${DOCKERHUB_USER} --password-stdin
+      - TAG=${SHORT_SHA} docker-compose build
+      - TAG=${SHORT_SHA} docker-compose push
