@@ -1,12 +1,16 @@
-import type { RootConfig } from "$common/config/RootConfig";
-import type { EntityStateService } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import { EntityStateSyncService } from "$common/data-modeler-state-service/sync-service/EntityStateSyncService";
-import { EntityStateSyncStore } from "$common/data-modeler-state-service/sync-service/EntityStateSyncStore";
-import { DerivedEntityUpdateHandler } from "$common/data-modeler-state-service/sync-service/DerivedEntityUpdateHandler";
-import { EntityStateUpdatesHandler } from "$common/data-modeler-state-service/sync-service/EntityStateUpdatesHandler";
+import type {RootConfig} from "$common/config/RootConfig";
+import type {EntityStateService} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {EntityType, StateType} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
+import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
+import {EntityStateSyncService} from "$common/data-modeler-state-service/sync-service/EntityStateSyncService";
+import {EntityRepository} from "$common/data-modeler-state-service/sync-service/EntityRepository";
+import {DerivedEntityUpdateHandler} from "$common/data-modeler-state-service/sync-service/DerivedEntityUpdateHandler";
+import {EntityStateUpdatesHandler} from "$common/data-modeler-state-service/sync-service/EntityStateUpdatesHandler";
+import {PersistentModelRepository} from "$common/data-modeler-state-service/sync-service/PersistentModelRepository";
+import {
+    PersistentModelUpdateHandler
+} from "$common/data-modeler-state-service/sync-service/PersistentModelUpdateHandler";
 
 /**
  * A single interface to start and stop all entity state sync services
@@ -20,7 +24,7 @@ export class DataModelerStateSyncService {
         this.entityStateSyncServices = entityStateServices.map((entityStateService) => {
             return new EntityStateSyncService(
                 config,
-                new EntityStateSyncStore(config.state,
+                DataModelerStateSyncService.getEntityRepository(config,
                     entityStateService.entityType, entityStateService.stateType),
                 DataModelerStateSyncService.getEntityStateUpdatesHandler(config, dataModelerService,
                     entityStateService.entityType, entityStateService.stateType),
@@ -38,6 +42,15 @@ export class DataModelerStateSyncService {
             entityStateSyncService => entityStateSyncService.destroy()));
     }
 
+    private static getEntityRepository(
+        config: RootConfig, entityType: EntityType, stateType: StateType,
+    ): EntityRepository<any> {
+        if (entityType === EntityType.Model && stateType === StateType.Persistent) {
+            return new PersistentModelRepository(config.state, entityType, stateType);
+        }
+        return new EntityRepository(config.state, entityType, stateType);
+    }
+
     private static getEntityStateUpdatesHandler(config: RootConfig, dataModelerService: DataModelerService,
                                                 entityType: EntityType, stateType: StateType) {
         if (stateType === StateType.Derived &&
@@ -45,6 +58,8 @@ export class DataModelerStateSyncService {
 
             return new DerivedEntityUpdateHandler(config, dataModelerService,
                 entityType === EntityType.Model ? "collectModelInfo": "collectTableInfo")
+        } else if (stateType === StateType.Persistent && entityType === EntityType.Model) {
+            return new PersistentModelUpdateHandler(config, dataModelerService);
         }
         return new EntityStateUpdatesHandler(config, dataModelerService);
     }

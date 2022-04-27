@@ -1,0 +1,62 @@
+import type { EntityState } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { readFile, writeFile } from "fs/promises";
+import type { StateConfig } from "$common/config/StateConfig";
+import type { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { existsSync } from "fs";
+
+/**
+ * Entity repository that writes to file
+ */
+export class EntityRepository<Entity extends EntityRecord> {
+    private readonly fileName: string;
+
+    constructor(
+        protected readonly stateConfig: StateConfig,
+        entityType: EntityType, stateType: StateType,
+    ) {
+        this.fileName = `${stateConfig.stateFolder}/` +
+            `${stateType.toLowerCase()}_${entityType.toLowerCase()}_state.json`;
+    }
+
+    public async sourceExists(): Promise<boolean> {
+        return existsSync(this.fileName);
+    }
+
+    public async saveAll(state: EntityState<Entity>): Promise<void> {
+        // console.log("saving", this.fileName, state);
+        await writeFile(this.fileName, JSON.stringify(state));
+        await Promise.all(state.entities.map(entity => this.save(entity)));
+    }
+
+    /**
+     * Save a specific entity
+     */
+    public async save(entity: Entity): Promise<void> {
+        return Promise.resolve();
+    }
+
+    public async getAll(): Promise<EntityState<Entity>> {
+        const state: EntityState<Entity> =
+            JSON.parse((await readFile(this.fileName)).toString());
+        const updates = await Promise.all(
+            state.entities.map(entity => this.update(entity)));
+        // if any entity updated save it back
+        if (updates.some(update => update)) {
+            await this.saveAll(state);
+        }
+        // if lastUpdated of any entity has updated then update state's lastUpdated as well
+        state.lastUpdated = Math.max(
+            state.lastUpdated,
+            ...state.entities.map(entity => entity.lastUpdated),
+        );
+        return state;
+    }
+
+    /**
+     * Update specific fields in entity based on id or any other field
+     */
+    public async update(entity: Entity): Promise<boolean> {
+        return false;
+    }
+}

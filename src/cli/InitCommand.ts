@@ -30,9 +30,6 @@ export class InitCommand extends DataModelerCliCommand {
     }
 
     protected async sendActions(): Promise<void> {
-        if (!existsSync(`${this.projectPath}/models`)) {
-            mkdirSync(`${this.projectPath}/models`, {});
-        }
         if (!this.alreadyInitialised) {
             // add a single model.
             await this.dataModelerService.dispatch("addModel", [{}]);
