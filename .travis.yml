@@ -45,7 +45,7 @@ jobs:
 
     - stage: publish
       name: "Build & Publish"
-      if: (tag IS NOT present AND branch = main) OR commit_message =~ ^test-publish
+      if: tag IS NOT present AND branch = main
       script:
       - SHORT_SHA=$(git rev-parse --short HEAD)
       - echo ${DOCKERHUB_CRED} | docker login --username ${DOCKERHUB_USER} --password-stdin
