@@ -1,3 +1,4 @@
+# syntax = docker/dockerfile:1.1-experimental
 FROM rilldata/duckdb:0.3.4
 
 WORKDIR /app
