@@ -3,11 +3,6 @@ language: python
 python:
   - "3.7"
 
-before_install:
-  - nvm install 16
-  - node --version
-  - echo "NPM Install can take up to 6-8 mins"
-
 cache:
   directories:
   - "$HOME/.npm"
@@ -22,6 +17,10 @@ jobs:
   include:
     - stage: test
       name: "Verify build"
+      before_install:
+        - nvm install 16
+        - node --version
+        - echo "NPM Install can take up to 6-8 mins"
       script:
         - npm install
         # install browser for UI tests
