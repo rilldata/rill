@@ -40,13 +40,14 @@ export class ModelActions extends DataModelerActions {
 
     @DataModelerActions.PersistentModelAction()
     public async addModel({stateService}: PersistentModelStateActionArg, params: NewModelParams) {
-        const persistentModel = getNewModel(params);
+        const persistentModel = getNewModel(params, stateService.getCurrentState().modelNumber + 1);
         const duplicateResp = this.checkDuplicateModel(stateService,
             persistentModel.name, persistentModel.id);
         if (duplicateResp) {
             return duplicateResp;
         }
 
+        this.dataModelerStateService.dispatch("incrementModelNumber", []);
         this.dataModelerStateService.dispatch("addEntity",
             [EntityType.Model, StateType.Persistent,
                 persistentModel, params.at]);

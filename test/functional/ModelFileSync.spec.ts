@@ -45,13 +45,13 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
 
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "query_0", query: ""}]);
-        await asyncWait(100);
+        await this.waitForModels();
         expect(existsSync(QUERY_0_FILE)).toBe(true);
 
         const [model, ] = this.getModels("tableName", "query_0");
         await this.clientDataModelerService.dispatch("updateModelQuery",
             [model.id, SingleTableQuery]);
-        await asyncWait(100);
+        await this.waitForModels();
 
         // updating query from client should update the file
         expect(readFileSync(QUERY_0_FILE).toString()).toBe(SingleTableQuery);
@@ -60,7 +60,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
 
         // updating query from file should update profiling data
         writeFileSync(QUERY_0_FILE, TwoTableJoinQuery);
-        await asyncWait(100);
+        await this.waitForModels();
         const [, newPersistentModel] = this.getModels("tableName", "query_0");
         this.assertColumns(newPersistentModel.profile, TwoTableJoinQueryColumnsTestData);
     }
@@ -69,12 +69,12 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     public async shouldRecreateModelFileOnDelete() {
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "query_0", query: SingleTableQuery}]);
-        await asyncWait(100);
+        await this.waitForModels();
         expect(existsSync(QUERY_0_FILE)).toBe(true);
 
         // file is recreated if deleted.
         execSync(`rm ${QUERY_0_FILE}`);
-        await asyncWait(100);
+        await this.waitForModels();
         const [model, ] = this.getModels("tableName", "query_0");
         expect(model.query).toBe(SingleTableQuery);
         expect(existsSync(QUERY_0_FILE)).toBe(true);
@@ -90,7 +90,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
             [{name: "query_0", query: SingleTableQuery}]);
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "query_1", query: TwoTableJoinQuery}]);
-        await asyncWait(100);
+        await this.waitForModels();
         expect(existsSync(QUERY_0_FILE)).toBe(true);
         expect(existsSync(QUERY_00_FILE)).toBe(false);
         expect(existsSync(QUERY_1_FILE)).toBe(true);
@@ -104,9 +104,9 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
             [model0.id, "query_00"]);
         await this.clientDataModelerService.dispatch("updateModelName",
             [model1.id, "query_10"]);
-        await asyncWait(100);
+        await this.waitForModels();
         writeFileSync(QUERY_0_FILE, NestedQuery);
-        await asyncWait(200);
+        await this.waitForModels();
         expect(readFileSync(QUERY_0_FILE).toString()).toBe(NestedQuery);
         expect(readFileSync(QUERY_00_FILE).toString()).toBe(SingleTableQuery);
         expect(existsSync(QUERY_1_FILE)).toBe(false);

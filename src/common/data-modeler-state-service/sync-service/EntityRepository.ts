@@ -26,6 +26,7 @@ export class EntityRepository<Entity extends EntityRecord> {
     }
 
     public async saveAll(state: EntityState<Entity>): Promise<void> {
+        if (!this.stateConfig.autoSync) return;
         await writeFile(this.fileName, JSON.stringify(state));
         await Promise.all(state.entities.map(entity => this.save(entity)));
     }

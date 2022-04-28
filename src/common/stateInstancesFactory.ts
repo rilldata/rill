@@ -11,12 +11,9 @@ import type {
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { sanitizeQuery } from "$lib/util/sanitize-query";
 import type {
     DerivedTableEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-
-let modelNumber = 0;
 
 interface NewModelArguments {
     query?: string;
@@ -44,10 +41,9 @@ export function getNewDerivedTable(table: PersistentTableEntity): DerivedTableEn
 export function cleanModelName(name: string): string {
     return name.replace(/\.sql$/, "");
 }
-export function getNewModel(params: NewModelArguments = {}): PersistentModelEntity {
+export function getNewModel(params: NewModelArguments = {}, modelNumber): PersistentModelEntity {
     const query = params.query || '';
     const name = `${params.name ? cleanModelName(params.name) : `query_${modelNumber}`}.sql`;
-    modelNumber += 1;
     return {
         id: guidGenerator(),
         type: EntityType.Model,
@@ -69,13 +65,9 @@ export function getNewDerivedModel(model: PersistentModelEntity): DerivedModelEn
     };
 }
 
-export function getEmptyModel(): Model {
-    return getNewModel({}) as any;
-}
-
 export function initialState() : DataModelerState {
     return {
-        models: [getEmptyModel()],
+        models: [],
         tables: [],
         metricsModels: [],
         exploreConfigurations: [],

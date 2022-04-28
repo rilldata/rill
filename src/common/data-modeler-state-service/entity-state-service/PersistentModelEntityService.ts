@@ -12,11 +12,28 @@ export interface PersistentModelEntity extends EntityRecord {
     name: string;
     tableName?: string;
 }
-export type PersistentModelState = EntityState<PersistentModelEntity>;
+export interface PersistentModelState extends EntityState<PersistentModelEntity> {
+    modelNumber: number;
+}
 export type PersistentModelStateActionArg = EntityStateActionArg<
     PersistentModelEntity, PersistentModelState, PersistentModelEntityService>;
 
 export class PersistentModelEntityService extends EntityStateService<PersistentModelEntity, PersistentModelState> {
     public readonly entityType = EntityType.Model;
     public readonly stateType = StateType.Persistent;
+
+    public init(initialState: PersistentModelState): void {
+        if (!("modelNumber" in initialState)) {
+            initialState.modelNumber = 0;
+        }
+        initialState.entities.forEach(entity => {
+            const [, numStr] = entity.name.match(/query_(\d*).sql/);
+            const num = Number(numStr);
+            if (!Number.isNaN(num)) {
+                initialState.modelNumber =
+                    Math.max(initialState.modelNumber, Number(num));
+            }
+        });
+        super.init(initialState);
+    }
 }

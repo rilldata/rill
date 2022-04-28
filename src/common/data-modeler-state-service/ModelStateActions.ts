@@ -16,6 +16,11 @@ export interface NewModelParams {
 }
 
 export class ModelStateActions extends StateActions {
+    @StateActions.PersistentModelAction()
+    public incrementModelNumber({draftState}: PersistentModelStateActionArg) {
+        draftState.modelNumber++;
+    }
+
     @StateActions.DerivedModelAction()
     public addModelError({stateService, draftState}: DerivedModelStateActionArg,
                          modelId: string, message: string): void {
