@@ -4,6 +4,7 @@ import type { StateConfig } from "$common/config/StateConfig";
 import type { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { existsSync } from "fs";
+import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
 
 /**
  * Entity repository that writes to file
@@ -13,6 +14,7 @@ export class EntityRepository<Entity extends EntityRecord> {
 
     constructor(
         protected readonly stateConfig: StateConfig,
+        protected readonly dataModelerService: DataModelerService,
         entityType: EntityType, stateType: StateType,
     ) {
         this.fileName = `${stateConfig.stateFolder}/` +
@@ -24,7 +26,6 @@ export class EntityRepository<Entity extends EntityRecord> {
     }
 
     public async saveAll(state: EntityState<Entity>): Promise<void> {
-        // console.log("saving", this.fileName, state);
         await writeFile(this.fileName, JSON.stringify(state));
         await Promise.all(state.entities.map(entity => this.save(entity)));
     }

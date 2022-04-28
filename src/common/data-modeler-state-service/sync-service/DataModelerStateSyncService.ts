@@ -24,7 +24,7 @@ export class DataModelerStateSyncService {
         this.entityStateSyncServices = entityStateServices.map((entityStateService) => {
             return new EntityStateSyncService(
                 config,
-                DataModelerStateSyncService.getEntityRepository(config,
+                DataModelerStateSyncService.getEntityRepository(config, dataModelerService,
                     entityStateService.entityType, entityStateService.stateType),
                 DataModelerStateSyncService.getEntityStateUpdatesHandler(config, dataModelerService,
                     entityStateService.entityType, entityStateService.stateType),
@@ -43,16 +43,19 @@ export class DataModelerStateSyncService {
     }
 
     private static getEntityRepository(
-        config: RootConfig, entityType: EntityType, stateType: StateType,
+        config: RootConfig, dataModelerService: DataModelerService,
+        entityType: EntityType, stateType: StateType,
     ): EntityRepository<any> {
         if (entityType === EntityType.Model && stateType === StateType.Persistent) {
-            return new PersistentModelRepository(config.state, entityType, stateType);
+            return new PersistentModelRepository(config.state, dataModelerService, entityType, stateType);
         }
-        return new EntityRepository(config.state, entityType, stateType);
+        return new EntityRepository(config.state, dataModelerService, entityType, stateType);
     }
 
-    private static getEntityStateUpdatesHandler(config: RootConfig, dataModelerService: DataModelerService,
-                                                entityType: EntityType, stateType: StateType) {
+    private static getEntityStateUpdatesHandler(
+        config: RootConfig, dataModelerService: DataModelerService,
+        entityType: EntityType, stateType: StateType,
+    ) {
         if (stateType === StateType.Derived &&
             (entityType === EntityType.Model || entityType === EntityType.Table)) {
 

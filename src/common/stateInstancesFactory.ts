@@ -41,9 +41,12 @@ export function getNewDerivedTable(table: PersistentTableEntity): DerivedTableEn
     };
 }
 
+export function cleanModelName(name: string): string {
+    return name.replace(/\.sql$/, "");
+}
 export function getNewModel(params: NewModelArguments = {}): PersistentModelEntity {
     const query = params.query || '';
-    const name = `${params.name || `query_${modelNumber}`}.sql`;
+    const name = `${params.name ? cleanModelName(params.name) : `query_${modelNumber}`}.sql`;
     modelNumber += 1;
     return {
         id: guidGenerator(),
@@ -58,7 +61,8 @@ export function getNewDerivedModel(model: PersistentModelEntity): DerivedModelEn
     return {
         id: model.id,
         type: EntityType.Model,
-        sanitizedQuery: sanitizeQuery(model.query),
+        // do not assign this to trigger profiling
+        sanitizedQuery: "",
         profile: [],
         lastUpdated: 0,
         status: EntityStatus.Idle,

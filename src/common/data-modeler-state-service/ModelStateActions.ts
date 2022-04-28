@@ -92,5 +92,6 @@ export class ModelStateActions extends StateActions {
     public updateModelName({stateService, draftState}: PersistentModelStateActionArg,
                            modelId: string, name: string): void {
         stateService.updateEntityField(draftState, modelId, "name", `${name}.sql`);
+        stateService.updateEntityField(draftState, modelId, "tableName", name);
     }
 }
