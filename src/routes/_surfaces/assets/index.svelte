@@ -1,9 +1,7 @@
 <script lang="ts">
-import { getContext, onMount } from "svelte";
-import { tweened } from "svelte/motion"
+import { getContext } from "svelte";
 import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
-import { SURFACE_SLIDE_DURATION } from "$lib/layout-store";
 
 import type { ApplicationStore } from "$lib/app-store";
 
@@ -23,9 +21,10 @@ import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import { EntityStatus, EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 import { assetVisibilityTween, assetsVisible, layout } from "$lib/layout-store";
+import {uploadTableFiles} from "$lib/util/tableFileUpload";
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
@@ -40,7 +39,16 @@ $: activeModel = $store && $persistentModelStore &&
 let showTables = true;
 let showModels = true;
 
-let view = 'assets';
+function onTableDrop(e: DragEvent) {
+  preventDefault(e);
+  if (e.dataTransfer?.files) {
+    uploadTableFiles(e.dataTransfer.files, "http://localhost:8080/api");
+  }
+}
+function preventDefault(e: DragEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+}
 
 </script>
 
@@ -80,14 +88,25 @@ let view = 'assets';
 
       <!-- <div style:height="80px"></div> -->
 
-          <div class='pl-4 pb-3 pt-5'>
+          <div class='pl-4 pb-3 pt-5'
+               on:drop={onTableDrop}
+               on:drag={preventDefault}
+               on:dragenter={preventDefault}
+               on:dragover={preventDefault}
+               on:dragleave={preventDefault}>
             <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
               <h4 class='flex flex-row items-center gap-x-2'><ParquetIcon size="16px" /> Tables</h4>
 
             </CollapsibleSectionTitle>
           </div>
             {#if showTables}
-              <div class="pb-6" transition:slide|local={{duration:200}}>
+              <div class="pb-6"
+                   transition:slide|local={{duration:200}}
+                   on:drop={onTableDrop}
+                   on:drag={preventDefault}
+                   on:dragenter={preventDefault}
+                   on:dragover={preventDefault}
+                   on:dragleave={preventDefault}>
               {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
                 <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
                 {#each ($persistentTableStore.entities) as { path, tableName, id} (id)}
