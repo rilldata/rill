@@ -36,6 +36,12 @@ export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
     }
     return fmt(removeTimezoneOffset(new Date(v)));
 }
+
+export const fullTimestampFormat = (v) => {
+    let fmt = timeFormat('%b %d, %Y %I:%M:%S.%L');
+    return fmt(removeTimezoneOffset(new Date(v)));
+}
+
 export const datePortion = timeFormat('%b %d, %Y');
 export const timePortion = timeFormat("%I:%M:%S");
 
