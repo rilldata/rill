@@ -23,12 +23,20 @@ Clone this repository to your local machine:
 git clone https://github.com/rilldata/rill-developer.git
 ```
 
+On Ubuntu, you'll also need to make sure you have `g++` installed in order to compile DuckDB from source during the installation steps below (please note that compiling DuckDB may take a while):
+```
+sudo apt install g++
+```
+
 # Install Locally
 Change directories to the local Rill Developer repository
 ```
 cd /path/to/rill-developer
 ```
-Run npm to install dependencies and build the application. This will take ~5 minutes to complete.
+Run npm to install dependencies and build the application.
+Part of this step involves compiling DuckDB which can be time consuming to complete (it may take approximately five minutes or more, depending on your machine).
+Please be patient.
+
 ```
 npm install
 npm run build
@@ -47,6 +55,7 @@ npm run cli --silent -- start --project ../rill-developer-example
 
 # Creating Your Own Project
 If you want to go beyond this example, you can also create a project using your own data.
+
 ## Initialize Your Project
 Initialize your project in the Rill Developer directory.
 ```
@@ -101,6 +110,33 @@ If you would like to see information on all of the available CLI commands, you c
 ```
 npm run cli --silent -- --help
 ```
+
+# Using Docker
+
+https://hub.docker.com/r/rilldata/rill-developer
+
+1. Build the rill-developer using docker compose, if any changes.
+    ```
+    docker compose build
+    ```
+
+1. Run the rill-developer using docker compose.
+    ```
+    docker compose up
+    ```
+    
+    Check [http://localhost:8080/](http://localhost:8080/)
+    
+    By default, it will create a project `rill-developer-example` under `./projects`
+    To create a new project, update `PROJECT` in docker-compose.yml.
+
+1. Copy over any file to import into `./projects/${PROJECT}/data/`
+    ```
+    docker exec -it rill-developer /bin/bash
+    
+    rill-developer import-table ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
+        --project ${PROJECT_BASE}/${PROJECT} 
+    ```
 
 # Legal
 By downloading and using our application you are agreeing to the Rill [Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
