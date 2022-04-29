@@ -151,8 +151,9 @@ let view = 'assets';
                   cardinality={derivedModel?.cardinality ?? 0}
                   profile={derivedModel?.profile ?? []}
                   head={derivedModel?.preview ?? []}
-                  sizeInByptes={derivedModel?.sizeInBytes ?? 0}
-                  emphasizeTitle ={query?.id === $store?.activeEntity?.id}
+                  sizeInBytes={derivedModel?.sizeInBytes ?? 0}
+                  emphasizeTitle ={
+                  query?.id === $store?.activeEntity?.id}
                 />
               {/each}
               </div>

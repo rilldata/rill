@@ -34,13 +34,13 @@ import notificationStore from "$lib/components/notifications/";
 import { onClickOutside } from "$lib/util/on-click-outside";
 import { config } from "./utils";
 
-export let icon:SvelteComponent;
+export let icon:SvelteComponent = undefined;
 export let name:string;
-export let path:string;
+export let path:string = undefined;
 export let cardinality:number;
 export let profile:any;
 export let head:any; // FIXME
-export let sizeInBytes:number;
+export let sizeInBytes:number = undefined;
 export let emphasizeTitle:boolean = false;
 export let draggable = true;
 export let show = false;
