@@ -152,7 +152,7 @@ let titleElementHovered = false;
             // pass up expand
             dispatch('expand');
         }}
-        {icon} >
+        >
         <svelte:fragment slot='tooltip-content'>
             <TooltipTitle>
                 <svelte:fragment slot="name">
