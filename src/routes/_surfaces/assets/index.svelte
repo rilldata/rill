@@ -152,8 +152,7 @@ let view = 'assets';
                   profile={derivedModel?.profile ?? []}
                   head={derivedModel?.preview ?? []}
                   sizeInBytes={derivedModel?.sizeInBytes ?? 0}
-                  emphasizeTitle ={
-                  query?.id === $store?.activeEntity?.id}
+                  emphasizeTitle ={query?.id === $store?.activeEntity?.id}
                 />
               {/each}
               </div>
