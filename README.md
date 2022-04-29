@@ -33,7 +33,10 @@ Change directories to the local Rill Developer repository
 ```
 cd /path/to/rill-developer
 ```
-Run npm to install dependencies and build the application. This will take ~5 minutes to complete.
+Run npm to install dependencies and build the application.
+Part of this step involves compiling DuckDB which can be time consuming to complete (it may take approximately five minutes or more, depending on your machine).
+Please be patient.
+
 ```
 npm install
 npm run build
