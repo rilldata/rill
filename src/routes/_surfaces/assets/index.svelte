@@ -138,6 +138,7 @@ let view = 'assets';
               <!-- TODO: fix the object property access back to m.id from m["id"] once svelte fixes it -->
               {#each $persistentModelStore.entities as query, i (query.id)}
                 {@const derivedModel = $derivedModelStore.entities.find(m => m["id"] === query["id"])}
+                {JSON.stringify(derivedModel)}
                 <CollapsibleTableSummary
                   on:select={() => {
                     dataModelerService.dispatch("setActiveAsset", [EntityType.Model, query.id]);
@@ -151,8 +152,9 @@ let view = 'assets';
                   cardinality={derivedModel?.cardinality ?? 0}
                   profile={derivedModel?.profile ?? []}
                   head={derivedModel?.preview ?? []}
-                  sizeInByptes={derivedModel?.sizeInBytes ?? 0}
-                  emphasizeTitle ={query?.id === $store?.activeEntity?.id}
+                  sizeInBytes={derivedModel?.sizeInBytes ?? 0}
+                  emphasizeTitle ={
+                  query?.id === $store?.activeEntity?.id}
                 />
               {/each}
               </div>
