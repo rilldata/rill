@@ -114,7 +114,7 @@ npm run cli --silent -- --help
 # Troubleshooting
 
 ## 404 Errors
-If you have just installed the applicaiton and are trying to see the User Interface at http://localhost:8080/ but see a 404 error, it is possible that npm install is taking longer than 5 minutes to build the application and you need to wait for the build to complete. Please wait an additional 5 minutes and try again.
+If you have just installed the application and are trying to see the User Interface at http://localhost:8080/ but see a 404 error, it is possible that npm install is taking longer than 5 minutes to build the application and you need to wait for the build to complete. Please wait an additional 5 minutes and try again.
 
 # Using Docker
 Docker is a containerization platform that packages our application and all its dependencies together to make sure it works seamlessly in any environment. As an alternative to the Install instructions above, you can install Rill Developer using our docker container.
