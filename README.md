@@ -140,7 +140,7 @@ https://hub.docker.com/r/rilldata/rill-developer
     ```
     docker exec -it rill-developer /bin/bash
     
-    rill-developer import-table ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
+    rill import-table ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
         --project ${PROJECT_BASE}/${PROJECT} 
     ```
 

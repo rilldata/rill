@@ -1,5 +1,5 @@
 {
-	"name": "@rilldata/rill-developer",
+	"name": "@rilldata/rill",
 	"version": "0.1.0",
 	"type": "module",
 	"scripts": {
@@ -101,7 +101,7 @@
 		"svelte": "^3.46.4"
 	},
 	"bin": {
-		"rill-developer": "./dist/cli/data-modeler-cli.js"
+		"rill": "./dist/cli/data-modeler-cli.js"
 	},
 	"files": [
 		"dist",
