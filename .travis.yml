@@ -3,21 +3,24 @@ language: python
 python:
   - "3.7"
 
-before_install:
-  - nvm install 16
-  - node --version
-  - echo "NPM Install can take up to 6-8 mins"
-
 cache:
   directories:
   - "$HOME/.npm"
   - "$TRAVIS_BUILD_DIR/data"
   - "node_modules"
 
+env:
+  global:
+  - DOCKER_IMAGE=rilldata/rill-developer
+
 jobs:
   include:
     - stage: test
       name: "Verify build"
+      before_install:
+        - nvm install 16
+        - node --version
+        - echo "NPM Install can take up to 6-8 mins"
       script:
         - npm install
         # install browser for UI tests
@@ -33,3 +36,25 @@ jobs:
 
         # run all tests
         - npm run test
+
+    - stage: test
+      name: "Verify docker build"
+      install: docker --version
+      script:
+        - docker build -t ${DOCKER_IMAGE} .
+
+    - stage: publish
+      name: "Build & Publish"
+      if: tag IS NOT present AND branch = main
+      script:
+      - SHORT_SHA=$(git rev-parse --short HEAD)
+      - echo ${DOCKERHUB_CRED} | docker login --username ${DOCKERHUB_USER} --password-stdin
+      - docker-compose pull
+
+      - echo "Publish docker image with tag ${SHORT_SHA}"
+      - TAG=${SHORT_SHA} docker-compose build
+      - TAG=${SHORT_SHA} docker-compose push
+
+      - echo "Publish docker image with tag latest"
+      - docker-compose build
+      - docker-compose push

@@ -4,14 +4,13 @@ import { cubicOut as easing } from "svelte/easing";
 export let value = 0;
 export let color;
 export let showBackground = true;
-export let title:string;
 
 const valueTween = tweened(0, {duration: 500, easing});
 $: valueTween.set(value);
 
 </script>
 
-<div {title} class="
+<div class="
     text-right grid items-center justify-end justify-items-end relative w-full"
     style:background-color={showBackground ? "hsla(217,5%, 90%, .25)" : 'hsl(217, 0%, 100%, .25)'}
 >
