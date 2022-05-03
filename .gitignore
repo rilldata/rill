@@ -13,6 +13,7 @@ server/venv/
 tsc-tmp/
 export/
 .idea
+.vscode
 /temp
 
 # data files
