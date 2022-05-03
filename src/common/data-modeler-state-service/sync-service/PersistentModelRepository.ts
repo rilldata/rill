@@ -11,7 +11,8 @@ import {execSync} from "node:child_process";
 
 export class PersistentModelRepository extends EntityRepository<PersistentModelEntity> {
     private readonly saveDirectory: string;
-    private filesForEntities: Map<string, string>;
+    private filesForEntities = new Map<string, string>();
+    private previousFilesForEntities: Map<string, string>;
 
     constructor(
         stateConfig: StateConfig,
@@ -41,11 +42,12 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
         // in case it is a new file then store an empty string
         readdirSync(this.saveDirectory).forEach(file =>
             currentFiles.set(file, this.filesForEntities?.get(file) ?? ""));
+        this.previousFilesForEntities = this.filesForEntities;
+        this.filesForEntities = new Map<string, string>();
 
         const entityState = await super.getAll();
 
         // build the new map of file name to entity id
-        this.filesForEntities = new Map<string, string>();
         entityState.entities.forEach(entity =>
             this.filesForEntities.set(this.getFileName(entity), entity.id));
 
@@ -68,6 +70,16 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
                 }, 5);
             }
         });
+        this.filesForEntities.forEach((id, fileName) => {
+            if (currentFiles.has(fileName)) return;
+            if (this.previousFilesForEntities.get(fileName) === id) {
+                // if current files is missing one of the entities then it is a possible delete.
+                setTimeout(() => {
+                    this.deleteEntity(id);
+                    // add a small timeout to make sure it runs after the sync ends
+                }, 5);
+            }
+        });
 
         return entityState;
     }
@@ -76,16 +88,19 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
      * Update specific fields in entity based on id or any other field
      */
     public async update(entity: PersistentModelEntity): Promise<boolean> {
-        const modelFileName = `${this.saveDirectory}/${this.getFileName(entity)}`;
-        // if file was deleted for any reason, recreate instead of throwing error
-        // NOTE: we currently do not support deleting entity by deleting the file
-        if (!existsSync(modelFileName)) {
-            await this.save(entity);
+        const modelFileName = this.getFileName(entity);
+        const modelFilePath = `${this.saveDirectory}/${modelFileName}`;
+        if (!existsSync(modelFilePath)) {
+            // call save for fresh entities
+            if (!this.previousFilesForEntities.has(modelFileName) ||
+                 this.previousFilesForEntities.get(modelFileName) !== entity.id) {
+                await this.save(entity);
+            }
             return false;
         }
 
-        const newQuery = readFileSync(modelFileName).toString();
-        const fileUpdated = statSync(modelFileName).mtimeMs;
+        const newQuery = readFileSync(modelFilePath).toString();
+        const fileUpdated = statSync(modelFilePath).mtimeMs;
         if (this.contentHasChanged(entity, newQuery) && fileUpdated > entity.lastUpdated) {
             this.updateEntity(entity, newQuery);
             entity.lastUpdated = Date.now();
@@ -111,5 +126,10 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
     protected async createEntity(fileName: string, fileContent: string) {
         return this.dataModelerService.dispatch(
             "addModel", [{name: fileName, query: fileContent}]);
+    }
+
+    protected async deleteEntity(id: string) {
+        return this.dataModelerService.dispatch(
+            "deleteModel", [id]);
     }
 }

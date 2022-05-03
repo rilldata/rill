@@ -211,8 +211,12 @@ export class ModelActions extends DataModelerActions {
     }
 
     @DataModelerActions.PersistentModelAction()
-    public async deleteModel(args: PersistentModelStateActionArg,
-                             modelId: string): Promise<void> {
+    public async deleteModel({stateService}: PersistentModelStateActionArg,
+                             modelId: string): Promise<ActionResponseFactory> {
+        const model = stateService.getById(modelId);
+        if (!model) {
+            return ActionResponseFactory.getEntityError(`No model found for ${modelId}`);
+        }
         await this.dataModelerService.dispatch(
             "deleteEntity", [EntityType.Model, modelId])
     }

@@ -10,13 +10,13 @@ import {
     TwoTableJoinQueryColumnsTestData
 } from "../data/ModelQuery.data";
 import {existsSync, readFileSync, writeFileSync} from "fs";
-import {asyncWait} from "$common/utils/waitUtils";
 import {expect} from "@playwright/test";
 import {execSync} from "node:child_process";
 
 const SYNC_TEST_FOLDER = "temp/model-sync-test";
 const MODEL_FOLDER = `${SYNC_TEST_FOLDER}/models`;
 const QUERY_0_FILE = `${MODEL_FOLDER}/query_0.sql`;
+const QUERY_1_FILE = `${MODEL_FOLDER}/query_1.sql`;
 
 @FunctionalTestBase.Suite
 export class ModelFileSyncSpec extends FunctionalTestBase {
@@ -66,7 +66,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     }
 
     @FunctionalTestBase.Test()
-    public async shouldRecreateModelFileOnDelete() {
+    public async shouldDeleteModelOnFileDelete() {
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "query_0", query: SingleTableQuery}]);
         await this.waitForModels();
@@ -76,14 +76,33 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
         execSync(`rm ${QUERY_0_FILE}`);
         await this.waitForModels();
         const [model, ] = this.getModels("tableName", "query_0");
-        expect(model.query).toBe(SingleTableQuery);
-        expect(existsSync(QUERY_0_FILE)).toBe(true);
+        expect(model).toBe(undefined);
+        expect(existsSync(QUERY_0_FILE)).toBe(false);
     }
 
     @FunctionalTestBase.Test()
-    public async shouldAddNewModels() {
+    public async shouldRenameModelOnFileRename() {
+        await this.clientDataModelerService.dispatch("addModel",
+            [{name: "query_0", query: SingleTableQuery}]);
+        await this.waitForModels();
+        expect(existsSync(QUERY_0_FILE)).toBe(true);
+        expect(existsSync(QUERY_1_FILE)).toBe(false);
+
+        // file is renamed if deleted.
+        execSync(`mv ${QUERY_0_FILE} ${QUERY_1_FILE}`);
+        await this.waitForModels();
+        const [model0, ] = this.getModels("tableName", "query_0");
+        const [model1, persistentModel1] = this.getModels("tableName", "query_1");
+        expect(model0).toBe(undefined);
+        expect(existsSync(QUERY_0_FILE)).toBe(false);
+        expect(model1.query).toBe(SingleTableQuery);
+        this.assertColumns(persistentModel1.profile, SingleTableQueryColumnsTestData);
+        expect(existsSync(QUERY_1_FILE)).toBe(true);
+    }
+
+    @FunctionalTestBase.Test()
+    public async shouldAddNewModelsOnModelRename() {
         const QUERY_00_FILE = `${MODEL_FOLDER}/query_00.sql`;
-        const QUERY_1_FILE = `${MODEL_FOLDER}/query_1.sql`;
         const QUERY_10_FILE = `${MODEL_FOLDER}/query_10.sql`;
 
         await this.clientDataModelerService.dispatch("addModel",

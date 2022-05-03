@@ -7,7 +7,10 @@ import { existsSync } from "fs";
 import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
 
 /**
- * Entity repository that writes to file
+ * Entity repository that writes to file.
+ * This class will deal with loading and saving all entity data.
+ * Currently, this directly saves and reads from files.
+ * This can later be swapped with something that persists into a DB.
  */
 export class EntityRepository<Entity extends EntityRecord> {
     private readonly fileName: string;
