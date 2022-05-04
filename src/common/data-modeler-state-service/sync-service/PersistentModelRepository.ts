@@ -7,11 +7,13 @@ import type {EntityType, StateType} from "$common/data-modeler-state-service/ent
 import {existsSync, mkdirSync, readFileSync, writeFileSync, statSync, readdirSync, unlinkSync} from "fs";
 import type {EntityState} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
+import {Throttler} from "$common/utils/Throttler";
 
 export class PersistentModelRepository extends EntityRepository<PersistentModelEntity> {
     private readonly saveDirectory: string;
     private filesForEntities = new Map<string, string>();
     private previousFilesForEntities: Map<string, string>;
+    private throttler = new Throttler();
 
     constructor(
         stateConfig: StateConfig,
@@ -65,7 +67,10 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
                 // else this a file added from outside.
                 // create a new model
                 setTimeout(() => {
-                    this.createEntity(currentFile, readFileSync(currentFilePath).toString());
+                    // throttle the call
+                    this.throttler.throttle(currentFile, () => {
+                        this.createEntity(currentFile, readFileSync(currentFilePath).toString());
+                    }, this.stateConfig.syncInterval * 2);
                     // add a small timeout to make sure it runs after the sync ends
                 }, 5);
             }
@@ -75,7 +80,10 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
             if (this.previousFilesForEntities.get(fileName) === id) {
                 // if current files is missing one of the entities then it is a possible delete.
                 setTimeout(() => {
-                    this.deleteEntity(id);
+                    // throttle the call
+                    this.throttler.throttle(id, () => {
+                        this.deleteEntity(id);
+                    }, this.stateConfig.syncInterval * 2);
                     // add a small timeout to make sure it runs after the sync ends
                 }, 5);
             }
