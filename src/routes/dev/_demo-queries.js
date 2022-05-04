@@ -1,6 +1,5 @@
-
 export const queries = [
-`
+  `
 WITH x AS (select a, b, c, d, whatevewr from table)
    select     a, b+c as   next_val, whatever        
    
@@ -8,7 +7,7 @@ WITH x AS (select a, b, c, d, whatevewr from table)
    from x
 
 `,
-`
+  `
 	WITH x as (select * from x0),
 	y as (select count(*) as count, category from x0 INNER JOIN y0 ON y0.id = x0.y_id GROUP BY category)
 	SELECT 
@@ -22,7 +21,7 @@ WITH x AS (select a, b, c, d, whatevewr from table)
 		INNER JOIN y ON y.category = x.category
 `,
 
-`WITH dataset AS (
+  `WITH dataset AS (
 	SELECT epoch(revenue_usd) as revenue_usd FROM revenue_transactions_cleaned
 ), S AS (
 	SELECT 
@@ -57,8 +56,8 @@ SELECT
 	high,
 	CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
 	FROM histogram_stage;`,
-// gitlab dbt
-`
+  // gitlab dbt
+  `
 WITH detection_rule AS (
  
     SELECT *
@@ -94,5 +93,5 @@ WITH detection_rule AS (
  
 )
 SELECt * from final;
-`
-]
+`,
+];
