@@ -21,4 +21,8 @@ export class StartCommand extends DataModelerCliCommand {
         return new ExpressServer(this.config, this.dataModelerService, this.dataModelerStateService,
             this.notificationService, this.metricsService).init();
     }
+
+    protected async teardown(): Promise<void> {
+        // do not teardown as this will have a perpetual server
+    }
 }
