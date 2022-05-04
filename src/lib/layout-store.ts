@@ -31,17 +31,17 @@ export const modelPreviewVisibilityTween = tweened(0, {
 	easing: SURFACE_SLIDE_EASING
 });
 
-export const assetsVisible = writable(1);
+export const assetsVisible = writable(true);
 assetsVisible.subscribe((tf) => {
 	assetVisibilityTween.set(tf ? 0 : 1);
 });
 
-export const inspectorVisible = writable(1);
+export const inspectorVisible = writable(true);
 inspectorVisible.subscribe((tf) => {
 	inspectorVisibilityTween.set(tf ? 0 : 1);
 });
 
-export const modelPreviewVisible = writable(1);
+export const modelPreviewVisible = writable(true);
 modelPreviewVisible.subscribe((tf) => {
 	modelPreviewVisibilityTween.set(tf ? 0 : 1);
 });
