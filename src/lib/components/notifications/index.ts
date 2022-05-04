@@ -1,4 +1,3 @@
-import type { SvelteComponent } from "svelte";
  import { writable, derived } from "svelte/store";
  import type { Readable } from "svelte/store";
  
@@ -48,8 +47,7 @@ import type { SvelteComponent } from "svelte";
      }
    );
    const { subscribe } = notifications;
-   let socket;
- 
+
    return {
      timeoutID: timeout,
      subscribe,

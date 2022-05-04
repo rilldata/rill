@@ -53,10 +53,10 @@ export class CLISpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldErrorIfSourceFileIsMalformed(): Promise<void> {
-        await execPromise(`${DATA_MODELER_CLI} init ${CLI_TEST_FOLDER}`);
-        await execPromise(`${DATA_MODELER_CLI} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER}`);
+        await execPromise(`${CLI_COMMAND} import-table data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`);
         // import the broken dataset.
-        await execPromise(`${DATA_MODELER_CLI} import-table data/BrokenCSV.csv ${CLI_TEST_FOLDER_ARG}`);
+        await execPromise(`${CLI_COMMAND} import-table data/BrokenCSV.csv ${CLI_TEST_FOLDER_ARG}`);
 
         let persistentState: PersistentTableState =
             JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());
@@ -70,7 +70,7 @@ export class CLISpec extends FunctionalTestBase {
         // let's get the state for AdBids before we attempt to import a broken dataset into it.
         const adBids = persistentState.entities.find(entity => entity.tableName === 'AdBids');
         // let's try to replace AdBids
-        await execPromise(`${DATA_MODELER_CLI} import-table data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`)
+        await execPromise(`${CLI_COMMAND} import-table data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`)
         // check to see if the sources are the same.
         persistentState =
             JSON.parse(readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString());

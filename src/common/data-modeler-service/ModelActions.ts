@@ -15,7 +15,7 @@ import {
 import type {
     DerivedModelStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { getNewDerivedModel, getNewModel } from "$common/stateInstancesFactory";
+import {cleanModelName, getNewDerivedModel, getNewModel} from "$common/stateInstancesFactory";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
@@ -39,14 +39,25 @@ export class ModelActions extends DataModelerActions {
     }
 
     @DataModelerActions.PersistentModelAction()
-    public async addModel(args: PersistentModelStateActionArg, params: NewModelParams) {
-        const persistentModel = getNewModel(params);
+    public async addModel({stateService}: PersistentModelStateActionArg, params: NewModelParams) {
+        const persistentModel = getNewModel(params, stateService.getCurrentState().modelNumber + 1);
+        const duplicateResp = this.checkDuplicateModel(stateService,
+            persistentModel.name, persistentModel.id);
+        if (duplicateResp) {
+            return duplicateResp;
+        }
+
+        this.dataModelerStateService.dispatch("incrementModelNumber", []);
         this.dataModelerStateService.dispatch("addEntity",
             [EntityType.Model, StateType.Persistent,
                 persistentModel, params.at]);
         this.dataModelerStateService.dispatch("addEntity",
             [EntityType.Model, StateType.Derived,
                 getNewDerivedModel(persistentModel), params.at]);
+        if (persistentModel.query) {
+            await this.dataModelerService.dispatch(
+                "updateModelQuery", [persistentModel.id, params.query]);
+        }
         return persistentModel;
     }
 
@@ -189,14 +200,23 @@ export class ModelActions extends DataModelerActions {
     }
 
     @DataModelerActions.PersistentModelAction()
-    public async updateModelName(args: PersistentModelStateActionArg,
-                                 modelId: string, name: string): Promise<void> {
-        this.dataModelerStateService.dispatch("updateModelName", [modelId, name]);
+    public async updateModelName({stateService}: PersistentModelStateActionArg,
+                                 modelId: string, name: string): Promise<ActionResponse> {
+        const duplicateResp = this.checkDuplicateModel(stateService, name, modelId);
+        if (duplicateResp) {
+            return duplicateResp;
+        }
+        this.dataModelerStateService.dispatch("updateModelName",
+            [modelId, cleanModelName(name)]);
     }
 
     @DataModelerActions.PersistentModelAction()
-    public async deleteModel(args: PersistentModelStateActionArg,
-                             modelId: string): Promise<void> {
+    public async deleteModel({stateService}: PersistentModelStateActionArg,
+                             modelId: string): Promise<ActionResponseFactory> {
+        const model = stateService.getById(modelId);
+        if (!model) {
+            return ActionResponseFactory.getEntityError(`No model found for ${modelId}`);
+        }
         await this.dataModelerService.dispatch(
             "deleteEntity", [EntityType.Model, modelId])
     }
@@ -262,5 +282,22 @@ export class ModelActions extends DataModelerActions {
             this.dataModelerStateService.dispatch("clearModelError", [modelId]);
         }
         return response;
+    }
+
+    private checkDuplicateModel(
+        stateService: PersistentModelEntityService, name: string, id: string,
+    ) {
+        name = cleanModelName(name);
+        const existing = stateService.getCurrentState().entities.find(model =>
+            cleanModelName(model.name) === name && model.id !== id);
+        if (!existing) {
+            return undefined;
+        } else {
+            this.notificationService.notify({
+                message: `Another model with the name ${name} already exists`,
+                type: "error",
+            });
+            return ActionResponseFactory.getErrorResponse(new Error(`Another model with the name ${name} already exists`));
+        }
     }
 }

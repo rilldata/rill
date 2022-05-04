@@ -59,7 +59,7 @@ export abstract class DataModelerCliCommand {
         this.isClient = isServerRunning;
     }
 
-    private async teardown(): Promise<void> {
+    protected async teardown(): Promise<void> {
         if (this.isClient) {
             await this.dataModelerService.destroy();
         } else {

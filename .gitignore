@@ -26,6 +26,7 @@ export/
 *.tsv
 /*_state.json
 /state
+/models
 
 # temporary. check in generated data files
 !/data/*.parquet
