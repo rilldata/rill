@@ -10,7 +10,11 @@ export class StateConfig extends Config<StateConfig> {
     @Config.ConfigField("state")
     public stateFolder: string;
 
+    @Config.ConfigField("models")
+    public modelFolder: string;
+
     public prependProjectFolder(projectFolder: string) {
         this.stateFolder = `${projectFolder}/${this.stateFolder}`;
+        this.modelFolder = `${projectFolder}/${this.modelFolder}`;
     }
 }

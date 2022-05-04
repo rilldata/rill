@@ -11,12 +11,9 @@ import type {
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { sanitizeQuery } from "$lib/util/sanitize-query";
 import type {
     DerivedTableEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-
-let modelNumber = 0;
 
 interface NewModelArguments {
     query?: string;
@@ -41,10 +38,12 @@ export function getNewDerivedTable(table: PersistentTableEntity): DerivedTableEn
     };
 }
 
-export function getNewModel(params: NewModelArguments = {}): PersistentModelEntity {
+export function cleanModelName(name: string): string {
+    return name.replace(/\.sql$/, "");
+}
+export function getNewModel(params: NewModelArguments = {}, modelNumber): PersistentModelEntity {
     const query = params.query || '';
-    const name = `${params.name || `query_${modelNumber}`}.sql`;
-    modelNumber += 1;
+    const name = `${params.name ? cleanModelName(params.name) : `query_${modelNumber}`}.sql`;
     return {
         id: guidGenerator(),
         type: EntityType.Model,
@@ -58,20 +57,17 @@ export function getNewDerivedModel(model: PersistentModelEntity): DerivedModelEn
     return {
         id: model.id,
         type: EntityType.Model,
-        sanitizedQuery: sanitizeQuery(model.query),
+        // do not assign this to trigger profiling
+        sanitizedQuery: "",
         profile: [],
         lastUpdated: 0,
         status: EntityStatus.Idle,
     };
 }
 
-export function getEmptyModel(): Model {
-    return getNewModel({}) as any;
-}
-
 export function initialState() : DataModelerState {
     return {
-        models: [getEmptyModel()],
+        models: [],
         tables: [],
         metricsModels: [],
         exploreConfigurations: [],

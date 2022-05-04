@@ -16,6 +16,11 @@ export interface NewModelParams {
 }
 
 export class ModelStateActions extends StateActions {
+    @StateActions.PersistentModelAction()
+    public incrementModelNumber({draftState}: PersistentModelStateActionArg) {
+        draftState.modelNumber++;
+    }
+
     @StateActions.DerivedModelAction()
     public addModelError({stateService, draftState}: DerivedModelStateActionArg,
                          modelId: string, message: string): void {
@@ -92,5 +97,6 @@ export class ModelStateActions extends StateActions {
     public updateModelName({stateService, draftState}: PersistentModelStateActionArg,
                            modelId: string, name: string): void {
         stateService.updateEntityField(draftState, modelId, "name", `${name}.sql`);
+        stateService.updateEntityField(draftState, modelId, "tableName", name);
     }
 }
