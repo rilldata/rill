@@ -7,7 +7,6 @@ import type {EntityType, StateType} from "$common/data-modeler-state-service/ent
 import {existsSync, mkdirSync, readFileSync, writeFileSync, statSync, readdirSync, unlinkSync} from "fs";
 import type {EntityState} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {DataModelerService} from "$common/data-modeler-service/DataModelerService";
-import {execSync} from "node:child_process";
 
 export class PersistentModelRepository extends EntityRepository<PersistentModelEntity> {
     private readonly saveDirectory: string;
@@ -39,7 +38,7 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
     public async getAll(): Promise<EntityState<PersistentModelEntity>> {
         const currentFiles = new Map<string, string>();
         // store ids of previous entity for the file
-        // in case it is a new file then store an empty string
+        // if it is a new file then store an empty string
         readdirSync(this.saveDirectory).forEach(file =>
             currentFiles.set(file, this.filesForEntities?.get(file) ?? ""));
         this.previousFilesForEntities = this.filesForEntities;
@@ -54,18 +53,19 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
         // go through all current files.
         currentFiles.forEach((id, currentFile) => {
             // if a file has an entry in new map ignore it.
-            if (this.filesForEntities.has(currentFile)) return;
-            const fullCurrentFile = `${this.saveDirectory}/${currentFile}`;
+            if (this.filesForEntities.has(currentFile) ||
+                !this.isValidFile(currentFile)) return;
+            const currentFilePath = `${this.saveDirectory}/${currentFile}`;
 
             if (id) {
                 // if the file has no entry in new map but has an id in currentFiles then remove the file.
                 // this was a possible rename
-                unlinkSync(fullCurrentFile);
+                unlinkSync(currentFilePath);
             } else {
                 // else this a file added from outside.
                 // create a new model
                 setTimeout(() => {
-                    this.createEntity(currentFile, readFileSync(fullCurrentFile).toString());
+                    this.createEntity(currentFile, readFileSync(currentFilePath).toString());
                     // add a small timeout to make sure it runs after the sync ends
                 }, 5);
             }
@@ -121,6 +121,9 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
     }
     protected contentHasChanged(entity: PersistentModelEntity, newContent: string): boolean {
         return newContent !== entity.query;
+    }
+    protected isValidFile(fileName: string): boolean {
+        return fileName.endsWith(".sql");
     }
 
     protected async createEntity(fileName: string, fileContent: string) {

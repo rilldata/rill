@@ -138,4 +138,30 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
         this.assertColumns(persistentModel1?.profile, TwoTableJoinQueryColumnsTestData);
         this.assertColumns(persistentModel2?.profile, NestedQueryColumnsTestData);
     }
+
+    @FunctionalTestBase.Test()
+    public async shouldDeleteNonSqlFiles() {
+        const INVALID_FILE = "query_0.sq";
+        await this.clientDataModelerService.dispatch("addModel",
+            [{name: "query_0", query: SingleTableQuery}]);
+        await this.waitForModels();
+        expect(existsSync(QUERY_0_FILE)).toBe(true);
+
+        // file is renamed to invalid file. model is deleted
+        execSync(`mv ${QUERY_0_FILE} ${INVALID_FILE}`);
+        await this.waitForModels();
+        let [model, ] = this.getModels("tableName", "query_0");
+        expect(model).toBe(undefined);
+        expect(existsSync(QUERY_0_FILE)).toBe(false);
+        // invalid file is not deleted
+        expect(existsSync(INVALID_FILE)).toBe(true);
+
+        // file is renamed back to .sql file
+        execSync(`mv ${INVALID_FILE} ${QUERY_0_FILE}`);
+        await this.waitForModels();
+        [model, ] = this.getModels("tableName", "query_0");
+        expect(model.tableName).toBe("query_0");
+        expect(readFileSync(QUERY_0_FILE).toString()).toBe(SingleTableQuery);
+        expect(existsSync(INVALID_FILE)).toBe(false);
+    }
 }
