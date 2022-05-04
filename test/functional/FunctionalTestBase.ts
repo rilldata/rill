@@ -84,9 +84,11 @@ export class FunctionalTestBase extends TestBase {
 
     protected async waitForTables(): Promise<void> {
         await this.waitForEntity(EntityType.Table);
+        await asyncWait(100);
     }
     protected async waitForModels(): Promise<void> {
         await this.waitForEntity(EntityType.Model);
+        await asyncWait(100);
     }
 
     protected getTables(field: string, value: any): [PersistentTableEntity, DerivedTableEntity] {

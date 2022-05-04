@@ -5,7 +5,7 @@ import type { RootConfig } from "$common/config/RootConfig";
 import type { EntityStateService } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { execSync } from "node:child_process";
-import type { EntityStateSyncStore } from "$common/data-modeler-state-service/sync-service/EntityStateSyncStore";
+import type { EntityRepository } from "$common/data-modeler-state-service/sync-service/EntityRepository";
 import type { EntityStateUpdatesHandler } from "$common/data-modeler-state-service/sync-service/EntityStateUpdatesHandler";
 
 /**
@@ -19,7 +19,7 @@ export class EntityStateSyncService<
     private syncTimer: NodeJS.Timer;
 
     public constructor(private readonly config: RootConfig,
-                       private readonly entityStateSyncStore: EntityStateSyncStore<Entity>,
+                       private readonly entityRepository: EntityRepository<Entity>,
                        private readonly entityStateUpdatesHandler: EntityStateUpdatesHandler<Entity>,
                        private readonly dataModelerStateService: DataModelerStateService,
                        private readonly entityStateService: StateService) {}
@@ -29,9 +29,9 @@ export class EntityStateSyncService<
 
         let initialState: EntityState<Entity>;
 
-        if (this.config.state.autoSync && await this.entityStateSyncStore.sourceExists()) {
+        if (this.config.state.autoSync && await this.entityRepository.sourceExists()) {
             try {
-                initialState = await this.entityStateSyncStore.readFromSource();
+                initialState = await this.entityRepository.getAll();
             } catch (err) {
                 initialState = this.entityStateService.getEmptyState();
             }
@@ -57,13 +57,13 @@ export class EntityStateSyncService<
     }
 
     private async sync(writeOnly = false): Promise<void> {
-        if (!await this.entityStateSyncStore.sourceExists()) {
+        if (!await this.entityRepository.sourceExists()) {
             await this.syncCurrentWithSource();
         }
 
         let sourceState: EntityState<Entity>;
         try {
-            sourceState = await this.entityStateSyncStore.readFromSource();
+            sourceState = await this.entityRepository.getAll();
         } catch (err) {
             sourceState = this.entityStateService.getEmptyState();
         }
@@ -114,6 +114,6 @@ export class EntityStateSyncService<
     }
 
     private async syncCurrentWithSource(): Promise<void> {
-        await this.entityStateSyncStore.writeToSource(this.entityStateService.getCurrentState());
+        await this.entityRepository.saveAll(this.entityStateService.getCurrentState());
     }
 }

@@ -34,6 +34,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
         await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
             [actualFilePath, `${extractTableName(inputFile)}_${extractFileExtension(inputFile)}`]);
         await this.waitForTables();
+        await asyncWait(250);
 
         const [table, derivedTable] = this.getTables("path", actualFilePath);
 
