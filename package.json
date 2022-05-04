@@ -17,7 +17,6 @@
 		"format": "prettier --ignore-path .gitignore --write --plugin-search-dir=. .",
 		"start": "electron ./electron.cjs",
 		"duckdb": "node ./server/server.duckdb.js",
-		"server": "ts-node-dev --project tsconfig.node.json -- src/server/server.ts",
 		"test": "npm run test:backend; npm run test:ui",
 		"test:backend": "jest --testPathIgnorePatterns test/ui",
 		"test:ui": "jest --detectOpenHandles test/ui",
