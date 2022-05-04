@@ -244,7 +244,7 @@ export class ModelActions extends DataModelerActions {
             [sanitizeQuery(model.query, false), exportFile]);
         await this.dataModelerStateService.dispatch("updateModelDestinationSize",
             [modelId, await this.databaseService.dispatch("getDestinationSize", [exportPath])]);
-        this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"});
+        // this.notificationService.notify({ message: `exported ${exportPath}`, type: "info"});
     }
 
     private setModelStatus(modelId: string, status: EntityStatus) {
