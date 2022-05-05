@@ -22,6 +22,7 @@ jobs:
         - node --version
         - echo "NPM Install can take up to 6-8 mins"
       script:
+        - rm -rf node_modules
         - npm install
         # install browser for UI tests
         - npx playwright install
