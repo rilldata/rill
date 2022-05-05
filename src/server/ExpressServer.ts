@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import cors from "cors";
 import fileUpload from "express-fileupload";
 import type { RootConfig } from "$common/config/RootConfig";
 import { SocketServer } from "$common/socket/SocketServer";
@@ -23,6 +24,10 @@ export class ExpressServer {
                 metricsService: MetricsService) {
         this.app = express();
         this.server = http.createServer(this.app);
+
+        this.app.use(cors({
+            origin: this.config.server.uiUrl,
+        }));
 
         const tmpFolder = `${config.projectFolder}/tmp`;
         if (!existsSync(tmpFolder)) mkdirSync(tmpFolder)

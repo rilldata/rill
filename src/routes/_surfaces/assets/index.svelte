@@ -15,7 +15,7 @@ import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
-import {dataModelerService} from "$lib/app-store";
+import {config, dataModelerService} from "$lib/app-store";
 import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
 import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
 import type {
@@ -42,7 +42,7 @@ let showModels = true;
 function onTableDrop(e: DragEvent) {
   preventDefault(e);
   if (e.dataTransfer?.files) {
-    uploadTableFiles(e.dataTransfer.files, "http://localhost:8080/api");
+    uploadTableFiles(e.dataTransfer.files, `${config.server.serverUrl}/api`);
   }
 }
 function preventDefault(e: DragEvent) {
