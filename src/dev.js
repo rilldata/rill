@@ -10,9 +10,9 @@ function spawnNpmProcess(scriptName) {
     });
     childProcess.on("exit", (code, other) => {
         console.log(`Script "npm run ${scriptName}" exited with code ${code}`, other);
-        // setImmediate(() => {
-        //     spawnNpmProcess(scriptName);
-        // });
+        setImmediate(() => {
+            spawnNpmProcess(scriptName);
+        });
     });
 }
 
