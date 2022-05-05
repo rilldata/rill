@@ -20,8 +20,8 @@ RUN echo "Compiling the code..." && \
 RUN echo "CommonJS vodoo" && \
     /app/build-tools/replace_package_type.sh module commonjs
 
-RUN echo '#!/bin/bash\nnode dist/cli/data-modeler-cli.js "$@"' > /usr/bin/rill-developer && \
-    chmod +x /usr/bin/rill-developer
+RUN echo '#!/bin/bash\nnode dist/cli/data-modeler-cli.js "$@"' > /usr/bin/rill && \
+    chmod +x /usr/bin/rill
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 ENTRYPOINT /entrypoint.sh

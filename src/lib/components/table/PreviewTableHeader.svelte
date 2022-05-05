@@ -21,7 +21,7 @@ const dispatch = createEventDispatcher();
 const { shiftClickAction } = createShiftClickAction();
 </script>
 
-<TableHeader {name} {type}>
+<TableHeader>
     <div 
        style:grid-template-columns="210px max-content"
        use:shiftClickAction

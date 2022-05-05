@@ -1,13 +1,13 @@
 {
-	"name": "rill-developer",
+	"name": "@rilldata/rill",
 	"version": "0.1.0",
 	"type": "module",
 	"scripts": {
 		"dev": "svelte-kit dev",
-		"build": "./build-tools/build.sh && tsc --project tsconfig.node.json",
+		"build": "svelte-kit build && tsc --project tsconfig.node.json",
 		"prepack": "./build-tools/replace_package_type.sh module commonjs",
 		"postpack": "./build-tools/replace_package_type.sh commonjs module",
-		"postinstall": "ts-node-dev --quiet --project tsconfig.node.json src/cli/post-install.ts",
+		"postinstall": "./build-tools/post_install.sh",
 		"install-and-build": "npm install && npm run build",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
@@ -23,7 +23,9 @@
 		"test:ui": "jest --detectOpenHandles test/ui",
 		"test:watch": "npm run test -- --watch",
 		"generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
-		"cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts"
+		"cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts",
+		"bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
+		"manual-publish": "./build-tools/npm_publish.sh"
 	},
 	"devDependencies": {
 		"@adityahegde/typescript-test-utils": "^1.3.2",
@@ -56,6 +58,7 @@
 		"postcss-load-config": "^3.1.3",
 		"prettier": "^2.6.1",
 		"prettier-plugin-svelte": "^2.6.0",
+		"semver": "^7.3.7",
 		"should": "^13.2.3",
 		"sinon": "^13.0.1",
 		"svelte-check": "^2.4.6",
@@ -83,7 +86,7 @@
 		"d3-shape": "^3.1.0",
 		"d3-time": "^3.0.0",
 		"d3-time-format": "^4.1.0",
-		"duckdb": "^0.3.2",
+		"duckdb": "0.3.2",
 		"express": "^4.17.3",
 		"express-fileupload": "^1.3.1",
 		"glob": "^7.2.0",
@@ -99,10 +102,11 @@
 		"svelte": "^3.46.4"
 	},
 	"bin": {
-		"data-modeler": "./dist/cli/data-modeler-cli.js"
+		"rill": "./dist/cli/data-modeler-cli.js"
 	},
 	"files": [
 		"dist",
+		"build-tools/post_install.sh",
 		"build",
 		"static",
 		"package.json",

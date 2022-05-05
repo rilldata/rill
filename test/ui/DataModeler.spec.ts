@@ -235,11 +235,6 @@ LINE 1: SELECT * FROM xyz
   private async execute(page: Page, sql: string) {
     const activeLine = page.locator('.cm-activeLine');
 
-    // Click add model button, and select model, if editor is not already visible.
-    // TODO this would be more future-proof if the UI added IDs for buttons.
-    await page.locator('button#create-model-button').click();
-    await page.locator('text=query_0.sql >> nth=1').click();
-
     await activeLine.fill(sql);
 
     // FIXME it would be better to get a signal from the UI that it has completed, than

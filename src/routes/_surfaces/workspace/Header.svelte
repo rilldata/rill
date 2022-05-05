@@ -1,25 +1,18 @@
 <script lang="ts">
-import { getContext, tick } from "svelte";
+import { getContext } from "svelte";
 import { ApplicationStore, dataModelerService } from "$lib/app-store";
 
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
-import MoreHorizontal from "$lib/components/icons/MoreHorizontal.svelte";
-import Export from "$lib/components/icons/Export.svelte"
-import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte"
-import Menu from "$lib/components/menu/Menu.svelte"
-import MenuItem from "$lib/components/menu/MenuItem.svelte"
 import type { PersistentModelStore } from "$lib/modelStores";
-
-import { onClickOutside } from "$lib/util/on-click-outside";
-
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import Spinner from "$lib/components/Spinner.svelte";
+import {ActionStatus} from "$common/data-modeler-service/response/ActionResponse";
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
@@ -103,9 +96,13 @@ $: debounceStatus(($store?.status as unknown) as EntityStatus);
                 on:blur={() => { editingTitle = false; }}
                 value={titleInput} 
                 size={Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1} 
-                on:change={(e) => { 
+                on:change={async (e) => {
                     if (currentModel?.id) {
-                        dataModelerService.dispatch('updateModelName', [currentModel?.id, formatModelName(e.target.value)]);
+                        const resp = await dataModelerService.dispatch('updateModelName',
+                            [currentModel?.id, formatModelName(e.target.value)]);
+                        if (resp.status === ActionStatus.Failure) {
+                            e.target.value = currentModel.name;
+                        }
                     }
                 }} />
             <TooltipContent slot="tooltip-content">

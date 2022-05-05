@@ -33,7 +33,10 @@ Change directories to the local Rill Developer repository
 ```
 cd /path/to/rill-developer
 ```
-Run npm to install dependencies and build the application. This will take ~5 minutes to complete.
+Run npm to install dependencies and build the application.
+Part of this step involves compiling DuckDB which can be time consuming to complete (it may take approximately five minutes or more, depending on your machine).
+Please be patient.
+
 ```
 npm install
 npm run build
@@ -108,7 +111,13 @@ If you would like to see information on all of the available CLI commands, you c
 npm run cli --silent -- --help
 ```
 
+# Troubleshooting
+
+## 404 Errors
+If you have just installed the application and are trying to see the User Interface at http://localhost:8080/ but see a 404 error, it is possible that npm install is taking longer than 5 minutes to build the application and you need to wait for the build to complete. Please wait an additional 5 minutes and try again.
+
 # Using Docker
+Docker is a containerization platform that packages our application and all its dependencies together to make sure it works seamlessly in any environment. As an alternative to the Install instructions above, you can install Rill Developer using our docker container.
 
 https://hub.docker.com/r/rilldata/rill-developer
 
@@ -131,7 +140,7 @@ https://hub.docker.com/r/rilldata/rill-developer
     ```
     docker exec -it rill-developer /bin/bash
     
-    rill-developer import-table ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
+    rill import-table ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
         --project ${PROJECT_BASE}/${PROJECT} 
     ```
 

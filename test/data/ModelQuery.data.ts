@@ -51,17 +51,6 @@ group by bid.publisher, bid.domain, imp.city, imp.country
 `;
 const TwoTableJoinQueryTestData: Args = [TwoTableJoinQuery, TwoTableJoinQueryColumnsTestData];
 
-export type ModelQueryTestDataProvider = DataProviderData<Args>;
-export const ModelQueryTestData: ModelQueryTestDataProvider = {
-    subData: [{
-        title: "Single table group",
-        args: SingleTableQueryTestData,
-    }, {
-        title: "Two table join",
-        args: TwoTableJoinQueryTestData,
-    }],
-};
-
 export const NestedQuery = `
 select
     count(*), avg(bid.bid_price) as bid_price,
@@ -73,6 +62,36 @@ from
     on bid.id = imp.id
 group by bid.publisher, bid.domain, imp.city, imp.country
 `;
+export const NestedQueryColumnsTestData: TestDataColumns = [{
+    name: "count_star()",
+    type: "BIGINT",
+    isNull: false,
+}, {
+    name: "bid_price",
+    type: "DOUBLE",
+    isNull: false,
+}, {
+    name: "publisher",
+    type: "VARCHAR",
+    isNull: true,
+}, {
+    name: "domain",
+    type: "VARCHAR",
+    isNull: false,
+}, {
+    name: "city",
+    type: "VARCHAR",
+    isNull: true,
+}, {
+    name: "country",
+    type: "VARCHAR",
+    isNull: false,
+}, {
+    name: "indian",
+    type: "VARCHAR",
+    isNull: false,
+}];
+const NestedQueryTestData: Args = [NestedQuery, NestedQueryColumnsTestData];
 
 export const CTE = `
 with
@@ -88,4 +107,18 @@ with
         (select uimp.name from UserImpression uimp where uimp.city=imp.city) as users
     from AdBids bid join AdImpressions imp on bid.id = imp.id
     group by bid.publisher, bid.domain, imp.city, imp.country
-`
+`;
+
+export type ModelQueryTestDataProvider = DataProviderData<Args>;
+export const ModelQueryTestData: ModelQueryTestDataProvider = {
+    subData: [{
+        title: "Single table group",
+        args: SingleTableQueryTestData,
+    }, {
+        title: "Two table join",
+        args: TwoTableJoinQueryTestData,
+    }, {
+        title: "Nested queries",
+        args: NestedQueryTestData
+    }],
+};
