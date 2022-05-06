@@ -29,9 +29,9 @@ export/
 /models
 
 # temporary. check in generated data files
-!/data/*.parquet
-!/data/*.csv
-!/data/*.tsv
+!/test/data/*.parquet
+!/test/data/*.csv
+!/test/data/*.tsv
 
 # generated content
 log

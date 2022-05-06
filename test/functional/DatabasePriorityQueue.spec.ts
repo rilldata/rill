@@ -22,7 +22,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
     @FunctionalTestBase.Test()
     public async shouldDePrioritiseTableProfiling() {
         const importPromise = this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdBids.parquet"]);
         await asyncWait(1);
 
         const [model] = this.getModels("tableName", "query_0");
@@ -35,9 +35,9 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
     @FunctionalTestBase.Test()
     public async shouldStopOlderQueriesOfModel() {
         await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdBids.parquet"]);
         await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdImpressions.parquet"]);
 
         const [model] = this.getModels("tableName", "query_0");
         const modelQueryOnePromise = this.clientDataModelerService.dispatch(
@@ -54,9 +54,9 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
     @FunctionalTestBase.Test()
     public async shouldDePrioritiseInactiveModel() {
         await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdBids.parquet"]);
         await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdImpressions.parquet"]);
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "query_1", query: ""}]);
 
@@ -79,7 +79,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
     @FunctionalTestBase.Test()
     public async shouldContinueModelProfileAfterAppendingSpaces() {
         await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdImpressions.parquet"]);
 
         const [model] = this.getModels("tableName", "query_0");
         const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
