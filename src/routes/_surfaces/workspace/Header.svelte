@@ -83,7 +83,7 @@ $: debounceStatus(($store?.status as unknown) as EntityStatus);
         <h1 style:font-size="16px"  class="grid grid-flow-col justify-start items-center gap-x-1">
             <ModelIcon />
             <Tooltip distance={8} bind:active={tooltipActive} suppress={editingTitle}>
-                <input 
+                <input
                 id="model-title-input"
                 bind:this={titleInputElement} 
                 on:input={(evt) => {

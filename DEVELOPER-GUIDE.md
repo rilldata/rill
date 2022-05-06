@@ -71,7 +71,7 @@ Run `npm build` to build the application.
 
 ## Starting a dev server
 
-Run `npm run dev` to start the dev server. UI will be available on http://localhost:3000
+Run `npm run dev` to start the UI and backend dev servers. UI will be available on http://localhost:3000
 
 ## Local testing
 
