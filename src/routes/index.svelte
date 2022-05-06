@@ -57,7 +57,7 @@ $: persistentExportedModel = $persistentModelStore?.entities?.find(model => mode
     show={(assetsHovered || !$assetsVisible)}
     left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) + 12 * $assetVisibilityTween}px"
     on:click={() => {
-      assetsVisible.set($assetsVisible ? 0 : 1);
+      assetsVisible.set(!$assetsVisible);
     }}
   >
     <SurfaceViewIcon size="16px" mode={$assetsVisible ? "right" : 'hamburger'} />

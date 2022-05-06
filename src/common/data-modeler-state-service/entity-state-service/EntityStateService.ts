@@ -1,7 +1,7 @@
 import { writable, get } from "svelte/store";
 import type {Writable} from "svelte/store";
 import { shallowCopy } from "$common/utils/shallowCopy";
-import produce, { applyPatches } from "immer";
+import { applyPatches, produce } from "immer";
 import type {Patch} from "immer";
 
 export enum EntityType {
