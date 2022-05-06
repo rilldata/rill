@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"type": "module",
 	"scripts": {
-		"dev": "node src/dev.js",
+		"dev": "ts-node-dev --quiet --project tsconfig.node.json src/dev.ts",
 		"build": "svelte-kit build && tsc --project tsconfig.node.json",
 		"prepack": "./build-tools/replace_package_type.sh module commonjs",
 		"postpack": "./build-tools/replace_package_type.sh commonjs module",
