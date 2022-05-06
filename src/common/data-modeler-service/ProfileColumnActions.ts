@@ -26,7 +26,10 @@ export class ProfileColumnActions extends DataModelerActions {
         try {
             await Promise.all(entity.profile.map(column =>
                 this.collectColumnInfo(entityType, entityId, persistentEntity.tableName, column)));
-        } catch (err) {}
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
     }
 
     private async collectColumnInfo(entityType: EntityType, entityId: string,
