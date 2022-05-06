@@ -2,7 +2,7 @@
 import { getContext } from "svelte";
 import ModelInspector from "./Model.svelte";
 
-import type { ApplicationStore } from "$lib/app-store";
+import type { ApplicationStore } from "$lib/application-state-stores/application-stores";
 
 import { drag } from "$lib/drag";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";

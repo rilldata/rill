@@ -1,3 +1,8 @@
+/**
+ * The ApplicationStore contains the state of the general application.
+ * It does not contain any of the state for the entities; instead, it contains information
+ * about things like the active entity and the application status.
+ */
 import type { Socket } from "socket.io";
 import type { Writable } from "svelte/store";
 import { clientFactory } from "$common/clientFactory";

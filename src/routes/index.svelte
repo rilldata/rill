@@ -11,10 +11,10 @@ import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.s
 import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
 import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
 
-import type { PersistentModelStore, DerivedModelStore } from "$lib/modelStores";
-import type { PersistentTableStore, DerivedTableStore } from "$lib/tableStores";
+import type { PersistentModelStore, DerivedModelStore } from "$lib/application-state-stores/model-stores";
+import type { PersistentTableStore, DerivedTableStore } from "$lib/application-state-stores/table-stores";
 
-import { config } from "$lib/app-store";
+import { config } from "$lib/application-state-stores/application-store";
 
 import { 
   layout,

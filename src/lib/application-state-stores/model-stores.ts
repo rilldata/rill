@@ -1,5 +1,15 @@
-import type { AppStore } from "$lib/app-store";
-import { dataModelerStateService } from "$lib/app-store";
+/**
+ * Contains the Svelte store for the model entities.
+ * The persistent model is the basic state gleaned from the asset.
+ * The derived model state contains derived information about the model
+ * such as the column profiles.
+ * The persistent model state tends to be generated from the model SQL files.
+ * 
+ * The stores in this file reactively respond to updates from the application server
+ * through the socket server.
+ */
+import type { AppStore } from "$lib/application-state-stores/application-store";
+import { dataModelerStateService } from "$lib/application-state-stores/application-store";
 import type {
     PersistentModelEntity, PersistentModelState
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";

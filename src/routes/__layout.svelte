@@ -2,15 +2,15 @@
 import "../fonts.css";
 import "../app.css";
 import { onMount, setContext } from "svelte";
-import { createStore } from '$lib/app-store';
+import { createStore } from '$lib/application-state-stores/application-store';
 import { browser } from "$app/env";
 
 import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
 import notification from "$lib/components/notifications/";
 
 import { createQueryHighlightStore } from "$lib/query-highlight-store";
-import { createDerivedTableStore, createPersistentTableStore } from "$lib/tableStores.ts";
-import { createDerivedModelStore, createPersistentModelStore } from "$lib/modelStores.ts";
+import { createDerivedTableStore, createPersistentTableStore } from "$lib/application-state-stores/table-stores";
+import { createDerivedModelStore, createPersistentModelStore } from "$lib/application-state-stores/model-stores";
 import { initMetrics } from "$lib/metrics/initMetrics";
 
 let store;

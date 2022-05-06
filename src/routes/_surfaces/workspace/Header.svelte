@@ -1,12 +1,12 @@
 <script lang="ts">
 import { getContext } from "svelte";
-import { ApplicationStore, dataModelerService } from "$lib/app-store";
+import { ApplicationStore, dataModelerService } from "$lib/application-state-stores/application-store";
 
 import ModelIcon from "$lib/components/icons/Code.svelte";
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 import EditIcon from "$lib/components/icons/EditIcon.svelte";
-import type { PersistentModelStore } from "$lib/modelStores";
+import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";

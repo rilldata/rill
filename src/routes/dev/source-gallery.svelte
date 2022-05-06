@@ -1,9 +1,7 @@
 <script lang="ts">
 import { getContext } from "svelte";
 
-import type { AppStore } from '$lib/app-store';
-import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
-import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import type { DerivedTableStore, PersistentTableStore } from "$lib/application-state-stores/table-stores";
 
 import ParquetIcon from "$lib/components/icons/Parquet.svelte";
 import CollapsibleTableSummary from  "$lib/components/column-profile/CollapsibleTableSummary.svelte";
