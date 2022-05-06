@@ -2,11 +2,11 @@
 import { getContext } from "svelte";
 import ModelInspector from "./Model.svelte";
 
-import type { ApplicationStore } from "$lib/app-store";
+import type { ApplicationStore } from "$lib/application-state-stores/application-stores";
 
 import { drag } from "$lib/drag";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { inspectorVisibilityTween, inspectorVisible, layout } from "$lib/layout-store";
+import { inspectorVisibilityTween, inspectorVisible, layout } from "$lib/application-state-stores/layout-store";
 import Portal from "$lib/components/Portal.svelte";
 
 const store = getContext('rill:app:store') as ApplicationStore;

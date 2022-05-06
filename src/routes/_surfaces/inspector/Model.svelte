@@ -4,9 +4,7 @@ import { slide } from "svelte/transition";
 import { tweened } from "svelte/motion";
 import { sineOut as easing } from "svelte/easing";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
-import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-import Spacer from "$lib/components/icons/Spacer.svelte";
+
 import * as classes from "$lib/util/component-classes";
 import Export from "$lib/components/icons/Export.svelte";
 import { onClickOutside } from "$lib/util/on-click-outside";
@@ -16,19 +14,19 @@ import MenuItem from "$lib/components/menu/MenuItem.svelte"
 import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
-import type { ApplicationStore } from "$lib/app-store";
+import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
 import { formatInteger, formatBigNumberPercentage } from "$lib/util/formatters"
 
-import {dataModelerService} from "$lib/app-store";
+import {dataModelerService} from "$lib/application-state-stores/application-store";
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
-import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import type { DerivedTableStore, PersistentTableStore } from "$lib/application-state-stores/table-stores";
+import type { DerivedModelStore, PersistentModelStore } from "$lib/application-state-stores/model-stores";
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 

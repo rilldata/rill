@@ -1,12 +1,12 @@
 <script lang="ts">
 import { getContext } from "svelte";
 import { slide } from "svelte/transition";
-import type { ApplicationStore } from "$lib/app-store";
-import { dataModelerService } from "$lib/app-store";
+import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+import { dataModelerService } from "$lib/application-state-stores/application-store";
 import { cubicOut as easing } from "svelte/easing";
 import Editor from "$lib/components/Editor.svelte";
 import { drag } from "$lib/drag";
-import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/layout-store";
+import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/application-state-stores/layout-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 import type {
@@ -15,7 +15,7 @@ import type {
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import type { DerivedModelStore, PersistentModelStore } from "$lib/application-state-stores/model-stores";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import Portal from "$lib/components/Portal.svelte";
 
