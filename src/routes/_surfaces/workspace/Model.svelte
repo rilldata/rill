@@ -6,7 +6,7 @@ import { dataModelerService } from "$lib/application-state-stores/application-st
 import { cubicOut as easing } from "svelte/easing";
 import Editor from "$lib/components/Editor.svelte";
 import { drag } from "$lib/drag";
-import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/layout-store";
+import { modelPreviewVisibilityTween, modelPreviewVisible, layout, assetVisibilityTween, inspectorVisibilityTween, SIDE_PAD } from "$lib/application-state-stores/layout-store";
 
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 import type {

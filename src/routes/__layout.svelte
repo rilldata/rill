@@ -8,7 +8,7 @@ import { browser } from "$app/env";
 import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
 import notification from "$lib/components/notifications/";
 
-import { createQueryHighlightStore } from "$lib/query-highlight-store";
+import { createQueryHighlightStore } from "$lib/application-state-stores/query-highlight-store";
 import { createDerivedTableStore, createPersistentTableStore } from "$lib/application-state-stores/table-stores";
 import { createDerivedModelStore, createPersistentModelStore } from "$lib/application-state-stores/model-stores";
 import { initMetrics } from "$lib/metrics/initMetrics";

@@ -23,7 +23,7 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { EntityStatus, EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-import { assetVisibilityTween, assetsVisible, layout } from "$lib/layout-store";
+import { assetVisibilityTween, assetsVisible, layout } from "$lib/application-state-stores/layout-store";
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;

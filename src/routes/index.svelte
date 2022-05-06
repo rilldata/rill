@@ -23,7 +23,7 @@ import {
   inspectorVisibilityTween,
   inspectorVisible,
   SIDE_PAD
-} from "$lib/layout-store"
+} from "$lib/application-state-stores/layout-store"
 import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 
