@@ -47,9 +47,9 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
         await this.secondDataModelerSyncService.init();
 
         await this.secondDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdBids.parquet"]);
         await this.secondDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdImpressions.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/AdImpressions.parquet"]);
         await asyncWait(100);
     }
 
@@ -59,7 +59,7 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
         expect(instances[0]).toBeUndefined();
 
         await this.secondDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/Users.parquet"]);
+            "addOrUpdateTableFromFile", ["test/data/Users.parquet"]);
         await asyncWait(500);
 
         instances = this.getTables("name", "Users");

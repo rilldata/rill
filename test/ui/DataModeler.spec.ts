@@ -48,9 +48,9 @@ class ServerSetup extends TestSuiteSetup {
     await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
 
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
-    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./data/Users.parquet`);
-    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdImpressions.parquet`);
-    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./data/AdBids.parquet`);
+    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/Users.parquet`);
+    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/AdImpressions.parquet`);
+    await execPromise(`${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/AdBids.parquet`);
 
     // Run Rill Developer in the background, logging to stdout.
     this.child = exec(`${CLI_COMMAND} start ${CLI_TEST_FOLDER_ARG}`);
