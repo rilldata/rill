@@ -43,9 +43,6 @@ body {
     overscroll-behavior: none;
 }
 
-.body {
-    background-color: blue;
-}
 
 button {
     font-family: "MD IO";
