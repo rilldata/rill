@@ -21,6 +21,7 @@ const config = {
 				alias: {
 					$common: resolve('./src/common'),
 					$lib: resolve('./src/lib'),
+					$server: resolve('./src/server'),
 				}
 			}
 		}
