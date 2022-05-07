@@ -3,7 +3,7 @@ import type {DataModelerActionsDefinition} from "$common/data-modeler-service/Da
 import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import type {DataModelerStateService} from "$common/data-modeler-state-service/DataModelerStateService";
-import type {ServerConfig} from "$common/config/ServerConfig";
+import type {ServerConfig} from "$server/ServerConfig";
 import type { ClientToServerEvents, ServerToClientEvents } from "$common/socket/SocketInterfaces";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import type { MetricsActionDefinition } from "$common/metrics-service/MetricsService";

@@ -4,11 +4,11 @@ import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import type { Command } from "commander";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { ServerConfig } from "$common/config/ServerConfig";
+import { ServerConfig } from "$server/ServerConfig";
 import { clientFactory } from "$common/clientFactory";
 import { isPortOpen } from "$common/utils/isPortOpen";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
-import { RillDeveloper } from "$common/RillDeveloper";
+import { RillDeveloper } from "$server/RillDeveloper";
 import { ProjectConfig } from "$common/config/ProjectConfig";
 
 const DATABASE_NAME = "stage.db";

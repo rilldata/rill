@@ -1,6 +1,6 @@
 import { Config } from "$common/utils/Config";
 import type { NonFunctionProperties } from "$common/utils/Config";
-import {ServerConfig} from "$common/config/ServerConfig";
+import { ServerConfig } from "$server/ServerConfig";
 import {DatabaseConfig} from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import { MetricsConfig } from "$common/config/MetricsConfig";

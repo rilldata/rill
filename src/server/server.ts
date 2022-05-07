@@ -1,7 +1,7 @@
 import "../moduleAlias";
 import {RootConfig} from "$common/config/RootConfig";
-import {RillDeveloper} from "$common/RillDeveloper";
-import {SocketServer} from "$common/socket/SocketServer";
+import { RillDeveloper } from "./RillDeveloper";
+import { SocketServer } from "./SocketServer";
 import type {SocketNotificationService} from "$common/socket/SocketNotificationService";
 
 const config = new RootConfig({});
