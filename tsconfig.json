@@ -29,7 +29,9 @@
 			"$common": ["src/common"],
 			"$common/*": ["src/common/*"],
 			"$cli": ["src/cli"],
-			"$cli/*": ["src/cli/*"]
+			"$cli/*": ["src/cli/*"],
+			"$server": ["src/server"],
+			"$server/*": ["src/server/*"],
 		},
 		"outDir": "dist"
 	},
