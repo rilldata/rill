@@ -5,7 +5,7 @@ import type { TimeGrain } from "$common/database-service/DatabaseColumnActions";
 import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
-import { dataModelerServiceFactory } from "$common/serverFactory";
+import { dataModelerServiceFactory } from "$server/serverFactory";
 
 import { timeGrainSeriesData } from "../data/TimeGrain.data"
 import type { GeneratedTimeseriesTestCase } from "../data/TimeGrain.data"

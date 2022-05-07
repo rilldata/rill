@@ -1,11 +1,11 @@
 import { existsSync } from "fs";
-import type { RootConfig } from "./config/RootConfig";
-import { DuckDbConnection } from "./connection/DuckDbConnection";
-import type { DataModelerService } from "./data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "./data-modeler-state-service/DataModelerStateService";
-import { DataModelerStateSyncService } from "./data-modeler-state-service/sync-service/DataModelerStateSyncService";
-import type { MetricsService } from "./metrics-service/MetricsService";
-import type { NotificationService } from "./notifications/NotificationService";
+import type { RootConfig } from "$common/config/RootConfig";
+import { DuckDbConnection } from "$common/connection/DuckDbConnection";
+import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
+import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import { DataModelerStateSyncService } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
+import type { MetricsService } from "$common/metrics-service/MetricsService";
+import type { NotificationService } from "$common/notifications/NotificationService";
 import { dataModelerServiceFactory } from "./serverFactory";
 
 /**

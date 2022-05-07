@@ -1,6 +1,6 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
-import { ExpressServer } from "../server/ExpressServer";
+import { ExpressServer } from "$server/ExpressServer";
 
 export class StartCommand extends DataModelerCliCommand {
     public getCommand(): Command {

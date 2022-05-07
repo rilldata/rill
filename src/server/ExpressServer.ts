@@ -3,7 +3,7 @@ import http from "http";
 import cors from "cors";
 import fileUpload from "express-fileupload";
 import type { RootConfig } from "$common/config/RootConfig";
-import { SocketServer } from "$common/socket/SocketServer";
+import { SocketServer } from "$server/SocketServer";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";

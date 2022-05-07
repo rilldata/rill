@@ -9,7 +9,7 @@ import { assert, useFakeTimers } from "sinon";
 import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { RootConfig } from "$common/config/RootConfig";
 import { ActiveEventHandler } from "$lib/metrics/ActiveEventHandler";
-import { dataModelerStateServiceFactory, metricsServiceFactory } from "$common/serverFactory";
+import { dataModelerStateServiceFactory, metricsServiceFactory } from "$server/serverFactory";
 import { asyncWait } from "$common/utils/waitUtils";
 import type { ActiveEvent } from "$common/metrics-service/MetricsTypes";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
