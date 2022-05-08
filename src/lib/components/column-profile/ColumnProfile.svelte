@@ -22,6 +22,8 @@ import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram
 import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
 import notificationStore from "$lib/components/notifications/";
 import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
+import TimestampDetail from "../data-graphic/compositions/timestamp-detail/TimestampDetail.svelte";
+import TimestampSpark from "../data-graphic/compositions/timestamp-detail/TimestampSpark.svelte";
 
 export let name;
 export let type;
@@ -49,6 +51,14 @@ $: summaryWidthSize = config.summaryVizWidth[containerWidth < compactBreakpoint 
 $: cardinalityFormatter = containerWidth > config.compactBreakpoint ? formatInteger : formatCompactInteger;
 
 let titleTooltip;
+
+function convert(d) {
+    return d.map(di => {
+        let pi = {...di}
+        pi.ts = new Date(pi.ts);
+        return pi;
+    })
+}
 
 </script>
 
@@ -161,11 +171,26 @@ let titleTooltip;
                     </Tooltip>
                     {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
                     <Tooltip location="right" alignment="center" distance={8}>
-
+                        {#if summary?.rollup?.spark}
+                            
+                            <TimestampSpark 
+                                data={convert(summary.rollup.spark)}
+                                xAccessor=ts
+                                yAccessor=count
+                                width={summaryWidthSize}
+                                height={18}
+                                top={0}
+                                bottom={0}
+                                left={0}
+                                right={0}
+                                area
+                            />
+                        {:else}
                             <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
                                 fillColor={DATA_TYPE_COLORS['TIMESTAMP'].vizFillClass}
                                 baselineStrokeColor={DATA_TYPE_COLORS['TIMESTAMP'].vizStrokeClass}    
                             />
+                        {/if}
                             <TooltipContent slot="tooltip-content" >
                                 the time series
                             </TooltipContent>
@@ -248,9 +273,28 @@ let titleTooltip;
                     max={summary.statistics.max}
                 />
             </div>
-            {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
+            {:else if TIMESTAMPS.has(type) && (summary?.histogram?.length || summary.rollup)}
                 <div class="pl-{indentLevel === 1 ? 16 : 10}">
                     <!-- pl-14 pl-10 -->
+                    {#if summary.rollup}
+                        <TimestampDetail 
+                            data={summary.rollup.results.map(di => {
+                                let pi = {...di};
+                                pi.ts = new Date(pi.ts);
+                                return pi;
+                            })}
+                            spark={summary.rollup.spark.map(di => {
+                                let pi = {...di};
+                                pi.ts = new Date(pi.ts);
+                                return pi;
+                            })}
+                            xAccessor=ts
+                            yAccessor=count
+                            mouseover={true}
+                            height={160}
+                            width={containerWidth - (indentLevel === 1 ? (20 + 24 + 54 ): 32 + 20)}
+                        />
+                    {:else}
                     <TimestampHistogram
                         {type}
                         width={containerWidth - (indentLevel === 1 ? (20 + 24 + 54 ): 32 + 20)}
@@ -258,6 +302,7 @@ let titleTooltip;
                         interval={summary.interval}
                         estimatedSmallestTimeGrain={summary?.estimatedSmallestTimeGrain}
                     />
+                    {/if}
                 </div>
             {/if}
         </div>

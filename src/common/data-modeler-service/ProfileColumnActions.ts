@@ -39,12 +39,16 @@ export class ProfileColumnActions extends DataModelerActions {
             if (TIMESTAMPS.has(column.type)) {
                 promises.push(this.collectTimeRange(entityType, entityId, tableName, column));
                 promises.push(this.collectSmallestTimegrainEstimate(entityType, entityId, tableName, column));
+                promises.push(this.collectTimestampRollup(entityType, entityId, tableName, column, 108, undefined));
             } else {
                 promises.push(this.collectDescriptiveStatistics(entityType, entityId, tableName, column));
             }
         }
         promises.push(this.collectNullCount(entityType, entityId, tableName, column));
         await Promise.all(promises);
+        // run one more time!
+       //if (TIMESTAMPS.has(column.type)) await this.collectTimestampRollup(entityType, entityId, tableName, column, 108, undefined);
+
     }
 
     private async collectTopKAndCardinality(entityType: EntityType, entityId: string,
@@ -65,6 +69,20 @@ export class ProfileColumnActions extends DataModelerActions {
             {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
             "estimateSmallestTimeGrain", [tableName, column.name]),
         ]);
+    }
+
+    private async collectTimestampRollup(entityType: EntityType, entityId: string,
+            tableName: string, 
+            column: ProfileColumn, 
+            pixels:number = undefined,
+            sampleSize:number = undefined) : Promise<void> {
+        this.dataModelerStateService.dispatch("updateColumnSummary",[
+            entityType, entityId, column.name,
+            await this.databaseActionQueue.enqueue(
+            {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+
+            "estimateTimestampRollup", [tableName, column.name, pixels, sampleSize]),
+        ]);                    
     }
 
     private async collectNumericHistogram(entityType: EntityType, entityId: string,

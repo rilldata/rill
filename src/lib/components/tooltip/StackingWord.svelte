@@ -3,17 +3,21 @@ import { getContext } from "svelte";
 import transientBooleanStore from "$lib/util/transient-boolean-store";
 const callbacks = getContext('rill:app:ui:shift-click-action-callbacks');
 let shiftClicked = transientBooleanStore();
-
+export let isStacked = false;
 // if a parent component upstream triggers the shift-click action,
 // let's flip our transientBooleanStore to create the animation.
-callbacks.addCallback(() => {
+if (callbacks) {
+    callbacks.addCallback(() => {
     shiftClicked.flip();
 })
+}
 
 </script>
 
-<span class="inline-block shiftable" class:shiftClicked={$shiftClicked}><slot /></span>
-
+<span class="inline-block shiftable" 
+    class:shiftClicked={!isStacked && $shiftClicked}
+    class:stacked={isStacked}
+><slot /></span>
 <style>
 
 .shiftable {
@@ -41,6 +45,13 @@ callbacks.addCallback(() => {
                     -2px -2px 0px rgba(75,75,75,1),
                     -3px -3px 0px rgba(50,50,50,1);
     }
+}
+
+.stacked {
+    transform: translateY(2px) translateX(2px);
+        box-shadow: -1px -1px 0px rgba(100,100,100,1),
+                    -2px -2px 0px rgba(75,75,75,1),
+                    -3px -3px 0px rgba(50,50,50,1);
 }
 
 </style>

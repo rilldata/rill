@@ -55,10 +55,10 @@ onMount(() => {
         const config = { attributes: true  };
         const observer = new MutationObserver(() => {
             setLocation(firstParentElement.getBoundingClientRect(), child?.getBoundingClientRect(), scrollX, scrollY, innerWidth, innerHeight);
-        })
+        });
         if (firstParentElement) {
             observer.observe(firstParentElement, config);
-        }   
+        }
     }
 })
 
