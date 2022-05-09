@@ -3,7 +3,7 @@ import type {
     DataProfileStateActionArg
 } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
-import { BOOLEANS, CATEGORICALS, TIMESTAMPS } from "$lib/duckdb-data-types";
+import { BOOLEANS, CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
 import type { ProfileColumn } from "$lib/types";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 
@@ -35,7 +35,10 @@ export class ProfileColumnActions extends DataModelerActions {
         if (CATEGORICALS.has(column.type) || BOOLEANS.has(column.type)) {
             promises.push(this.collectTopKAndCardinality(entityType, entityId, tableName, column));
         } else {
-            promises.push(this.collectNumericHistogram(entityType, entityId, tableName, column));
+
+            if (NUMERICS.has(column.type)) {
+                promises.push(this.collectNumericHistogram(entityType, entityId, tableName, column));
+            }
             if (TIMESTAMPS.has(column.type)) {
                 promises.push(this.collectTimeRange(entityType, entityId, tableName, column));
                 promises.push(this.collectSmallestTimegrainEstimate(entityType, entityId, tableName, column));

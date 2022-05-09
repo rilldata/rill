@@ -101,6 +101,7 @@ export class EntityStatusSpec extends FunctionalTestBase {
             ApplicationStatus.Idle,
             ApplicationStatus.Running,
             ApplicationStatus.Idle,
+            ApplicationStatus.Running
         ]);
     }
 

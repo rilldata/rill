@@ -39,8 +39,8 @@ export class DatabaseColumns extends FunctionalTestBase {
             for (const item of numericHistograms) {
                 await this.testHistogramSummary(item.input, item.output);
             }
-            for (const item of dateHistograms) {
-                await this.testHistogramSummary(item.input, item.output);
-            }
+            // for (const item of dateHistograms) {
+            //     await this.testHistogramSummary(item.input, item.output);
+            // }
     }
 }

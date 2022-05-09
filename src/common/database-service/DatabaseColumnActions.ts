@@ -120,7 +120,8 @@ export class DatabaseColumnActions extends DatabaseActions {
     }
 
     /**
-     * A single-pass rollup estimation of a timestamp column.
+     * A single-pass heuristic for generating a count(*) over an entire timestamp column,
+     * rolled up to a hopefully useful timegrain.
      * It will make a reasonable estimate of how the column should be rolled up,
      * then produce both the final rolled up result and a reduced M4-like spark representation
      * using the same temporary table.
@@ -143,39 +144,40 @@ export class DatabaseColumnActions extends DatabaseActions {
          * then join this result set against the empirical counts.
          */
         try {
-        await this.databaseClient.execute(`CREATE TEMPORARY TABLE _ts_ AS (
-            WITH template as (
-                SELECT 
-                    generate_series as ts 
-                FROM 
-                    generate_series(
-                        date_trunc(
-                            '${rollupGranularity.split(' ')[1]}', 
-                            TIMESTAMP '${minValue.toISOString()}'
-                        ), 
-                        date_trunc(
-                            '${rollupGranularity.split(' ')[1]}', 
-                            TIMESTAMP '${maxValue.toISOString()}'
-                        ), 
-                        interval ${rollupGranularity})
-            ),
-            transformed AS (
-                SELECT 
-                    date_trunc('${rollupGranularity.split(' ')[1]}', "${column}") as ts 
-                FROM "${table}"
-                    ${sampleSize && sampleSize < total ? `USING SAMPLE ${(sampleSize / total) * 100}%` : ''}
-            ),
-            series AS (
-                SELECT count(*) as count, ts from transformed 
-                GROUP BY ts ORDER BY ts
-            )
-            SELECT COALESCE(series.count * ${inflator}::FLOAT, 0) as count, template.ts from template
-            LEFT OUTER JOIN series ON template.ts = series.ts
-            ORDER BY template.ts
-        )`);
+            await this.databaseClient.execute(`CREATE TEMPORARY TABLE _ts_ AS (
+                WITH template as (
+                    SELECT 
+                        generate_series as ts 
+                    FROM 
+                        generate_series(
+                            date_trunc(
+                                '${rollupGranularity.split(' ')[1]}', 
+                                TIMESTAMP '${minValue.toISOString()}'
+                            ), 
+                            date_trunc(
+                                '${rollupGranularity.split(' ')[1]}', 
+                                TIMESTAMP '${maxValue.toISOString()}'
+                            ), 
+                            interval ${rollupGranularity})
+                ),
+                transformed AS (
+                    SELECT 
+                        date_trunc('${rollupGranularity.split(' ')[1]}', "${column}") as ts 
+                    FROM "${table}"
+                        ${sampleSize && sampleSize < total ? `USING SAMPLE ${(sampleSize / total) * 100}%` : ''}
+                ),
+                series AS (
+                    SELECT count(*) as count, ts from transformed 
+                    GROUP BY ts ORDER BY ts
+                )
+                SELECT COALESCE(series.count * ${inflator}::FLOAT, 0) as count, template.ts from template
+                LEFT OUTER JOIN series ON template.ts = series.ts
+                ORDER BY template.ts
+            )`);
         } catch (err) {
-            console.log(err)
+            await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
         }
+        
         // decide if the final result set has to be thrown out
         const [{ count }] = await this.databaseClient.execute(`
             SELECT 
