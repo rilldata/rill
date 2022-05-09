@@ -2,10 +2,9 @@
 import { getContext } from "svelte";
 import { slide } from "svelte/transition";
 import { cubicOut as easing } from "svelte/easing";
-import type { AppStore } from '$lib/app-store';
+import type { AppStore } from '$lib/application-state-stores/application-store';
 
 import MetricsEditor from "$lib/components/MetricsEditor.svelte";
-import {dataModelerService} from "$lib/app-store";
 
 const store = getContext("rill:app:store") as AppStore;
 

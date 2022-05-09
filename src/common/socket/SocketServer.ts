@@ -17,9 +17,18 @@ export class SocketServer {
                 private readonly dataModelerStateService: DataModelerStateService,
                 private readonly metricsService: MetricsService,
                 server?: http.Server) {
-        this.server = new Server(server ?? {
-            cors: { origin: this.config.server.serverUrl, methods: ["GET", "POST"] },
-        });
+        if (server) {
+            this.server = new Server(server, {
+                cors: {
+                    origin: this.config.server.uiUrl,
+                    methods: ["GET", "POST"],
+                },
+            });
+        } else {
+            this.server = new Server({
+                cors: { origin: this.config.server.serverUrl, methods: ["GET", "POST"] },
+            });
+        }
     }
 
     public getSocketServer() {

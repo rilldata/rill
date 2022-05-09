@@ -1,0 +1,9 @@
+.svelte-kit/
+build/
+build-tools/
+test/data/
+dist/
+scripts/
+state/
+static/
+node_modules/

@@ -12,7 +12,7 @@ import { ActionErrorType } from "$common/data-modeler-service/response/ActionRes
 import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
 
-const UserFile = "data/Users.csv";
+const UserFile = "test/data/Users.csv";
 
 @TestBase.Suite
 export class DataLoaderSpec extends FunctionalTestBase {
@@ -59,7 +59,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
     @TestBase.Test()
     public async shouldNotLoadInvalidTable(): Promise<void> {
         const response = await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
-          ["data/AdBids", "AdBidsTableInvalid"]);
+          ["test/data/AdBids", "AdBidsTableInvalid"]);
         await this.waitForTables();
 
         const [table] = this.getTables("name", "AdBidsTableInvalid");
@@ -73,9 +73,9 @@ export class DataLoaderSpec extends FunctionalTestBase {
     public async shouldDropTable(): Promise<void> {
         await Promise.all([
             this.clientDataModelerService.dispatch(
-                "addOrUpdateTableFromFile", ["data/AdBids.csv"]),
+                "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]),
             this.clientDataModelerService.dispatch(
-                "addOrUpdateTableFromFile", ["data/AdImpressions.csv"]),
+                "addOrUpdateTableFromFile", ["test/data/AdImpressions.csv"]),
         ])
         await this.clientDataModelerService.dispatch("addModel",
             [{name: "query_0", query: SingleTableQuery}]);

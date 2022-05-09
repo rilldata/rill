@@ -38,6 +38,13 @@ import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { existsSync, readFileSync } from "fs";
 import { LocalConfigFile } from "$common/config/ConfigFolders";
 
+let PACKAGE_JSON = "";
+try {
+    PACKAGE_JSON = __dirname + "/../../package.json";
+} catch (err) {
+    PACKAGE_JSON = "package.json";
+}
+
 export function databaseServiceFactory(config: RootConfig) {
     const duckDbClient = new DuckDBClient(config.database);
     const databaseDataLoaderActions = new DatabaseDataLoaderActions(config.database, duckDbClient);
@@ -74,7 +81,7 @@ export function dataModelerServiceFactory(config: RootConfig) {
         config.local = JSON.parse(readFileSync(LocalConfigFile).toString());
     }
     try {
-        config.local.version = JSON.parse(readFileSync(__dirname + "/../../package.json").toString()).version;
+        config.local.version = JSON.parse(readFileSync(PACKAGE_JSON).toString()).version;
     } catch (err) {
         console.error(err);
     }

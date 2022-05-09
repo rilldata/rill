@@ -26,7 +26,6 @@ import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
 import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
 import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 
-import { dropStore } from '$lib/drop-store';
 
 import { defaultSort, sortByNullity, sortByName } from "$lib/components/column-profile/sort-utils"
 import notificationStore from "$lib/components/notifications/";
@@ -109,32 +108,7 @@ let titleElementHovered = false;
     {#if showTitle}
     <div {draggable} 
         class="active:cursor-grabbing"
-        on:dragstart={(evt) => {
-            var elem = document.createElement("div");
-            elem.id = "drag-ghost";
-            elem.textContent = `${name}`;
-            elem.style.position = "absolute";
-            elem.style.top = "-1000px";
-            elem.style.fontSize = '12px';
-            elem.style.transform = 'translateY(-5em)';
-            elem.classList.add('draggable');
-            document.body.appendChild(elem);
-            evt.dataTransfer.setDragImage(elem, 0, 0);
-            dropStore.set({
-                type: "source-to-query",
-                props: {
-                    content: `SELECT \n  ${selectingColumns && selectedColumns.length ? selectedColumns.join(',\n  ') : '*' }\nFROM '${path}';`,
-                    name: 'whatever.sql'
-                }
-            });
-        }}
-        on:dragend={() => {
-            var ghost = document.getElementById("drag-ghost");
-            if (ghost.parentNode) {
-                ghost.parentNode.removeChild(ghost);
-            }
-            dropStore.set(undefined);
-        }}>
+    >
 
     <NavEntry
         expanded={show}

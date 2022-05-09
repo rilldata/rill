@@ -1,4 +1,4 @@
-import { layout } from '$lib/layout-store';
+import { layout } from '$lib/application-state-stores/layout-store';
 export function drag(node, params) {
     let minSize_ = params?.minSize || 300;
     let maxSize_ = params?.maxSize || 800;

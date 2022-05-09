@@ -35,4 +35,4 @@ export const MAX_USERS = 100;
 export const AD_BID_COUNT = 10000;
 export const AD_IMPRESSION_COUNT = 5000;
 
-export const DATA_FOLDER = "data";
+export const DATA_FOLDER = "test/data";

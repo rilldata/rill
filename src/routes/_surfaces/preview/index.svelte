@@ -3,8 +3,8 @@ import { getContext } from "svelte";
 
 import { dragVertical } from "$lib/drag";
 import PreviewTable from "$lib/components/table/PreviewTable.svelte";
-import { ApplicationStore } from "$lib/app-store";
-import { DerivedModelStore } from "$lib/modelStores";
+import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
 import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
