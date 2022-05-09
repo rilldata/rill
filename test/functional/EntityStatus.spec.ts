@@ -28,7 +28,7 @@ export class EntityStatusSpec extends FunctionalTestBase {
         await asyncWait(50);
 
         await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.csv"]);
+            "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
         await asyncWait(50);
 
         expect(this.entityStatusTracker.getStatusChangeOrder()).toEqual([
@@ -46,7 +46,7 @@ export class EntityStatusSpec extends FunctionalTestBase {
     @FunctionalTestBase.Test()
     public async shouldHaveCorrectStatusWhileUpdatingModelQuery() {
         await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.csv"]);
+            "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
         await this.waitForTables();
         await this.clientDataModelerService.dispatch(
             "addModel", [{name: "query_0", query: ""}]);
@@ -75,10 +75,12 @@ export class EntityStatusSpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldHaveCorrectStatusWhileExportingModel() {
-        await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.csv"]);
-        await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdImpressions.tsv"]);
+        const response1 = await this.clientDataModelerService.dispatch(
+            "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
+        console.log(response1)
+        const response2 = await this.clientDataModelerService.dispatch(
+            "addOrUpdateTableFromFile", ["test/data/AdImpressions.tsv"]);
+        console.log(response2)
         await this.waitForTables();
         await this.clientDataModelerService.dispatch(
             "addModel", [{name: "query_0", query: TwoTableJoinQuery}]);
@@ -120,9 +122,9 @@ export class EntityStatusSpec extends FunctionalTestBase {
 
         const promises = [];
         promises.push(this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdBids.csv"]));
+            "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]));
         promises.push(this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["data/AdImpressions.tsv"]));
+            "addOrUpdateTableFromFile", ["test/data/AdImpressions.tsv"]));
         await asyncWait(50);
         promises.push(this.clientDataModelerService.dispatch(
             "updateModelQuery", [model0.id, SingleTableQuery]));

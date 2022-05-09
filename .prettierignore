@@ -1,7 +1,7 @@
 .svelte-kit/
 build/
 build-tools/
-data/
+test/data/
 dist/
 scripts/
 state/

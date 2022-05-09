@@ -3,7 +3,7 @@ import { getContext } from "svelte";
 import { slide } from "svelte/transition";
 import { flip } from "svelte/animate";
 
-import type { ApplicationStore } from "$lib/app-store";
+import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
 import Portal from "$lib/components/Portal.svelte";
 
@@ -15,15 +15,15 @@ import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
-import {config, dataModelerService} from "$lib/app-store";
-import type { DerivedTableStore, PersistentTableStore } from "$lib/tableStores";
-import type { DerivedModelStore, PersistentModelStore } from "$lib/modelStores";
+import {config, dataModelerService} from "$lib/application-state-stores/application-store";
+import type { DerivedTableStore, PersistentTableStore } from "$lib/application-state-stores/table-stores";
+import type { DerivedModelStore, PersistentModelStore } from "$lib/application-state-stores/model-stores";
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-import { assetVisibilityTween, assetsVisible, layout } from "$lib/layout-store";
+import { assetVisibilityTween, assetsVisible, layout } from "$lib/application-state-stores/layout-store";
 import {uploadTableFiles} from "$lib/util/tableFileUpload";
 
 const store = getContext('rill:app:store') as ApplicationStore;

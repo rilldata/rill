@@ -6,7 +6,7 @@
 */
 import { tweened } from "svelte/motion";
 import { cubicOut as easing } from "svelte/easing";
-import { SURFACE_SLIDE_DURATION } from "$lib/layout-store";
+import { SURFACE_SLIDE_DURATION } from "$lib/application-state-stores/layout-store";
 export let size = "1em";
 export let color='currentColor';
 
