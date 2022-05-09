@@ -17,6 +17,6 @@ export function uploadFile(file: File, url: string) {
         method: "POST",
         body: formData
     })
-        .then((...args) => console.log(...args))
-        .catch((...args) => console.log(...args));
+        .then((...args) => console.error(...args))
+        .catch((...args) => console.error(...args));
 }
