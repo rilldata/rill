@@ -138,9 +138,40 @@ $: $X = scaleLinear().domain([$xMin, $xMax]).range([left + buffer, width - right
 
 // Generate the line density by dividing the total available pixels by the window length.
 // We will scale by window.pixelDensityRatio.
-let lineDensity = .05;
-$: lineDensity = Math.min(1, .3 + (($X($xMax)  - $X($xMin)) * scale) / dataWindow.length);
 
+$: totalTravelDistance = dataWindow.map((di,i) => {
+     if (i === data.length - 1) { return 0 };
+     let max = Math.max($Y(data[i+1][yAccessor]), $Y(data[i][yAccessor]));
+     let min = Math.min($Y(data[i+1][yAccessor]), $Y(data[i][yAccessor]));
+     return Math.abs(max - min);
+ }).reduce((acc,v) => acc+v, 0)
+
+let lineDensity = .05;
+$: lineDensity = Math.min(1, 
+    /** to determine the stroke width of the path, let's look at 
+     * the bigger of two values:
+     * 1. the "y-ish" distance travelled
+     * the inverse of "total travel distance", which is the Y
+     * gap size b/t successive points divided by the zoom window size;
+     * 2. time serires length / available X pixels
+     * the time series divided by the total number of pixels in the existing
+     * zoom window.
+     * 
+     * These heuristics could be refined, but this seems to provide a reasonable approximation for
+     * the stroke width. (1) excels when lots of successive points are close together in the Y direction,
+     * whereas (1) excels when a line is very
+    */
+    Math.max(
+        2 / (totalTravelDistance / (($X($xMax) - $X($xMin)) * scale)),
+        (($X($xMax)  - $X($xMin)) * scale * .7) / dataWindow.length / 1.5
+    )
+    
+);
+/** the line opacity calculation is just a function of the availble pixels divided
+ * by the window length, capped at 1. This seems to work well in practice.
+*/
+$: opacity = Math.min(1, 1 + (($X($xMax)  - $X($xMin)) * scale) / dataWindow.length / 2);
+ 
 // Generate our Y Scale.
 let yExtents = extent(data, d => d[yAccessor]);
 $: yExtents = extent(data, d => d[yAccessor]);
@@ -243,7 +274,7 @@ const { shiftClickAction } = createShiftClickAction();
                 // clear the tooltip shake effect zeroing timeout.
                 clearTimeout(movementTimeout);
                 // shake the word "pan" in the tooltip here.
-                tooltipPanShakeAmount.set(event.detail.movementX / 2);
+                tooltipPanShakeAmount.set(event.detail.movementX / 8);
                 // set this timeout to resolve back to 0 if the user stops dragging.
                 movementTimeout = setTimeout(() => {
                     tooltipPanShakeAmount.set(0);
@@ -301,10 +332,11 @@ const { shiftClickAction } = createShiftClickAction();
             />
             <path
                 d={lineFcn(yAccessor)(data)}
-                stroke={(smooth && dataWindow?.length && dataWindow.length > (width * scale) ? 1 : 0) ? 'rgba(0,0,0,.25)' : 'rgba(0,0,0,.55'} 
+                stroke="black" 
                 stroke-width={lineDensity}
                 fill=none
-                style:opacity={1}
+                style:opacity={opacity}
+                class="transition-opacity"
             />
 
         <!-- smoothed line -->
