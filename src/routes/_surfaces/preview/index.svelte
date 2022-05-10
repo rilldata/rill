@@ -27,9 +27,7 @@ $: if ($store?.activeEntity && $derivedModelStore?.entities)
         style:min-width="calc(100vw - var(--left-sidebar-width) - .5rem)"
         >
         {#if currentModel?.preview}
-        <!-- <RowTable data={currentQuery.preview} /> -->
         <PreviewTable rows={currentModel.preview} columnNames={currentModel.profile} />
-        <!-- <RowTable data={currentQuery.preview} /> -->
     {/if}
     </div>
 
