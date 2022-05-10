@@ -340,7 +340,7 @@ const { shiftClickAction } = createShiftClickAction();
             />
 
         <!-- smoothed line -->
-        <!-- <g style:transition="opacity 300ms" style:opacity={smooth && dataWindow?.length && dataWindow.length > (width * scale) ? 1 : 0}>
+        <g style:transition="opacity 300ms" style:opacity={smooth && dataWindow?.length && dataWindow.length > (width * scale) ? 1 : 0}>
             <path
                 d={smoothedLine}
                 stroke=white fill=none
@@ -351,9 +351,9 @@ const { shiftClickAction } = createShiftClickAction();
                 d={smoothedLine}
                 stroke="hsl(217, 80%, 20%)" fill=none
                 stroke-width={1.5}
-                style:opacity={.35}
+                style:opacity={.85}
             />
-        </g> -->
+        </g>
         {#if isZoomed}
             <!-- fadeout gradients on each side? -->
             <rect 
