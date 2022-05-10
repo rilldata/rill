@@ -1,5 +1,4 @@
 <script lang="ts">
-import IconButton from "$lib/components/IconButton.svelte";
 import * as classes from "$lib/util/component-classes";
 
 import { defaultSort, sortByNullity, sortByName } from "$lib/components/column-profile/sort-utils";
