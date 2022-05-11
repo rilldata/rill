@@ -4,14 +4,22 @@
   export let value = 0;
   export let color;
   export let showBackground = true;
+  export let justify: string | boolean = "end"; // or left
+  export let tweenParameters = { duration: 500, easing };
 
-  const valueTween = tweened(0, { duration: 500, easing });
+  let finalParameters = { ...{ duration: 500, easing }, ...tweenParameters };
+
+  const valueTween = tweened(0, finalParameters);
   $: valueTween.set(value);
+  // justify-items-stretch justify-items-end justify-items-start
+  // justify-stretch justify-end -justify-start
 </script>
 
 <div
   class="
-    text-right grid items-center justify-end justify-items-end relative w-full"
+    text-right grid items-center 
+    {justify ? `justify-${justify}` : ''} 
+    {justify ? `justify-items-${justify}` : ''} relative w-full"
   style:background-color={showBackground
     ? "hsla(217,5%, 90%, .25)"
     : "hsl(217, 0%, 100%, .25)"}
@@ -29,7 +37,7 @@
     position: absolute;
     left: 0;
     top: 0;
-    height: 18px;
+    height: 100%;
 
     mix-blend-mode: multiply;
     pointer-events: none;
