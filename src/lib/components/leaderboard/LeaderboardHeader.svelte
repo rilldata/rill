@@ -9,7 +9,7 @@
 
     class="
         grid w-full justify-between items-center pl-2 pr-2
-        border
+        border-b
         border-gray-200
         rounded-t
         bg-white

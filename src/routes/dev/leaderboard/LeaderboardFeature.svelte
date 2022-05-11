@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * LeaderboardFeature.svelte
+ * -------------------------
+ * This is the "implemented" feature of the leaderboard, meant to be used
+ * in the application itself.
+*/
 import { createEventDispatcher } from "svelte";
 import { fly } from 'svelte/transition';
 
@@ -47,12 +53,8 @@ $: hiddenSelectedValues = values.filter((di, i) => {
                         grid grid-flow-col 
                         items-center justify-center w-max
                         gap-x-2 italic 
-                        bg-red-100 text-red-800 
+                        text-red-800 
                         text-center
-                        p-2
-                        pt-0
-                        pb-0
-                        rounded
                         "
                     on:click={() => { dispatch('clear-all')}}>
                         clear <Close />
@@ -120,48 +122,37 @@ $: hiddenSelectedValues = values.filter((di, i) => {
         </div>
         {/each}
         {#if values.length > slice}
-        <hr />
-        {#if hiddenSelectedValues.length}
-            <button
-                style:height="22px"
-                on:click={() => {
-                    seeMore = true;
-                }}
-                class="
-                    pl-2 pr-2 italic text-gray-500
-                "
-            > 
-                ... {hiddenSelectedValues.length} 
-                selected value{#if hiddenSelectedValues.length !== 1}s{/if} hidden.
-            </button>
-            <hr />
-        {/if}
-        {#if !seeMore}
             <Tooltip location="right">
             <LeaderboardListItem
-                value={1 - (values.slice(0, slice).reduce((a,b) => a+b.value, 0)) / total}
+                value={atLeastOneActive ? 0 : 1 - (values.slice(0, slice).reduce((a,b) => a+b.value, 0)) / total}
                 color="bg-gray-100"
-                on:click={() => {
-                    seeMore = true;
-                }}
             >
                 <div class="italic text-gray-500" slot="title">
-                    Other
+                    All Others
                 </div>
-                <div class="italic text-gray-500" slot="right">{total - values.slice(0,slice).reduce((a,b) => a + b.value, 0) - nullCount}</div>    
+                <div class="italic text-gray-500" slot="right">{total - values.slice(0,!seeMore ? slice : seeMoreSlice).reduce((a,b) => a + b.value, 0) - nullCount}</div>    
             </LeaderboardListItem>
             <TooltipContent slot="tooltip-content">
                 see next 12
             </TooltipContent>
             </Tooltip>
+            <hr />
 
-        {:else}
             <button 
                 class="italic pl-2 pr-2 p-1 text-gray-500"
                 on:click={() => {
-                    seeMore = false;
-                }}>show only top {slice}</button>
-        {/if}
+                    seeMore = !seeMore;
+                }}>
+                    {#if seeMore}
+                        show only top {slice}
+                    {:else}
+                        show {seeMoreSlice - slice} more
+                        {#if hiddenSelectedValues.length}
+                            ({hiddenSelectedValues.length} 
+                            selected value{#if hiddenSelectedValues.length !== 1}s{/if} hidden.)
+                        {/if}
+                    {/if}
+                </button>
         {/if}
     </LeaderboardList>
 </LeaderboardContainer>

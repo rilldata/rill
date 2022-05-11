@@ -26,7 +26,7 @@
     <BarAndLabel 
         {color} 
         {value} 
-        showBackground={false}
+        showBackground={isActive}
         tweenParameters={{ duration: 200 }}
         justify={false}>
         <div 

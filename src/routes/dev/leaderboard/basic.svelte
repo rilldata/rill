@@ -1,7 +1,7 @@
 <script>
-
+    import { fly } from "svelte/transition"
     import Close from "$lib/components/icons/Close.svelte";
-import Leaderboard from "./LeaderboardFeature.svelte";
+    import Leaderboard from "./LeaderboardFeature.svelte";
 
     /** remove this before we componentize anything. */
     const files = import.meta.globEager('./data/*.json');
@@ -50,8 +50,19 @@ import Leaderboard from "./LeaderboardFeature.svelte";
         <div>
             
             {#if anythingSelected}
-                <button 
+                <!-- FIXME: we should be generalizing whatever this button is -->
+                <button
+                    transition:fly={{ duration: 200, y: 5}}
                     on:click={clearAllFilters}
+                    class="
+                        grid gap-x-2 items-center font-bold
+                        bg-red-100
+                        text-red-900
+                        p-1
+                        pl-2 pr-2
+                        rounded
+                    "
+                    style:grid-template-columns="auto max-content"
                 >
                     clear all filters <Close />
                 </button>
