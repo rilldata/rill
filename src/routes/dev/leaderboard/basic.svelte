@@ -1,7 +1,8 @@
 <script>
     import { fly } from "svelte/transition"
     import Close from "$lib/components/icons/Close.svelte";
-    import Leaderboard from "./LeaderboardFeature.svelte";
+    /** for now, this LeaderboardFeature.svelte file will be here. */
+    import Leaderboard from "./_LeaderboardFeature.svelte";
 
     /** remove this before we componentize anything. */
     const files = import.meta.globEager('./data/*.json');
@@ -77,7 +78,7 @@
                     if (!(activeValues[displayName].includes(event.detail))) {
                         activeValues[displayName] = [...activeValues[displayName], event.detail]
                     } else {
-                        activeValues[displayName] = activeValues[displayName].filter(b => b !== event.detail);
+                        activeValues[displayName] = activeValues[displayName]?.filter(b => b !== event.detail);
                     }
                 }}
                 on:clear-all={() => {

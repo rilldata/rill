@@ -93,9 +93,9 @@ $: hiddenSelectedValues = values.filter((di, i) => {
                 <div
                     
                     style:max-width="calc({315 - Math.max(...widths, 0)}px - 2rem)"
-
+                    class:text-gray-700={!atLeastOneActive}
                     class:text-gray-500={atLeastOneActive && !isActive}
-                           class:italic={atLeastOneActive && !isActive}
+                    class:italic={atLeastOneActive && !isActive}
                     class="w-full text-ellipsis overflow-hidden whitespace-nowrap" 
                     slot="title">
                     {label}
@@ -139,7 +139,7 @@ $: hiddenSelectedValues = values.filter((di, i) => {
             <hr />
 
             <button 
-                class="italic pl-2 pr-2 p-1 text-gray-500"
+                class="italic pl-2 pr-2 p-1 text-gray-500 w-full text-left hover:bg-gray-50"
                 on:click={() => {
                     seeMore = !seeMore;
                 }}>

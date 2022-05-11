@@ -1,5 +1,5 @@
 /**
- * generate_leaderboards.js
+ * generate-leaderboards.js
  * ------------------------
  * 
  * Usage:
@@ -83,8 +83,3 @@ for (let { name } of tables) {
     fs.writeFileSync(`./src/routes/dev/leaderboard/data/${name}.json`, JSON.stringify(leaderboards, null, 2));
     console.log(`wrote ${name}.json`)
 }
-
-
-/** get all tables from duckdb */
-
-/** for each, extract out the  */
