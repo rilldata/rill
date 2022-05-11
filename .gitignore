@@ -39,3 +39,5 @@ saved-state.json
 last-query-output.json
 staging-databases
 projects/
+# data path utilized for development of leaderboard stories.
+/src/routes/dev/leaderboard/data/*

@@ -1,6 +1,7 @@
 <script>
 
-    import Leaderboard from "./LeaderboardFeature.svelte";
+    import Close from "$lib/components/icons/Close.svelte";
+import Leaderboard from "./LeaderboardFeature.svelte";
 
     /** remove this before we componentize anything. */
     const files = import.meta.globEager('./data/*.json');
@@ -9,99 +10,84 @@
             return [fileName, leaderboard];
     })
 
-    /** these parameters control the total leaderboard length */
-    const slice = 3;
-    const seeMoreSlice = 15;
-
-    /** bootstrapping some data and interactions */
-    const leaderboards = [
-        {
-            displayName: 'Publishers',
-            total: 80000,
-            values: [
-                {
-                    label: 'Goofball TV',
-                    value: 42400
-                },
-                {
-                    label: 'Nexus Television',
-                    value: 20100
-                },
-                {
-                    label: 'YouFace',
-                    value: 12000
-                },
-                {
-                    label: 'etc. online',
-                    value: 9200
-                },
-                {
-                    label: 'something else',
-                    value: 5300
-                },
-                {
-                    label: 'connected tv',
-                    value: 3000
-                },
-                {
-                    label: 'Balogne Television',
-                    value: 1000
-                },
-                {
-                    label: 'HGWTFTV',
-                    value: 400
-                },
-            ]
-        }
-    ]
-
-    let activeLeaderboards = leaderboardSet.reduce((acc,v) => {
-        acc[v.displayName] = []
-        return acc;
-    }, {});
-    let seeMore = true;
-
-
     /**
      * get the current leaderboard element.
      */
     let currentLeaderboard = leaderboardSet[0][1];
     let activeValues = {};
-    $: activeValues = currentLeaderboard.leaderboards.reduce((acc, leaderboard) => {
+
+    function initializeActiveValues(leaderboards) {
+        return leaderboards.reduce((acc, leaderboard) => {
         acc[leaderboard.displayName] = [];
         return acc;
     }, {});
+    }
+
+    function clearAllFilters() {
+        activeValues = initializeActiveValues(currentLeaderboard.leaderboards); 
+    }
+
+    $: activeValues = initializeActiveValues(currentLeaderboard.leaderboards);
+
+    $: anythingSelected = Object.keys(activeValues).some(key => {
+        return activeValues[key]?.length;
+    })
 </script>
 
-<div class="w-screen min-h-screen bg-gray-50 p-8">
-
-<h1>{currentLeaderboard.displayName}</h1>
-<select bind:value={currentLeaderboard}>
-    {#each leaderboardSet as [file, leaderboard]}
-        <option value={leaderboard}>{leaderboard.displayName}</option>
-    {/each}
-</select>
-
-<div class="grid grid-cols-3 gap-8 justify-start w-max">
-    {#each currentLeaderboard.leaderboards as {displayName, values, nullCount }}
-        <Leaderboard
-            on:select-item={(event) => {
-                activeValues[displayName];
-                if (!(activeValues[displayName].includes(event.detail))) {
-                    activeValues[displayName] = [...activeValues[displayName], event.detail]
-                } else {
-                    activeValues[displayName] = activeValues[displayName].filter(b => b !== event.detail);
-                }
-            }}
-            on:clear-all={() => {
-                activeValues[displayName] = [];
-            }}
-            activeValues={activeValues[displayName]}
-            {displayName}
-            {values}
-            total={currentLeaderboard.total}
-            {nullCount}
-        />
-    {/each}
-</div>
+<div class="w-screen min-h-screen bg-white p-8">
+    <section style:width="{315 * 3 + 2 * 32}px">
+    {#if leaderboardSet.length}
+    <header
+        style:height="32px"
+        style:grid-template-columns="max-content max-content"
+        class="pb-3 grid  w-full justify-between"
+    >
+        <select bind:value={currentLeaderboard}>
+            {#each leaderboardSet as [file, leaderboard]}
+                <option value={leaderboard}>{leaderboard.displayName}</option>
+            {/each}
+        </select>
+        <div>
+            
+            {#if anythingSelected}
+                <button 
+                    on:click={clearAllFilters}
+                >
+                    clear all filters <Close />
+                </button>
+            {/if}
+        </div>
+    </header>
+    <div class="grid grid-cols-3 gap-8 justify-start w-max">
+        {#each currentLeaderboard.leaderboards as {displayName, values, nullCount }}
+            <Leaderboard
+                on:select-item={(event) => {
+                    activeValues[displayName];
+                    if (!(activeValues[displayName].includes(event.detail))) {
+                        activeValues[displayName] = [...activeValues[displayName], event.detail]
+                    } else {
+                        activeValues[displayName] = activeValues[displayName].filter(b => b !== event.detail);
+                    }
+                }}
+                on:clear-all={() => {
+                    activeValues[displayName] = [];
+                }}
+                activeValues={activeValues[displayName]}
+                {displayName}
+                {values}
+                total={currentLeaderboard.total}
+                {nullCount}
+            />
+        {/each}
+    </div>
+    {:else}
+        <p>
+            <b>No leaderboards present.</b>
+        </p>
+        <p style:width="600px">
+            Run <code class="italic text-blue-600">node ./scripts/dev/generate-leaderboards.js path/to/stage.db</code>
+            to generate example leaderboard data.
+        </p>
+    {/if}
+    </section>
 </div>

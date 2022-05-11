@@ -8,7 +8,7 @@ export let focused = false;
 </script>
 
 <div 
-    class:drop-shadow-sm={focused}
+    class:drop-shadow-lg={focused}
     style:width="{width}px"
 >
     <slot />
