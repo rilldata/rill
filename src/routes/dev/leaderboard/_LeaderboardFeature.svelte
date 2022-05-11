@@ -76,7 +76,7 @@ $: hiddenSelectedValues = values.filter((di, i) => {
         <div>
         <Tooltip location="right">
             <LeaderboardListItem
-                value={atLeastOneActive && !isActive ? 0 : value / total}
+                value={value / (total - nullCount)}
                 {isActive}
                 on:click={() => { dispatch('select-item', label) }}
                 color={isActive ? 'bg-blue-200' : 'bg-gray-100'}
@@ -124,7 +124,7 @@ $: hiddenSelectedValues = values.filter((di, i) => {
         {#if values.length > slice}
             <Tooltip location="right">
             <LeaderboardListItem
-                value={atLeastOneActive ? 0 : 1 - (values.slice(0, slice).reduce((a,b) => a+b.value, 0)) / total}
+                value={1 - (values.slice(0, slice).reduce((a,b) => a+b.value, 0)) / total}
                 color="bg-gray-100"
             >
                 <div class="italic text-gray-500" slot="title">

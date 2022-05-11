@@ -70,7 +70,7 @@
             {/if}
         </div>
     </header>
-    <div class="grid grid-cols-3 gap-8 justify-start w-max">
+    <div class="grid grid-cols-3 gap-6 justify-start w-max">
         {#each currentLeaderboard.leaderboards as {displayName, values, nullCount }}
             <Leaderboard
                 on:select-item={(event) => {
