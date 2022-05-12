@@ -59,7 +59,6 @@ function convert(d) {
         return pi;
     })
 }
-
 </script>
 
     <!-- pl-10 -->
@@ -169,7 +168,9 @@ function convert(d) {
                             the distribution of the values of this column
                         </TooltipContent>
                     </Tooltip>
-                    {:else if TIMESTAMPS.has(type) && summary?.histogram?.length}
+                    {:else if TIMESTAMPS.has(type) && 
+                        /** a legacy histogram type or a new rollup spark */
+                        (summary?.histogram?.length || summary?.rollup?.spark?.length)}
                     <Tooltip location="right" alignment="center" distance={8}>
                         {#if summary?.rollup?.spark}
                             
@@ -293,6 +294,9 @@ function convert(d) {
                             mouseover={true}
                             height={160}
                             width={containerWidth - (indentLevel === 1 ? (20 + 24 + 54 ): 32 + 20)}
+                            rollupGrain={summary.rollup.granularity}
+                            estimatedSmallestTimeGrain={summary?.estimatedSmallestTimeGrain}
+                            interval={summary.interval}
                         />
                     {:else}
                     <TimestampHistogram

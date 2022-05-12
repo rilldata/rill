@@ -24,7 +24,8 @@ import { DEFAULT_COORDINATES } from '$lib/components/data-graphic/constants';
 import { createScrubAction } from '$lib/components/data-graphic/create-scrub-action';
 import { extent, bisector, max, min } from "d3-array";
 import { outline } from "$lib/components/data-graphic/outline";
-import { datePortion, timePortion, formatInteger } from '$lib/util/formatters';
+import { datePortion, timePortion, formatInteger, intervalToTimestring } from '$lib/util/formatters';
+import type { Interval } from "$lib/util/formatters"
 import { writable } from 'svelte/store';
 import { createExtremumResolutionStore } from '../../extremum-resolution-store';
 
@@ -35,6 +36,7 @@ import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
 
 import { createShiftClickAction } from "$lib/util/shift-click-action";
 import notifications from "$lib/components/notifications";
+import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
 const plotID = guidGenerator();
 
@@ -58,7 +60,6 @@ export let left = 1;
 export let right = 1;
 export let top = 12;
 export let bottom = 4;
-
 export let buffer = 0
 
 /** text elements */
@@ -68,6 +69,11 @@ export let textGap = 4;
 
 /** zoom elements */
 export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
+
+/** rollup grain, time range, etc. */
+export let interval:Interval;
+export let rollupGrain:string;
+export let estimatedSmallestTimeGrain:string;
 
 let scale:number;
 onMount(() => {
@@ -123,6 +129,9 @@ let dataWindow;
 // this adaptive smoothing should be a function?
 $: dataWindow = data
     .filter(di => di[xAccessor] >= $xMin && di[xAccessor] <= $xMax);
+$: windowWithoutZeros = dataWindow.filter(di => {
+    return di[yAccessor] !== 0;
+})
 $: windowSize = dataWindow.length < 150 ? 30 : ~~(dataWindow.length / (25));
 
 $: smoothedData = data.map((di, i, arr) => {
@@ -250,9 +259,49 @@ $: zoomMaxBound = ($zoomCoords.start.x ?
  * Use this shiftClickAction to copy the timestamp that is currently moused over.
  */
 const { shiftClickAction } = createShiftClickAction();
-
 </script>
-<div style:width="{width}px">
+<div style:max-width="{width}px">
+    <div class="text-gray-600" style="
+        display: grid;
+        grid-template-columns: auto auto;
+    ">
+        <Tooltip distance={16} location="top">
+        <div style="grid-row: 1; grid-column: 1;">
+            {#if interval}
+            RANGE {intervalToTimestring(interval)}
+            {/if}
+        </div>
+        <TooltipContent slot="tooltip-content">
+            <div style:max-width="315px">
+                The range of this timestamp is {intervalToTimestring(interval)}.
+            </div>
+        </TooltipContent>
+        </Tooltip>
+        <Tooltip distance={16} location="top">
+            <div class="text-right" style="grid-row: 1; column: 2;">
+                {#if rollupGrain}
+                    ROLLUP {rollupGrain}
+                {/if}
+            </div>
+            <TooltipContent slot="tooltip-content">
+                <div style:max-width="315px">
+                    This timestamp column is aggregated so each point on the time series is <i>{rollupGrain}</i>.
+                </div>
+            </TooltipContent>
+        </Tooltip>
+        <Tooltip distance={16} location="top">
+        <div class="text-right" style="grid-row: 2; grid-column: 2;">
+            {#if estimatedSmallestTimeGrain}
+                GRAIN {estimatedSmallestTimeGrain}
+            {/if}
+        </div>
+        <TooltipContent slot="tooltip-content">
+            <div style:width="315px">
+                The smallest available grain in this column is at the <i>{estimatedSmallestTimeGrain}</i> level.
+            </div>
+        </TooltipContent>
+        </Tooltip>
+    </div>
     <Tooltip location="right" alignment="center" distance={32}>
     <svg width={width} height={height}
         style:cursor={setCursor($isZooming, $isScrolling)}
@@ -340,7 +389,7 @@ const { shiftClickAction } = createShiftClickAction();
             />
 
         <!-- smoothed line -->
-        <g style:transition="opacity 300ms" style:opacity={smooth && dataWindow?.length && dataWindow.length > (width * scale) ? 1 : 0}>
+        <g style:transition="opacity 300ms" style:opacity={smooth && windowWithoutZeros?.length && windowWithoutZeros.length > (width * scale) ? 1 : 0}>
             <path
                 d={smoothedLine}
                 stroke=white fill=none
