@@ -5,7 +5,14 @@
     import Leaderboard from "./_LeaderboardFeature.svelte";
 
     /** remove this before we componentize anything. */
-    const files = import.meta.globEager('./data/*.json');
+    let files = [];
+    try {
+        // @ts-ignore
+        files = import.meta.globEager('./data/*.json');
+    } catch (err) {
+        console.log('initial build did not work out.')
+    }
+    
     const leaderboardSet = Object.keys(files).map(fileName => {
         const leaderboard = files[fileName].default;
             return [fileName, leaderboard];
@@ -14,10 +21,11 @@
     /**
      * get the current leaderboard element.
      */
-    let currentLeaderboard = leaderboardSet[0][1];
+    let currentLeaderboard = leaderboardSet.length ? leaderboardSet[0][1] : [];
     let activeValues = {};
 
     function initializeActiveValues(leaderboards) {
+        if (!leaderboards) return []
         return leaderboards.reduce((acc, leaderboard) => {
         acc[leaderboard.displayName] = [];
         return acc;
@@ -25,10 +33,10 @@
     }
 
     function clearAllFilters() {
-        activeValues = initializeActiveValues(currentLeaderboard.leaderboards); 
+        activeValues = initializeActiveValues(currentLeaderboard?.leaderboards); 
     }
 
-    $: activeValues = initializeActiveValues(currentLeaderboard.leaderboards);
+    $: activeValues = initializeActiveValues(currentLeaderboard?.leaderboards);
 
     $: anythingSelected = Object.keys(activeValues).some(key => {
         return activeValues[key]?.length;
