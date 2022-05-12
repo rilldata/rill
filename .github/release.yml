@@ -9,7 +9,7 @@ changelog:
     - title: Exciting New Features 🎉
       labels:
         - enhancement
-    - title: Bug Fixes :hammer:
+    - title: Bug Fixes 🔨
       labels:
         - bug
     - title: Other Changes
