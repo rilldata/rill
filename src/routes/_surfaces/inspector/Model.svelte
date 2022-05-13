@@ -319,7 +319,6 @@ onMount(() => {
                 const exportFilename = currentModel.name.replace('.sql', '.csv');
                 window.open(`${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
                 `&type=csv&fileName=${encodeURIComponent(exportFilename)}`);
-                //dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
             }}>
                 Export as CSV 
             </MenuItem>
