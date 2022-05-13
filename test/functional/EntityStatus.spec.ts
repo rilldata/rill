@@ -75,12 +75,10 @@ export class EntityStatusSpec extends FunctionalTestBase {
 
     @FunctionalTestBase.Test()
     public async shouldHaveCorrectStatusWhileExportingModel() {
-        const response1 = await this.clientDataModelerService.dispatch(
+        await this.clientDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
-        console.log(response1)
-        const response2 = await this.clientDataModelerService.dispatch(
+        await this.clientDataModelerService.dispatch(
             "addOrUpdateTableFromFile", ["test/data/AdImpressions.tsv"]);
-        console.log(response2)
         await this.waitForTables();
         await this.clientDataModelerService.dispatch(
             "addModel", [{name: "query_0", query: TwoTableJoinQuery}]);
