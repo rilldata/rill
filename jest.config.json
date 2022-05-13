@@ -15,7 +15,7 @@
   "moduleFileExtensions": ["ts", "js", "svelte"],
   "setupFilesAfterEnv": [
     "@testing-library/jest-dom/extend-expect",
-    "<rootDir>/test/global_test_setup.ts"
+    "<rootDir>/test/global-test-setup.ts"
   ],
   "modulePathIgnorePatterns": ["<rootDir>/dist/"],
   "testEnvironment": "node",
