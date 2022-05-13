@@ -186,6 +186,7 @@ function convertTimestampPreview(d) {
                                 left={0}
                                 right={0}
                                 area
+                                tweenIn
                             />
 
                         {:else}

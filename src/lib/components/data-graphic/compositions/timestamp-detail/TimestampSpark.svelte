@@ -15,6 +15,7 @@ import { extent  } from "d3-array";
 import { writable } from 'svelte/store';
 import { createExtremumResolutionStore } from '../../extremum-resolution-store';
 import { lineFactory, areaFactory } from './utils';
+import { tweened } from 'svelte/motion';
 
 const plotID = guidGenerator();
 
@@ -25,6 +26,7 @@ export let height = 120;
 export let curve = 'curveLinear';
 export let area = false;
 export let color = 'hsl(217, 10%, 50%)';
+export let tweenIn = false;
 
 // the color of the zoom window
 export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
@@ -68,8 +70,21 @@ $: $X = scaleLinear().domain([$xMin, $xMax]).range([left + buffer, width - right
 // Generate our Y Scale.
 let yExtents = extent(data, d => d[yAccessor]);
 $: yExtents = extent(data, d => d[yAccessor]);
-const yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]))
-$: $Y = scaleLinear().domain([0, $yMax]).range([plotBottom, plotTop]);
+const yMax = createExtremumResolutionStore(
+    Math.max(5, yExtents[1]),
+)
+
+/** Listen ~ the world needs a little bit of joy. If the user wants to tween in the height
+ * of the graph so it looks like it grows, then let them have it.
+ * This tweened value is consumed only if the consumer sets tweenIn={true}.
+*/
+const tweenInValue = tweened(height, { duration: 600, easing });
+$: tweenInValue.set(plotTop);
+
+/** we will tween in the upper part of the range if the consumer of the component
+ * sets tweenIn={true}. Otherwise This sparkline will just appear.
+*/
+$: $Y = scaleLinear().domain([0, $yMax]).range([plotBottom, tweenIn ? $tweenInValue : plotTop]);
 
 $: lineFcn = lineFactory({
     xScale: $X,

@@ -70,6 +70,7 @@ export let zoomWindowXMax:Date = undefined;
             <div style:display="inline-grid">
                 <TimestampSpark 
                     area
+                    tweenIn
                     {data}
                     {xAccessor}
                     {yAccessor}
