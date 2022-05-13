@@ -52,7 +52,8 @@ $: cardinalityFormatter = containerWidth > config.compactBreakpoint ? formatInte
 
 let titleTooltip;
 
-function convert(d) {
+/** used to convert a timestamp preview from the server for a sparkline. */
+function convertTimestampPreview(d) {
     return d.map(di => {
         let pi = {...di}
         pi.ts = new Date(pi.ts);
@@ -175,7 +176,7 @@ function convert(d) {
                         {#if summary?.rollup?.spark}
                             
                             <TimestampSpark
-                                data={convert(summary.rollup.spark)}
+                                data={convertTimestampPreview(summary.rollup.spark)}
                                 xAccessor=ts
                                 yAccessor=count
                                 width={summaryWidthSize}
