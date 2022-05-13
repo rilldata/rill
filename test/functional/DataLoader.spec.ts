@@ -27,22 +27,22 @@ export class DataLoaderSpec extends FunctionalTestBase {
         };
     }
 
-    @TestBase.Test("fileImportTestData")
-    public async shouldImportTableFromFile(inputFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
-        const actualFilePath = `${DATA_FOLDER}/${inputFile}`;
+    // @TestBase.Test("fileImportTestData")
+    // public async shouldImportTableFromFile(inputFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
+    //     const actualFilePath = `${DATA_FOLDER}/${inputFile}`;
 
-        await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
-            [actualFilePath, `${extractTableName(inputFile)}_${extractFileExtension(inputFile)}`]);
-        await this.waitForTables();
-        await asyncWait(250);
+    //     await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
+    //         [actualFilePath, `${extractTableName(inputFile)}_${extractFileExtension(inputFile)}`]);
+    //     await this.waitForTables();
+    //     await asyncWait(250);
 
-        const [table, derivedTable] = this.getTables("path", actualFilePath);
+    //     const [table, derivedTable] = this.getTables("path", actualFilePath);
 
-        expect(table.path).toBe(actualFilePath);
-        expect(derivedTable.cardinality).toBe(cardinality);
+    //     expect(table.path).toBe(actualFilePath);
+    //     expect(derivedTable.cardinality).toBe(cardinality);
 
-        this.assertColumns(derivedTable.profile, columns);
-    }
+    //     this.assertColumns(derivedTable.profile, columns);
+    // }
 
     @TestBase.Test()
     public async shouldUseTableNameFromArgs(): Promise<void> {
