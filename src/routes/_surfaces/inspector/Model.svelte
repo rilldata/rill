@@ -1,23 +1,26 @@
 <script lang="ts">
-import { getContext, onMount, tick } from "svelte";
-import { slide } from "svelte/transition";
-import { tweened } from "svelte/motion";
-import { sineOut as easing } from "svelte/easing";
-import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import { getContext, onMount, tick } from "svelte";
+  import { slide } from "svelte/transition";
+  import { tweened } from "svelte/motion";
+  import { sineOut as easing } from "svelte/easing";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
-import * as classes from "$lib/util/component-classes";
-import Export from "$lib/components/icons/Export.svelte";
-import { onClickOutside } from "$lib/util/on-click-outside";
-import Menu from "$lib/components/menu/Menu.svelte"
-import MenuItem from "$lib/components/menu/MenuItem.svelte"
+  import * as classes from "$lib/util/component-classes";
+  import Export from "$lib/components/icons/Export.svelte";
+  import { onClickOutside } from "$lib/util/on-click-outside";
+  import Menu from "$lib/components/menu/Menu.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
 
-import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
 import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 import {config as appConfig} from "$lib/application-state-stores/application-store";
 
-import { formatInteger, formatBigNumberPercentage } from "$lib/util/formatters"
+  import {
+    formatInteger,
+    formatBigNumberPercentage,
+  } from "$lib/util/formatters";
 
 import type {
     PersistentModelEntity
@@ -30,126 +33,156 @@ import type { DerivedModelStore, PersistentModelStore } from "$lib/application-s
 import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
-import { config } from "$lib/components/column-profile/utils"
+  import { config } from "$lib/components/column-profile/utils";
 
-const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
-const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
-const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
-const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
+  const persistentTableStore = getContext(
+    "rill:app:persistent-table-store"
+  ) as PersistentTableStore;
+  const derivedTableStore = getContext(
+    "rill:app:derived-table-store"
+  ) as DerivedTableStore;
+  const persistentModelStore = getContext(
+    "rill:app:persistent-model-store"
+  ) as PersistentModelStore;
+  const derivedModelStore = getContext(
+    "rill:app:derived-model-store"
+  ) as DerivedModelStore;
 
-const store = getContext('rill:app:store') as ApplicationStore;
-const queryHighlight = getContext('rill:app:query-highlight');
+  const store = getContext("rill:app:store") as ApplicationStore;
+  const queryHighlight = getContext("rill:app:query-highlight");
 
-function tableDestinationCompute(key, table, destination) {
-  let inputs = table.reduce((acc,v) => acc + v[key], 0)
-  return  (destination[key]) / inputs;
-}
+  function tableDestinationCompute(key, table, destination) {
+    let inputs = table.reduce((acc, v) => acc + v[key], 0);
+    return destination[key] / inputs;
+  }
 
-function computeRollup(table, destination) {
-  return tableDestinationCompute('cardinality', table, destination);
-}
+  function computeRollup(table, destination) {
+    return tableDestinationCompute("cardinality", table, destination);
+  }
 
-let rollup;
-let tables;
-// get source tables?
-let sourceTableReferences;
-let showColumns = true;
-let showExportOptions = true;
-let sourceTableNames = [];
+  let rollup;
+  let tables;
+  // get source tables?
+  let sourceTableReferences;
+  let showColumns = true;
+  let showExportOptions = true;
+  let sourceTableNames = [];
 
-// interface tweens for the  big numbers
-let bigRollupNumber = tweened(0, { duration: 700, easing });
-let inputRowCardinality = tweened(0, { duration: 200, easing });
-let outputRowCardinality = tweened(0, { duration: 250, easing });
+  // interface tweens for the  big numbers
+  let bigRollupNumber = tweened(0, { duration: 700, easing });
+  let inputRowCardinality = tweened(0, { duration: 200, easing });
+  let outputRowCardinality = tweened(0, { duration: 250, easing });
 
-let currentModel: PersistentModelEntity;
-$: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
-    $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
-let currentDerivedModel: DerivedModelEntity;
-$: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
-    $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
-// get source table references.
-$: if (currentDerivedModel?.sources) {
-  sourceTableReferences = currentDerivedModel?.sources;
-}
+  let currentModel: PersistentModelEntity;
+  $: currentModel =
+    $store?.activeEntity && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find(
+          (q) => q.id === $store.activeEntity.id
+        )
+      : undefined;
+  let currentDerivedModel: DerivedModelEntity;
+  $: currentDerivedModel =
+    $store?.activeEntity && $derivedModelStore?.entities
+      ? $derivedModelStore.entities.find((q) => q.id === $store.activeEntity.id)
+      : undefined;
+  // get source table references.
+  $: if (currentDerivedModel?.sources) {
+    sourceTableReferences = currentDerivedModel?.sources;
+  }
 
-// map and filter these source tables.
-$: if (sourceTableReferences?.length) {
-    tables = sourceTableReferences.map(sourceTableReference => {
-        const table = $persistentTableStore.entities.find(t => sourceTableReference.name === t.tableName);
+  // map and filter these source tables.
+  $: if (sourceTableReferences?.length) {
+    tables = sourceTableReferences
+      .map((sourceTableReference) => {
+        const table = $persistentTableStore.entities.find(
+          (t) => sourceTableReference.name === t.tableName
+        );
         if (!table) return undefined;
-        return $derivedTableStore.entities.find(derivedTable => derivedTable.id === table.id);
-    }).filter(t => !!t);
+        return $derivedTableStore.entities.find(
+          (derivedTable) => derivedTable.id === table.id
+        );
+      })
+      .filter((t) => !!t);
   } else {
     tables = [];
   }
 
+  $: outputRowCardinalityValue = currentDerivedModel?.cardinality;
+  $: if (
+    outputRowCardinalityValue !== 0 &&
+    outputRowCardinalityValue !== undefined
+  ) {
+    outputRowCardinality.set(outputRowCardinalityValue);
+  }
+  $: inputRowCardinalityValue = tables?.length
+    ? tables.reduce((acc, v) => acc + v.cardinality, 0)
+    : 0;
+  $: if (
+    inputRowCardinalityValue !== undefined &&
+    outputRowCardinalityValue !== undefined
+  ) {
+    rollup = outputRowCardinalityValue / inputRowCardinalityValue;
+  }
 
-$: outputRowCardinalityValue = currentDerivedModel?.cardinality
-$: if (outputRowCardinalityValue !== 0 && outputRowCardinalityValue !== undefined) {
-  outputRowCardinality.set(outputRowCardinalityValue)
-}
-$: inputRowCardinalityValue = tables?.length ? tables.reduce((acc, v) => acc + v.cardinality, 0) : 0;
-$: if (inputRowCardinalityValue !== undefined && outputRowCardinalityValue !== undefined) {
-  rollup = outputRowCardinalityValue / inputRowCardinalityValue;
-}
+  function validRollup(number) {
+    return rollup !== Infinity && rollup !== -Infinity && !isNaN(number);
+  }
 
-function validRollup(number) {
-  return rollup !== Infinity && rollup !== -Infinity &&
-            !isNaN(number)
-}
+  $: if (rollup !== undefined && !isNaN(rollup)) bigRollupNumber.set(rollup);
 
-$: if (rollup !== undefined && !isNaN(rollup)) bigRollupNumber.set(rollup);
+  // toggle state for inspector sections
+  let showSourceTables = true;
 
-// toggle state for inspector sections
-let showSourceTables = true;
-
-
-let container;
-let containerWidth = 0;
-let contextMenu;
-let contextMenuOpen = false;
-let menuX;
-let menuY;
-let clickOutsideListener;
-$: if (!contextMenuOpen && clickOutsideListener) {
+  let container;
+  let containerWidth = 0;
+  let contextMenu;
+  let contextMenuOpen = false;
+  let menuX;
+  let menuY;
+  let clickOutsideListener;
+  $: if (!contextMenuOpen && clickOutsideListener) {
     clickOutsideListener();
     clickOutsideListener = undefined;
-}
+  }
 
-onMount(() => {
-    const observer = new ResizeObserver(entries => {
-        containerWidth = container.clientWidth;
+  onMount(() => {
+    const observer = new ResizeObserver((entries) => {
+      containerWidth = container.clientWidth;
     });
     observer.observe(container);
-})
+  });
 </script>
 
 {#key currentModel?.id}
   <div bind:this={container}>
     {#if currentModel && currentModel.query.trim().length && tables}
-    <div
-      style:height="var(--header-height)"
-      class:text-gray-300={currentDerivedModel?.error} 
-      class='cost pl-4 pr-4 flex flex-row items-center gap-x-2'
+      <div
+        style:height="var(--header-height)"
+        class:text-gray-300={currentDerivedModel?.error}
+        class="cost pl-4 pr-4 flex flex-row items-center gap-x-2"
       >
-      {#if !currentDerivedModel?.error && (rollup !== undefined && rollup !== Infinity && rollup !== -Infinity)}
-    <Tooltip location="left" alignment="middle" distance={16} suppress={contextMenuOpen}>
-      <button
-      bind:this={contextMenu}
-      on:click={async (event) => {
-          contextMenuOpen = !contextMenuOpen;
-          menuX = event.clientX;
-          menuY = event.clientY;
-          if (!clickOutsideListener) {
-              await tick();
-              clickOutsideListener = onClickOutside(() => {
-                  contextMenuOpen = false;
-              }, contextMenu);
-          }
-      }}
-      style:grid-column="left-control"
-      class="
+        {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
+          <Tooltip
+            location="left"
+            alignment="middle"
+            distance={16}
+            suppress={contextMenuOpen}
+          >
+            <button
+              bind:this={contextMenu}
+              on:click={async (event) => {
+                contextMenuOpen = !contextMenuOpen;
+                menuX = event.clientX;
+                menuY = event.clientY;
+                if (!clickOutsideListener) {
+                  await tick();
+                  clickOutsideListener = onClickOutside(() => {
+                    contextMenuOpen = false;
+                  }, contextMenu);
+                }
+              }}
+              style:grid-column="left-control"
+              class="
           hover:bg-gray-300
           hover:border-gray-300
           border-black
@@ -164,143 +197,153 @@ onMount(() => {
           pl-4 pr-4
           pt-2 pb-2
         "
-      >
-    export
-    <Export size="16px" />
-</button>
-    <TooltipContent slot="tooltip-content">
-        export this model as a dataset
-    </TooltipContent>
-</Tooltip>
+            >
+              export
+              <Export size="16px" />
+            </button>
+            <TooltipContent slot="tooltip-content">
+              export this model as a dataset
+            </TooltipContent>
+          </Tooltip>
 
-    <div class="grow text-right">
-      <div class='cost-estimate text-gray-900 font-bold'  class:text-gray-300={currentDerivedModel?.error}>
-        {#if inputRowCardinalityValue > 0}
-          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > config.hideRight}, {currentDerivedModel?.profile?.length} columns
-          {/if}
-        {:else if inputRowCardinalityValue === 0}
-          no rows selected
-        {:else}
-          &nbsp;
-        {/if}
-      </div>
-      <Tooltip location="left" alignment="center" distance={8}>
-        <div class=" text-gray-500" >
-            {#if validRollup(rollup)}
+          <div class="grow text-right">
+            <div
+              class="cost-estimate text-gray-900 font-bold"
+              class:text-gray-300={currentDerivedModel?.error}
+            >
+              {#if inputRowCardinalityValue > 0}
+                {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > config.hideRight},
+                  {currentDerivedModel?.profile?.length} columns
+                {/if}
+              {:else if inputRowCardinalityValue === 0}
+                no rows selected
+              {:else}
+                &nbsp;
+              {/if}
+            </div>
+            <Tooltip location="left" alignment="center" distance={8}>
+              <div class=" text-gray-500">
+                {#if validRollup(rollup)}
                   {#if isNaN(rollup)}
                     ~
-                  {:else if rollup === 0 }
+                  {:else if rollup === 0}
                     <!-- show no additional text. -->
                     resultset is empty
                   {:else if rollup !== 1}
-                                  {formatBigNumberPercentage(rollup < .0005 ? rollup :( $bigRollupNumber || 0))}
-                              of source rows
+                    {formatBigNumberPercentage(
+                      rollup < 0.0005 ? rollup : $bigRollupNumber || 0
+                    )}
+                    of source rows
                   {:else}no change in row {#if containerWidth > config.hideRight}count{:else}ct.{/if}
-
-                  {/if}  
-              {:else if rollup === Infinity}
-                &nbsp; {formatInteger(outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if} selected
-            {/if}
-        </div>
-      <TooltipContent slot='tooltip-content'>
-        <div class="pt-1 pb-1 font-bold">
-          the rollup percentage
-        </div>
-        <div style:width="240px" class="pb-1">
-          the ratio of destination table rows to
-          source table rows, as a percentage
-        </div>
-      </TooltipContent>
-      </Tooltip>
-    </div>
-    {/if}
-    </div>
-  {/if}
-
-  <hr />
-
-    <div class="model-profile">
-    {#if currentModel && currentModel.query.trim().length}       
-      <div class='pt-4 pb-4'>
-        <div class=" pl-4 pr-4">
-          <CollapsibleSectionTitle tooltipText="source tables" bind:active={showSourceTables}>
-            Source Tables
-          </CollapsibleSectionTitle>
-        </div>
-        {#if showSourceTables}
-          <div transition:slide|local={{duration: 200}} class="mt-1">
-            {#if sourceTableReferences?.length && tables}
-
-            {#each sourceTableReferences as reference, index (reference.name)}
-            {@const correspondingTableCardinality = tables[index]?.cardinality}
-              <div
-                class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
-                style:grid-template-columns="auto max-content"
-                on:focus={() => {
-                  queryHighlight.set(reference.tables);
-                }}
-                on:mouseover={() => {
-                  queryHighlight.set(reference.tables);
-              }}
-                on:mouseleave={() => {
-                  queryHighlight.set(undefined)
-                }}
-                on:blur={() => {
-                  queryHighlight.set(undefined);
-                }}
-              >
-              <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-                {reference.name}
-              </div>
-              <div class="text-gray-500 italic">
-                <!-- is there a source table with this name and cardinality established? -->
-                {#if correspondingTableCardinality}
-                  {`${formatInteger(correspondingTableCardinality)} rows` || ''}
+                  {/if}
+                {:else if rollup === Infinity}
+                  &nbsp; {formatInteger(outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+                  selected
                 {/if}
               </div>
-            </div>
-            {/each}
-            {:else}
-            <div class='pl-4 pr-5 p-1 italic text-gray-400'>
-            none selected
-            </div>
-          {/if}
+              <TooltipContent slot="tooltip-content">
+                <div class="pt-1 pb-1 font-bold">the rollup percentage</div>
+                <div style:width="240px" class="pb-1">
+                  the ratio of destination table rows to source table rows, as a
+                  percentage
+                </div>
+              </TooltipContent>
+            </Tooltip>
           </div>
         {/if}
       </div>
-      
-      <hr />
-      
-      <div class="pb-4 pt-4">
-      <div class=" pl-4 pr-4">
-        <CollapsibleSectionTitle tooltipText="source tables" bind:active={showColumns}>
-          selected columns
-        </CollapsibleSectionTitle>
-      </div>
+    {/if}
 
-        {#if currentDerivedModel?.profile && showColumns}
-        <div  transition:slide|local={{duration: 200}}>
-            <CollapsibleTableSummary
-              showTitle={false}
-              showContextButton={false}
-              show={showColumns}
-              name={currentModel.name}
-              cardinality={currentDerivedModel?.cardinality ?? 0}
-              profile={currentDerivedModel?.profile ?? []}
-              head={currentDerivedModel?.preview ?? []}
-              emphasizeTitle ={currentModel?.id === $store?.activeEntity?.id}
-            />
+    <hr />
+
+    <div class="model-profile">
+      {#if currentModel && currentModel.query.trim().length}
+        <div class="pt-4 pb-4">
+          <div class=" pl-4 pr-4">
+            <CollapsibleSectionTitle
+              tooltipText="source tables"
+              bind:active={showSourceTables}
+            >
+              Source Tables
+            </CollapsibleSectionTitle>
+          </div>
+          {#if showSourceTables}
+            <div transition:slide|local={{ duration: 200 }} class="mt-1">
+              {#if sourceTableReferences?.length && tables}
+                {#each sourceTableReferences as reference, index (reference.name)}
+                  {@const correspondingTableCardinality =
+                    tables[index]?.cardinality}
+                  <div
+                    class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
+                    style:grid-template-columns="auto max-content"
+                    on:focus={() => {
+                      queryHighlight.set(reference.tables);
+                    }}
+                    on:mouseover={() => {
+                      queryHighlight.set(reference.tables);
+                    }}
+                    on:mouseleave={() => {
+                      queryHighlight.set(undefined);
+                    }}
+                    on:blur={() => {
+                      queryHighlight.set(undefined);
+                    }}
+                  >
+                    <div
+                      class="text-ellipsis overflow-hidden whitespace-nowrap"
+                    >
+                      {reference.name}
+                    </div>
+                    <div class="text-gray-500 italic">
+                      <!-- is there a source table with this name and cardinality established? -->
+                      {#if correspondingTableCardinality}
+                        {`${formatInteger(
+                          correspondingTableCardinality
+                        )} rows` || ""}
+                      {/if}
+                    </div>
+                  </div>
+                {/each}
+              {:else}
+                <div class="pl-4 pr-5 p-1 italic text-gray-400">
+                  none selected
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
 
-        {/if}
-    </div>
+        <hr />
 
-    {/if}
-  </div>
+        <div class="pb-4 pt-4">
+          <div class=" pl-4 pr-4">
+            <CollapsibleSectionTitle
+              tooltipText="source tables"
+              bind:active={showColumns}
+            >
+              selected columns
+            </CollapsibleSectionTitle>
+          </div>
+
+          {#if currentDerivedModel?.profile && showColumns}
+            <div transition:slide|local={{ duration: 200 }}>
+              <CollapsibleTableSummary
+                showTitle={false}
+                showContextButton={false}
+                show={showColumns}
+                name={currentModel.name}
+                cardinality={currentDerivedModel?.cardinality ?? 0}
+                profile={currentDerivedModel?.profile ?? []}
+                head={currentDerivedModel?.preview ?? []}
+                emphasizeTitle={currentModel?.id === $store?.activeEntity?.id}
+              />
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
 {/key}
-
-
 
 {#if contextMenuOpen}
 <!-- place this above codemirror.-->
@@ -324,13 +367,12 @@ onMount(() => {
             </MenuItem>
         </Menu>
     </FloatingElement>
-</div>
+  </div>
 {/if}
 
 <style lang="postcss">
-
-.results {
-  overflow: auto;
-  max-width: var(--right-sidebar-width);
-}
+  .results {
+    overflow: auto;
+    max-width: var(--right-sidebar-width);
+  }
 </style>

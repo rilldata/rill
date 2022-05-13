@@ -1,41 +1,45 @@
 <script lang="ts">
-import { getContext } from "svelte";
+  import { getContext } from "svelte";
 
-import { dragVertical } from "$lib/drag";
-import PreviewTable from "$lib/components/table/PreviewTable.svelte";
-import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
-import type {
-    DerivedModelEntity
-} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { dragVertical } from "$lib/drag";
+  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
+  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
-const store = getContext('rill:app:store') as ApplicationStore;
-const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
-let currentModel: DerivedModelEntity;
-$: if ($store?.activeEntity && $derivedModelStore?.entities)
-    currentModel = $derivedModelStore?.entities.find(q => q.id === $store.activeEntity.id);
+  const store = getContext("rill:app:store") as ApplicationStore;
+  const derivedModelStore = getContext(
+    "rill:app:derived-model-store"
+  ) as DerivedModelStore;
+  let currentModel: DerivedModelEntity;
+  $: if ($store?.activeEntity && $derivedModelStore?.entities)
+    currentModel = $derivedModelStore?.entities.find(
+      (q) => q.id === $store.activeEntity.id
+    );
 </script>
 
-<div 
-    style:width="calc(100vw - var(--left-sidebar-width))"
-    style:height="var(--bottom-sidebar-width)"
+<div
+  style:width="calc(100vw - var(--left-sidebar-width))"
+  style:height="var(--bottom-sidebar-width)"
 >
-
-    <div 
-        class="relative  bg-gray-50 overflow-auto border-t border-gray-300" 
-        style:height="var(--bottom-sidebar-width)"
-        style:min-width="calc(100vw - var(--left-sidebar-width) - .5rem)"
-        >
-        {#if currentModel?.preview}
-        <PreviewTable rows={currentModel.preview} columnNames={currentModel.profile} />
+  <div
+    class="relative  bg-gray-50 overflow-auto border-t border-gray-300"
+    style:height="var(--bottom-sidebar-width)"
+    style:min-width="calc(100vw - var(--left-sidebar-width) - .5rem)"
+  >
+    {#if currentModel?.preview}
+      <PreviewTable
+        rows={currentModel.preview}
+        columnNames={currentModel.profile}
+      />
     {/if}
-    </div>
+  </div>
 
-    <div 
-    class='drawer-handler h-4 absolute hover:cursor-col-resize translate-y-3 z-20'
+  <div
+    class="drawer-handler h-4 absolute hover:cursor-col-resize translate-y-3 z-20"
     style:bottom="var(--bottom-sidebar-width, 300px)"
     style:min-width="300px"
     style:width="calc(100vw - var(--left-sidebar-width) - .5rem)"
-    use:dragVertical={{minSize: 0}}
-/>
+    use:dragVertical={{ minSize: 0 }}
+  />
 </div>

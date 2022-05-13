@@ -1,18 +1,18 @@
 <script lang="ts">
-import { getContext } from "svelte";
-import { slide } from "svelte/transition";
-import { flip } from "svelte/animate";
+  import { getContext } from "svelte";
+  import { slide } from "svelte/transition";
+  import { flip } from "svelte/animate";
 
-import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
-import Portal from "$lib/components/Portal.svelte";
+  import Portal from "$lib/components/Portal.svelte";
 
-import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-import ModelIcon from "$lib/components/icons/Code.svelte";
-import AddIcon from "$lib/components/icons/Add.svelte";
-import CollapsibleTableSummary from  "$lib/components/column-profile/CollapsibleTableSummary.svelte";
-import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import ParquetIcon from "$lib/components/icons/Parquet.svelte";
+  import ModelIcon from "$lib/components/icons/Code.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
+  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
+  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
 import { dataModelerService} from "$lib/application-state-stores/application-store";
@@ -26,24 +26,39 @@ import { EntityType } from "$common/data-modeler-state-service/entity-state-serv
 import { assetVisibilityTween, assetsVisible, layout } from "$lib/application-state-stores/layout-store";
 import { onManualSourceUpload, onSourceDrop } from "$lib/util/file-upload"
 
-const store = getContext('rill:app:store') as ApplicationStore;
-const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
-const derivedTableStore = getContext('rill:app:derived-table-store') as DerivedTableStore;
-const persistentModelStore = getContext('rill:app:persistent-model-store') as PersistentModelStore;
-const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
+  const store = getContext("rill:app:store") as ApplicationStore;
+  const persistentTableStore = getContext(
+    "rill:app:persistent-table-store"
+  ) as PersistentTableStore;
+  const derivedTableStore = getContext(
+    "rill:app:derived-table-store"
+  ) as DerivedTableStore;
+  const persistentModelStore = getContext(
+    "rill:app:persistent-model-store"
+  ) as PersistentModelStore;
+  const derivedModelStore = getContext(
+    "rill:app:derived-model-store"
+  ) as DerivedModelStore;
 
-let activeModel: PersistentModelEntity;
-$: activeModel = $store && $persistentModelStore &&
-  $store?.activeEntity && $persistentModelStore?.entities ?
-    $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
-let showTables = true;
-let showModels = true;
+  let activeModel: PersistentModelEntity;
+  $: activeModel =
+    $store &&
+    $persistentModelStore &&
+    $store?.activeEntity &&
+    $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find(
+          (q) => q.id === $store.activeEntity.id
+        )
+      : undefined;
+  let showTables = true;
+  let showModels = true;
 
 let fileUploadElement:HTMLElement;
 
 </script>
 
-<div class='
+<div
+  class="
   border-r 
   border-transparent 
   fixed 
@@ -52,16 +67,17 @@ let fileUploadElement:HTMLElement;
   transition-colors
   h-screen
   bg-white
-' 
+"
   class:hidden={$assetVisibilityTween === 1}
   class:pointer-events-none={!$assetsVisible}
-  style:top="0px" style:width="{$layout.assetsWidth}px">
-    
-    <!-- draw handler -->
-    {#if $assetsVisible}
-      <Portal>
-        <div 
-        class='fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen'
+  style:top="0px"
+  style:width="{$layout.assetsWidth}px"
+>
+  <!-- draw handler -->
+  {#if $assetsVisible}
+    <Portal>
+      <div
+        class="fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
         style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
         use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
       </Portal>
@@ -167,36 +183,108 @@ let fileUploadElement:HTMLElement;
               {#each $persistentModelStore.entities as query, i (query.id)}
                 {@const derivedModel = $derivedModelStore.entities.find(m => m["id"] === query["id"])}
                 <CollapsibleTableSummary
-                  on:select={() => {
-                    dataModelerService.dispatch("setActiveAsset", [EntityType.Model, query.id]);
-                  }}
-                  on:delete={() => {
-                    dataModelerService.dispatch('deleteModel', [query.id]);
-                  }}
                   indentLevel={1}
-                  icon={ModelIcon}
-                  name={query.name}
-                  cardinality={derivedModel?.cardinality ?? 0}
-                  profile={derivedModel?.profile ?? []}
-                  head={derivedModel?.preview ?? []}
-                  sizeInBytes={derivedModel?.sizeInBytes ?? 0}
-                  emphasizeTitle ={query?.id === $store?.activeEntity?.id}
+                  icon={ParquetIcon}
+                  name={tableName}
+                  cardinality={derivedTable?.cardinality ?? 0}
+                  profile={derivedTable?.profile ?? []}
+                  head={derivedTable?.preview ?? []}
+                  {path}
+                  sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+                  on:delete={() => {
+                    dataModelerService.dispatch("dropTable", [tableName]);
+                  }}
                 />
-              {/each}
               </div>
-            {/if}
+            {/each}
           {/if}
-      </div>
-      <!-- assets pane footer. -->
-      <div class='p-3 italic text-gray-800 bg-gray-50 flex items-center text-center justify-center' style:height="var(--header-height)">
-        <div class='text-left'>
-        Bugs, complaints, feedback? &nbsp;
         </div>
-        <a
-          target="_blank" 
-          class="inline not-italic font-bold text-blue-600 text-right"
-          href="http://bit.ly/3jg4IsF"> Ask us on Discord 💬
-        </a>
-      </div>
+      {/if}
+
+      {#if $persistentModelStore && $persistentModelStore.entities}
+        <div
+          class="pl-4 pb-3 pr-4 grid justify-between"
+          style="grid-template-columns: auto max-content;"
+          out:slide={{ duration: 200 }}
+        >
+          <CollapsibleSectionTitle
+            tooltipText={"tables"}
+            bind:active={showModels}
+          >
+            <h4 class="flex flex-row items-center gap-x-2">
+              <ModelIcon size="16px" /> Models
+            </h4>
+          </CollapsibleSectionTitle>
+          <ContextButton
+            id={"create-model-button"}
+            tooltipText="create a new model"
+            on:click={async () => {
+              // create the new model.
+              let response = await dataModelerService.dispatch("addModel", [
+                {},
+              ]);
+              // change the active asset to the new model.
+              dataModelerService.dispatch("setActiveAsset", [
+                EntityType.Model,
+                response.id,
+              ]);
+              // if the models are not visible in the assets list, show them.
+              if (!showModels) {
+                showModels = true;
+              }
+            }}
+          >
+            <AddIcon />
+          </ContextButton>
+        </div>
+        {#if showModels}
+          <div
+            class="pb-6 justify-self-end"
+            transition:slide={{ duration: 200 }}
+            id="assets-model-list"
+          >
+            <!-- TODO: fix the object property access back to m.id from m["id"] once svelte fixes it -->
+            {#each $persistentModelStore.entities as query, i (query.id)}
+              {@const derivedModel = $derivedModelStore.entities.find(
+                (m) => m["id"] === query["id"]
+              )}
+              <CollapsibleTableSummary
+                on:select={() => {
+                  dataModelerService.dispatch("setActiveAsset", [
+                    EntityType.Model,
+                    query.id,
+                  ]);
+                }}
+                on:delete={() => {
+                  dataModelerService.dispatch("deleteModel", [query.id]);
+                }}
+                indentLevel={1}
+                icon={ModelIcon}
+                name={query.name}
+                cardinality={derivedModel?.cardinality ?? 0}
+                profile={derivedModel?.profile ?? []}
+                head={derivedModel?.preview ?? []}
+                sizeInBytes={derivedModel?.sizeInBytes ?? 0}
+                emphasizeTitle={query?.id === $store?.activeEntity?.id}
+              />
+            {/each}
+          </div>
+        {/if}
+      {/if}
     </div>
+    <!-- assets pane footer. -->
+    <div
+      class="p-3 italic text-gray-800 bg-gray-50 flex items-center text-center justify-center"
+      style:height="var(--header-height)"
+    >
+      <div class="text-left">Bugs, complaints, feedback? &nbsp;</div>
+      <a
+        target="_blank"
+        class="inline not-italic font-bold text-blue-600 text-right"
+        href="http://bit.ly/3jg4IsF"
+      >
+        Ask us on Discord 💬
+      </a>
+    </div>
+  </div>
 </div>
