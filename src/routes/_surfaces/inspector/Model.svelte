@@ -14,24 +14,26 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
-import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-import {config as appConfig} from "$lib/application-state-stores/application-store";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import { config as appConfig } from "$lib/application-state-stores/application-store";
 
   import {
     formatInteger,
     formatBigNumberPercentage,
   } from "$lib/util/formatters";
 
-import type {
-    PersistentModelEntity
-} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type {
-    DerivedModelEntity
-} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { DerivedTableStore, PersistentTableStore } from "$lib/application-state-stores/table-stores";
-import type { DerivedModelStore, PersistentModelStore } from "$lib/application-state-stores/model-stores";
-import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
-import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
+  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import type {
+    DerivedTableStore,
+    PersistentTableStore,
+  } from "$lib/application-state-stores/table-stores";
+  import type {
+    DerivedModelStore,
+    PersistentModelStore,
+  } from "$lib/application-state-stores/model-stores";
+  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
   import { config } from "$lib/components/column-profile/utils";
 
@@ -346,26 +348,49 @@ import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleT
 {/key}
 
 {#if contextMenuOpen}
-<!-- place this above codemirror.-->
-<div bind:this={contextMenu}>
-    <FloatingElement relationship="mouse" target={{x: menuX, y:menuY}} location="left" alignment="start">
-        <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
-            <MenuItem on:select={() => {
-                const exportFilename = currentModel.name.replace('.sql', '.parquet');
-                window.open(`${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
-                    `&type=parquet&fileName=${encodeURIComponent(exportFilename)}`);
-                //dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
-            }}>
-                Export as Parquet
-            </MenuItem>
-            <MenuItem on:select={() => {
-                const exportFilename = currentModel.name.replace('.sql', '.csv');
-                window.open(`${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
-                `&type=csv&fileName=${encodeURIComponent(exportFilename)}`);
-            }}>
-                Export as CSV 
-            </MenuItem>
-        </Menu>
+  <!-- place this above codemirror.-->
+  <div bind:this={contextMenu}>
+    <FloatingElement
+      relationship="mouse"
+      target={{ x: menuX, y: menuY }}
+      location="left"
+      alignment="start"
+    >
+      <Menu
+        on:escape={() => {
+          contextMenuOpen = false;
+        }}
+        on:item-select={() => {
+          contextMenuOpen = false;
+        }}
+      >
+        <MenuItem
+          on:select={() => {
+            const exportFilename = currentModel.name.replace(
+              ".sql",
+              ".parquet"
+            );
+            window.open(
+              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
+                `&type=parquet&fileName=${encodeURIComponent(exportFilename)}`
+            );
+            //dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
+          }}
+        >
+          Export as Parquet
+        </MenuItem>
+        <MenuItem
+          on:select={() => {
+            const exportFilename = currentModel.name.replace(".sql", ".csv");
+            window.open(
+              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
+                `&type=csv&fileName=${encodeURIComponent(exportFilename)}`
+            );
+          }}
+        >
+          Export as CSV
+        </MenuItem>
+      </Menu>
     </FloatingElement>
   </div>
 {/if}
