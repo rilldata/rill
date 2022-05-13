@@ -1,5 +1,5 @@
 import type { DataProviderData } from "@adityahegde/typescript-test-utils";
-import { TimeGrain } from "$common/database-service/DatabaseColumnActions";
+import { EstimatedSmallestTimeGrain } from "$common/database-service/DatabaseColumnActions";
 
 export interface GeneratedTimeseriesTestCase {
     start: string,
@@ -17,7 +17,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
                 start: '2021-01-01 01:30:00',
                 end: '2021-01-01 02:00:00',
                 interval: '4 millisecond',
-                expectedTimeGrain: TimeGrain.milliseconds
+                expectedTimeGrain: EstimatedSmallestTimeGrain.milliseconds
             }]}
         ]
     },
@@ -28,7 +28,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
                 start: '2021-01-01 23:30:00',
                 end: '2021-01-02 23:30:00',
                 interval: '4 millisecond',
-                expectedTimeGrain: TimeGrain.milliseconds
+                expectedTimeGrain: EstimatedSmallestTimeGrain.milliseconds
             }]}]
     },
     {
@@ -38,7 +38,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01 12:30:00',
             end: '2021-01-01 13:30:00',
             interval: '2 seconds',
-            expectedTimeGrain: TimeGrain.seconds
+            expectedTimeGrain: EstimatedSmallestTimeGrain.seconds
         }]}]
     },
     {
@@ -48,7 +48,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01 01:04:04',
             end: '2021-01-01 09:04:04',
             interval: '47 minutes',
-            expectedTimeGrain: TimeGrain.minutes
+            expectedTimeGrain: EstimatedSmallestTimeGrain.minutes
         }]}]
     },
     {
@@ -58,7 +58,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01',
             end: '2022-01-01',
             interval: '2 hours',
-            expectedTimeGrain: TimeGrain.hours
+            expectedTimeGrain: EstimatedSmallestTimeGrain.hours
         }]}]
     },
     {
@@ -68,7 +68,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '2021-01-01',
             end: '2025-01-01',
             interval: '3 days',
-            expectedTimeGrain: TimeGrain.days
+            expectedTimeGrain: EstimatedSmallestTimeGrain.days
         }]}]
     },
     {
@@ -78,7 +78,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '2000-01-01',
             interval: '7 day',
-            expectedTimeGrain: TimeGrain.weeks
+            expectedTimeGrain: EstimatedSmallestTimeGrain.weeks
         }]}]
     },
     {
@@ -88,7 +88,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '1900-03-01',
             interval: '7 day',
-            expectedTimeGrain: TimeGrain.weeks
+            expectedTimeGrain: EstimatedSmallestTimeGrain.weeks
         }]}]
     },
     {
@@ -98,7 +98,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '2000-01-01',
             interval: '7 day',
-            expectedTimeGrain: TimeGrain.weeks
+            expectedTimeGrain: EstimatedSmallestTimeGrain.weeks
         }]}]
     },
     {
@@ -108,7 +108,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '2000-01-01',
             interval: '2 month',
-            expectedTimeGrain: TimeGrain.months
+            expectedTimeGrain: EstimatedSmallestTimeGrain.months
         }]}]
     },
     {
@@ -118,7 +118,7 @@ export const timeGrainSeriesData:DataProviderData<[GeneratedTimeseriesTestCase]>
             start: '1900-01-01',
             end: '2000-01-01',
             interval: '1 year',
-            expectedTimeGrain: TimeGrain.years
+            expectedTimeGrain: EstimatedSmallestTimeGrain.years
         }]}]
     },
 ]}

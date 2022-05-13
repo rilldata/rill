@@ -9,7 +9,7 @@ import { PreviewRollupInterval } from '$lib/duckdb-data-types';
 const TOP_K_COUNT = 50;
 
 /** FIXME: these should be moved somewhere else. */
-export enum TimeGrain {
+export enum EstimatedSmallestTimeGrain {
   milliseconds = "milliseconds",
   seconds = "seconds",
   minutes = "minutes",
@@ -18,6 +18,12 @@ export enum TimeGrain {
   weeks = "weeks",
   months = "months",
   years = "years"
+}
+
+export interface RollupInterval {
+    rollupInterval:string,
+    minValue:Date,
+    maxValue:Date
 }
 
 /** These are used for duckdb interval conversions. */
@@ -71,13 +77,14 @@ export class DatabaseColumnActions extends DatabaseActions {
      * Estimates a reasonable rollup timegrain for the given table & timestamp column.
      * This is currently based on a heuristic method that largely looks at
      * the time range of the timestamp column and guesses a good rollup grain.
+     * @returns {RollupInterval} the rollup interval information, an object with a rollupInterval, minValue, maxValue
      */
-    public async estimateRollupTimegrain(metadata: DatabaseMetadata,
-        tableName: string, columnName: string): Promise<any> {
+    public async estimateIdealRollupInterval(metadata: DatabaseMetadata,
+        tableName: string, columnName: string): Promise<RollupInterval> {
         
-        function rollupTimegrainReturnFormat(rollupGranularity, minValue, maxValue) {
+        function rollupTimegrainReturnFormat(rollupInterval, minValue, maxValue) : RollupInterval {
           return {
-            rollupGranularity, minValue, maxValue
+            rollupInterval, minValue, maxValue,
           }
         }
 
@@ -91,7 +98,7 @@ export class DatabaseColumnActions extends DatabaseActions {
 
         const { r, max_value: maxValue, min_value: minValue, count } = timeRange;
         
-        let range = typeof r === 'number' ? {days: r, micros:0, months: 0} : r;
+        const range = typeof r === 'number' ? {days: r, micros:0, months: 0} : r;
     
         if (range.days === 0 && range.micros <= MICROS.minute) {
             return rollupTimegrainReturnFormat(PreviewRollupInterval.ms, minValue, maxValue);
@@ -104,20 +111,13 @@ export class DatabaseColumnActions extends DatabaseActions {
         if (range.days === 0 && range.micros <= MICROS.hour * 24) {
             return rollupTimegrainReturnFormat(PreviewRollupInterval.minute, minValue, maxValue);
         }
-        if (range.days < 7) {
+        if (range.days <= 7) {
             return rollupTimegrainReturnFormat(PreviewRollupInterval.hour, minValue, maxValue);
         }
-        if (range.days < 365) {
+        if (range.days <= (365 * 20)) {
             return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
         }
-    
-        if (range.days < (365 * 20) && count > range.days * 15) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
-        }
-        if (range.days < (365 * 20)) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
-        }
-        if (range.days < (365 * 500)) {
+        if (range.days <= (365 * 500)) {
             return rollupTimegrainReturnFormat(PreviewRollupInterval.month, minValue, maxValue);
         } 
         return rollupTimegrainReturnFormat(PreviewRollupInterval.year, minValue, maxValue);
@@ -136,7 +136,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     public async estimateTimestampRollup(
           metadata: DatabaseMetadata,
           table:string, column:string, pixels = undefined, sampleSize = undefined) {
-        const {rollupGranularity, minValue, maxValue} = await this.estimateRollupTimegrain(metadata, table, column);
+        const {rollupInterval, minValue, maxValue} = await this.estimateIdealRollupInterval(metadata, table, column);
         const [ totalRow ] = await this.databaseClient.execute(`SELECT count(*) as c from "${table}"`);
         const total = totalRow.c;
         
@@ -155,18 +155,18 @@ export class DatabaseColumnActions extends DatabaseActions {
                     FROM 
                         generate_series(
                             date_trunc(
-                                '${rollupGranularity.split(' ')[1]}', 
+                                '${rollupInterval.split(' ')[1]}', 
                                 TIMESTAMP '${minValue.toISOString()}'
                             ), 
                             date_trunc(
-                                '${rollupGranularity.split(' ')[1]}', 
+                                '${rollupInterval.split(' ')[1]}', 
                                 TIMESTAMP '${maxValue.toISOString()}'
                             ), 
-                            interval ${rollupGranularity})
+                            interval ${rollupInterval})
                 ),
                 transformed AS (
                     SELECT 
-                        date_trunc('${rollupGranularity.split(' ')[1]}', "${column}") as ts 
+                        date_trunc('${rollupInterval.split(' ')[1]}', "${column}") as ts 
                     FROM "${table}"
                         ${sampleSize && sampleSize < total ? `USING SAMPLE ${(sampleSize / total) * 100}%` : ''}
                 ),
@@ -265,7 +265,7 @@ export class DatabaseColumnActions extends DatabaseActions {
         return {
             rollup: {
               results, 
-              granularity: rollupGranularity, 
+              rollupInterval: rollupInterval, 
               reduced: (pixels && pixels * 4 <= count),
               rows: total,
               spark,
@@ -300,7 +300,7 @@ export class DatabaseColumnActions extends DatabaseActions {
      * we've thrown at it.
      */
     public async estimateSmallestTimeGrain(metadata: DatabaseMetadata,
-        tableName: string, columnName: string, sampleSize = 500000): Promise<{ estimatedSmallestTimeGrain: TimeGrain }> {
+        tableName: string, columnName: string, sampleSize = 500000): Promise<{ estimatedSmallestTimeGrain: EstimatedSmallestTimeGrain }> {
       const [total] = await this.databaseClient.execute(`
         SELECT count(*) as c from "${tableName}"
       `)

@@ -299,7 +299,7 @@ function convertTimestampPreview(d) {
                             mouseover={true}
                             height={160}
                             width={containerWidth - (indentLevel === 1 ? (20 + 24 + 54 ): 32 + 20)}
-                            rollupGrain={summary.rollup.granularity}
+                            rollupGrain={summary.rollup.rollupInterval}
                             estimatedSmallestTimeGrain={summary?.estimatedSmallestTimeGrain}
                             interval={summary.interval}
                         />
