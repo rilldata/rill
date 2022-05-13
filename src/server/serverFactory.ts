@@ -9,7 +9,7 @@ import {ModelActions} from "$common/data-modeler-service/ModelActions";
 import {ProfileColumnStateActions} from "$common/data-modeler-state-service/ProfileColumnStateActions";
 import {DataModelerService} from "$common/data-modeler-service/DataModelerService";
 import {ProfileColumnActions} from "$common/data-modeler-service/ProfileColumnActions";
-import {SocketServer} from "$common/socket/SocketServer";
+import {SocketServer} from "$server/SocketServer";
 import {DatabaseService} from "$common/database-service/DatabaseService";
 import type {RootConfig} from "$common/config/RootConfig";
 import { SocketNotificationService } from "$common/socket/SocketNotificationService";

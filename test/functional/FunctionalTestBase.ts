@@ -33,7 +33,7 @@ import type {
     DerivedModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { ActiveEntity } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import { RillDeveloper } from "$common/RillDeveloper";
+import { RillDeveloper } from "$server/RillDeveloper";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {

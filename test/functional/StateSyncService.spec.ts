@@ -1,6 +1,6 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import { execSync } from "node:child_process";
-import { dataModelerServiceFactory } from "$common/serverFactory";
+import { dataModelerServiceFactory } from "$server/serverFactory";
 import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";

@@ -1,6 +1,6 @@
 import "../moduleAlias";
 import {RootConfig} from "$common/config/RootConfig";
-import {RillDeveloper} from "$common/RillDeveloper";
+import { RillDeveloper } from "./RillDeveloper";
 import type {SocketNotificationService} from "$common/socket/SocketNotificationService";
 import {ExpressServer} from "./ExpressServer";
 import {ServerConfig} from "$common/config/ServerConfig";
