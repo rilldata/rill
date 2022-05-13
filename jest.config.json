@@ -11,16 +11,11 @@
     ],
     "^\\$common(.*)$": "<rootDir>/src/common$1"
   },
-  "extensionsToTreatAsEsm": [
-    ".svelte"
-  ],
-  "moduleFileExtensions": [
-    "ts",
-    "js",
-    "svelte"
-  ],
+  "extensionsToTreatAsEsm": [".svelte"],
+  "moduleFileExtensions": ["ts", "js", "svelte"],
   "setupFilesAfterEnv": [
-    "@testing-library/jest-dom/extend-expect"
+    "@testing-library/jest-dom/extend-expect",
+    "<rootDir>/test/global_test_setup.ts"
   ],
   "modulePathIgnorePatterns": ["<rootDir>/dist/"],
   "testEnvironment": "node",
