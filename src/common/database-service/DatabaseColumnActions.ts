@@ -123,6 +123,101 @@ export class DatabaseColumnActions extends DatabaseActions {
         return rollupTimegrainReturnFormat(PreviewRollupInterval.year, minValue, maxValue);
     }
 
+    /** 
+     * Contains an as-of-this-commit unpublished algorithm for an M4-like line density reduction.
+     * This will take in an n-length time series and produce a pixels * 4 reduction of the time series
+     * that preserves the shape and trends.
+     * 
+     * This algorithm expects the source table to have a timestamp column and some kind of value column,
+     * meaning it expects the data to essentially already be aggregated.
+     * 
+     * It's important to note that this implemention is NOT the original M4 aggregation method, but a method
+     * that has the same basic understanding but is much faster. 
+     * 
+     * Nonetheless, we mostly use this to reduce a many-thousands-point-long time series to about 120 * 4 pixels. 
+     * Importantly, this function runs very fast. For more information about the original M4 method,
+     * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
+     */
+    public async createTimestampRollupReduction(
+        metadata: DatabaseMetadata, 
+        table:string, 
+        timestampColumn:string, 
+        valueColumn:string, 
+        pixels:number) {
+
+        const [timeSeriesLength] = await this.databaseClient.execute(`
+            SELECT count(*) as c FROM "${table}"
+        `)
+        if (timeSeriesLength.c < pixels * 4) {
+            return this.databaseClient.execute(`
+                SELECT "${timestampColumn}" as ts, "${valueColumn}" as count FROM "${table}"
+            `)
+        }
+        
+        const reduction = await this.databaseClient.execute(`
+        -- extract unix time
+        WITH Q as (
+            SELECT extract('epoch' from "${timestampColumn}") as t, "${valueColumn}" as v FROM "${table}"
+        ),
+        -- generate bounds
+        M as (
+            SELECT min(t) as t1, max(t) as t2, max(t) - min(t) as diff FROM Q
+        )
+        -- core logic
+        SELECT 
+            -- left boundary point
+            min(t) * 1000  as min_t, 
+            arg_min(v, t) as argmin_tv, 
+    
+            -- right boundary point
+            max(t) * 1000 as max_t, 
+            arg_max(v, t) as argmax_tv,
+    
+            -- smallest point within boundary
+            min(v) as min_v, 
+            arg_min(t, v) * 1000  as argmin_vt,
+    
+            -- largest point within boundary
+            max(v) as max_v, 
+            arg_max(t, v) * 1000  as argmax_vt,
+    
+            round(${pixels} * (t - (SELECT t1 FROM M)) / (SELECT diff FROM M)) AS bin
+    
+        FROM Q GROUP BY bin
+        ORDER BY bin
+        `)
+        return reduction.map((di => {
+            /** 
+             * Extract the four prototype points for each pixel bin,
+             * sort the points, then flatten the entire array.
+             */
+            let points = [
+                {
+                    ts: new Date(di.min_t),
+                    count: di.argmin_tv, bin: di.bin
+                },
+                {
+                    ts: new Date(di.argmin_vt),
+                    count: di.min_v, bin: di.bin
+                },
+                {
+                    ts: new Date(di.argmax_vt),
+                    count: di.max_v , bin: di.bin
+                },
+                {
+                    ts: new Date(di.max_t),
+                    count: di.argmax_tv, bin: di.bin
+                },
+            ]
+            /** Sort the final point set. */
+            points = points.sort((a,b) => {
+                if (a.ts === b.ts) return 0;
+                return a.ts < b.ts ? -1 : 1;
+            })
+            return points;
+        })).flat();
+    }
+
     /**
      * A single-pass heuristic for generating a count(*) over an entire timestamp column,
      * rolled up to a hopefully useful timegrain.
@@ -134,8 +229,9 @@ export class DatabaseColumnActions extends DatabaseActions {
      * in extreme cases.
      */
     public async estimateTimestampRollup(
-          metadata: DatabaseMetadata,
+          metadata:DatabaseMetadata,
           table:string, column:string, pixels = undefined, sampleSize = undefined) {
+        
         const {rollupInterval, minValue, maxValue} = await this.estimateIdealRollupInterval(metadata, table, column);
         const [ totalRow ] = await this.databaseClient.execute(`SELECT count(*) as c from "${table}"`);
         const total = totalRow.c;
@@ -149,6 +245,7 @@ export class DatabaseColumnActions extends DatabaseActions {
          */
         try {
             await this.databaseClient.execute(`CREATE TEMPORARY TABLE _ts_ AS (
+                -- generate a time series column that has the intended range
                 WITH template as (
                     SELECT 
                         generate_series as ts 
@@ -164,16 +261,21 @@ export class DatabaseColumnActions extends DatabaseActions {
                             ), 
                             interval ${rollupInterval})
                 ),
+                -- transform the original data, and optionally sample it.
                 transformed AS (
                     SELECT 
                         date_trunc('${rollupInterval.split(' ')[1]}', "${column}") as ts 
                     FROM "${table}"
                         ${sampleSize && sampleSize < total ? `USING SAMPLE ${(sampleSize / total) * 100}%` : ''}
                 ),
+                -- roll up the transformed data
                 series AS (
                     SELECT count(*) as count, ts from transformed 
                     GROUP BY ts ORDER BY ts
                 )
+                -- join the transformed data with the generated time series column,
+                -- coalescing the first value to get the 0-default when the rolled up data
+                -- does not have that value.
                 SELECT COALESCE(series.count * ${inflator}::FLOAT, 0) as count, template.ts from template
                 LEFT OUTER JOIN series ON template.ts = series.ts
                 ORDER BY template.ts
@@ -183,12 +285,7 @@ export class DatabaseColumnActions extends DatabaseActions {
         }
         
         // decide if the final result set has to be thrown out
-        const [{ count }] = await this.databaseClient.execute(`
-            SELECT 
-                count(*) as count
-                from _ts_`);
         
-        let results;
         let spark;
         
         if (pixels) {
@@ -197,79 +294,18 @@ export class DatabaseColumnActions extends DatabaseActions {
              * This variation will produce 4 points per pixel – the left bound, right bound,
              * the max, and the min.
              */
-            spark = await this.databaseClient.execute(`
-            WITH Q as (
-                SELECT extract('epoch' from ts) as t, "count" as v from _ts_
-            ),
-            M as (
-                SELECT min(t) as t1, max(t) as t2, max(t) - min(t) as diff FROM Q
-            )
-            SELECT 
-        
-                -- left boundary point
-                min(t) * 1000  as min_t, 
-                arg_min(v, t) as argmin_tv, 
-        
-                -- right boundary point
-                max(t) * 1000 as max_t, 
-                arg_max(v, t) as argmax_tv,
-        
-                -- smallest point within boundary
-                min(v) as min_v, 
-                arg_min(t, v) * 1000  as argmin_vt,
-        
-                -- largest point within boundary
-                max(v) as max_v, 
-                arg_max(t, v) * 1000  as argmax_vt,
-        
-                round(${pixels} * (t - (select t1 from M)) / (select diff from M)) AS bin
-        
-            FROM Q GROUP BY bin
-            ORDER BY bin
-            `)
-            spark = spark.map((di => {
-                /** 
-                 * Extract the four prototype points for each pixel bin,
-                 * sort the points, then flatten the entire array.
-                 */
-                let points = [
-                    {
-                        ts: new Date(di.min_t),
-                        count: di.argmin_tv, bin: di.bin
-                    },
-                    {
-                        ts: new Date(di.argmin_vt),
-                        count: di.min_v, bin: di.bin
-                    },
-                    {
-                        ts: new Date(di.argmax_vt),
-                        count: di.max_v , bin: di.bin
-                    },
-                    {
-                        ts: new Date(di.max_t),
-                        count: di.argmax_tv, bin: di.bin
-                    },
-                ]
-                /** Sort the final point set. */
-                points = points.sort((a,b) => {
-                    if (a.ts === b.ts) return 0;
-                    return a.ts < b.ts ? -1 : 1;
-                })
-                return points;
-            })).flat();
+            spark = await this.createTimestampRollupReduction(metadata, '_ts_', 'ts', 'count', pixels);
         } 
         /** Materialize the final time series. */
-        results = await this.databaseClient.execute(`SELECT * from _ts_`);
+        const results = await this.databaseClient.execute(`SELECT * from _ts_`);
         await this.databaseClient.execute(`DROP TABLE _ts_`);
 
         return {
             rollup: {
               results, 
-              rollupInterval: rollupInterval, 
-              reduced: (pixels && pixels * 4 <= count),
-              rows: total,
+              rollupInterval, 
               spark,
-              sampleSize: sampleSize
+              sampleSize
             }
         }
     }
