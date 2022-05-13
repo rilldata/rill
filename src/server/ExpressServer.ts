@@ -1,4 +1,4 @@
-import express from "express";
+import express, {Request, Response} from "express";
 import http from "http";
 import cors from "cors";
 import fileUpload from "express-fileupload";
@@ -9,6 +9,7 @@ import type { DataModelerStateService } from "$common/data-modeler-state-service
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import {existsSync, mkdirSync} from "fs";
+import {ActionStatus} from "$common/data-modeler-service/response/ActionResponse";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -40,6 +41,9 @@ export class ExpressServer {
             this.handleFileUpload((req as any).files.file);
             res.send("OK");
         });
+        this.app.get("/api/export", async (req, res) => {
+            this.handleFileExport(req, res);
+        });
 
         this.socketServer = new SocketServer(config, dataModelerService,
             dataModelerStateService, metricsService, this.server);
@@ -63,5 +67,22 @@ export class ExpressServer {
         const filePath = `${this.config.projectFolder}/tmp/${file.name}`;
         file.mv(filePath);
         await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [filePath]);
+    }
+
+    private async handleFileExport(req: Request, res: Response) {
+        const modelId = req.query.id as string;
+        const exportType = req.query.type === "csv" ? "exportToCsv" : "exportToParquet";
+        const fileName = decodeURIComponent(req.query.fileName as string);
+        const exportResp = await this.dataModelerService.dispatch(exportType,
+            [modelId, fileName]);
+        if (exportResp.status === ActionStatus.Success) {
+            res.setHeader("Content-Type","application/octet-stream");
+            res.setHeader("Content-Disposition",`attachment; filename="${fileName}"`);
+            console.log(process.cwd(), this.config.database.exportFolder, fileName);
+            res.sendFile(`${process.cwd()}/${this.config.database.exportFolder}/${fileName}`);
+        } else {
+            res.status(500);
+            res.send(`Failed to export.\n${exportResp.messages.map(message => message.message).join("\n")}`);
+        }
     }
 }

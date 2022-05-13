@@ -15,10 +15,10 @@ import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
 import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
 import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+import {config as appConfig} from "$lib/application-state-stores/application-store";
 
 import { formatInteger, formatBigNumberPercentage } from "$lib/util/formatters"
 
-import {dataModelerService} from "$lib/application-state-stores/application-store";
 import type {
     PersistentModelEntity
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
@@ -309,13 +309,16 @@ onMount(() => {
         <Menu on:escape={()=> { contextMenuOpen = false; }} on:item-select={() => { contextMenuOpen = false; }}>
             <MenuItem on:select={() => {
                 const exportFilename = currentModel.name.replace('.sql', '.parquet');
-                dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
+                window.open(`${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
+                    `&type=parquet&fileName=${encodeURIComponent(exportFilename)}`);
+                //dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
             }}>
-                Export as Parquet 
+                Export as Parquet
             </MenuItem>
             <MenuItem on:select={() => {
                 const exportFilename = currentModel.name.replace('.sql', '.csv');
-                dataModelerService.dispatch('exportToCsv', [currentModel.id, exportFilename]);
+                window.open(`${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
+                `&type=csv&fileName=${encodeURIComponent(exportFilename)}`);
             }}>
                 Export as CSV 
             </MenuItem>
