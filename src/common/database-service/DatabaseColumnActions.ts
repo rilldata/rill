@@ -4,8 +4,11 @@ import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
 import {sanitizeColumn} from "$common/utils/queryUtils";
 import {TIMESTAMPS} from "$lib/duckdb-data-types";
 
+import { PreviewRollupInterval } from '$lib/duckdb-data-types';
+
 const TOP_K_COUNT = 50;
 
+/** FIXME: these should be moved somewhere else. */
 export enum TimeGrain {
   milliseconds = "milliseconds",
   seconds = "seconds",
@@ -17,6 +20,7 @@ export enum TimeGrain {
   years = "years"
 }
 
+/** These are used for duckdb interval conversions. */
 const MICROS = {
   hour:   1000 * 1000 * 60 * 60,
   minute: 1000 * 1000 * 60,
@@ -90,33 +94,33 @@ export class DatabaseColumnActions extends DatabaseActions {
         let range = typeof r === 'number' ? {days: r, micros:0, months: 0} : r;
     
         if (range.days === 0 && range.micros <= MICROS.minute) {
-            return rollupTimegrainReturnFormat('1 millisecond', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.ms, minValue, maxValue);
         }
     
         if (range.days === 0 && range.micros > MICROS.minute && range.micros <= MICROS.minute * 60) {
-            return rollupTimegrainReturnFormat('1 second', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.second, minValue, maxValue);
         }
     
         if (range.days === 0 && range.micros <= MICROS.hour * 24) {
-            return rollupTimegrainReturnFormat('1 minute', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.minute, minValue, maxValue);
         }
         if (range.days < 7) {
-            return rollupTimegrainReturnFormat('1 hour', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.hour, minValue, maxValue);
         }
         if (range.days < 365) {
-            return rollupTimegrainReturnFormat('1 day', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
         }
     
         if (range.days < (365 * 20) && count > range.days * 15) {
-            return rollupTimegrainReturnFormat('1 day', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
         }
         if (range.days < (365 * 20)) {
-            return rollupTimegrainReturnFormat('1 day', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
         }
         if (range.days < (365 * 500)) {
-            return rollupTimegrainReturnFormat('1 month', minValue, maxValue);
+            return rollupTimegrainReturnFormat(PreviewRollupInterval.month, minValue, maxValue);
         } 
-        return rollupTimegrainReturnFormat('1 year', minValue, maxValue);
+        return rollupTimegrainReturnFormat(PreviewRollupInterval.year, minValue, maxValue);
     }
 
     /**

@@ -24,7 +24,7 @@ import { DEFAULT_COORDINATES } from '$lib/components/data-graphic/constants';
 import { createScrubAction } from '$lib/components/data-graphic/create-scrub-action';
 import { extent, bisector, max, min } from "d3-array";
 import { outline } from "$lib/components/data-graphic/outline";
-import { datePortion, timePortion, formatInteger, intervalToTimestring } from '$lib/util/formatters';
+import { datePortion, timePortion, formatInteger, intervalToTimestring, PreviewRollupIntervalFormatter } from '$lib/util/formatters';
 import type { Interval } from "$lib/util/formatters"
 import { writable } from 'svelte/store';
 import { createExtremumResolutionStore } from '../../extremum-resolution-store';
@@ -63,9 +63,12 @@ export let bottom = 4;
 export let buffer = 0
 
 /** text elements */
-// the gap b/t text nodes
 export let fontSize = 12;
+// the gap b/t text nodes
 export let textGap = 4;
+
+/** the datatype of this column */
+export let type:string;
 
 /** zoom elements */
 export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
@@ -162,13 +165,13 @@ $: lineDensity = Math.min(1,
      * 1. the "y-ish" distance travelled
      * the inverse of "total travel distance", which is the Y
      * gap size b/t successive points divided by the zoom window size;
-     * 2. time serires length / available X pixels
+     * 2. time series length / available X pixels
      * the time series divided by the total number of pixels in the existing
      * zoom window.
      * 
      * These heuristics could be refined, but this seems to provide a reasonable approximation for
      * the stroke width. (1) excels when lots of successive points are close together in the Y direction,
-     * whereas (1) excels when a line is very
+     * whereas (2) excels when a line is very, very noisy (and thus the X direction is the main constraint).
     */
     Math.max(
         2 / (totalTravelDistance / (($X($xMax) - $X($xMin)) * scale)),
@@ -176,7 +179,7 @@ $: lineDensity = Math.min(1,
     )
     
 );
-/** the line opacity calculation is just a function of the availble pixels divided
+/** the line opacity calculation is just a function of the available pixels divided
  * by the window length, capped at 1. This seems to work well in practice.
 */
 $: opacity = Math.min(1, 1 + (($X($xMax)  - $X($xMin)) * scale) / dataWindow.length / 2);
@@ -259,48 +262,66 @@ $: zoomMaxBound = ($zoomCoords.start.x ?
  * Use this shiftClickAction to copy the timestamp that is currently moused over.
  */
 const { shiftClickAction } = createShiftClickAction();
+
 </script>
 <div style:max-width="{width}px">
-    <div class="text-gray-600" style="
+    <div class="text-gray-600 pb-3" style="
         display: grid;
         grid-template-columns: auto auto;
     ">
         <Tooltip distance={16} location="top">
-        <div style="grid-row: 1; grid-column: 1;">
-            {#if interval}
-            RANGE {intervalToTimestring(interval)}
-            {/if}
-        </div>
-        <TooltipContent slot="tooltip-content">
-            <div style:max-width="315px">
-                The range of this timestamp is {intervalToTimestring(interval)}.
+                
+            <div style:font-weight="600">
+                {type}
             </div>
-        </TooltipContent>
+
+            <TooltipContent slot="tooltip-content">
+                <div style:max-width="315px">
+                    this column has the {type} type.
+                </div>
+            </TooltipContent>
         </Tooltip>
+       
         <Tooltip distance={16} location="top">
-            <div class="text-right" style="grid-row: 1; column: 2;">
-                {#if rollupGrain}
-                    ROLLUP {rollupGrain}
+            <div class="text-right">
+                {#if estimatedSmallestTimeGrain}
+                    min. interval <b  style:font-weight="600">{estimatedSmallestTimeGrain}</b>
+                {/if}
+            </div>
+            <TooltipContent slot="tooltip-content">
+                <div style:width="315px">
+                    The smallest available time interval in this column appears to be at the <i>{estimatedSmallestTimeGrain}</i> level.
+                </div>
+            </TooltipContent>
+        </Tooltip>
+
+        <Tooltip distance={16} location="top">
+            <div>
+                {#if interval}
+                    {intervalToTimestring(interval)}
                 {/if}
             </div>
             <TooltipContent slot="tooltip-content">
                 <div style:max-width="315px">
-                    This timestamp column is aggregated so each point on the time series is <i>{rollupGrain}</i>.
+                    The range of this timestamp is {intervalToTimestring(interval)}.
+                </div>
+            </TooltipContent>
+            </Tooltip>
+
+        <Tooltip distance={16} location="top">
+            <div class="text-right">
+                {#if rollupGrain}
+                    showing <b>{PreviewRollupIntervalFormatter[rollupGrain]}</b> row counts
+                {/if}
+            </div>
+            <TooltipContent slot="tooltip-content">
+                <div style:max-width="315px">
+                    This timestamp column is aggregated so each point on the time series represents
+                        a rollup count at the <b style:font-weight="600">{rollupGrain} level</b>.
                 </div>
             </TooltipContent>
         </Tooltip>
-        <Tooltip distance={16} location="top">
-        <div class="text-right" style="grid-row: 2; grid-column: 2;">
-            {#if estimatedSmallestTimeGrain}
-                GRAIN {estimatedSmallestTimeGrain}
-            {/if}
-        </div>
-        <TooltipContent slot="tooltip-content">
-            <div style:width="315px">
-                The smallest available grain in this column is at the <i>{estimatedSmallestTimeGrain}</i> level.
-            </div>
-        </TooltipContent>
-        </Tooltip>
+        
     </div>
     <Tooltip location="right" alignment="center" distance={32}>
     <svg width={width} height={height}
@@ -308,13 +329,13 @@ const { shiftClickAction } = createShiftClickAction();
         use:scrubAction
         use:scrollAction
         use:shiftClickAction
+
         on:shift-click={async () => {
             let exportedValue = `TIMESTAMP '${nearestPoint[xAccessor].toISOString()}'`
             await navigator.clipboard.writeText(exportedValue);
             setTimeout(() => {
                 notifications.send({ message: `copied ${exportedValue} to clipboard`});
-            }, 200)
-            
+            }, 200)  
         }}
 
         on:scrolling={(event) => {
@@ -470,6 +491,7 @@ const { shiftClickAction } = createShiftClickAction();
                     <text
                         x={plotLeft} 
                         y={fontSize} 
+                        class="fill-gray-500"
                         use:outline
                     >
                         {datePortion(nearestPoint[xAccessor])}
@@ -477,6 +499,7 @@ const { shiftClickAction } = createShiftClickAction();
                     <text
                         x={plotLeft} 
                         y={(fontSize) * 2 + textGap}
+                        class="fill-gray-500"
                         use:outline
                 >
                     {timePortion(nearestPoint[xAccessor])}
@@ -484,6 +507,7 @@ const { shiftClickAction } = createShiftClickAction();
                 <text
                     x={plotLeft}
                     y={(fontSize) * 3 + textGap * 2} 
+                    class="fill-gray-500"
                     use:outline
 
                 >

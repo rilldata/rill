@@ -1,4 +1,5 @@
-import { INTERVALS, INTEGERS, FLOATS, CATEGORICALS, TIMESTAMPS, BOOLEANS } from "$lib/duckdb-data-types";
+import { INTERVALS, INTEGERS, FLOATS, CATEGORICALS, TIMESTAMPS, BOOLEANS, PreviewRollupInterval } from "$lib/duckdb-data-types";
+import type { Interval } from "$lib/duckdb-data-types";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
 
@@ -26,8 +27,6 @@ export function formatBigNumberPercentage(v) {
 export function removeTimezoneOffset(dt) {
     return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000)
 }
-
-//export const formatPercentage = format('.2%');
 
 export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
     let fmt = timeFormat('%b %d, %Y %I:%M:%S');
@@ -64,12 +63,6 @@ export function microsToTimestring(microseconds:number) {
     return `${sign == 1 ? '' : '-'}${zeroPad(hours)}:${zeroPad(minutes)}:${zeroPad(seconds)}.${msPad(ms)}`
 }
 
-interface Interval {
-    months:number;
-    days:number;
-    micros:number;
-}
-
 export function intervalToTimestring(interval:Interval) {
     const months = interval.months ? `${formatInteger(interval.months)} month${interval.months > 1 ? 's' : ''} ` : '';
     const days = interval.days ? `${formatInteger(interval.days)} day${interval.days > 1 ? 's' : ''} ` : '';
@@ -104,4 +97,15 @@ export function formatDataType(value:any, type:string) {
     } else if (BOOLEANS.has(type)) {
         return value;
     }
+}
+
+/** These will be used in the string */
+export const PreviewRollupIntervalFormatter = {
+    [PreviewRollupInterval.ms]: 'millisecond-level',         /** showing rows binned by ms */
+    [PreviewRollupInterval.second]: 'second-level', /** showing rows binned by second */
+    [PreviewRollupInterval.minute]: 'minute-level', /** showing rows binned by minute */
+    [PreviewRollupInterval.hour]: 'hourly',          /** showing hourly counts */
+    [PreviewRollupInterval.day]: 'daily',            /** showing daily counts */
+    [PreviewRollupInterval.month]: 'monthly',        /** showing monthly counts */
+    [PreviewRollupInterval.year]: 'yearly',          /** showing yearly counts */
 }

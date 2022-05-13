@@ -174,7 +174,7 @@ function convert(d) {
                     <Tooltip location="right" alignment="center" distance={8}>
                         {#if summary?.rollup?.spark}
                             
-                            <TimestampSpark 
+                            <TimestampSpark
                                 data={convert(summary.rollup.spark)}
                                 xAccessor=ts
                                 yAccessor=count
@@ -186,11 +186,14 @@ function convert(d) {
                                 right={0}
                                 area
                             />
+
                         {:else}
+
                             <Histogram data={summary.histogram} width={summaryWidthSize} height={18} 
                                 fillColor={DATA_TYPE_COLORS['TIMESTAMP'].vizFillClass}
                                 baselineStrokeColor={DATA_TYPE_COLORS['TIMESTAMP'].vizStrokeClass}    
                             />
+
                         {/if}
                             <TooltipContent slot="tooltip-content" >
                                 the time series
@@ -274,11 +277,12 @@ function convert(d) {
                     max={summary.statistics.max}
                 />
             </div>
-            {:else if TIMESTAMPS.has(type) && (summary?.histogram?.length || summary.rollup)}
+            {:else if TIMESTAMPS.has(type) && (summary?.histogram?.length || summary?.rollup)}
                 <div class="pl-{indentLevel === 1 ? 16 : 10}">
                     <!-- pl-14 pl-10 -->
                     {#if summary.rollup}
                         <TimestampDetail 
+                            {type}
                             data={summary.rollup.results.map(di => {
                                 let pi = {...di};
                                 pi.ts = new Date(pi.ts);
