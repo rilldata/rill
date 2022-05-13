@@ -74,11 +74,11 @@ export class CreateTimestampRollupReduction extends FunctionalTestBase  {
         this.dbClient = this.databaseService.getDatabaseClient();
     }
 
-    public seriesGeneratedTimegrainData(): DataProviderData<[RollupReductionTestCase]> {
+    public rollupReductionTestCase(): DataProviderData<[RollupReductionTestCase]> {
         return rollupReduction;
     }
 
-    @TestBase.Test("seriesGeneratedTimegrainData")
+    @TestBase.Test("rollupReductionTestCase")
     public async shouldEstimateInterval(args:RollupReductionTestCase) {
         /** create a _test view with a single ts column */
         await this.dbClient.execute(generateSeries('_test', args.start, args.end, args.interval, true));
