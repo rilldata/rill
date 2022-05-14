@@ -45,6 +45,17 @@ function onTableDrop(e: DragEvent) {
     uploadTableFiles(e.dataTransfer.files, `${config.server.serverUrl}/api`);
   }
 }
+
+/** FIXME: what is the correct type for this kind of event? */
+function onManualUpload(e: Event) {
+  preventDefault(e);
+  // @ts-ignore
+  if (e?.target?.files) {
+    // @ts-ignore
+    uploadTableFiles(e.target.files, `${config.server.serverUrl}/api`);
+  }
+}
+
 function preventDefault(e: DragEvent) {
   e.preventDefault();
   e.stopPropagation();
@@ -88,7 +99,7 @@ function preventDefault(e: DragEvent) {
 
       <!-- <div style:height="80px"></div> -->
 
-          <div class='pl-4 pb-3 pt-5'
+          <div class='pl-4 pb-3 pr-4 pt-5 grid justify-between' style="grid-template-columns: auto max-content;"
                on:drop={onTableDrop}
                on:drag={preventDefault}
                on:dragenter={preventDefault}
@@ -98,6 +109,20 @@ function preventDefault(e: DragEvent) {
               <h4 class='flex flex-row items-center gap-x-2'><ParquetIcon size="16px" /> Tables</h4>
 
             </CollapsibleSectionTitle>
+            
+            <ContextButton 
+                id={'create-table-button'}
+                tooltipText="import csv or parquet file into a table" on:click={async () => {
+                  const input = document.createElement('input');
+                  input.type = "file"
+                  input.multiple = true;
+                  input.addEventListener("change", onManualUpload, false);
+                  input.click();
+
+                }
+              }>
+                <AddIcon />
+              </ContextButton>
           </div>
             {#if showTables}
               <div class="pb-6"
