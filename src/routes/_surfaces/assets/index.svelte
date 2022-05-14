@@ -15,7 +15,7 @@ import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
-import {config, dataModelerService} from "$lib/application-state-stores/application-store";
+import { dataModelerService} from "$lib/application-state-stores/application-store";
 import type { DerivedTableStore, PersistentTableStore } from "$lib/application-state-stores/table-stores";
 import type { DerivedModelStore, PersistentModelStore } from "$lib/application-state-stores/model-stores";
 import type {
@@ -24,8 +24,7 @@ import type {
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 import { assetVisibilityTween, assetsVisible, layout } from "$lib/application-state-stores/layout-store";
-import {uploadTableFiles} from "$lib/util/tableFileUpload";
-import notifications from "$lib/components/notifications";
+import { onManualSourceUpload, onSourceDrop } from "$lib/util/tableFileUpload"
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
@@ -39,42 +38,6 @@ $: activeModel = $store && $persistentModelStore &&
     $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
 let showTables = true;
 let showModels = true;
-
-function reportFileErrors(invalidFiles:File[]) {
-  notifications.send({ 
-      message: `${invalidFiles.length} file${invalidFiles.length !== 1 ? 's are' : " is"} invalid: \n${invalidFiles.map(file => file.name).join('\n')}`,
-      options: {
-        width: 400
-      }
-    })
-}
-
-/** Handles the uploading of the datasets. Any invalid files will be reported
- * through reportFileErrors.
- */
-function handleFileUploads(filesArray:File[]) {
-  let invalidFiles = [];
-  if (filesArray) {
-    invalidFiles = uploadTableFiles(filesArray, `${config.server.serverUrl}/api`);
-  }
-  if (invalidFiles.length) {
-    reportFileErrors(invalidFiles);
-  }
-}
-
-function onTableDrop(e: DragEvent) {
-  const files = e?.dataTransfer?.files;
-  if (files) {
-    handleFileUploads(Array.from(files));
-  }
-}
-
-function onManualUpload(e: Event) {
-  const files = (<HTMLInputElement>e.target)?.files as FileList;
-  if (files) {
-    handleFileUploads(Array.from(files));
-  }
-}
 
 </script>
 
@@ -115,7 +78,7 @@ function onManualUpload(e: Event) {
       <!-- <div style:height="80px"></div> -->
 
           <div class='pl-4 pb-3 pr-4 pt-5 grid justify-between' style="grid-template-columns: auto max-content;"
-               on:drop|preventDefault|stopPropagation={onTableDrop}
+               on:drop|preventDefault|stopPropagation={onSourceDrop}
                on:drag|preventDefault|stopPropagation
                on:dragenter|preventDefault|stopPropagation
                on:dragover|preventDefault|stopPropagation
@@ -139,7 +102,7 @@ function onManualUpload(e: Event) {
                   const input = document.createElement('input');
                   input.type = "file";
                   input.multiple = true;
-                  input.addEventListener("change", onManualUpload, false);
+                  input.addEventListener("change", onManualSourceUpload, false);
                   input.click();
                 }
               }>
@@ -149,7 +112,7 @@ function onManualUpload(e: Event) {
             {#if showTables}
               <div class="pb-6"
                    transition:slide|local={{duration:200}}
-                   on:drop={onTableDrop}
+                   on:drop={onSourceDrop}
                    on:drag|preventDefault|stopPropagation
                    on:dragenter|preventDefault|stopPropagation
                    on:dragover|preventDefault|stopPropagation
