@@ -14,17 +14,23 @@
    id: string;
    type: string;
    message: string;
+   options?: Options;
+ }
+
+ interface Options {
+   width?: number;
  }
  
  export function createNotificationStore(): NotificationStore {
    const _notification = writable({ id: undefined });
    let timeout: ReturnType<typeof setTimeout>;
  
-   function send({ message, type = "default" }): void {
+   function send({ message, type = "default", options = {} }): void {
      const notificationMessage: NotificationMessage = {
        id: id(),
        type,
-       message
+       message,
+       options
      };
      _notification.set(notificationMessage);
    }

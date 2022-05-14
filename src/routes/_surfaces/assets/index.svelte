@@ -25,6 +25,7 @@ import { EntityType } from "$common/data-modeler-state-service/entity-state-serv
 
 import { assetVisibilityTween, assetsVisible, layout } from "$lib/application-state-stores/layout-store";
 import {uploadTableFiles} from "$lib/util/tableFileUpload";
+import notifications from "$lib/components/notifications";
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
@@ -39,10 +40,23 @@ $: activeModel = $store && $persistentModelStore &&
 let showTables = true;
 let showModels = true;
 
+function reportFileErrors(invalidFiles:File[]) {
+  notifications.send({ 
+      message: `${invalidFiles.length} file${invalidFiles.length !== 1 ? 's are' : " is"} invalid: \n${invalidFiles.map(file => file.name).join('\n')}`,
+      options: {
+        width: 400
+      }
+    })
+}
+
 function onTableDrop(e: DragEvent) {
   preventDefault(e);
+  let invalidFiles = [];
   if (e.dataTransfer?.files) {
-    uploadTableFiles(e.dataTransfer.files, `${config.server.serverUrl}/api`);
+    invalidFiles = uploadTableFiles(e.dataTransfer.files, `${config.server.serverUrl}/api`);
+  }
+  if (invalidFiles.length) {
+    reportFileErrors(invalidFiles);
   }
 }
 
@@ -50,9 +64,13 @@ function onTableDrop(e: DragEvent) {
 function onManualUpload(e: Event) {
   preventDefault(e);
   // @ts-ignore
+  let invalidFiles = [];
   if (e?.target?.files) {
     // @ts-ignore
-    uploadTableFiles(e.target.files, `${config.server.serverUrl}/api`);
+    invalidFiles = uploadTableFiles(e.target.files, `${config.server.serverUrl}/api`);
+  }
+  if (invalidFiles.length) { 
+    reportFileErrors(invalidFiles);
   }
 }
 

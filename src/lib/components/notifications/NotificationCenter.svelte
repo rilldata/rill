@@ -5,7 +5,7 @@
   
   {#key $store.id}
     {#if $store.id}
-      <Notification location=bottom>
+      <Notification location=bottom {...$store.options}>
           {$store.message}
       </Notification>
     {/if}
