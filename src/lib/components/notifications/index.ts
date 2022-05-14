@@ -1,18 +1,25 @@
  import { writable, derived } from "svelte/store";
  import type { Readable } from "svelte/store";
+import type { Socket } from "socket.io";
  
  const NOTIFICATION_TIMEOUT = 2000;
  
  export interface NotificationStore extends Readable<object> {
    timeoutID: ReturnType<typeof setTimeout>;
-   send: Function;
-   clear: Function;
-   listenToSocket: Function;
+   send: (args:NotificationMssageArguments) => void;
+   clear: () => void;
+   listenToSocket: (s:Socket) => void;
  }
  
+interface NotificationMessageArguments {
+  message: string;
+  type?: string;
+  options?: Options;
+}
+
  interface NotificationMessage {
    id: string;
-   type: string;
+   type?: string;
    message: string;
    options?: Options;
  }
@@ -25,10 +32,10 @@
    const _notification = writable({ id: undefined });
    let timeout: ReturnType<typeof setTimeout>;
  
-   function send({ message, type = "default", options = {} }): void {
+   function send({ message, type = "default", options = {} }: NotificationMessageArguments): void {
      const notificationMessage: NotificationMessage = {
        id: id(),
-       type,
+       type: type,
        message,
        options
      };

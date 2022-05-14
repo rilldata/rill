@@ -49,34 +49,31 @@ function reportFileErrors(invalidFiles:File[]) {
     })
 }
 
-function onTableDrop(e: DragEvent) {
-  preventDefault(e);
+/** Handles the uploading of the datasets. Any invalid files will be reported
+ * through reportFileErrors.
+ */
+function handleFileUploads(filesArray:File[]) {
   let invalidFiles = [];
-  if (e.dataTransfer?.files) {
-    invalidFiles = uploadTableFiles(e.dataTransfer.files, `${config.server.serverUrl}/api`);
+  if (filesArray) {
+    invalidFiles = uploadTableFiles(filesArray, `${config.server.serverUrl}/api`);
   }
   if (invalidFiles.length) {
     reportFileErrors(invalidFiles);
   }
 }
 
-/** FIXME: what is the correct type for this kind of event? */
-function onManualUpload(e: Event) {
-  preventDefault(e);
-  // @ts-ignore
-  let invalidFiles = [];
-  if (e?.target?.files) {
-    // @ts-ignore
-    invalidFiles = uploadTableFiles(e.target.files, `${config.server.serverUrl}/api`);
-  }
-  if (invalidFiles.length) { 
-    reportFileErrors(invalidFiles);
+function onTableDrop(e: DragEvent) {
+  const files = e?.dataTransfer?.files;
+  if (files) {
+    handleFileUploads(Array.from(files));
   }
 }
 
-function preventDefault(e: DragEvent) {
-  e.preventDefault();
-  e.stopPropagation();
+function onManualUpload(e: Event) {
+  const files = (<HTMLInputElement>e.target)?.files as FileList;
+  if (files) {
+    handleFileUploads(Array.from(files));
+  }
 }
 
 </script>
@@ -118,11 +115,11 @@ function preventDefault(e: DragEvent) {
       <!-- <div style:height="80px"></div> -->
 
           <div class='pl-4 pb-3 pr-4 pt-5 grid justify-between' style="grid-template-columns: auto max-content;"
-               on:drop={onTableDrop}
-               on:drag={preventDefault}
-               on:dragenter={preventDefault}
-               on:dragover={preventDefault}
-               on:dragleave={preventDefault}>
+               on:drop|preventDefault|stopPropagation={onTableDrop}
+               on:drag|preventDefault|stopPropagation
+               on:dragenter|preventDefault|stopPropagation
+               on:dragover|preventDefault|stopPropagation
+               on:dragleave|preventDefault|stopPropagation>
             <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
               <h4 class='flex flex-row items-center gap-x-2'><ParquetIcon size="16px" /> Tables</h4>
 
@@ -130,7 +127,15 @@ function preventDefault(e: DragEvent) {
             
             <ContextButton 
                 id={'create-table-button'}
-                tooltipText="import csv or parquet file into a table" on:click={async () => {
+                tooltipText="import csv or parquet file into a table" on:click={
+                /** 
+                 * Manual file upload
+                 * ------------------
+                 * creates a file input element, adds a callback to upload,
+                 * then clicks it.
+                 * 
+                */
+                async () => {
                   const input = document.createElement('input');
                   input.type = "file";
                   input.multiple = true;
@@ -145,10 +150,10 @@ function preventDefault(e: DragEvent) {
               <div class="pb-6"
                    transition:slide|local={{duration:200}}
                    on:drop={onTableDrop}
-                   on:drag={preventDefault}
-                   on:dragenter={preventDefault}
-                   on:dragover={preventDefault}
-                   on:dragleave={preventDefault}>
+                   on:drag|preventDefault|stopPropagation
+                   on:dragenter|preventDefault|stopPropagation
+                   on:dragover|preventDefault|stopPropagation
+                   on:dragleave|preventDefault|stopPropagation >
               {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
                 <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
                 {#each ($persistentTableStore.entities) as { path, tableName, id} (id)}
