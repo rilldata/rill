@@ -6,7 +6,7 @@ import type { Socket } from "socket.io";
  
  export interface NotificationStore extends Readable<object> {
    timeoutID: ReturnType<typeof setTimeout>;
-   send: (args:NotificationMssageArguments) => void;
+   send: (args:NotificationMessageArguments) => void;
    clear: () => void;
    listenToSocket: (s:Socket) => void;
  }
