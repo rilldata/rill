@@ -24,7 +24,7 @@ import type {
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 import { assetVisibilityTween, assetsVisible, layout } from "$lib/application-state-stores/layout-store";
-import { onManualSourceUpload, onSourceDrop } from "$lib/util/tableFileUpload"
+import { onManualSourceUpload, onSourceDrop } from "$lib/util/file-upload"
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
