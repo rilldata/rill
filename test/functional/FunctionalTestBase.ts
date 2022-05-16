@@ -13,130 +13,173 @@ import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import {
-    EntityRecord,
-    EntityStateService,
-    EntityStatus,
-    EntityType,
-    StateType
+  EntityRecord,
+  EntityStateService,
+  EntityStatus,
+  EntityType,
+  StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type {
-    PersistentTableEntity
-} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import type {
-    DerivedTableEntity
-} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import { dataModelerStateServiceClientFactory } from "$common/clientFactory";
-import type {
-    PersistentModelEntity
-} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type {
-    DerivedModelEntity
-} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { ActiveEntity } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import { RillDeveloper } from "$server/RillDeveloper";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
-    protected clientDataModelerStateService: DataModelerStateService;
-    protected clientDataModelerService: DataModelerService;
+  protected clientDataModelerStateService: DataModelerStateService;
+  protected clientDataModelerService: DataModelerService;
 
-    protected serverDataModelerStateService: DataModelerStateService;
-    protected serverDataModelerService: DataModelerService;
-    protected socketServer: SocketServerMock;
-    protected rillDeveloper: RillDeveloper;
+  protected serverDataModelerStateService: DataModelerStateService;
+  protected serverDataModelerService: DataModelerService;
+  protected socketServer: SocketServerMock;
+  protected rillDeveloper: RillDeveloper;
 
-    @TestBase.BeforeSuite()
-    public async setup(configOverride?: RootConfig): Promise<void> {
-        this.clientDataModelerStateService = dataModelerStateServiceClientFactory()
-        this.clientDataModelerService = new DataModelerSocketServiceMock(this.clientDataModelerStateService);
+  @TestBase.BeforeSuite()
+  public async setup(configOverride?: RootConfig): Promise<void> {
+    this.clientDataModelerStateService = dataModelerStateServiceClientFactory();
+    this.clientDataModelerService = new DataModelerSocketServiceMock(
+      this.clientDataModelerStateService
+    );
 
-        const config = configOverride ?? new RootConfig({
-            database: new DatabaseConfig({ databaseName: ":memory:" }),
-            state: new StateConfig({ autoSync: false }),
-            projectFolder: "temp/test",
-        });
-        this.rillDeveloper = RillDeveloper.getRillDeveloper(config);
-        this.serverDataModelerStateService = this.rillDeveloper.dataModelerStateService;
-        this.serverDataModelerService = this.rillDeveloper.dataModelerService;
-        this.socketServer = new SocketServerMock(
-            this.serverDataModelerService, this.serverDataModelerStateService,
-            this.clientDataModelerService as DataModelerSocketServiceMock,
+    const config =
+      configOverride ??
+      new RootConfig({
+        database: new DatabaseConfig({ databaseName: ":memory:" }),
+        state: new StateConfig({ autoSync: false }),
+        projectFolder: "temp/test",
+      });
+    this.rillDeveloper = RillDeveloper.getRillDeveloper(config);
+    this.serverDataModelerStateService =
+      this.rillDeveloper.dataModelerStateService;
+    this.serverDataModelerService = this.rillDeveloper.dataModelerService;
+    this.socketServer = new SocketServerMock(
+      this.serverDataModelerService,
+      this.serverDataModelerStateService,
+      this.clientDataModelerService as DataModelerSocketServiceMock
+    );
+    (
+      this.clientDataModelerService as DataModelerSocketServiceMock
+    ).socketServerMock = this.socketServer;
+
+    await this.rillDeveloper.init();
+    await this.clientDataModelerService.init();
+    await this.socketServer.init();
+  }
+
+  @TestBase.AfterSuite()
+  public async teardown(): Promise<void> {
+    await this.rillDeveloper?.destroy();
+    await this.socketServer?.destroy();
+  }
+
+  protected async loadTestTables(): Promise<void> {
+    await Promise.all(
+      ParquetFileTestData.subData.map(async (parquetFileData) => {
+        await this.clientDataModelerService.dispatch(
+          "addOrUpdateTableFromFile",
+          [`${DATA_FOLDER}/${parquetFileData.title}`]
         );
-        (this.clientDataModelerService as DataModelerSocketServiceMock).socketServerMock = this.socketServer;
+      })
+    );
+    await this.waitForTables();
+  }
 
-        await this.rillDeveloper.init();
-        await this.clientDataModelerService.init();
-        await this.socketServer.init();
-    }
+  protected async waitForTables(): Promise<void> {
+    await this.waitForEntity(EntityType.Table);
+    await asyncWait(100);
+  }
+  protected async waitForModels(): Promise<void> {
+    await this.waitForEntity(EntityType.Model);
+    await asyncWait(100);
+  }
 
-    @TestBase.AfterSuite()
-    public async teardown(): Promise<void> {
-        await this.rillDeveloper?.destroy();
-        await this.socketServer?.destroy();
-    }
+  protected getTables(
+    field: string,
+    value: any
+  ): [PersistentTableEntity, DerivedTableEntity] {
+    return this.getStatesForEntityType(EntityType.Table, field, value) as [
+      PersistentTableEntity,
+      DerivedTableEntity
+    ];
+  }
+  protected getModels(
+    field: string,
+    value: any
+  ): [PersistentModelEntity, DerivedModelEntity] {
+    return this.getStatesForEntityType(EntityType.Model, field, value) as [
+      PersistentModelEntity,
+      DerivedModelEntity
+    ];
+  }
 
-    protected async loadTestTables(): Promise<void> {
-        await Promise.all(ParquetFileTestData.subData.map(async (parquetFileData) => {
-            await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [`${DATA_FOLDER}/${parquetFileData.title}`]);
-        }));
-        await this.waitForTables();
-    }
+  protected assertColumns(
+    profileColumns: ProfileColumn[],
+    columns: TestDataColumns
+  ): void {
+    profileColumns.forEach((profileColumn, idx) => {
+      expect(profileColumn.name).toBe(columns[idx].name);
+      expect(profileColumn.type).toBe(columns[idx].type);
+      expect(profileColumn.nullCount > 0).toBe(columns[idx].isNull);
+      // TODO: assert summary
+      // console.log(profileColumn.name, profileColumn.summary);
+    });
+  }
 
-    protected async waitForTables(): Promise<void> {
-        await this.waitForEntity(EntityType.Table);
-        await asyncWait(100);
-    }
-    protected async waitForModels(): Promise<void> {
-        await this.waitForEntity(EntityType.Model);
-        await asyncWait(100);
-    }
+  protected getActiveEntity(): ActiveEntity {
+    return this.clientDataModelerStateService.getApplicationState()
+      .activeEntity;
+  }
 
-    protected getTables(field: string, value: any): [PersistentTableEntity, DerivedTableEntity] {
-        return this.getStatesForEntityType(EntityType.Table, field, value) as
-            [PersistentTableEntity, DerivedTableEntity];
-    }
-    protected getModels(field: string, value: any): [PersistentModelEntity, DerivedModelEntity] {
-        return this.getStatesForEntityType(EntityType.Model, field, value) as
-            [PersistentModelEntity, DerivedModelEntity];
-    }
+  private async waitForEntity(entityType: EntityType): Promise<void> {
+    await asyncWait(200);
+    await waitUntil(() => {
+      const currentState = this.clientDataModelerStateService
+        .getEntityStateService(entityType, StateType.Derived)
+        .getCurrentState();
+      return (currentState.entities as any[]).every(
+        (item) => item.status === EntityStatus.Idle
+      );
+    });
+  }
 
-    protected assertColumns(profileColumns: ProfileColumn[], columns: TestDataColumns): void {
-        profileColumns.forEach((profileColumn, idx) => {
-            expect(profileColumn.name).toBe(columns[idx].name);
-            expect(profileColumn.type).toBe(columns[idx].type);
-            expect(profileColumn.nullCount > 0).toBe(columns[idx].isNull);
-            // TODO: assert summary
-            // console.log(profileColumn.name, profileColumn.summary);
-        });
-    }
+  private getEntityByField(
+    entityType: EntityType,
+    stateType: StateType,
+    field: string,
+    value: any
+  ): EntityRecord {
+    return (
+      this.clientDataModelerStateService.getEntityStateService(
+        entityType,
+        stateType
+      ) as EntityStateService<any>
+    ).getByField(field, value);
+  }
 
-    protected getActiveEntity(): ActiveEntity {
-        return this.clientDataModelerStateService
-            .getApplicationState().activeEntity;
-    }
-
-    private async waitForEntity(entityType: EntityType): Promise<void> {
-        await asyncWait(200);
-        await waitUntil(() => {
-            const currentState = this.clientDataModelerStateService
-                .getEntityStateService(entityType, StateType.Derived)
-                .getCurrentState();
-            return (currentState.entities as any[]).every(item => item.status === EntityStatus.Idle);
-        });
-    }
-
-    private getEntityByField(entityType: EntityType, stateType: StateType,
-                             field: string, value: any): EntityRecord {
-        return (this.clientDataModelerStateService
-            .getEntityStateService(entityType, stateType) as EntityStateService<any>)
-            .getByField(field, value);
-    }
-
-    private getStatesForEntityType(entityType: EntityType, field: string, value: any): [EntityRecord, EntityRecord] {
-        const persistent = this.getEntityByField(entityType, StateType.Persistent, field, value);
-        return [
-            persistent,
-            persistent ? this.getEntityByField(entityType, StateType.Derived, "id", persistent.id) : undefined,
-        ];
-    }
+  private getStatesForEntityType(
+    entityType: EntityType,
+    field: string,
+    value: any
+  ): [EntityRecord, EntityRecord] {
+    const persistent = this.getEntityByField(
+      entityType,
+      StateType.Persistent,
+      field,
+      value
+    );
+    return [
+      persistent,
+      persistent
+        ? this.getEntityByField(
+            entityType,
+            StateType.Derived,
+            "id",
+            persistent.id
+          )
+        : undefined,
+    ];
+  }
 }
