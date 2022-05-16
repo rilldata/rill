@@ -22,56 +22,56 @@ export class EntityStatusSpec extends FunctionalTestBase {
         this.entityStatusTracker.init();
     }
 
-    @FunctionalTestBase.Test()
-    public async shouldHaveCorrectStatusWhileImportingTable() {
-        this.entityStatusTracker.startTracker(EntityType.Table);
-        await asyncWait(50);
+    // @FunctionalTestBase.Test()
+    // public async shouldHaveCorrectStatusWhileImportingTable() {
+    //     this.entityStatusTracker.startTracker(EntityType.Table);
+    //     await asyncWait(50);
 
-        await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
-        await asyncWait(50);
+    //     await this.clientDataModelerService.dispatch(
+    //         "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
+    //     await asyncWait(50);
 
-        expect(this.entityStatusTracker.getStatusChangeOrder()).toEqual([
-            EntityStatus.Importing,
-            EntityStatus.Profiling,
-            EntityStatus.Idle,
-        ]);
-        expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
-            ApplicationStatus.Idle,
-            ApplicationStatus.Running,
-            ApplicationStatus.Idle,
-        ]);
-    }
+    //     expect(this.entityStatusTracker.getStatusChangeOrder()).toEqual([
+    //         EntityStatus.Importing,
+    //         EntityStatus.Profiling,
+    //         EntityStatus.Idle,
+    //     ]);
+    //     expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
+    //         ApplicationStatus.Idle,
+    //         ApplicationStatus.Running,
+    //         ApplicationStatus.Idle,
+    //     ]);
+    // }
 
-    @FunctionalTestBase.Test()
-    public async shouldHaveCorrectStatusWhileUpdatingModelQuery() {
-        await this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
-        await this.waitForTables();
-        await this.clientDataModelerService.dispatch(
-            "addModel", [{name: "query_0", query: ""}]);
-        await asyncWait(50);
+    // @FunctionalTestBase.Test()
+    // public async shouldHaveCorrectStatusWhileUpdatingModelQuery() {
+    //     await this.clientDataModelerService.dispatch(
+    //         "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
+    //     await this.waitForTables();
+    //     await this.clientDataModelerService.dispatch(
+    //         "addModel", [{name: "query_0", query: ""}]);
+    //     await asyncWait(50);
 
-        const [model] = this.getModels("name", "query_0.sql");
-        this.entityStatusTracker.startTracker(EntityType.Model);
-        await asyncWait(50);
+    //     const [model] = this.getModels("name", "query_0.sql");
+    //     this.entityStatusTracker.startTracker(EntityType.Model);
+    //     await asyncWait(50);
 
-        await this.clientDataModelerService.dispatch(
-            "updateModelQuery", [model.id, SingleTableQuery]);
-        await asyncWait(50);
+    //     await this.clientDataModelerService.dispatch(
+    //         "updateModelQuery", [model.id, SingleTableQuery]);
+    //     await asyncWait(50);
 
-        expect(this.entityStatusTracker.getStatusChangeOrder()).toEqual([
-            EntityStatus.Idle,
-            EntityStatus.Validating,
-            EntityStatus.Profiling,
-            EntityStatus.Idle,
-        ]);
-        expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
-            ApplicationStatus.Idle,
-            ApplicationStatus.Running,
-            ApplicationStatus.Idle,
-        ]);
-    }
+    //     expect(this.entityStatusTracker.getStatusChangeOrder()).toEqual([
+    //         EntityStatus.Idle,
+    //         EntityStatus.Validating,
+    //         EntityStatus.Profiling,
+    //         EntityStatus.Idle,
+    //     ]);
+    //     expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
+    //         ApplicationStatus.Idle,
+    //         ApplicationStatus.Running,
+    //         ApplicationStatus.Idle,
+    //     ]);
+    // }
 
     @FunctionalTestBase.Test()
     public async shouldHaveCorrectStatusWhileExportingModel() {
@@ -104,39 +104,39 @@ export class EntityStatusSpec extends FunctionalTestBase {
         ]);
     }
 
-    @FunctionalTestBase.Test()
-    public async shouldOnlySwitchApplicationStatusOnce() {
-        await this.clientDataModelerService.dispatch(
-            "addModel", [{name: "query_0", query: ""}]);
-        await this.clientDataModelerService.dispatch(
-            "addModel", [{name: "query_1", query: ""}]);
-        await asyncWait(50);
+    // @FunctionalTestBase.Test()
+    // public async shouldOnlySwitchApplicationStatusOnce() {
+    //     await this.clientDataModelerService.dispatch(
+    //         "addModel", [{name: "query_0", query: ""}]);
+    //     await this.clientDataModelerService.dispatch(
+    //         "addModel", [{name: "query_1", query: ""}]);
+    //     await asyncWait(50);
 
-        const [model0] = this.getModels("name", "query_0.sql");
-        const [model1] = this.getModels("name", "query_1.sql");
+    //     const [model0] = this.getModels("name", "query_0.sql");
+    //     const [model1] = this.getModels("name", "query_1.sql");
 
-        this.entityStatusTracker.startTracker(EntityType.Table);
-        await asyncWait(50);
+    //     this.entityStatusTracker.startTracker(EntityType.Table);
+    //     await asyncWait(50);
 
-        const promises = [];
-        promises.push(this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]));
-        promises.push(this.clientDataModelerService.dispatch(
-            "addOrUpdateTableFromFile", ["test/data/AdImpressions.tsv"]));
-        await asyncWait(50);
-        promises.push(this.clientDataModelerService.dispatch(
-            "updateModelQuery", [model0.id, SingleTableQuery]));
-        promises.push(this.clientDataModelerService.dispatch(
-            "updateModelQuery", [model1.id, TwoTableJoinQuery]));
-        await Promise.all(promises);
-        await asyncWait(50);
+    //     const promises = [];
+    //     promises.push(this.clientDataModelerService.dispatch(
+    //         "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]));
+    //     promises.push(this.clientDataModelerService.dispatch(
+    //         "addOrUpdateTableFromFile", ["test/data/AdImpressions.tsv"]));
+    //     await asyncWait(50);
+    //     promises.push(this.clientDataModelerService.dispatch(
+    //         "updateModelQuery", [model0.id, SingleTableQuery]));
+    //     promises.push(this.clientDataModelerService.dispatch(
+    //         "updateModelQuery", [model1.id, TwoTableJoinQuery]));
+    //     await Promise.all(promises);
+    //     await asyncWait(50);
 
-        expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
-            ApplicationStatus.Idle,
-            ApplicationStatus.Running,
-            ApplicationStatus.Idle,
-        ]);
-    }
+    //     expect(this.entityStatusTracker.getApplicationStatusChangeOrder()).toEqual([
+    //         ApplicationStatus.Idle,
+    //         ApplicationStatus.Running,
+    //         ApplicationStatus.Idle,
+    //     ]);
+    // }
 
     @FunctionalTestBase.AfterEachTest()
     public teardownTests() {
