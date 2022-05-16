@@ -281,11 +281,13 @@ export class TableActions extends DataModelerActions {
         }
         if (response?.status === ActionStatus.Failure) {
             this.notificationService.notify({ 
-                message: `failed to import ${table.name} from ${table.path}`, type: "error",
+                message: `failed to import ${table.name} from ${table.path}`,
+                type: "error",
             });
         } else {
             this.notificationService.notify({ 
-                message: `imported ${table.name}`, type: "info"
+                message: `imported ${table.name}`,
+                type: "info"
             });
         }
         return response;
