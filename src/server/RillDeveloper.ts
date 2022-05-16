@@ -13,65 +13,72 @@ import { dataModelerServiceFactory } from "./serverFactory";
  * To be used on the server only.
  */
 export class RillDeveloper {
-    private readonly duckDbConnection: DuckDbConnection;
-    public constructor(
-        public readonly config: RootConfig,
-        public readonly dataModelerService: DataModelerService,
-        public readonly dataModelerStateService: DataModelerStateService,
-        public readonly dataModelerStateSyncService: DataModelerStateSyncService,
-        public readonly metricsService: MetricsService,
-        public readonly notificationService: NotificationService,
-    ) {
-        this.duckDbConnection = new DuckDbConnection(
-            this.config, this.dataModelerService,
-            this.dataModelerStateService,
-            this.dataModelerService.getDatabaseService().getDatabaseClient(),
-        );
+  private readonly duckDbConnection: DuckDbConnection;
+  public constructor(
+    public readonly config: RootConfig,
+    public readonly dataModelerService: DataModelerService,
+    public readonly dataModelerStateService: DataModelerStateService,
+    public readonly dataModelerStateSyncService: DataModelerStateSyncService,
+    public readonly metricsService: MetricsService,
+    public readonly notificationService: NotificationService
+  ) {
+    this.duckDbConnection = new DuckDbConnection(
+      this.config,
+      this.dataModelerService,
+      this.dataModelerStateService,
+      this.dataModelerService.getDatabaseService().getDatabaseClient()
+    );
+  }
+
+  public async init(): Promise<void> {
+    const alreadyInitialized = existsSync(this.config.state.stateFolder);
+
+    await this.dataModelerStateSyncService.init();
+    if (alreadyInitialized) {
+      this.config.project.duckDbPath =
+        this.dataModelerStateService.getApplicationState().duckDbPath;
+    }
+    if (this.config.project.duckDbPath) {
+      this.config.database.databaseName = this.config.project.duckDbPath;
     }
 
-    public async init(): Promise<void> {
-        const alreadyInitialized = existsSync(this.config.state.stateFolder);
-
-        await this.dataModelerStateSyncService.init();
-        if (alreadyInitialized) {
-            this.config.project.duckDbPath =
-                this.dataModelerStateService.getApplicationState().duckDbPath;
-        }
-        if (this.config.project.duckDbPath) {
-            this.config.database.databaseName = this.config.project.duckDbPath;
-        }
-
-        await this.dataModelerService.init();
-        if (!alreadyInitialized && this.config.project.duckDbPath) {
-            this.dataModelerStateService.dispatch(
-                "setDuckDbPath", [this.config.project.duckDbPath]);
-        }
-        await this.duckDbConnection.init();
+    await this.dataModelerService.init();
+    if (!alreadyInitialized && this.config.project.duckDbPath) {
+      this.dataModelerStateService.dispatch("setDuckDbPath", [
+        this.config.project.duckDbPath,
+      ]);
     }
+    await this.duckDbConnection.init();
+  }
 
-    public async destroy() {
-        await this.dataModelerStateSyncService.destroy();
-        await this.duckDbConnection.destroy();
-        await this.dataModelerService.destroy();
-    }
+  public async destroy() {
+    await this.dataModelerStateSyncService.destroy();
+    await this.duckDbConnection.destroy();
+    await this.dataModelerService.destroy();
+  }
 
-    public static getRillDeveloper(config: RootConfig) {
-        const {
-            dataModelerService,
-            dataModelerStateService,
-            metricsService,
-            notificationService,
-        } = dataModelerServiceFactory(config);
+  public static getRillDeveloper(config: RootConfig) {
+    const {
+      dataModelerService,
+      dataModelerStateService,
+      metricsService,
+      notificationService,
+    } = dataModelerServiceFactory(config);
 
-        const dataModelerStateSyncService = new DataModelerStateSyncService(
-            config, dataModelerStateService.entityStateServices,
-            dataModelerService, dataModelerStateService,
-        );
+    const dataModelerStateSyncService = new DataModelerStateSyncService(
+      config,
+      dataModelerStateService.entityStateServices,
+      dataModelerService,
+      dataModelerStateService
+    );
 
-        return new RillDeveloper(
-            config, dataModelerService,
-            dataModelerStateService, dataModelerStateSyncService,
-            metricsService, notificationService,
-        );
-    }
+    return new RillDeveloper(
+      config,
+      dataModelerService,
+      dataModelerStateService,
+      dataModelerStateSyncService,
+      metricsService,
+      notificationService
+    );
+  }
 }

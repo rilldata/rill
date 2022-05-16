@@ -1,18 +1,22 @@
 import "../moduleAlias";
-import {RootConfig} from "$common/config/RootConfig";
+import { RootConfig } from "$common/config/RootConfig";
 import { RillDeveloper } from "./RillDeveloper";
-import type {SocketNotificationService} from "$common/socket/SocketNotificationService";
-import {ExpressServer} from "./ExpressServer";
-import {ServerConfig} from "$common/config/ServerConfig";
+import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
+import { ExpressServer } from "./ExpressServer";
+import { ServerConfig } from "$common/config/ServerConfig";
 
 const config = new RootConfig({
-    server: new ServerConfig({ serveStaticFile: true })
+  server: new ServerConfig({ serveStaticFile: true }),
 });
 const rillDeveloper = RillDeveloper.getRillDeveloper(config);
-const expressServer = new ExpressServer(config,
-    rillDeveloper.dataModelerService, rillDeveloper.dataModelerStateService,
-    rillDeveloper.notificationService as SocketNotificationService, rillDeveloper.metricsService);
+const expressServer = new ExpressServer(
+  config,
+  rillDeveloper.dataModelerService,
+  rillDeveloper.dataModelerStateService,
+  rillDeveloper.notificationService as SocketNotificationService,
+  rillDeveloper.metricsService
+);
 (async () => {
-    await rillDeveloper.init();
-    await expressServer.init();
+  await rillDeveloper.init();
+  await expressServer.init();
 })();
