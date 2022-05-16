@@ -39,6 +39,7 @@ $: hiddenSelectedValues = values.filter((di, i) => {
     return activeValues.includes(di.label) && i > slice - 1 && !seeMore
 })
 
+
 </script>
 <LeaderboardContainer focused={atLeastOneActive}>
     <Tooltip location="top" alignment="start" distance={4}>

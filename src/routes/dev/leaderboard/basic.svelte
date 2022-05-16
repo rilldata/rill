@@ -1,8 +1,11 @@
-<script>
+<script lang="ts">
     import { fly } from "svelte/transition"
     import Close from "$lib/components/icons/Close.svelte";
     /** for now, this LeaderboardFeature.svelte file will be here. */
     import Leaderboard from "./_LeaderboardFeature.svelte";
+
+    import { swimLanePlacement } from "$lib/util/swim-lane-placement";
+import { onMount } from "svelte";
 
     /** remove this before we componentize anything. */
     let files = [];
@@ -41,10 +44,25 @@
     $: anythingSelected = Object.keys(activeValues).some(key => {
         return activeValues[key]?.length;
     })
+
+    let columns = 3;
+    let leaderboardContainer:Element;
+    let availableWidth = 0;
+    function onResize() {
+        availableWidth = leaderboardContainer.offsetWidth;
+        columns = Math.floor(availableWidth / (315 + 20));
+    }
+
+    onMount(() => {
+        // determine initial resize.
+        onResize();
+    })
 </script>
 
+<svelte:window on:resize={onResize} />
+repeat({columns}, max-content)
 <div class="w-screen min-h-screen bg-white p-8">
-    <section style:width="{315 * 3 + 2 * 32}px">
+    <section>
     {#if leaderboardSet.length}
     <header
         style:height="32px"
@@ -78,27 +96,38 @@
             {/if}
         </div>
     </header>
-    <div class="grid grid-cols-3 gap-6 justify-start w-max">
-        {#each currentLeaderboard.leaderboards as {displayName, values, nullCount }}
-            <Leaderboard
-                on:select-item={(event) => {
-                    activeValues[displayName];
-                    if (!(activeValues[displayName].includes(event.detail))) {
-                        activeValues[displayName] = [...activeValues[displayName], event.detail]
-                    } else {
-                        activeValues[displayName] = activeValues[displayName]?.filter(b => b !== event.detail);
-                    }
-                }}
-                on:clear-all={() => {
-                    activeValues[displayName] = [];
-                }}
-                activeValues={activeValues[displayName]}
-                {displayName}
-                {values}
-                total={currentLeaderboard.total}
-                {nullCount}
-            />
-        {/each}
+    <div  bind:this={leaderboardContainer}>
+        <div
+            style:grid-template-columns="repeat({columns}, max-content)" 
+            class="
+            grid 
+            gap-6 justify-start w-max">
+            <!-- {#each currentLeaderboard.leaderboards as {displayName, values, nullCount }} -->
+            {#each swimLanePlacement(currentLeaderboard.leaderboards, (leaderboard) => leaderboard.values.length, columns) as lane, i}
+                <div class="flex flex-col">
+                {#each lane as {displayName, values, nullCount }, j (displayName)}
+                    <Leaderboard
+                        on:select-item={(event) => {
+                            activeValues[displayName];
+                            if (!(activeValues[displayName].includes(event.detail))) {
+                                activeValues[displayName] = [...activeValues[displayName], event.detail]
+                            } else {
+                                activeValues[displayName] = activeValues[displayName]?.filter(b => b !== event.detail);
+                            }
+                        }}
+                        on:clear-all={() => {
+                            activeValues[displayName] = [];
+                        }}
+                        activeValues={activeValues[displayName]}
+                        {displayName}
+                        {values}
+                        total={currentLeaderboard.total}
+                        {nullCount}
+                    />
+                {/each}
+                </div>
+            {/each}
+        </div>
     </div>
     {:else}
         <p>

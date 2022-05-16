@@ -44,7 +44,9 @@ function fixUpName(inputString) {
 }
 
 const tables = await dbAll(db, 'PRAGMA show_tables;');
-fs.rmSync('./src/routes/dev/leaderboard/data/',  { recursive: true });
+if (fs.existsSync('./src/routes/dev/leaderboard/data/')) {
+    fs.rmSync('./src/routes/dev/leaderboard/data/',  { recursive: true });
+}
 fs.mkdirSync('./src/routes/dev/leaderboard/data/');
 for (let { name } of tables) {
     // get column names.

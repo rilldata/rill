@@ -7,7 +7,7 @@ export let width = 315;
 export let focused = false;
 </script>
 
-<div 
+<div
     class:drop-shadow-lg={focused}
     style:width="{width}px"
 >
