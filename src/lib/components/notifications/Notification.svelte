@@ -26,7 +26,7 @@
   <aside
     transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
     {style}
-    class="radius-sm notification-{level} 
+    class="whitespace-pre radius-sm notification-{level} 
       {location !== undefined
       ? `notification-floating notification-floating-${location}`
       : ''}"
@@ -47,7 +47,7 @@
     aside {
       --width: max-content;
       padding: 8px 14px;
-      width: max-content;
+      width: var(--width);
       box-shadow: var(--rally-box-shadow-sm);
       font-style: normal;
       /* font-weight: 600; */

@@ -15,7 +15,7 @@ import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
 import { drag } from '$lib/drag'
-import {config, dataModelerService} from "$lib/application-state-stores/application-store";
+import { dataModelerService} from "$lib/application-state-stores/application-store";
 import type { DerivedTableStore, PersistentTableStore } from "$lib/application-state-stores/table-stores";
 import type { DerivedModelStore, PersistentModelStore } from "$lib/application-state-stores/model-stores";
 import type {
@@ -24,7 +24,7 @@ import type {
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 import { assetVisibilityTween, assetsVisible, layout } from "$lib/application-state-stores/layout-store";
-import {uploadTableFiles} from "$lib/util/tableFileUpload";
+import { onManualSourceUpload, onSourceDrop } from "$lib/util/file-upload"
 
 const store = getContext('rill:app:store') as ApplicationStore;
 const persistentTableStore = getContext('rill:app:persistent-table-store') as PersistentTableStore;
@@ -39,16 +39,7 @@ $: activeModel = $store && $persistentModelStore &&
 let showTables = true;
 let showModels = true;
 
-function onTableDrop(e: DragEvent) {
-  preventDefault(e);
-  if (e.dataTransfer?.files) {
-    uploadTableFiles(e.dataTransfer.files, `${config.server.serverUrl}/api`);
-  }
-}
-function preventDefault(e: DragEvent) {
-  e.preventDefault();
-  e.stopPropagation();
-}
+let fileUploadElement:HTMLElement;
 
 </script>
 
@@ -75,7 +66,9 @@ function preventDefault(e: DragEvent) {
         use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
       </Portal>
     {/if}
-
+    
+    <!-- This input element will be used for all file uploads-->
+    <input class="hidden" type="file" multiple bind:this={fileUploadElement} on:change={onManualSourceUpload} />
 
     <div class='w-full flex flex-col h-full'>
       <div class='grow' style:outline="1px solid black">
@@ -88,25 +81,41 @@ function preventDefault(e: DragEvent) {
 
       <!-- <div style:height="80px"></div> -->
 
-          <div class='pl-4 pb-3 pt-5'
-               on:drop={onTableDrop}
-               on:drag={preventDefault}
-               on:dragenter={preventDefault}
-               on:dragover={preventDefault}
-               on:dragleave={preventDefault}>
+          <div class='pl-4 pb-3 pr-4 pt-5 grid justify-between' style="grid-template-columns: auto max-content;"
+               on:drop|preventDefault|stopPropagation={onSourceDrop}
+               on:drag|preventDefault|stopPropagation
+               on:dragenter|preventDefault|stopPropagation
+               on:dragover|preventDefault|stopPropagation
+               on:dragleave|preventDefault|stopPropagation>
             <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
               <h4 class='flex flex-row items-center gap-x-2'><ParquetIcon size="16px" /> Tables</h4>
 
             </CollapsibleSectionTitle>
+            
+            <ContextButton 
+                id={'create-table-button'}
+                tooltipText="import csv or parquet file into a table" on:click={
+                /** 
+                 * Manual file upload
+                 * ------------------
+                 * clicks on the fileUploadElement above, which is hidden from the user.
+                 * 
+                */
+                async () => {
+                  fileUploadElement.click();
+                }
+              }>
+                <AddIcon />
+              </ContextButton>
           </div>
             {#if showTables}
               <div class="pb-6"
                    transition:slide|local={{duration:200}}
-                   on:drop={onTableDrop}
-                   on:drag={preventDefault}
-                   on:dragenter={preventDefault}
-                   on:dragover={preventDefault}
-                   on:dragleave={preventDefault}>
+                   on:drop={onSourceDrop}
+                   on:drag|preventDefault|stopPropagation
+                   on:dragenter|preventDefault|stopPropagation
+                   on:dragover|preventDefault|stopPropagation
+                   on:dragleave|preventDefault|stopPropagation >
               {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
                 <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
                 {#each ($persistentTableStore.entities) as { path, tableName, id} (id)}
