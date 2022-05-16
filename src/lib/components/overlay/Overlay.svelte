@@ -1,4 +1,4 @@
-<script context module>
+<script context="module">
   let activatedOverlays = 0;
 </script>
 
