@@ -1,8 +1,12 @@
-import {DatabaseActions} from "./DatabaseActions";
-import type {CategoricalSummary, NumericSummary, TimeRangeSummary} from "$lib/types";
-import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
-import {sanitizeColumn} from "$common/utils/queryUtils";
-import {TIMESTAMPS} from "$lib/duckdb-data-types";
+import { DatabaseActions } from "./DatabaseActions";
+import type {
+  CategoricalSummary,
+  NumericSummary,
+  TimeRangeSummary,
+} from "$lib/types";
+import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import { sanitizeColumn } from "$common/utils/queryUtils";
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
 
 const TOP_K_COUNT = 50;
 
@@ -14,35 +18,50 @@ export enum TimeGrain {
   days = "days",
   weeks = "weeks",
   months = "months",
-  years = "years"
+  years = "years",
 }
 
 /**
- * All database column actions return javascript objects that get folded 
+ * All database column actions return javascript objects that get folded
  * into a `summary` field in the derived table. Thus any action in this file must
  * return an object.
  */
 export class DatabaseColumnActions extends DatabaseActions {
-    public async getTopKAndCardinality(metadata: DatabaseMetadata, tableName: string, columnName: string,
-                                       func = "count(*)"): Promise<CategoricalSummary> {
-        return {
-            topK: await this.getTopKOfColumn(metadata, tableName, columnName, func),
-            cardinality: await this.getCardinalityOfColumn(metadata, tableName, columnName),
-        };
-    }
+  public async getTopKAndCardinality(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string,
+    func = "count(*)"
+  ): Promise<CategoricalSummary> {
+    return {
+      topK: await this.getTopKOfColumn(metadata, tableName, columnName, func),
+      cardinality: await this.getCardinalityOfColumn(
+        metadata,
+        tableName,
+        columnName
+      ),
+    };
+  }
 
-    public async getNullCount(metadata: DatabaseMetadata,
-                              tableName: string, columnName: string): Promise<number> {
-        const sanitizedColumName = sanitizeColumn(columnName);
-        const [nullity] = await this.databaseClient.execute(
-            `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${sanitizedColumName} IS NULL;`);
-        return nullity.count;
-    }
+  public async getNullCount(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string
+  ): Promise<number> {
+    const sanitizedColumName = sanitizeColumn(columnName);
+    const [nullity] = await this.databaseClient.execute(
+      `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${sanitizedColumName} IS NULL;`
+    );
+    return nullity.count;
+  }
 
-    public async getDescriptiveStatistics(metadata: DatabaseMetadata,
-                                          tableName: string, columnName: string): Promise<NumericSummary> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        const [results] = await this.databaseClient.execute(`
+  public async getDescriptiveStatistics(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string
+  ): Promise<NumericSummary> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    const [results] = await this.databaseClient.execute(`
             SELECT
                 min(${sanitizedColumnName}) as min,
                 reservoir_quantile(${sanitizedColumnName}, 0.25) as q25,
@@ -53,44 +72,51 @@ export class DatabaseColumnActions extends DatabaseActions {
                 stddev_pop(${sanitizedColumnName}) as sd
             FROM '${tableName}';
        `);
-        return { statistics: results };
-    }
+    return { statistics: results };
+  }
 
-    /**
-     * Estimates the smallest time grain present in the column.
-     * The "smallest time grain" is the smallest value that we believe the user
-     * can reliably roll up. In other words, if the data is reported daily, this
-     * action will return "day", since that's the smallest rollup grain we can
-     * rely on.
-     * 
-     * This function can only focus on some common time grains. It will operate on
-     * - ms
-     * - second
-     * - minute
-     * - hour
-     * - day
-     * - week
-     * - month
-     * - year
-     * 
-     * It will not estimate any more nuanced or difficult-to-measure time grains, such as
-     * quarters, once-a-month, etc.
-     * 
-     * It accomplishes its goal by sampling 500k values of a column and then estimating the cardinality
-     * of each. If there are < 500k samples, the action will use all of the column's data.
-     * We're not sure all the ways this heuristic will fail, but it seems pretty resilient to the tests
-     * we've thrown at it.
-     */
-    public async estimateSmallestTimeGrain(metadata: DatabaseMetadata,
-                                                tableName: string, columnName: string, sampleSize = 500000): Promise<{ estimatedSmallestTimeGrain: TimeGrain }> {
-      const [total] = await this.databaseClient.execute(`
+  /**
+   * Estimates the smallest time grain present in the column.
+   * The "smallest time grain" is the smallest value that we believe the user
+   * can reliably roll up. In other words, if the data is reported daily, this
+   * action will return "day", since that's the smallest rollup grain we can
+   * rely on.
+   *
+   * This function can only focus on some common time grains. It will operate on
+   * - ms
+   * - second
+   * - minute
+   * - hour
+   * - day
+   * - week
+   * - month
+   * - year
+   *
+   * It will not estimate any more nuanced or difficult-to-measure time grains, such as
+   * quarters, once-a-month, etc.
+   *
+   * It accomplishes its goal by sampling 500k values of a column and then estimating the cardinality
+   * of each. If there are < 500k samples, the action will use all of the column's data.
+   * We're not sure all the ways this heuristic will fail, but it seems pretty resilient to the tests
+   * we've thrown at it.
+   */
+  public async estimateSmallestTimeGrain(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string,
+    sampleSize = 500000
+  ): Promise<{ estimatedSmallestTimeGrain: TimeGrain }> {
+    const [total] = await this.databaseClient.execute(`
         SELECT count(*) as c from "${tableName}"
-      `)
-      const totalRows = total.c;
-      // only sample when you have a lot of data.
-      const useSample = sampleSize > totalRows ? '' : `USING SAMPLE ${(100 * sampleSize / totalRows)}%`
+      `);
+    const totalRows = total.c;
+    // only sample when you have a lot of data.
+    const useSample =
+      sampleSize > totalRows
+        ? ""
+        : `USING SAMPLE ${(100 * sampleSize) / totalRows}%`;
 
-      const [ timeGrainResult ] = await this.databaseClient.execute(`
+    const [timeGrainResult] = await this.databaseClient.execute(`
       WITH cleaned_column AS (
           SELECT "${columnName}" as cd
           from ${tableName}
@@ -127,18 +153,28 @@ export class DatabaseColumnActions extends DatabaseActions {
         ) as estimatedSmallestTimeGrain
       FROM time_grains
       `);
-      return timeGrainResult;
-    }
+    return timeGrainResult;
+  }
 
-    public async getNumericHistogram(metadata: DatabaseMetadata,
-                                              tableName: string, columnName: string, columnType: string): Promise<NumericSummary> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        // use approx_count_distinct to get the immediate cardinality of this column.
-        const [buckets] = await this.databaseClient.execute(`SELECT approx_count_distinct(${sanitizedColumnName}) as count from ${tableName}`);
-        const bucketSize = Math.min(40, buckets.count);
-        const result = await this.databaseClient.execute(`
+  public async getNumericHistogram(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string,
+    columnType: string
+  ): Promise<NumericSummary> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    // use approx_count_distinct to get the immediate cardinality of this column.
+    const [buckets] = await this.databaseClient.execute(
+      `SELECT approx_count_distinct(${sanitizedColumnName}) as count from ${tableName}`
+    );
+    const bucketSize = Math.min(40, buckets.count);
+    const result = await this.databaseClient.execute(`
           WITH data_table AS (
-            SELECT ${TIMESTAMPS.has(columnType) ? `epoch(${sanitizedColumnName})` : `${sanitizedColumnName}::DOUBLE`} as ${sanitizedColumnName} 
+            SELECT ${
+              TIMESTAMPS.has(columnType)
+                ? `epoch(${sanitizedColumnName})`
+                : `${sanitizedColumnName}::DOUBLE`
+            } as ${sanitizedColumnName} 
             FROM ${tableName}
             WHERE ${sanitizedColumnName} IS NOT NULL
           ), S AS (
@@ -181,37 +217,48 @@ export class DatabaseColumnActions extends DatabaseActions {
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
 	      `);
-        return { histogram: result };
-    }
+    return { histogram: result };
+  }
 
-    public async getTimeRange(metadata: DatabaseMetadata,
-                              tableName: string, columnName: string): Promise<TimeRangeSummary> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        const [ranges] = await this.databaseClient.execute(`
+  public async getTimeRange(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string
+  ): Promise<TimeRangeSummary> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    const [ranges] = await this.databaseClient.execute(`
 	        SELECT
 		    min(${sanitizedColumnName}) as min, max(${sanitizedColumnName}) as max, 
 		    max(${sanitizedColumnName}) - min(${sanitizedColumnName}) as interval
 		    FROM '${tableName}';
 	    `);
-        return ranges;
-    }
+    return ranges;
+  }
 
-    private async getTopKOfColumn(metadata: DatabaseMetadata,
-                          tableName: string, columnName: string, func = "count(*)"): Promise<any> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        return this.databaseClient.execute(`
+  private async getTopKOfColumn(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string,
+    func = "count(*)"
+  ): Promise<any> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    return this.databaseClient.execute(`
             SELECT ${sanitizedColumnName} as value, ${func} AS count from '${tableName}'
             GROUP BY ${sanitizedColumnName}
             ORDER BY count desc
             LIMIT ${TOP_K_COUNT};
         `);
-    }
+  }
 
-    private async getCardinalityOfColumn(metadata: DatabaseMetadata,
-                                 tableName: string, columnName: string): Promise<number> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        const [results] = await this.databaseClient.execute(
-            `SELECT approx_count_distinct(${sanitizedColumnName}) as count from '${tableName}';`);
-        return results.count;
-    }
+  private async getCardinalityOfColumn(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string
+  ): Promise<number> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    const [results] = await this.databaseClient.execute(
+      `SELECT approx_count_distinct(${sanitizedColumnName}) as count from '${tableName}';`
+    );
+    return results.count;
+  }
 }

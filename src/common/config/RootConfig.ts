@@ -1,49 +1,49 @@
 import { Config } from "$common/utils/Config";
 import type { NonFunctionProperties } from "$common/utils/Config";
-import {ServerConfig} from "$common/config/ServerConfig";
-import {DatabaseConfig} from "$common/config/DatabaseConfig";
+import { ServerConfig } from "$common/config/ServerConfig";
+import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import { MetricsConfig } from "$common/config/MetricsConfig";
 import { LocalConfig } from "$common/config/LocalConfig";
 import { ProjectConfig } from "./ProjectConfig";
 
 export class RootConfig extends Config<RootConfig> {
-    @Config.SubConfig(ServerConfig)
-    public server: ServerConfig;
+  @Config.SubConfig(ServerConfig)
+  public server: ServerConfig;
 
-    @Config.SubConfig(DatabaseConfig)
-    public database: DatabaseConfig;
+  @Config.SubConfig(DatabaseConfig)
+  public database: DatabaseConfig;
 
-    @Config.SubConfig(StateConfig)
-    public state: StateConfig;
+  @Config.SubConfig(StateConfig)
+  public state: StateConfig;
 
-    @Config.SubConfig(MetricsConfig)
-    public metrics: MetricsConfig;
+  @Config.SubConfig(MetricsConfig)
+  public metrics: MetricsConfig;
 
-    @Config.SubConfig(LocalConfig)
-    public local: LocalConfig;
+  @Config.SubConfig(LocalConfig)
+  public local: LocalConfig;
 
-    @Config.SubConfig(ProjectConfig)
-    public project: ProjectConfig;
+  @Config.SubConfig(ProjectConfig)
+  public project: ProjectConfig;
 
-    @Config.ConfigField(".")
-    public projectFolder: string;
+  @Config.ConfigField(".")
+  public projectFolder: string;
 
-    @Config.ConfigField(true)
-    public profileWithUpdate: boolean;
+  @Config.ConfigField(true)
+  public profileWithUpdate: boolean;
 
-    constructor(configJson: {
-        [K in keyof NonFunctionProperties<RootConfig>]?: NonFunctionProperties<RootConfig>[K]
-    }) {
-        super(configJson);
+  constructor(configJson: {
+    [K in keyof NonFunctionProperties<RootConfig>]?: NonFunctionProperties<RootConfig>[K];
+  }) {
+    super(configJson);
 
-        this.prependProjectFolder();
-    }
+    this.prependProjectFolder();
+  }
 
-    private prependProjectFolder() {
-        if (this.projectFolder === ".") return;
+  private prependProjectFolder() {
+    if (this.projectFolder === ".") return;
 
-        this.database.prependProjectFolder(this.projectFolder);
-        this.state.prependProjectFolder(this.projectFolder);
-    }
+    this.database.prependProjectFolder(this.projectFolder);
+    this.state.prependProjectFolder(this.projectFolder);
+  }
 }
