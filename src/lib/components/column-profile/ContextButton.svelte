@@ -1,15 +1,20 @@
 <script lang="ts">
-import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-export let rotated = false;
-export let suppressTooltip = false;
-export let tooltipText:string;
-// utilize the ID for easier UI testing.
-export let id:string;
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  export let rotated = false;
+  export let suppressTooltip = false;
+  export let tooltipText: string;
+  // utilize the ID for easier UI testing.
+  export let id: string;
 </script>
 
-<Tooltip location="right" alignment="middle" distance={16} suppress={suppressTooltip || tooltipText === undefined}>
-    <button
+<Tooltip
+  location="right"
+  alignment="middle"
+  distance={16}
+  suppress={suppressTooltip || tooltipText === undefined}
+>
+  <button
     on:click
     {id}
     style:width="16px"
@@ -28,10 +33,10 @@ export let id:string;
         border-transparent
         hover:border-gray-400
         {rotated ? '-rotate-90' : ''}"
-    >
-        <slot />
-    </button>
-    <TooltipContent slot="tooltip-content">
-        {tooltipText}
-    </TooltipContent>
+  >
+    <slot />
+  </button>
+  <TooltipContent slot="tooltip-content">
+    {tooltipText}
+  </TooltipContent>
 </Tooltip>

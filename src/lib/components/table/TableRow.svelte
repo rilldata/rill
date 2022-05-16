@@ -1,11 +1,12 @@
 <script>
-export let hovered = false;
+  export let hovered = false;
 </script>
+
 <tr
-    class="
+  class="
         hover:bg-gray-100
         {hovered && 'bg-gray-100'}
-    "    
+    "
 >
-    <slot />
+  <slot />
 </tr>
