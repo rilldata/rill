@@ -33,9 +33,11 @@ const persistentModelStore = getContext('rill:app:persistent-model-store') as Pe
 const derivedModelStore = getContext('rill:app:derived-model-store') as DerivedModelStore;
 
 let activeModel: PersistentModelEntity;
-$: activeModel = $store && $persistentModelStore &&
-  $store?.activeEntity && $persistentModelStore?.entities ?
-    $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
+
+/** Select the explicit ID to prevent unneeded reactive updates in currentModel */
+$: activeEntityID = $store?.activeEntity?.id;
+$: activeModel = activeEntityID && $persistentModelStore && $persistentModelStore?.entities ?
+    $persistentModelStore.entities.find(q => q.id === activeEntityID) : undefined;
 let showTables = true;
 let showModels = true;
 
@@ -171,7 +173,7 @@ function preventDefault(e: DragEvent) {
                   profile={derivedModel?.profile ?? []}
                   head={derivedModel?.preview ?? []}
                   sizeInBytes={derivedModel?.sizeInBytes ?? 0}
-                  emphasizeTitle ={query?.id === $store?.activeEntity?.id}
+                  emphasizeTitle ={query?.id === activeEntityID}
                 />
               {/each}
               </div>

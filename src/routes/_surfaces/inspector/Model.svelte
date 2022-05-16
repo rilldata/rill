@@ -62,12 +62,15 @@ let bigRollupNumber = tweened(0, { duration: 700, easing });
 let inputRowCardinality = tweened(0, { duration: 200, easing });
 let outputRowCardinality = tweened(0, { duration: 250, easing });
 
+/** Select the explicit ID to prevent unneeded reactive updates in currentModel */
+$: activeEntityID = $store?.activeEntity?.id;
+
 let currentModel: PersistentModelEntity;
-$: currentModel = ($store?.activeEntity && $persistentModelStore?.entities) ?
-    $persistentModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
+$: currentModel = (activeEntityID && $persistentModelStore?.entities) ?
+    $persistentModelStore.entities.find(q => q.id === activeEntityID) : undefined;
 let currentDerivedModel: DerivedModelEntity;
-$: currentDerivedModel = ($store?.activeEntity && $derivedModelStore?.entities) ?
-    $derivedModelStore.entities.find(q => q.id === $store.activeEntity.id) : undefined;
+$: currentDerivedModel = (activeEntityID && $derivedModelStore?.entities) ?
+    $derivedModelStore.entities.find(q => q.id === activeEntityID) : undefined;
 // get source table references.
 $: if (currentDerivedModel?.sources) {
   sourceTableReferences = currentDerivedModel?.sources;

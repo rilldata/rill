@@ -167,8 +167,6 @@ export class TableActions extends DataModelerActions {
         if (!derivedTable || !persistentTable) {
             return ActionResponseFactory.getEntityError(`No table found for ${tableId}`);
         }
-        this.dataModelerStateService.dispatch("setEntityStatus",
-            [EntityType.Table, tableId, EntityStatus.Profiling]);
 
         // check row count
         const newCardinality = await this.databaseActionQueue.enqueue(
@@ -180,6 +178,7 @@ export class TableActions extends DataModelerActions {
         const newProfiles: Array<ProfileColumn> = await this.databaseActionQueue.enqueue(
             {id: tableId, priority: DatabaseActionQueuePriority.TableImport},
             "getProfileColumns", [persistentTable.tableName]);
+        // perform the checks to see if we should begin re-profiling the data.
         if (newProfiles.length === derivedTable.profile.length) {
             const existingColumns = new Map<string, ProfileColumn>();
             derivedTable.profile.forEach(column => existingColumns.set(column.name, column));
@@ -191,6 +190,10 @@ export class TableActions extends DataModelerActions {
                 return;
             }
         }
+        
+        /** If the checks above pass, only then should we update the entity status. */
+        this.dataModelerStateService.dispatch("setEntityStatus",
+            [EntityType.Table, tableId, EntityStatus.Profiling])
 
         await this.dataModelerService.dispatch("collectTableInfo", [tableId]);
     }

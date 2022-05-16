@@ -4,7 +4,7 @@ import type { DatabaseService } from "$common/database-service/DatabaseService";
 import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
-import { dataModelerServiceFactory } from "$common/serverFactory";
+import { dataModelerServiceFactory } from "$server/serverFactory";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 
 import { generateSeries } from "../utils/query-generators";
