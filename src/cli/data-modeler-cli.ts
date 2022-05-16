@@ -10,19 +10,28 @@ import { DropTableCommand } from "$cli/DropTableCommand";
 const program = new Command();
 
 program
-    .name("rill-developer")
-    .description("Rill Developer CLI.")
-    // Override help to add a capital D for display.
-    .helpOption("-h, --help", "Display help for command.")
-    .addHelpCommand("help [command]", "Display help for command.")
-    // common across all commands
-    .option("--project <projectPath>", "Optional path of project. Defaults to current directory.");
+  .name("rill-developer")
+  .description("Rill Developer CLI.")
+  // Override help to add a capital D for display.
+  .helpOption("-h, --help", "Display help for command.")
+  .addHelpCommand("help [command]", "Display help for command.")
+  // common across all commands
+  .option(
+    "--project <projectPath>",
+    "Optional path of project. Defaults to current directory."
+  );
 
-[InitCommand, ImportTableCommand, StartCommand, DropTableCommand, InfoCommand].forEach(
-    CommandClass => program.addCommand(new CommandClass().getCommand())
+[
+  InitCommand,
+  ImportTableCommand,
+  StartCommand,
+  DropTableCommand,
+  InfoCommand,
+].forEach((CommandClass) =>
+  program.addCommand(new CommandClass().getCommand())
 );
 
 program.parse();
 
-process.on("uncaughtException", error => console.error(error));
-process.on("unhandledRejection", error => console.error(error));
+process.on("uncaughtException", (error) => console.error(error));
+process.on("unhandledRejection", (error) => console.error(error));
