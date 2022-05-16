@@ -1,35 +1,37 @@
 <script lang="ts">
-import { tweened } from "svelte/motion";
-import { cubicOut as easing } from "svelte/easing";
-export let value = 0;
-export let color;
-export let showBackground = true;
+  import { tweened } from "svelte/motion";
+  import { cubicOut as easing } from "svelte/easing";
+  export let value = 0;
+  export let color;
+  export let showBackground = true;
 
-const valueTween = tweened(0, {duration: 500, easing});
-$: valueTween.set(value);
-
+  const valueTween = tweened(0, { duration: 500, easing });
+  $: valueTween.set(value);
 </script>
 
-<div class="
+<div
+  class="
     text-right grid items-center justify-end justify-items-end relative w-full"
-    style:background-color={showBackground ? "hsla(217,5%, 90%, .25)" : 'hsl(217, 0%, 100%, .25)'}
+  style:background-color={showBackground
+    ? "hsla(217,5%, 90%, .25)"
+    : "hsl(217, 0%, 100%, .25)"}
 >
-    <div class='pl-2 pr-2 text-right' style="position: relative;"><slot /></div> 
-    <div class='number-bar {color}' style="--width: {$valueTween};" />
+  <div class="pl-2 pr-2 text-right" style="position: relative;"><slot /></div>
+  <div class="number-bar {color}" style="--width: {$valueTween};" />
 </div>
 
 <style>
-    .number-bar {
-        --width: 0%;
-        content: '';
-        display: inline-block;
-        width: calc(100% * var(--width));
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 18px;
-        
-        mix-blend-mode: multiply;
-        pointer-events: none;
-    }
-    </style> 
+  .number-bar {
+    --width: 0%;
+    content: "";
+    display: inline-block;
+    width: calc(100% * var(--width));
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 18px;
+
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+</style>

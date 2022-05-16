@@ -4,30 +4,40 @@
  * The derived table state contains derived information about the table
  * such as the table profiles.
  * The persistent table state tends to be generated from the model SQL files.
- * 
+ *
  * The stores in this file reactively respond to updates from the application server
  * through the socket server.
  */
 import type { AppStore } from "$lib/application-state-stores/application-store";
 import { dataModelerStateService } from "$lib/application-state-stores/application-store";
 import type {
-    PersistentTableEntity,
-    PersistentTableState
+  PersistentTableEntity,
+  PersistentTableState,
 } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import type {
-    DerivedTableEntity,
-    DerivedTableState
+  DerivedTableEntity,
+  DerivedTableState,
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { EntityType, StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  EntityType,
+  StateType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-export type PersistentTableStore = AppStore<PersistentTableEntity, PersistentTableState>;
+export type PersistentTableStore = AppStore<
+  PersistentTableEntity,
+  PersistentTableState
+>;
 export function createPersistentTableStore(): PersistentTableStore {
-    return dataModelerStateService
-        .getEntityStateService(EntityType.Table, StateType.Persistent).store;
+  return dataModelerStateService.getEntityStateService(
+    EntityType.Table,
+    StateType.Persistent
+  ).store;
 }
 
 export type DerivedTableStore = AppStore<DerivedTableEntity, DerivedTableState>;
 export function createDerivedTableStore(): DerivedTableStore {
-    return dataModelerStateService
-        .getEntityStateService(EntityType.Table, StateType.Derived).store;
+  return dataModelerStateService.getEntityStateService(
+    EntityType.Table,
+    StateType.Derived
+  ).store;
 }
