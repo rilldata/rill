@@ -59,8 +59,7 @@ $: formatCount = format(',');
                             <StackingWord>copy</StackingWord> column value to clipboard
                         </div>
                         <Shortcut>
-                            <span style='font-family: var(--system);";
-                            '>⇧</span> + Click
+                            <span style='font-family: var(--system);'>⇧</span> + Click
                         </Shortcut>
                     </TooltipShortcutContainer>
                 </TooltipContent>
@@ -93,8 +92,7 @@ $: formatCount = format(',');
                                 <StackingWord>copy</StackingWord> {count} to clipboard
                             </div>
                             <Shortcut>
-                                <span style='font-family: var(--system);";
-                                '>⇧</span> + Click
+                                <span style='font-family: var(--system);'>⇧</span> + Click
                             </Shortcut>
                         </TooltipShortcutContainer>
                     </TooltipContent>

@@ -119,8 +119,7 @@ let titleTooltip;
                         column name to clipboard
                     </div>
                     <Shortcut>
-                        <span style='font-family: var(--system);";
-                        '>⇧</span> + Click
+                        <span style='font-family: var(--system);'>⇧</span> + Click
                     </Shortcut>
                 </TooltipShortcutContainer>
             {:else}
