@@ -39,6 +39,8 @@ $: activeModel = $store && $persistentModelStore &&
 let showTables = true;
 let showModels = true;
 
+let fileUploadElement:HTMLElement;
+
 </script>
 
 <div class='
@@ -64,7 +66,9 @@ let showModels = true;
         use:drag={{ minSize: 300, maxSize:500,  side: 'assetsWidth',  }} />
       </Portal>
     {/if}
-
+    
+    <!-- This input element will be used for all file uploads-->
+    <input class="hidden" type="file" multiple bind:this={fileUploadElement} on:change={onManualSourceUpload} />
 
     <div class='w-full flex flex-col h-full'>
       <div class='grow' style:outline="1px solid black">
@@ -94,16 +98,11 @@ let showModels = true;
                 /** 
                  * Manual file upload
                  * ------------------
-                 * creates a file input element, adds a callback to upload,
-                 * then clicks it.
+                 * clicks on the fileUploadElement above, which is hidden from the user.
                  * 
                 */
                 async () => {
-                  const input = document.createElement('input');
-                  input.type = "file";
-                  input.multiple = true;
-                  input.addEventListener("change", onManualSourceUpload, false);
-                  input.click();
+                  fileUploadElement.click();
                 }
               }>
                 <AddIcon />
