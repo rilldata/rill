@@ -162,19 +162,19 @@ LINE 1: SELECT * FROM xyz
     expect(modelName.includes(modelTitleElement)).toBeTruthy();
   }
 
-  @TestBase.Test('queryDataProvider')
-  public async testCostEstimates(query: string, result: string, { page }: PlaywrightTestArgs) {
-    await page.goto(URL);
+  // @TestBase.Test('queryDataProvider')
+  // public async testCostEstimates(query: string, result: string, { page }: PlaywrightTestArgs) {
+  //   await page.goto(URL);
 
-    await this.execute(page, query);
+  //   await this.execute(page, query);
 
-    const cost = page.locator('.cost-estimate');
+  //   const cost = page.locator('.cost-estimate');
 
-    await this.execute(page, query);
-    const actualCost = encodeURI(await cost.textContent());
-    const expectedCost = result;
-    expect(actualCost).toEqual(expectedCost);
-  }
+  //   await this.execute(page, query);
+  //   const actualCost = encodeURI(await cost.textContent());
+  //   const expectedCost = result;
+  //   expect(actualCost).toEqual(expectedCost);
+  // }
 
   @TestBase.Test()
   public async testNewModelCreation({ page }: PlaywrightTestArgs) {
