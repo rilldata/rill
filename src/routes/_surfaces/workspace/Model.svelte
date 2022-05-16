@@ -174,11 +174,6 @@
           </div>
         {/if}
       </div>
-      {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
-        <PreviewTable rows={currentDerivedModel.preview} columnNames={currentDerivedModel.profile} />
-      {:else}
-        <div class="grid items-center justify-center italic pt-3 text-gray-600">no columns selected</div>
-      {/if}
     </div>
   {/if}
 </div>
