@@ -3,52 +3,29 @@
   import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
 
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-
-  import Portal from "$lib/components/Portal.svelte";
+  import { uploadFilesWithDialog } from "$lib/util/file-upload";
 
   import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-  import ModelIcon from "$lib/components/icons/Code.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
 
-  import { drag } from "$lib/drag";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "$lib/application-state-stores/model-stores";
-  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-  import {
-    assetVisibilityTween,
-    assetsVisible,
-    layout,
-  } from "$lib/application-state-stores/layout-store";
-  import { onManualSourceUpload, onSourceDrop } from "$lib/util/file-upload";
+  import { onSourceDrop } from "$lib/util/file-upload";
 
-  export let fileUploadElement: HTMLElement;
-
-  const store = getContext("rill:app:store") as ApplicationStore;
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
+
   const derivedTableStore = getContext(
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
 
   let showTables = true;
 </script>
@@ -71,15 +48,7 @@
   <ContextButton
     id={"create-table-button"}
     tooltipText="import csv or parquet file into a table"
-    on:click={/**
-     * Manual file upload
-     * ------------------
-     * clicks on the fileUploadElement above, which is hidden from the user.
-     *
-     */
-    async () => {
-      fileUploadElement.click();
-    }}
+    on:click={uploadFilesWithDialog}
   >
     <AddIcon />
   </ContextButton>

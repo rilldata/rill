@@ -1,23 +1,14 @@
 <script lang="ts">
-  // import { getContext } from "svelte";
-
-  // import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-
   import Portal from "$lib/components/Portal.svelte";
-
   import { drag } from "$lib/drag";
-  // import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import {
     assetVisibilityTween,
     assetsVisible,
     layout,
   } from "$lib/application-state-stores/layout-store";
-  import { onManualSourceUpload } from "$lib/util/file-upload";
 
   import TableAssets from "./TableAssets.svelte";
   import ModelAssets from "./ModelAssets.svelte";
-
-  let fileUploadElement: HTMLElement;
 </script>
 
 <div
@@ -47,15 +38,6 @@
     </Portal>
   {/if}
 
-  <!-- This input element will be used for all file uploads-->
-  <input
-    class="hidden"
-    type="file"
-    multiple
-    bind:this={fileUploadElement}
-    on:change={onManualSourceUpload}
-  />
-
   <div class="w-full flex flex-col h-full">
     <div class="grow" style:outline="1px solid black">
       <header
@@ -73,9 +55,7 @@
           <div class="font-bold">Rill Developer</div>
         </h1>
       </header>
-
-      <!-- <div style:height="80px"></div> -->
-      <TableAssets {fileUploadElement} />
+      <TableAssets />
       <ModelAssets />
     </div>
     <!-- assets pane footer. -->
