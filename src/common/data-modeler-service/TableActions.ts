@@ -300,7 +300,7 @@ export class TableActions extends DataModelerActions {
       tableId,
       EntityStatus.Profiling,
     ]);
-    
+
     await this.dataModelerService.dispatch("collectTableInfo", [tableId]);
   }
 

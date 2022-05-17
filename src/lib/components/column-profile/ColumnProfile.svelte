@@ -150,9 +150,7 @@
               column name to clipboard
             </div>
             <Shortcut>
-              <span
-                style="font-family: var(--system);">⇧</span
-              > + Click
+              <span style="font-family: var(--system);">⇧</span> + Click
             </Shortcut>
           </TooltipShortcutContainer>
         {:else}
@@ -193,8 +191,7 @@
                 the distribution of the values of this column
               </TooltipContent>
             </Tooltip>
-          {:else if TIMESTAMPS.has(type) && /** a legacy histogram type or a new rollup spark */
-            (summary?.histogram?.length || summary?.rollup?.spark?.length)}
+          {:else if TIMESTAMPS.has(type) /** a legacy histogram type or a new rollup spark */ && (summary?.histogram?.length || summary?.rollup?.spark?.length)}
             <Tooltip location="right" alignment="center" distance={8}>
               {#if summary?.rollup?.spark}
                 <TimestampSpark

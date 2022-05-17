@@ -48,15 +48,16 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-let activeModel: PersistentModelEntity;
+  let activeModel: PersistentModelEntity;
 
-/** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-$: activeEntityID = $store?.activeEntity?.id;
-$: activeModel = activeEntityID && $persistentModelStore && $persistentModelStore?.entities ?
-    $persistentModelStore.entities.find(q => q.id === activeEntityID) : undefined;
-let showTables = true;
-let showModels = true;
-
+  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
+  $: activeEntityID = $store?.activeEntity?.id;
+  $: activeModel =
+    activeEntityID && $persistentModelStore && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
+      : undefined;
+  let showTables = true;
+  let showModels = true;
 
   let fileUploadElement: HTMLElement;
 </script>
@@ -254,8 +255,8 @@ let showModels = true;
                 profile={derivedModel?.profile ?? []}
                 head={derivedModel?.preview ?? []}
                 sizeInBytes={derivedModel?.sizeInBytes ?? 0}
-                emphasizeTitle ={query?.id === activeEntityID}
-                />
+                emphasizeTitle={query?.id === activeEntityID}
+              />
             {/each}
           </div>
         {/if}

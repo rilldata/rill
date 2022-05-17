@@ -92,18 +92,18 @@ export const DATA_TYPE_COLORS = {
   ...setTypeTailwindStyles(Array.from(TIMESTAMPS), TIMESTAMP_TOKENS),
   ...setTypeTailwindStyles(Array.from(INTERVALS), INTERVAL_TOKENS),
   ...setTypeTailwindStyles(Array.from(BOOLEANS), CATEGORICAL_TOKENS),
-}
+};
 
-/** 
+/**
  * These are the intervals that are used in the rollup timegrain estimation.
  * These intervals get templated into the query as a duckdb INTERVAL (e.g. INTERVAL 1 hour).
-  */
+ */
 export enum PreviewRollupInterval {
-  ms = '1 millisecond',
-  second = '1 second',
-  minute = '1 minute',
-  hour = '1 hour',
-  day = '1 day',
-  month = '1 month',
-  year = '1 year'
+  ms = "1 millisecond",
+  second = "1 second",
+  minute = "1 minute",
+  hour = "1 hour",
+  day = "1 day",
+  month = "1 month",
+  year = "1 year",
 }

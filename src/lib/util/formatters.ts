@@ -1,4 +1,12 @@
-import { INTERVALS, INTEGERS, FLOATS, CATEGORICALS, TIMESTAMPS, BOOLEANS, PreviewRollupInterval } from "$lib/duckdb-data-types";
+import {
+  INTERVALS,
+  INTEGERS,
+  FLOATS,
+  CATEGORICALS,
+  TIMESTAMPS,
+  BOOLEANS,
+  PreviewRollupInterval,
+} from "$lib/duckdb-data-types";
 import type { Interval } from "$lib/duckdb-data-types";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
@@ -28,20 +36,20 @@ export function removeTimezoneOffset(dt) {
   return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
 }
 
-export const standardTimestampFormat = (v, type = 'TIMESTAMP') => {
-  let fmt = timeFormat('%b %d, %Y %I:%M:%S');
-  if (type === 'DATE') {
-    fmt = timeFormat('%b %d, %Y');
+export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
+  let fmt = timeFormat("%b %d, %Y %I:%M:%S");
+  if (type === "DATE") {
+    fmt = timeFormat("%b %d, %Y");
   }
   return fmt(removeTimezoneOffset(new Date(v)));
-}
+};
 
 export const fullTimestampFormat = (v) => {
-  let fmt = timeFormat('%b %d, %Y %I:%M:%S.%L');
+  let fmt = timeFormat("%b %d, %Y %I:%M:%S.%L");
   return fmt(removeTimezoneOffset(new Date(v)));
-}
+};
 
-export const datePortion = timeFormat('%b %d, %Y');
+export const datePortion = timeFormat("%b %d, %Y");
 export const timePortion = timeFormat("%I:%M:%S");
 
 export function microsToTimestring(microseconds: number) {
@@ -66,11 +74,21 @@ export function microsToTimestring(microseconds: number) {
 }
 
 export function intervalToTimestring(interval: Interval) {
-  const months = interval.months ? `${formatInteger(interval.months)} month${interval.months > 1 ? 's' : ''} ` : '';
-  const days = interval.days ? `${formatInteger(interval.days)} day${interval.days > 1 ? 's' : ''} ` : '';
-  const time = (interval.months > 0 || interval.days > 1) ? '' : microsToTimestring(interval.micros);
+  const months = interval.months
+    ? `${formatInteger(interval.months)} month${
+        interval.months > 1 ? "s" : ""
+      } `
+    : "";
+  const days = interval.days
+    ? `${formatInteger(interval.days)} day${interval.days > 1 ? "s" : ""} `
+    : "";
+  const time =
+    interval.months > 0 || interval.days > 1
+      ? ""
+      : microsToTimestring(interval.micros);
   // if only days && days > 365, convert to years?
-  if (interval.months === 0 && interval.days > 0 && interval.days > 365) return `${formatRate(interval.days / 365)} years`
+  if (interval.months === 0 && interval.days > 0 && interval.days > 365)
+    return `${formatRate(interval.days / 365)} years`;
   return `${months}${days}${time}`;
 }
 
@@ -103,11 +121,14 @@ export function formatDataType(value: any, type: string) {
 
 /** These will be used in the string */
 export const PreviewRollupIntervalFormatter = {
-  [PreviewRollupInterval.ms]: 'millisecond-level',         /** showing rows binned by ms */
-  [PreviewRollupInterval.second]: 'second-level', /** showing rows binned by second */
-  [PreviewRollupInterval.minute]: 'minute-level', /** showing rows binned by minute */
-  [PreviewRollupInterval.hour]: 'hourly',          /** showing hourly counts */
-  [PreviewRollupInterval.day]: 'daily',            /** showing daily counts */
-  [PreviewRollupInterval.month]: 'monthly',        /** showing monthly counts */
-  [PreviewRollupInterval.year]: 'yearly',          /** showing yearly counts */
-}
+  [PreviewRollupInterval.ms]:
+    "millisecond-level" /** showing rows binned by ms */,
+  [PreviewRollupInterval.second]:
+    "second-level" /** showing rows binned by second */,
+  [PreviewRollupInterval.minute]:
+    "minute-level" /** showing rows binned by minute */,
+  [PreviewRollupInterval.hour]: "hourly" /** showing hourly counts */,
+  [PreviewRollupInterval.day]: "daily" /** showing daily counts */,
+  [PreviewRollupInterval.month]: "monthly" /** showing monthly counts */,
+  [PreviewRollupInterval.year]: "yearly" /** showing yearly counts */,
+};
