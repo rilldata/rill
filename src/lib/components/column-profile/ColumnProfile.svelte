@@ -151,8 +151,7 @@
             </div>
             <Shortcut>
               <span
-                style="font-family: var(--system);";
-                          ">⇧</span
+                style="font-family: var(--system);">⇧</span
               > + Click
             </Shortcut>
           </TooltipShortcutContainer>
