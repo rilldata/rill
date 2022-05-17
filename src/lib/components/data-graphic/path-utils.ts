@@ -4,10 +4,10 @@
  * These completed, segmented arcs will not overlap in a way where
  * we can overplot if part of the same path.
  */
-export function circlePath(cx:number, cy:number, r:number) {
-    return `
+export function circlePath(cx: number, cy: number, r: number) {
+  return `
     M ${cx - r}, ${cy}
       a ${r},${r} 0 1,0 ${r * 2},0
-      a ${r},${r} 0 1,0 ${-r *2},0
-    `
+      a ${r},${r} 0 1,0 ${-r * 2},0
+    `;
 }

@@ -1,1 +1,1 @@
-export const DEFAULT_COORDINATES = {x: undefined, y: undefined}
+export const DEFAULT_COORDINATES = { x: undefined, y: undefined };

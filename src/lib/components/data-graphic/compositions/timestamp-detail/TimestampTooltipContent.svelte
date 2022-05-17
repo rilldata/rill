@@ -1,97 +1,98 @@
 <script lang="ts">
-/**
- * The TimestampTooltipContent is used in the TimestampDetail component.
- * The goal is to provide user a quick & easy onboarding for the basic TimestampDetail
- * actions of zooming and panning. This component is a bit extra.
-*/
-import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
-import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
+  /**
+   * The TimestampTooltipContent is used in the TimestampDetail component.
+   * The goal is to provide user a quick & easy onboarding for the basic TimestampDetail
+   * actions of zooming and panning. This component is a bit extra.
+   */
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
+  import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
 
-import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
-import { formatBigNumberPercentage, formatInteger } from "$lib/util/formatters";
-import TimestampSpark from "./TimestampSpark.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
+  import {
+    formatBigNumberPercentage,
+    formatInteger,
+  } from "$lib/util/formatters";
+  import TimestampSpark from "./TimestampSpark.svelte";
 
-export let xAccessor:string;
-export let yAccessor:string;
-export let data:any;
-export let width:number = 84;
-export let height:number = 12;
+  export let xAccessor: string;
+  export let yAccessor: string;
+  export let data: any;
+  export let width: number = 84;
+  export let height: number = 12;
 
-export let totalRows:number;
-export let zoomedRows:number;
+  export let totalRows: number;
+  export let zoomedRows: number;
 
-// these flags change the text in the tooltip.
-export let zoomed = false;
-export let zooming = false;
-// this determines the "shake" of the pan label when panning.
-export let tooltipPanShakeAmount = 0;
-// the window bounds for the spark within the zoom row of the tooltip.
-export let zoomWindowXMin:Date = undefined;
-export let zoomWindowXMax:Date = undefined;
-
+  // these flags change the text in the tooltip.
+  export let zoomed = false;
+  export let zooming = false;
+  // this determines the "shake" of the pan label when panning.
+  export let tooltipPanShakeAmount = 0;
+  // the window bounds for the spark within the zoom row of the tooltip.
+  export let zoomWindowXMin: Date = undefined;
+  export let zoomWindowXMax: Date = undefined;
 </script>
-<TooltipContent>
-    <div class="pt-1 pb-1 italic" 
-    >  
-        {#if zoomed}
-        <div class="grid space-between w-full" style="grid-template-columns: auto max-content;">
-            <div>
-                {#if zooming}<span>zoomed</span>{:else}<span>zooming</span>{/if} 
-                to {formatInteger(zoomedRows)} row{#if zoomedRows !== 1}s{/if}
-            </div>
-            <div class="text-right text-gray-300">
-                {formatBigNumberPercentage(zoomedRows / totalRows)}
-            </div>
-        </div>
-        {:else}
-            showing all {formatInteger(totalRows)} rows
-        {/if}
-    </div>
-    <TooltipShortcutContainer>
-        <div>
-            <StackingWord>
-            copy</StackingWord> to clipboard
-        </div>
-        <Shortcut>
-            <span style='font-family: var(--system); font-size: 11.5px;";
-            '>⇧</span> + Click
-        </Shortcut>
-        <div>
-            <div style:transform="translateX({tooltipPanShakeAmount}px)">
-                pan
-            </div>
-        </div>
-        <Shortcut>
-            Click + Drag
-        </Shortcut>
-        <div>
-                zoom
-            <div style:display="inline-grid">
-                <TimestampSpark 
-                    area
-                    tweenIn
-                    {data}
-                    {xAccessor}
-                    {yAccessor}
-                    {width}
-                    {height}
-                    buffer={0}
-                    left={0}
-                    right={0}
-                    top={0}
-                    bottom={0}
-                    color="hsla(217,1%,99%, .5)"
-                    zoomWindowColor="hsla(217, 70%, 60%, .6)"
-                    zoomWindowBoundaryColor="hsla(217, 10%, 90%, .9)"
-                    {zoomWindowXMin}
-                    {zoomWindowXMax}
-                />
-            </div>
-        </div>
-        <Shortcut>
-            Alt + Click + Drag
-        </Shortcut>
-    </TooltipShortcutContainer>
 
+<TooltipContent>
+  <div class="pt-1 pb-1 italic">
+    {#if zoomed}
+      <div
+        class="grid space-between w-full"
+        style="grid-template-columns: auto max-content;"
+      >
+        <div>
+          {#if zooming}<span>zoomed</span>{:else}<span>zooming</span>{/if}
+          to {formatInteger(zoomedRows)} row{#if zoomedRows !== 1}s{/if}
+        </div>
+        <div class="text-right text-gray-300">
+          {formatBigNumberPercentage(zoomedRows / totalRows)}
+        </div>
+      </div>
+    {:else}
+      showing all {formatInteger(totalRows)} rows
+    {/if}
+  </div>
+  <TooltipShortcutContainer>
+    <div>
+      <StackingWord>copy</StackingWord> to clipboard
+    </div>
+    <Shortcut>
+      <span
+        style="
+          font-family: var(--system); 
+          font-size: 11.5px;
+        ">⇧</span
+      > + Click
+    </Shortcut>
+    <div>
+      <div style:transform="translateX({tooltipPanShakeAmount}px)">pan</div>
+    </div>
+    <Shortcut>Click + Drag</Shortcut>
+    <div>
+      zoom
+      <div style:display="inline-grid">
+        <TimestampSpark
+          area
+          tweenIn
+          {data}
+          {xAccessor}
+          {yAccessor}
+          {width}
+          {height}
+          buffer={0}
+          left={0}
+          right={0}
+          top={0}
+          bottom={0}
+          color="hsla(217,1%,99%, .5)"
+          zoomWindowColor="hsla(217, 70%, 60%, .6)"
+          zoomWindowBoundaryColor="hsla(217, 10%, 90%, .9)"
+          {zoomWindowXMin}
+          {zoomWindowXMax}
+        />
+      </div>
+    </div>
+    <Shortcut>Alt + Click + Drag</Shortcut>
+  </TooltipShortcutContainer>
 </TooltipContent>
