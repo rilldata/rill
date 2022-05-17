@@ -3,8 +3,6 @@
   import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
 
-  import { uploadFilesWithDialog } from "$lib/util/file-upload";
-
   import ParquetIcon from "$lib/components/icons/Parquet.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
@@ -17,7 +15,7 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
 
-  import { onSourceDrop } from "$lib/util/file-upload";
+  import { onSourceDrop, uploadFilesWithDialog } from "$lib/util/file-upload";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
