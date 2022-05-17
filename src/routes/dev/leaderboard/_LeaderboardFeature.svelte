@@ -1,88 +1,100 @@
 <script lang="ts">
-/**
- * LeaderboardFeature.svelte
- * -------------------------
- * This is the "implemented" feature of the leaderboard, meant to be used
- * in the application itself.
-*/
-import { createEventDispatcher } from "svelte";
-import { fly } from 'svelte/transition';
+  /**
+   * LeaderboardFeature.svelte
+   * -------------------------
+   * This is the "implemented" feature of the leaderboard, meant to be used
+   * in the application itself.
+   */
+  import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
 
-import LeaderboardContainer from "$lib/components/leaderboard/LeaderboardContainer.svelte";
-import LeaderboardHeader from "$lib/components/leaderboard/LeaderboardHeader.svelte";
-import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
-import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
-import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-import Close from "$lib/components/icons/Close.svelte";
+  import LeaderboardContainer from "$lib/components/leaderboard/LeaderboardContainer.svelte";
+  import LeaderboardHeader from "$lib/components/leaderboard/LeaderboardHeader.svelte";
+  import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
+  import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import Close from "$lib/components/icons/Close.svelte";
 
-export let displayName;
-export let total:number;
-export let values;
-export let nullCount = 0;
-export let activeValues:string[];
+  export let displayName;
+  export let total: number;
+  export let values;
+  export let nullCount = 0;
+  export let activeValues: string[];
 
-export let slice = 7;
-export let seeMoreSlice = 15;
+  export let slice = 7;
+  export let seeMoreSlice = 15;
 
-let seeMore = false;
+  let seeMore = false;
 
-const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-$: atLeastOneActive = !!activeValues?.length;
+  $: atLeastOneActive = !!activeValues?.length;
 
-let righthandElements = [];
-$: widths = righthandElements.map(element => element?.getBoundingClientRect()?.width || 0);
+  let righthandElements = [];
+  $: widths = righthandElements.map(
+    (element) => element?.getBoundingClientRect()?.width || 0
+  );
 
-/** figure out how many selected values are currently hidden */
-$: hiddenSelectedValues = values.filter((di, i) => {
-    return activeValues.includes(di.label) && i > slice - 1 && !seeMore
-})
-
-
+  /** figure out how many selected values are currently hidden */
+  $: hiddenSelectedValues = values.filter((di, i) => {
+    return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
+  });
 </script>
+
 <LeaderboardContainer focused={atLeastOneActive}>
-    <Tooltip location="top" alignment="start" distance={4}>
+  <Tooltip location="top" alignment="start" distance={4}>
     <LeaderboardHeader isActive={atLeastOneActive}>
-        <div slot="title" class:text-gray-500={atLeastOneActive} class:italic={atLeastOneActive}>{displayName}</div>
-        <div slot="right">
-            {#if activeValues.length}
-                <button 
-                    in:fly|local={{ duration: 100, y: 4 }} 
-                    out:fly|local={{ duration: 100, y: -4}}
-                    class="
+      <div
+        slot="title"
+        class:text-gray-500={atLeastOneActive}
+        class:italic={atLeastOneActive}
+      >
+        {displayName}
+      </div>
+      <div slot="right">
+        {#if activeValues.length}
+          <button
+            in:fly|local={{ duration: 100, y: 4 }}
+            out:fly|local={{ duration: 100, y: -4 }}
+            class="
                         grid grid-flow-col 
                         items-center justify-center w-max
                         gap-x-2 italic 
                         text-red-800 
                         text-center
                         "
-                    on:click={() => { dispatch('clear-all')}}>
-                        clear <Close />
-                    </button>
-            {/if}
-        </div>
+            on:click={() => {
+              dispatch("clear-all");
+            }}
+          >
+            clear <Close />
+          </button>
+        {/if}
+      </div>
     </LeaderboardHeader>
     <TooltipContent slot="tooltip-content">
-        {#if activeValues.length}
-            filtering {displayName} by {activeValues.length} value{#if activeValues.length !== 1}s{/if}
-        {:else}
-            click on the fields to filter by ____
-        {/if}
+      {#if activeValues.length}
+        filtering {displayName} by {activeValues.length} value{#if activeValues.length !== 1}s{/if}
+      {:else}
+        click on the fields to filter by ____
+      {/if}
     </TooltipContent>
-    </Tooltip>
-    <LeaderboardList>
-        {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as {label, value}, i (label)}
-            {@const isActive = activeValues?.includes(label)}
-        <div>
+  </Tooltip>
+  <LeaderboardList>
+    {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as { label, value }, i (label)}
+      {@const isActive = activeValues?.includes(label)}
+      <div>
         <Tooltip location="right">
-            <LeaderboardListItem
-                value={value / (total - nullCount)}
-                {isActive}
-                on:click={() => { dispatch('select-item', label) }}
-                color={isActive ? 'bg-blue-200' : 'bg-gray-100'}
-            >
-                <!-- 
+          <LeaderboardListItem
+            value={value / (total - nullCount)}
+            {isActive}
+            on:click={() => {
+              dispatch("select-item", label);
+            }}
+            color={isActive ? "bg-blue-200" : "bg-gray-100"}
+          >
+            <!-- 
                     title element
                     -------------
                     We will fix the maximum width of the title element
@@ -91,69 +103,73 @@ $: hiddenSelectedValues = values.filter((di, i) => {
                     BarAndNumber component to do things that are harder to maintain.
                     The current approach does a decent enough job of maintaining the flow and scan-friendliness.
                  -->
-                <div
-                    
-                    style:max-width="calc({315 - Math.max(...widths, 0)}px - 2rem)"
-                    class:text-gray-700={!atLeastOneActive}
-                    class:text-gray-500={atLeastOneActive && !isActive}
-                    class:italic={atLeastOneActive && !isActive}
-                    class="w-full text-ellipsis overflow-hidden whitespace-nowrap" 
-                    slot="title">
-                    {label}
-                </div>
-
-                <!-- right-hand metric value -->
-                <div slot="right" bind:this={righthandElements[i]}>
-                    {#if !(atLeastOneActive && !isActive)}
-                        <div in:fly={{duration: 200, y: 4}}>
-                            {value}
-                        </div>
-                    {/if}
-                </div>
-            </LeaderboardListItem>
-            <TooltipContent slot='tooltip-content'>
-                <div>
-                    {value / total}
-                </div>
-                <div>
-                    filter on <span class='italic'>{label}</span>
-                </div>
-            </TooltipContent>
-            </Tooltip>
-        </div>
-        {/each}
-        {#if values.length > slice}
-            <Tooltip location="right">
-            <LeaderboardListItem
-                value={1 - (values.slice(0, slice).reduce((a,b) => a+b.value, 0)) / total}
-                color="bg-gray-100"
+            <div
+              style:max-width="calc({315 - Math.max(...widths, 0)}px - 2rem)"
+              class:text-gray-700={!atLeastOneActive}
+              class:text-gray-500={atLeastOneActive && !isActive}
+              class:italic={atLeastOneActive && !isActive}
+              class="w-full text-ellipsis overflow-hidden whitespace-nowrap"
+              slot="title"
             >
-                <div class="italic text-gray-500" slot="title">
-                    All Others
-                </div>
-                <div class="italic text-gray-500" slot="right">{total - values.slice(0,!seeMore ? slice : seeMoreSlice).reduce((a,b) => a + b.value, 0) - nullCount}</div>    
-            </LeaderboardListItem>
-            <TooltipContent slot="tooltip-content">
-                see next 12
-            </TooltipContent>
-            </Tooltip>
-            <hr />
+              {label}
+            </div>
 
-            <button 
-                class="italic pl-2 pr-2 p-1 text-gray-500 w-full text-left hover:bg-gray-50"
-                on:click={() => {
-                    seeMore = !seeMore;
-                }}>
-                    {#if seeMore}
-                        show only top {slice}
-                    {:else}
-                        show {seeMoreSlice - slice} more
-                        {#if hiddenSelectedValues.length}
-                            ({hiddenSelectedValues.length} 
-                            selected value{#if hiddenSelectedValues.length !== 1}s{/if} hidden.)
-                        {/if}
-                    {/if}
-                </button>
+            <!-- right-hand metric value -->
+            <div slot="right" bind:this={righthandElements[i]}>
+              {#if !(atLeastOneActive && !isActive)}
+                <div in:fly={{ duration: 200, y: 4 }}>
+                  {value}
+                </div>
+              {/if}
+            </div>
+          </LeaderboardListItem>
+          <TooltipContent slot="tooltip-content">
+            <div>
+              {value / total}
+            </div>
+            <div>
+              filter on <span class="italic">{label}</span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    {/each}
+    {#if values.length > slice}
+      <Tooltip location="right">
+        <LeaderboardListItem
+          value={1 -
+            values.slice(0, slice).reduce((a, b) => a + b.value, 0) / total}
+          color="bg-gray-100"
+        >
+          <div class="italic text-gray-500" slot="title">All Others</div>
+          <div class="italic text-gray-500" slot="right">
+            {total -
+              values
+                .slice(0, !seeMore ? slice : seeMoreSlice)
+                .reduce((a, b) => a + b.value, 0) -
+              nullCount}
+          </div>
+        </LeaderboardListItem>
+        <TooltipContent slot="tooltip-content">see next 12</TooltipContent>
+      </Tooltip>
+      <hr />
+
+      <button
+        class="italic pl-2 pr-2 p-1 text-gray-500 w-full text-left hover:bg-gray-50"
+        on:click={() => {
+          seeMore = !seeMore;
+        }}
+      >
+        {#if seeMore}
+          show only top {slice}
+        {:else}
+          show {seeMoreSlice - slice} more
+          {#if hiddenSelectedValues.length}
+            ({hiddenSelectedValues.length}
+            selected value{#if hiddenSelectedValues.length !== 1}s{/if} hidden.)
+          {/if}
         {/if}
-    </LeaderboardList>
+      </button>
+    {/if}
+  </LeaderboardList>
 </LeaderboardContainer>
