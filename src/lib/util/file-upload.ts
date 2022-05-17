@@ -55,7 +55,6 @@ function reportFileErrors(invalidFiles: File[]) {
  * through reportFileErrors.
  */
 export function handleFileUploads(filesArray: File[]) {
-  console.log(filesArray.length, filesArray);
   let invalidFiles = [];
   if (filesArray) {
     invalidFiles = uploadTableFiles(
@@ -78,7 +77,6 @@ export function onSourceDrop(e: DragEvent) {
 
 /** an event callback when a source table file is chosen manually */
 export function onManualSourceUpload(e: Event) {
-  console.log(e);
   const files = (<HTMLInputElement>e.target)?.files as FileList;
   if (files) {
     handleFileUploads(Array.from(files));
