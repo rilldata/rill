@@ -65,21 +65,17 @@ export function placeElement({
 
   // Task 1: check if we need to reflect agains the location axis.
   if (location === "bottom") {
-
-    if (parentBottom + elementHeight + distance + pad  > windowHeight + y) {
+    if (parentBottom + elementHeight + distance + pad > windowHeight + y) {
       top = parentTop - elementHeight - distance;
     } else {
       top = parentBottom + distance;
     }
-
-    
   } else if (location === "top") {
     if (parentTop - elementHeight - distance - pad < y) {
       top = parentBottom + distance;
     } else {
       top = parentTop - elementHeight - distance;
     }
-
   } else if (location === "left") {
     if (parentLeft - distance - elementWidth - pad < x) {
       // reflect
@@ -87,52 +83,47 @@ export function placeElement({
     } else {
       left = parentLeft - elementWidth - distance;
     }
-
-  } else if (location === 'right') {
+  } else if (location === "right") {
     if (parentRight + elementWidth + distance + pad > windowWidth + x) {
       left = parentLeft - elementWidth - distance;
     } else {
       left = parentRight + distance;
     }
-    
   }
 
   // OUR SECOND JOB IS RE-ALIGNMENT ALONG THE ALIGNMENT ACTION.
   let alignmentValue;
 
-  let rightLeft = (location === 'right' || location === 'left');
+  let rightLeft = location === "right" || location === "left";
 
   switch (alignment) {
     case "start": {
-      alignmentValue = rightLeft ? 
-        parentTop : // right / left
-        parentLeft; // top / bottom
+      alignmentValue = rightLeft
+        ? parentTop // right / left
+        : parentLeft; // top / bottom
       break;
     }
     case "end": {
-      alignmentValue = rightLeft ? 
-        parentBottom - elementHeight : // right / left
-        parentRight - elementWidth;    // top / bottom
+      alignmentValue = rightLeft
+        ? parentBottom - elementHeight // right / left
+        : parentRight - elementWidth; // top / bottom
       break;
     }
-    default: { // 'middle'
-      alignmentValue = rightLeft ? 
-      parentTop - (elementHeight - parentHeight) / 2 : // right / left
-      parentLeft - (elementWidth - parentWidth) / 2;  // top / bottom
+    default: {
+      // 'middle'
+      alignmentValue = rightLeft
+        ? parentTop - (elementHeight - parentHeight) / 2 // right / left
+        : parentLeft - (elementWidth - parentWidth) / 2; // top / bottom
       break;
     }
   }
   const alignMin = pad + (rightLeft ? y : x);
-  const alignMax = rightLeft ? 
-    y + windowHeight - elementHeight - pad : 
-    x + windowWidth  - elementWidth  - pad;
-  
-  const value = minmax(
-    alignmentValue,
-    alignMin,
-    alignMax
-  );
-  
+  const alignMax = rightLeft
+    ? y + windowHeight - elementHeight - pad
+    : x + windowWidth - elementWidth - pad;
+
+  const value = minmax(alignmentValue, alignMin, alignMax);
+
   if (rightLeft) {
     top = value;
   } else {

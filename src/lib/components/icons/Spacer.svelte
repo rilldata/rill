@@ -1,5 +1,5 @@
 <script>
-    export let size = '1em';
-</script>    
+  export let size = "1em";
+</script>
 
-<div style:width={size} style:height={size}></div>
+<div style:width={size} style:height={size} />

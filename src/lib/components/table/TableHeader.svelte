@@ -1,17 +1,18 @@
 <script lang="ts">
-export let sticky:string = 'top';
+  export let sticky: string = "top";
 </script>
-<th class="
+
+<th
+  class="
     p-0
 "
-    class:sticky={!!sticky}
-    class:top-0={sticky === 'top'}
-    class:left-0={sticky === 'left'}
-    class:z-10={!!sticky}
-
+  class:sticky={!!sticky}
+  class:top-0={sticky === "top"}
+  class:left-0={sticky === "left"}
+  class:z-10={!!sticky}
 >
-    <div 
-        class="
+  <div
+    class="
             p-3
             pl-4
             pr-4
@@ -22,7 +23,7 @@ export let sticky:string = 'top';
             text-left
             bg-gray-100
         "
-    >
-        <slot />
-    </div>
+  >
+    <slot />
+  </div>
 </th>

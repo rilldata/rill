@@ -14,8 +14,8 @@ const ColumnProfilePriorityMap = {
 
 export class ProfileColumnActions extends DataModelerActions {
     @DataModelerActions.DerivedAction()
-    public async collectProfileColumns({stateService}: DataProfileStateActionArg,
-                                       entityType: EntityType, entityId: string): Promise<void> {
+    public async collectProfileColumns({ stateService }: DataProfileStateActionArg,
+        entityType: EntityType, entityId: string): Promise<void> {
         const persistentEntity = this.dataModelerStateService
             .getEntityById(entityType, StateType.Persistent, entityId);
         const entity = stateService.getById(entityId);
@@ -26,11 +26,11 @@ export class ProfileColumnActions extends DataModelerActions {
         try {
             await Promise.all(entity.profile.map(column =>
                 this.collectColumnInfo(entityType, entityId, persistentEntity.tableName, column)));
-        } catch (err) {}
+        } catch (err) { }
     }
 
     private async collectColumnInfo(entityType: EntityType, entityId: string,
-                                    tableName: string, column: ProfileColumn): Promise<void> {
+        tableName: string, column: ProfileColumn): Promise<void> {
         const promises = [];
         if (CATEGORICALS.has(column.type) || BOOLEANS.has(column.type)) {
             promises.push(this.collectTopKAndCardinality(entityType, entityId, tableName, column));
@@ -50,80 +50,80 @@ export class ProfileColumnActions extends DataModelerActions {
         promises.push(this.collectNullCount(entityType, entityId, tableName, column));
         await Promise.all(promises);
         // run one more time!
-       //if (TIMESTAMPS.has(column.type)) await this.collectTimestampRollup(entityType, entityId, tableName, column, 108, undefined);
+        //if (TIMESTAMPS.has(column.type)) await this.collectTimestampRollup(entityType, entityId, tableName, column, 108, undefined);
 
     }
 
     private async collectTopKAndCardinality(entityType: EntityType, entityId: string,
-                                            tableName: string, column: ProfileColumn): Promise<void> {
-        this.dataModelerStateService.dispatch("updateColumnSummary",[
+        tableName: string, column: ProfileColumn): Promise<void> {
+        this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
             await this.databaseActionQueue.enqueue(
-                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
                 "getTopKAndCardinality", [tableName, column.name]),
         ]);
     }
 
     private async collectSmallestTimegrainEstimate(entityType: EntityType, entityId: string,
-                                            tableName: string, column: ProfileColumn): Promise<void> {
-            this.dataModelerStateService.dispatch("updateColumnSummary",[
+        tableName: string, column: ProfileColumn): Promise<void> {
+        this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
             await this.databaseActionQueue.enqueue(
-            {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
-            "estimateSmallestTimeGrain", [tableName, column.name]),
+                { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+                "estimateSmallestTimeGrain", [tableName, column.name]),
         ]);
     }
 
     private async collectTimestampRollup(entityType: EntityType, entityId: string,
-            tableName: string, 
-            column: ProfileColumn, 
-            pixels:number = undefined,
-            sampleSize:number = undefined) : Promise<void> {
-        this.dataModelerStateService.dispatch("updateColumnSummary",[
-            entityType, entityId, column.name,
-            await this.databaseActionQueue.enqueue(
-            {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
-
-            "estimateTimestampRollup", [tableName, column.name, pixels, sampleSize]),
-        ]);                    
-    }
-
-    private async collectNumericHistogram(entityType: EntityType, entityId: string,
-                                          tableName: string, column: ProfileColumn): Promise<void> {
+        tableName: string,
+        column: ProfileColumn,
+        pixels: number = undefined,
+        sampleSize: number = undefined): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
             await this.databaseActionQueue.enqueue(
-                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+
+                "estimateTimestampRollup", [tableName, column.name, pixels, sampleSize]),
+        ]);
+    }
+
+    private async collectNumericHistogram(entityType: EntityType, entityId: string,
+        tableName: string, column: ProfileColumn): Promise<void> {
+        this.dataModelerStateService.dispatch("updateColumnSummary", [
+            entityType, entityId, column.name,
+            await this.databaseActionQueue.enqueue(
+                { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
                 "getNumericHistogram", [tableName, column.name, column.type]),
         ]);
     }
 
     private async collectTimeRange(entityType: EntityType, entityId: string,
-                                   tableName: string, column: ProfileColumn): Promise<void> {
+        tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
             await this.databaseActionQueue.enqueue(
-                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
                 "getTimeRange", [tableName, column.name]),
         ]);
     }
 
     private async collectDescriptiveStatistics(entityType: EntityType, entityId: string,
-                                               tableName: string, column: ProfileColumn): Promise<void> {
+        tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateColumnSummary", [
             entityType, entityId, column.name,
             await this.databaseActionQueue.enqueue(
-                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
                 "getDescriptiveStatistics", [tableName, column.name]),
         ]);
     }
 
     private async collectNullCount(entityType: EntityType, entityId: string,
-                                   tableName: string, column: ProfileColumn): Promise<void> {
+        tableName: string, column: ProfileColumn): Promise<void> {
         this.dataModelerStateService.dispatch("updateNullCount", [
             entityType, entityId, column.name,
             await this.databaseActionQueue.enqueue(
-                {id: entityId, priority: ColumnProfilePriorityMap[entityType]},
+                { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
                 "getNullCount", [tableName, column.name]),
         ]);
     }

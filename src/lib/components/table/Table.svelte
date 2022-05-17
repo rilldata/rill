@@ -1,5 +1,3 @@
-<table 
-    on:mouseleave
-    class='relative border-collapse bg-white'>
-    <slot></slot>
+<table on:mouseleave class="relative border-collapse bg-white">
+  <slot />
 </table>

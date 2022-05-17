@@ -1,8 +1,8 @@
-import {DatabaseActions} from "./DatabaseActions";
-import type {CategoricalSummary, NumericSummary, TimeRangeSummary} from "$lib/types";
-import type {DatabaseMetadata} from "$common/database-service/DatabaseMetadata";
-import {sanitizeColumn} from "$common/utils/queryUtils";
-import {TIMESTAMPS} from "$lib/duckdb-data-types";
+import { DatabaseActions } from "./DatabaseActions";
+import type { CategoricalSummary, NumericSummary, TimeRangeSummary } from "$lib/types";
+import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import { sanitizeColumn } from "$common/utils/queryUtils";
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
 
 import { PreviewRollupInterval } from '$lib/duckdb-data-types';
 
@@ -21,14 +21,14 @@ export enum EstimatedSmallestTimeGrain {
 }
 
 export interface RollupInterval {
-    rollupInterval:string,
-    minValue:Date,
-    maxValue:Date
+  rollupInterval: string,
+  minValue: Date,
+  maxValue: Date
 }
 
 /** These are used for duckdb interval conversions. */
 const MICROS = {
-  hour:   1000 * 1000 * 60 * 60,
+  hour: 1000 * 1000 * 60 * 60,
   minute: 1000 * 1000 * 60,
   second: 1000 * 1000,
   millisecond: 1000
@@ -40,26 +40,26 @@ const MICROS = {
  * return an object.
  */
 export class DatabaseColumnActions extends DatabaseActions {
-    public async getTopKAndCardinality(metadata: DatabaseMetadata, tableName: string, columnName: string,
-                                       func = "count(*)"): Promise<CategoricalSummary> {
-        return {
-            topK: await this.getTopKOfColumn(metadata, tableName, columnName, func),
-            cardinality: await this.getCardinalityOfColumn(metadata, tableName, columnName),
-        };
-    }
+  public async getTopKAndCardinality(metadata: DatabaseMetadata, tableName: string, columnName: string,
+    func = "count(*)"): Promise<CategoricalSummary> {
+    return {
+      topK: await this.getTopKOfColumn(metadata, tableName, columnName, func),
+      cardinality: await this.getCardinalityOfColumn(metadata, tableName, columnName),
+    };
+  }
 
-    public async getNullCount(metadata: DatabaseMetadata,
-                              tableName: string, columnName: string): Promise<number> {
-        const sanitizedColumName = sanitizeColumn(columnName);
-        const [nullity] = await this.databaseClient.execute(
-            `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${sanitizedColumName} IS NULL;`);
-        return nullity.count;
-    }
+  public async getNullCount(metadata: DatabaseMetadata,
+    tableName: string, columnName: string): Promise<number> {
+    const sanitizedColumName = sanitizeColumn(columnName);
+    const [nullity] = await this.databaseClient.execute(
+      `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${sanitizedColumName} IS NULL;`);
+    return nullity.count;
+  }
 
-    public async getDescriptiveStatistics(metadata: DatabaseMetadata,
-                                          tableName: string, columnName: string): Promise<NumericSummary> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        const [results] = await this.databaseClient.execute(`
+  public async getDescriptiveStatistics(metadata: DatabaseMetadata,
+    tableName: string, columnName: string): Promise<NumericSummary> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    const [results] = await this.databaseClient.execute(`
             SELECT
                 min(${sanitizedColumnName}) as min,
                 reservoir_quantile(${sanitizedColumnName}, 0.25) as q25,
@@ -70,25 +70,25 @@ export class DatabaseColumnActions extends DatabaseActions {
                 stddev_pop(${sanitizedColumnName}) as sd
             FROM '${tableName}';
        `);
-        return { statistics: results };
+    return { statistics: results };
+  }
+
+  /**
+   * Estimates a reasonable rollup timegrain for the given table & timestamp column.
+   * This is currently based on a heuristic method that largely looks at
+   * the time range of the timestamp column and guesses a good rollup grain.
+   * @returns {RollupInterval} the rollup interval information, an object with a rollupInterval, minValue, maxValue
+   */
+  public async estimateIdealRollupInterval(metadata: DatabaseMetadata,
+    tableName: string, columnName: string): Promise<RollupInterval> {
+
+    function rollupTimegrainReturnFormat(rollupInterval, minValue, maxValue): RollupInterval {
+      return {
+        rollupInterval, minValue, maxValue,
+      }
     }
 
-    /**
-     * Estimates a reasonable rollup timegrain for the given table & timestamp column.
-     * This is currently based on a heuristic method that largely looks at
-     * the time range of the timestamp column and guesses a good rollup grain.
-     * @returns {RollupInterval} the rollup interval information, an object with a rollupInterval, minValue, maxValue
-     */
-    public async estimateIdealRollupInterval(metadata: DatabaseMetadata,
-        tableName: string, columnName: string): Promise<RollupInterval> {
-        
-        function rollupTimegrainReturnFormat(rollupInterval, minValue, maxValue) : RollupInterval {
-          return {
-            rollupInterval, minValue, maxValue,
-          }
-        }
-
-        const [timeRange] =  await this.databaseClient.execute(`SELECT 
+    const [timeRange] = await this.databaseClient.execute(`SELECT 
             max("${columnName}") - min("${columnName}") as r,
             max("${columnName}") as max_value,
             min("${columnName}") as min_value,
@@ -96,65 +96,65 @@ export class DatabaseColumnActions extends DatabaseActions {
             from 
         ${tableName}`);
 
-        const { r, max_value: maxValue, min_value: minValue, count } = timeRange;
-        
-        const range = typeof r === 'number' ? {days: r, micros:0, months: 0} : r;
-    
-        if (range.days === 0 && range.micros <= MICROS.minute) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.ms, minValue, maxValue);
-        }
-    
-        if (range.days === 0 && range.micros > MICROS.minute && range.micros <= MICROS.minute * 60) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.second, minValue, maxValue);
-        }
-    
-        if (range.days === 0 && range.micros <= MICROS.hour * 24) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.minute, minValue, maxValue);
-        }
-        if (range.days <= 7) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.hour, minValue, maxValue);
-        }
-        if (range.days <= (365 * 20)) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
-        }
-        if (range.days <= (365 * 500)) {
-            return rollupTimegrainReturnFormat(PreviewRollupInterval.month, minValue, maxValue);
-        } 
-        return rollupTimegrainReturnFormat(PreviewRollupInterval.year, minValue, maxValue);
+    const { r, max_value: maxValue, min_value: minValue, count } = timeRange;
+
+    const range = typeof r === 'number' ? { days: r, micros: 0, months: 0 } : r;
+
+    if (range.days === 0 && range.micros <= MICROS.minute) {
+      return rollupTimegrainReturnFormat(PreviewRollupInterval.ms, minValue, maxValue);
     }
 
-    /** 
-     * Contains an as-of-this-commit unpublished algorithm for an M4-like line density reduction.
-     * This will take in an n-length time series and produce a pixels * 4 reduction of the time series
-     * that preserves the shape and trends.
-     * 
-     * This algorithm expects the source table to have a timestamp column and some kind of value column,
-     * meaning it expects the data to essentially already be aggregated.
-     * 
-     * It's important to note that this implemention is NOT the original M4 aggregation method, but a method
-     * that has the same basic understanding but is much faster. 
-     * 
-     * Nonetheless, we mostly use this to reduce a many-thousands-point-long time series to about 120 * 4 pixels. 
-     * Importantly, this function runs very fast. For more information about the original M4 method,
-     * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
-     */
-    public async createTimestampRollupReduction(
-        metadata: DatabaseMetadata, 
-        table:string, 
-        timestampColumn:string, 
-        valueColumn:string, 
-        pixels:number) {
+    if (range.days === 0 && range.micros > MICROS.minute && range.micros <= MICROS.minute * 60) {
+      return rollupTimegrainReturnFormat(PreviewRollupInterval.second, minValue, maxValue);
+    }
 
-        const [timeSeriesLength] = await this.databaseClient.execute(`
+    if (range.days === 0 && range.micros <= MICROS.hour * 24) {
+      return rollupTimegrainReturnFormat(PreviewRollupInterval.minute, minValue, maxValue);
+    }
+    if (range.days <= 7) {
+      return rollupTimegrainReturnFormat(PreviewRollupInterval.hour, minValue, maxValue);
+    }
+    if (range.days <= (365 * 20)) {
+      return rollupTimegrainReturnFormat(PreviewRollupInterval.day, minValue, maxValue);
+    }
+    if (range.days <= (365 * 500)) {
+      return rollupTimegrainReturnFormat(PreviewRollupInterval.month, minValue, maxValue);
+    }
+    return rollupTimegrainReturnFormat(PreviewRollupInterval.year, minValue, maxValue);
+  }
+
+  /** 
+   * Contains an as-of-this-commit unpublished algorithm for an M4-like line density reduction.
+   * This will take in an n-length time series and produce a pixels * 4 reduction of the time series
+   * that preserves the shape and trends.
+   * 
+   * This algorithm expects the source table to have a timestamp column and some kind of value column,
+   * meaning it expects the data to essentially already be aggregated.
+   * 
+   * It's important to note that this implemention is NOT the original M4 aggregation method, but a method
+   * that has the same basic understanding but is much faster. 
+   * 
+   * Nonetheless, we mostly use this to reduce a many-thousands-point-long time series to about 120 * 4 pixels. 
+   * Importantly, this function runs very fast. For more information about the original M4 method,
+   * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
+   */
+  public async createTimestampRollupReduction(
+    metadata: DatabaseMetadata,
+    table: string,
+    timestampColumn: string,
+    valueColumn: string,
+    pixels: number) {
+
+    const [timeSeriesLength] = await this.databaseClient.execute(`
             SELECT count(*) as c FROM "${table}"
         `)
-        if (timeSeriesLength.c < pixels * 4) {
-            return this.databaseClient.execute(`
+    if (timeSeriesLength.c < pixels * 4) {
+      return this.databaseClient.execute(`
                 SELECT "${timestampColumn}" as ts, "${valueColumn}" as count FROM "${table}"
             `)
-        }
-        
-        const reduction = await this.databaseClient.execute(`
+    }
+
+    const reduction = await this.databaseClient.execute(`
         -- extract unix time
         WITH Q as (
             SELECT extract('epoch' from "${timestampColumn}") as t, "${valueColumn}" as v FROM "${table}"
@@ -186,65 +186,65 @@ export class DatabaseColumnActions extends DatabaseActions {
         FROM Q GROUP BY bin
         ORDER BY bin
         `)
-        return reduction.map((di => {
-            /** 
-             * Extract the four prototype points for each pixel bin,
-             * sort the points, then flatten the entire array.
-             */
-            let points = [
-                {
-                    ts: new Date(di.min_t),
-                    count: di.argmin_tv, bin: di.bin
-                },
-                {
-                    ts: new Date(di.argmin_vt),
-                    count: di.min_v, bin: di.bin
-                },
-                {
-                    ts: new Date(di.argmax_vt),
-                    count: di.max_v , bin: di.bin
-                },
-                {
-                    ts: new Date(di.max_t),
-                    count: di.argmax_tv, bin: di.bin
-                },
-            ]
-            /** Sort the final point set. */
-            points = points.sort((a,b) => {
-                if (a.ts === b.ts) return 0;
-                return a.ts < b.ts ? -1 : 1;
-            })
-            return points;
-        })).flat();
-    }
+    return reduction.map((di => {
+      /** 
+       * Extract the four prototype points for each pixel bin,
+       * sort the points, then flatten the entire array.
+       */
+      let points = [
+        {
+          ts: new Date(di.min_t),
+          count: di.argmin_tv, bin: di.bin
+        },
+        {
+          ts: new Date(di.argmin_vt),
+          count: di.min_v, bin: di.bin
+        },
+        {
+          ts: new Date(di.argmax_vt),
+          count: di.max_v, bin: di.bin
+        },
+        {
+          ts: new Date(di.max_t),
+          count: di.argmax_tv, bin: di.bin
+        },
+      ]
+      /** Sort the final point set. */
+      points = points.sort((a, b) => {
+        if (a.ts === b.ts) return 0;
+        return a.ts < b.ts ? -1 : 1;
+      })
+      return points;
+    })).flat();
+  }
 
+  /**
+   * A single-pass heuristic for generating a count(*) over an entire timestamp column,
+   * rolled up to a hopefully useful timegrain.
+   * It will make a reasonable estimate of how the column should be rolled up,
+   * then produce both the final rolled up result and a reduced M4-like spark representation
+   * using the same temporary table.
+   * A sampleSize argument is provided to provide an "optimistic query" option for the user
+   * if speed is a concern. A reasonable 1,000,000 row sample should speed things up
+   * in extreme cases.
+   */
+  public async estimateTimestampRollup(
+    metadata: DatabaseMetadata,
+    table: string, column: string, pixels = undefined, sampleSize = undefined) {
+
+    const { rollupInterval, minValue, maxValue } = await this.estimateIdealRollupInterval(metadata, table, column);
+    const [totalRow] = await this.databaseClient.execute(`SELECT count(*) as c from "${table}"`);
+    const total = totalRow.c;
+
+    const inflator = (sampleSize && sampleSize < total) ? (total / sampleSize) : 1;
     /**
-     * A single-pass heuristic for generating a count(*) over an entire timestamp column,
-     * rolled up to a hopefully useful timegrain.
-     * It will make a reasonable estimate of how the column should be rolled up,
-     * then produce both the final rolled up result and a reduced M4-like spark representation
-     * using the same temporary table.
-     * A sampleSize argument is provided to provide an "optimistic query" option for the user
-     * if speed is a concern. A reasonable 1,000,000 row sample should speed things up
-     * in extreme cases.
+     * Generate the rolled up time series as a temporary table and 
+     * then compute the result set + any M4-like reduction on it.
+     * We first create a resultset of zero-values,
+     * then join this result set against the empirical counts.
      */
-    public async estimateTimestampRollup(
-          metadata:DatabaseMetadata,
-          table:string, column:string, pixels = undefined, sampleSize = undefined) {
-        
-        const {rollupInterval, minValue, maxValue} = await this.estimateIdealRollupInterval(metadata, table, column);
-        const [ totalRow ] = await this.databaseClient.execute(`SELECT count(*) as c from "${table}"`);
-        const total = totalRow.c;
-        
-        const inflator = (sampleSize && sampleSize < total) ? (total / sampleSize) : 1;
-        /**
-         * Generate the rolled up time series as a temporary table and 
-         * then compute the result set + any M4-like reduction on it.
-         * We first create a resultset of zero-values,
-         * then join this result set against the empirical counts.
-         */
-        try {
-            await this.databaseClient.execute(`CREATE TEMPORARY TABLE _ts_ AS (
+    try {
+      await this.databaseClient.execute(`CREATE TEMPORARY TABLE _ts_ AS (
                 -- generate a time series column that has the intended range
                 WITH template as (
                     SELECT 
@@ -280,71 +280,71 @@ export class DatabaseColumnActions extends DatabaseActions {
                 LEFT OUTER JOIN series ON template.ts = series.ts
                 ORDER BY template.ts
             )`);
-        } catch (err) {
-            await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
-        }
-        
-        // decide if the final result set has to be thrown out
-        
-        let spark;
-        
-        if (pixels) {
-            /**
-             * Generate the M4-like reduction of this time series.
-             * This variation will produce 4 points per pixel – the left bound, right bound,
-             * the max, and the min.
-             */
-            spark = await this.createTimestampRollupReduction(metadata, '_ts_', 'ts', 'count', pixels);
-        } 
-        /** Materialize the final time series. */
-        const results = await this.databaseClient.execute(`SELECT * from _ts_`);
-        await this.databaseClient.execute(`DROP TABLE _ts_`);
-
-        return {
-            rollup: {
-              results, 
-              rollupInterval, 
-              spark,
-              sampleSize
-            }
-        }
+    } catch (err) {
+      await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
     }
 
-    /**
-     * Estimates the smallest time grain present in the column.
-     * The "smallest time grain" is the smallest value that we believe the user
-     * can reliably roll up. In other words, if the data is reported daily, this
-     * action will return "day", since that's the smallest rollup grain we can
-     * rely on.
-     * 
-     * This function can only focus on some common time grains. It will operate on
-     * - ms
-     * - second
-     * - minute
-     * - hour
-     * - day
-     * - week
-     * - month
-     * - year
-     * 
-     * It will not estimate any more nuanced or difficult-to-measure time grains, such as
-     * quarters, once-a-month, etc.
-     * 
-     * It accomplishes its goal by sampling 500k values of a column and then estimating the cardinality
-     * of each. If there are < 500k samples, the action will use all of the column's data.
-     * We're not sure all the ways this heuristic will fail, but it seems pretty resilient to the tests
-     * we've thrown at it.
-     */
-    public async estimateSmallestTimeGrain(metadata: DatabaseMetadata,
-        tableName: string, columnName: string, sampleSize = 500000): Promise<{ estimatedSmallestTimeGrain: EstimatedSmallestTimeGrain }> {
-      const [total] = await this.databaseClient.execute(`
+    // decide if the final result set has to be thrown out
+
+    let spark;
+
+    if (pixels) {
+      /**
+       * Generate the M4-like reduction of this time series.
+       * This variation will produce 4 points per pixel – the left bound, right bound,
+       * the max, and the min.
+       */
+      spark = await this.createTimestampRollupReduction(metadata, '_ts_', 'ts', 'count', pixels);
+    }
+    /** Materialize the final time series. */
+    const results = await this.databaseClient.execute(`SELECT * from _ts_`);
+    await this.databaseClient.execute(`DROP TABLE _ts_`);
+
+    return {
+      rollup: {
+        results,
+        rollupInterval,
+        spark,
+        sampleSize
+      }
+    }
+  }
+
+  /**
+   * Estimates the smallest time grain present in the column.
+   * The "smallest time grain" is the smallest value that we believe the user
+   * can reliably roll up. In other words, if the data is reported daily, this
+   * action will return "day", since that's the smallest rollup grain we can
+   * rely on.
+   * 
+   * This function can only focus on some common time grains. It will operate on
+   * - ms
+   * - second
+   * - minute
+   * - hour
+   * - day
+   * - week
+   * - month
+   * - year
+   * 
+   * It will not estimate any more nuanced or difficult-to-measure time grains, such as
+   * quarters, once-a-month, etc.
+   * 
+   * It accomplishes its goal by sampling 500k values of a column and then estimating the cardinality
+   * of each. If there are < 500k samples, the action will use all of the column's data.
+   * We're not sure all the ways this heuristic will fail, but it seems pretty resilient to the tests
+   * we've thrown at it.
+   */
+  public async estimateSmallestTimeGrain(metadata: DatabaseMetadata,
+    tableName: string, columnName: string, sampleSize = 500000): Promise<{ estimatedSmallestTimeGrain: EstimatedSmallestTimeGrain }> {
+    const [total] = await this.databaseClient.execute(`
         SELECT count(*) as c from "${tableName}"
       `)
-      const totalRows = total.c;
-      // only sample when you have a lot of data.
-      const useSample = sampleSize > totalRows ? '' : `USING SAMPLE ${(100 * sampleSize / totalRows)}%`
+    const totalRows = total.c;
+    // only sample when you have a lot of data.
+    const useSample = sampleSize > totalRows ? '' : `USING SAMPLE ${(100 * sampleSize / totalRows)}%`
 
-      const [ timeGrainResult ] = await this.databaseClient.execute(`
+    const [timeGrainResult] = await this.databaseClient.execute(`
       WITH cleaned_column AS (
           SELECT "${columnName}" as cd
           from ${tableName}
@@ -381,16 +381,16 @@ export class DatabaseColumnActions extends DatabaseActions {
         ) as estimatedSmallestTimeGrain
       FROM time_grains
       `);
-      return timeGrainResult;
-    }
+    return timeGrainResult;
+  }
 
-    public async getNumericHistogram(metadata: DatabaseMetadata,
-                                              tableName: string, columnName: string, columnType: string): Promise<NumericSummary> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        // use approx_count_distinct to get the immediate cardinality of this column.
-        const [buckets] = await this.databaseClient.execute(`SELECT approx_count_distinct(${sanitizedColumnName}) as count from ${tableName}`);
-        const bucketSize = Math.min(40, buckets.count);
-        const result = await this.databaseClient.execute(`
+  public async getNumericHistogram(metadata: DatabaseMetadata,
+    tableName: string, columnName: string, columnType: string): Promise<NumericSummary> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    // use approx_count_distinct to get the immediate cardinality of this column.
+    const [buckets] = await this.databaseClient.execute(`SELECT approx_count_distinct(${sanitizedColumnName}) as count from ${tableName}`);
+    const bucketSize = Math.min(40, buckets.count);
+    const result = await this.databaseClient.execute(`
           WITH data_table AS (
             SELECT ${TIMESTAMPS.has(columnType) ? `epoch(${sanitizedColumnName})` : `${sanitizedColumnName}::DOUBLE`} as ${sanitizedColumnName} 
             FROM ${tableName}
@@ -435,37 +435,37 @@ export class DatabaseColumnActions extends DatabaseActions {
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
 	      `);
-        return { histogram: result };
-    }
+    return { histogram: result };
+  }
 
-    public async getTimeRange(metadata: DatabaseMetadata,
-                              tableName: string, columnName: string): Promise<TimeRangeSummary> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        const [ranges] = await this.databaseClient.execute(`
+  public async getTimeRange(metadata: DatabaseMetadata,
+    tableName: string, columnName: string): Promise<TimeRangeSummary> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    const [ranges] = await this.databaseClient.execute(`
 	        SELECT
 		    min(${sanitizedColumnName}) as min, max(${sanitizedColumnName}) as max, 
 		    max(${sanitizedColumnName}) - min(${sanitizedColumnName}) as interval
 		    FROM '${tableName}';
 	    `);
-        return ranges;
-    }
+    return ranges;
+  }
 
-    private async getTopKOfColumn(metadata: DatabaseMetadata,
-                          tableName: string, columnName: string, func = "count(*)"): Promise<any> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        return this.databaseClient.execute(`
+  private async getTopKOfColumn(metadata: DatabaseMetadata,
+    tableName: string, columnName: string, func = "count(*)"): Promise<any> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    return this.databaseClient.execute(`
             SELECT ${sanitizedColumnName} as value, ${func} AS count from '${tableName}'
             GROUP BY ${sanitizedColumnName}
             ORDER BY count desc
             LIMIT ${TOP_K_COUNT};
         `);
-    }
+  }
 
-    private async getCardinalityOfColumn(metadata: DatabaseMetadata,
-                                 tableName: string, columnName: string): Promise<number> {
-        const sanitizedColumnName = sanitizeColumn(columnName);
-        const [results] = await this.databaseClient.execute(
-            `SELECT approx_count_distinct(${sanitizedColumnName}) as count from '${tableName}';`);
-        return results.count;
-    }
+  private async getCardinalityOfColumn(metadata: DatabaseMetadata,
+    tableName: string, columnName: string): Promise<number> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
+    const [results] = await this.databaseClient.execute(
+      `SELECT approx_count_distinct(${sanitizedColumnName}) as count from '${tableName}';`);
+    return results.count;
+  }
 }
