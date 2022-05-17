@@ -41,57 +41,67 @@
       showModels = true;
     }
   }
+
+  // type Coll
+
+  let persistentModelEntities: PersistentModelEntity[] = [];
+  $: persistentModelEntities =
+    ($persistentModelStore && $persistentModelStore.entities) || [];
+
+  $: availableModels = persistentModelEntities.map((query) => {
+    let derivedModel = $derivedModelStore.entities.find(
+      (model) => model.id === query.id
+    );
+
+    return {
+      id: query.id,
+      tableSummaryProps: {
+        name: query.name,
+        cardinality: derivedModel?.cardinality ?? 0,
+        profile: derivedModel?.profile ?? [],
+        head: derivedModel?.preview ?? [],
+        sizeInBytes: derivedModel?.sizeInBytes ?? 0,
+        emphasizeTitle: query?.id === $store?.activeEntity?.id,
+      },
+    };
+  });
 </script>
 
-{#if $persistentModelStore && $persistentModelStore.entities}
-  <div
-    class="pl-4 pb-3 pr-4 grid justify-between"
-    style="grid-template-columns: auto max-content;"
-    out:slide={{ duration: 200 }}
+<div
+  class="pl-4 pb-3 pr-4 grid justify-between"
+  style="grid-template-columns: auto max-content;"
+  out:slide={{ duration: 200 }}
+>
+  <CollapsibleSectionTitle tooltipText={"models"} bind:active={showModels}>
+    <h4 class="flex flex-row items-center gap-x-2">
+      <ModelIcon size="16px" /> Models
+    </h4>
+  </CollapsibleSectionTitle>
+  <ContextButton
+    id={"create-model-button"}
+    tooltipText="create a new model"
+    on:click={addModel}
   >
-    <CollapsibleSectionTitle tooltipText={"models"} bind:active={showModels}>
-      <h4 class="flex flex-row items-center gap-x-2">
-        <ModelIcon size="16px" /> Models
-      </h4>
-    </CollapsibleSectionTitle>
-    <ContextButton
-      id={"create-model-button"}
-      tooltipText="create a new model"
-      on:click={addModel}
-    >
-      <AddIcon />
-    </ContextButton>
+    <AddIcon />
+  </ContextButton>
+</div>
+{#if showModels}
+  <div
+    class="pb-6 justify-self-end"
+    transition:slide={{ duration: 200 }}
+    id="assets-model-list"
+  >
+    {#each availableModels as { id, tableSummaryProps }, i (id)}
+      <CollapsibleTableSummary
+        on:select={() => {
+          dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
+        }}
+        on:delete={() => {
+          dataModelerService.dispatch("deleteModel", [id]);
+        }}
+        indentLevel={1}
+        {...tableSummaryProps}
+      />
+    {/each}
   </div>
-  {#if showModels}
-    <div
-      class="pb-6 justify-self-end"
-      transition:slide={{ duration: 200 }}
-      id="assets-model-list"
-    >
-      <!-- TODO: fix the object property access back to m.id from m["id"] once svelte fixes it -->
-      {#each $persistentModelStore.entities as query, i (query.id)}
-        {@const derivedModel = $derivedModelStore.entities.find(
-          (m) => m["id"] === query["id"]
-        )}
-        <CollapsibleTableSummary
-          on:select={() => {
-            dataModelerService.dispatch("setActiveAsset", [
-              EntityType.Model,
-              query.id,
-            ]);
-          }}
-          on:delete={() => {
-            dataModelerService.dispatch("deleteModel", [query.id]);
-          }}
-          indentLevel={1}
-          name={query.name}
-          cardinality={derivedModel?.cardinality ?? 0}
-          profile={derivedModel?.profile ?? []}
-          head={derivedModel?.preview ?? []}
-          sizeInBytes={derivedModel?.sizeInBytes ?? 0}
-          emphasizeTitle={query?.id === $store?.activeEntity?.id}
-        />
-      {/each}
-    </div>
-  {/if}
 {/if}
