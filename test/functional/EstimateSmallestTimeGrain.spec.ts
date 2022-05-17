@@ -7,7 +7,7 @@ import { DatabaseConfig } from "$common/config/DatabaseConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import { dataModelerServiceFactory } from "$server/serverFactory";
 
-import { generateSeries } from "../utils/query-generators"
+import { generateSeries } from "../utils/query-generators";
 import { timeGrainSeriesData } from "../data/EstimatedSmallestTimeGrain.data";
 import type { GeneratedTimeseriesTestCase } from "../data/EstimatedSmallestTimeGrain.data";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
@@ -40,8 +40,13 @@ export class EstimateSmallestTimeGrainSpec extends FunctionalTestBase {
 
   @TestBase.Test("seriesGeneratedTimegrainData")
   public async shouldIdentifyTimegrain(args: GeneratedTimeseriesTestCase) {
-    await this.dbClient.execute(generateSeries(args.table, args.start, args.end, args.interval));
-    const result = await this.databaseService.dispatch("estimateSmallestTimeGrain", [args.table, "ts"]) as { estimatedSmallestTimeGrain: EstimatedSmallestTimeGrain };
+    await this.dbClient.execute(
+      generateSeries(args.table, args.start, args.end, args.interval)
+    );
+    const result = (await this.databaseService.dispatch(
+      "estimateSmallestTimeGrain",
+      [args.table, "ts"]
+    )) as { estimatedSmallestTimeGrain: EstimatedSmallestTimeGrain };
     expect(args.expectedTimeGrain).toBe(result.estimatedSmallestTimeGrain);
   }
 }

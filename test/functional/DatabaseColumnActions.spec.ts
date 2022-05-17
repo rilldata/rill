@@ -9,8 +9,10 @@ export class DatabaseColumns extends FunctionalTestBase {
 
   private async testHistogramSummary(input, output) {
     const [model] = this.getModels("tableName", "query_0");
-    await this.clientDataModelerService.dispatch("updateModelQuery",
-      [model.id, input]);
+    await this.clientDataModelerService.dispatch("updateModelQuery", [
+      model.id,
+      input,
+    ]);
     await this.waitForModels();
     const [_, derivedModel] = this.getModels("tableName", "query_0");
     expect(derivedModel.profile[0].summary.histogram).toEqual(output);
