@@ -48,7 +48,7 @@ export class ProfileColumnActions extends DataModelerActions {
           )
         )
       );
-    } catch (err) {}
+    } catch (err) { }
   }
 
   private async collectColumnInfo(
@@ -105,8 +105,6 @@ export class ProfileColumnActions extends DataModelerActions {
       this.collectNullCount(entityType, entityId, tableName, column)
     );
     await Promise.all(promises);
-    // run one more time!
-    //if (TIMESTAMPS.has(column.type)) await this.collectTimestampRollup(entityType, entityId, tableName, column, 108, undefined);
   }
 
   private async collectTopKAndCardinality(
