@@ -183,7 +183,6 @@ let showModels = true;
                   on:delete={() => {
                     dataModelerService.dispatch("dropTable", [tableName]);
                   }}
-                  emphasizeTitle ={query?.id === activeEntityID}
                 />
               </div>
             {/each}
@@ -255,8 +254,8 @@ let showModels = true;
                 profile={derivedModel?.profile ?? []}
                 head={derivedModel?.preview ?? []}
                 sizeInBytes={derivedModel?.sizeInBytes ?? 0}
-                emphasizeTitle={query?.id === $store?.activeEntity?.id}
-              />
+                emphasizeTitle ={query?.id === activeEntityID}
+                />
             {/each}
           </div>
         {/if}
