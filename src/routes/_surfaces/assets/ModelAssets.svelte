@@ -26,16 +26,6 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  let activeModel: PersistentModelEntity;
-  $: activeModel =
-    $store &&
-    $persistentModelStore &&
-    $store?.activeEntity &&
-    $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find(
-          (q) => q.id === $store.activeEntity.id
-        )
-      : undefined;
   let showModels = true;
 
   async function addModel() {
