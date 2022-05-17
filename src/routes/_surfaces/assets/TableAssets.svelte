@@ -72,7 +72,6 @@
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             indentLevel={1}
-            icon={ParquetIcon}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             profile={derivedTable?.profile ?? []}

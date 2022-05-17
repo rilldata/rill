@@ -92,7 +92,6 @@
             dataModelerService.dispatch("deleteModel", [query.id]);
           }}
           indentLevel={1}
-          icon={ModelIcon}
           name={query.name}
           cardinality={derivedModel?.cardinality ?? 0}
           profile={derivedModel?.profile ?? []}

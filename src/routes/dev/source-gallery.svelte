@@ -41,7 +41,6 @@
             style:width="{innerWidth / 3 - 6}px"
           >
             <CollapsibleTableSummary
-              icon={ParquetIcon}
               name={tableName}
               cardinality={derivedTable?.cardinality ?? 0}
               profile={derivedTable?.profile ?? []}
