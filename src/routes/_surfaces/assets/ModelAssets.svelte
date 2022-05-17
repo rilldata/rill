@@ -37,6 +37,20 @@
         )
       : undefined;
   let showModels = true;
+
+  async function addModel() {
+    // create the new model.
+    let response = await dataModelerService.dispatch("addModel", [{}]);
+    // change the active asset to the new model.
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      response.id,
+    ]);
+    // if the models are not visible in the assets list, show them.
+    if (!showModels) {
+      showModels = true;
+    }
+  }
 </script>
 
 {#if $persistentModelStore && $persistentModelStore.entities}
@@ -53,19 +67,7 @@
     <ContextButton
       id={"create-model-button"}
       tooltipText="create a new model"
-      on:click={async () => {
-        // create the new model.
-        let response = await dataModelerService.dispatch("addModel", [{}]);
-        // change the active asset to the new model.
-        dataModelerService.dispatch("setActiveAsset", [
-          EntityType.Model,
-          response.id,
-        ]);
-        // if the models are not visible in the assets list, show them.
-        if (!showModels) {
-          showModels = true;
-        }
-      }}
+      on:click={addModel}
     >
       <AddIcon />
     </ContextButton>
