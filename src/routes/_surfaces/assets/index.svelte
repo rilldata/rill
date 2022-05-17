@@ -183,17 +183,7 @@ let showModels = true;
                   on:delete={() => {
                     dataModelerService.dispatch("dropTable", [tableName]);
                   }}
-<<<<<<< HEAD
-                  indentLevel={1}
-                  icon={ModelIcon}
-                  name={query.name}
-                  cardinality={derivedModel?.cardinality ?? 0}
-                  profile={derivedModel?.profile ?? []}
-                  head={derivedModel?.preview ?? []}
-                  sizeInBytes={derivedModel?.sizeInBytes ?? 0}
                   emphasizeTitle ={query?.id === activeEntityID}
-=======
->>>>>>> main
                 />
               </div>
             {/each}
