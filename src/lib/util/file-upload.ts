@@ -82,3 +82,11 @@ export function onManualSourceUpload(e: Event) {
     handleFileUploads(Array.from(files));
   }
 }
+
+export async function uploadFilesWithDialog() {
+  const input = document.createElement("input");
+  input.multiple = true;
+  input.type = "file";
+  input.onchange = onManualSourceUpload;
+  input.click();
+}

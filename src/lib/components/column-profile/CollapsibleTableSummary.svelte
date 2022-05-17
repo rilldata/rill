@@ -36,7 +36,6 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { config } from "./utils";
 
-  export let icon: SvelteComponent = undefined;
   export let name: string;
   export let path: string = undefined;
   export let cardinality: number;
