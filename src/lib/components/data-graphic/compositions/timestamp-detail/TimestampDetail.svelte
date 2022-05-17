@@ -306,7 +306,7 @@
 
 <div style:max-width="{width}px">
   <div
-    class="text-gray-600 pb-3"
+    class="text-gray-500 italic pb-3"
     style="
         display: grid;
         grid-template-columns: auto auto;
@@ -327,9 +327,8 @@
     <Tooltip distance={16} location="top">
       <div class="text-right">
         {#if estimatedSmallestTimeGrain}
-          min. interval <b style:font-weight="600"
-            >{estimatedSmallestTimeGrain}</b
-          >
+          min. interval
+          {estimatedSmallestTimeGrain}
         {/if}
       </div>
       <TooltipContent slot="tooltip-content">
@@ -356,7 +355,7 @@
     <Tooltip distance={16} location="top">
       <div class="text-right">
         {#if rollupGrain}
-          showing <b>{PreviewRollupIntervalFormatter[rollupGrain]}</b> row counts
+          showing {PreviewRollupIntervalFormatter[rollupGrain]} row counts
         {/if}
       </div>
       <TooltipContent slot="tooltip-content">
