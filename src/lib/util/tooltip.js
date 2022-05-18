@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { listen } from "svelte/internal";
 import { placeElement } from "../utils/float-placement";
 

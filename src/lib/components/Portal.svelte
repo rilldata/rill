@@ -1,5 +1,4 @@
 <script lang="ts">
-  // eslint-disable-next-line import/no-extraneous-dependencies
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/env";
   export let target: string = undefined;
