@@ -31,11 +31,8 @@ module.exports = {
     "@typescript-eslint/ban-types": "off",
     "no-useless-escape": "off",
     "no-empty": "off",
-    // "import/no-extraneous-dependencies": "off",
     "@typescript-eslint/no-empty-interface": "off",
-    // "svelte/unused-export-let": "off",
     "use-isnan": "off",
-    "no-var": "off",
-    "no-inner-declarations": "off",
+    "no-var": "error",
   },
 };
