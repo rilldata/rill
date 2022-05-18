@@ -5,13 +5,16 @@
 <button
   style:height="32px"
   style:grid-template-columns="auto max-content"
-  class:font-bold={!isActive}
+  class:font-semibold={!isActive}
   class="
-        grid w-full justify-between items-center pl-2 pr-2
+        pl-2 pr-2
+        grid justify-between items-center 
+        w-full
         border-b
         border-gray-200
         rounded-t
         bg-white
+        text-gray-600
     "
   on:click
 >

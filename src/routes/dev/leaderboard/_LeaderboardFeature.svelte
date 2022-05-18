@@ -25,7 +25,7 @@
   export let slice = 7;
   export let seeMoreSlice = 15;
 
-  let seeMore = false;
+  export let seeMore = false;
 
   const dispatch = createEventDispatcher();
 
@@ -40,6 +40,8 @@
   $: hiddenSelectedValues = values.filter((di, i) => {
     return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
   });
+
+  let expanded = false;
 </script>
 
 <LeaderboardContainer focused={atLeastOneActive}>
@@ -53,7 +55,13 @@
         {displayName}
       </div>
       <div slot="right">
-        {#if activeValues.length}
+        <button
+          on:click={() => {
+            dispatch("expand");
+          }}
+          >{#if expanded}less{:else}more{/if}</button
+        >
+        <!-- {#if activeValues.length}
           <button
             in:fly|local={{ duration: 100, y: 4 }}
             out:fly|local={{ duration: 100, y: -4 }}
@@ -70,7 +78,7 @@
           >
             clear <Close />
           </button>
-        {/if}
+        {/if} -->
       </div>
     </LeaderboardHeader>
     <TooltipContent slot="tooltip-content">
@@ -92,7 +100,11 @@
             on:click={() => {
               dispatch("select-item", label);
             }}
-            color={isActive ? "bg-blue-200" : "bg-gray-100"}
+            color={isActive
+              ? "bg-blue-200"
+              : activeValues.length
+              ? "bg-gray-100"
+              : "bg-gray-200"}
           >
             <!-- 
                     title element
@@ -136,11 +148,7 @@
     {/each}
     {#if values.length > slice}
       <Tooltip location="right">
-        <LeaderboardListItem
-          value={1 -
-            values.slice(0, slice).reduce((a, b) => a + b.value, 0) / total}
-          color="bg-gray-100"
-        >
+        <LeaderboardListItem value={0} color="bg-gray-100">
           <div class="italic text-gray-500" slot="title">All Others</div>
           <div class="italic text-gray-500" slot="right">
             {total -
@@ -152,9 +160,8 @@
         </LeaderboardListItem>
         <TooltipContent slot="tooltip-content">see next 12</TooltipContent>
       </Tooltip>
-      <hr />
 
-      <button
+      <!-- <button
         class="italic pl-2 pr-2 p-1 text-gray-500 w-full text-left hover:bg-gray-50"
         on:click={() => {
           seeMore = !seeMore;
@@ -169,7 +176,7 @@
             selected value{#if hiddenSelectedValues.length !== 1}s{/if} hidden.)
           {/if}
         {/if}
-      </button>
+      </button> -->
     {/if}
   </LeaderboardList>
 </LeaderboardContainer>

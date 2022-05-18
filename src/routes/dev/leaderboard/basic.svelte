@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { fly } from "svelte/transition";
+  import { fly, fade } from "svelte/transition";
+  //import { flip } from "svelte/animate";
+  import { createFlipAnimationFactory } from "./_custom-flip";
+  import { quadInOut as flipEasing } from "svelte/easing";
   import Close from "$lib/components/icons/Close.svelte";
   /** for now, this LeaderboardFeature.svelte file will be here. */
   import Leaderboard from "./_LeaderboardFeature.svelte";
 
   import { swimLanePlacement } from "$lib/util/swim-lane-placement";
   import { onMount } from "svelte";
+
+  const { flip, isFlipped } = createFlipAnimationFactory();
 
   /** remove this before we componentize anything. */
   let files = [];
@@ -24,7 +29,7 @@
   /**
    * get the current leaderboard element.
    */
-  let currentLeaderboard = leaderboardSet.length ? leaderboardSet[0][1] : [];
+  let currentLeaderboard = leaderboardSet.length ? leaderboardSet[4][1] : [];
   let activeValues = {};
 
   function initializeActiveValues(leaderboards) {
@@ -46,7 +51,7 @@
   });
 
   let columns = 3;
-  let leaderboardContainer: Element;
+  let leaderboardContainer: HTMLElement;
   let availableWidth = 0;
   function onResize() {
     availableWidth = leaderboardContainer.offsetWidth;
@@ -57,10 +62,16 @@
     // determine initial resize.
     onResize();
   });
+
+  let leaderboardExpanded: string;
+  function handleLeaderboarding(leaderboards, expandedLeaderboard = undefined) {
+    return expandedLeaderboard
+      ? leaderboards.filter((l) => l.displayName === expandedLeaderboard)
+      : leaderboards;
+  }
 </script>
 
 <svelte:window on:resize={onResize} />
-repeat({columns}, max-content)
 <div class="w-screen min-h-screen bg-white p-8">
   <section>
     {#if leaderboardSet.length}
@@ -97,39 +108,58 @@ repeat({columns}, max-content)
       </header>
       <div bind:this={leaderboardContainer}>
         <div
-          style:grid-template-columns="repeat({columns}, max-content)"
+          style:grid-template-columns="repeat({leaderboardExpanded
+            ? 1
+            : columns}, {leaderboardExpanded ? "1fr" : "315px"})"
           class="
-            grid 
-            gap-6 justify-start w-max"
+            grid
+            gap-6 justify-start"
         >
           <!-- {#each currentLeaderboard.leaderboards as {displayName, values, nullCount }} -->
-          {#each swimLanePlacement(currentLeaderboard.leaderboards, (leaderboard) => leaderboard.values.length, columns) as lane, i}
-            <div class="flex flex-col">
-              {#each lane as { displayName, values, nullCount }, j (displayName)}
-                <Leaderboard
-                  on:select-item={(event) => {
-                    activeValues[displayName];
-                    if (!activeValues[displayName].includes(event.detail)) {
-                      activeValues[displayName] = [
-                        ...activeValues[displayName],
-                        event.detail,
-                      ];
-                    } else {
-                      activeValues[displayName] = activeValues[
-                        displayName
-                      ]?.filter((b) => b !== event.detail);
-                    }
-                  }}
-                  on:clear-all={() => {
-                    activeValues[displayName] = [];
-                  }}
-                  activeValues={activeValues[displayName]}
-                  {displayName}
-                  {values}
-                  total={currentLeaderboard.total}
-                  {nullCount}
-                />
-              {/each}
+          {#each handleLeaderboarding(currentLeaderboard.leaderboards, leaderboardExpanded) as { displayName, values, nullCount }, i (displayName)}
+            <div
+              style:width={leaderboardExpanded === displayName
+                ? `${availableWidth}px`
+                : "315px"}
+              transition:fade={{ duration: 200 }}
+              animate:flip={{
+                duration: leaderboardExpanded === displayName ? 900 : 900,
+                easing: flipEasing,
+              }}
+              style:grid-column={1 + (i % columns)}
+              style:grid-row={1 + Math.floor(i / columns)}
+            >
+              <Leaderboard
+                seeMore={leaderboardExpanded === displayName}
+                on:expand={() => {
+                  if (leaderboardExpanded === displayName)
+                    leaderboardExpanded = undefined;
+                  else {
+                    leaderboardExpanded = displayName;
+                  }
+                }}
+                on:select-item={(event) => {
+                  activeValues[displayName];
+                  if (!activeValues[displayName].includes(event.detail)) {
+                    activeValues[displayName] = [
+                      ...activeValues[displayName],
+                      event.detail,
+                    ];
+                  } else {
+                    activeValues[displayName] = activeValues[
+                      displayName
+                    ]?.filter((b) => b !== event.detail);
+                  }
+                }}
+                on:clear-all={() => {
+                  activeValues[displayName] = [];
+                }}
+                activeValues={activeValues[displayName]}
+                {displayName}
+                {values}
+                total={currentLeaderboard.total}
+                {nullCount}
+              />
             </div>
           {/each}
         </div>
