@@ -172,7 +172,7 @@
                 {#if titleElementHovered || emphasizeTitle}
                   <span
                     ><span
-                      >{cardinality !== undefined && cardinality !== NaN
+                      >{cardinality !== undefined && !isNaN(cardinality)
                         ? formatInteger(interimCardinality)
                         : "no"}</span
                     >
