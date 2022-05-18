@@ -135,9 +135,6 @@
     return CTEs;
   }
 
-  function trackDownFrom(query) {}
-
-  ////
   $: parse = getSubquery(content, location);
   $: ctes = extractCTEs(content, location);
 </script>
