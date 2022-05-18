@@ -15,6 +15,7 @@ export/
 .idea
 .vscode
 /temp
+/tmp
 
 # data files
 *.duckdb
