@@ -75,13 +75,9 @@
   let selectedColumns = [];
 
   let sortedProfile;
-  function sortByOriginalOrder() {
-    sortedProfile = profile;
-  }
+  const sortByOriginalOrder = null;
 
   let sortMethod = defaultSort;
-  // this predicate actually is valid but typescript doesn't seem to agree.
-  // @ts-ignore
   $: if (sortMethod !== sortByOriginalOrder) {
     sortedProfile = [...profile].sort(sortMethod);
   } else {
