@@ -37,7 +37,6 @@
   import { config } from "./utils";
 
   export let name: string;
-  export let path: string = undefined;
   export let cardinality: number;
   export let profile: any;
   export let head: any; // FIXME
