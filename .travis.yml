@@ -34,9 +34,7 @@ jobs:
         - npm run build
 
         # verify lint of the repo
-        # - npm run lint
-        # Almost every file throws an error right now.
-        # Updating this in this PR will conflict with every open PR
+        - npm run lint
 
         # run all tests
         - npm run test
