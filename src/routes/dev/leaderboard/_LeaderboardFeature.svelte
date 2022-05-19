@@ -23,7 +23,7 @@
   export let activeValues: string[];
 
   export let slice = 7;
-  export let seeMoreSlice = 15;
+  export let seeMoreSlice = 50;
 
   export let seeMore = false;
 
@@ -116,7 +116,6 @@
                     The current approach does a decent enough job of maintaining the flow and scan-friendliness.
                  -->
             <div
-              style:max-width="calc({315 - Math.max(...widths, 0)}px - 2rem)"
               class:text-gray-700={!atLeastOneActive}
               class:text-gray-500={atLeastOneActive && !isActive}
               class:italic={atLeastOneActive && !isActive}

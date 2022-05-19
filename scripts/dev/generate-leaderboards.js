@@ -69,7 +69,7 @@ for (let { name } of tables) {
             WHERE label IS NOT NULL
             GROUP BY "${column.name}"
             ORDER BY value desc
-            LIMIT 15;
+            LIMIT 35;
         `)
         const [nulls] = await dbAll(db, `
             SELECT count(*) as c from "${name}"
