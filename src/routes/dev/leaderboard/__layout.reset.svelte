@@ -1,3 +1,7 @@
-<div>
+<script>
+  import Layout from "../../__layout.svelte";
+</script>
+
+<Layout>
   <slot />
-</div>
+</Layout>

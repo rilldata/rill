@@ -14,7 +14,7 @@
   import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import Close from "$lib/components/icons/Close.svelte";
+  import Expand from "$lib/components/icons/ExpandCaret.svelte";
 
   export let displayName;
   export let total: number;
@@ -59,26 +59,8 @@
           on:click={() => {
             dispatch("expand");
           }}
-          >{#if expanded}less{:else}more{/if}</button
+          >{#if expanded}less{:else}<Expand size={16} />{/if}</button
         >
-        <!-- {#if activeValues.length}
-          <button
-            in:fly|local={{ duration: 100, y: 4 }}
-            out:fly|local={{ duration: 100, y: -4 }}
-            class="
-                        grid grid-flow-col 
-                        items-center justify-center w-max
-                        gap-x-2 italic 
-                        text-red-800 
-                        text-center
-                        "
-            on:click={() => {
-              dispatch("clear-all");
-            }}
-          >
-            clear <Close />
-          </button>
-        {/if} -->
       </div>
     </LeaderboardHeader>
     <TooltipContent slot="tooltip-content">

@@ -1,16 +1,34 @@
 <script lang="ts">
+  import { browser } from "$app/env";
   import { fly, fade } from "svelte/transition";
   import { flip } from "svelte/animate";
-  //import { createFlipAnimationFactory } from "./_custom-flip";
   import { quadInOut as flipEasing } from "svelte/easing";
+
   import Close from "$lib/components/icons/Close.svelte";
   /** for now, this LeaderboardFeature.svelte file will be here. */
   import Leaderboard from "./_LeaderboardFeature.svelte";
 
-  import { swimLanePlacement } from "$lib/util/swim-lane-placement";
-  import { onMount } from "svelte";
+  import { getContext, onMount } from "svelte";
+  let store;
+  if (browser) {
+    store = getContext("rill:app:store");
+    store.socket.on("message", (message) => {
+      console.log(message);
+    });
+    store.socket.emit("explorer", "ok!!!");
+  }
 
-  // const { flip, isFlipped } = createFlipAnimationFactory();
+  /** prunes the actives list to the bare minimum needed for the API. */
+  function prune(actives) {
+    return Object.keys(actives)
+      .filter((key) => {
+        return activeValues[key].length;
+      })
+      .reduce((acc, v) => {
+        acc[v] = activeValues[v].map((value) => ({ include: value }));
+        return acc;
+      }, {});
+  }
 
   /** remove this before we componentize anything. */
   let files = [];
@@ -110,9 +128,7 @@
       <div bind:this={leaderboardContainer}>
         <div
           style:position="relative"
-          style:grid-template-columns="repeat({leaderboardExpanded
-            ? 1
-            : columns}, {leaderboardExpanded ? "1fr" : "315px"})"
+          style:grid-template-columns="repeat({columns}, 315px)"
           class="
             grid
             gap-6 justify-start"
@@ -165,6 +181,9 @@
                       displayName
                     ]?.filter((b) => b !== event.detail);
                   }
+
+                  if (browser)
+                    store.socket.emit("explorer", prune(activeValues));
                 }}
                 on:clear-all={() => {
                   activeValues[displayName] = [];
