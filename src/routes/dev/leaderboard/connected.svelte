@@ -2,7 +2,9 @@
   import { browser } from "$app/env";
   import { fly, fade } from "svelte/transition";
   import { flip } from "svelte/animate";
-  import { quadInOut as flipEasing } from "svelte/easing";
+  import { quadInOut as flipEasing, cubicIn } from "svelte/easing";
+
+  import { tweened } from "svelte/motion";
 
   import Close from "$lib/components/icons/Close.svelte";
   /** for now, this LeaderboardFeature.svelte file will be here. */
@@ -10,6 +12,12 @@
 
   import { getContext, onMount } from "svelte";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import {
+    formatInteger,
+    formatBigNumberPercentage,
+  } from "$lib/util/formatters";
+
+  import BarAndLabel from "$lib/components/BarAndLabel.svelte";
 
   let leaderboards = [];
   let currentTable: string;
@@ -18,9 +26,21 @@
   let persistentTableStore;
   let derivedTableStore;
 
-  let leaderboardMap = {};
-
   let bigNumber;
+  /** This is the reference value used to scale the bars.
+   * WHen it's a count(*) metric, it's identical to the leaderboard.
+   */
+  let referenceValue;
+  const bigNumberTween = tweened(0, {
+    duration: 1000,
+    delay: 200,
+    easing: cubicIn,
+  });
+  $: bigNumberTween.set(bigNumber || 0);
+
+  const metricFormatters = {
+    simpleSummable: formatInteger,
+  };
 
   if (browser) {
     store = getContext("rill:app:store");
@@ -34,6 +54,7 @@
   if (browser) {
     /** listen to the available columns here. */
     store.socket.on("getAvailableDimensions", ({ dimensions }) => {
+      console.log("where are we?", currentTable);
       availableDimensions = dimensions;
       // now, uh, calculate all the dimension leaderboards.
       availableDimensions.forEach((dimensionName) => {
@@ -66,8 +87,11 @@
       }
     });
     // receive bigNumber
-    store.socket.on("getBigNumber", ({ metric, value }) => {
+    store.socket.on("getBigNumber", ({ metric, value, filters }) => {
       bigNumber = value;
+      if (!isAnythingSelected(filters)) {
+        referenceValue = value;
+      }
     });
   }
   /** ------------------------------------ */
@@ -84,13 +108,20 @@
       }, {});
   }
 
+  function isAnythingSelected(filters): boolean {
+    if (!filters) return false;
+    return Object.keys(filters).some((key) => {
+      return filters[key]?.length;
+    });
+  }
+
   /**
    * get the current leaderboard element.
    */
   let activeValues = {};
 
   function initializeActiveValues(leaderboards) {
-    if (!leaderboards) return [];
+    if (!leaderboards && !leaderboards.length) return {};
     return leaderboards.reduce((acc, leaderboard) => {
       acc[leaderboard.displayName] = [];
       return acc;
@@ -99,7 +130,7 @@
 
   function clearAllFilters() {
     activeValues = initializeActiveValues(leaderboards);
-    bigNumber = undefined;
+    bigNumber = 0;
     store.socket.emit("getBigNumber", {
       entityType: EntityType.Table,
       entityID: currentTable,
@@ -114,11 +145,7 @@
     });
   }
 
-  // $: activeValues = initializeActiveValues(leaderboards);
-
-  $: anythingSelected = Object.keys(activeValues).some((key) => {
-    return activeValues[key]?.length;
-  });
+  $: anythingSelected = isAnythingSelected(activeValues);
 
   let columns = 3;
   let leaderboardContainer: HTMLElement;
@@ -131,7 +158,23 @@
   onMount(() => {
     // determine initial resize.
     onResize();
+    leaderboards = [];
   });
+
+  $: if (!currentTable && $persistentTableStore?.entities?.length) {
+    currentTable = $persistentTableStore?.entities[0].id;
+
+    activeValues = initializeActiveValues(leaderboards);
+    store.socket.emit("getAvailableDimensions", {
+      entityType: EntityType.Table,
+      entityID: currentTable,
+    });
+    store.socket.emit("getBigNumber", {
+      entityType: EntityType.Table,
+      entityID: currentTable,
+      expression: "count(*)",
+    });
+  }
 
   let leaderboardExpanded: string;
   let waitForLeaderboardClearout = false;
@@ -141,18 +184,13 @@
 
 <svelte:window on:resize={onResize} />
 <div class="w-screen min-h-screen bg-white p-8">
-  <h1>count(*) – {bigNumber}</h1>
-  <!-- {#each Object.keys(activeValues) as dimension}
-    {#if activeValues[dimension].length}
-      {activeValues[dimension]}
-    {/if}
-  {/each} -->
   {#if $persistentTableStore?.entities}
     <select
       on:change={(event) => {
         currentTable = event.target.value;
         // this is where we re-establish the table names?
         leaderboards = [];
+        activeValues = initializeActiveValues(leaderboards);
         store.socket.emit("getAvailableDimensions", {
           entityType: EntityType.Table,
           entityID: currentTable,
@@ -169,12 +207,45 @@
       {/each}
     </select>
   {/if}
+
   <section>
     <header
-      style:height="32px"
       style:grid-template-columns="max-content max-content"
-      class="pb-3 grid  w-full justify-between"
+      class="pb-6 pt-6 grid  w-full justify-between"
     >
+      <h1 style:line-height="1.1">
+        <div class="pl-2 text-gray-600 font-normal" style:font-size="1.5rem">
+          Total Records
+        </div>
+        <div style:font-size="2rem" style:width="600px">
+          <div class="w-full">
+            <BarAndLabel
+              justify="stretch"
+              showBackground={anythingSelected}
+              color={!anythingSelected ? "bg-transparent" : "bg-blue-200"}
+              value={bigNumber / referenceValue || 0}
+            >
+              <div
+                style:grid-template-columns="auto auto"
+                class="grid items-center gap-x-2 w-full text-left pb-2 pt-2"
+              >
+                <div>
+                  {metricFormatters.simpleSummable(~~$bigNumberTween)}
+                </div>
+
+                <div class="font-normal text-gray-600 italic text-right">
+                  {#if $bigNumberTween && referenceValue}
+                    {formatBigNumberPercentage(
+                      $bigNumberTween / referenceValue
+                    )}
+                  {/if}
+                </div>
+              </div>
+            </BarAndLabel>
+          </div>
+        </div>
+      </h1>
+
       <div>
         {#if anythingSelected}
           <!-- FIXME: we should be generalizing whatever this button is -->
@@ -198,9 +269,11 @@
     </header>
     <div bind:this={leaderboardContainer}>
       <div
-        style:position="relative"
         style:grid-template-columns="repeat({columns}, 315px)"
+        style:max-height="80vh"
         class="
+          border-t border-gray-200
+          overflow-auto
             grid
             gap-6 justify-start"
       >
@@ -246,8 +319,7 @@
 
                 if (browser) {
                   const filters = prune(activeValues);
-                  // set bigNumber = 0
-                  bigNumber = undefined;
+                  bigNumber = 0;
 
                   store.socket.emit("getBigNumber", {
                     entityType: EntityType.Table,
@@ -272,7 +344,7 @@
               activeValues={activeValues[displayName]}
               {displayName}
               {values}
-              total={bigNumber || 0}
+              referenceValue={referenceValue || 0}
             />
           </div>
         {/each}

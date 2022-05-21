@@ -16,8 +16,14 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import Expand from "$lib/components/icons/ExpandCaret.svelte";
 
+  import { formatBigNumberPercentage } from "$lib/util/formatters";
+
   export let displayName;
-  export let total: number;
+  /** The reference value is the one that the bar in the LeaderboardListItem
+   * gets scaled with. For a summable metric, the total is a reference value,
+   * or for a count(*) metric, the reference value is the total number of rows.
+   */
+  export let referenceValue: number;
   export let values;
   export let activeValues: string[];
 
@@ -76,7 +82,7 @@
       <div>
         <Tooltip location="right">
           <LeaderboardListItem
-            value={total ? value / total : 0}
+            value={referenceValue ? value / referenceValue : 0}
             {isActive}
             on:click={() => {
               dispatch("select-item", label);
@@ -84,7 +90,7 @@
             color={isActive
               ? "bg-blue-200"
               : activeValues.length
-              ? "bg-gray-100"
+              ? "bg-gray-200"
               : "bg-gray-200"}
           >
             <!-- 
@@ -117,7 +123,7 @@
           </LeaderboardListItem>
           <TooltipContent slot="tooltip-content">
             <div>
-              {value / total}
+              {formatBigNumberPercentage(value / referenceValue)} of records
             </div>
             <div>
               filter on <span class="italic">{label}</span>
@@ -131,7 +137,7 @@
         <LeaderboardListItem value={0} color="bg-gray-100">
           <div class="italic text-gray-500" slot="title">All Others</div>
           <div class="italic text-gray-500" slot="right">
-            {total -
+            {referenceValue -
               values
                 .slice(0, !seeMore ? slice : seeMoreSlice)
                 .reduce((a, b) => a + b.value, 0)}

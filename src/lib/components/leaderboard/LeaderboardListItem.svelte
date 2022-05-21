@@ -31,7 +31,7 @@
   <BarAndLabel
     {color}
     {value}
-    showBackground={isActive}
+    showBackground={false}
     tweenParameters={{ duration: 200 }}
     justify={false}
   >
