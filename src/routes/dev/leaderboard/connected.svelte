@@ -18,6 +18,10 @@
   let persistentTableStore;
   let derivedTableStore;
 
+  let leaderboardMap = {};
+
+  let bigNumber;
+
   if (browser) {
     store = getContext("rill:app:store");
     persistentTableStore = getContext("rill:app:persistent-table-store");
@@ -32,14 +36,38 @@
     store.socket.on("getAvailableDimensions", ({ dimensions }) => {
       availableDimensions = dimensions;
       // now, uh, calculate all the dimension leaderboards.
-      store.socket.emit("getDimensionLeaderboard", {
-        dimensionName: availableDimensions[0],
-        entityType: EntityType.Table,
-        entityID: currentTable,
+      availableDimensions.forEach((dimensionName) => {
+        store.socket.emit("getDimensionLeaderboard", {
+          dimensionName,
+          entityType: EntityType.Table,
+          entityID: currentTable,
+        });
       });
-      // availableDimensions.forEach((dimensionName) => {
-      //   store.socket.emit("");
-      // });
+    });
+    // receive getDimensionLeaderboard responses.
+    store.socket.on("getDimensionLeaderboard", ({ dimensionName, values }) => {
+      let exists = leaderboards.find(
+        (leaderboard) => leaderboard?.displayName === dimensionName
+      );
+      if (exists) {
+        exists.values = values;
+        exists.displayName = dimensionName;
+      }
+
+      if (exists) leaderboards = [...leaderboards];
+      else
+        leaderboards = [
+          ...leaderboards,
+          { displayName: dimensionName, values },
+        ];
+      // add to the activeValues.
+      if (!(dimensionName in activeValues)) {
+        activeValues[dimensionName] = [];
+      }
+    });
+    // receive bigNumber
+    store.socket.on("getBigNumber", ({ metric, value }) => {
+      bigNumber = value;
     });
   }
   /** ------------------------------------ */
@@ -51,7 +79,7 @@
         return activeValues[key].length;
       })
       .reduce((acc, v) => {
-        acc[v] = activeValues[v].map((value) => ({ include: value }));
+        acc[v] = activeValues[v].map((value) => [value, "include"]);
         return acc;
       }, {});
   }
@@ -71,9 +99,22 @@
 
   function clearAllFilters() {
     activeValues = initializeActiveValues(leaderboards);
+    bigNumber = undefined;
+    store.socket.emit("getBigNumber", {
+      entityType: EntityType.Table,
+      entityID: currentTable,
+      expression: "count(*)",
+    });
+    availableDimensions.forEach((dimensionName) => {
+      store.socket.emit("getDimensionLeaderboard", {
+        dimensionName,
+        entityType: EntityType.Table,
+        entityID: currentTable,
+      });
+    });
   }
 
-  $: activeValues = initializeActiveValues(leaderboards);
+  // $: activeValues = initializeActiveValues(leaderboards);
 
   $: anythingSelected = Object.keys(activeValues).some((key) => {
     return activeValues[key]?.length;
@@ -96,20 +137,30 @@
   let waitForLeaderboardClearout = false;
 
   /** scratch work */
-  $: console.log($persistentTableStore?.entities);
 </script>
 
 <svelte:window on:resize={onResize} />
 <div class="w-screen min-h-screen bg-white p-8">
+  <h1>count(*) – {bigNumber}</h1>
+  <!-- {#each Object.keys(activeValues) as dimension}
+    {#if activeValues[dimension].length}
+      {activeValues[dimension]}
+    {/if}
+  {/each} -->
   {#if $persistentTableStore?.entities}
     <select
       on:change={(event) => {
-        console.log(event.target.value);
         currentTable = event.target.value;
         // this is where we re-establish the table names?
+        leaderboards = [];
         store.socket.emit("getAvailableDimensions", {
           entityType: EntityType.Table,
           entityID: currentTable,
+        });
+        store.socket.emit("getBigNumber", {
+          entityType: EntityType.Table,
+          entityID: currentTable,
+          expression: "count(*)",
         });
       }}
     >
@@ -118,11 +169,6 @@
       {/each}
     </select>
   {/if}
-  {#each availableDimensions as dimension}
-    <div>
-      {dimension}
-    </div>
-  {/each}
   <section>
     <header
       style:height="32px"
@@ -158,25 +204,16 @@
             grid
             gap-6 justify-start"
       >
-        {#each leaderboards as { displayName, values, nullCount }, i (displayName)}
+        {#each leaderboards as { displayName, values }, i (displayName)}
+          {@const nullCount = 0}
           <div
             style:width="315px"
             transition:fade={{
               duration: 200,
-              delay: waitForLeaderboardClearout ? 600 : 0,
             }}
             animate:flip={{
-              duration:
-                waitForLeaderboardClearout ||
-                leaderboardExpanded === displayName
-                  ? 600
-                  : 200,
+              duration: 200,
               easing: flipEasing,
-              delay:
-                waitForLeaderboardClearout &&
-                leaderboardExpanded !== displayName
-                  ? 200
-                  : 0,
             }}
             style:grid-column={1 + (i % columns)}
             style:grid-row={1 + Math.floor(i / columns)}
@@ -207,7 +244,27 @@
                   );
                 }
 
-                if (browser) store.socket.emit("explorer", prune(activeValues));
+                if (browser) {
+                  const filters = prune(activeValues);
+                  // set bigNumber = 0
+                  bigNumber = undefined;
+
+                  store.socket.emit("getBigNumber", {
+                    entityType: EntityType.Table,
+                    entityID: currentTable,
+                    expression: "count(*)",
+                    filters,
+                  });
+                  availableDimensions.forEach((dimensionName) => {
+                    // invalidate the exiting leaderboard?
+                    store.socket.emit("getDimensionLeaderboard", {
+                      dimensionName,
+                      entityType: EntityType.Table,
+                      entityID: currentTable,
+                      filters,
+                    });
+                  });
+                }
               }}
               on:clear-all={() => {
                 activeValues[displayName] = [];
@@ -215,8 +272,7 @@
               activeValues={activeValues[displayName]}
               {displayName}
               {values}
-              total={currentLeaderboard.total}
-              {nullCount}
+              total={bigNumber || 0}
             />
           </div>
         {/each}

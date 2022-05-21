@@ -25,7 +25,10 @@
     : "hsl(217, 0%, 100%, .25)"}
 >
   <div class="pl-2 pr-2 text-right" style="position: relative;"><slot /></div>
-  <div class="number-bar {color}" style="--width: {$valueTween};" />
+  <div
+    class="number-bar {color}"
+    style="--width: {Math.min(1, $valueTween)};"
+  />
 </div>
 
 <style>

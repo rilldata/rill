@@ -10,7 +10,7 @@ import { QueryCancelledError } from "$common/errors/QueryCancelledError";
 
 export class ActionQueueOrchestrator<
   ActionsDefinition extends Record<string, Array<any>>
-> {
+  > {
   private actionService: ActionServiceBase<ActionsDefinition>;
   private priorityActionQueue = new PriorityActionQueue();
 

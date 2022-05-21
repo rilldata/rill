@@ -19,7 +19,6 @@
   export let displayName;
   export let total: number;
   export let values;
-  export let nullCount = 0;
   export let activeValues: string[];
 
   export let slice = 7;
@@ -77,7 +76,7 @@
       <div>
         <Tooltip location="right">
           <LeaderboardListItem
-            value={value / (total - nullCount)}
+            value={total ? value / total : 0}
             {isActive}
             on:click={() => {
               dispatch("select-item", label);
@@ -135,8 +134,7 @@
             {total -
               values
                 .slice(0, !seeMore ? slice : seeMoreSlice)
-                .reduce((a, b) => a + b.value, 0) -
-              nullCount}
+                .reduce((a, b) => a + b.value, 0)}
           </div>
         </LeaderboardListItem>
         <TooltipContent slot="tooltip-content">see next 12</TooltipContent>
