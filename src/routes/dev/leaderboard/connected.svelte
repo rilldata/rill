@@ -4,6 +4,8 @@
   import { flip } from "svelte/animate";
   import { quadInOut as flipEasing, cubicIn } from "svelte/easing";
 
+  import VirtualizedGrid from "./_VirtualizedGrid.svelte";
+
   import { tweened } from "svelte/motion";
 
   import Close from "$lib/components/icons/Close.svelte";
@@ -267,54 +269,41 @@
         {/if}
       </div>
     </header>
-    <div bind:this={leaderboardContainer}>
+    <div>
       <div
-        style:grid-template-columns="repeat({columns}, 315px)"
-        style:max-height="80vh"
+        bind:this={leaderboardContainer}
+        style:height="80vh"
         class="
           border-t border-gray-200
-          overflow-auto
-            grid
-            gap-6 justify-start"
+          "
       >
-        {#each leaderboards as { displayName, values }, i (displayName)}
-          {@const nullCount = 0}
-          <div
-            style:width="315px"
-            transition:fade={{
-              duration: 200,
-            }}
-            animate:flip={{
-              duration: 200,
-              easing: flipEasing,
-            }}
-            style:grid-column={1 + (i % columns)}
-            style:grid-row={1 + Math.floor(i / columns)}
-          >
+        <VirtualizedGrid {columns} height="100%" items={leaderboards} let:item>
+          <!-- the single virtual element -->
+          <div style:width="315px">
             <Leaderboard
-              seeMore={leaderboardExpanded === displayName}
+              seeMore={leaderboardExpanded === item.displayName}
               on:expand={() => {
-                if (leaderboardExpanded === displayName) {
+                if (leaderboardExpanded === item.displayName) {
                   leaderboardExpanded = undefined;
                   setTimeout(() => {
                     waitForLeaderboardClearout = false;
                   }, 600);
                 } else {
-                  leaderboardExpanded = displayName;
+                  leaderboardExpanded = item.displayName;
                   waitForLeaderboardClearout = true;
                 }
               }}
               on:select-item={(event) => {
-                activeValues[displayName];
-                if (!activeValues[displayName].includes(event.detail)) {
-                  activeValues[displayName] = [
-                    ...activeValues[displayName],
+                activeValues[item.displayName];
+                if (!activeValues[item.displayName].includes(event.detail)) {
+                  activeValues[item.displayName] = [
+                    ...activeValues[item.displayName],
                     event.detail,
                   ];
                 } else {
-                  activeValues[displayName] = activeValues[displayName]?.filter(
-                    (b) => b !== event.detail
-                  );
+                  activeValues[item.displayName] = activeValues[
+                    item.displayName
+                  ]?.filter((b) => b !== event.detail);
                 }
 
                 if (browser) {
@@ -339,15 +328,16 @@
                 }
               }}
               on:clear-all={() => {
-                activeValues[displayName] = [];
+                activeValues[item.displayName] = [];
               }}
-              activeValues={activeValues[displayName]}
-              {displayName}
-              {values}
+              activeValues={activeValues[item.displayName]}
+              displayName={item.displayName}
+              values={item.values}
               referenceValue={referenceValue || 0}
             />
           </div>
-        {/each}
+          <!-- {/each} -->
+        </VirtualizedGrid>
       </div>
     </div>
   </section>
