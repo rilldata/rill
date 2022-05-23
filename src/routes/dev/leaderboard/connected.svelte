@@ -12,6 +12,12 @@
   /** for now, this LeaderboardFeature.svelte file will be here. */
   import Leaderboard from "./_LeaderboardFeature.svelte";
 
+  import CheckerFull from "$lib/components/icons/CheckerFull.svelte";
+  import CheckerHalf from "$lib/components/icons/CheckerHalf.svelte";
+
+  import FilterSet from "./_components/FilterSet.svelte";
+  import Filter from "./_components/Filter.svelte";
+
   import { getContext, onMount } from "svelte";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
@@ -20,6 +26,8 @@
   } from "$lib/util/formatters";
 
   import BarAndLabel from "$lib/components/BarAndLabel.svelte";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
   let leaderboards = [];
   let currentTable: string;
@@ -152,6 +160,7 @@
   let columns = 3;
   let leaderboardContainer: HTMLElement;
   let availableWidth = 0;
+
   function onResize() {
     availableWidth = leaderboardContainer.offsetWidth;
     columns = Math.floor(availableWidth / (315 + 20));
@@ -180,6 +189,11 @@
 
   let leaderboardExpanded: string;
   let waitForLeaderboardClearout = false;
+
+  /** State for the reference value toggle */
+  let whichReferenceValue = "filtered";
+  $: stagedReferenceValue =
+    whichReferenceValue === "filtered" ? bigNumber : referenceValue;
 
   /** scratch work */
 </script>
@@ -212,15 +226,15 @@
 
   <section>
     <header
-      style:grid-template-columns="max-content max-content"
-      class="pb-6 pt-6 grid  w-full justify-between"
+      style:grid-template-columns="max-content max-content max-content"
+      class="pb-6 pt-6 grid w-full justify-between"
     >
       <h1 style:line-height="1.1">
         <div class="pl-2 text-gray-600 font-normal" style:font-size="1.5rem">
           Total Records
         </div>
         <div style:font-size="2rem" style:width="600px">
-          <div class="w-full">
+          <div class="w-full rounded">
             <BarAndLabel
               justify="stretch"
               showBackground={anythingSelected}
@@ -248,9 +262,84 @@
         </div>
       </h1>
 
+      <div
+        style:font-size="24px"
+        class="grid justify-items-start justify-start grid-flow-col items-center"
+      >
+        <Tooltip distance={16}>
+          <button
+            class="m-0 p-1 transition-color"
+            class:bg-transparent={whichReferenceValue !== "filtered"}
+            class:bg-gray-200={whichReferenceValue === "filtered"}
+            class:font-bold={whichReferenceValue === "filtered"}
+            class:text-gray-400={whichReferenceValue !== "filtered"}
+            on:click={() => (whichReferenceValue = "filtered")}
+            ><CheckerHalf /></button
+          >
+          <TooltipContent slot="tooltip-content">
+            scale leaderboard bars by currently-filtered total
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip distance={16}>
+          <button
+            class="m-0 p-1 transition-color"
+            class:bg-transparent={whichReferenceValue !== "global"}
+            class:bg-gray-200={whichReferenceValue === "global"}
+            class:font-bold={whichReferenceValue === "global"}
+            class:text-gray-400={whichReferenceValue !== "global"}
+            on:click={() => (whichReferenceValue = "global")}
+            ><CheckerFull /></button
+          >
+          <TooltipContent slot="tooltip-content">
+            scale leaderboard bars by total record count
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
       <div>
         {#if anythingSelected}
           <!-- FIXME: we should be generalizing whatever this button is -->
+          {#each Object.keys(activeValues) as dimension, i}
+            {#if activeValues[dimension].length}
+              <FilterSet>
+                <svelte:fragment slot="name">{dimension}</svelte:fragment>
+                <svelte:fragment slot="values">
+                  {#each activeValues[dimension] as value}
+                    <Filter
+                      on:click={() => {
+                        activeValues[dimension] = activeValues[
+                          dimension
+                        ]?.filter((b) => b !== value);
+                        if (browser) {
+                          const filters = prune(activeValues);
+                          bigNumber = 0;
+
+                          store.socket.emit("getBigNumber", {
+                            entityType: EntityType.Table,
+                            entityID: currentTable,
+                            expression: "count(*)",
+                            filters,
+                          });
+                          availableDimensions.forEach((dimensionName) => {
+                            // invalidate the exiting leaderboard?
+                            store.socket.emit("getDimensionLeaderboard", {
+                              dimensionName,
+                              entityType: EntityType.Table,
+                              entityID: currentTable,
+                              filters,
+                            });
+                          });
+                        }
+                      }}
+                    >
+                      {value}
+                    </Filter>
+                  {/each}
+                </svelte:fragment>
+              </FilterSet>
+            {/if}
+          {/each}
+
           <button
             transition:fly={{ duration: 200, y: 5 }}
             on:click={clearAllFilters}
@@ -333,7 +422,7 @@
               activeValues={activeValues[item.displayName]}
               displayName={item.displayName}
               values={item.values}
-              referenceValue={referenceValue || 0}
+              referenceValue={stagedReferenceValue || 0}
             />
           </div>
           <!-- {/each} -->
