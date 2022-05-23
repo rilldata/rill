@@ -7,6 +7,6 @@ echo "Packaging rill-developer"
 npm pack
 
 echo "Publishing rill-developer"
-npm publish --access public --dry-run
+npm publish --access public
 # cleanup
-rm rilldata-rill-developer-*.tgz
+rm rilldata-rill-*.tgz
