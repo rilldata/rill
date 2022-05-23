@@ -90,6 +90,11 @@ export class TableActions extends DataModelerActions {
       table.csvDelimiter = options.csvDelimiter;
     }
 
+    const existingModelResp = this.checkExistingModel(name);
+    if (existingModelResp) {
+      return existingModelResp;
+    }
+
     table.lastUpdated = Date.now();
 
     return await this.addOrUpdateTable(table, !existingTable);
@@ -442,5 +447,21 @@ export class TableActions extends DataModelerActions {
       });
     }
     return response;
+  }
+
+  private checkExistingModel(tableName: string): ActionResponse {
+    const existingModel = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getByField("tableName", tableName);
+    if (existingModel) {
+      this.notificationService.notify({
+        message: `Another model with the sanitised table name ${tableName} already exists`,
+        type: "error",
+      });
+      return ActionResponseFactory.getExisingEntityError(
+        `Another model with the sanitised table name ${tableName} already exists`
+      );
+    }
+    return undefined;
   }
 }

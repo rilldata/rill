@@ -7,6 +7,7 @@ export enum ActionErrorType {
   Unknown,
   ActionDefinition,
   EntityError,
+  ExistingEntityError,
   ImportTable,
   ModelQuery,
   QueryCancelled,

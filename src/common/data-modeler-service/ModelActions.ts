@@ -23,6 +23,10 @@ import type { ActionResponse } from "$common/data-modeler-service/response/Actio
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import {
+  extractTableName,
+  sanitizeTableName,
+} from "$lib/util/extract-table-name";
 
 export enum FileExportType {
   Parquet = "exportToParquet",
@@ -449,23 +453,34 @@ export class ModelActions extends DataModelerActions {
     stateService: PersistentModelEntityService,
     name: string,
     id: string
-  ) {
+  ): ActionResponse {
     name = cleanModelName(name);
     const existing = stateService
       .getCurrentState()
       .entities.find(
         (model) => cleanModelName(model.name) === name && model.id !== id
       );
-    if (!existing) {
-      return undefined;
-    } else {
+    const existingTable = this.dataModelerStateService
+      .getEntityStateService(EntityType.Table, StateType.Persistent)
+      .getByField("tableName", sanitizeTableName(extractTableName(name)));
+
+    if (existing) {
       this.notificationService.notify({
         message: `Another model with the name ${name} already exists`,
         type: "error",
       });
-      return ActionResponseFactory.getErrorResponse(
-        new Error(`Another model with the name ${name} already exists`)
+      return ActionResponseFactory.getExisingEntityError(
+        `Another model with the name ${name} already exists`
+      );
+    } else if (existingTable) {
+      this.notificationService.notify({
+        message: `Another table with the sanitised table name ${existingTable.tableName} already exists`,
+        type: "error",
+      });
+      return ActionResponseFactory.getExisingEntityError(
+        `Another table with the sanitised table name ${existingTable.tableName} already exists`
       );
     }
+    return undefined;
   }
 }

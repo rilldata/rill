@@ -32,21 +32,27 @@ export class DataLoaderSpec extends FunctionalTestBase {
   }
 
   // @TestBase.Test("fileImportTestData")
-  // public async shouldImportTableFromFile(inputFile: string, cardinality: number, columns: TestDataColumns): Promise<void> {
-  //     const actualFilePath = `${DATA_FOLDER}/${inputFile}`;
+  public async shouldImportTableFromFile(
+    inputFile: string,
+    cardinality: number,
+    columns: TestDataColumns
+  ): Promise<void> {
+    const actualFilePath = `${DATA_FOLDER}/${inputFile}`;
 
-  //     await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile",
-  //         [actualFilePath, `${extractTableName(inputFile)}_${extractFileExtension(inputFile)}`]);
-  //     await this.waitForTables();
-  //     await asyncWait(250);
+    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+      actualFilePath,
+      `${extractTableName(inputFile)}_${extractFileExtension(inputFile)}`,
+    ]);
+    await this.waitForTables();
+    await asyncWait(250);
 
-  //     const [table, derivedTable] = this.getTables("path", actualFilePath);
+    const [table, derivedTable] = this.getTables("path", actualFilePath);
 
-  //     expect(table.path).toBe(actualFilePath);
-  //     expect(derivedTable.cardinality).toBe(cardinality);
+    expect(table.path).toBe(actualFilePath);
+    expect(derivedTable.cardinality).toBe(cardinality);
 
-  //     this.assertColumns(derivedTable.profile, columns);
-  // }
+    this.assertColumns(derivedTable.profile, columns);
+  }
 
   @TestBase.Test()
   public async shouldUseTableNameFromArgs(): Promise<void> {
@@ -108,5 +114,23 @@ export class DataLoaderSpec extends FunctionalTestBase {
       [model.id, TwoTableJoinQuery]
     );
     expect(response.status).toBe(ActionStatus.Failure);
+  }
+
+  @TestBase.Test()
+  public async shouldNotImportWithExistingModelName() {
+    await this.clientDataModelerService.dispatch("addModel", [
+      { name: "ExistingModel", query: "" },
+    ]);
+    await this.waitForModels();
+    const resp = await this.clientDataModelerService.dispatch(
+      "addOrUpdateTableFromFile",
+      ["test/data/AdBids.csv", "ExistingModel"]
+    );
+    await this.waitForTables();
+
+    expect(resp.status).toBe(ActionStatus.Failure);
+    expect(resp.messages[0].errorType).toBe(
+      ActionErrorType.ExistingEntityError
+    );
   }
 }
