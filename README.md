@@ -142,7 +142,7 @@ npm run cli --silent -- import-table /path/to/data_4.txt --delimiter "|"
 
 You can connect to an existing duckdb database by passing --db with path to the db file.
 Any updates made directly to the tables in the database will reflect in rill-developer.
-Similarly, any changes made by rill-developer will modify the database.
+Similarly, any changes made by Rill Developer will modify the database.
 Make sure to have only one connection open to the database, otherwise there will be some unexpected issues.
 
 ```
