@@ -5,6 +5,7 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityStateActionArgMapType } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
+import { asyncWait } from "$common/utils/waitUtils";
 
 export abstract class ActionsBase {
   public static actionToStateTypesMap: Record<string, [EntityType, StateType]>;
@@ -165,6 +166,10 @@ export abstract class ActionsBase {
             entityId,
             EntityStatus.Idle,
           ]);
+          await this.dataModelerStateService.waitForAllUpdates(
+            entityType,
+            StateType.Derived
+          );
           return resp;
         } catch (err) {
           this.dataModelerStateService.dispatch("setEntityStatus", [

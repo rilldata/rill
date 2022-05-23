@@ -28,6 +28,7 @@ import type {
 import type { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
 import type { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
 import type { ApplicationState } from "./entity-state-service/ApplicationEntityService";
+import { BatchedStateUpdate } from "$common/data-modeler-state-service/BatchedStateUpdate";
 
 enablePatches();
 
@@ -54,6 +55,13 @@ export type EntityTypeAndStates = Array<
   [EntityType, StateType, EntityState<any>]
 >;
 
+// Actions that need throttling.
+// Contains column profile actions
+const ThrottleActions = {
+  updateColumnSummary: true,
+  updateNullCount: true,
+};
+
 /**
  * Lower order actions that update the Rill Developer state directly and somewhat atomically.
  * Use dispatch for taking actions.
@@ -74,6 +82,8 @@ export class DataModelerStateService {
 
   private patchesSubscribers: Array<PatchesSubscriber> = [];
 
+  private batchedStateUpdate: BatchedStateUpdate;
+
   public constructor(
     private readonly stateActions: Array<StateActions>,
     public readonly entityStateServices: Array<EntityStateService<any>>,
@@ -90,6 +100,14 @@ export class DataModelerStateService {
         entityStateService.stateType
       ] = entityStateService;
     });
+
+    this.batchedStateUpdate = new BatchedStateUpdate(
+      (patches, entityType, stateType) => {
+        this.patchesSubscribers.forEach((subscriber) =>
+          subscriber(entityType, stateType, patches)
+        );
+      }
+    );
   }
 
   public async init(): Promise<void> {
@@ -153,13 +171,17 @@ export class DataModelerStateService {
       this.entityStateServicesMap[stateTypes[0] ?? (args[0] as any)]?.[
         stateTypes[1] ?? (args[1] as any)
       ];
-    this.updateStateAndEmitPatches(stateService, (draftState) => {
-      actionsInstance[action].call(
-        actionsInstance,
-        { stateService, draftState },
-        ...args
-      );
-    });
+    this.updateStateAndEmitPatches(
+      stateService,
+      (draftState) => {
+        actionsInstance[action].call(
+          actionsInstance,
+          { stateService, draftState },
+          ...args
+        );
+      },
+      action in ThrottleActions
+    );
   }
 
   public applyPatches(
@@ -201,18 +223,37 @@ export class DataModelerStateService {
 
   public updateStateAndEmitPatches(
     service: EntityStateService<any>,
-    callback: (draft) => void
+    callback: (draft) => void,
+    throttle = false
   ) {
-    service.updateState(
-      (draft) => {
-        callback(draft);
-        draft.lastUpdated = Date.now();
-      },
-      (patches) => {
-        this.patchesSubscribers.forEach((subscriber) =>
-          subscriber(service.entityType, service.stateType, patches)
-        );
-      }
-    );
+    if (throttle) {
+      this.batchedStateUpdate.updateState(service, callback);
+    } else {
+      // call through for to make sure state is up-to-date
+      this.batchedStateUpdate.callThrough(service);
+      service.updateState(
+        (draft) => {
+          callback(draft);
+          draft.lastUpdated = Date.now();
+        },
+        (patches) => {
+          this.patchesSubscribers.forEach((subscriber) =>
+            subscriber(service.entityType, service.stateType, patches)
+          );
+        }
+      );
+    }
+  }
+
+  public async waitForAllUpdates(
+    entityType: EntityType,
+    stateType: StateType
+  ): Promise<void> {
+    setImmediate(() => {
+      this.batchedStateUpdate.callThrough(
+        this.entityStateServicesMap[entityType][stateType]
+      );
+    });
+    await this.batchedStateUpdate.waitForNextUpdate(entityType, stateType);
   }
 }
