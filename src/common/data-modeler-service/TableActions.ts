@@ -247,7 +247,6 @@ export class TableActions extends DataModelerActions {
   }
 
   @DataModelerActions.DerivedTableAction()
-  @DataModelerActions.ResetStateToIdle(EntityType.Table)
   public async syncTable(
     { stateService }: DerivedTableStateActionArg,
     tableId: string
@@ -261,11 +260,7 @@ export class TableActions extends DataModelerActions {
         `No table found for ${tableId}`
       );
     }
-    this.dataModelerStateService.dispatch("setEntityStatus", [
-      EntityType.Table,
-      tableId,
-      EntityStatus.Profiling,
-    ]);
+    if (derivedTable.status === EntityStatus.Profiling) return;
 
     // check row count
     const newCardinality = await this.databaseActionQueue.enqueue(

@@ -55,7 +55,7 @@
   <div
     class="pb-6"
     transition:slide|local={{ duration: 200 }}
-    on:drop={onSourceDrop}
+    on:drop|preventDefault|stopPropagation={onSourceDrop}
     on:drag|preventDefault|stopPropagation
     on:dragenter|preventDefault|stopPropagation
     on:dragover|preventDefault|stopPropagation
