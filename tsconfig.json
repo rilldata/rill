@@ -1,42 +1,39 @@
 {
-	"compilerOptions": {
-		"moduleResolution": "node",
-		"module": "es2020",
-		"lib": ["es2020", "DOM"],
-		"target": "es2020",
-		/**
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "es2020",
+    "lib": ["es2020", "DOM"],
+    "target": "es2020",
+    /**
 			svelte-preprocess cannot figure out whether you have a value or a type, so tell TypeScript
 			to enforce using \`import type\` instead of \`import\` for Types.
 			*/
-		"importsNotUsedAsValues": "error",
-		"isolatedModules": true,
-		"resolveJsonModule": true,
-		/**
+    "importsNotUsedAsValues": "error",
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    /**
 			To have warnings/errors of the Svelte compiler at the correct position,
 			enable source maps by default.
 			*/
-		"sourceMap": true,
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"forceConsistentCasingInFileNames": true,
-		"experimentalDecorators": true,
-		"baseUrl": ".",
-		"allowJs": true,
-		"checkJs": true,
-		"paths": {
-			"$lib": ["src/lib"],
-			"$lib/*": ["src/lib/*"],
-			"$common": ["src/common"],
-			"$common/*": ["src/common/*"],
-			"$cli": ["src/cli"],
-			"$cli/*": ["src/cli/*"]
-		},
-		"outDir": "dist"
-	},
-	"include": [
-		"src/**/*.d.ts",
-		"src/**/*.ts", 
-		"src/**/*.svelte",
-		"test/**/*.ts"
-	]
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "baseUrl": ".",
+    "allowJs": true,
+    "checkJs": true,
+    "paths": {
+      "$lib": ["src/lib"],
+      "$lib/*": ["src/lib/*"],
+      "$common": ["src/common"],
+      "$common/*": ["src/common/*"],
+      "$cli": ["src/cli"],
+      "$cli/*": ["src/cli/*"],
+      "$server": ["src/server"],
+      "$server/*": ["src/server/*"]
+    },
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.svelte", "test/**/*.ts"]
 }

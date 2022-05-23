@@ -1,8 +1,11 @@
 import "../moduleAlias";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { LocalConfig} from "$common/config/LocalConfig";
+import { LocalConfig } from "$common/config/LocalConfig";
 import { guidGenerator } from "$lib/util/guid";
-import { ApplicationConfigFolder, LocalConfigFile } from "$common/config/ConfigFolders";
+import {
+  ApplicationConfigFolder,
+  LocalConfigFile,
+} from "$common/config/ConfigFolders";
 
 /**
  * Initializes the rill local config.
@@ -14,19 +17,19 @@ import { ApplicationConfigFolder, LocalConfigFile } from "$common/config/ConfigF
  */
 
 (async () => {
-    if (!existsSync(ApplicationConfigFolder)) {
-        mkdirSync(ApplicationConfigFolder, {recursive: true});
-        console.log("creating folder");
-    }
+  if (!existsSync(ApplicationConfigFolder)) {
+    mkdirSync(ApplicationConfigFolder, { recursive: true });
+    console.log("creating folder");
+  }
 
-    let configJson;
-    if (existsSync(LocalConfigFile)) {
-        configJson = JSON.parse(readFileSync(LocalConfigFile).toString());
-    } else {
-        configJson = {};
-    }
-    const configObject = new LocalConfig(configJson);
-    configObject.installId = guidGenerator();
+  let configJson;
+  if (existsSync(LocalConfigFile)) {
+    configJson = JSON.parse(readFileSync(LocalConfigFile).toString());
+  } else {
+    configJson = {};
+  }
+  const configObject = new LocalConfig(configJson);
+  configObject.installId = guidGenerator();
 
-    writeFileSync(LocalConfigFile, JSON.stringify(configObject));
+  writeFileSync(LocalConfigFile, JSON.stringify(configObject));
 })();

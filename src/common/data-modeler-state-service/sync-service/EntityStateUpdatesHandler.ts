@@ -7,10 +7,12 @@ import type { DataModelerService } from "$common/data-modeler-service/DataModele
  * Any new entity, updated entity or deleted entity will trigger respective method by {@link EntityStateSyncService}
  */
 export class EntityStateUpdatesHandler<Entity extends EntityRecord> {
-    public constructor(protected readonly config: RootConfig,
-                       protected readonly dataModelerService: DataModelerService) {}
+  public constructor(
+    protected readonly config: RootConfig,
+    protected readonly dataModelerService: DataModelerService
+  ) {}
 
-    public async handleEntityInit(entity: Entity): Promise<void> {}
-    public async handleNewEntity(entity: Entity): Promise<void> {}
-    public async handleUpdatedEntity(entity: Entity): Promise<void> {}
+  public async handleEntityInit(entity: Entity): Promise<void> {}
+  public async handleNewEntity(entity: Entity): Promise<void> {}
+  public async handleUpdatedEntity(entity: Entity): Promise<void> {}
 }

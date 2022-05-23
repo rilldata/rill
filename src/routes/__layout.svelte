@@ -1,51 +1,56 @@
 <script>
-import "../fonts.css";
-import "../app.css";
-import { onMount, setContext } from "svelte";
-import { createStore } from '$lib/app-store';
-import { browser } from "$app/env";
+  import "../fonts.css";
+  import "../app.css";
+  import { onMount, setContext } from "svelte";
+  import { createStore } from "$lib/application-state-stores/application-store";
+  import { browser } from "$app/env";
 
-import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
-import notification from "$lib/components/notifications/";
+  import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
+  import notification from "$lib/components/notifications/";
 
-import { createQueryHighlightStore } from "$lib/query-highlight-store";
-import { createDerivedTableStore, createPersistentTableStore } from "$lib/tableStores.ts";
-import { createDerivedModelStore, createPersistentModelStore } from "$lib/modelStores.ts";
-import { initMetrics } from "$lib/metrics/initMetrics";
+  import { createQueryHighlightStore } from "$lib/application-state-stores/query-highlight-store";
+  import {
+    createDerivedTableStore,
+    createPersistentTableStore,
+  } from "$lib/application-state-stores/table-stores";
+  import {
+    createDerivedModelStore,
+    createPersistentModelStore,
+  } from "$lib/application-state-stores/model-stores";
+  import { initMetrics } from "$lib/metrics/initMetrics";
 
-let store;
-let queryHighlight = createQueryHighlightStore();
-if (browser) {
-  store = createStore();
-  setContext('rill:app:store', store);
-  setContext('rill:app:query-highlight', queryHighlight);
-  setContext(`rill:app:persistent-table-store`, createPersistentTableStore());
-  setContext(`rill:app:derived-table-store`, createDerivedTableStore());
-  setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
-  setContext(`rill:app:derived-model-store`, createDerivedModelStore());
-  notification.listenToSocket(store.socket);
-}
+  let store;
+  let queryHighlight = createQueryHighlightStore();
+  if (browser) {
+    store = createStore();
+    setContext("rill:app:store", store);
+    setContext("rill:app:query-highlight", queryHighlight);
+    setContext(`rill:app:persistent-table-store`, createPersistentTableStore());
+    setContext(`rill:app:derived-table-store`, createDerivedTableStore());
+    setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
+    setContext(`rill:app:derived-model-store`, createDerivedModelStore());
+    notification.listenToSocket(store.socket);
+  }
 
-onMount(() => {
+  onMount(() => {
     initMetrics();
-});
+  });
 
-let dbRunState = 'disconnected';
-let runstateTimer;
+  let dbRunState = "disconnected";
+  let runstateTimer;
 
-function debounceRunstate(state) {
-  if (runstateTimer) clearTimeout(runstateTimer);
-  setTimeout(() => {
-    dbRunState = state;
-  }, 500)
-}
+  function debounceRunstate(state) {
+    if (runstateTimer) clearTimeout(runstateTimer);
+    setTimeout(() => {
+      dbRunState = state;
+    }, 500);
+  }
 
-$: debounceRunstate($store?.status || 'disconnected');
-
+  $: debounceRunstate($store?.status || "disconnected");
 </script>
 
-<div class='body'>
+<div class="body">
   <slot />
-  </div>
+</div>
 
 <NotificationCenter />

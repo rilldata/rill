@@ -1,132 +1,149 @@
 <script lang="ts">
-/**
- * PreviewTable.svelte
- * Use this component to drop into the application.
- * Its goal it so utilize all of the other container components
- * and provide the interactions needed to do things with the table.
-*/
-import { slide } from "svelte/transition";
-import { Table, TableRow, TableCell } from "$lib/components/table/";
-import { FormattedDataType } from "$lib/components/data-types/";
-import PreviewTableHeader from "./PreviewTableHeader.svelte";
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
-import { standardTimestampFormat } from "$lib/util/formatters"
+  /**
+   * PreviewTable.svelte
+   * Use this component to drop into the application.
+   * Its goal it so utilize all of the other container components
+   * and provide the interactions needed to do things with the table.
+   */
+  import { slide } from "svelte/transition";
+  import { Table, TableRow, TableCell } from "$lib/components/table/";
+  import { FormattedDataType } from "$lib/components/data-types/";
+  import PreviewTableHeader from "./PreviewTableHeader.svelte";
+  import { TIMESTAMPS } from "$lib/duckdb-data-types";
+  import { standardTimestampFormat } from "$lib/util/formatters";
 
-interface ColumnName {
-    name:string;
-    type:string;
-}
+  interface ColumnName {
+    name: string;
+    type: string;
+  }
 
-export let columnNames:ColumnName[];
-export let rows:any[];
+  export let columnNames: ColumnName[];
+  export let rows: any[];
 
-let visualCellField = undefined;
-let visualCellValue = undefined;
-let visualCellType = undefined;
+  let visualCellField = undefined;
+  let visualCellValue = undefined;
+  let visualCellType = undefined;
 
-let selectedColumns = [];
+  let selectedColumns = [];
 
-let activeIndex;
+  let activeIndex;
 
-function setActiveElement(value, name, index) {
-    visualCellValue = value; 
+  function setActiveElement(value, name, index) {
+    visualCellValue = value;
     visualCellField = name;
-    visualCellType = columnNames.find(column => column.name === visualCellField)?.type
+    visualCellType = columnNames.find(
+      (column) => column.name === visualCellField
+    )?.type;
     activeIndex = index;
-}
+  }
 
-function columnIsPinned(name, selectedCols) {
-    return selectedCols.map(column => column.name).includes(name);
-}
+  function columnIsPinned(name, selectedCols) {
+    return selectedCols.map((column) => column.name).includes(name);
+  }
 
-function togglePin(name, type, selectedCols) {
+  function togglePin(name, type, selectedCols) {
     // if column is already pinned, remove.
     if (columnIsPinned(name, selectedCols)) {
-        selectedColumns = [...selectedCols.filter(column => column.name !== name)]
+      selectedColumns = [
+        ...selectedCols.filter((column) => column.name !== name),
+      ];
     } else {
-        selectedColumns = [...selectedCols, {name, type}];
+      selectedColumns = [...selectedCols, { name, type }];
     }
-}
-
-
+  }
 </script>
 
-<div 
-    class='flex relative'>
-    
-    <Table on:mouseleave={() => { visualCellValue = undefined; setActiveElement(undefined, undefined, undefined) }}>
-        <!-- headers -->
-        <TableRow>
-            {#each columnNames as {name, type} (name)}
-                {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-                <PreviewTableHeader 
-                    {name} 
-                    {type} 
-                    pinned={thisColumnIsPinned} 
-                    on:pin={() => {
-                        togglePin(name, type, selectedColumns);
-                    }}
-                />
-            {/each}
-        </TableRow>
-        <!-- values -->
-        {#each rows as row, index}
-            <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
-                {#each columnNames as { name, type } (index+name)}
-                    <TableCell
-                        on:inspect={() => { setActiveElement(row[name], name, index) }} 
-                        {name} 
-                        {type} 
-                        value={row[name]}
-                        isNull={row[name] === null}
-
-                    />
-                {/each}
-            </TableRow>
+<div class="flex relative">
+  <Table
+    on:mouseleave={() => {
+      visualCellValue = undefined;
+      setActiveElement(undefined, undefined, undefined);
+    }}
+  >
+    <!-- headers -->
+    <TableRow>
+      {#each columnNames as { name, type } (name)}
+        {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
+        <PreviewTableHeader
+          {name}
+          {type}
+          pinned={thisColumnIsPinned}
+          on:pin={() => {
+            togglePin(name, type, selectedColumns);
+          }}
+        />
+      {/each}
+    </TableRow>
+    <!-- values -->
+    {#each rows as row, index}
+      <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
+        {#each columnNames as { name, type } (index + name)}
+          <TableCell
+            on:inspect={() => {
+              setActiveElement(row[name], name, index);
+            }}
+            {name}
+            {type}
+            value={row[name]}
+            isNull={row[name] === null}
+          />
         {/each}
-    </Table>
+      </TableRow>
+    {/each}
+  </Table>
 
-    {#if selectedColumns.length}
-    <div class="sticky right-0 z-20 bg-white border border-l-4 border-t-0 border-b-0 border-r-0 border-gray-300" >
-        <Table>
-            <TableRow>
-                {#each selectedColumns as {name, type} (name)}
-                    {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-                    <PreviewTableHeader 
-                        {name} 
-                        {type} 
-                        pinned={thisColumnIsPinned} 
-                        on:pin={() => {
-                            togglePin(name, type, selectedColumns);
-                        }}
-                    />
-                {/each}
-            </TableRow>
-                {#each rows as row, index}
-                <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
-                    {#each selectedColumns as { name, type }}
-                        <TableCell 
-                            on:inspect={() => { setActiveElement(row[name], name, index) }}
-                            {name} 
-                            {type} 
-                            {index}
-                            isNull={row[name] === null}
-                            value={row[name]} />
-                    {/each}
-                </TableRow>
+  {#if selectedColumns.length}
+    <div
+      class="sticky right-0 z-20 bg-white border border-l-4 border-t-0 border-b-0 border-r-0 border-gray-300"
+    >
+      <Table>
+        <TableRow>
+          {#each selectedColumns as { name, type } (name)}
+            {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
+            <PreviewTableHeader
+              {name}
+              {type}
+              pinned={thisColumnIsPinned}
+              on:pin={() => {
+                togglePin(name, type, selectedColumns);
+              }}
+            />
+          {/each}
+        </TableRow>
+        {#each rows as row, index}
+          <TableRow
+            hovered={activeIndex === index && activeIndex !== undefined}
+          >
+            {#each selectedColumns as { name, type }}
+              <TableCell
+                on:inspect={() => {
+                  setActiveElement(row[name], name, index);
+                }}
+                {name}
+                {type}
+                {index}
+                isNull={row[name] === null}
+                value={row[name]}
+              />
             {/each}
-        </Table>
+          </TableRow>
+        {/each}
+      </Table>
     </div>
-    {/if}
+  {/if}
 </div>
 
 {#if visualCellValue !== undefined}
-<div 
-    transition:slide={{duration: 100}} 
-        class="sticky bottom-0 left-0 bg-white p-3 border border-t-1 border-gray-200 pointer-events-none z-30 grid grid-flow-col justify-start gap-x-3 items-baseline"
-        style:box-shadow="0 -4px 2px 0 rgb(0 0 0 / 0.05)"
-    >
-        <span class='font-bold pr-5'>{visualCellField}</span>
-        <FormattedDataType value={visualCellValue} type={visualCellType} isNull={visualCellValue === null} />
-</div>
+  <div
+    transition:slide={{ duration: 100 }}
+    class="sticky bottom-0 left-0 bg-white p-3 border border-t-1 border-gray-200 pointer-events-none z-30 grid grid-flow-col justify-start gap-x-3 items-baseline"
+    style:box-shadow="0 -4px 2px 0 rgb(0 0 0 / 0.05)"
+  >
+    <span class="font-bold pr-5">{visualCellField}</span>
+    <FormattedDataType
+      value={visualCellValue}
+      type={visualCellType}
+      isNull={visualCellValue === null}
+    />
+  </div>
 {/if}
