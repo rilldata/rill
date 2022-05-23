@@ -1,9 +1,8 @@
 <script lang="ts">
   import { browser } from "$app/env";
   import { fly, fade } from "svelte/transition";
-  import { flip } from "svelte/animate";
   import { quadInOut as flipEasing, cubicIn } from "svelte/easing";
-
+  import { flip } from "svelte/animate";
   import VirtualizedGrid from "./_VirtualizedGrid.svelte";
 
   import { tweened } from "svelte/motion";
@@ -200,7 +199,7 @@
 
 <svelte:window on:resize={onResize} />
 <div class="w-screen min-h-screen bg-white p-8">
-  {#if $persistentTableStore?.entities}
+  <!-- {#if $persistentTableStore?.entities}
     <select
       on:change={(event) => {
         currentTable = event.target.value;
@@ -222,18 +221,18 @@
         <option value={entity.id}>{entity.tableName}</option>
       {/each}
     </select>
-  {/if}
+  {/if} -->
 
   <section>
     <header
-      style:grid-template-columns="max-content max-content max-content"
+      style:grid-template-columns="max-content auto"
       class="pb-6 pt-6 grid w-full justify-between"
     >
       <h1 style:line-height="1.1">
         <div class="pl-2 text-gray-600 font-normal" style:font-size="1.5rem">
           Total Records
         </div>
-        <div style:font-size="2rem" style:width="600px">
+        <div style:font-size="2rem" style:width="400px">
           <div class="w-full rounded">
             <BarAndLabel
               justify="stretch"
@@ -261,7 +260,7 @@
           </div>
         </div>
       </h1>
-
+      <!-- 
       <div
         style:font-size="24px"
         class="grid justify-items-start justify-start grid-flow-col items-center"
@@ -294,51 +293,60 @@
             scale leaderboard bars by total record count
           </TooltipContent>
         </Tooltip>
-      </div>
+      </div> -->
 
       <div>
         {#if anythingSelected}
           <!-- FIXME: we should be generalizing whatever this button is -->
-          {#each Object.keys(activeValues) as dimension, i}
-            {#if activeValues[dimension].length}
-              <FilterSet>
-                <svelte:fragment slot="name">{dimension}</svelte:fragment>
-                <svelte:fragment slot="values">
-                  {#each activeValues[dimension] as value}
-                    <Filter
-                      on:click={() => {
-                        activeValues[dimension] = activeValues[
-                          dimension
-                        ]?.filter((b) => b !== value);
-                        if (browser) {
-                          const filters = prune(activeValues);
-                          bigNumber = 0;
+          <div class="flex flex-col gap-y-1">
+            {#each Object.keys(activeValues) as dimension, i}
+              {#if activeValues[dimension].length}
+                <FilterSet>
+                  <div transition:fly={{ duration: 200, x: -16 }} slot="name">
+                    {dimension}
+                  </div>
+                  <svelte:fragment slot="values">
+                    {#each activeValues[dimension] as value (dimension + value)}
+                      <div
+                        animate:flip={{ duration: 200 }}
+                        transition:fly={{ duration: 200, x: 16 }}
+                      >
+                        <Filter
+                          on:click={() => {
+                            activeValues[dimension] = activeValues[
+                              dimension
+                            ]?.filter((b) => b !== value);
+                            if (browser) {
+                              const filters = prune(activeValues);
+                              bigNumber = 0;
 
-                          store.socket.emit("getBigNumber", {
-                            entityType: EntityType.Table,
-                            entityID: currentTable,
-                            expression: "count(*)",
-                            filters,
-                          });
-                          availableDimensions.forEach((dimensionName) => {
-                            // invalidate the exiting leaderboard?
-                            store.socket.emit("getDimensionLeaderboard", {
-                              dimensionName,
-                              entityType: EntityType.Table,
-                              entityID: currentTable,
-                              filters,
-                            });
-                          });
-                        }
-                      }}
-                    >
-                      {value}
-                    </Filter>
-                  {/each}
-                </svelte:fragment>
-              </FilterSet>
-            {/if}
-          {/each}
+                              store.socket.emit("getBigNumber", {
+                                entityType: EntityType.Table,
+                                entityID: currentTable,
+                                expression: "count(*)",
+                                filters,
+                              });
+                              availableDimensions.forEach((dimensionName) => {
+                                // invalidate the exiting leaderboard?
+                                store.socket.emit("getDimensionLeaderboard", {
+                                  dimensionName,
+                                  entityType: EntityType.Table,
+                                  entityID: currentTable,
+                                  filters,
+                                });
+                              });
+                            }
+                          }}
+                        >
+                          {value}
+                        </Filter>
+                      </div>
+                    {/each}
+                  </svelte:fragment>
+                </FilterSet>
+              {/if}
+            {/each}
+          </div>
 
           <button
             transition:fly={{ duration: 200, y: 5 }}
