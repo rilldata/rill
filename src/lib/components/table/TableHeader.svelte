@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let sticky: string = "top";
+  export let sticky = "top";
 </script>
 
 <th

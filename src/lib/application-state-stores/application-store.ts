@@ -48,6 +48,7 @@ export function createStore(): ApplicationStore {
       EntityType.Application,
       StateType.Derived
     ).store.subscribe as any,
+    // FIXME: what is happening with these types
     // @ts-ignore
     socket: (dataModelerService as DataModelerSocketService).getSocket(),
   };

@@ -37,12 +37,11 @@
   import { config } from "./utils";
 
   export let name: string;
-  export let path: string = undefined;
   export let cardinality: number;
   export let profile: any;
   export let head: any; // FIXME
   export let sizeInBytes: number = undefined;
-  export let emphasizeTitle: boolean = false;
+  export let emphasizeTitle = false;
   export let draggable = true;
   export let show = false;
   export let showTitle = true;
@@ -76,13 +75,9 @@
   let selectedColumns = [];
 
   let sortedProfile;
-  function sortByOriginalOrder() {
-    sortedProfile = profile;
-  }
+  const sortByOriginalOrder = null;
 
   let sortMethod = defaultSort;
-  // this predicate actually is valid but typescript doesn't seem to agree.
-  // @ts-ignore
   $: if (sortMethod !== sortByOriginalOrder) {
     sortedProfile = [...profile].sort(sortMethod);
   } else {
@@ -173,7 +168,7 @@
                 {#if titleElementHovered || emphasizeTitle}
                   <span
                     ><span
-                      >{cardinality !== undefined && cardinality !== NaN
+                      >{cardinality !== undefined && !isNaN(cardinality)
                         ? formatInteger(interimCardinality)
                         : "no"}</span
                     >

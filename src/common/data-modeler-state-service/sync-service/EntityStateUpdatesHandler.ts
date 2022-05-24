@@ -12,7 +12,13 @@ export class EntityStateUpdatesHandler<Entity extends EntityRecord> {
     protected readonly dataModelerService: DataModelerService
   ) {}
 
-  public async handleEntityInit(entity: Entity): Promise<void> {}
-  public async handleNewEntity(entity: Entity): Promise<void> {}
-  public async handleUpdatedEntity(entity: Entity): Promise<void> {}
+  public async handleEntityInit(entity: Entity): Promise<void> {
+    // FIXME add descriptive comment describing why this empy method is needed
+  }
+  public async handleNewEntity(entity: Entity): Promise<void> {
+    // FIXME add descriptive comment describing why this empy method is needed
+  }
+  public async handleUpdatedEntity(entity: Entity): Promise<void> {
+    // FIXME add descriptive comment describing why this empy method is needed
+  }
 }

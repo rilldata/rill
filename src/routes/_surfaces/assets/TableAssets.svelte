@@ -63,7 +63,7 @@
   >
     {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
-      {#each $persistentTableStore.entities as { path, tableName, id } (id)}
+      {#each $persistentTableStore.entities as { tableName, id } (id)}
         {@const derivedTable = $derivedTableStore.entities.find(
           (t) => t["id"] === id
         )}
@@ -74,7 +74,6 @@
             cardinality={derivedTable?.cardinality ?? 0}
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
-            {path}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
