@@ -23,12 +23,6 @@ Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check you
 node -v
 ```
 
-Clone this repository to your local machine:
-
-```
-git clone https://github.com/rilldata/rill-developer.git
-```
-
 On Ubuntu, you'll also need to make sure you have `g++` installed in order to compile DuckDB from source during the installation steps below (please note that compiling DuckDB may take a while):
 
 ```
@@ -37,19 +31,12 @@ sudo apt install g++
 
 # Install Locally
 
-Change directories to the local Rill Developer repository
+To install locally, you can use `npm` to globally install Rill Developer. This will give you a CLI to start the server. 
+
+Note: this install command involves compiling DuckDB which can be time consuming to complete (it may take approximately five minutes or more, depending on your machine). Please be patient!
 
 ```
-cd /path/to/rill-developer
-```
-
-Run npm to install dependencies and build the application.
-Part of this step involves compiling DuckDB which can be time consuming to complete (it may take approximately five minutes or more, depending on your machine).
-Please be patient.
-
-```
-npm install
-npm run build
+npm install -g @rilldata/rill
 ```
 
 # Quick Start Example
@@ -57,13 +44,13 @@ npm run build
 If you are looking for a fast way to get started you can run our quick start example script. This script initializes a project, downloads an [OpenSky Network dataset](https://zenodo.org/record/6325961#.YjDFvhDMI0Q), and imports the data. The Rill Developer UI will be available at http://localhost:8080.
 
 ```
-bash scripts/example-project.sh
+rill initialize-example-project
 ```
 
 If you close the example project and want to restart it, you can do so by running:
 
 ```
-npm run cli --silent -- start --project ../rill-developer-example
+rill start
 ```
 
 # Creating Your Own Project
@@ -75,7 +62,7 @@ If you want to go beyond this example, you can also create a project using your 
 Initialize your project in the Rill Developer directory.
 
 ```
-npm run cli --silent -- init
+rill init
 ```
 
 ## Import Your Data
@@ -83,9 +70,9 @@ npm run cli --silent -- init
 Import datasets of interest into the Rill Developer [duckDB](https://duckdb.org/docs/sql/introduction) database to make them available. We currently support .parquet, .csv, and .tsv.
 
 ```
-npm run cli --silent -- import-table /path/to/data_1.parquet
-npm run cli --silent -- import-table /path/to/data_2.csv
-npm run cli --silent -- import-table /path/to/data_3.tsv
+rill import-table /path/to/data_1.parquet
+rill import-table /path/to/data_2.csv
+rill import-table /path/to/data_3.tsv
 ```
 
 ## Start Your Project
@@ -93,7 +80,7 @@ npm run cli --silent -- import-table /path/to/data_3.tsv
 Start the User Interface to interact with your imported tables and revisit projects you have created.
 
 ```
-npm run cli --silent -- start
+rill start
 ```
 
 The Rill Developer UI will be available at http://localhost:8080.
@@ -107,37 +94,35 @@ Rill Developer is powered by duckDB. Please visit their documentation for insigh
 Rill Developer will be evolving quickly! If you want an updated version, you can pull in the latest changes and rebuild the application. Once you have rebuilt the application you can restart your project to see the new experience.
 
 ```
-git pull origin main
-npm run build
-npm run cli --silent -- start
+npm install -g @rilldata/rill
 ```
 
 # Helpful Hints
 
-You can specify a new project folder by including the --project option.
+Rill works best if you have `cd`ed into the project directory, since it assumes that you are in a project directory already. But you can also specify a new project folder by including the --project option.
 
 ```
-npm run cli --silent -- init --project /path/to/a/new/project
-npm run cli --silent -- import-table /path/to/data_1.parquet --project /path/to/a/new/project
-npm run cli --silent -- start --project /path/to/a/new/project
+rill init --project /path/to/a/new/project
+rill import-table /path/to/data_1.parquet --project /path/to/a/new/project
+rill start --project /path/to/a/new/project
 ```
 
 By default the table name will be a sanitized version of the dataset file name. You can specify a name using the --name option.
 
 ```
-npm run cli --silent -- import-table  /path/to/data_1.parquet --name my_table
+rill import-table  /path/to/data_1.parquet --name my_table
 ```
 
 If you have added a table to Rill Developer that you want to drop, you can do so using the --drop-table option.
 
 ```
-npm run cli --silent -- drop-table my_table
+rill drop-table my_table
 ```
 
 If you have a dataset that is delimited by a character other than a comma or tab, you can use the --delimiter option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
 
 ```
-npm run cli --silent -- import-table /path/to/data_4.txt --delimiter "|"
+rill import-table /path/to/data_4.txt --delimiter "|"
 ```
 
 You can connect to an existing duckdb database by passing --db with path to the db file.
@@ -146,20 +131,20 @@ Similarly, any changes made by Rill Developer will modify the database.
 Make sure to have only one connection open to the database, otherwise there will be some unexpected issues.
 
 ```
-npm run cli --silent -- init --db /path/to/duckdb/file
+rill init --db /path/to/duckdb/file
 ```
 
 You can also copy over the database so that there are no conflicts and overrides to the source.
 Pass --copy along with --db to achieve this.
 
 ```
-npm run cli --silent -- init --db /path/to/duckdb/file --copy
+rill init --db /path/to/duckdb/file --copy
 ```
 
 If you would like to see information on all the available CLI commands, you can use the help option.
 
 ```
-npm run cli --silent -- --help
+rill --help
 ```
 
 # Troubleshooting
