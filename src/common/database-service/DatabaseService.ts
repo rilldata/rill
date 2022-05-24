@@ -72,5 +72,7 @@ export class DatabaseService
     return await actionsInstance[action].call(actionsInstance, null, ...args);
   }
 
-  public async destroy(): Promise<void> {}
+  public async destroy(): Promise<void> {
+    // FIXME add descriptive comment describing why this empy method is needed
+  }
 }

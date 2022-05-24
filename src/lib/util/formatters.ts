@@ -93,7 +93,7 @@ export function intervalToTimestring(interval: Interval) {
 }
 
 export function formatCompactInteger(n: number) {
-  let fmt: Function;
+  let fmt: (number) => string;
   if (n <= 1000) {
     fmt = formatInteger;
     return fmt(~~n);

@@ -48,7 +48,9 @@ export class ProfileColumnActions extends DataModelerActions {
           )
         )
       );
-    } catch (err) { }
+    } catch (err) {
+      // continue regardless of error
+    }
   }
 
   private async collectColumnInfo(

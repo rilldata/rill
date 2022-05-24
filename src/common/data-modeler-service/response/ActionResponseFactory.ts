@@ -4,6 +4,7 @@ import { ActionStatus } from "$common/data-modeler-service/response/ActionRespon
 import { ImportTableError } from "$common/errors/ImportTableError";
 import { ModelQueryError } from "$common/errors/ModelQueryError";
 import { EntityError } from "$common/errors/EntityError";
+import { ExistingEntityError } from "$common/errors/ExistingEntityError";
 
 export class ActionResponseFactory {
   public static getSuccessResponse(message?: string): ActionResponse {
@@ -44,5 +45,9 @@ export class ActionResponseFactory {
 
   public static getModelQueryError(message: string): ActionResponse {
     return this.getErrorResponse(new ModelQueryError(message));
+  }
+
+  public static getExisingEntityError(message: string): ActionResponse {
+    return this.getErrorResponse(new ExistingEntityError(message));
   }
 }

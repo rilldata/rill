@@ -14,9 +14,10 @@
 
   const dispatch = createEventDispatcher();
   export let content;
-  export let componentContainer;
   export let editorHeight = 0;
   export let selections = [];
+
+  let componentContainer;
 
   $: editorHeight = componentContainer?.offsetHeight || 0;
 
@@ -127,7 +128,7 @@
       parent: editorContainerComponent,
     });
     const obs = new ResizeObserver(() => {
-      editorHeight = componentContainer.offsetHeight;
+      editorHeight = componentContainer?.offsetHeight;
     });
     obs.observe(componentContainer);
   });

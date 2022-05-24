@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { browser } from "$app/env";
   import Editor from "$lib/components/Editor.svelte";
 
@@ -87,7 +87,12 @@
     let ei;
     let nest = 0;
     let inside = false;
-    let currentExpression = {};
+    let currentExpression: {
+      name?: string;
+      start?: number;
+      end?: number;
+      substring?: string;
+    } = {};
     while (ri < string.length) {
       // let's get the name of this thing
       let char = string[ri];
@@ -119,7 +124,7 @@
           .trim();
         CTEs.push({ ...currentExpression });
         si = ri + 1;
-        // @ts-ignore
+
         currentExpression = {};
         nest = 0;
         inside = false;
@@ -130,9 +135,6 @@
     return CTEs;
   }
 
-  function trackDownFrom(query) {}
-
-  ////
   $: parse = getSubquery(content, location);
   $: ctes = extractCTEs(content, location);
 </script>

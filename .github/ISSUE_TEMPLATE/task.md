@@ -2,7 +2,7 @@
 name: Task
 about: A task is an actionable unit of work that contributes to new feature development.
 title: ''
-labels: 'enhancement'
+labels: 'task'
 assignees: ''
 
 ---

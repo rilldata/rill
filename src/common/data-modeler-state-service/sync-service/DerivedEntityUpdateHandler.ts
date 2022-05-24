@@ -52,7 +52,9 @@ export class DerivedEntityUpdateHandler extends EntityStateUpdatesHandler<DataPr
               this.collectEntityInfoAction,
               [entity.id]
             );
-          } catch (err) {}
+          } catch (err) {
+            // continue regardless of error
+          }
           this.collectInfoThrottler.clear(entity.id);
         }, this.config.state.syncInterval);
       },
