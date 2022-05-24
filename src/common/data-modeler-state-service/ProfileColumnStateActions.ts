@@ -1,4 +1,4 @@
-import { StateActions } from ".//StateActions";
+import { StateActions } from "./StateActions";
 import type { ColumnarTypeKeys, ProfileColumnSummary } from "$lib/types";
 import type { DataProfileStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 import type { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";

@@ -1,4 +1,4 @@
-import { StateActions } from ".//StateActions";
+import { StateActions } from "./StateActions";
 import type {
   PersistentTableEntity,
   PersistentTableStateActionArg,

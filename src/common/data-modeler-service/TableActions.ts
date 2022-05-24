@@ -1,4 +1,4 @@
-import { DataModelerActions } from ".//DataModelerActions";
+import { DataModelerActions } from "./DataModelerActions";
 import {
   FILE_EXTENSION_TO_TABLE_TYPE,
   ProfileColumn,
