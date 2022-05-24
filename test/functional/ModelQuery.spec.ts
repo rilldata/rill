@@ -168,4 +168,31 @@ export class ModelQuerySpec extends FunctionalTestBase {
     await asyncWait(100);
     expect(this.getActiveEntity().id).toBe(ids[3]);
   }
+
+  @FunctionalTestBase.Test()
+  public async shouldNotCreateOrRenameWithExistingTableName() {
+    const resp = await this.clientDataModelerService.dispatch("addModel", [
+      { name: "AdBids", query: "" },
+    ]);
+    await this.waitForModels();
+    expect(resp.status).toBe(ActionStatus.Failure);
+    expect(resp.messages[0].errorType).toBe(
+      ActionErrorType.ExistingEntityError
+    );
+
+    await this.clientDataModelerService.dispatch("addModel", [
+      { name: "modelRename", query: "" },
+    ]);
+    await this.waitForModels();
+
+    const [model] = this.getModels("tableName", "modelRename");
+    const renameResp = await this.clientDataModelerService.dispatch(
+      "updateModelName",
+      [model.id, "AdBids"]
+    );
+    expect(renameResp.status).toBe(ActionStatus.Failure);
+    expect(renameResp.messages[0].errorType).toBe(
+      ActionErrorType.ExistingEntityError
+    );
+  }
 }

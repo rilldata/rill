@@ -32,7 +32,7 @@
   <div class="assets">
     <div class="grid grid-cols-3">
       {#if $persistentTableStore && $derivedTableStore && $persistentTableStore?.entities?.length && $derivedTableStore?.entities?.length}
-        {#each $persistentTableStore.entities as { tableName, path, id } (id)}
+        {#each $persistentTableStore.entities as { tableName, id } (id)}
           {@const derivedTable = $derivedTableStore.entities.find(
             (t) => t["id"] === id
           )}
@@ -45,7 +45,6 @@
               cardinality={derivedTable?.cardinality ?? 0}
               profile={derivedTable?.profile ?? []}
               head={derivedTable?.preview ?? []}
-              {path}
               sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             />
           </div>

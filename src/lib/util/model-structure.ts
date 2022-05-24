@@ -216,11 +216,11 @@ export function extractCoreSelectStatements(query: string) {
 
       // look at end of name and trim the end.
 
-      function getStartAndEnd(string) {
+      const getStartAndEnd = (string) => {
         let start = firstCharacterAt(string);
         let end = firstCharacterAt(string.split("").reverse().join(""));
         return [start, end];
-      }
+      };
       let [_, nameEnd] = getStartAndEnd(name);
       let [expressionStart, __] = getStartAndEnd(expression);
       // look at the start of expression and trim the start.

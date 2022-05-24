@@ -62,7 +62,7 @@
   $: tweeningFunction =
     dataType === "int" ? (v: number) => ~~v : (v: number) => v;
 
-  let formatter: Function;
+  let formatter: (number) => string;
   $: formatter = dataType === "int" ? format("") : format(".2d");
   $: $lowValue = data[0].low;
   $: $highValue = data.slice(-1)[0].high;

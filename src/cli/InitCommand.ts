@@ -29,7 +29,10 @@ export class InitCommand extends DataModelerCliCommand {
         InitCommand.makeDirectoryIfNotExists(projectPath);
         this.alreadyInitialised = existsSync(`${projectPath}/state`);
 
-        if (!InitCommand.verifyDuckDbPath(opts.db, opts.copy, projectPath)) {
+        if (
+          !this.alreadyInitialised &&
+          !InitCommand.verifyDuckDbPath(opts.db, opts.copy, projectPath)
+        ) {
           console.log(`Failed to initialize project under ${projectPath}`);
           return;
         }

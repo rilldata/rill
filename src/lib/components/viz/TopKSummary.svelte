@@ -11,7 +11,7 @@
 
   import { createShiftClickAction } from "$lib/util/shift-click-action";
 
-  export let displaySize: string = "md";
+  export let displaySize = "md";
   export let totalRows: number;
   export let topK: any; // FIXME
   export let color: string;

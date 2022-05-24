@@ -25,8 +25,9 @@ const CLI_TEST_DUCKDB_FOLDER_ARG = `--project ${CLI_TEST_DUCKDB_FOLDER}`;
 @FunctionalTestBase.Suite
 export class DuckDbConnectionSpec extends FunctionalTestBase {
   @FunctionalTestBase.BeforeSuite()
-  // override parent method to stop it from starting local server
-  public async setup() {}
+  public async setup() {
+    // override parent method to stop it from starting local server
+  }
 
   @FunctionalTestBase.BeforeEachTest()
   public async setupTests(): Promise<void> {

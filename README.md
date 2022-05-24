@@ -140,7 +140,23 @@ If you have a dataset that is delimited by a character other than a comma or tab
 npm run cli --silent -- import-table /path/to/data_4.txt --delimiter "|"
 ```
 
-If you would like to see information on all of the available CLI commands, you can use the help option.
+You can connect to an existing duckdb database by passing --db with path to the db file.
+Any updates made directly to the tables in the database will reflect in Rill Developer.
+Similarly, any changes made by Rill Developer will modify the database.
+Make sure to have only one connection open to the database, otherwise there will be some unexpected issues.
+
+```
+npm run cli --silent -- init --db /path/to/duckdb/file
+```
+
+You can also copy over the database so that there are no conflicts and overrides to the source.
+Pass --copy along with --db to achieve this.
+
+```
+npm run cli --silent -- init --db /path/to/duckdb/file --copy
+```
+
+If you would like to see information on all the available CLI commands, you can use the help option.
 
 ```
 npm run cli --silent -- --help
