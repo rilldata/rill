@@ -113,6 +113,9 @@
   ],
   "pkg": {
     "scripts": "dist/**/*.js",
-    "assets": ["build/**/*", "package.json"]
+    "assets": [
+      "build/**/*",
+      "package.json"
+    ]
   }
 }
