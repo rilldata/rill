@@ -101,10 +101,7 @@ export class ExpressServer {
         "Content-Disposition",
         `attachment; filename="${fileName}"`
       );
-      console.log(process.cwd(), this.config.database.exportFolder, fileName);
-      res.sendFile(
-        `${process.cwd()}/${this.config.database.exportFolder}/${fileName}`
-      );
+      res.sendFile(`${this.config.database.exportFolder}/${fileName}`);
     } else {
       res.status(500);
       res.send(
