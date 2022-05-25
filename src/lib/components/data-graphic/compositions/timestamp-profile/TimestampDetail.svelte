@@ -192,10 +192,12 @@
 
   // this adaptive smoothing should be a function?
 
-  // Let's set the X Scale based on the $xMin and $xMax.
-  $: $X = scaleLinear()
-    .domain([$xMin, $xMax])
-    .range([left + buffer, width - right - buffer]);
+  // Let's set the X Scale based on the $xMin and $xMax, or if the
+  $: X.set(
+    scaleLinear()
+      .domain([$xMin, $xMax])
+      .range([$plotConfig.plotLeft, $plotConfig.plotRight])
+  );
 
   // Generate the line density by dividing the total available pixels by the window length.
   // We will scale by window.pixelDensityRatio.
@@ -204,9 +206,13 @@
   let yExtents = extent(data, (d) => d[yAccessor]);
   $: yExtents = extent(data, (d) => d[yAccessor]);
   const yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
-  $: $Y = scaleLinear()
-    .domain([0, $yMax])
-    .range([$plotConfig.plotBottom, $plotConfig.plotTop]);
+
+  // Set Y if there's a new yMax or the range changes.
+  $: Y.set(
+    scaleLinear()
+      .domain([0, $yMax])
+      .range([$plotConfig.plotBottom, $plotConfig.plotTop])
+  );
 
   // get the nearest point to where the cursor is.
 
@@ -235,6 +241,7 @@
   // when zooming / panning, get the total number of zoomed rows.
   let zoomedRows;
 
+  // find the total number of rows currently visible in the zoom.
   $: if ($zoomCoords.start.x && $zoomCoords.stop.x) {
     let xStart = $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x));
     let xEnd = $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x));
