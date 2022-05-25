@@ -31,8 +31,10 @@
   import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
   import notificationStore from "$lib/components/notifications/";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import TimestampDetail from "../data-graphic/compositions/timestamp-detail/TimestampDetail.svelte";
-  import TimestampSpark from "../data-graphic/compositions/timestamp-detail/TimestampSpark.svelte";
+  import {
+    TimestampDetail,
+    TimestampSpark,
+  } from "../data-graphic/compositions/timestamp-profile";
 
   export let name;
   export let type;
