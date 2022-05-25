@@ -1,5 +1,37 @@
 import { line, area, curveLinear, curveStep } from "d3-shape";
-import type { scaleLinear } from "d3-scale";
+import type { ScaleLinear } from "d3-scale";
+
+export interface PlotConfig {
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  buffer: number;
+  plotTop: number;
+  plotBottom: number;
+  plotLeft: number;
+  plotRight: number;
+  fontSize: number;
+  textGap: number;
+  id: string;
+}
+
+/**
+ * Creates a string to be fed into the d attribute of a path,
+ * producing a single path definition for one circle.
+ * These completed, segmented arcs will not overlap in a way where
+ * we can overplot if part of the same path.
+ */
+export function circlePath(cx: number, cy: number, r: number) {
+  return `
+    M ${cx - r}, ${cy}
+      a ${r},${r} 0 1,0 ${r * 2},0
+      a ${r},${r} 0 1,0 ${-r * 2},0
+    `;
+}
 
 const curves = {
   curveLinear,
@@ -25,8 +57,8 @@ function isDefined(yAccessor: string) {
 
 interface LineGeneratorArguments {
   xAccessor: string;
-  xScale: scaleLinear;
-  yScale: scaleLinear;
+  xScale: ScaleLinear<number, number>;
+  yScale: ScaleLinear<number, number>;
   curve: string;
 }
 

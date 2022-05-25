@@ -13,25 +13,21 @@
    * The graph will contain an unsmoothed series (showing noise * abnormalities) by default, and
    * a smoothed series (showing the trend) if the time series merits it.
    */
-  import { onMount } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { guidGenerator } from "$lib/util/guid";
   import { spring } from "svelte/motion";
   import { fly, fade } from "svelte/transition";
   import { cubicOut as easing } from "svelte/easing";
   import { scaleLinear } from "d3-scale";
-  import { lineFactory, areaFactory } from "./utils";
+  import type { ScaleLinear } from "d3-scale";
   import { DEFAULT_COORDINATES } from "$lib/components/data-graphic/constants";
   import { createScrubAction } from "$lib/components/data-graphic/create-scrub-action";
   import { extent, bisector, max, min } from "d3-array";
   import { outline } from "$lib/components/data-graphic/outline";
-  import {
-    datePortion,
-    timePortion,
-    formatInteger,
-    removeTimezoneOffset,
-  } from "$lib/util/formatters";
+  import { removeTimezoneOffset } from "$lib/util/formatters";
   import type { Interval } from "$lib/duckdb-data-types";
   import { writable } from "svelte/store";
+  import type { Writable } from "svelte/store";
   import { createExtremumResolutionStore } from "../../extremum-resolution-store";
 
   import TimestampBound from "./TimestampBound.svelte";
@@ -42,9 +38,13 @@
 
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import notifications from "$lib/components/notifications";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import TimestampMouseoverAnnotation from "./TimestampMouseoverAnnotation.svelte";
+  import TimestampPaths from "./TimestampPaths.svelte";
 
-  const plotID = guidGenerator();
+  import type { PlotConfig } from "$lib/components/data-graphic/utils";
+  import ZoomWindow from "./ZoomWindow.svelte";
+
+  const id = guidGenerator();
 
   export let data;
   export let spark;
@@ -84,19 +84,54 @@
   export let rollupGrain: string;
   export let estimatedSmallestTimeGrain: string;
 
-  let scale: number;
+  let devicePixelRatio: number = 1;
   onMount(() => {
-    scale = window.devicePixelRatio;
+    devicePixelRatio = window.devicePixelRatio;
   });
 
-  const X = writable(undefined);
-  const Y = writable(undefined);
+  /** These are our global scales, X and Y. */
+  const X: Writable<ScaleLinear> = writable(undefined);
+  const Y: Writable<ScaleLinear> = writable(undefined);
+  /** make them available to the children. */
+  setContext("rill:data-graphic:X", X);
+  setContext("rill:data-graphic:Y", Y);
+
   let coordinates = writable(DEFAULT_COORDINATES);
 
-  $: plotTop = top + buffer;
-  $: plotBottom = height - buffer - bottom;
-  $: plotLeft = left + buffer;
-  $: plotRight = width - right - buffer;
+  const plotConfig: Writable<PlotConfig> = writable({
+    top,
+    bottom,
+    left,
+    right,
+    buffer,
+    width,
+    height,
+    devicePixelRatio,
+    plotTop: top + buffer,
+    plotBottom: height - buffer - bottom,
+    plotLeft: left + buffer,
+    plotRight: width - right - buffer,
+    fontSize: fontSize,
+    textGap: textGap,
+    id,
+  });
+
+  setContext("rill:data-graphic:plot-config", plotConfig);
+
+  $: $plotConfig.devicePixelRatio = devicePixelRatio;
+  $: $plotConfig.width = width;
+  $: $plotConfig.height = height;
+  $: $plotConfig.top = top;
+  $: $plotConfig.bottom = bottom;
+  $: $plotConfig.left = left;
+  $: $plotConfig.right = right;
+  $: $plotConfig.buffer = buffer;
+  $: $plotConfig.plotTop = top + buffer;
+  $: $plotConfig.plotBottom = height - buffer - bottom;
+  $: $plotConfig.plotLeft = left + buffer;
+  $: $plotConfig.plotRight = width - right - buffer;
+  $: $plotConfig.fontSize = fontSize;
+  $: $plotConfig.textGap = textGap;
 
   /**
    * The scrub action creates a scrubbing event that enables the user to
@@ -106,10 +141,10 @@
     scrubAction,
     isScrubbing: isZooming,
   } = createScrubAction({
-    plotLeft,
-    plotRight,
-    plotTop,
-    plotBottom,
+    plotLeft: $plotConfig.plotLeft,
+    plotRight: $plotConfig.plotRight,
+    plotTop: $plotConfig.plotTop,
+    plotBottom: $plotConfig.plotBottom,
     startPredicate: (event) => event.altKey,
     movePredicate: (event) => event.altKey,
     completedEventName: "scrub",
@@ -121,10 +156,10 @@
    */
   const { scrubAction: scrollAction, isScrubbing: isScrolling } =
     createScrubAction({
-      plotLeft,
-      plotRight,
-      plotTop,
-      plotBottom,
+      plotLeft: $plotConfig.plotLeft,
+      plotRight: $plotConfig.plotRight,
+      plotTop: $plotConfig.plotTop,
+      plotBottom: $plotConfig.plotBottom,
       startPredicate: (event) => !event.altKey && !event.shiftKey,
       movePredicate: (event) => !event.altKey && !event.shiftKey,
       moveEventName: "scrolling",
@@ -147,28 +182,15 @@
     easing,
   });
 
+  // setContext('rill:data-graphic:x-min', xMin);
+  // setContext
+
   $: xExtents = extent(data, (d) => d[xAccessor]);
 
   $: xMin.setWithKey("x", zoomedXStart || xExtents[0]);
   $: xMax.setWithKey("x", zoomedXEnd || xExtents[1]);
-  let dataWindow;
 
   // this adaptive smoothing should be a function?
-  $: dataWindow = data.filter(
-    (di) => di[xAccessor] >= $xMin && di[xAccessor] <= $xMax
-  );
-  $: windowWithoutZeros = dataWindow.filter((di) => {
-    return di[yAccessor] !== 0;
-  });
-  $: windowSize = dataWindow.length < 150 ? 30 : ~~(dataWindow.length / 25);
-
-  $: smoothedData = data.map((di, i, arr) => {
-    const dii = { ...di };
-    const window = Math.max(3, Math.min(~~windowSize, i));
-    const prev = arr.slice(i - ~~(window / 2), i + ~~(window / 2));
-    dii._smoothed = prev.reduce((a, b) => a + b.count, 0) / prev.length;
-    return dii;
-  });
 
   // Let's set the X Scale based on the $xMin and $xMax.
   $: $X = scaleLinear()
@@ -178,81 +200,28 @@
   // Generate the line density by dividing the total available pixels by the window length.
   // We will scale by window.pixelDensityRatio.
 
-  $: totalTravelDistance = dataWindow
-    .map((di, i) => {
-      if (i === data.length - 1) {
-        return 0;
-      }
-      let max = Math.max($Y(data[i + 1][yAccessor]), $Y(data[i][yAccessor]));
-      let min = Math.min($Y(data[i + 1][yAccessor]), $Y(data[i][yAccessor]));
-      return Math.abs(max - min);
-    })
-    .reduce((acc, v) => acc + v, 0);
-
-  let lineDensity = 0.05;
-  $: lineDensity = Math.min(
-    1,
-    /** to determine the stroke width of the path, let's look at
-     * the bigger of two values:
-     * 1. the "y-ish" distance travelled
-     * the inverse of "total travel distance", which is the Y
-     * gap size b/t successive points divided by the zoom window size;
-     * 2. time series length / available X pixels
-     * the time series divided by the total number of pixels in the existing
-     * zoom window.
-     *
-     * These heuristics could be refined, but this seems to provide a reasonable approximation for
-     * the stroke width. (1) excels when lots of successive points are close together in the Y direction,
-     * whereas (2) excels when a line is very, very noisy (and thus the X direction is the main constraint).
-     */
-    Math.max(
-      2 / (totalTravelDistance / (($X($xMax) - $X($xMin)) * scale)),
-      (($X($xMax) - $X($xMin)) * scale * 0.7) / dataWindow.length / 1.5
-    )
-  );
-  /** the line opacity calculation is just a function of the available pixels divided
-   * by the window length, capped at 1. This seems to work well in practice.
-   */
-  $: opacity = Math.min(
-    1,
-    1 + (($X($xMax) - $X($xMin)) * scale) / dataWindow.length / 2
-  );
-
   // Generate our Y Scale.
   let yExtents = extent(data, (d) => d[yAccessor]);
   $: yExtents = extent(data, (d) => d[yAccessor]);
   const yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
-  $: $Y = scaleLinear().domain([0, $yMax]).range([plotBottom, plotTop]);
-
-  $: lineFcn = lineFactory({
-    xScale: $X,
-    yScale: $Y,
-    curve,
-    xAccessor,
-  });
-
-  $: areaFcn = areaFactory({
-    xScale: $X,
-    yScale: $Y,
-    curve,
-    xAccessor,
-  });
-
-  let nearestPoint = undefined;
+  $: $Y = scaleLinear()
+    .domain([0, $yMax])
+    .range([$plotConfig.plotBottom, $plotConfig.plotTop]);
 
   // get the nearest point to where the cursor is.
+
   let bisectDate = bisector((d) => d[xAccessor]).center;
   $: nearestPoint = data[bisectDate(data, $X.invert($coordinates.x))];
-
-  // let's create the final version of the smoothedData d attribute.
-  $: smoothedLine = lineFcn("_smoothed")(smoothedData);
 
   function clearMouseMove() {
     coordinates.set(DEFAULT_COORDINATES);
   }
 
   function handleMouseMove(event) {
-    if (event.offsetX > plotLeft && event.offsetX < plotRight) {
+    if (
+      event.offsetX > $plotConfig.plotLeft &&
+      event.offsetX < $plotConfig.plotRight
+    ) {
       coordinates.set({ x: event.offsetX, y: event.offsetY });
     }
   }
@@ -382,69 +351,38 @@
           <stop offset="100%" stop-color="white" />
         </linearGradient>
       </defs>
-      <clipPath id="data-graphic-{plotID}">
+      <clipPath id="data-graphic-{$plotConfig.id}">
         <rect
-          x={plotLeft}
-          y={plotTop}
-          width={plotRight - plotLeft}
-          height={plotBottom - plotTop}
+          x={$plotConfig.plotLeft}
+          y={$plotConfig.plotTop}
+          width={$plotConfig.plotRight - $plotConfig.plotLeft}
+          height={$plotConfig.plotBottom - $plotConfig.plotTop}
         />
       </clipPath>
-      <g clip-path="url(#data-graphic-{plotID})">
+      <g clip-path="url(#data-graphic-{id})">
         <!-- core geoms -->
-        <path d={areaFcn(yAccessor)(data)} fill="rgba(0,0,0,.05)" />
-        <path
-          d={lineFcn(yAccessor)(data)}
-          stroke="black"
-          stroke-width={lineDensity}
-          fill="none"
-          style:opacity
-          class="transition-opacity"
-        />
+        <TimestampPaths {curve} {data} {xAccessor} {yAccessor} {smooth} />
 
-        <!-- smoothed line -->
-        <g
-          style:transition="opacity 300ms"
-          style:opacity={smooth &&
-          windowWithoutZeros?.length &&
-          windowWithoutZeros.length > width * scale
-            ? 1
-            : 0}
-        >
-          <path
-            d={smoothedLine}
-            stroke="white"
-            fill="none"
-            stroke-width={3}
-            style:opacity={0.5}
-          />
-          <path
-            d={smoothedLine}
-            stroke="hsl(217, 80%, 20%)"
-            fill="none"
-            stroke-width={1.5}
-            style:opacity={0.85}
-          />
-        </g>
         {#if isZoomed}
           <!-- fadeout gradients on each side? -->
           <rect
             transition:fade
-            x={plotLeft}
-            y={plotTop}
+            x={$plotConfig.plotLeft}
+            y={$plotConfig.plotTop}
             width={20}
-            height={plotBottom - plotTop}
+            height={$plotConfig.plotBottom - $plotConfig.plotTop}
             fill="url(#left-side)"
           />
           <rect
             transition:fade
-            x={plotRight - 20}
-            y={plotTop}
+            x={$plotConfig.plotRight - 20}
+            y={$plotConfig.plotTop}
             width={20}
-            height={plotBottom - plotTop}
+            height={$plotConfig.plotBottom - $plotConfig.plotTop}
             fill="url(#right-side)"
           />
         {/if}
+        <!-- add baseline -->
         <line
           x1={$X?.range()[0]}
           x2={$X?.range()[1]}
@@ -455,73 +393,26 @@
       </g>
       <g>
         {#if $zoomCoords.start.x && $zoomCoords.stop.x}
-          <rect
-            x={Math.min($zoomCoords.start.x, $zoomCoords.stop.x)}
-            y={plotTop + buffer}
-            width={Math.abs($zoomCoords.start.x - $zoomCoords.stop.x)}
-            height={plotBottom - plotTop}
-            fill={zoomWindowColor}
-            style:mix-blend-mode="darken"
-          />
-          <line
-            x1={$zoomCoords.start.x}
-            x2={$zoomCoords.start.x}
-            y1={plotTop + buffer}
-            y2={plotBottom}
-            stroke="rgb(100,100,100)"
+          <ZoomWindow
+            start={$zoomCoords.start.x}
+            stop={$zoomCoords.stop.x}
+            color={zoomWindowColor}
           />
         {/if}
       </g>
-      <!-- mouseover information -->
+      <!-- mouseover annotation -->
       {#if $coordinates.x}
-        <g>
-          <line
-            x1={$X(nearestPoint[xAccessor])}
-            x2={$X(nearestPoint[xAccessor])}
-            y1={plotTop + buffer}
-            y2={plotBottom}
-            stroke="rgb(100,100,100)"
-          />
-          {#each [[yAccessor, "rgb(100,100,100)"]] as [accessor, color]}
-            {@const cx = $X(nearestPoint[xAccessor])}
-            {@const cy = $Y(nearestPoint[accessor])}
-            {#if cx && cy}
-              <circle {cx} {cy} r={3} fill={color} />
-            {/if}
-          {/each}
-          <g
-            in:fly={{ duration: 200, x: -16 }}
-            out:fly={{ duration: 200, x: -16 }}
-            font-size={fontSize}
-            style:user-select={"none"}
-          >
-            <text x={plotLeft} y={fontSize} class="fill-gray-500" use:outline>
-              {datePortion(nearestPoint[xAccessor])}
-            </text>
-            <text
-              x={plotLeft}
-              y={fontSize * 2 + textGap}
-              class="fill-gray-500"
-              use:outline
-            >
-              {timePortion(nearestPoint[xAccessor])}
-            </text>
-            <text
-              x={plotLeft}
-              y={fontSize * 3 + textGap * 2}
-              class="fill-gray-500"
-              use:outline
-            >
-              {formatInteger(~~nearestPoint[yAccessor])} row{#if nearestPoint[yAccessor] !== 1}s{/if}
-            </text>
-          </g>
-        </g>
+        <TimestampMouseoverAnnotation
+          point={nearestPoint}
+          {xAccessor}
+          {yAccessor}
+        />
       {/if}
       <!-- scrub-clearing click region -->
       {#if zoomedXStart && zoomedXEnd}
         <text
           font-size={fontSize}
-          x={plotRight}
+          x={$plotConfig.plotRight}
           y={fontSize}
           text-anchor="end"
           style:font-style="italic"

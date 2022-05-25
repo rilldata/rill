@@ -13,8 +13,8 @@
   import { scaleLinear } from "d3-scale";
   import { extent } from "d3-array";
   import { writable } from "svelte/store";
-  import { createExtremumResolutionStore } from "../../extremum-resolution-store";
-  import { lineFactory, areaFactory } from "./utils";
+  import { createExtremumResolutionStore } from "$lib/components/data-graphic/extremum-resolution-store";
+  import { lineFactory, areaFactory } from "$lib/components/data-graphic/utils";
   import { tweened } from "svelte/motion";
 
   const plotID = guidGenerator();

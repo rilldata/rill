@@ -1,8 +1,14 @@
-export function outline(node) {
+/** this action appends another text DOM element
+ * that gives an outlined / punched-out look to whatever
+ * svg text node it is applied to. It will then listen to
+ * any of the relevant attributes / the content itself
+ * and update accordingly via a basic MutationObserver.
+ */
+export function outline(node: SVGElement): SvelteActionReturnType {
   const enclosingSVG = node.ownerSVGElement;
 
   // create a clone of the element.
-  const clonedElement = node.cloneNode(true);
+  const clonedElement = node.cloneNode(true) as SVGElement;
   node.parentElement.insertBefore(clonedElement, node);
   clonedElement.setAttribute("fill", "white");
   clonedElement.style.fill = "white";
@@ -44,7 +50,7 @@ export function outline(node) {
     subtree: true,
     characterData: true,
   };
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver(() => {
     clonedElement.setAttribute("x", node.getAttribute("x"));
     clonedElement.setAttribute("y", node.getAttribute("y"));
     clonedElement.setAttribute("text-anchor", node.getAttribute("text-anchor"));

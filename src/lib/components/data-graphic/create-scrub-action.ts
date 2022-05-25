@@ -1,7 +1,10 @@
 import { writable, get } from "svelte/store";
 import { DEFAULT_COORDINATES } from "./constants";
 
-function mouseEvents(event) {
+/** converts an event to a simplified object
+ * with only the needed properties
+ */
+function mouseEvents(event: MouseEvent) {
   return {
     movementX: event.movementX,
     movementY: event.movementY,
@@ -10,16 +13,39 @@ function mouseEvents(event) {
   };
 }
 
-const DEFAULTS = {
-  startEvent: "mousedown",
-  startPredicate: undefined,
-  endEvent: "mouseup",
-  endPredicate: undefined,
-  moveEvent: "mousemove",
-  movePredicate: undefined,
-  completedEventName: undefined,
-  moveEventName: undefined,
-};
+interface ScrubActionFactoryArguments {
+  /** the bounds where the scrub is active. */
+  plotLeft: number;
+  plotRight: number;
+  plotTop: number;
+  plotBottom: number;
+  /** the name of the events we declare for start, move, end.
+   * Typically mousedown, mousemove, and mouseup.
+   */
+  startEvent?: string;
+  endEvent?: string;
+  moveEvent?: string;
+  /** the dispatched move event name for the scrub move effect, to be
+   * passed up to the parent element when the scrub move has happened.
+   * e.g.
+   */
+  moveEventName?: string;
+  /** the dispatched move event name for the scrub completion effect, to be
+   * passed up to the parent element when the scrub is completed.
+   * e.g.
+   */
+  completedEventName?: string;
+  /** These predicates will gate whether we continue with
+   * the startEvent, moveEvent, and endEvents.
+   * If they're not passed in as arguments, the action
+   * will always assume they're true.
+   * This is used e.g. when a user wants to hold the shift or alt key, or 
+   * check for some other condition to to be true.
+   */
+  startPredicate?: (event: Event) => boolean;
+  movePredicate?: (event: Event) => boolean;
+  endPredicate?: (event: Event) => boolean;
+}
 
 export function createScrubAction({
   plotLeft,
@@ -34,7 +60,7 @@ export function createScrubAction({
   movePredicate = undefined,
   completedEventName = undefined,
   moveEventName = undefined,
-}) {
+}: ScrubActionFactoryArguments) {
   const coordinates = writable({
     start: DEFAULT_COORDINATES,
     stop: DEFAULT_COORDINATES,
