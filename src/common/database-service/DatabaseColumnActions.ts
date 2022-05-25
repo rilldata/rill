@@ -31,7 +31,8 @@ export interface RollupInterval {
 }
 
 /** These are used for duckdb interval conversions. */
-const MICROS = {
+export const MICROS = {
+  day: 1000 * 1000 * 60 * 60 * 24,
   hour: 1000 * 1000 * 60 * 60,
   minute: 1000 * 1000 * 60,
   second: 1000 * 1000,
@@ -123,7 +124,7 @@ export class DatabaseColumnActions extends DatabaseActions {
             from 
         ${tableName}`);
 
-    const { r, max_value: maxValue, min_value: minValue, count } = timeRange;
+    const { r, max_value: maxValue, min_value: minValue } = timeRange;
 
     const range = typeof r === "number" ? { days: r, micros: 0, months: 0 } : r;
 
@@ -138,7 +139,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     if (
       range.days === 0 &&
       range.micros > MICROS.minute &&
-      range.micros <= MICROS.minute * 60
+      range.micros <= MICROS.hour
     ) {
       return rollupTimegrainReturnFormat(
         PreviewRollupInterval.second,
@@ -147,7 +148,7 @@ export class DatabaseColumnActions extends DatabaseActions {
       );
     }
 
-    if (range.days === 0 && range.micros <= MICROS.hour * 24) {
+    if (range.days === 0 && range.micros <= MICROS.day) {
       return rollupTimegrainReturnFormat(
         PreviewRollupInterval.minute,
         minValue,
@@ -335,15 +336,13 @@ export class DatabaseColumnActions extends DatabaseActions {
                 -- transform the original data, and optionally sample it.
                 transformed AS (
                     SELECT 
-                        date_trunc('${
-                          rollupInterval.split(" ")[1]
-                        }', "${column}") as ts 
+                        date_trunc('${rollupInterval.split(" ")[1]
+        }', "${column}") as ts 
                     FROM "${table}"
-                        ${
-                          sampleSize && sampleSize < total
-                            ? `USING SAMPLE ${(sampleSize / total) * 100}%`
-                            : ""
-                        }
+                        ${sampleSize && sampleSize < total
+          ? `USING SAMPLE ${(sampleSize / total) * 100}%`
+          : ""
+        }
                 ),
                 -- roll up the transformed data
                 series AS (
@@ -488,11 +487,10 @@ export class DatabaseColumnActions extends DatabaseActions {
     const bucketSize = Math.min(40, buckets.count);
     const result = await this.databaseClient.execute(`
           WITH data_table AS (
-            SELECT ${
-              TIMESTAMPS.has(columnType)
-                ? `epoch(${sanitizedColumnName})`
-                : `${sanitizedColumnName}::DOUBLE`
-            } as ${sanitizedColumnName} 
+            SELECT ${TIMESTAMPS.has(columnType)
+        ? `epoch(${sanitizedColumnName})`
+        : `${sanitizedColumnName}::DOUBLE`
+      } as ${sanitizedColumnName} 
             FROM ${tableName}
             WHERE ${sanitizedColumnName} IS NOT NULL
           ), S AS (
