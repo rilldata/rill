@@ -92,10 +92,7 @@ export abstract class DataModelerCliCommand {
     await dataModelerService.init();
   }
 
-  protected async run(
-    cliRunArgs: CliRunArgs,
-    ...args: Array<any>
-  ): Promise<void> {
+  public async run(cliRunArgs: CliRunArgs, ...args: Array<any>): Promise<void> {
     await this.init(cliRunArgs);
     await this.sendActions(...args);
     await this.teardown();

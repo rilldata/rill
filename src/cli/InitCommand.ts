@@ -26,22 +26,27 @@ export class InitCommand extends DataModelerCliCommand {
         const { project } = command.optsWithGlobals();
 
         const projectPath = project ?? process.cwd();
-        InitCommand.makeDirectoryIfNotExists(projectPath);
-        this.alreadyInitialised = existsSync(`${projectPath}/state`);
 
-        if (
-          !this.alreadyInitialised &&
-          !InitCommand.verifyDuckDbPath(opts.db, opts.copy, projectPath)
-        ) {
-          console.log(`Failed to initialize project under ${projectPath}`);
-          return;
-        }
-
-        return this.run({
-          projectPath,
-          duckDbPath: opts.copy ? undefined : opts.db,
-        });
+        return this.createProjectAndRun(opts, projectPath);
       });
+  }
+
+  public createProjectAndRun(opts, projectPath: string) {
+    InitCommand.makeDirectoryIfNotExists(projectPath);
+    this.alreadyInitialised = existsSync(`${projectPath}/state`);
+
+    if (
+      !this.alreadyInitialised &&
+      !InitCommand.verifyDuckDbPath(opts.db, opts.copy, projectPath)
+    ) {
+      console.log(`Failed to initialize project under ${projectPath}`);
+      return;
+    }
+
+    return this.run({
+      projectPath,
+      duckDbPath: opts.copy ? undefined : opts.db,
+    });
   }
 
   protected async sendActions(): Promise<void> {

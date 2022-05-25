@@ -6,6 +6,7 @@ import { ImportTableCommand } from "$cli/ImportTableCommand";
 import { StartCommand } from "$cli/StartCommand";
 import { InfoCommand } from "$cli/InfoCommand";
 import { DropTableCommand } from "$cli/DropTableCommand";
+import { ExampleProjectCommand } from "$cli/ExampleProjectCommand";
 
 const program = new Command();
 
@@ -27,6 +28,7 @@ program
   StartCommand,
   DropTableCommand,
   InfoCommand,
+  ExampleProjectCommand,
 ].forEach((CommandClass) =>
   program.addCommand(new CommandClass().getCommand())
 );

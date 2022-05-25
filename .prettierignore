@@ -25,3 +25,4 @@ log
 .prettierignore
 Dockerfile
 Duckdb-Dockerfile
+README.md
