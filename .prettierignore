@@ -1,6 +1,7 @@
 .github/
 .svelte-kit/
 .vscode/
+.idea/
 build/
 build-tools/
 dist/
@@ -13,9 +14,11 @@ test/data/
 
 *.sql
 *.csv
+*.tsv
 *.db
 *.wal
 *.parquet
+.DS_Store
 
 log
 .gitignore
