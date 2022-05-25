@@ -39,20 +39,24 @@
   export let yAccessor: string = undefined;
 
   // rowsize for table
-  export let left = 4;
-  export let right = 4;
+  export let left = 0;
+  export let right = 0;
   export let top = 12;
   export let bottom = 4;
 
   export let buffer = 4;
+  export let leftBuffer = buffer;
+  export let rightBuffer = buffer;
+  export let topBuffer = buffer;
+  export let bottomBuffer = buffer;
 
   const X = writable(undefined);
   const Y = writable(undefined);
 
-  $: plotTop = top + buffer;
-  $: plotBottom = height - buffer - bottom;
-  $: plotLeft = left + buffer;
-  $: plotRight = width - right - buffer;
+  $: plotTop = top + topBuffer;
+  $: plotBottom = height - bottomBuffer - bottom;
+  $: plotLeft = left + leftBuffer;
+  $: plotRight = width - rightBuffer - buffer;
 
   // establish basis values
   let xExtents = extent(data, (d) => d[xAccessor]);
@@ -74,7 +78,7 @@
   // Let's set the X Scale based on the $xMin and $xMax.
   $: $X = scaleLinear()
     .domain([$xMin, $xMax])
-    .range([left + buffer, width - right - buffer]);
+    .range([left, width - right]);
 
   // Generate our Y Scale.
   let yExtents = extent(data, (d) => d[yAccessor]);

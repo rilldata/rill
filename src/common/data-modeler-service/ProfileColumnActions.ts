@@ -12,6 +12,7 @@ import {
 } from "$lib/duckdb-data-types";
 import type { ProfileColumn } from "$lib/types";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
 const ColumnProfilePriorityMap = {
   [EntityType.Table]: DatabaseActionQueuePriority.TableProfile,
@@ -88,7 +89,8 @@ export class ProfileColumnActions extends DataModelerActions {
             entityId,
             tableName,
             column,
-            108,
+            // use the medium width for the spark line
+            COLUMN_PROFILE_CONFIG.summaryVizWidth.medium,
             undefined
           )
         );

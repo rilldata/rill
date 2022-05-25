@@ -11,13 +11,12 @@
   import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
   import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
-  import { config } from "./utils";
+  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
-  import { percentage } from "./utils";
   import {
     formatInteger,
     formatCompactInteger,
-    standardTimestampFormat,
+    singleDigitPercentage,
   } from "$lib/util/formatters";
   import {
     CATEGORICALS,
@@ -57,15 +56,15 @@
     active = false;
   }
   $: exampleWidth =
-    containerWidth > config.mediumCutoff
-      ? config.exampleWidth.medium
-      : config.exampleWidth.small;
+    containerWidth > COLUMN_PROFILE_CONFIG.mediumCutoff
+      ? COLUMN_PROFILE_CONFIG.exampleWidth.medium
+      : COLUMN_PROFILE_CONFIG.exampleWidth.small;
   $: summaryWidthSize =
-    config.summaryVizWidth[
+    COLUMN_PROFILE_CONFIG.summaryVizWidth[
       containerWidth < compactBreakpoint ? "small" : "medium"
     ];
   $: cardinalityFormatter =
-    containerWidth > config.compactBreakpoint
+    containerWidth > COLUMN_PROFILE_CONFIG.compactBreakpoint
       ? formatInteger
       : formatCompactInteger;
 
@@ -204,6 +203,8 @@
                   bottom={0}
                   left={0}
                   right={0}
+                  leftBuffer={0}
+                  rightBuffer={0}
                   area
                   tweenIn
                 />
@@ -226,7 +227,7 @@
       </div>
 
       <div
-        style:width="{config.nullPercentageWidth}px"
+        style:width="{COLUMN_PROFILE_CONFIG.nullPercentageWidth}px"
         class:hidden={hideNullPercentage}
       >
         {#if totalRows !== 0 && totalRows !== undefined && nullCount !== undefined}
@@ -237,7 +238,7 @@
               value={nullCount / totalRows || 0}
             >
               <span class:text-gray-300={nullCount === 0}
-                >∅ {percentage(nullCount / totalRows)}</span
+                >∅ {singleDigitPercentage(nullCount / totalRows)}</span
               >
             </BarAndLabel>
             <TooltipContent slot="tooltip-content">
@@ -245,7 +246,8 @@
                 what percentage of values are null?
               </svelte:fragment>
               {#if nullCount > 0}
-                {percentage(nullCount / totalRows)} of the values are null
+                {singleDigitPercentage(nullCount / totalRows)} of the values are
+                null
               {:else}
                 no null values in this column
               {/if}

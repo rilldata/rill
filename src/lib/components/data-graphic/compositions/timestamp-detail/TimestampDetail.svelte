@@ -28,14 +28,14 @@
     datePortion,
     timePortion,
     formatInteger,
-    intervalToTimestring,
-    PreviewRollupIntervalFormatter,
+    removeTimezoneOffset,
   } from "$lib/util/formatters";
-  import type { Interval } from "$lib/util/formatters";
+  import type { Interval } from "$lib/duckdb-data-types";
   import { writable } from "svelte/store";
   import { createExtremumResolutionStore } from "../../extremum-resolution-store";
 
   import TimestampBound from "./TimestampBound.svelte";
+  import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
 
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
@@ -305,69 +305,13 @@
 </script>
 
 <div style:max-width="{width}px">
-  <div
-    class="text-gray-500 italic pb-3"
-    style="
-        display: grid;
-        grid-template-columns: auto auto;
-    "
-  >
-    <Tooltip distance={16} location="top">
-      <div style:font-weight="600">
-        {type}
-      </div>
+  <TimestampProfileSummary
+    {type}
+    {estimatedSmallestTimeGrain}
+    {interval}
+    {rollupGrain}
+  />
 
-      <TooltipContent slot="tooltip-content">
-        <div style:max-width="315px">
-          this column has the {type} type.
-        </div>
-      </TooltipContent>
-    </Tooltip>
-
-    <Tooltip distance={16} location="top">
-      <div class="text-right">
-        {#if estimatedSmallestTimeGrain}
-          min. interval
-          {estimatedSmallestTimeGrain}
-        {/if}
-      </div>
-      <TooltipContent slot="tooltip-content">
-        <div style:width="315px">
-          The smallest available time interval in this column appears to be at
-          the <i>{estimatedSmallestTimeGrain}</i> level.
-        </div>
-      </TooltipContent>
-    </Tooltip>
-
-    <Tooltip distance={16} location="top">
-      <div>
-        {#if interval}
-          {intervalToTimestring(interval)}
-        {/if}
-      </div>
-      <TooltipContent slot="tooltip-content">
-        <div style:max-width="315px">
-          The range of this timestamp is {intervalToTimestring(interval)}.
-        </div>
-      </TooltipContent>
-    </Tooltip>
-
-    <Tooltip distance={16} location="top">
-      <div class="text-right">
-        {#if rollupGrain}
-          showing {PreviewRollupIntervalFormatter[rollupGrain]} row counts
-        {/if}
-      </div>
-      <TooltipContent slot="tooltip-content">
-        <div style:max-width="315px">
-          This timestamp column is aggregated so each point on the time series
-          represents a rollup count at the <b style:font-weight="600"
-            >{rollupGrain} level</b
-          >.
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  </div>
   <Tooltip location="right" alignment="center" distance={32}>
     <svg
       {width}
@@ -377,9 +321,9 @@
       use:scrollAction
       use:shiftClickAction
       on:shift-click={async () => {
-        let exportedValue = `TIMESTAMP '${nearestPoint[
-          xAccessor
-        ].toISOString()}'`;
+        let exportedValue = `TIMESTAMP '${removeTimezoneOffset(
+          nearestPoint[xAccessor]
+        ).toISOString()}'`;
         await navigator.clipboard.writeText(exportedValue);
         setTimeout(() => {
           notifications.send({

@@ -16,6 +16,9 @@ const msPad = format("03d");
 export const formatInteger = format(",");
 const formatRate = format(".1f");
 
+/**  */
+export const singleDigitPercentage = format(".1%");
+
 /**
  * changes precision depending on the
  */
@@ -75,9 +78,8 @@ export function microsToTimestring(microseconds: number) {
 
 export function intervalToTimestring(interval: Interval) {
   const months = interval.months
-    ? `${formatInteger(interval.months)} month${
-        interval.months > 1 ? "s" : ""
-      } `
+    ? `${formatInteger(interval.months)} month${interval.months > 1 ? "s" : ""
+    } `
     : "";
   const days = interval.days
     ? `${formatInteger(interval.days)} day${interval.days > 1 ? "s" : ""} `
