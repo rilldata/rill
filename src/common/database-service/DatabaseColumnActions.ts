@@ -336,13 +336,15 @@ export class DatabaseColumnActions extends DatabaseActions {
                 -- transform the original data, and optionally sample it.
                 transformed AS (
                     SELECT 
-                        date_trunc('${rollupInterval.split(" ")[1]
-        }', "${column}") as ts 
+                        date_trunc('${
+                          rollupInterval.split(" ")[1]
+                        }', "${column}") as ts 
                     FROM "${table}"
-                        ${sampleSize && sampleSize < total
-          ? `USING SAMPLE ${(sampleSize / total) * 100}%`
-          : ""
-        }
+                        ${
+                          sampleSize && sampleSize < total
+                            ? `USING SAMPLE ${(sampleSize / total) * 100}%`
+                            : ""
+                        }
                 ),
                 -- roll up the transformed data
                 series AS (
@@ -487,10 +489,11 @@ export class DatabaseColumnActions extends DatabaseActions {
     const bucketSize = Math.min(40, buckets.count);
     const result = await this.databaseClient.execute(`
           WITH data_table AS (
-            SELECT ${TIMESTAMPS.has(columnType)
-        ? `epoch(${sanitizedColumnName})`
-        : `${sanitizedColumnName}::DOUBLE`
-      } as ${sanitizedColumnName} 
+            SELECT ${
+              TIMESTAMPS.has(columnType)
+                ? `epoch(${sanitizedColumnName})`
+                : `${sanitizedColumnName}::DOUBLE`
+            } as ${sanitizedColumnName} 
             FROM ${tableName}
             WHERE ${sanitizedColumnName} IS NOT NULL
           ), S AS (

@@ -170,34 +170,34 @@ export class TableActions extends DataModelerActions {
             );
           },
           async () =>
-          (newDerivedTable.sizeInBytes =
-            await this.databaseActionQueue.enqueue(
-              {
-                id: tableId,
-                priority: DatabaseActionQueuePriority.TableProfile,
-              },
-              "getDestinationSize",
-              [persistentTable.path]
-            )),
+            (newDerivedTable.sizeInBytes =
+              await this.databaseActionQueue.enqueue(
+                {
+                  id: tableId,
+                  priority: DatabaseActionQueuePriority.TableProfile,
+                },
+                "getDestinationSize",
+                [persistentTable.path]
+              )),
           async () =>
-          (newDerivedTable.cardinality =
-            await this.databaseActionQueue.enqueue(
+            (newDerivedTable.cardinality =
+              await this.databaseActionQueue.enqueue(
+                {
+                  id: tableId,
+                  priority: DatabaseActionQueuePriority.TableProfile,
+                },
+                "getCardinalityOfTable",
+                [persistentTable.tableName]
+              )),
+          async () =>
+            (newDerivedTable.preview = await this.databaseActionQueue.enqueue(
               {
                 id: tableId,
                 priority: DatabaseActionQueuePriority.TableProfile,
               },
-              "getCardinalityOfTable",
+              "getFirstNOfTable",
               [persistentTable.tableName]
             )),
-          async () =>
-          (newDerivedTable.preview = await this.databaseActionQueue.enqueue(
-            {
-              id: tableId,
-              priority: DatabaseActionQueuePriority.TableProfile,
-            },
-            "getFirstNOfTable",
-            [persistentTable.tableName]
-          )),
         ].map((asyncFunc) => asyncFunc())
       );
 
@@ -293,7 +293,7 @@ export class TableActions extends DataModelerActions {
           (newProfileColumn) =>
             existingColumns.has(newProfileColumn.name) &&
             existingColumns.get(newProfileColumn.name).type ===
-            newProfileColumn.type
+              newProfileColumn.type
         )
       ) {
         return;
