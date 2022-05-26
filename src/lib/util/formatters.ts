@@ -76,7 +76,11 @@ export function microsToTimestring(microseconds: number) {
   )}:${zeroPad(seconds)}.${msPad(ms)}`;
 }
 
-export function intervalToTimestring(interval: Interval) {
+export function intervalToTimestring(inputInterval: Interval) {
+  const interval =
+    typeof inputInterval === "number"
+      ? { months: 0, days: inputInterval, micros: 0 }
+      : inputInterval;
   const months = interval.months
     ? `${formatInteger(interval.months)} month${
         interval.months > 1 ? "s" : ""

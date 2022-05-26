@@ -46,7 +46,7 @@
       {/if}
     </div>
     <TooltipContent slot="tooltip-content">
-      <div style:width="315px">
+      <div style:max-width="315px">
         The smallest available time interval in this column appears to be at the <i
           >{estimatedSmallestTimeGrain}</i
         > level.
