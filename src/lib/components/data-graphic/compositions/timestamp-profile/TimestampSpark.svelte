@@ -32,8 +32,8 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
   // the color of the zoom window boundaries
   export let zoomWindowBoundaryColor = "rgb(100,100,100)";
-  export let zoomWindowXMin: any = undefined;
-  export let zoomWindowXMax: any = undefined;
+  export let zoomWindowXMin: Date = undefined;
+  export let zoomWindowXMax: Date = undefined;
 
   export let xAccessor: string = undefined;
   export let yAccessor: string = undefined;

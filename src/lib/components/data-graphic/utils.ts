@@ -39,7 +39,7 @@ const curves = {
 };
 
 function isDefined(yAccessor: string) {
-  return (d: any, i: number, arr: any[]) => {
+  return (d, i: number, arr) => {
     return (
       !isNaN(d[yAccessor]) &&
       d[yAccessor] !== undefined &&

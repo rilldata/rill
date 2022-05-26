@@ -17,9 +17,9 @@
 
   export let xAccessor: string;
   export let yAccessor: string;
-  export let data: any;
-  export let width: number = 84;
-  export let height: number = 12;
+  export let data;
+  export let width = 84;
+  export let height = 12;
 
   export let totalRows: number;
   export let zoomedRows: number;

@@ -63,8 +63,8 @@
       if (i === data.length - 1) {
         return 0;
       }
-      let max = Math.max($Y(data[i + 1][yAccessor]), $Y(data[i][yAccessor]));
-      let min = Math.min($Y(data[i + 1][yAccessor]), $Y(data[i][yAccessor]));
+      const max = Math.max($Y(data[i + 1][yAccessor]), $Y(data[i][yAccessor]));
+      const min = Math.min($Y(data[i + 1][yAccessor]), $Y(data[i][yAccessor]));
       return Math.abs(max - min);
     })
     .reduce((acc, v) => acc + v, 0);

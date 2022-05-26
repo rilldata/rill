@@ -84,7 +84,7 @@
   export let rollupGrain: string;
   export let estimatedSmallestTimeGrain: string;
 
-  let devicePixelRatio: number = 1;
+  let devicePixelRatio = 1;
   onMount(() => {
     devicePixelRatio = window.devicePixelRatio;
   });
@@ -96,7 +96,7 @@
   setContext("rill:data-graphic:X", X);
   setContext("rill:data-graphic:Y", Y);
 
-  let coordinates = writable(DEFAULT_COORDINATES);
+  const coordinates = writable(DEFAULT_COORDINATES);
 
   const plotConfig: Writable<PlotConfig> = writable({
     top,
@@ -215,7 +215,7 @@
 
   // get the nearest point to where the cursor is.
 
-  let bisectDate = bisector((d) => d[xAccessor]).center;
+  const bisectDate = bisector((d) => d[xAccessor]).center;
   $: nearestPoint = data[bisectDate(data, $X.invert($coordinates.x))];
 
   function clearMouseMove() {
@@ -242,8 +242,8 @@
 
   // find the total number of rows currently visible in the zoom.
   $: if ($zoomCoords.start.x && $zoomCoords.stop.x) {
-    let xStart = $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x));
-    let xEnd = $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x));
+    const xStart = $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x));
+    const xEnd = $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x));
     zoomedRows = ~~data
       .filter((di) => {
         return di[xAccessor] >= xStart && di[xAccessor] <= xEnd;
@@ -258,9 +258,9 @@
   }
 
   // Tooltip & timestamp range variables.
-  let tooltipSparkWidth = 84;
-  let tooltipSparkHeight = 12;
-  let tooltipPanShakeAmount = spring(0, { stiffness: 0.1, damping: 0.9 });
+  const tooltipSparkWidth = 84;
+  const tooltipSparkHeight = 12;
+  const tooltipPanShakeAmount = spring(0, { stiffness: 0.1, damping: 0.9 });
   let movementTimeout: ReturnType<typeof setTimeout>;
 
   $: zoomMinBound =
@@ -296,7 +296,7 @@
       use:scrollAction
       use:shiftClickAction
       on:shift-click={async () => {
-        let exportedValue = `TIMESTAMP '${removeTimezoneOffset(
+        const exportedValue = `TIMESTAMP '${removeTimezoneOffset(
           nearestPoint[xAccessor]
         ).toISOString()}'`;
         await navigator.clipboard.writeText(exportedValue);
@@ -317,11 +317,11 @@
             tooltipPanShakeAmount.set(0);
           }, 150);
 
-          let timeDistance =
+          const timeDistance =
             $X.invert(event.detail.clientX + event.detail.movementX) -
             $X.invert(event.detail.clientX);
-          let oldXStart = new Date(+zoomedXStart);
-          let oldXEnd = new Date(+zoomedXEnd);
+          const oldXStart = new Date(+zoomedXStart);
+          const oldXEnd = new Date(+zoomedXEnd);
           zoomedXStart = new Date(+zoomedXStart - +timeDistance);
           zoomedXEnd = new Date(+zoomedXEnd - +timeDistance);
 
@@ -344,8 +344,8 @@
           isZoomed = true;
         }, 100);
       }}
-      on:mousemove={mouseover ? handleMouseMove : () => {}}
-      on:mouseleave={mouseover ? clearMouseMove : () => {}}
+      on:mousemove={mouseover ? handleMouseMove : undefined}
+      on:mouseleave={mouseover ? clearMouseMove : undefined}
     >
       <defs>
         <linearGradient id="left-side">

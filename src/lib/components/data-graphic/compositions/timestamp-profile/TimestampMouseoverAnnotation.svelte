@@ -10,9 +10,8 @@
   import { getContext } from "svelte";
 
   import type { Writable } from "svelte/store";
-  import type { PlotConfig } from "./utils";
+  import type { PlotConfig } from "$lib/components/data-graphic/utils";
   import type { ScaleLinear } from "d3-scale";
-  import Number from "$lib/components/data-types/Number.svelte";
 
   const X: Writable<ScaleLinear<number, number>> = getContext(
     "rill:data-graphic:X"

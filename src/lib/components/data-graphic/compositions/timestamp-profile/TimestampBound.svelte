@@ -22,7 +22,7 @@
   const { shiftClickAction } = createShiftClickAction();
 
   export let value: Date;
-  export let label: string = "value";
+  export let label = "value";
   export let align: "left" | "right" = "left";
   let valueWithoutOffset = undefined;
   $: if (value instanceof Date)
@@ -34,8 +34,8 @@
     class="text-{align} text-gray-500"
     style:line-height={1.1}
     use:shiftClickAction
-    on:shift-click={async (event) => {
-      let exportedValue = `TIMESTAMP '${valueWithoutOffset.toISOString()}'`;
+    on:shift-click={async () => {
+      const exportedValue = `TIMESTAMP '${valueWithoutOffset.toISOString()}'`;
       await navigator.clipboard.writeText(exportedValue);
       notifications.send({ message: `copied ${exportedValue} to clipboard` });
       // update this to set the active animation in the tooltip text
