@@ -4,11 +4,11 @@
  * This action factory produces an object that contains
  * - a coordinates store, which has the x and y start and stop values
  *   of the in-progress scrub.
- * - an isScrubbing store, which the user can exploit to see if scrubbing is 
+ * - an isScrubbing store, which the user can exploit to see if scrubbing is
  *   currently happening
  * - a movement store, which captures the momentum of the scrub.
  * - a customized action
- * 
+ *
  * Why is this an action factory and not an action? Because we actually want to initialize a bunch
  * of stores that are used throughout the app, which respond to the action's logic automatically,
  * and can thus be consumed within the application without any other explicit call point.
@@ -57,7 +57,7 @@ interface ScrubActionFactoryArguments {
    * the startEvent, moveEvent, and endEvents.
    * If they're not passed in as arguments, the action
    * will always assume they're true.
-   * This is used e.g. when a user wants to hold the shift or alt key, or 
+   * This is used e.g. when a user wants to hold the shift or alt key, or
    * check for some other condition to to be true.
    * e.g when completedEventName = "scrub", we have <div use:scrubAction on:scrub={...} />
    */
