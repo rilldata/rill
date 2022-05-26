@@ -11,6 +11,7 @@ import { cubicOut } from "svelte/easing";
 import { writable, derived } from "svelte/store";
 import { tweened } from "svelte/motion";
 import { min, max } from "d3-array";
+import type { EasingFunction } from "svelte/transition";
 
 const LINEAR_SCALE_STORE_DEFAULTS = {
   duration: 0,
@@ -19,14 +20,9 @@ const LINEAR_SCALE_STORE_DEFAULTS = {
   namespace: undefined,
 };
 
-interface Options {
-  duration: number;
-  easing: Function;
-}
-
 interface extremumArgs {
   duration?: number;
-  easing?: (t: number) => number;
+  easing?: EasingFunction;
   direction?: string;
 }
 
@@ -41,9 +37,9 @@ export function createExtremumResolutionStore(
   initialValue,
   passedArgs: extremumArgs = {}
 ) {
-  let args = { ...LINEAR_SCALE_STORE_DEFAULTS, ...passedArgs };
-  let storedValues = writable({});
-  let valueTween = tweened(initialValue, {
+  const args = { ...LINEAR_SCALE_STORE_DEFAULTS, ...passedArgs };
+  const storedValues = writable({});
+  const valueTween = tweened(initialValue, {
     duration: args.duration,
     easing: args.easing,
   });

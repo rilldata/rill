@@ -171,6 +171,7 @@
   let zoomedXEnd: Date;
   // establish basis values
   let xExtents = extent(data, (d) => d[xAccessor]);
+  $: xExtents = extent(data, (d) => d[xAccessor]);
 
   const xMin = createExtremumResolutionStore(xExtents[0], {
     duration: 300,
@@ -184,8 +185,6 @@
 
   // setContext('rill:data-graphic:x-min', xMin);
   // setContext
-
-  $: xExtents = extent(data, (d) => d[xAccessor]);
 
   $: xMin.setWithKey("x", zoomedXStart || xExtents[0]);
   $: xMax.setWithKey("x", zoomedXEnd || xExtents[1]);
