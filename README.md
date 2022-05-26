@@ -1,4 +1,6 @@
-# Rill Developer **_(tech preview)_**
+# Rill Developer **_(tech preview)_** <a href="https://gitpod.io/from-referrer/">
+  <img src="https://img.shields.io/badge/Contribute%20with-Gitpod-908a85?logo=gitpod" alt="Contribute with Gitpod" />
+</a>
 
 Rill Developer is a tool that makes it effortless to transform your datasets with SQL. It's not just a SQL GUI! Rill Developer follows a few guiding principles:
 
