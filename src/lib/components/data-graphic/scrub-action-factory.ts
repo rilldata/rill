@@ -83,7 +83,7 @@ export function createScrubAction({
   endPredicate = undefined,
   moveEvent = "mousemove",
   movePredicate = undefined,
-  completedEventName = undefined,
+  endEventName = undefined,
   moveEventName = undefined,
 }: ScrubActionFactoryArguments) {
   const coordinates = writable({
@@ -165,9 +165,9 @@ export function createScrubAction({
           return;
         }
         const coords = get(coordinates);
-        if (coords.start.x && coords.stop.x && completedEventName) {
+        if (coords.start.x && coords.stop.x && endEventName) {
           node.dispatchEvent(
-            new CustomEvent(completedEventName, {
+            new CustomEvent(endEventName, {
               detail: {
                 ...coords,
                 ...mouseEvents(event),
