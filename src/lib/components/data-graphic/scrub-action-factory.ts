@@ -1,3 +1,21 @@
+/**
+ * scrub-action-factory
+ * --------------------
+ * This action factory produces an object that contains
+ * - a coordinates store, which has the x and y start and stop values
+ *   of the in-progress scrub.
+ * - an isScrubbing store, which the user can exploit to see if scrubbing is 
+ *   currently happening
+ * - a movement store, which captures the momentum of the scrub.
+ * - a customized action
+ * 
+ * Why is this an action factory and not an action? Because we actually want to initialize a bunch
+ * of stores that are used throughout the app, which respond to the action's logic automatically,
+ * and can thus be consumed within the application without any other explicit call point.
+ * This action factory pattern is quite useful in a variety of settings.
+ * </script>
+ */
+
 import { writable, get } from "svelte/store";
 import { DEFAULT_COORDINATES } from "./constants";
 
@@ -32,19 +50,26 @@ interface ScrubActionFactoryArguments {
   moveEventName?: string;
   /** the dispatched move event name for the scrub completion effect, to be
    * passed up to the parent element when the scrub is completed.
-   * e.g.
+   * e.g. when moveEventName = "scrubbing", we have <div use:scrubAction on:scrubbing={...} />
    */
-  completedEventName?: string;
+  endEventName?: string;
   /** These predicates will gate whether we continue with
    * the startEvent, moveEvent, and endEvents.
    * If they're not passed in as arguments, the action
    * will always assume they're true.
    * This is used e.g. when a user wants to hold the shift or alt key, or 
    * check for some other condition to to be true.
+   * e.g when completedEventName = "scrub", we have <div use:scrubAction on:scrub={...} />
    */
   startPredicate?: (event: Event) => boolean;
   movePredicate?: (event: Event) => boolean;
   endPredicate?: (event: Event) => boolean;
+}
+
+function clamp(v: number, min: number, max: number) {
+  if (v < min) return min;
+  if (v > max) return max;
+  return v;
 }
 
 export function createScrubAction({
@@ -73,13 +98,7 @@ export function createScrubAction({
 
   const isScrubbing = writable(false);
 
-  function clamp(v, min, max) {
-    if (v < min) return min;
-    if (v > max) return max;
-    return v;
-  }
-
-  function setCoordinateBounds(event) {
+  function setCoordinateBounds(event: MouseEvent) {
     return {
       x: clamp(event.offsetX, plotLeft, plotRight),
       y: clamp(event.offsetY, plotTop, plotBottom),
@@ -90,7 +109,7 @@ export function createScrubAction({
     coordinates,
     isScrubbing,
     movement,
-    scrubAction(node) {
+    scrubAction(node: Node): SvelteActionReturnType {
       function reset() {
         coordinates.set({
           start: DEFAULT_COORDINATES,
@@ -99,7 +118,7 @@ export function createScrubAction({
         isScrubbing.set(false);
       }
 
-      function onScrubStart(event) {
+      function onScrubStart(event: MouseEvent) {
         event.preventDefault();
         if (!(startPredicate === undefined || startPredicate(event))) {
           return;
@@ -111,7 +130,7 @@ export function createScrubAction({
         isScrubbing.set(true);
       }
 
-      function onScrub(event) {
+      function onScrub(event: MouseEvent) {
         event.preventDefault();
         const isCurrentlyScrubbing = get(isScrubbing);
         if (!isCurrentlyScrubbing) return;
@@ -139,7 +158,7 @@ export function createScrubAction({
         }
       }
 
-      function onScrubEnd(event) {
+      function onScrubEnd(event: MouseEvent) {
         event.preventDefault();
         if (!(endPredicate === undefined || endPredicate(event))) {
           reset();

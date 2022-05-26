@@ -21,7 +21,7 @@
   import { scaleLinear } from "d3-scale";
   import type { ScaleLinear } from "d3-scale";
   import { DEFAULT_COORDINATES } from "$lib/components/data-graphic/constants";
-  import { createScrubAction } from "$lib/components/data-graphic/create-scrub-action";
+  import { createScrubAction } from "$lib/components/data-graphic/scrub-action-factory";
   import { extent, bisector, max, min } from "d3-array";
   import { outline } from "$lib/components/data-graphic/outline";
   import { removeTimezoneOffset } from "$lib/util/formatters";
@@ -90,8 +90,8 @@
   });
 
   /** These are our global scales, X and Y. */
-  const X: Writable<ScaleLinear> = writable(undefined);
-  const Y: Writable<ScaleLinear> = writable(undefined);
+  const X: Writable<ScaleLinear<number, number>> = writable(undefined);
+  const Y: Writable<ScaleLinear<number, number>> = writable(undefined);
   /** make them available to the children. */
   setContext("rill:data-graphic:X", X);
   setContext("rill:data-graphic:Y", Y);
@@ -145,9 +145,9 @@
     plotRight: $plotConfig.plotRight,
     plotTop: $plotConfig.plotTop,
     plotBottom: $plotConfig.plotBottom,
-    startPredicate: (event) => event.altKey,
-    movePredicate: (event) => event.altKey,
-    completedEventName: "scrub",
+    startPredicate: (event: MouseEvent) => event.altKey,
+    movePredicate: (event: MouseEvent) => event.altKey,
+    endEventName: "scrub",
   });
 
   /**
@@ -160,8 +160,8 @@
       plotRight: $plotConfig.plotRight,
       plotTop: $plotConfig.plotTop,
       plotBottom: $plotConfig.plotBottom,
-      startPredicate: (event) => !event.altKey && !event.shiftKey,
-      movePredicate: (event) => !event.altKey && !event.shiftKey,
+      startPredicate: (event: MouseEvent) => !event.altKey && !event.shiftKey,
+      movePredicate: (event: MouseEvent) => !event.altKey && !event.shiftKey,
       moveEventName: "scrolling",
     });
 
@@ -222,7 +222,7 @@
     coordinates.set(DEFAULT_COORDINATES);
   }
 
-  function handleMouseMove(event) {
+  function handleMouseMove(event: MouseEvent) {
     if (
       event.offsetX > $plotConfig.plotLeft &&
       event.offsetX < $plotConfig.plotRight
@@ -231,7 +231,7 @@
     }
   }
 
-  function setCursor(isZooming, isScrolling) {
+  function setCursor(isZooming: boolean, isScrolling: boolean) {
     if (isZooming) return "text";
     if (isScrolling) return "grab";
     return "inherit";
