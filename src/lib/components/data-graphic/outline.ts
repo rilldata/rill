@@ -4,7 +4,12 @@
  * any of the relevant attributes / the content itself
  * and update accordingly via a basic MutationObserver.
  */
-export function outline(node: SVGElement): SvelteActionReturnType {
+
+interface OutlineAction {
+  destroy: () => void
+}
+
+export function outline(node: SVGElement): OutlineAction {
   const enclosingSVG = node.ownerSVGElement;
 
   // create a clone of the element.

@@ -66,6 +66,10 @@ interface ScrubActionFactoryArguments {
   endPredicate?: (event: Event) => boolean;
 }
 
+interface ScrubAction {
+  destroy: () => void
+}
+
 function clamp(v: number, min: number, max: number) {
   if (v < min) return min;
   if (v > max) return max;
@@ -109,7 +113,7 @@ export function createScrubAction({
     coordinates,
     isScrubbing,
     movement,
-    scrubAction(node: Node): SvelteActionReturnType {
+    scrubAction(node: Node): ScrubAction {
       function reset() {
         coordinates.set({
           start: DEFAULT_COORDINATES,
