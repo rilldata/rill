@@ -42,9 +42,9 @@
   );
 
   /** figure out how many selected values are currently hidden */
-  $: hiddenSelectedValues = values.filter((di, i) => {
-    return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
-  });
+  // $: hiddenSelectedValues = values.filter((di, i) => {
+  //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
+  // });
 
   let expanded = false;
 </script>

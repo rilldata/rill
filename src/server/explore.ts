@@ -3,7 +3,7 @@ import { CATEGORICALS } from "$lib/duckdb-data-types";
 
 import { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
 
-
+let activeEntityID;
 
 function getAvailableDimensions({
   // when this is a table, the dimensions
@@ -11,6 +11,7 @@ function getAvailableDimensions({
   entityType,
   entityID
 }) {
+  if (entityID !== activeEntityID) this.queue.clearQueue();
   if (entityType === EntityType.Table) {
     // this is where we return something?
     const dimensions = this.dataModelerStateService.getEntityById(
@@ -31,6 +32,7 @@ async function getBigNumber({
   filters, entityType,
   entityID, expression = 'count(*)'
 }) {
+  if (entityID !== activeEntityID) this.queue.clearQueue();
   const table = this.dataModelerStateService.getEntityById(
     EntityType.Table,
     StateType.Persistent,
@@ -122,10 +124,7 @@ const exploreAPI = [
   getBigNumber
 ]
 
-
-
-
-
+let queue;
 export function initializeExploreSocketEndpoints(socket, dataModelerService, dataModelerStateService) {
   /** add all the explore API endpoints. Let's bind the dataModelerService to the functions
    * so that we can call this.datamodelerService & other things to tap into the existing server
@@ -138,7 +137,11 @@ export function initializeExploreSocketEndpoints(socket, dataModelerService, dat
       return queryMap[action](db, args);
     }
   }
-  const queue = new ActionQueueOrchestrator(exploreQueries);
+  if (!queue) {
+    queue = new ActionQueueOrchestrator(exploreQueries);
+  } else {
+    queue.clearQueue();
+  }
 
   exploreAPI.forEach((api) => {
     socket.on(api.name, api.bind({ dataModelerService, dataModelerStateService, socket, queue, db }))

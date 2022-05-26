@@ -1,5 +1,7 @@
 <script>
-  /** This is an */
+  /** This is adapted from
+   * https://github.com/sveltejs/svelte-virtual-list/blob/master/VirtualList.svelte
+   */
   import { onMount, tick } from "svelte";
 
   // props
