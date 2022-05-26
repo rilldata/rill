@@ -155,10 +155,7 @@ export class DataModelerTest extends TestBase {
     type Args = [string, ErrorOutput];
 
     const CatalogErrorQuery = "SELECT * FROM xyz";
-    const CatalogErrorResult: ErrorOutput = `Catalog Error: Table with name xyz does not exist!
-Did you mean \"Users\"?
-LINE 1: SELECT * FROM xyz
-                      ^`;
+    const CatalogErrorResult: ErrorOutput = `Catalog Error: Table with name xyz does not exist!`;
     const CatalogErrorTestData: Args = [CatalogErrorQuery, CatalogErrorResult];
 
     const ParserErrorQuery = "SELECT FROM AdBids";
@@ -252,7 +249,7 @@ LINE 1: SELECT * FROM xyz
     await this.execute(page, query);
 
     const actualError = await error.textContent();
-    expect(actualError).toEqual(result);
+    expect(actualError).toContain(result);
   }
 
   /**
