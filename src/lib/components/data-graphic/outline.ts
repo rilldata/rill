@@ -6,7 +6,7 @@
  */
 
 interface OutlineAction {
-  destroy: () => void
+  destroy: () => void;
 }
 
 export function outline(node: SVGElement): OutlineAction {

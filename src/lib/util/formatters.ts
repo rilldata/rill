@@ -78,8 +78,9 @@ export function microsToTimestring(microseconds: number) {
 
 export function intervalToTimestring(interval: Interval) {
   const months = interval.months
-    ? `${formatInteger(interval.months)} month${interval.months > 1 ? "s" : ""
-    } `
+    ? `${formatInteger(interval.months)} month${
+        interval.months > 1 ? "s" : ""
+      } `
     : "";
   const days = interval.days
     ? `${formatInteger(interval.days)} day${interval.days > 1 ? "s" : ""} `

@@ -12,7 +12,9 @@
  * @returns a string that represents the templated CTAS query
  */
 export function ctas(table: string, selectStatement: string, temp = true) {
-    return `CREATE ${temp ? 'TEMPORARY' : ''} VIEW ${table} AS (${selectStatement})`
+  return `CREATE ${
+    temp ? "TEMPORARY" : ""
+  } VIEW ${table} AS (${selectStatement})`;
 }
 
 /**
@@ -24,10 +26,19 @@ export function ctas(table: string, selectStatement: string, temp = true) {
  * @param interval an interval string specifying the interval size (e.g. "1 day")
  * @returns a string that represented a CTAS query that generates the time series.
  */
-export function generateSeries(table: string, start: string, end: string, interval: string, addFauxCount = false) {
-    return ctas(table, `
+export function generateSeries(
+  table: string,
+  start: string,
+  end: string,
+  interval: string,
+  addFauxCount = false
+) {
+  return ctas(
+    table,
+    `
     SELECT generate_series as ts 
-    ${addFauxCount ? ", 1 AS count" : ''}
+    ${addFauxCount ? ", 1 AS count" : ""}
     FROM generate_series(TIMESTAMP '${start}', TIMESTAMP '${end}', interval ${interval})
-    `)
+    `
+  );
 }

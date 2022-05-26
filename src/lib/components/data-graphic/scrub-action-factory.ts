@@ -67,7 +67,7 @@ interface ScrubActionFactoryArguments {
 }
 
 interface ScrubAction {
-  destroy: () => void
+  destroy: () => void;
 }
 
 function clamp(v: number, min: number, max: number) {
