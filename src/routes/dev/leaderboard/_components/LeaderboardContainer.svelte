@@ -10,7 +10,6 @@
   }
 
   onMount(() => {
-    // determine initial resize.
     onResize();
   });
 </script>

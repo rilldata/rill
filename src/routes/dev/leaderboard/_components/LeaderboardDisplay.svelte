@@ -4,10 +4,13 @@
   import Leaderboard from "./Leaderboard.svelte";
   import { browser } from "$app/env";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { ExploreStore } from "../_store";
   export let columns: number;
   export let referenceValue: number;
 
-  const leaderboardStore = getContext("rill:app:leaderboard-store");
+  const leaderboardStore: ExploreStore = getContext(
+    "rill:app:leaderboard-store"
+  );
 
   const dispatch = createEventDispatcher();
   let leaderboardExpanded;

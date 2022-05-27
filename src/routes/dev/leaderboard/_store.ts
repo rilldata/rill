@@ -1,13 +1,34 @@
 import { writable, get } from "svelte/store";
+import type { Writable } from "svelte/store";
 import { produce } from "immer";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { isAnythingSelected } from "./_utils";
+import type { Socket } from "socket.io-client";
 
-const initialState = {
+interface Leaderboard {
+  value: number;
+  label: string;
+}
+
+interface ActiveValues {
+  [key: string]: string[]
+}
+
+export interface ExploreState {
+  activeEntityID: string;
+  bigNumber: number;
+  referenceValue: number;
+  leaderboards: Leaderboard[];
+  availableDimensions: string[];
+  activeValues: ActiveValues;
+}
+
+const initialState: ExploreState = {
   activeEntityID: undefined,
   bigNumber: undefined,
   referenceValue: undefined,
   leaderboards: [],
+  availableDimensions: [],
   activeValues: {},
 };
 
@@ -99,7 +120,7 @@ function initializeSockets(store, socket) {
 
     store.setAvailableDimensions(dimensions);
 
-    const storeValue = get(store);
+    const storeValue = get(store) as ExploreState;
 
     // now, uh, calculate all the dimension leaderboards.
     storeValue.availableDimensions.forEach((dimensionName) => {
@@ -139,7 +160,20 @@ const actions = {
   clearLeaderboards,
 };
 
-export function createLeaderboardStore(socket) {
+export interface ExploreStore extends Writable<ExploreState> {
+  socket: Socket;
+  setAvailableDimensions,
+  setActiveEntityID,
+  setBigNumber,
+  setReferenceValue,
+  setDimensionLeaderboard,
+  initializeActiveValues,
+  initializeLeaderboardActiveValues,
+  setLeaderboardActiveValue,
+  clearLeaderboards,
+}
+
+export function createLeaderboardStore(socket): ExploreStore {
   const { subscribe, update } = writable(initialState);
 
   function dispatch(fcn) {
@@ -153,18 +187,18 @@ export function createLeaderboardStore(socket) {
   }
   // add actionSet.
   const actionSet = Object.entries(actions).reduce((actions, [name, fcn]) => {
+    // FIXME: find a better solution than this for typescript.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     actions[name] = (...args) => dispatch(fcn(...args));
     return actions;
   }, {});
 
   const store = {
     subscribe,
-    dispatch(fcn) {
-      update(produce(fcn));
-    },
     ...actionSet,
     socket,
   };
   initializeSockets(store, socket);
-  return store;
+  return store as ExploreStore;
 }
