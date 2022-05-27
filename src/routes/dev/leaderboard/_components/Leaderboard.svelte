@@ -122,11 +122,13 @@
             </div>
           </LeaderboardListItem>
           <TooltipContent slot="tooltip-content">
-            <div>
-              {formatBigNumberPercentage(value / referenceValue)} of records
-            </div>
-            <div>
-              filter on <span class="italic">{label}</span>
+            <div style:max-width="480px">
+              <div>
+                {formatBigNumberPercentage(value / referenceValue)} of records
+              </div>
+              <div>
+                filter on <span class="italic">{label}</span>
+              </div>
             </div>
           </TooltipContent>
         </Tooltip>

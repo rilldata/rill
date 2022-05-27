@@ -3,32 +3,36 @@ import { produce } from "immer";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { isAnythingSelected } from "./_utils";
 
-
 const initialState = {
   activeEntityID: undefined,
   bigNumber: undefined,
   referenceValue: undefined,
   leaderboards: [],
-  activeValues: {}
-}
+  activeValues: {},
+};
 
 function setAvailableDimensions(dimensions = []) {
-  return (draft) => { draft.availableDimensions = dimensions; };
+  return (draft) => {
+    draft.availableDimensions = dimensions;
+  };
 }
 
 function setActiveEntityID(entityID) {
   return (draft) => {
     draft.activeEntityID = entityID;
-  }
+  };
 }
 
-
 function setBigNumber(bigNumber: number) {
-  return (draft) => { draft.bigNumber = bigNumber }
+  return (draft) => {
+    draft.bigNumber = bigNumber;
+  };
 }
 
 function setReferenceValue(referenceValue: number) {
-  return (draft) => { draft.referenceValue = referenceValue }
+  return (draft) => {
+    draft.referenceValue = referenceValue;
+  };
 }
 
 function setLeaderboardActiveValue(dimensionName, dimensionValue) {
@@ -45,7 +49,7 @@ function setLeaderboardActiveValue(dimensionName, dimensionValue) {
         dimensionName
       ]?.filter((b) => b !== dimensionValue);
     }
-  }
+  };
 }
 
 function initializeActiveValues(boards = []) {
@@ -54,7 +58,7 @@ function initializeActiveValues(boards = []) {
       acc[leaderboard.displayName] = [];
       return acc;
     }, {});
-  }
+  };
 }
 
 /** get RID OF THIS!!! */
@@ -63,11 +67,13 @@ function initializeLeaderboardActiveValues(dimensionName) {
     if (!(dimensionName in draft.activeValues)) {
       draft.activeValues[dimensionName] = [];
     }
-  }
+  };
 }
 
 function clearLeaderboards() {
-  return draft => { draft.leaderboards = [] }
+  return (draft) => {
+    draft.leaderboards = [];
+  };
 }
 
 function setDimensionLeaderboard(dimensionName, values) {
@@ -78,20 +84,16 @@ function setDimensionLeaderboard(dimensionName, values) {
     if (exists) {
       exists.values = values;
       exists.displayName = dimensionName;
-    }
-
-    else
+    } else
       draft.leaderboards = [
         ...draft.leaderboards,
         { displayName: dimensionName, values },
       ];
-  }
-
+  };
 }
 
 // handle socket updates.
 function initializeSockets(store, socket) {
-
   socket.on("getAvailableDimensions", ({ dimensions }) => {
     // set availableDimensions
 
@@ -112,15 +114,15 @@ function initializeSockets(store, socket) {
   socket.on("getDimensionLeaderboard", ({ dimensionName, values }) => {
     store.setDimensionLeaderboard(dimensionName, values);
     // add to the activeValues.
-    store.initializeLeaderboardActiveValues(dimensionName)
+    store.initializeLeaderboardActiveValues(dimensionName);
   });
   // receive bigNumber
-  socket.on("getBigNumber", ({ metric, value, filters }) => {
+  socket.on("getBigNumber", ({ value, filters }) => {
     store.setBigNumber(value);
 
     if (!isAnythingSelected(filters)) {
       //referenceValue = value;
-      store.setReferenceValue(value)
+      store.setReferenceValue(value);
     }
   });
 }
@@ -134,24 +136,23 @@ const actions = {
   initializeActiveValues,
   initializeLeaderboardActiveValues,
   setLeaderboardActiveValue,
-  clearLeaderboards
-}
+  clearLeaderboards,
+};
 
 export function createLeaderboardStore(socket) {
   const { subscribe, update } = writable(initialState);
 
   function dispatch(fcn) {
-    if (fcn.constructor.name === 'AsyncFunction') {
+    if (fcn.constructor.name === "AsyncFunction") {
       // treat as thunk.
       fcn(this, () => get(store));
     } else {
       // treat as plain action.
-      update(draft => produce(draft, fcn));
+      update((draft) => produce(draft, fcn));
     }
   }
   // add actionSet.
-  const actionSet = Object.entries(actions).reduce((
-    actions, [name, fcn]) => {
+  const actionSet = Object.entries(actions).reduce((actions, [name, fcn]) => {
     actions[name] = (...args) => dispatch(fcn(...args));
     return actions;
   }, {});
@@ -162,9 +163,8 @@ export function createLeaderboardStore(socket) {
       update(produce(fcn));
     },
     ...actionSet,
-    socket
-  }
+    socket,
+  };
   initializeSockets(store, socket);
   return store;
 }
-

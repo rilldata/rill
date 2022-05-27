@@ -27,6 +27,6 @@
 
 <style>
   section {
-    --header: 130px;
+    --header: 160px;
   }
 </style>

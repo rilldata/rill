@@ -9,8 +9,6 @@
 
   import { createLeaderboardStore } from "./_store";
 
-  let currentTable: string;
-
   let store;
   let persistentTableStore;
   let leaderboardStore;
@@ -30,8 +28,6 @@
     leaderboardStore.setActiveEntityID($persistentTableStore?.entities[0].id);
     leaderboardStore.initializeActiveValues();
 
-    // dispatch when nothing has happened.
-
     leaderboardStore.socket.emit("getAvailableDimensions", {
       entityType: EntityType.Table,
       entityID: $leaderboardStore.activeEntityID,
@@ -49,8 +45,6 @@
     whichReferenceValue === "filtered"
       ? $leaderboardStore?.bigNumber
       : $leaderboardStore?.referenceValue;
-
-  /** scratch work */
 </script>
 
 <LeaderboardContainer let:columns>
