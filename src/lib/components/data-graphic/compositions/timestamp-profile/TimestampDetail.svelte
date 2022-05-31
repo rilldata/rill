@@ -5,7 +5,7 @@
    * This component is a diagnostic plot of the count(*) over time of a timestamp column.
    * The goal is to enable users to understand abnormalities and trends in the timestamp columns
    * of a dataset. As such, this component can:
-   * - zoom into a specified scrub region – if the user alt + clicks + drags, the component
+   * - zoom into a specified scrub region – if the user ctrl + clicks + drags, the component
    * will zoom into a specific region, enabling the user to better understand weird data.
    * - panning – after zooming, the user may pan around to better situate the viewport.
    * - shift + clicking – users can copy the timestamp value.
@@ -145,8 +145,8 @@
     plotRight: $plotConfig.plotRight,
     plotTop: $plotConfig.plotTop,
     plotBottom: $plotConfig.plotBottom,
-    startPredicate: (event: MouseEvent) => event.altKey,
-    movePredicate: (event: MouseEvent) => event.altKey,
+    startPredicate: (event: MouseEvent) => event.ctrlKey,
+    movePredicate: (event: MouseEvent) => event.ctrlKey,
     endEventName: "scrub",
   });
 
@@ -160,8 +160,8 @@
       plotRight: $plotConfig.plotRight,
       plotTop: $plotConfig.plotTop,
       plotBottom: $plotConfig.plotBottom,
-      startPredicate: (event: MouseEvent) => !event.altKey && !event.shiftKey,
-      movePredicate: (event: MouseEvent) => !event.altKey && !event.shiftKey,
+      startPredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
+      movePredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
       moveEventName: "scrolling",
     });
 

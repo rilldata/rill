@@ -93,6 +93,6 @@
         />
       </div>
     </div>
-    <Shortcut>Alt + Click + Drag</Shortcut>
+    <Shortcut>Ctrl + Click + Drag</Shortcut>
   </TooltipShortcutContainer>
 </TooltipContent>
