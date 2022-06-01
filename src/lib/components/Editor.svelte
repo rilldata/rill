@@ -55,16 +55,19 @@
     ".cm-underline": { backgroundColor: "yellow", outline: "2px solid red" },
   });
 
-  const breakpointGutter = [
-    EditorView.baseTheme({
-      ".cm-breakpoint-gutter .cm-gutterElement": {
-        color: "red",
-        paddingLeft: "24px",
-        paddingRight: "24px",
-        cursor: "default",
+  const rillTheme = EditorView.theme({
+    "&.cm-editor": {
+      "&.cm-focused": {
+        outline: "none",
       },
-    }),
-  ];
+    },
+    ".cm-breakpoint-gutter .cm-gutterElement": {
+      color: "red",
+      paddingLeft: "24px",
+      paddingRight: "24px",
+      cursor: "default",
+    },
+  });
 
   function underlineSelection(view: EditorView, selections) {
     const effects = selections
@@ -93,7 +96,7 @@
           basicSetup,
           sql(),
           keymap.of([indentWithTab]),
-          breakpointGutter,
+          rillTheme,
           EditorView.updateListener.of((v) => {
             const candidateLocation = v.state.selection.ranges[0].head;
             if (candidateLocation !== cursorLocation) {
