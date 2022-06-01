@@ -7,8 +7,13 @@
     DecorationSet,
   } from "@codemirror/view";
   import { RangeSet } from "@codemirror/rangeset";
-  import { indentWithTab } from "@codemirror/commands";
-  import { EditorState, StateField, StateEffect } from "@codemirror/state";
+  import { indentWithTab, insertNewline } from "@codemirror/commands";
+  import {
+    EditorState,
+    StateField,
+    StateEffect,
+    Prec,
+  } from "@codemirror/state";
   import { basicSetup } from "@codemirror/basic-setup";
   import { sql } from "@codemirror/lang-sql";
 
@@ -100,6 +105,14 @@
           basicSetup,
           sql(),
           keymap.of([indentWithTab]),
+          Prec.highest(
+            keymap.of([
+              {
+                key: "Enter",
+                run: insertNewline,
+              },
+            ])
+          ),
           breakpointGutter,
           EditorView.updateListener.of((v) => {
             const candidateLocation = v.state.selection.ranges[0].head;
