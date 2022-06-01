@@ -52,7 +52,9 @@
   const underlineMark = Decoration.mark({ class: "cm-underline" });
 
   const underlineTheme = EditorView.baseTheme({
-    ".cm-underline": { backgroundColor: "yellow", outline: "2px solid red" },
+    ".cm-underline": {
+      backgroundColor: "rgb(254 240 138)",
+    },
   });
 
   const rillTheme = EditorView.theme({
@@ -61,6 +63,9 @@
         outline: "none",
       },
     },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+      { backgroundColor: "rgb(65 99 255 / 25%)" },
+    ".cm-selectionMatch": { backgroundColor: "rgb(189 233 255)" },
     ".cm-breakpoint-gutter .cm-gutterElement": {
       color: "red",
       paddingLeft: "24px",
