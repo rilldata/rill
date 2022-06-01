@@ -6,7 +6,6 @@
     Decoration,
     DecorationSet,
   } from "@codemirror/view";
-  import { RangeSet } from "@codemirror/rangeset";
   import { indentWithTab } from "@codemirror/commands";
   import { EditorState, StateField, StateEffect } from "@codemirror/state";
   import { basicSetup } from "@codemirror/basic-setup";
@@ -26,12 +25,6 @@
   let editor;
   let editorContainer;
   let editorContainerComponent;
-
-  export function refreshContent(newContent) {
-    editor.update({
-      changes: { from: 0, to: editor?.doc?.length || 0, insert: newContent },
-    });
-  }
 
   const addUnderline = StateEffect.define<{ from: number; to: number }>();
 
@@ -134,7 +127,7 @@
   });
 </script>
 
-<div bind:this={componentContainer} class=" h-full">
+<div bind:this={componentContainer} class="h-full">
   <div class="editor-container border h-full" bind:this={editorContainer}>
     <div bind:this={editorContainerComponent} />
   </div>
