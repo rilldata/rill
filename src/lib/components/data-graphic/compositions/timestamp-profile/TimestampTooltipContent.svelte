@@ -18,6 +18,8 @@
   export let xAccessor: string;
   export let yAccessor: string;
   export let data;
+  // FIXME: document meaning of these special looking numbers
+  // e.g. something like width = y* CHAR_HEIGHT, height = CHAR_HEIGHT?
   export let width = 84;
   export let height = 12;
 
