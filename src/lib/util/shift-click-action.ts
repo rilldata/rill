@@ -8,13 +8,14 @@ interface CreateShiftClick {
 export function createShiftClickAction(
   params: CreateShiftClick = { stopImmediatePropagation: true }
 ) {
-  let _stopImmediatePropagation = params?.stopImmediatePropagation || false;
+  const _stopImmediatePropagation = params?.stopImmediatePropagation || false;
   // set a context for children to consume transient state.
-  let { subscribe, update } = writable([]);
+  const { subscribe, update } = writable([]);
 
+  const shiftHeld = writable(false);
   // create a callback store that can be added to by children components.
   // see StackingWord.svelte for an example of usage.
-  let callbacks = {
+  const callbacks = {
     subscribe,
     addCallback(callback) {
       update((cbs) => {
@@ -28,8 +29,21 @@ export function createShiftClickAction(
   return {
     // export the click switch callbacks added by children, in case that's needed.
     clickShiftCallbacks: callbacks,
+    shiftHeld,
     // put this in a use:shiftClickAction
     shiftClickAction(node: Element) {
+      function mouseDown(event) {
+        if (event.shiftKey) {
+          shiftHeld.set(true);
+          node.dispatchEvent(new CustomEvent("shift-mousedown"));
+        }
+      }
+
+      function mouseUp(event) {
+        shiftHeld.set(false);
+        if (event.shiftKey)
+          node.dispatchEvent(new CustomEvent("shift-mouseup"));
+      }
       function shiftClick(event: MouseEvent) {
         if (event.shiftKey) {
           // dispatch our custom event. accessible via on:shift-click
@@ -43,12 +57,17 @@ export function createShiftClickAction(
             event.stopImmediatePropagation();
           }
         }
+        node.addEventListener("mousedown", mouseDown);
       }
+      node.addEventListener("mouseup", mouseUp);
       node.addEventListener("click", shiftClick);
+      window.addEventListener("mouseup", mouseUp);
       return {
         destroy() {
-          // remove the shiftClick listener if the DOM element
-          node.addEventListener("click", shiftClick);
+          node.removeEventListener("mousedown", mouseDown);
+          node.removeEventListener("mouseup", mouseUp);
+          window.removeEventListener("mouseup", mouseUp);
+          node.removeEventListener("click", shiftClick);
         },
       };
     },

@@ -35,7 +35,7 @@
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
-  import { config } from "$lib/components/column-profile/utils";
+  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -75,17 +75,18 @@
   let inputRowCardinality = tweened(0, { duration: 200, easing });
   let outputRowCardinality = tweened(0, { duration: 250, easing });
 
+  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
+  $: activeEntityID = $store?.activeEntity?.id;
+
   let currentModel: PersistentModelEntity;
   $: currentModel =
-    $store?.activeEntity && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find(
-          (q) => q.id === $store.activeEntity.id
-        )
+    activeEntityID && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
   let currentDerivedModel: DerivedModelEntity;
   $: currentDerivedModel =
-    $store?.activeEntity && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === $store.activeEntity.id)
+    activeEntityID && $derivedModelStore?.entities
+      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
   // get source table references.
   $: if (currentDerivedModel?.sources) {
@@ -214,7 +215,7 @@
               class:text-gray-300={currentDerivedModel?.error}
             >
               {#if inputRowCardinalityValue > 0}
-                {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > config.hideRight},
+                {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}{#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight},
                   {currentDerivedModel?.profile?.length} columns
                 {/if}
               {:else if inputRowCardinalityValue === 0}
@@ -236,7 +237,7 @@
                       rollup < 0.0005 ? rollup : $bigRollupNumber || 0
                     )}
                     of source rows
-                  {:else}no change in row {#if containerWidth > config.hideRight}count{:else}ct.{/if}
+                  {:else}no change in row {#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight}count{:else}ct.{/if}
                   {/if}
                 {:else if rollup === Infinity}
                   &nbsp; {formatInteger(outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}

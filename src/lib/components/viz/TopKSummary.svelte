@@ -7,7 +7,7 @@
   import { format } from "d3-format";
   import BarAndLabel from "$lib/components/BarAndLabel.svelte";
   import notificationStore from "$lib/components/notifications/";
-  import { config } from "$lib/components/column-profile/utils";
+  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
   import { createShiftClickAction } from "$lib/util/shift-click-action";
 
@@ -90,9 +90,9 @@
           <BarAndLabel value={count / totalRows} {color}>
             <span
               class:text-gray-500={negligiblePercentage &&
-                containerWidth >= config.hideRight}
+                containerWidth >= COLUMN_PROFILE_CONFIG.hideRight}
               >{formatCount(count)}
-              {#if !containerWidth || containerWidth >= config.hideRight}
+              {#if !containerWidth || containerWidth >= COLUMN_PROFILE_CONFIG.hideRight}
                 {#if percentage.length < 6}&nbsp;{/if}{#if percentage.length < 5}&nbsp;{/if}&nbsp;<span
                   class:text-gray-600={!negligiblePercentage}
                   >({percentage})</span
