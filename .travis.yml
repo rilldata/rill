@@ -1,13 +1,25 @@
-dist: xenial
-language: python
-python:
-  - "3.7"
+language: node_js
+node_js:
+  - 16
 
 cache:
   directories:
     - "$HOME/.npm"
     - "$TRAVIS_BUILD_DIR/data"
     - "node_modules"
+
+deploy:
+  provider: releases
+  api_key: ${GITHUB_TOKEN}
+  # explicitly mention all types of binaries
+  # travis doesnt support folder upload as of now
+  file:
+    - rilldata/rill-macos-x64
+    - rilldata/rill-linux-x64
+    - rilldata/rill-win-x64.exe
+  skip_cleanup: true
+  on:
+    tags: true
 
 env:
   global:
@@ -17,10 +29,15 @@ jobs:
   include:
     - stage: test
       name: "Verify build"
-      before_install:
-        - nvm install 16
-        - node --version
-        - echo "NPM Install can take up to 6-8 mins"
+      before_install: &python-setup
+        - echo "Installing python 3.7.0 needed during npm install"
+        - pyenv install 3.7.0
+        - pyenv global 3.7.0
+
+      install: &slow-npm-ci
+        - echo "NPM Install can take up to 15 mins"
+        - travis_wait 30 npm ci
+
       script:
         - npm install
 
@@ -62,25 +79,26 @@ jobs:
         - docker-compose push
 
     - stage: publish
-      name: "Build & Publish binaries"
-      if: tag IS present AND branch = main
-      os:
-        - osx
-        - linux
-        - windows
-      before_install:
-        - nvm install 16
-        - node --version
-        - echo "NPM Install can take up to 6-8 mins"
-      script:
-        - npm install
+      name: "Build & Publish mac os binary"
+      if: tag IS present
+      os: osx
+      install: *slow-npm-ci
+      script: &build-vercel-pkg
+        # build the entire application
+        - npm run build
         - echo "Building vercel/pkg binary"
-        - npm run vercel-build-and-publish
-      deploy:
-        provider: releases
-        api_key:
-          secure: QWERTY
-        file: @rilldata/*
-        skip_cleanup: true
-        on:
-          tags: true
+        - npm run build-vercel-pkg
+
+    - stage: publish
+      name: "Build & Publish linux binary"
+      if: tag IS present
+      before_install: *python-setup
+      install: *slow-npm-ci
+      script: *build-vercel-pkg
+
+    - stage: publish
+      name: "Build & Publish windows binary"
+      if: tag IS present
+      os: windows
+      install: *slow-npm-ci
+      script: *build-vercel-pkg

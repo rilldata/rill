@@ -27,7 +27,7 @@ if (!(nodePlatform in PlatformMap) || !(cpuArch in CPUArchAllowList)) {
   process.exit(1);
 }
 const platform = PlatformMap[nodePlatform];
-const binaryPath = `@rilldata/rill-${platform}-${cpuArch}`;
+const binaryPath = `rilldata/rill-${platform}-${cpuArch}`;
 
 execSync(
   `npx pkg -c package.json ` +
@@ -35,4 +35,5 @@ execSync(
     `-o ${binaryPath} ${CLIPath}`,
   { stdio: "inherit" }
 );
-console.log(`Generated binary for ${platform}-${cpuArch}`);
+console.log(`Generated binary for ${platform} ${cpuArch}`);
+console.log(execSync(`ls -ltr rilldata`).toString());
