@@ -25,7 +25,8 @@
     "generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
     "cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts",
     "bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
-    "manual-publish": "./build-tools/npm_publish.sh"
+    "manual-publish": "./build-tools/npm_publish.sh",
+    "build-vercel-pkg": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/build-vercel-pkg.ts"
   },
   "devDependencies": {
     "@adityahegde/typescript-test-utils": "^1.3.2",
@@ -53,6 +54,7 @@
     "eslint-plugin-svelte3": "^3.4.1",
     "jest": "^27.5.1",
     "parquetjs": "^0.11.2",
+    "pkg": "^5.7.0",
     "playwright": "^1.20.1",
     "postcss-load-config": "^3.1.3",
     "prettier": "^2.6.1",
@@ -120,5 +122,12 @@
     "package-lock.json",
     "LICENSE.md",
     "README.md"
-  ]
+  ],
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "build/**/*",
+      "package.json"
+    ]
+  }
 }

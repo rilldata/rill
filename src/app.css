@@ -11,11 +11,6 @@
   }
 }
 
-::selection {
-  background-color: black;
-  color: white;
-}
-
 html {
   @apply bg-gray-400;
 }
@@ -49,11 +44,6 @@ body {
 
 button {
   font-family: "MD IO";
-}
-
-.ͼ1 .cm-scroller {
-  font-family: "MD IO";
-  font-size: 13px;
 }
 
 .stack-list > * + * {
@@ -151,6 +141,11 @@ button {
 
 .draggable:active {
   cursor: dragging;
+}
+
+.ͼ1 .cm-scroller {
+  font-family: "MD IO";
+  font-size: 13px;
 }
 
 .ͼ2 .cm-gutters {
