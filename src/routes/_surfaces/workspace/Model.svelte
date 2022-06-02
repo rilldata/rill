@@ -34,8 +34,6 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  let errorLineNumber;
-
   let showPreview = true;
 
   let currentModel: PersistentModelEntity;
@@ -67,11 +65,7 @@
         {#key currentModel?.id}
           <Editor
             content={currentModel.query}
-            name={currentModel.name}
             selections={$queryHighlight}
-            errorLineNumber={currentModel.id === $store.activeEntity.id
-              ? errorLineNumber
-              : undefined}
             on:down={() => {
               dataModelerService.dispatch("moveModelDown", [currentModel.id]);
             }}
