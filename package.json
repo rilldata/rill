@@ -76,8 +76,17 @@
     "workerpool": "^6.2.0"
   },
   "dependencies": {
-    "@codemirror/basic-setup": "^0.19.1",
+    "@codemirror/autocomplete": "^0.19.15",
+    "@codemirror/closebrackets": "^0.19.2",
+    "@codemirror/commands": "^0.19.8",
+    "@codemirror/comment": "^0.19.1",
+    "@codemirror/fold": "^0.19.4",
+    "@codemirror/history": "^0.19.2",
     "@codemirror/lang-sql": "^0.19.4",
+    "@codemirror/language": "^0.19.10",
+    "@codemirror/lint": "^0.19.6",
+    "@codemirror/rectangular-selection": "^0.19.2",
+    "@codemirror/search": "^0.19.10",
     "@codemirror/state": "^0.19.9",
     "@codemirror/view": "^0.19.47",
     "@types/d3-scale": "^4.0.2",

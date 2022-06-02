@@ -1,14 +1,45 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from "svelte";
   import {
-    EditorView,
     keymap,
+    highlightSpecialChars,
+    drawSelection,
+    highlightActiveLine,
+    dropCursor,
+    EditorView,
     Decoration,
     DecorationSet,
   } from "@codemirror/view";
-  import { indentWithTab } from "@codemirror/commands";
-  import { EditorState, StateField, StateEffect } from "@codemirror/state";
-  import { basicSetup } from "@codemirror/basic-setup";
+  import {
+    EditorState,
+    StateEffect,
+    StateField,
+    Prec,
+  } from "@codemirror/state";
+  import { history, historyKeymap } from "@codemirror/history";
+  import { foldGutter, foldKeymap } from "@codemirror/fold";
+  import { indentOnInput } from "@codemirror/language";
+  import { lineNumbers, highlightActiveLineGutter } from "@codemirror/gutter";
+  import {
+    defaultKeymap,
+    insertNewline,
+    indentWithTab,
+  } from "@codemirror/commands";
+  import { bracketMatching } from "@codemirror/matchbrackets";
+  import {
+    closeBrackets,
+    closeBracketsKeymap,
+  } from "@codemirror/closebrackets";
+  import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+  import {
+    acceptCompletion,
+    autocompletion,
+    completionKeymap,
+  } from "@codemirror/autocomplete";
+  import { commentKeymap } from "@codemirror/comment";
+  import { rectangularSelection } from "@codemirror/rectangular-selection";
+  import { defaultHighlightStyle } from "@codemirror/highlight";
+  import { lintKeymap } from "@codemirror/lint";
   import { sql } from "@codemirror/lang-sql";
 
   const dispatch = createEventDispatcher();
@@ -98,7 +129,49 @@
       state: EditorState.create({
         doc: oldContent,
         extensions: [
-          basicSetup,
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          foldGutter(),
+          drawSelection(),
+          dropCursor(),
+          EditorState.allowMultipleSelections.of(true),
+          indentOnInput(),
+          defaultHighlightStyle.fallback,
+          bracketMatching(),
+          closeBrackets(),
+          autocompletion(),
+          rectangularSelection(),
+          highlightActiveLine(),
+          highlightSelectionMatches(),
+          keymap.of([
+            ...closeBracketsKeymap,
+            ...defaultKeymap,
+            ...searchKeymap,
+            ...historyKeymap,
+            ...foldKeymap,
+            ...commentKeymap,
+            ...completionKeymap,
+            ...lintKeymap,
+            indentWithTab,
+          ]),
+          Prec.high(
+            keymap.of([
+              {
+                key: "Enter",
+                run: insertNewline,
+              },
+            ])
+          ),
+          Prec.highest(
+            keymap.of([
+              {
+                key: "Tab",
+                run: acceptCompletion,
+              },
+            ])
+          ),
           sql(),
           keymap.of([indentWithTab]),
           rillTheme,
