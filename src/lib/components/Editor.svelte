@@ -1,20 +1,41 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from "svelte";
   import {
-    EditorView,
     keymap,
+    highlightSpecialChars,
+    drawSelection,
+    highlightActiveLine,
+    dropCursor,
+    EditorView,
     Decoration,
     DecorationSet,
   } from "@codemirror/view";
-  import { RangeSet } from "@codemirror/rangeset";
-  import { indentWithTab, insertNewline } from "@codemirror/commands";
   import {
     EditorState,
-    StateField,
     StateEffect,
+    StateField,
     Prec,
   } from "@codemirror/state";
-  import { basicSetup } from "@codemirror/basic-setup";
+  import { history, historyKeymap } from "@codemirror/history";
+  import { foldGutter, foldKeymap } from "@codemirror/fold";
+  import { indentOnInput } from "@codemirror/language";
+  import { lineNumbers, highlightActiveLineGutter } from "@codemirror/gutter";
+  import {
+    defaultKeymap,
+    insertNewline,
+    indentWithTab,
+  } from "@codemirror/commands";
+  import { bracketMatching } from "@codemirror/matchbrackets";
+  import {
+    closeBrackets,
+    closeBracketsKeymap,
+  } from "@codemirror/closebrackets";
+  import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+  import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
+  import { commentKeymap } from "@codemirror/comment";
+  import { rectangularSelection } from "@codemirror/rectangular-selection";
+  import { defaultHighlightStyle } from "@codemirror/highlight";
+  import { lintKeymap } from "@codemirror/lint";
   import { sql } from "@codemirror/lang-sql";
 
   const dispatch = createEventDispatcher();
@@ -102,7 +123,32 @@
       state: EditorState.create({
         doc: oldContent,
         extensions: [
-          basicSetup,
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          foldGutter(),
+          drawSelection(),
+          dropCursor(),
+          EditorState.allowMultipleSelections.of(true),
+          indentOnInput(),
+          defaultHighlightStyle.fallback,
+          bracketMatching(),
+          closeBrackets(),
+          autocompletion(),
+          rectangularSelection(),
+          highlightActiveLine(),
+          highlightSelectionMatches(),
+          keymap.of([
+            ...closeBracketsKeymap,
+            ...defaultKeymap,
+            ...searchKeymap,
+            ...historyKeymap,
+            ...foldKeymap,
+            ...commentKeymap,
+            ...completionKeymap,
+            ...lintKeymap,
+          ]),
           sql(),
           keymap.of([indentWithTab]),
           Prec.highest(
