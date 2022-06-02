@@ -302,12 +302,6 @@ export class TableActions extends DataModelerActions {
       }
     }
 
-    this.dataModelerStateService.dispatch("setEntityStatus", [
-      EntityType.Table,
-      tableId,
-      EntityStatus.Profiling,
-    ]);
-
     await this.dataModelerService.dispatch("collectTableInfo", [tableId]);
   }
 

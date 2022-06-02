@@ -5,7 +5,7 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { EntityStatusTracker } from "../utils/EntityStatusTracker";
 import { asyncWait } from "$common/utils/waitUtils";
-import { TwoTableJoinQuery } from "../data/ModelQuery.data";
+import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
 import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 @FunctionalTestBase.Suite

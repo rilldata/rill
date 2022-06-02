@@ -45,7 +45,6 @@
   // type Coll
 
   let persistentModelEntities: PersistentModelEntity[] = [];
-  $: activeEntityID = $store?.activeEntity?.id;
   $: persistentModelEntities =
     ($persistentModelStore && $persistentModelStore.entities) || [];
 
@@ -62,7 +61,7 @@
         profile: derivedModel?.profile ?? [],
         head: derivedModel?.preview ?? [],
         sizeInBytes: derivedModel?.sizeInBytes ?? 0,
-        emphasizeTitle: query?.id === activeEntityID,
+        emphasizeTitle: query?.id === $store?.activeEntity?.id,
       },
     };
   });
