@@ -3,7 +3,7 @@ import { DuckDBClient } from "$common/database-service/DuckDBClient";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
 
 (async () => {
-  const duckDbClient = new DuckDBClient(
+  const duckDbClient = DuckDBClient.getInstance(
     new DatabaseConfig({ databaseName: process.argv[2] })
   );
   await duckDbClient.init();

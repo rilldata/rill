@@ -1,6 +1,7 @@
 .github/
 .svelte-kit/
 .vscode/
+.idea/
 build/
 build-tools/
 dist/
@@ -13,12 +14,17 @@ test/data/
 
 *.sql
 *.csv
+*.tsv
 *.db
 *.wal
 *.parquet
+.travis.yml
+.DS_Store
 
 log
+*.log
 .gitignore
 .prettierignore
 Dockerfile
 Duckdb-Dockerfile
+README.md

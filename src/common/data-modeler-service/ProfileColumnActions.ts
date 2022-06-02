@@ -4,9 +4,15 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataProfileStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
-import { BOOLEANS, CATEGORICALS, TIMESTAMPS } from "$lib/duckdb-data-types";
+import {
+  BOOLEANS,
+  CATEGORICALS,
+  NUMERICS,
+  TIMESTAMPS,
+} from "$lib/duckdb-data-types";
 import type { ProfileColumn } from "$lib/types";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
 const ColumnProfilePriorityMap = {
   [EntityType.Table]: DatabaseActionQueuePriority.TableProfile,
@@ -60,9 +66,11 @@ export class ProfileColumnActions extends DataModelerActions {
         this.collectTopKAndCardinality(entityType, entityId, tableName, column)
       );
     } else {
-      promises.push(
-        this.collectNumericHistogram(entityType, entityId, tableName, column)
-      );
+      if (NUMERICS.has(column.type)) {
+        promises.push(
+          this.collectNumericHistogram(entityType, entityId, tableName, column)
+        );
+      }
       if (TIMESTAMPS.has(column.type)) {
         promises.push(
           this.collectTimeRange(entityType, entityId, tableName, column)
@@ -73,6 +81,17 @@ export class ProfileColumnActions extends DataModelerActions {
             entityId,
             tableName,
             column
+          )
+        );
+        promises.push(
+          this.collectTimestampRollup(
+            entityType,
+            entityId,
+            tableName,
+            column,
+            // use the medium width for the spark line
+            COLUMN_PROFILE_CONFIG.summaryVizWidth.medium,
+            undefined
           )
         );
       } else {
@@ -124,6 +143,27 @@ export class ProfileColumnActions extends DataModelerActions {
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
         "estimateSmallestTimeGrain",
         [tableName, column.name]
+      ),
+    ]);
+  }
+
+  private async collectTimestampRollup(
+    entityType: EntityType,
+    entityId: string,
+    tableName: string,
+    column: ProfileColumn,
+    pixels: number = undefined,
+    sampleSize: number = undefined
+  ): Promise<void> {
+    this.dataModelerStateService.dispatch("updateColumnSummary", [
+      entityType,
+      entityId,
+      column.name,
+      await this.databaseActionQueue.enqueue(
+        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+
+        "estimateTimestampRollup",
+        [tableName, column.name, pixels, sampleSize]
       ),
     ]);
   }

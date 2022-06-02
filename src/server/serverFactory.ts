@@ -36,7 +36,7 @@ try {
 }
 
 export function databaseServiceFactory(config: RootConfig) {
-  const duckDbClient = new DuckDBClient(config.database);
+  const duckDbClient = DuckDBClient.getInstance(config.database);
   const databaseDataLoaderActions = new DatabaseDataLoaderActions(
     config.database,
     duckDbClient

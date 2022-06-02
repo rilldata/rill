@@ -20,10 +20,18 @@ export class DuckDBClient {
   protected onCallback: () => void;
   protected offCallback: () => void;
 
-  public constructor(private readonly databaseConfig: DatabaseConfig) {}
+  // this is a singleton class because
+  // duckdb doesn't work well with multiple connections to same db from same process
+  // if we ever need to have different connections modify this to have a map of database to instance
+  private static instance: DuckDBClient;
+  private constructor(private readonly databaseConfig: DatabaseConfig) {}
+  public static getInstance(databaseConfig: DatabaseConfig) {
+    if (!this.instance) this.instance = new DuckDBClient(databaseConfig);
+    return this.instance;
+  }
 
   public async init(): Promise<void> {
-    if (this.databaseConfig.skipDatabase) return;
+    if (this.databaseConfig.skipDatabase || this.db) return;
     // we can later on swap this over to WASM and update data loader
     this.db = new duckdb.Database(this.databaseConfig.databaseName);
     this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");

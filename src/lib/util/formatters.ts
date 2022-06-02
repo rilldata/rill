@@ -5,7 +5,9 @@ import {
   CATEGORICALS,
   TIMESTAMPS,
   BOOLEANS,
+  PreviewRollupInterval,
 } from "$lib/duckdb-data-types";
+import type { Interval } from "$lib/duckdb-data-types";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
 
@@ -13,6 +15,9 @@ const zeroPad = format("02d");
 const msPad = format("03d");
 export const formatInteger = format(",");
 const formatRate = format(".1f");
+
+/**  */
+export const singleDigitPercentage = format(".1%");
 
 /**
  * changes precision depending on the
@@ -34,8 +39,6 @@ export function removeTimezoneOffset(dt) {
   return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
 }
 
-//export const formatPercentage = format('.2%');
-
 export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
   let fmt = timeFormat("%b %d, %Y %I:%M:%S");
   if (type === "DATE") {
@@ -43,6 +46,12 @@ export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
   }
   return fmt(removeTimezoneOffset(new Date(v)));
 };
+
+export const fullTimestampFormat = (v) => {
+  let fmt = timeFormat("%b %d, %Y %I:%M:%S.%L");
+  return fmt(removeTimezoneOffset(new Date(v)));
+};
+
 export const datePortion = timeFormat("%b %d, %Y");
 export const timePortion = timeFormat("%I:%M:%S");
 
@@ -67,13 +76,11 @@ export function microsToTimestring(microseconds: number) {
   )}:${zeroPad(seconds)}.${msPad(ms)}`;
 }
 
-interface Interval {
-  months: number;
-  days: number;
-  micros: number;
-}
-
-export function intervalToTimestring(interval: Interval) {
+export function intervalToTimestring(inputInterval: Interval) {
+  const interval =
+    typeof inputInterval === "number"
+      ? { months: 0, days: inputInterval, micros: 0 }
+      : inputInterval;
   const months = interval.months
     ? `${formatInteger(interval.months)} month${
         interval.months > 1 ? "s" : ""
@@ -118,3 +125,17 @@ export function formatDataType(value: any, type: string) {
     return value;
   }
 }
+
+/** These will be used in the string */
+export const PreviewRollupIntervalFormatter = {
+  [PreviewRollupInterval.ms]:
+    "millisecond-level" /** showing rows binned by ms */,
+  [PreviewRollupInterval.second]:
+    "second-level" /** showing rows binned by second */,
+  [PreviewRollupInterval.minute]:
+    "minute-level" /** showing rows binned by minute */,
+  [PreviewRollupInterval.hour]: "hourly" /** showing hourly counts */,
+  [PreviewRollupInterval.day]: "daily" /** showing daily counts */,
+  [PreviewRollupInterval.month]: "monthly" /** showing monthly counts */,
+  [PreviewRollupInterval.year]: "yearly" /** showing yearly counts */,
+};
