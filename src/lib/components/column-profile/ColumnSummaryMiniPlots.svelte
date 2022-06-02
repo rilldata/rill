@@ -53,91 +53,68 @@
       return pi;
     });
   }
-
-  const enum MiniPlotTypes {
-    BAR_AND_LABEL,
-    NUMERIC_HISTOGRAM,
-    TIMESTAMP_SPARK, // a rollup sparkline
-    TIMESTAMP_HISTOGRAM, // a legacy histogram timestamp histor
-    NONE,
-  }
-
-  let miniPlotType: MiniPlotTypes = MiniPlotTypes.NONE;
-  // check to see if the summary has cardinality. Otherwise do not show anything.
-  if (totalRows > 0) {
-    if (
-      (CATEGORICALS.has(type) || BOOLEANS.has(type)) &&
-      summary?.cardinality
-    ) {
-      miniPlotType = MiniPlotTypes.BAR_AND_LABEL;
-    } else if (NUMERICS.has(type) && summary?.histogram?.length) {
-      miniPlotType = MiniPlotTypes.NUMERIC_HISTOGRAM;
-    } else if (TIMESTAMPS.has(type) && summary?.histogram?.length) {
-      miniPlotType = MiniPlotTypes.TIMESTAMP_HISTOGRAM;
-    } else if (TIMESTAMPS.has(type) && summary?.rollup?.spark?.length) {
-      miniPlotType = MiniPlotTypes.TIMESTAMP_SPARK;
-    }
-  }
 </script>
 
 <div class="flex gap-2 items-center" class:hidden={view !== "summaries"}>
   <div class="flex items-center" style:width="{summaryWidthSize}px">
-    {#if miniPlotType === MiniPlotTypes.BAR_AND_LABEL}
-      <Tooltip location="right" alignment="center" distance={8}>
-        <BarAndLabel
-          color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
-          value={summary?.cardinality / totalRows}
-        >
-          |{cardinalityFormatter(summary?.cardinality)}|
-        </BarAndLabel>
-        <TooltipContent slot="tooltip-content">
-          {formatInteger(summary?.cardinality)} unique values
-        </TooltipContent>
-      </Tooltip>
-    {:else if miniPlotType === MiniPlotTypes.NUMERIC_HISTOGRAM}
-      <Tooltip location="right" alignment="center" distance={8}>
-        <Histogram
-          data={summary.histogram}
-          width={summaryWidthSize}
-          height={18}
-          fillColor={DATA_TYPE_COLORS["DOUBLE"].vizFillClass}
-          baselineStrokeColor={DATA_TYPE_COLORS["DOUBLE"].vizStrokeClass}
-        />
-        <TooltipContent slot="tooltip-content">
-          the distribution of the values of this column
-        </TooltipContent>
-      </Tooltip>
-    {:else if miniPlotType === MiniPlotTypes.TIMESTAMP_SPARK}
-      <Tooltip location="right" alignment="center" distance={8}>
-        <TimestampSpark
-          data={convertTimestampPreview(summary.rollup.spark)}
-          xAccessor="ts"
-          yAccessor="count"
-          width={summaryWidthSize}
-          height={18}
-          top={0}
-          bottom={0}
-          left={0}
-          right={0}
-          leftBuffer={0}
-          rightBuffer={0}
-          area
-          tweenIn
-        />
-        <TooltipContent slot="tooltip-content">the time series</TooltipContent>
-      </Tooltip>
-    {:else if miniPlotType === MiniPlotTypes.TIMESTAMP_HISTOGRAM}
-      <Tooltip location="right" alignment="center" distance={8}>
-        <Histogram
-          data={summary.histogram}
-          width={summaryWidthSize}
-          height={18}
-          fillColor={DATA_TYPE_COLORS["TIMESTAMP"].vizFillClass}
-          baselineStrokeColor={DATA_TYPE_COLORS["TIMESTAMP"].vizStrokeClass}
-        />
-
-        <TooltipContent slot="tooltip-content">the time series</TooltipContent>
-      </Tooltip>
+    {#if totalRows}
+      {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.cardinality}
+        <Tooltip location="right" alignment="center" distance={8}>
+          <BarAndLabel
+            color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
+            value={summary?.cardinality / totalRows}
+          >
+            |{cardinalityFormatter(summary?.cardinality)}|
+          </BarAndLabel>
+          <TooltipContent slot="tooltip-content">
+            {formatInteger(summary?.cardinality)} unique values
+          </TooltipContent>
+        </Tooltip>
+      {:else if NUMERICS.has(type) && summary?.histogram?.length}
+        <Tooltip location="right" alignment="center" distance={8}>
+          <Histogram
+            data={summary.histogram}
+            width={summaryWidthSize}
+            height={18}
+            fillColor={DATA_TYPE_COLORS["DOUBLE"].vizFillClass}
+            baselineStrokeColor={DATA_TYPE_COLORS["DOUBLE"].vizStrokeClass}
+          />
+          <TooltipContent slot="tooltip-content">
+            the distribution of the values of this column
+          </TooltipContent>
+        </Tooltip>
+      {:else if TIMESTAMPS.has(type) /** a legacy histogram type or a new rollup spark */ && (summary?.histogram?.length || summary?.rollup?.spark?.length)}
+        <Tooltip location="right" alignment="center" distance={8}>
+          {#if summary?.rollup?.spark}
+            <TimestampSpark
+              data={convertTimestampPreview(summary.rollup.spark)}
+              xAccessor="ts"
+              yAccessor="count"
+              width={summaryWidthSize}
+              height={18}
+              top={0}
+              bottom={0}
+              left={0}
+              right={0}
+              leftBuffer={0}
+              rightBuffer={0}
+              area
+              tweenIn
+            />
+          {:else}
+            <Histogram
+              data={summary.histogram}
+              width={summaryWidthSize}
+              height={18}
+              fillColor={DATA_TYPE_COLORS["TIMESTAMP"].vizFillClass}
+              baselineStrokeColor={DATA_TYPE_COLORS["TIMESTAMP"].vizStrokeClass}
+            />
+          {/if}
+          <TooltipContent slot="tooltip-content">
+            the time series
+          </TooltipContent>
+        </Tooltip>
+      {/if}
     {/if}
   </div>
 
