@@ -18,9 +18,11 @@ test/data/
 *.db
 *.wal
 *.parquet
+.travis.yml
 .DS_Store
 
 log
+*.log
 .gitignore
 .prettierignore
 Dockerfile
