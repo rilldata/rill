@@ -31,7 +31,11 @@
     closeBracketsKeymap,
   } from "@codemirror/closebrackets";
   import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-  import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
+  import {
+    acceptCompletion,
+    autocompletion,
+    completionKeymap,
+  } from "@codemirror/autocomplete";
   import { commentKeymap } from "@codemirror/comment";
   import { rectangularSelection } from "@codemirror/rectangular-selection";
   import { defaultHighlightStyle } from "@codemirror/highlight";
@@ -148,10 +152,9 @@
             ...commentKeymap,
             ...completionKeymap,
             ...lintKeymap,
+            indentWithTab,
           ]),
-          sql(),
-          keymap.of([indentWithTab]),
-          Prec.highest(
+          Prec.high(
             keymap.of([
               {
                 key: "Enter",
@@ -159,6 +162,15 @@
               },
             ])
           ),
+          Prec.highest(
+            keymap.of([
+              {
+                key: "Tab",
+                run: acceptCompletion,
+              },
+            ])
+          ),
+          sql(),
           breakpointGutter,
           EditorView.updateListener.of((v) => {
             const candidateLocation = v.state.selection.ranges[0].head;
