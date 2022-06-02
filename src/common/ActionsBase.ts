@@ -165,6 +165,10 @@ export abstract class ActionsBase {
             entityId,
             EntityStatus.Idle,
           ]);
+          await this.dataModelerStateService.waitForAllUpdates(
+            entityType,
+            StateType.Derived
+          );
           return resp;
         } catch (err) {
           this.dataModelerStateService.dispatch("setEntityStatus", [

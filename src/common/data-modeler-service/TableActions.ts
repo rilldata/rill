@@ -256,7 +256,7 @@ export class TableActions extends DataModelerActions {
     { stateService }: DerivedTableStateActionArg,
     tableId: string
   ) {
-    const derivedTable = stateService.getById(tableId);
+    let derivedTable = stateService.getById(tableId);
     const persistentTable = this.dataModelerStateService
       .getEntityStateService(EntityType.Table, StateType.Persistent)
       .getById(tableId);
@@ -273,6 +273,7 @@ export class TableActions extends DataModelerActions {
       "getCardinalityOfTable",
       [persistentTable.tableName]
     );
+    derivedTable = stateService.getById(tableId);
     if (newCardinality === derivedTable.cardinality) return;
 
     // check column count and names
@@ -282,6 +283,7 @@ export class TableActions extends DataModelerActions {
         "getProfileColumns",
         [persistentTable.tableName]
       );
+    derivedTable = stateService.getById(tableId);
     if (newProfiles.length === derivedTable.profile.length) {
       const existingColumns = new Map<string, ProfileColumn>();
       derivedTable.profile.forEach((column) =>
