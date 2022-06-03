@@ -53,7 +53,7 @@
 
   let oldContent = content;
 
-  let editor;
+  let editor: EditorView;
   let editorContainer;
   let editorContainerComponent;
 
@@ -192,6 +192,20 @@
     });
     obs.observe(componentContainer);
   });
+
+  function updateEditorContents(newContent: string) {
+    if (typeof editor !== "undefined") {
+      let curContent = editor.state.doc.toString();
+      if (newContent != curContent) {
+        editor.dispatch({
+          changes: { from: 0, to: curContent.length, insert: newContent },
+        });
+      }
+    }
+  }
+
+  // reactive statement to update the editor when `content` changes
+  $: updateEditorContents(content);
 </script>
 
 <div bind:this={componentContainer} class="h-full">
