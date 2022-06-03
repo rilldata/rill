@@ -89,6 +89,7 @@
     "@codemirror/search": "^0.19.10",
     "@codemirror/state": "^0.19.9",
     "@codemirror/view": "^0.19.47",
+    "@types/d3-scale": "^4.0.2",
     "axios": "^0.26.1",
     "commander": "^9.1.0",
     "cors": "^2.8.5",

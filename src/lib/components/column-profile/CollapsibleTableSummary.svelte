@@ -34,7 +34,7 @@
   import notificationStore from "$lib/components/notifications/";
 
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { config } from "./utils";
+  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
   export let name: string;
   export let cardinality: number;
@@ -269,9 +269,10 @@
               {indentLevel}
               example={head[0][column.name] || ""}
               {containerWidth}
-              hideNullPercentage={containerWidth < config.hideNullPercentage}
-              hideRight={containerWidth < config.hideRight}
-              compactBreakpoint={config.compactBreakpoint}
+              hideNullPercentage={containerWidth <
+                COLUMN_PROFILE_CONFIG.hideNullPercentage}
+              hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
+              compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
               view={previewView}
               name={column.name}
               type={column.type}
