@@ -24,7 +24,6 @@ module.exports = {
   rules: {
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": "warn",
-    "prefer-const": "warn",
     "@typescript-eslint/ban-ts-comment": "warn",
     "no-useless-escape": "warn",
     "@typescript-eslint/no-empty-interface": "warn",

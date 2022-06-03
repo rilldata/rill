@@ -214,7 +214,7 @@ describe("extractCoreSelectStatements", () => {
   });
 });
 
-let joinQueries = [
+const joinQueries = [
   {
     input:
       "SELECt * from whatever inner join another ON another.id = whatever.another_id",

@@ -74,7 +74,7 @@ export class CLISpec extends FunctionalTestBase {
     let persistentState: PersistentTableState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
     );
-    let derivedState: DerivedTableState = JSON.parse(
+    const derivedState: DerivedTableState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/derived_table_state.json`).toString()
     );
 
