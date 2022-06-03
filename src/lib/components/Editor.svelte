@@ -17,7 +17,6 @@
     Prec,
   } from "@codemirror/state";
   import { history, historyKeymap } from "@codemirror/history";
-  import { foldGutter, foldKeymap } from "@codemirror/fold";
   import { indentOnInput } from "@codemirror/language";
   import { lineNumbers, highlightActiveLineGutter } from "@codemirror/gutter";
   import {
@@ -88,6 +87,8 @@
     },
   });
 
+  const highlightBackground = "#f3f9ff";
+
   const rillTheme = EditorView.theme({
     "&.cm-editor": {
       "&.cm-focused": {
@@ -97,6 +98,15 @@
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "rgb(65 99 255 / 25%)" },
     ".cm-selectionMatch": { backgroundColor: "rgb(189 233 255)" },
+    ".cm-activeLine": { backgroundColor: highlightBackground },
+    ".cm-activeLineGutter": {
+      backgroundColor: highlightBackground,
+    },
+    ".cm-lineNumbers .cm-gutterElement": {
+      paddingLeft: "5px",
+      paddingRight: "10px",
+      minWidth: "32px",
+    },
     ".cm-breakpoint-gutter .cm-gutterElement": {
       color: "red",
       paddingLeft: "24px",
@@ -133,7 +143,6 @@
           highlightActiveLineGutter(),
           highlightSpecialChars(),
           history(),
-          foldGutter(),
           drawSelection(),
           dropCursor(),
           EditorState.allowMultipleSelections.of(true),
@@ -150,7 +159,6 @@
             ...defaultKeymap,
             ...searchKeymap,
             ...historyKeymap,
-            ...foldKeymap,
             ...commentKeymap,
             ...completionKeymap,
             ...lintKeymap,
