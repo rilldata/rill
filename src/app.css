@@ -135,10 +135,6 @@ button {
   height: 18px;
 }
 
-/* .pl-accordion {
-    padding-left: calc(14px + .25rem);
-} */
-
 .draggable:active {
   cursor: dragging;
 }
