@@ -68,7 +68,7 @@ jobs:
 
     - stage: publish
       name: "Build & Publish mac os binary"
-      #if: tag IS present
+      if: tag IS present
       os: osx
       install: *slow-npm-ci
       script: &build-vercel-pkg
@@ -95,7 +95,7 @@ jobs:
 
     - stage: publish
       name: "Build & Publish linux binary"
-      #if: tag IS present
+      if: tag IS present
       before_install: *python-setup
       install: *slow-npm-ci
       script: *build-vercel-pkg
@@ -105,7 +105,7 @@ jobs:
 
     - stage: publish
       name: "Build & Publish windows binary"
-      #if: tag IS present
+      if: tag IS present
       os: windows
       before_install:
         - echo "Installing python 3"
