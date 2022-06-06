@@ -68,14 +68,16 @@ jobs:
 
     - stage: publish
       name: "Build & Publish mac os binary"
-      if: tag IS present
+      #if: tag IS present
       os: osx
       install: *slow-npm-ci
       script: &build-vercel-pkg
         # build the entire application
         - npm run build
+        - echo "Cleaning dev depandancies"
+        - npm prune --production
         - echo "Building vercel/pkg binary"
-        - npm run build-vercel-pkg
+        - npm run prepack && npm run build-vercel-pkg
       deploy: &deploy-vercel-pkg
         provider: releases
         api_key: ${GITHUB_TOKEN}
@@ -88,19 +90,28 @@ jobs:
         skip_cleanup: true
         on:
           tags: true
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
     - stage: publish
       name: "Build & Publish linux binary"
-      if: tag IS present
+      #if: tag IS present
       before_install: *python-setup
       install: *slow-npm-ci
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
     - stage: publish
       name: "Build & Publish windows binary"
-      if: tag IS present
+      #if: tag IS present
       os: windows
+      before_install:
+        - echo "Installing python 3"
+        - choco install python3
       install: *slow-npm-ci
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
