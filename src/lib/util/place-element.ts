@@ -94,7 +94,7 @@ export function placeElement({
   // OUR SECOND JOB IS RE-ALIGNMENT ALONG THE ALIGNMENT ACTION.
   let alignmentValue;
 
-  let rightLeft = location === "right" || location === "left";
+  const rightLeft = location === "right" || location === "left";
 
   switch (alignment) {
     case "start": {

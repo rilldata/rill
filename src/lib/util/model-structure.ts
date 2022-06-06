@@ -86,7 +86,7 @@ export function extractCTEs(query: string): CTE[] {
   let currentExpression = {} as CTE;
   let reachedEndOfCTEs = false;
   while (ri < query.length && !reachedEndOfCTEs) {
-    let char = query[ri];
+    const char = query[ri];
 
     // let's get the name of this thing.
     // we should only trigger this if nest === 1; otherwise we're selecting the CTEs of CTEs :)
@@ -164,12 +164,12 @@ export function extractCoreSelectStatements(query: string) {
       )}`
     );
   }
-  let i = "SELECT ".length + startingBuffer;
+  const i = "SELECT ".length + startingBuffer;
   let ri = i;
   let ei = ri;
   let reachedFrom = false;
   let nestLevel = 0;
-  let columnSelects = [];
+  const columnSelects = [];
 
   function queryEndsWithFrom(query) {
     return query.toLowerCase().endsWith("from ");
@@ -185,8 +185,8 @@ export function extractCoreSelectStatements(query: string) {
     // and then the name the second
     // if no `as` then the expression is the name
     // later, we crawl the expression for the column names.
-    let querySoFar = restOfQuery.slice(ei, ri).toLowerCase();
-    let endsWithFrom = queryEndsWithFrom(querySoFar) && nestLevel === 0;
+    const querySoFar = restOfQuery.slice(ei, ri).toLowerCase();
+    const endsWithFrom = queryEndsWithFrom(querySoFar) && nestLevel === 0;
     if ((restOfQuery[ri] === "," && nestLevel === 0) || endsWithFrom) {
       let start = ei;
       const firstRealChar = firstCharacterAt(restOfQuery.slice(start));
@@ -217,12 +217,12 @@ export function extractCoreSelectStatements(query: string) {
       // look at end of name and trim the end.
 
       const getStartAndEnd = (string) => {
-        let start = firstCharacterAt(string);
-        let end = firstCharacterAt(string.split("").reverse().join(""));
+        const start = firstCharacterAt(string);
+        const end = firstCharacterAt(string.split("").reverse().join(""));
         return [start, end];
       };
-      let [_, nameEnd] = getStartAndEnd(name);
-      let [expressionStart, __] = getStartAndEnd(expression);
+      const [_, nameEnd] = getStartAndEnd(name);
+      const [expressionStart, __] = getStartAndEnd(expression);
       // look at the start of expression and trim the start.
 
       columnSelects.push({
@@ -275,19 +275,19 @@ function getAllIndexes(arr, val) {
 }
 
 export function extractFromStatements(query: string) {
-  let latest = 0;
-  let restOfQuery = query.replace(/[\s\t\r\n]/g, " ");
+  const latest = 0;
+  const restOfQuery = query.replace(/[\s\t\r\n]/g, " ");
   const finds = getAllIndexes(restOfQuery.toLowerCase(), " from ");
 
-  let sourceTables = [];
+  const sourceTables = [];
 
   finds.forEach((fi) => {
-    let ei = fi + " from ".length;
+    const ei = fi + " from ".length;
     let ri = ei;
-    let nestLevel = 0;
+    const nestLevel = 0;
     while (ri < restOfQuery.length) {
       ri += 1;
-      let char = restOfQuery[ri - 1];
+      const char = restOfQuery[ri - 1];
       let seqSoFar = restOfQuery.slice(ei, ri);
 
       // skip if the FROM statement contains a nested statement inside it.
@@ -335,7 +335,7 @@ export function extractFromStatements(query: string) {
         if (char === ")") {
           rightCorrection += 1;
           // look for spaces b/t ) and statement.
-          let additionalRightBuffer = firstCharacterAt(
+          const additionalRightBuffer = firstCharacterAt(
             seqSoFar.split("").reverse().join("").slice(1)
           );
           if (additionalRightBuffer !== -1) {
@@ -348,7 +348,7 @@ export function extractFromStatements(query: string) {
           ri - rightCorrection
         );
         const [name, ...remainder] = finalSeq.split(" ");
-        let remainingChars = remainder.join(" ");
+        const remainingChars = remainder.join(" ");
         sourceTables.push({
           name: name.trim(),
           start: ei + latest + leftCorrection,
@@ -370,7 +370,7 @@ export function extractFromStatements(query: string) {
 const postWhereClauses = [" having ", " group by ", " order by "];
 
 function endsWith(string, clauses = postWhereClauses) {
-  let intermediate = string.toLowerCase();
+  const intermediate = string.toLowerCase();
   return clauses.some((clause) => intermediate.endsWith(clause));
 }
 
@@ -393,7 +393,7 @@ export function extractCoreWhereClauses(query: string) {
       )}`
     );
   }
-  let i = "SELECT ".length + (startingBuffer !== -1 ? startingBuffer : 0);
+  const i = "SELECT ".length + (startingBuffer !== -1 ? startingBuffer : 0);
   let ri = i;
   let ei = ri;
   let inWhereClause = false;
@@ -423,7 +423,7 @@ export function extractCoreWhereClauses(query: string) {
       ) {
         // let's split on  ' and ' and ' or '
         const whereClause = substring; // we need to massage this
-        let matches = [];
+        const matches = [];
         const andsAndOrs = [
           ...getAllIndexes(normalized, " and "),
           getAllIndexes(normalized, " or "),
@@ -440,11 +440,11 @@ export function extractCoreWhereClauses(query: string) {
         const ci = ei;
         // this is where we split up and say the relation.
         // ok let's goooo
-        let clauseType = normalized.endsWith(" and ") ? " and " : " or ";
-        let start = latest + ei + firstCharacterAt(normalized);
+        const clauseType = normalized.endsWith(" and ") ? " and " : " or ";
+        const start = latest + ei + firstCharacterAt(normalized);
         // append the clause
-        let statement = substring.slice(0, -clauseType.length);
-        let end =
+        const statement = substring.slice(0, -clauseType.length);
+        const end =
           ri +
           latest -
           firstCharacterAt(statement.split("").reverse().join(""));
@@ -479,18 +479,18 @@ export function extractCoreWhereClauses(query: string) {
 }
 
 export function extractJoins(query) {
-  let latest = 0;
-  let restOfQuery = query.replace(/[\s\t\r\n]/gi, " ");
+  const latest = 0;
+  const restOfQuery = query.replace(/[\s\t\r\n]/gi, " ");
 
   const finds = getAllIndexes(restOfQuery.toLowerCase(), " join ");
-  let matches = [];
-  for (let find of finds) {
-    let ei = find + " join ".length; //restOfQuery.slice(find + ' join '.length);
+  const matches = [];
+  for (const find of finds) {
+    const ei = find + " join ".length; //restOfQuery.slice(find + ' join '.length);
     let ri = ei;
-    let noMatchYet = true;
+    const noMatchYet = true;
     while (ri < restOfQuery.length || noMatchYet) {
       ri += 1;
-      let soFar = restOfQuery.slice(ei, ri);
+      const soFar = restOfQuery.slice(ei, ri);
       // break if we're on a subquery, for now.
       if (restOfQuery[ri] === "(") {
         break;
@@ -498,8 +498,8 @@ export function extractJoins(query) {
       if (soFar.toLowerCase().endsWith(" on ")) {
         // we have a match.
         let name = soFar.slice(0, -` on `.length);
-        let start = ei + firstCharacterAt(name);
-        let end =
+        const start = ei + firstCharacterAt(name);
+        const end =
           ei +
           name.length -
           firstCharacterAt(name.split("").reverse().join(""));
@@ -514,7 +514,7 @@ export function extractJoins(query) {
 
 export function extractSourceTables(query) {
   const CTEs = extractCTEs(query);
-  let cteAliases = new Set(CTEs.map((cte) => cte.name));
+  const cteAliases = new Set(CTEs.map((cte) => cte.name));
   const froms = extractFromStatements(query).filter(
     (statement) => !cteAliases.has(statement.name)
   );
