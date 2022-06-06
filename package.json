@@ -7,7 +7,9 @@
     "build": "svelte-kit build && tsc --project tsconfig.node.json",
     "prepack": "./build-tools/replace_package_type.sh module commonjs",
     "postpack": "./build-tools/replace_package_type.sh commonjs module",
-    "postinstall": "./build-tools/post_install.sh",
+    "postinstall": "node build-tools/post_install.js",
+    "postinstall:dev": "ts-node-dev --quiet --project tsconfig.node.json src/cli/post-install.ts",
+    "postinstall:prod": "node dist/cli/post-install.js",
     "install-and-build": "npm install && npm run build",
     "package": "svelte-kit package",
     "preview": "svelte-kit preview",
@@ -26,7 +28,7 @@
     "cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts",
     "bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
     "manual-publish": "./build-tools/npm_publish.sh",
-    "build-vercel-pkg": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/build-vercel-pkg.ts"
+    "build-vercel-pkg": "node dist/cli/build-vercel-pkg.js"
   },
   "devDependencies": {
     "@adityahegde/typescript-test-utils": "^1.3.2",
@@ -115,7 +117,7 @@
   },
   "files": [
     "dist",
-    "build-tools/post_install.sh",
+    "build-tools/post_install.js",
     "build",
     "static",
     "package.json",
