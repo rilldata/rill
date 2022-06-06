@@ -5,9 +5,9 @@ import type {
 import type { RootConfig } from "$common/config/RootConfig";
 import type { EntityStateService } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import { execSync } from "node:child_process";
 import type { EntityRepository } from "$common/data-modeler-state-service/sync-service/EntityRepository";
 import type { EntityStateUpdatesHandler } from "$common/data-modeler-state-service/sync-service/EntityStateUpdatesHandler";
+import { mkdirSync } from "fs";
 
 /**
  * This class periodically checks source and compares it with in-memory state.
@@ -28,7 +28,7 @@ export class EntityStateSyncService<
   ) {}
 
   public async init(): Promise<void> {
-    execSync(`mkdir -p ${this.config.state.stateFolder}`);
+    mkdirSync(this.config.state.stateFolder, { recursive: true });
 
     let initialState: EntityState<Entity>;
 
