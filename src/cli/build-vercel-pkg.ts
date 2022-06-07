@@ -30,7 +30,7 @@ const platform = PlatformMap[nodePlatform];
 const binaryPath = `rilldata/rill-${platform}-${cpuArch}`;
 
 execSync(
-  `npx pkg -c package.json ` +
+  `npx pkg -c package.json --compress GZip ` +
     `-t ${NodeJSVersion}-${platform}-${cpuArch} ` +
     `-o ${binaryPath} ${CLIPath}`,
   { stdio: "inherit" }
