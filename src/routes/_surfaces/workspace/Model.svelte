@@ -34,8 +34,6 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  let errorLineNumber;
-
   let showPreview = true;
 
   let currentModel: PersistentModelEntity;
@@ -67,36 +65,11 @@
         {#key currentModel?.id}
           <Editor
             content={currentModel.query}
-            name={currentModel.name}
             selections={$queryHighlight}
-            errorLineNumber={currentModel.id === $store.activeEntity.id
-              ? errorLineNumber
-              : undefined}
-            on:down={() => {
-              dataModelerService.dispatch("moveModelDown", [currentModel.id]);
-            }}
-            on:up={() => {
-              dataModelerService.dispatch("moveModelUp", [currentModel.id]);
-            }}
-            on:delete={() => {
-              dataModelerService.dispatch("deleteModel", [currentModel.id]);
-            }}
             on:receive-focus={() => {
               dataModelerService.dispatch("setActiveAsset", [
                 EntityType.Model,
                 currentModel.id,
-              ]);
-            }}
-            on:release-focus={() => {
-              //dataModelerService.dispatch('releaseActiveQueryFocus', [{ id: q.id }]);
-            }}
-            on:model-profile={() => {
-              //dataModelerService.dispatch('computeModelProfile', [{ id: currentQuery.id }]);
-            }}
-            on:rename={(evt) => {
-              dataModelerService.dispatch("updateModelName", [
-                currentModel.id,
-                evt.detail,
               ]);
             }}
             on:write={(evt) => {

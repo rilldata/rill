@@ -53,7 +53,7 @@
 
   let oldContent = content;
 
-  let editor;
+  let editor: EditorView;
   let editorContainer;
   let editorContainerComponent;
 
@@ -122,8 +122,6 @@
     underlineSelection(editor, selections || []);
   }
 
-  let cursorLocation = 0;
-
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
@@ -176,20 +174,8 @@
           keymap.of([indentWithTab]),
           rillTheme,
           EditorView.updateListener.of((v) => {
-            const candidateLocation = v.state.selection.ranges[0].head;
-            if (candidateLocation !== cursorLocation) {
-              cursorLocation = candidateLocation;
-              dispatch("cursor-location", {
-                location: cursorLocation,
-                content: v.state.doc.toString(),
-              });
-            }
-            if (v.focusChanged) {
-              if (v.view.hasFocus) {
-                dispatch("receive-focus");
-              } else {
-                dispatch("release-focus");
-              }
+            if (v.focusChanged && v.view.hasFocus) {
+              dispatch("receive-focus");
             }
             if (v.docChanged) {
               dispatch("write", {
@@ -206,6 +192,20 @@
     });
     obs.observe(componentContainer);
   });
+
+  function updateEditorContents(newContent: string) {
+    if (typeof editor !== "undefined") {
+      let curContent = editor.state.doc.toString();
+      if (newContent != curContent) {
+        editor.dispatch({
+          changes: { from: 0, to: curContent.length, insert: newContent },
+        });
+      }
+    }
+  }
+
+  // reactive statement to update the editor when `content` changes
+  $: updateEditorContents(content);
 </script>
 
 <div bind:this={componentContainer} class="h-full">
