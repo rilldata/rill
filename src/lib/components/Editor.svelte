@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from "svelte";
+  import {onMount, createEventDispatcher, getContext} from "svelte";
   import {
     keymap,
     highlightSpecialChars,
@@ -15,6 +15,7 @@
     StateEffect,
     StateField,
     Prec,
+    Text
   } from "@codemirror/state";
   import { history, historyKeymap } from "@codemirror/history";
   import { foldGutter, foldKeymap } from "@codemirror/fold";
@@ -41,6 +42,22 @@
   import { defaultHighlightStyle } from "@codemirror/highlight";
   import { lintKeymap } from "@codemirror/lint";
   import { sql } from "@codemirror/lang-sql";
+  import {PersistentModelStore} from "$lib/application-state-stores/model-stores";
+  import {ApplicationStore} from "$lib/application-state-stores/application-store";
+  import {
+    PersistentModelEntity
+  } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+
+  const store = getContext("rill:app:store") as ApplicationStore;
+  const persistentModelStore = getContext(
+    "rill:app:persistent-model-store"
+  ) as PersistentModelStore;
+  $: activeEntityID = $store?.activeEntity?.id;
+  let currentModel: PersistentModelEntity;
+  $: currentModel =
+    activeEntityID && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
+      : undefined;
 
   const dispatch = createEventDispatcher();
   export let content;
@@ -120,6 +137,20 @@
 
   $: if (editor) {
     underlineSelection(editor, selections || []);
+  }
+
+  $: if (currentModel && currentModel.query && editor) {
+    const currentEditorValue = editor.state.doc.toString();
+    if (currentEditorValue !== currentModel.query) {
+      // send the changes to the editor if the query is different in the model
+      editor.dispatch({
+        changes: {
+          from: 0,
+          to: editor.state.doc.length,
+          insert: currentModel.query
+        }
+      });
+    }
   }
 
   let cursorLocation = 0;
