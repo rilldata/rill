@@ -141,7 +141,6 @@
 
 <div style="width: 1600px;;" class="p-5 grid grid-flow-col gap-8">
   <Editor
-    name="traversal test"
     content={`
 WITH dataset AS (
 	SELECT epoch(created_date) as created_date FROM './scripts/nyc311-reduced.parquet'
@@ -177,10 +176,7 @@ SELECT
 	low,
 	high,
 	CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + 1 ELSE count END AS count
-	FROM histogram_stage;
-
-
-        
+	FROM histogram_stage;        
         `}
     on:cursor-location={(event) => {
       location = event.detail.location;
