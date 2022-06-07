@@ -346,6 +346,7 @@
       }}
       on:mousemove={mouseover ? handleMouseMove : undefined}
       on:mouseleave={mouseover ? clearMouseMove : undefined}
+      on:contextmenu|preventDefault|stopPropagation
     >
       <defs>
         <linearGradient id="left-side">
