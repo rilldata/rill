@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from "svelte";
+  import { onMount, createEventDispatcher, getContext } from "svelte";
   import {
     keymap,
     highlightSpecialChars,
@@ -17,6 +17,7 @@
     Prec,
   } from "@codemirror/state";
   import { history, historyKeymap } from "@codemirror/history";
+  import { sql } from "@codemirror/lang-sql";
   import { indentOnInput } from "@codemirror/language";
   import { lineNumbers, highlightActiveLineGutter } from "@codemirror/gutter";
   import {
@@ -39,7 +40,12 @@
   import { rectangularSelection } from "@codemirror/rectangular-selection";
   import { defaultHighlightStyle } from "@codemirror/highlight";
   import { lintKeymap } from "@codemirror/lint";
-  import { sql } from "@codemirror/lang-sql";
+  import type {
+    DerivedTableStore,
+    PersistentTableStore,
+  } from "$lib/application-state-stores/table-stores";
+  import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+  import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
   const dispatch = createEventDispatcher();
   export let content;
@@ -132,6 +138,24 @@
     underlineSelection(editor, selections || []);
   }
 
+  const persistentTableStore = getContext(
+    "rill:app:persistent-table-store"
+  ) as PersistentTableStore;
+  const derivedTableStore = getContext(
+    "rill:app:derived-table-store"
+  ) as DerivedTableStore;
+
+  const schema = $persistentTableStore.entities.reduce(
+    (acc, persistentTable: PersistentTableEntity) => {
+      const derivedTable: DerivedTableEntity = $derivedTableStore.entities.find(
+        (derivedTable) => persistentTable.id === derivedTable.id
+      );
+      const columnNames = derivedTable?.profile.map((col) => col.name);
+      return (acc[persistentTable.tableName] = columnNames), acc;
+    },
+    {}
+  );
+
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
@@ -178,7 +202,7 @@
               },
             ])
           ),
-          sql(),
+          sql({ schema }),
           keymap.of([indentWithTab]),
           rillTheme,
           EditorView.updateListener.of((v) => {
