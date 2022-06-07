@@ -5,6 +5,9 @@
     highlightSpecialChars,
     drawSelection,
     highlightActiveLine,
+    highlightActiveLineGutter,
+    lineNumbers,
+    rectangularSelection,
     dropCursor,
     EditorView,
     Decoration,
@@ -16,29 +19,28 @@
     StateField,
     Prec,
   } from "@codemirror/state";
-  import { history, historyKeymap } from "@codemirror/history";
   import { sql } from "@codemirror/lang-sql";
-  import { indentOnInput } from "@codemirror/language";
-  import { lineNumbers, highlightActiveLineGutter } from "@codemirror/gutter";
+  import {
+    defaultHighlightStyle,
+    indentOnInput,
+    syntaxHighlighting,
+    bracketMatching,
+  } from "@codemirror/language";
   import {
     defaultKeymap,
     insertNewline,
     indentWithTab,
+    history,
+    historyKeymap,
   } from "@codemirror/commands";
-  import { bracketMatching } from "@codemirror/matchbrackets";
-  import {
-    closeBrackets,
-    closeBracketsKeymap,
-  } from "@codemirror/closebrackets";
   import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
   import {
     acceptCompletion,
     autocompletion,
     completionKeymap,
+    closeBrackets,
+    closeBracketsKeymap,
   } from "@codemirror/autocomplete";
-  import { commentKeymap } from "@codemirror/comment";
-  import { rectangularSelection } from "@codemirror/rectangular-selection";
-  import { defaultHighlightStyle } from "@codemirror/highlight";
   import { lintKeymap } from "@codemirror/lint";
   import type {
     DerivedTableStore,
@@ -169,7 +171,7 @@
           dropCursor(),
           EditorState.allowMultipleSelections.of(true),
           indentOnInput(),
-          defaultHighlightStyle.fallback,
+          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           bracketMatching(),
           closeBrackets(),
           autocompletion({
@@ -183,7 +185,6 @@
             ...defaultKeymap,
             ...searchKeymap,
             ...historyKeymap,
-            ...commentKeymap,
             ...completionKeymap,
             ...lintKeymap,
             indentWithTab,
