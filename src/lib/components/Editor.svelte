@@ -50,9 +50,9 @@
   import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
   const dispatch = createEventDispatcher();
-  export let content;
-  export let editorHeight = 0;
-  export let selections = [];
+  export let content: string;
+  export let editorHeight: number = 0;
+  export let selections: any[] = [];
 
   let componentContainer;
 
