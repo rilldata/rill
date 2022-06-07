@@ -172,7 +172,9 @@
           defaultHighlightStyle.fallback,
           bracketMatching(),
           closeBrackets(),
-          autocompletion(),
+          autocompletion({
+            icons: false,
+          }),
           rectangularSelection(),
           highlightActiveLine(),
           highlightSelectionMatches(),
