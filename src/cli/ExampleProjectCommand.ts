@@ -41,6 +41,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
     await new ImportTableCommand().run(
       {
         projectPath: project,
+        profileWithUpdate: true,
       },
       `${project}/data/flightlist_2022_02.csv`,
       {}
