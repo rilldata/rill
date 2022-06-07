@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { guidGenerator } from "../../util/guid";
 
-import type { MetricsDefinitionsSlice } from "./metrics-defintion-types";
+import type { MetricsDefinitionsSlice } from "$common/state-slice-types/metrics-defintion-types";
 
 const initialState: MetricsDefinitionsSlice = {
   defs: {},
