@@ -45,16 +45,17 @@ export type DimensionDefinition = {
 };
 
 export type MetricsDefinition = {
-  metricDefinitionId: UUID;
+  id: UUID;
   metricDefLabel: string;
   sourceModelId: SourceModelEntityId | undefined;
   timeDimension: ModelColumnIdOrName | undefined;
   measures: MeasureDefinition[];
   dimensions: DimensionDefinition[];
+  creationTime: number;
 };
 
 export type MetricsDefinitionsSlice = {
-  defs: { [id: UUID]: MetricsDefinition };
+  // defs: { [id: UUID]: MetricsDefinition };
   defsCounter: number;
   selectedDefId?: UUID;
 };

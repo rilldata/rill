@@ -9,6 +9,7 @@
 
   import TableAssets from "./TableAssets.svelte";
   import ModelAssets from "./ModelAssets.svelte";
+  import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
 </script>
 
 <div
@@ -57,6 +58,7 @@
       </header>
       <TableAssets />
       <ModelAssets />
+      <MetricsDefinitionAssets />
     </div>
     <!-- assets pane footer. -->
     <div
