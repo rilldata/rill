@@ -8,6 +8,7 @@ export enum EntityType {
   Table = "Table",
   Model = "Model",
   Application = "Application",
+  MetricsDef = "MetricsDef",
 }
 
 export enum StateType {

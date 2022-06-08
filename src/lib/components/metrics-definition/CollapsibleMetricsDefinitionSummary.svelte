@@ -40,17 +40,17 @@
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
   export let metricsDefId: EntityId;
-  export let name: string;
+  // export let name: string;
   export let cardinality: number;
   // export let profile: any;
-  export let head: any; // FIXME
+  // export let head: any; // FIXME
   export let sizeInBytes: number = undefined;
-  export let emphasizeTitle = false;
+  // export let emphasizeTitle = false;
   export let draggable = true;
-  export let show = false;
+  // export let show = false;
   export let showTitle = true;
-  export let showContextButton = true;
-  export let indentLevel = 0;
+  // export let showContextButton = true;
+  // export let indentLevel = 0;
 
   const dispatch = createEventDispatcher();
 

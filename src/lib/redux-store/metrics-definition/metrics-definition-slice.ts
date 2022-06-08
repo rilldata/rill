@@ -1,24 +1,8 @@
 import { createSlice, createEntityAdapter } from "@reduxjs/toolkit";
-import type { PayloadAction } from "@reduxjs/toolkit";
 
 import { guidGenerator } from "../../util/guid";
 
 import type { MetricsDefinition } from "$common/state-slice-types/metrics-defintion-types";
-
-// const initialState: MetricsDefinitionsSlice = {
-//   defs: {},
-//   defsCounter: 0,
-// };
-
-type updateDefLabelPayload = {
-  id: string;
-  label: string;
-};
-
-type setDefModelPayload = {
-  id: string;
-  sourceModelId: string;
-};
 
 const metricsDefAdapter = createEntityAdapter<MetricsDefinition>({
   sortComparer: (a, b) => a.creationTime - b.creationTime,

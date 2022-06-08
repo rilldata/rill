@@ -1,11 +1,6 @@
 <script lang="ts">
   import { SvelteComponent, tick } from "svelte/internal";
   import { onMount, createEventDispatcher } from "svelte";
-  // import { slide } from "svelte/transition";
-  import { tweened } from "svelte/motion";
-  import { cubicInOut as easing, cubicOut } from "svelte/easing";
-  import { format } from "d3-format";
-
   import type { EntityId } from "@reduxjs/toolkit";
 
   import Menu from "$lib/components/menu/Menu.svelte";
@@ -17,8 +12,6 @@
 
   // import ColumnProfile from "./ColumnProfile.svelte";
 
-  import Spacer from "$lib/components/icons/Spacer.svelte";
-
   import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
 
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
@@ -28,73 +21,39 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
 
-  import {
-    defaultSort,
-    // sortByNullity,
-    // sortByName,
-  } from "$lib/components/column-profile/sort-utils";
   import notificationStore from "$lib/components/notifications/";
 
   import { onClickOutside } from "$lib/util/on-click-outside";
-  // import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import { store, reduxReadable } from "$lib/redux-store/store-root";
 
   import { deleteMetricsDef } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
 
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+
+  // FIXME: wnat to remove svelte stores and contexts
+  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import { getContext } from "svelte";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+
   export let metricsDefId: EntityId;
 
   export let name: string;
-  // export let cardinality: number;
-  // export let profile: any;
-  // export let head: any; // FIXME
-  // export let sizeInBytes: number = undefined;
-  export let emphasizeTitle = false;
-  // export let draggable = true;
+  // export let emphasizeTitle = false;
   export let show = false;
-  // export let showTitle = true;
-  // export let showContextButton = true;
-  // export let indentLevel = 0;
 
   $: metricsDef = $reduxReadable?.metricsDefinition?.entities[metricsDefId];
   $: name = metricsDef?.metricDefLabel;
 
+  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
+  $: emphasizeTitle = $rillAppStore?.activeEntity?.id === metricsDefId;
+
   const dispatch = createEventDispatcher();
 
-  // const formatInteger = format(",");
-
-  // let containerWidth = 0;
   let contextMenu;
   let contextMenuOpen = false;
-  // let container;
-
-  // onMount(() => {
-  //   const observer = new ResizeObserver((entries) => {
-  //     containerWidth = container?.clientWidth ?? 0;
-  //   });
-  //   observer.observe(container);
-  // });
-
-  // let cardinalityTween = tweened(cardinality, { duration: 600, easing });
-  // let sizeTween = tweened(sizeInBytes, { duration: 650, easing, delay: 150 });
-
-  // $: cardinalityTween.set(cardinality || 0);
-  // $: interimCardinality = ~~$cardinalityTween;
-  // $: sizeTween.set(sizeInBytes || 0);
-
-  // let selectingColumns = false;
-  // let selectedColumns = [];
-
-  // let sortedProfile;
-  // const sortByOriginalOrder = null;
-
-  // let sortMethod = defaultSort;
-  // $: if (sortMethod !== sortByOriginalOrder) {
-  //   sortedProfile = [...profile].sort(sortMethod);
-  // } else {
-  //   sortedProfile = profile;
-  // }
-
-  // let previewView = "summaries";
+  const closeContextMenu = () => {
+    contextMenuOpen = false;
+  };
 
   let menuX;
   let menuY;
@@ -103,6 +62,10 @@
     clickOutsideListener();
     clickOutsideListener = undefined;
   }
+
+  const dispatchDeleteMetricsDef = () => {
+    store.dispatch(deleteMetricsDef(metricsDefId));
+  };
 
   // state for title bar hover.
   let titleElementHovered = false;
@@ -117,7 +80,11 @@
     notificationStore.send({ message: `copied "${name}" to clipboard` });
   }}
   on:select-body={async (event) => {
-    dispatch("select");
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.MetricsDef,
+      metricsDefId.toString(), // FIXME: should not need to do this type conversion
+    ]);
+    // dispatch("select");
   }}
   on:expand={() => {
     show = !show;
@@ -156,14 +123,6 @@
         class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap "
       >
         {#if titleElementHovered || emphasizeTitle}
-          <!-- <span
-            ><span
-              >{cardinality !== undefined && !isNaN(cardinality)
-                ? formatInteger(interimCardinality)
-                : "no"}</span
-            >
-            row{#if cardinality !== 1}s{/if}</span
-          > -->
           <span class="self-center">
             <ContextButton
               id={metricsDefId.toString()}
@@ -185,7 +144,6 @@
           </span>
         {/if}
       </span>
-      <!-- {/if} -->
     </div>
   </svelte:fragment>
 
@@ -197,22 +155,8 @@
         location="right"
         alignment="start"
       >
-        <Menu
-          on:escape={() => {
-            console.log("esc");
-            contextMenuOpen = false;
-          }}
-          on:item-select={() => {
-            console.log("item-select");
-            contextMenuOpen = false;
-          }}
-        >
-          <MenuItem
-            on:select={() => {
-              console.log("select");
-              store.dispatch(deleteMetricsDef(metricsDefId));
-            }}
-          >
+        <Menu on:escape={closeContextMenu} on:item-select={closeContextMenu}>
+          <MenuItem on:select={dispatchDeleteMetricsDef}>
             delete {name}
           </MenuItem>
         </Menu>
