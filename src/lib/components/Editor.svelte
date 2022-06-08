@@ -19,7 +19,12 @@
     StateField,
     Prec,
   } from "@codemirror/state";
-  import { sql } from "@codemirror/lang-sql";
+  import {
+    keywordCompletionSource,
+    schemaCompletionSource,
+    sql,
+    SQLDialect,
+  } from "@codemirror/lang-sql";
   import {
     defaultHighlightStyle,
     indentOnInput,
@@ -158,6 +163,11 @@
     {}
   );
 
+  const DuckDBSQL: SQLDialect = SQLDialect.define({
+    keywords:
+      "select from where group by having order limit sample unnest with window qualify values filter",
+  });
+
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
@@ -175,6 +185,10 @@
           bracketMatching(),
           closeBrackets(),
           autocompletion({
+            override: [
+              keywordCompletionSource(DuckDBSQL),
+              schemaCompletionSource({ schema }),
+            ],
             icons: false,
           }),
           rectangularSelection(),
@@ -205,7 +219,7 @@
               },
             ])
           ),
-          sql({ schema }),
+          sql(),
           keymap.of([indentWithTab]),
           rillTheme,
           EditorView.updateListener.of((v) => {
