@@ -102,6 +102,7 @@
 
   const highlightBackground = "#f3f9ff";
 
+  // TODO: These hardcoded colors ain't good. Try to move this to app.css and use Tailwind colors. Might have to navigated CodeMirror generated classes.
   const rillTheme = EditorView.theme({
     "&.cm-editor": {
       "&.cm-focused": {
@@ -125,6 +126,28 @@
       paddingLeft: "24px",
       paddingRight: "24px",
       cursor: "default",
+    },
+    ".cm-tooltip": {
+      border: "none",
+      borderRadius: "0.25rem",
+      backgroundColor: "rgb(243 249 255)",
+      color: "black",
+    },
+    ".cm-tooltip-autocomplete": {
+      "& > ul > li[aria-selected]": {
+        border: "none",
+        borderRadius: "0.25rem",
+        backgroundColor: "rgb(15 119 204 / .25)",
+        color: "black",
+      },
+    },
+    ".cm-completionLabel": {
+      fontSize: "13px",
+      fontFamily: "MD IO",
+    },
+    ".cm-completionMatchedText": {
+      textDecoration: "none",
+      color: "rgb(15 119 204)",
     },
   });
 
