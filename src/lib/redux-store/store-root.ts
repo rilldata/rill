@@ -1,23 +1,23 @@
 import { configureStore } from "@reduxjs/toolkit";
 // import type { EnhancedStore } from "@reduxjs/toolkit";
-import logger from "redux-logger";
+import { createLogger } from "redux-logger";
 import metricsDefinitionReducer from "./metrics-definition/metrics-definition-slice";
 
 import { readable } from "svelte/store";
-// import metricsDefinitionsMetadataReducer from "./metrics-definition/metrics-definitions-metatdata-slice";
-
-// const middlewares = [];
-
-// if (process.env.NODE_ENV === `development`) {
-//   middlewares.push(logger);
-// }
+import { browser } from "$app/env";
 
 export const store = configureStore({
   reducer: {
     metricsDefinition: metricsDefinitionReducer,
-    // metricsDefinitionsMetadata: metricsDefinitionsMetadataReducer,
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
+  middleware: (getDefaultMiddleware) => {
+    if (browser && process.env.NODE_ENV === `development`) {
+      // calling `createLogger()` outside of the browser causes SSR errors
+      const logger = createLogger();
+      return getDefaultMiddleware().concat(logger);
+    }
+    return getDefaultMiddleware();
+  },
 });
 
 export const reduxReadable = readable(store.getState(), (set) => {
