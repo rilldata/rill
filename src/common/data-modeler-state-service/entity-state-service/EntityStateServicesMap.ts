@@ -41,6 +41,11 @@ export type EntityStateServicesMapType = {
     [StateType.Persistent]?: never;
     [StateType.Derived]?: ApplicationStateService;
   };
+  //FIXME: placehoder to prevent TS compilation failure
+  [EntityType.MetricsDef]?: {
+    [StateType.Persistent]?: never;
+    [StateType.Derived]?: never;
+  };
 };
 
 export type EntityRecordMapType = {
@@ -56,6 +61,11 @@ export type EntityRecordMapType = {
     [StateType.Persistent]: never;
     [StateType.Derived]: ApplicationEntity;
   };
+  //FIXME: placehoder to prevent TS compilation failure
+  [EntityType.MetricsDef]?: {
+    [StateType.Persistent]?: never;
+    [StateType.Derived]?: never;
+  };
 };
 export type EntityStateActionArgMapType = {
   [EntityType.Table]: {
@@ -69,5 +79,10 @@ export type EntityStateActionArgMapType = {
   [EntityType.Application]: {
     [StateType.Persistent]: never;
     [StateType.Derived]: ApplicationStateActionArg;
+  };
+  //FIXME: placehoder to prevent TS compilation failure
+  [EntityType.MetricsDef]?: {
+    [StateType.Persistent]?: never;
+    [StateType.Derived]?: never;
   };
 };
