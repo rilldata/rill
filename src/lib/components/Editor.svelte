@@ -56,7 +56,7 @@
 
   const dispatch = createEventDispatcher();
   export let content: string;
-  export let editorHeight: number = 0;
+  export let editorHeight = 0;
   export let selections: any[] = [];
 
   let componentContainer;
