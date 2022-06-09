@@ -90,6 +90,7 @@
   }, "")
 
 </script>
+
 <svg {width} {height}>
   <!-- histogram -->
   <g shape-rendering="crispEdges">
