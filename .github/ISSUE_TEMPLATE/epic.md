@@ -10,5 +10,8 @@ assignees: ''
 **Initiative**
 A clear and concise description of the problem statement.
 
+**Resources**
+Notion epic doc link.
+
 **Checklist of Issues**
 - [ ] 
