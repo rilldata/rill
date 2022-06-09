@@ -181,7 +181,8 @@
         (derivedTable) => persistentTable.id === derivedTable.id
       );
       const columnNames = derivedTable?.profile.map((col) => col.name);
-      return (acc[persistentTable.tableName] = columnNames), acc;
+      acc[persistentTable.tableName] = columnNames;
+      return acc;
     },
     {}
   );
