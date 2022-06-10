@@ -1,7 +1,6 @@
 import adapter from "@sveltejs/adapter-static";
 import preprocess from "svelte-preprocess";
 import { resolve } from "path";
-import typescript from "@rollup/plugin-typescript";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -9,10 +8,10 @@ const config = {
   // for more information about preprocessors
   preprocess: preprocess(),
 
-  plugins: [typescript({ sourceMap: true })],
-
   kit: {
-    adapter: adapter(),
+    adapter: adapter({
+      fallback: "index.html",
+    }),
 
     vite: {
       resolve: {
