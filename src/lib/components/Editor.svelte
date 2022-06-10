@@ -40,6 +40,7 @@
   import { defaultHighlightStyle } from "@codemirror/highlight";
   import { lintKeymap } from "@codemirror/lint";
   import { sql } from "@codemirror/lang-sql";
+  import {Debounce} from "$common/utils/Debounce";
 
   const dispatch = createEventDispatcher();
   export let content;
@@ -51,6 +52,9 @@
   $: editorHeight = componentContainer?.offsetHeight || 0;
 
   let oldContent = content;
+  let latestContent = content;
+  let latestEditorContent = "";
+  const debounce = new Debounce();
 
   let editor: EditorView;
   let editorContainer;
@@ -186,9 +190,12 @@
               dispatch("receive-focus");
             }
             if (v.docChanged) {
-              dispatch("write", {
-                content: v.state.doc.toString(),
-              });
+              latestEditorContent = v.state.doc.toString();
+              debounce.debounce("write", () => {
+                dispatch("write", {
+                  content: latestEditorContent,
+                });
+              }, 500);
             }
           }),
         ],
@@ -205,9 +212,12 @@
     if (typeof editor !== "undefined") {
       let curContent = editor.state.doc.toString();
       if (newContent != curContent) {
-        editor.dispatch({
-          changes: { from: 0, to: curContent.length, insert: newContent },
-        });
+        latestContent = newContent;
+        debounce.debounce("update", () => {
+          editor.dispatch({
+            changes: { from: 0, to: latestContent.length, insert: latestContent },
+          });
+        }, 500);
       }
     }
   }
