@@ -18,6 +18,7 @@
     StateEffect,
     StateField,
     Prec,
+    Compartment,
   } from "@codemirror/state";
   import {
     keywordCompletionSource,
@@ -74,6 +75,8 @@
   let editorContainer;
   let editorContainerComponent;
 
+  // UNDERLINES
+
   const addUnderline = StateEffect.define<{ from: number; to: number }>();
 
   const underlineField = StateField.define<DecorationSet>({
@@ -104,6 +107,25 @@
       backgroundColor: "rgb(254 240 138)",
     },
   });
+
+  function underlineSelection(view: EditorView, selections) {
+    const effects = selections
+      .map(({ start, end }) => ({ from: start, to: end }))
+      .map(({ from, to }) => addUnderline.of({ from, to }));
+
+    if (!view.state.field(underlineField, false))
+      effects.push(
+        StateEffect.appendConfig.of([underlineField, underlineTheme])
+      );
+    view.dispatch({ effects });
+    return true;
+  }
+
+  $: if (editor) {
+    underlineSelection(editor, selections || []);
+  }
+
+  // DESIGN
 
   const highlightBackground = "#f3f9ff";
 
@@ -156,22 +178,9 @@
     },
   });
 
-  function underlineSelection(view: EditorView, selections) {
-    const effects = selections
-      .map(({ start, end }) => ({ from: start, to: end }))
-      .map(({ from, to }) => addUnderline.of({ from, to }));
+  // AUTOCOMPLETE
 
-    if (!view.state.field(underlineField, false))
-      effects.push(
-        StateEffect.appendConfig.of([underlineField, underlineTheme])
-      );
-    view.dispatch({ effects });
-    return true;
-  }
-
-  $: if (editor) {
-    underlineSelection(editor, selections || []);
-  }
+  let autocompleteCompartment = new Compartment();
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -180,22 +189,40 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  const schema = $persistentTableStore.entities.reduce(
-    (acc, persistentTable: PersistentTableEntity) => {
-      const derivedTable: DerivedTableEntity = $derivedTableStore.entities.find(
-        (derivedTable) => persistentTable.id === derivedTable.id
-      );
-      const columnNames = derivedTable?.profile.map((col) => col.name);
-      acc[persistentTable.tableName] = columnNames;
-      return acc;
-    },
-    {}
-  );
+  let schema: { [table: string]: string[] };
+  $: {
+    schema = $persistentTableStore.entities.reduce(
+      (acc, persistentTable: PersistentTableEntity) => {
+        const derivedTable: DerivedTableEntity =
+          $derivedTableStore.entities.find(
+            (derivedTable) => persistentTable.id === derivedTable.id
+          );
+        // defensive check since persistentTableStore updates incrementally and can
+        // have transition states where tables are defined but none of their attributes are
+        if (derivedTable?.profile) {
+          const columnNames = derivedTable?.profile.map((col) => col.name);
+          acc[persistentTable.tableName] = columnNames;
+        }
+        return acc;
+      },
+      {}
+    );
+  }
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
       "select from where group by having order limit sample unnest with window qualify values filter",
   });
+
+  function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
+    return autocompletion({
+      override: [
+        keywordCompletionSource(DuckDBSQL),
+        schemaCompletionSource({ schema }),
+      ],
+      icons: false,
+    });
+  }
 
   onMount(() => {
     editor = new EditorView({
@@ -213,13 +240,7 @@
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           bracketMatching(),
           closeBrackets(),
-          autocompletion({
-            override: [
-              keywordCompletionSource(DuckDBSQL),
-              schemaCompletionSource({ schema }),
-            ],
-            icons: false,
-          }),
+          autocompleteCompartment.of(makeAutocompleteConfig(schema)), // a compartment makes the config dynamic
           rectangularSelection(),
           highlightActiveLine(),
           highlightSelectionMatches(),
@@ -300,8 +321,19 @@
     }
   }
 
-  // reactive statement to update the editor when `content` changes
+  function updateAutocompleteSources(schema: { [table: string]: string[] }) {
+    if (typeof editor !== "undefined") {
+      editor.dispatch({
+        effects: autocompleteCompartment.reconfigure(
+          makeAutocompleteConfig(schema)
+        ),
+      });
+    }
+  }
+
+  // reactive statements to dynamically update the editor when inputs change
   $: updateEditorContents(content);
+  $: updateAutocompleteSources(schema);
 </script>
 
 <div bind:this={componentContainer} class="h-full">
