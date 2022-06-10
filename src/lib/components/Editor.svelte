@@ -61,7 +61,7 @@
   export let editorHeight = 0;
   export let selections: any[] = [];
 
-  const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 200;
+  const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
   let componentContainer;
@@ -326,7 +326,7 @@
   }
 
   // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(content);
+  // $: updateEditorContents(content);
   $: updateAutocompleteSources(schema);
   $: underlineSelection(selections || []);
 </script>
