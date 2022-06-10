@@ -40,7 +40,7 @@
   import { defaultHighlightStyle } from "@codemirror/highlight";
   import { lintKeymap } from "@codemirror/lint";
   import { sql } from "@codemirror/lang-sql";
-  import {Debounce} from "$common/utils/Debounce";
+  import { Debounce } from "$common/utils/Debounce";
 
   const dispatch = createEventDispatcher();
   export let content;
@@ -191,11 +191,15 @@
             }
             if (v.docChanged) {
               latestEditorContent = v.state.doc.toString();
-              debounce.debounce("write", () => {
-                dispatch("write", {
-                  content: latestEditorContent,
-                });
-              }, 500);
+              debounce.debounce(
+                "write",
+                () => {
+                  dispatch("write", {
+                    content: latestEditorContent,
+                  });
+                },
+                500
+              );
             }
           }),
         ],
@@ -213,11 +217,19 @@
       let curContent = editor.state.doc.toString();
       if (newContent != curContent) {
         latestContent = newContent;
-        debounce.debounce("update", () => {
-          editor.dispatch({
-            changes: { from: 0, to: latestContent.length, insert: latestContent },
-          });
-        }, 500);
+        debounce.debounce(
+          "update",
+          () => {
+            editor.dispatch({
+              changes: {
+                from: 0,
+                to: latestContent.length,
+                insert: latestContent,
+              },
+            });
+          },
+          500
+        );
       }
     }
   }
