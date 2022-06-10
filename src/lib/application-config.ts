@@ -7,7 +7,7 @@
 export const COLUMN_PROFILE_CONFIG = {
   // width of summary value
   // width of null %
-  nullPercentageWidth: 74,
+  nullPercentageWidth: 76,
   mediumCutoff: 300,
   compactBreakpoint: 350,
   hideRight: 325,

@@ -1,11 +1,8 @@
 <script lang="ts">
   import { tweened } from "svelte/motion";
-  import { fly, fade } from "svelte/transition";
   import { cubicOut as easing } from "svelte/easing";
   import { scaleLinear } from "d3-scale";
   import { format } from "d3-format";
-  // FIXME: move util to $lib or add a $util
-  import { guidGenerator } from "$lib/util/guid";
 
   interface HistogramBin {
     bucket: number;
@@ -67,27 +64,26 @@
   $: $lowValue = data[0].low;
   $: $highValue = data.slice(-1)[0].high;
 
-  function transformValue(value, valueType) {
-    if (valueType === "mean") {
-      return Math.round(value * 10000) / 10000;
-    }
-    return value;
-  }
+  // reduce data to construct path for polyline
+  $: lineData = data.reduce((pointsPathString, datum) => {
+    const { low, high, count } = datum;
+    const x = X(low) + separateQuantity;
+    const width = X(high) - X(low) - separateQuantity * 2;
+    const y = Y(0) * (1 - $tw) + Y(count) * $tw;
+    const height = Math.min(Y(0), Y(0) * $tw - Y(count) * $tw);
 
-  let histogramID = guidGenerator();
+    const currentPoints = `${x},${y + height} ${x},${y} ${x + width},${y}, ${
+      x + width
+    },${y + height} `;
+
+    return pointsPathString + currentPoints;
+  }, "");
 </script>
 
 <svg {width} {height}>
   <!-- histogram -->
   <g shape-rendering="crispEdges">
-    {#each data as { low, high, count }, i}
-      {@const x = X(low) + separateQuantity}
-      {@const width = X(high) - X(low) - separateQuantity * 2}
-      {@const y = Y(0) * (1 - $tw) + Y(count) * $tw}
-      {@const height = Math.min(Y(0), Y(0) * $tw - Y(count) * $tw)}
-
-      <rect {x} {width} {y} {height} class={fillColor} />
-    {/each}
+    <polyline class={fillColor} points={lineData} />
     <line
       x1={left + vizOffset}
       x2={width * $tw - right - vizOffset}
