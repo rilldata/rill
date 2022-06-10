@@ -60,6 +60,9 @@
   export let editorHeight = 0;
   export let selections: any[] = [];
 
+  const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 200;
+  const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
+
   let componentContainer;
 
   $: editorHeight = componentContainer?.offsetHeight || 0;
@@ -263,7 +266,7 @@
                     content: latestEditorContent,
                   });
                 },
-                500
+                QUERY_UPDATE_DEBOUNCE_TIMEOUT
               );
             }
           }),
@@ -293,7 +296,7 @@
               },
             });
           },
-          500
+          QUERY_SYNC_DEBOUNCE_TIMEOUT
         );
       }
     }
