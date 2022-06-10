@@ -258,12 +258,12 @@
               dispatch("receive-focus");
             }
             if (v.docChanged) {
-              latestEditorContent = v.state.doc.toString();
+              latestContent = v.state.doc.toString();
               debounce.debounce(
                 "write",
                 () => {
                   dispatch("write", {
-                    content: latestEditorContent,
+                    content: latestContent,
                   });
                 },
                 QUERY_UPDATE_DEBOUNCE_TIMEOUT
