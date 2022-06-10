@@ -75,61 +75,12 @@
   let editorContainer;
   let editorContainerComponent;
 
-  // UNDERLINES
-
-  const addUnderline = StateEffect.define<{ from: number; to: number }>();
-
-  const underlineField = StateField.define<DecorationSet>({
-    create() {
-      return Decoration.none;
-    },
-    update(underlines, tr) {
-      underlines = underlines.map(tr.changes);
-      underlines = underlines.update({
-        filter: () => false,
-      });
-
-      for (let e of tr.effects)
-        if (e.is(addUnderline)) {
-          underlines = underlines.update({
-            add: [underlineMark.range(e.value.from, e.value.to)],
-          });
-        }
-      return underlines;
-    },
-    provide: (f) => EditorView.decorations.from(f),
-  });
-
-  const underlineMark = Decoration.mark({ class: "cm-underline" });
-
-  const underlineTheme = EditorView.baseTheme({
-    ".cm-underline": {
-      backgroundColor: "rgb(254 240 138)",
-    },
-  });
-
-  function underlineSelection(view: EditorView, selections) {
-    const effects = selections
-      .map(({ start, end }) => ({ from: start, to: end }))
-      .map(({ from, to }) => addUnderline.of({ from, to }));
-
-    if (!view.state.field(underlineField, false))
-      effects.push(
-        StateEffect.appendConfig.of([underlineField, underlineTheme])
-      );
-    view.dispatch({ effects });
-    return true;
-  }
-
-  $: if (editor) {
-    underlineSelection(editor, selections || []);
-  }
-
   // DESIGN
 
   const highlightBackground = "#f3f9ff";
 
-  // TODO: These hardcoded colors ain't good. Try to move this to app.css and use Tailwind colors. Might have to navigated CodeMirror generated classes.
+  // TODO: These hardcoded colors ain't good. Try to move this to app.css and use Tailwind
+  // colors. Might have to navigated CodeMirror generated classes.
   const rillTheme = EditorView.theme({
     "&.cm-editor": {
       "&.cm-focused": {
@@ -175,6 +126,9 @@
     ".cm-completionMatchedText": {
       textDecoration: "none",
       color: "rgb(15 119 204)",
+    },
+    ".cm-underline": {
+      backgroundColor: "rgb(254 240 138)",
     },
   });
 
@@ -223,6 +177,31 @@
       icons: false,
     });
   }
+
+  // UNDERLINES
+
+  const addUnderline = StateEffect.define<{ from: number; to: number }>();
+  const underlineMark = Decoration.mark({ class: "cm-underline" });
+  const underlineField = StateField.define<DecorationSet>({
+    create() {
+      return Decoration.none;
+    },
+    update(underlines, tr) {
+      underlines = underlines.map(tr.changes);
+      underlines = underlines.update({
+        filter: () => false,
+      });
+
+      for (let e of tr.effects)
+        if (e.is(addUnderline)) {
+          underlines = underlines.update({
+            add: [underlineMark.range(e.value.from, e.value.to)],
+          });
+        }
+      return underlines;
+    },
+    provide: (f) => EditorView.decorations.from(f),
+  });
 
   onMount(() => {
     editor = new EditorView({
@@ -299,8 +278,10 @@
     obs.observe(componentContainer);
   });
 
+  // REACTIVE FUNCTIONS
+
   function updateEditorContents(newContent: string) {
-    if (typeof editor !== "undefined") {
+    if (editor) {
       let curContent = editor.state.doc.toString();
       if (newContent != curContent) {
         latestContent = newContent;
@@ -322,7 +303,7 @@
   }
 
   function updateAutocompleteSources(schema: { [table: string]: string[] }) {
-    if (typeof editor !== "undefined") {
+    if (editor) {
       editor.dispatch({
         effects: autocompleteCompartment.reconfigure(
           makeAutocompleteConfig(schema)
@@ -331,9 +312,23 @@
     }
   }
 
+  function underlineSelection(selections: any) {
+    if (editor) {
+      const effects = selections
+        .map(({ start, end }) => ({ from: start, to: end }))
+        .map(({ from, to }) => addUnderline.of({ from, to }));
+
+      if (!editor.state.field(underlineField, false))
+        effects.push(StateEffect.appendConfig.of([underlineField]));
+      editor.dispatch({ effects });
+      return true;
+    }
+  }
+
   // reactive statements to dynamically update the editor when inputs change
   $: updateEditorContents(content);
   $: updateAutocompleteSources(schema);
+  $: underlineSelection(selections || []);
 </script>
 
 <div bind:this={componentContainer} class="h-full">
