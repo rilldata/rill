@@ -67,9 +67,7 @@
 
   $: editorHeight = componentContainer?.offsetHeight || 0;
 
-  let oldContent = content;
   let latestContent = content;
-  let latestEditorContent = "";
   const debounce = new Debounce();
 
   let editor: EditorView;
@@ -202,7 +200,7 @@
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
-        doc: oldContent,
+        doc: latestContent,
         extensions: [
           lineNumbers(),
           highlightActiveLineGutter(),
