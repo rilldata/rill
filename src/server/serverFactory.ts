@@ -27,6 +27,8 @@ import { MetricsService } from "$common/metrics-service/MetricsService";
 import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { existsSync, readFileSync } from "fs";
 import { LocalConfigFile } from "$common/config/ConfigFolders";
+import { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
+import { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 let PACKAGE_JSON = "";
 try {
@@ -64,6 +66,7 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
       ProfileColumnStateActions,
       CommonStateActions,
       ApplicationStateActions,
+      MetricsDefinitionStateActions,
     ].map((StateActionsClass) => new StateActionsClass()),
     [
       PersistentTableEntityService,
@@ -71,6 +74,7 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
       PersistentModelEntityService,
       DerivedModelEntityService,
       ApplicationStateService,
+      MetricsDefinitionStateService,
     ].map((EntityStateService) => new EntityStateService()),
     config
   );

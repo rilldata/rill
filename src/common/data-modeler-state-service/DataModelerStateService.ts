@@ -29,6 +29,7 @@ import type { CommonStateActions } from "$common/data-modeler-state-service/Comm
 import type { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
 import type { ApplicationState } from "./entity-state-service/ApplicationEntityService";
 import { BatchedStateUpdate } from "$common/data-modeler-state-service/BatchedStateUpdate";
+import type { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
 
 enablePatches();
 
@@ -38,7 +39,8 @@ type DataModelerStateActionsClasses = PickActionFunctions<
     ModelStateActions &
     ProfileColumnStateActions &
     CommonStateActions &
-    ApplicationStateActions
+    ApplicationStateActions &
+    MetricsDefinitionStateActions
 >;
 export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<
   EntityStateActionArg<any>,

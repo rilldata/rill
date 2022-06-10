@@ -372,7 +372,7 @@
               ".parquet"
             );
             window.open(
-              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
+              `${appConfig.server.serverUrl}/api/file/export?id=${currentModel.id}` +
                 `&type=parquet&fileName=${encodeURIComponent(exportFilename)}`
             );
             //dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
@@ -384,7 +384,7 @@
           on:select={() => {
             const exportFilename = currentModel.name.replace(".sql", ".csv");
             window.open(
-              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
+              `${appConfig.server.serverUrl}/api/file/export?id=${currentModel.id}` +
                 `&type=csv&fileName=${encodeURIComponent(exportFilename)}`
             );
           }}

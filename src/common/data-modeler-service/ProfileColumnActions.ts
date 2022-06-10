@@ -44,7 +44,7 @@ export class ProfileColumnActions extends DataModelerActions {
           this.collectColumnInfo(
             entityType,
             entityId,
-            persistentEntity.tableName,
+            (persistentEntity as any).tableName,
             column
           )
         )

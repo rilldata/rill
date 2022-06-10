@@ -1,4 +1,4 @@
-import type { DataModelerState, Model } from "$lib/types";
+import type { DataModelerState } from "$lib/types";
 import { guidGenerator } from "$lib/util/guid";
 import {
   extractTableName,
@@ -12,6 +12,7 @@ import {
 import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 interface NewModelArguments {
   query?: string;
@@ -69,6 +70,19 @@ export function getNewDerivedModel(
     profile: [],
     lastUpdated: 0,
     status: EntityStatus.Idle,
+  };
+}
+
+export function getMetricsDefinition(counter: number): MetricsDefinitionEntity {
+  return {
+    id: guidGenerator(),
+    type: EntityType.MetricsDefinition,
+    metricDefLabel: `metric definition ${counter}`,
+    sourceModelId: undefined,
+    timeDimension: undefined,
+    measures: [],
+    dimensions: [],
+    lastUpdated: 0,
   };
 }
 

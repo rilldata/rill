@@ -9,6 +9,7 @@ import { DerivedModelEntityService } from "$common/data-modeler-state-service/en
 import { ApplicationStateService } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { MetricsSocketService } from "$common/socket/MetricsSocketService";
+import { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export function dataModelerStateServiceClientFactory() {
   return new DataModelerStateService(
@@ -19,6 +20,7 @@ export function dataModelerStateServiceClientFactory() {
       PersistentModelEntityService,
       DerivedModelEntityService,
       ApplicationStateService,
+      MetricsDefinitionStateService,
     ].map((EntityStateService) => new EntityStateService())
   );
 }

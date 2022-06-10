@@ -27,6 +27,11 @@ import type {
   ApplicationStateActionArg,
   ApplicationStateService,
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type {
+  MetricsDefinitionEntity,
+  MetricsDefinitionStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export type EntityStateServicesMapType = {
   [EntityType.Table]?: {
@@ -40,6 +45,10 @@ export type EntityStateServicesMapType = {
   [EntityType.Application]?: {
     [StateType.Persistent]?: never;
     [StateType.Derived]?: ApplicationStateService;
+  };
+  [EntityType.MetricsDefinition]?: {
+    [StateType.Persistent]?: MetricsDefinitionStateService;
+    [StateType.Derived]?: never;
   };
 };
 
@@ -56,6 +65,10 @@ export type EntityRecordMapType = {
     [StateType.Persistent]: never;
     [StateType.Derived]: ApplicationEntity;
   };
+  [EntityType.MetricsDefinition]: {
+    [StateType.Persistent]: MetricsDefinitionEntity;
+    [StateType.Derived]: never;
+  };
 };
 export type EntityStateActionArgMapType = {
   [EntityType.Table]: {
@@ -69,5 +82,9 @@ export type EntityStateActionArgMapType = {
   [EntityType.Application]: {
     [StateType.Persistent]: never;
     [StateType.Derived]: ApplicationStateActionArg;
+  };
+  [EntityType.MetricsDefinition]: {
+    [StateType.Persistent]: MetricsDefinitionStateActionArg;
+    [StateType.Derived]: never;
   };
 };

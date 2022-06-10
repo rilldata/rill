@@ -1,0 +1,28 @@
+/**
+ * A go like channel class that exposes a generator function.
+ * One end will push redux actions after processing a request.
+ * The other end will pop them and send it over an HTTP streaming connection.
+ */
+import { waitUntil } from "$common/utils/waitUtils";
+
+export class RillActionsChannel {
+  private messages: Array<[string, Array<any>]>;
+  private isDone = false;
+
+  public pushMessage(action: string, args: Array<any>) {
+    this.messages.push([action, args]);
+  }
+
+  public end() {
+    this.isDone = true;
+  }
+
+  public async *getActions(): AsyncGenerator {
+    while (!this.isDone) {
+      await waitUntil(() => this.messages.length > 0, -1);
+      while (this.messages.length > 0) {
+        yield this.messages.pop();
+      }
+    }
+  }
+}
