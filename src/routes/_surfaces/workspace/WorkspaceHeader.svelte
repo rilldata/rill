@@ -1,49 +1,17 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "$lib/application-state-stores/application-store";
-
   import ModelIcon from "$lib/components/icons/Code.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
-  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
-  const store = getContext("rill:app:store") as ApplicationStore;
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-
-  function formatModelName(str) {
-    let output = str.trim().replaceAll(" ", "_").replace(/\.sql/, "");
-    return output;
-  }
-
-  let currentModel: PersistentModelEntity;
-  $: if ($store?.activeEntity && $persistentModelStore?.entities)
-    currentModel = $persistentModelStore.entities.find(
-      (q) => q.id === $store.activeEntity.id
-    );
+  export let onChangeCallback;
+  export let titleInput;
 
   let titleInputElement;
   let editingTitle = false;
   let titleInputValue;
   let tooltipActive;
-
-  let clickOutsideListener;
-
-  $: if (!contextMenuOpen && clickOutsideListener) {
-    clickOutsideListener();
-    clickOutsideListener = undefined;
-  }
-
-  let titleInput = currentModel?.name;
-  $: titleInput = currentModel?.name;
 
   function onKeydown(event) {
     if (editingTitle && event.key === "Enter") {
@@ -51,7 +19,8 @@
     }
   }
 
-  let contextMenuOpen = false;
+  $: inputSize =
+    Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1;
 </script>
 
 <svelte:window on:keydown={onKeydown} />
@@ -86,21 +55,8 @@
               editingTitle = false;
             }}
             value={titleInput}
-            size={Math.max(
-              (editingTitle ? titleInputValue : titleInput)?.length || 0,
-              5
-            ) + 1}
-            on:change={async (e) => {
-              if (currentModel?.id) {
-                const resp = await dataModelerService.dispatch(
-                  "updateModelName",
-                  [currentModel?.id, formatModelName(e.target.value)]
-                );
-                if (resp.status === ActionStatus.Failure) {
-                  e.target.value = currentModel.name;
-                }
-              }
-            }}
+            size={inputSize}
+            on:change={onChangeCallback}
           />
           <TooltipContent slot="tooltip-content">
             <div class="flex items-center"><EditIcon size=".75em" />Edit</div>

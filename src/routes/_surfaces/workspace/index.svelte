@@ -1,7 +1,7 @@
 <script lang="ts">
   import ModelView from "./Model.svelte";
-  import Header from "./Header.svelte";
+  import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
 </script>
 
-<Header />
+<ModelWorkspaceHeader />
 <ModelView />
