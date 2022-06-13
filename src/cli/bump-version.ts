@@ -37,13 +37,8 @@ writeFileSync(
     `"version": "${newVersion}",`
   )
 );
-writeFileSync(
-  PACKAGE_LOCK_JSON_FILE,
-  packageJsonString.replace(
-    `"version": "${currentVersion}",`,
-    `"version": "${newVersion}",`
-  )
-);
+console.log("Regenerating `package-lock.json`");
+execSyncToStdout(`npm install`);
 
 console.log("Creating new branch");
 const branchName = `release-candidate-${newVersion}`;
