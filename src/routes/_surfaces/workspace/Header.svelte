@@ -11,9 +11,8 @@
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import Spinner from "$lib/components/Spinner.svelte";
   import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+  import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -36,8 +35,6 @@
   let titleInputValue;
   let tooltipActive;
 
-  let menuX;
-  let menuY;
   let clickOutsideListener;
 
   $: if (!contextMenuOpen && clickOutsideListener) {
@@ -54,21 +51,7 @@
     }
   }
 
-  let contextMenu;
   let contextMenuOpen = false;
-
-  // debounce the application status to resolve any quick flickers that
-  // may occur from quick changes to the application status.
-  let applicationStatus = 0;
-  let asTimer;
-  function debounceStatus(status: EntityStatus) {
-    clearTimeout(asTimer);
-    asTimer = setTimeout(() => {
-      applicationStatus = status;
-    }, 100);
-  }
-
-  $: debounceStatus($store?.status as unknown as EntityStatus);
 </script>
 
 <svelte:window on:keydown={onKeydown} />
@@ -126,24 +109,5 @@
       </h1>
     {/if}
   </div>
-  <div>
-    <div class="text-gray-400">
-      <Tooltip location="left" alignment="center" distance={16}>
-        <Spinner status={applicationStatus || EntityStatus.Idle} size="20px" />
-        <TooltipContent slot="tooltip-content">
-          {#if applicationStatus === EntityStatus.Idle}
-            idle
-          {:else if applicationStatus === EntityStatus.Running}
-            running
-          {:else if applicationStatus === EntityStatus.Exporting}
-            exporting a model resultset
-          {:else if applicationStatus === EntityStatus.Importing}
-            importing a table
-          {:else if applicationStatus === EntityStatus.Profiling}
-            profiling
-          {/if}
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  </div>
+  <WorkspaceHeaderStatusSpinner />
 </header>
