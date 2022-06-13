@@ -9,6 +9,7 @@ import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service
 import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { ProfileColumn } from "$lib/types";
 import { CATEGORICALS, NUMERICS } from "$lib/duckdb-data-types";
+import { mode } from "$app/env";
 
 type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -68,7 +69,11 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       .getEntityStateService(EntityType.Model, StateType.Derived)
       .getById(metricsDefinition.sourceModelId);
 
-    await Promise.all(model.profile.map());
+    await Promise.all(
+      model.profile.map((column) =>
+        this.inferFromColumn(metricsDefinition, model, column)
+      )
+    );
   }
 
   private async inferFromColumn(

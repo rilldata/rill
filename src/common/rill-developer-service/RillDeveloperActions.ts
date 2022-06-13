@@ -14,4 +14,10 @@ export class RillDeveloperActions {
     protected readonly dataModelerStateService: DataModelerStateService,
     protected readonly databaseService: DatabaseService
   ) {}
+
+  public setDatabaseActionQueue(
+    databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>
+  ): void {
+    this.databaseActionQueue = databaseActionQueue;
+  }
 }

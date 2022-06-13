@@ -45,6 +45,7 @@ export type DimensionDefinition = {
   id: UUID;
   dimensionIsValid: ValidationState;
   sqlNameIsValid: ValidationState;
+  cardinality: number;
   summaryPlotId: UUID; // Want to reuse summary cardnality plots used elsewhere. How are those stored?
 };
 

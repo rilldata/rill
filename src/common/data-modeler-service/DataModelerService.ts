@@ -60,6 +60,8 @@ export class DataModelerService {
   } = {};
   private runningCount = 0;
 
+  public readonly databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>;
+
   public constructor(
     protected readonly dataModelerStateService: DataModelerStateService,
     private readonly databaseService: DatabaseService,
@@ -67,12 +69,12 @@ export class DataModelerService {
     protected readonly metricsService: MetricsService,
     private readonly dataModelerActions: Array<DataModelerActions>
   ) {
-    const databaseActionQueue =
+    this.databaseActionQueue =
       new ActionQueueOrchestrator<DatabaseActionsDefinition>(databaseService);
     dataModelerActions.forEach((actions) => {
       actions.setDataModelerActionService(this);
       actions.setNotificationService(notificationService);
-      actions.setDatabaseActionQueue(databaseActionQueue);
+      actions.setDatabaseActionQueue(this.databaseActionQueue);
       getActionMethods(actions).forEach((action) => {
         this.actionsMap[action] = actions;
       });
