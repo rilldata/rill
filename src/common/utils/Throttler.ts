@@ -1,7 +1,7 @@
 export class Throttler {
   private throttleMap = new Map<string, NodeJS.Timer>();
 
-  public throttle(id: string, callback: () => any, time: number) {
+  public throttle(id: string, callback: () => void, time: number) {
     if (this.throttleMap.has(id)) return;
 
     this.throttleMap.set(

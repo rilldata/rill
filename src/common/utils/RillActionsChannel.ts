@@ -5,12 +5,17 @@
  */
 import { waitUntil } from "$common/utils/waitUtils";
 
+type Message = {
+  action: string;
+  args: Array<any>;
+};
+
 export class RillActionsChannel {
-  private messages: Array<[string, Array<any>]>;
+  private messages: Array<Message>;
   private isDone = false;
 
   public pushMessage(action: string, args: Array<any>) {
-    this.messages.push([action, args]);
+    this.messages.push({ action, args });
   }
 
   public end() {

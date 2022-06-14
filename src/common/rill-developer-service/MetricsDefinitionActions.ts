@@ -6,12 +6,10 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getMetricsDefinition } from "$common/stateInstancesFactory";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { ProfileColumn } from "$lib/types";
 import { CATEGORICALS, NUMERICS } from "$lib/duckdb-data-types";
-import { mode } from "$app/env";
 
-type MetricsDefinitionContext = RillRequestContext<
+export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
   StateType.Persistent
 >;
@@ -30,6 +28,9 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
     this.dataModelerStateService.dispatch("addEntity", [
       EntityType.MetricsDefinition,
       StateType.Persistent,
+      metricsDefinition,
+    ]);
+    rillRequestContext.actionsChannel.pushMessage("addEmptyMetricsDef", [
       metricsDefinition,
     ]);
   }
@@ -71,19 +72,22 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
 
     await Promise.all(
       model.profile.map((column) =>
-        this.inferFromColumn(metricsDefinition, model, column)
+        this.inferFromColumn(metricsDefinition, column)
       )
     );
   }
 
   private async inferFromColumn(
     metricsDefinition: MetricsDefinitionEntity,
-    model: DerivedModelEntity,
     column: ProfileColumn
   ) {
     if (CATEGORICALS.has(column.type)) {
+      await this.rillDeveloperService.dispatch("addNewDimension", [
+        metricsDefinition.id,
+        column.name,
+      ]);
     } else if (NUMERICS.has(column.type)) {
-      // TODO: it is not possible just yet
+      // TODO: it is not possible without SQL parsing
     }
   }
 }

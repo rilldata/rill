@@ -3,6 +3,7 @@ import type {
   UUID,
 } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { DimensionDefinition } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export type MetricsDefinitionsSlice = {
   defs: { [id: UUID]: MetricsDefinitionEntity };
@@ -16,6 +17,11 @@ const initialState: MetricsDefinitionsSlice = {
 type updateDefLabelPayload = {
   id: string;
   label: string;
+};
+
+type addNewDimensionPayload = {
+  id: string;
+  dimension: DimensionDefinition;
 };
 
 type setDefModelPayload = {
@@ -47,6 +53,15 @@ export const metricsDefSlice = createSlice({
           action.payload.sourceModelId;
       },
       prepare: (id, sourceModelId) => ({ payload: { id, sourceModelId } }),
+    },
+
+    addNewDimension: {
+      reducer: (state, action: PayloadAction<addNewDimensionPayload>) => {
+        state.defs[action.payload.id].dimensions.push(action.payload.dimension);
+      },
+      prepare: (id: string, dimension: DimensionDefinition) => ({
+        payload: { id, dimension },
+      }),
     },
   },
 });

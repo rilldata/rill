@@ -9,11 +9,16 @@ import type {
   EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import type {
+  CategoricalSummary,
+  ProfileColumn,
+  ProfileColumnSummary,
+} from "$lib/types";
 
 // or whatever we're usng for ids
 export type UUID = string;
 
-enum ValidationState {
+export enum ValidationState {
   OK = "OK",
   WARNING = "WARNING",
   ERROR = "ERROR",
@@ -45,8 +50,7 @@ export type DimensionDefinition = {
   id: UUID;
   dimensionIsValid: ValidationState;
   sqlNameIsValid: ValidationState;
-  cardinality: number;
-  summaryPlotId: UUID; // Want to reuse summary cardnality plots used elsewhere. How are those stored?
+  summary?: ProfileColumnSummary;
 };
 
 export interface MetricsDefinitionEntity extends EntityRecord {

@@ -22,8 +22,8 @@
   });
 
   onDestroy(() => {
-    if (browser) {
-      document.body.removeChild(portal);
+    if (browser && portal) {
+      portal.remove();
     }
   });
 </script>

@@ -1,5 +1,8 @@
 import { StateActions } from "$common/data-modeler-state-service/StateActions";
-import type { MetricsDefinitionStateActionArg } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type {
+  DimensionDefinition,
+  MetricsDefinitionStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export class MetricsDefinitionStateActions extends StateActions {
   @StateActions.MetricsDefinitionAction()
@@ -35,5 +38,15 @@ export class MetricsDefinitionStateActions extends StateActions {
       "timeDimension",
       timeDimension
     );
+  }
+
+  @StateActions.MetricsDefinitionAction()
+  public addNewDimension(
+    { draftState, stateService }: MetricsDefinitionStateActionArg,
+    metricsDefId: string,
+    dimension: DimensionDefinition
+  ) {
+    const metricsDef = stateService.getById(metricsDefId, draftState);
+    metricsDef.dimensions.push(dimension);
   }
 }

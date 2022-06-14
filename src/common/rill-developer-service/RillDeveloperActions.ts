@@ -15,6 +15,12 @@ export class RillDeveloperActions {
     protected readonly databaseService: DatabaseService
   ) {}
 
+  public setRillDeveloperService(
+    rillDeveloperService: RillDeveloperService
+  ): void {
+    this.rillDeveloperService = rillDeveloperService;
+  }
+
   public setDatabaseActionQueue(
     databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>
   ): void {
