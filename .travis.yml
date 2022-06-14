@@ -77,7 +77,7 @@ jobs:
         - echo "Cleaning dev depandancies"
         - npm prune --production
         - echo "Building vercel/pkg binary"
-        - node build-tools/replace_package_type.js module commonjs && npm run build-vercel-pkg
+        - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
       deploy: &deploy-vercel-pkg
         provider: releases
         api_key: ${GITHUB_TOKEN}
