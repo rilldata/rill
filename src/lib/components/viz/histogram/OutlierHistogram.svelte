@@ -19,6 +19,8 @@
 
     export let anchorBuffer = 8;
 
+    const outlierDeviationThreshold = 6;
+
     const histogramID = guidGenerator();
   
     $: effectiveWidth = Math.max(width - 8, 120);
@@ -29,12 +31,33 @@
      count: 1       
     }))
 
-    const intervals = [["µ", mean]];
-    $: ["1σ", "2σ", "3σ"].forEach((label, i) => {
-        // push interval only if it can be displayed on the plot
-        if ((mean + (i+1)*sd) <= max) intervals.push([label, mean + (i+1)*sd])
-        if ((mean - (i+1)*sd) >= min) intervals.push(["-"+label, mean - (i+1)*sd])
-    })
+    function addDeviationLabels() {
+      const intervals = [["µ", mean]];
+
+      if (max >= (mean + outlierDeviationThreshold*sd) && sd !== 0) {
+        const deviation = (max-mean)/sd;
+        const label = `${Math.round(deviation * 100) / 100}σ`;
+        intervals.push([label, max])
+      }
+
+      if (min <= (mean - outlierDeviationThreshold*sd) && sd !== 0) {
+        const deviation = (min-mean)/sd;
+        const label = `${Math.round(deviation * 100) / 100}σ`;
+        intervals.push([label, min])
+      }
+
+      // push labels only if not extreme outliers present
+      if (intervals.length == 1) {
+        ["1σ", "2σ", "3σ"].forEach((label, i) => {
+          // push interval only if it can be displayed on the plot
+          if ((mean + (i+1)*sd) <= max) intervals.push([label, mean + (i+1)*sd])
+          if ((mean - (i+1)*sd) >= min) intervals.push(["-"+label, mean - (i+1)*sd])
+        })
+      }
+      return intervals
+    }
+
+    $: intervals = addDeviationLabels()
 
   </script>
   
@@ -69,6 +92,7 @@
     </filter>
     <g class="textElements">
         {#each intervals as [label, value] (label)}
+        {@const anchor = value == max ? "end" : "middle"}
             <line
                 x1={x(value)}
                 x2={x(value)}
@@ -83,7 +107,7 @@
                 y={y(0) + anchorBuffer*2}
                 font-size="11"
                 fill="hsl(217,1%,40%)"
-                text-anchor="middle">{label}</text
+                text-anchor={anchor}>{label}</text
             >
         {/each}
     </g>
