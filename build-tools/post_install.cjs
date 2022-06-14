@@ -1,5 +1,7 @@
-import {existsSync} from "fs";
-import {execSync} from "node:child_process";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const {execSync} = require("node:child_process");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const {existsSync} = require("fs");
 
 /**
  * Wrapper script to switch to either the source .ts or built .js script
