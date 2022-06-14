@@ -116,7 +116,7 @@
     id="assets-model-list"
   >
     {#each metricsDefIds as id}
-      <CollapsibleMetricsDefinitionSummary metricsDefId={id} />
+      <CollapsibleMetricsDefinitionSummary metricsDefId={id} indentLevel={1} />
       <!-- {id}{"   "} -->
     {/each}
 

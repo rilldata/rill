@@ -26,7 +26,10 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { store, reduxReadable } from "$lib/redux-store/store-root";
 
-  import { deleteMetricsDef } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
+  import {
+    deleteMetricsDef,
+    toggleSummaryInNav,
+  } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
@@ -37,17 +40,14 @@
 
   export let metricsDefId: EntityId;
 
-  export let name: string;
-  // export let emphasizeTitle = false;
-  export let show = false;
-
   $: metricsDef = $reduxReadable?.metricsDefinition?.entities[metricsDefId];
   $: name = metricsDef?.metricDefLabel;
+  $: summaryExpanded = metricsDef.summaryExpandedInNav;
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   $: emphasizeTitle = $rillAppStore?.activeEntity?.id === metricsDefId;
 
-  const dispatch = createEventDispatcher();
+  // const dispatch = createEventDispatcher();
 
   let contextMenu;
   let contextMenuOpen = false;
@@ -62,9 +62,25 @@
     clickOutsideListener();
     clickOutsideListener = undefined;
   }
+  const contextButtonClickHandler = async (event) => {
+    contextMenuOpen = !contextMenuOpen;
+    menuX = event.clientX;
+    menuY = event.clientY;
+
+    if (!clickOutsideListener) {
+      await tick();
+      clickOutsideListener = onClickOutside(() => {
+        contextMenuOpen = false;
+      }, contextMenu);
+    }
+  };
 
   const dispatchDeleteMetricsDef = () => {
     store.dispatch(deleteMetricsDef(metricsDefId));
+  };
+
+  const dispatchToggleSummaryInNav = () => {
+    store.dispatch(toggleSummaryInNav(metricsDefId));
   };
 
   // state for title bar hover.
@@ -72,7 +88,7 @@
 </script>
 
 <NavEntry
-  expanded={show}
+  expanded={summaryExpanded}
   selected={emphasizeTitle}
   bind:hovered={titleElementHovered}
   on:shift-click={async () => {
@@ -84,13 +100,8 @@
       EntityType.MetricsDef,
       metricsDefId.toString(), // FIXME: should not need to do this type conversion
     ]);
-    // dispatch("select");
   }}
-  on:expand={() => {
-    show = !show;
-    // pass up expand
-    dispatch("expand");
-  }}
+  on:expand={dispatchToggleSummaryInNav}
 >
   <svelte:fragment slot="tooltip-content">
     <TooltipTitle>
@@ -128,18 +139,7 @@
               id={metricsDefId.toString()}
               tooltipText="delete"
               suppressTooltip={contextMenuOpen}
-              on:click={async (event) => {
-                contextMenuOpen = !contextMenuOpen;
-                menuX = event.clientX;
-                menuY = event.clientY;
-
-                if (!clickOutsideListener) {
-                  await tick();
-                  clickOutsideListener = onClickOutside(() => {
-                    contextMenuOpen = false;
-                  }, contextMenu);
-                }
-              }}><MoreIcon /></ContextButton
+              on:click={contextButtonClickHandler}><MoreIcon /></ContextButton
             >
           </span>
         {/if}

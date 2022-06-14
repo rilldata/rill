@@ -7,7 +7,7 @@ type SourceModelEntityId = number | string;
 // are model columns stored by id of any kind, or only name?
 type ModelColumnIdOrName = number | string;
 // or whatever we're usng for ids
-type UUID = string;
+export type UUID = string;
 
 enum ValidationState {
   OK = "OK",
@@ -52,6 +52,7 @@ export type MetricsDefinition = {
   measures: MeasureDefinition[];
   dimensions: DimensionDefinition[];
   creationTime: number;
+  summaryExpandedInNav: boolean;
 };
 
 export type MetricsDefinitionsSlice = {

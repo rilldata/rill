@@ -52,8 +52,6 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  $: useModelWorkspace = $rillAppStore?.activeEntity?.type === EntityType.Model;
-
   // get any importing tables
   $: derivedImportedTable = $derivedTableStore?.entities?.find(
     (table) => table.status === EntityStatus.Importing

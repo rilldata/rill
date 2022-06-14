@@ -39,25 +39,31 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
+  import { store, reduxReadable } from "$lib/redux-store/store-root";
+
   export let metricsDefId: EntityId;
+
+  $: summaryExpanded =
+    $reduxReadable?.metricsDefinition?.entities[metricsDefId]
+      .summaryExpandedInNav;
   // export let name: string;
-  export let cardinality: number;
+  // export let cardinality: number;
   // export let profile: any;
   // export let head: any; // FIXME
-  export let sizeInBytes: number = undefined;
+  // export let sizeInBytes: number = undefined;
   // export let emphasizeTitle = false;
-  export let draggable = true;
+  // export let draggable = true;
   // export let show = false;
-  export let showTitle = true;
+  // export let showTitle = true;
   // export let showContextButton = true;
-  // export let indentLevel = 0;
+  export let indentLevel = 0;
 
-  const dispatch = createEventDispatcher();
+  // const dispatch = createEventDispatcher();
 
-  const formatInteger = format(",");
+  // const formatInteger = format(",");
 
   let containerWidth = 0;
-  let contextMenu;
+  // let contextMenu;
   let contextMenuOpen = false;
   let container;
 
@@ -66,32 +72,33 @@
       containerWidth = container?.clientWidth ?? 0;
     });
     observer.observe(container);
+    return () => observer.unobserve(container);
   });
 
-  let cardinalityTween = tweened(cardinality, { duration: 600, easing });
-  let sizeTween = tweened(sizeInBytes, { duration: 650, easing, delay: 150 });
+  // let cardinalityTween = tweened(cardinality, { duration: 600, easing });
+  // let sizeTween = tweened(sizeInBytes, { duration: 650, easing, delay: 150 });
 
-  $: cardinalityTween.set(cardinality || 0);
-  $: interimCardinality = ~~$cardinalityTween;
-  $: sizeTween.set(sizeInBytes || 0);
+  // $: cardinalityTween.set(cardinality || 0);
+  // $: interimCardinality = ~~$cardinalityTween;
+  // $: sizeTween.set(sizeInBytes || 0);
 
-  let selectingColumns = false;
-  let selectedColumns = [];
+  // let selectingColumns = false;
+  // let selectedColumns = [];
 
   // let sortedProfile;
-  const sortByOriginalOrder = null;
+  // const sortByOriginalOrder = null;
 
-  let sortMethod = defaultSort;
+  // let sortMethod = defaultSort;
   // $: if (sortMethod !== sortByOriginalOrder) {
   //   sortedProfile = [...profile].sort(sortMethod);
   // } else {
   //   sortedProfile = profile;
   // }
 
-  let previewView = "summaries";
+  // let previewView = "summaries";
 
-  let menuX;
-  let menuY;
+  // let menuX;
+  // let menuY;
   let clickOutsideListener;
   $: if (!contextMenuOpen && clickOutsideListener) {
     clickOutsideListener();
@@ -99,17 +106,15 @@
   }
 
   // state for title bar hover.
-  let titleElementHovered = false;
+  // let titleElementHovered = false;
 </script>
 
 <div bind:this={container}>
-  {#if showTitle}
-    <div {draggable} class="active:cursor-grabbing">
-      <CollapsibleMetricsDefinitionSummaryNavEntry {metricsDefId} />
-    </div>
-  {/if}
-  <!-- 
-  {#if show}
+  <div class="active:cursor-grabbing">
+    <CollapsibleMetricsDefinitionSummaryNavEntry {metricsDefId} />
+  </div>
+
+  {#if summaryExpanded}
     <div
       class="pt-1 pb-3 pl-accordion"
       transition:slide|local={{ duration: 120 }}
@@ -120,7 +125,8 @@
           : '4'} pr-5 pb-2 flex justify-between text-gray-500"
         class:flex-col={containerWidth < 325}
       >
-        <select
+        <em>((summary placeholder))</em>
+        <!-- <select
           style:transform="translateX(-4px)"
           bind:value={sortMethod}
           class={classes.NATIVE_SELECT}
@@ -129,8 +135,8 @@
           <option value={defaultSort}>sort by type</option>
           <option value={sortByNullity}>sort by null %</option>
           <option value={sortByName}>sort by name</option>
-        </select>
-        <select
+        </select> -->
+        <!-- <select
           style:transform="translateX(4px)"
           bind:value={previewView}
           class={classes.NATIVE_SELECT}
@@ -138,10 +144,10 @@
         >
           <option value="summaries">show summary&nbsp;</option>
           <option value="example">show example</option>
-        </select>
+        </select> -->
       </div>
 
-      <div>
+      <!-- <div>
         {#if sortedProfile && sortedProfile.length && head.length}
           {#each sortedProfile as column (column.name)}
              <ColumnProfile
@@ -165,7 +171,7 @@
             </ColumnProfile>
           {/each}
         {/if}
-      </div>
+      </div> -->
     </div>
-  {/if} -->
+  {/if}
 </div>
