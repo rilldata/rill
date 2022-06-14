@@ -153,6 +153,7 @@
       containerWidth = container.clientWidth;
     });
     observer.observe(container);
+    return () => observer.unobserve(container);
   });
 </script>
 

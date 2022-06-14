@@ -276,6 +276,7 @@
       editorHeight = componentContainer?.offsetHeight;
     });
     obs.observe(componentContainer);
+    return () => obs.unobserve(componentContainer);
   });
 
   // REACTIVE FUNCTIONS
