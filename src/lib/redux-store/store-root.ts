@@ -1,5 +1,4 @@
 import { configureStore } from "@reduxjs/toolkit";
-// import type { EnhancedStore } from "@reduxjs/toolkit";
 import { createLogger } from "redux-logger";
 import metricsDefinitionReducer from "./metrics-definition/metrics-definition-slice";
 

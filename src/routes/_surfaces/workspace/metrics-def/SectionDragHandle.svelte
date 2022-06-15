@@ -1,51 +1,14 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import { drag } from "$lib/drag";
   import {
     modelPreviewVisibilityTween,
-    // modelPreviewVisible,
     layout,
     assetVisibilityTween,
     inspectorVisibilityTween,
     SIDE_PAD,
   } from "$lib/application-state-stores/layout-store";
-
-  // import PreviewTable from "$lib/components/table/PreviewTable.svelte";
-  // import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  // import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  // import type {
-  //   DerivedModelStore,
-  //   PersistentModelStore,
-  // } from "$lib/application-state-stores/model-stores";
-  // import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Portal from "$lib/components/Portal.svelte";
 
-  const store = getContext("rill:app:store") as ApplicationStore;
-  // const queryHighlight = getContext("rill:app:query-highlight");
-  // const persistentModelStore = getContext(
-  //   "rill:app:persistent-model-store"
-  // ) as PersistentModelStore;
-  // const derivedModelStore = getContext(
-  //   "rill:app:derived-model-store"
-  // ) as DerivedModelStore;
-
-  // let showPreview = true;
-
-  // let currentModel: PersistentModelEntity;
-  // $: currentModel =
-  //   $store?.activeEntity && $persistentModelStore?.entities
-  //     ? $persistentModelStore.entities.find(
-  //         (q) => q.id === $store.activeEntity.id
-  //       )
-  //     : undefined;
-  // let currentDerivedModel: DerivedModelEntity;
-  // $: currentDerivedModel =
-  //   $store?.activeEntity && $derivedModelStore?.entities
-  //     ? $derivedModelStore.entities.find((q) => q.id === $store.activeEntity.id)
-  //     : undefined;
-
-  // track innerHeight to calculate the size of the editor element.
   let innerHeight;
 </script>
 

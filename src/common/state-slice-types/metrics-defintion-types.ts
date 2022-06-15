@@ -2,6 +2,8 @@
 // these types at the top are placeholders to begin thinking about the state shape
 
 // is the EntityRecordId the correct id to use to lookup a Model and get info about it columns etc?
+import type { EntityAdapter } from "@reduxjs/toolkit";
+
 type SourceModelEntityId = number | string;
 
 // are model columns stored by id of any kind, or only name?
@@ -55,8 +57,7 @@ export type MetricsDefinition = {
   summaryExpandedInNav: boolean;
 };
 
-export type MetricsDefinitionsSlice = {
-  // defs: { [id: UUID]: MetricsDefinition };
-  defsCounter: number;
+export type MetricsDefinitionsSlice = EntityAdapter<MetricsDefinition> & {
+  defsCount: number;
   selectedDefId?: UUID;
 };

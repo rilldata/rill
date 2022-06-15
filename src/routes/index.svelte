@@ -20,7 +20,6 @@
   } from "$lib/application-state-stores/table-stores";
 
   import { config } from "$lib/application-state-stores/application-store";
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
   import {
     layout,
@@ -30,15 +29,11 @@
     inspectorVisible,
     SIDE_PAD,
   } from "$lib/application-state-stores/layout-store";
-  import {
-    EntityStatus,
-    EntityType,
-  } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   let assetsHovered = false;
   let inspectorHovered = false;
 
-  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;

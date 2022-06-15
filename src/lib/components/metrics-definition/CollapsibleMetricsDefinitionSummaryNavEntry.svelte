@@ -1,16 +1,11 @@
 <script lang="ts">
-  import { SvelteComponent, tick } from "svelte/internal";
-  import { onMount, createEventDispatcher } from "svelte";
-  import type { EntityId } from "@reduxjs/toolkit";
+  import { tick } from "svelte/internal";
 
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
-  // import * as classes from "$lib/util/component-classes";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-
-  // import ColumnProfile from "./ColumnProfile.svelte";
 
   import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
 
@@ -37,8 +32,9 @@
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import type { UUID } from "$common/state-slice-types/metrics-defintion-types";
 
-  export let metricsDefId: EntityId;
+  export let metricsDefId: UUID;
 
   $: metricsDef = $reduxReadable?.metricsDefinition?.entities[metricsDefId];
   $: name = metricsDef?.metricDefLabel;
@@ -46,8 +42,6 @@
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   $: emphasizeTitle = $rillAppStore?.activeEntity?.id === metricsDefId;
-
-  // const dispatch = createEventDispatcher();
 
   let contextMenu;
   let contextMenuOpen = false;

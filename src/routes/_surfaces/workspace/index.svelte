@@ -27,14 +27,16 @@
 
   $: useModelWorkspace = $rillAppStore?.activeEntity?.type === EntityType.Model;
   $: useMetricsDefWorkspace =
-    $rillAppStore?.activeEntity?.type === EntityType.MetricsDef;
+    $rillAppStore?.activeEntity?.type === EntityType.MetricsDef &&
+    MetricsDefWorkspaceHeader !== null &&
+    MetricsDefWorkspace !== null;
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
 </script>
 
 {#if useModelWorkspace}
   <ModelWorkspaceHeader />
   <ModelView />
-{:else if useMetricsDefWorkspace && MetricsDefWorkspaceHeader !== null && MetricsDefWorkspace !== null}
+{:else if useMetricsDefWorkspace}
   <MetricsDefWorkspaceHeader metricsDefId={activeEntityID} />
   <MetricsDefWorkspace />
 {/if}
