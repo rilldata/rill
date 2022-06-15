@@ -62,6 +62,7 @@
       containerWidth = container?.clientWidth ?? 0;
     });
     observer.observe(container);
+    return () => observer.unobserve(container);
   });
 
   let cardinalityTween = tweened(cardinality, { duration: 600, easing });

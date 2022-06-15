@@ -53,6 +53,7 @@ jobs:
     - stage: publish
       name: "Build & Publish docker"
       if: tag IS NOT present AND branch = main
+      install: docker --version
       script:
         - SHORT_SHA=$(git rev-parse --short HEAD)
         - echo ${DOCKERHUB_CRED} | docker login --username ${DOCKERHUB_USER} --password-stdin
