@@ -4,8 +4,9 @@ import type { DatabaseService } from "$common/database-service/DatabaseService";
 import type { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
 import type { DatabaseActionsDefinition } from "$common/database-service/DatabaseService";
 import type { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
+import { ActionsBase } from "$common/ActionsBase";
 
-export class RillDeveloperActions {
+export class RillDeveloperActions extends ActionsBase {
   protected rillDeveloperService: RillDeveloperService;
   protected databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>;
 
@@ -13,7 +14,9 @@ export class RillDeveloperActions {
     protected readonly config: RootConfig,
     protected readonly dataModelerStateService: DataModelerStateService,
     protected readonly databaseService: DatabaseService
-  ) {}
+  ) {
+    super();
+  }
 
   public setRillDeveloperService(
     rillDeveloperService: RillDeveloperService

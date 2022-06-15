@@ -102,6 +102,7 @@
     "glob": "^7.2.0",
     "immer": "^9.0.12",
     "module-alias": "^2.2.2",
+    "pgsql-ast-parser": "^10.3.1",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1",
     "svelte": "^3.46.4"

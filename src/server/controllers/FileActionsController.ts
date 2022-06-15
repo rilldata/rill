@@ -5,11 +5,11 @@ import path from "path";
 
 export class FileActionsController extends RillDeveloperController {
   protected setupRouter(router: Router) {
-    router.post("/table-upload", (req: any, res) => {
+    router.post("/table-upload", (req: Request, res: Response) => {
       this.handleFileUpload((req as any).files.file);
       res.send("OK");
     });
-    router.get("/export", async (req, res) => {
+    router.get("/export", async (req: Request, res: Response) => {
       this.handleFileExport(req, res);
     });
   }

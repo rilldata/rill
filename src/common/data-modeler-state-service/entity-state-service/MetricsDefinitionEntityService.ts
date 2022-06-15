@@ -9,11 +9,7 @@ import type {
   EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
-import type {
-  CategoricalSummary,
-  ProfileColumn,
-  ProfileColumnSummary,
-} from "$lib/types";
+import type { ProfileColumnSummary } from "$lib/types";
 
 // or whatever we're usng for ids
 export type UUID = string;

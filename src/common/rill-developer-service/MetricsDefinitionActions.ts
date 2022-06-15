@@ -7,7 +7,8 @@ import {
 import { getMetricsDefinition } from "$common/stateInstancesFactory";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { ProfileColumn } from "$lib/types";
-import { CATEGORICALS, NUMERICS } from "$lib/duckdb-data-types";
+import { CATEGORICALS } from "$lib/duckdb-data-types";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 
 export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -15,6 +16,7 @@ export type MetricsDefinitionContext = RillRequestContext<
 >;
 
 export class MetricsDefinitionActions extends RillDeveloperActions {
+  @RillDeveloperActions.MetricsDefinitionAction()
   public async createMetricsDefinition(
     rillRequestContext: MetricsDefinitionContext
   ) {
@@ -35,6 +37,7 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
     ]);
   }
 
+  @RillDeveloperActions.MetricsDefinitionAction()
   public async updateMetricsDefinitionModel(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
@@ -45,8 +48,17 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       metricsDefId,
       modelId,
     ]);
+    this.dataModelerStateService.dispatch("clearMetricsDefinition", [
+      metricsDefId,
+    ]);
+    await this.rillDeveloperService.dispatch(
+      rillRequestContext,
+      "inferMeasuresAndDimensions",
+      [metricsDefId]
+    );
   }
 
+  @RillDeveloperActions.MetricsDefinitionAction()
   public async updateMetricsDefinitionTime(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
@@ -57,8 +69,24 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       metricsDefId,
       timeDimension,
     ]);
+    if (!rillRequestContext.record.sourceModelId) return;
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+
+    const rollupInterval = await this.databaseActionQueue.enqueue(
+      { id: metricsDefId, priority: DatabaseActionQueuePriority.ActiveModel },
+      "estimateIdealRollupInterval",
+      [model.tableName, timeDimension]
+    );
+    this.dataModelerStateService.dispatch(
+      "updateMetricsDefinitionRollupInterval",
+      [metricsDefId, rollupInterval]
+    );
+    // TODO: update all measure graphs
   }
 
+  @RillDeveloperActions.MetricsDefinitionAction()
   public async inferMeasuresAndDimensions(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string
@@ -72,22 +100,22 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
 
     await Promise.all(
       model.profile.map((column) =>
-        this.inferFromColumn(metricsDefinition, column)
+        this.inferFromColumn(rillRequestContext, metricsDefinition, column)
       )
     );
   }
 
   private async inferFromColumn(
+    rillRequestContext: MetricsDefinitionContext,
     metricsDefinition: MetricsDefinitionEntity,
     column: ProfileColumn
   ) {
     if (CATEGORICALS.has(column.type)) {
-      await this.rillDeveloperService.dispatch("addNewDimension", [
-        metricsDefinition.id,
-        column.name,
-      ]);
-    } else if (NUMERICS.has(column.type)) {
-      // TODO: it is not possible without SQL parsing
+      await this.rillDeveloperService.dispatch(
+        rillRequestContext,
+        "addNewDimension",
+        [metricsDefinition.id, column.name]
+      );
     }
   }
 }

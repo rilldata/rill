@@ -1,4 +1,4 @@
-import { RillActionsChannel } from "$common/utils/RillActionsChannel";
+import type { RillActionsChannel } from "$common/utils/RillActionsChannel";
 import type {
   EntityType,
   StateType,
@@ -13,8 +13,6 @@ import type {
  * For now, it will have the {@link RillActionsChannel} instance mainly along with target entity details.
  */
 export class RillRequestContext<ET extends EntityType, ST extends StateType> {
-  public readonly actionsChannel = new RillActionsChannel();
-
   public entityStateService: EntityStateServicesMapType[ET][ST];
 
   /**
@@ -24,6 +22,8 @@ export class RillRequestContext<ET extends EntityType, ST extends StateType> {
   public entityType: ET;
   public stateType: ST;
   public record: EntityRecordMapType[ET][ST];
+
+  public constructor(public readonly actionsChannel: RillActionsChannel) {}
 
   public setEntityStateService(
     entityStateService: EntityStateServicesMapType[ET][ST]
