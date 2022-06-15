@@ -9,7 +9,16 @@
 
   import TableAssets from "./TableAssets.svelte";
   import ModelAssets from "./ModelAssets.svelte";
-  import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
+  // import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
+  let MetricsDefinitionAssets = null;
+
+  if (import.meta.env.VITE_USE_METRICS_DEF === `use`) {
+    (async () => {
+      MetricsDefinitionAssets = (
+        await import("./MetricsDefinitionAssets.svelte")
+      ).default;
+    })();
+  }
 </script>
 
 <div
@@ -58,7 +67,9 @@
       </header>
       <TableAssets />
       <ModelAssets />
-      <MetricsDefinitionAssets />
+      {#if MetricsDefinitionAssets !== null}
+        <MetricsDefinitionAssets />
+      {/if}
     </div>
     <!-- assets pane footer. -->
     <div
