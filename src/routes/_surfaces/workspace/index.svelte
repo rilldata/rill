@@ -2,7 +2,8 @@
   import { getContext } from "svelte";
   import ModelView from "./Model.svelte";
   import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
-  import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
+  import MetricsDefWorkspaceHeader from "./metrics-def/MetricsDefWorkspaceHeader.svelte";
+  import MetricsDefWorkspace from "./metrics-def/MetricsDefWorkspace.svelte";
 
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
@@ -20,5 +21,5 @@
   <ModelView />
 {:else if useMetricsDefWorkspace}
   <MetricsDefWorkspaceHeader metricsDefId={activeEntityID} />
-  <!-- <ModelView /> -->
+  <MetricsDefWorkspace />
 {/if}
