@@ -22,6 +22,8 @@ export class StartCommand extends DataModelerCliCommand {
     return new ExpressServer(
       this.config,
       this.dataModelerService,
+      // not exposed to users just yet.
+      undefined,
       this.dataModelerStateService,
       this.notificationService,
       this.metricsService

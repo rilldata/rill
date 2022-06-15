@@ -78,6 +78,8 @@ export class RillDeveloperService {
       args
     );
 
+    console.log(context, action, args);
+
     let returnResponse: ActionResponse;
     try {
       returnResponse = await actionsInstance[action].call(
@@ -88,7 +90,12 @@ export class RillDeveloperService {
       if (!returnResponse)
         returnResponse = ActionResponseFactory.getSuccessResponse();
     } catch (err) {
+      console.log(err);
       returnResponse = ActionResponseFactory.getErrorResponse(err);
+    }
+
+    if (context.level === 0) {
+      context.actionsChannel.end();
     }
 
     return returnResponse;
@@ -103,7 +110,10 @@ export class RillDeveloperService {
     args: RillDeveloperActionsDefinition[Action]
   ): RillRequestContext<any, any> {
     if (context.entityStateService) {
-      context = new RillRequestContext<any, any>(context.actionsChannel);
+      context = new RillRequestContext<any, any>(
+        context.actionsChannel,
+        context.level + 1
+      );
     }
 
     context.setEntityStateService(

@@ -1,26 +1,42 @@
 import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
 import type { Router, Request, Response } from "express";
-import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
-import { RillActionsChannel } from "$common/utils/RillActionsChannel";
 
 export class MetricsDefinitionController extends RillDeveloperController {
   protected setupRouter(router: Router) {
-    router.put("/", (req: Request, res: Response) => {
-      return this.handleMetricsDefinitionCreate(req, res);
-    });
+    router.put("/", (req: Request, res: Response) =>
+      this.handleCreate(req, res)
+    );
+    router.post("/:id/updateModel", (req: Request, res: Response) =>
+      this.handleModelUpdate(req, res)
+    );
+    router.post("/:id/updateTimestamp", (req: Request, res: Response) =>
+      this.handleTimestampUpdate(req, res)
+    );
   }
 
-  private async handleMetricsDefinitionCreate(req: Request, res: Response) {
-    const context = new RillRequestContext(new RillActionsChannel());
-    const promise = this.wrapHttpStream(
-      res,
-      context.actionsChannel.getActions()
+  private async handleCreate(req: Request, res: Response) {
+    return this.wrapHttpStream(res, (context) =>
+      this.rillDeveloperService.dispatch(context, "createMetricsDefinition", [])
     );
-    await this.rillDeveloperService.dispatch(
-      context,
-      "createMetricsDefinition",
-      []
+  }
+
+  private async handleModelUpdate(req: Request, res: Response) {
+    return this.wrapHttpStream(res, (context) =>
+      this.rillDeveloperService.dispatch(
+        context,
+        "updateMetricsDefinitionModel",
+        [req.params.id, req.body.modelId]
+      )
     );
-    return promise;
+  }
+
+  private async handleTimestampUpdate(req: Request, res: Response) {
+    return this.wrapHttpStream(res, (context) =>
+      this.rillDeveloperService.dispatch(
+        context,
+        "updateMetricsDefinitionTimestamp",
+        [req.params.id, req.body.timeDimension]
+      )
+    );
   }
 }

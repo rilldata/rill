@@ -59,13 +59,13 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
-  public async updateMetricsDefinitionTime(
+  public async updateMetricsDefinitionTimestamp(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
     timeDimension: string
   ) {
     // TODO: validate ids
-    this.dataModelerStateService.dispatch("updateMetricsDefinitionTime", [
+    this.dataModelerStateService.dispatch("updateMetricsDefinitionTimestamp", [
       metricsDefId,
       timeDimension,
     ]);

@@ -56,7 +56,10 @@ export abstract class ActionsBase {
     return this.Action(EntityType.Application, StateType.Derived);
   }
   public static MetricsDefinitionAction() {
-    return this.Action(EntityType.MetricsDefinition, StateType.Derived);
+    return this.Action(
+      EntityType.MetricsDefinition,
+      StateType.Persistent
+    ) as any;
   }
 
   /**

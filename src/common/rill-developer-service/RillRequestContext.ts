@@ -23,7 +23,10 @@ export class RillRequestContext<ET extends EntityType, ST extends StateType> {
   public stateType: ST;
   public record: EntityRecordMapType[ET][ST];
 
-  public constructor(public readonly actionsChannel: RillActionsChannel) {}
+  public constructor(
+    public readonly actionsChannel: RillActionsChannel,
+    public readonly level = 0
+  ) {}
 
   public setEntityStateService(
     entityStateService: EntityStateServicesMapType[ET][ST]

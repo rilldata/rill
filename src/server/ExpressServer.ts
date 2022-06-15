@@ -1,6 +1,7 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import http from "http";
 import cors from "cors";
+import bodyParser from "body-parser";
 import fileUpload from "express-fileupload";
 import type { RootConfig } from "$common/config/RootConfig";
 import { SocketServer } from "$server/SocketServer";
@@ -9,8 +10,11 @@ import type { DataModelerStateService } from "$common/data-modeler-state-service
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { existsSync, mkdirSync } from "fs";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { FileActionsController } from "$server/controllers/FileActionsController";
+import type { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
+import { MetricsDefinitionController } from "$server/controllers/MetricsDefinitionController";
+import { MetricsDimensionController } from "$server/controllers/MetricsDimensionController";
+import { MetricsMeasureController } from "$server/controllers/MetricsMeasureController";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -22,6 +26,7 @@ export class ExpressServer {
   constructor(
     private readonly config: RootConfig,
     private readonly dataModelerService: DataModelerService,
+    private readonly rillDeveloperService: RillDeveloperService,
     dataModelerStateService: DataModelerStateService,
     notificationService: SocketNotificationService,
     metricsService: MetricsService
@@ -29,25 +34,8 @@ export class ExpressServer {
     this.app = express();
     this.server = http.createServer(this.app);
 
-    this.app.use(
-      cors({
-        origin: this.config.server.uiUrl,
-      })
-    );
-
-    const tmpFolder = `${config.projectFolder}/tmp`;
-    if (!existsSync(tmpFolder)) mkdirSync(tmpFolder);
-    this.app.use(
-      fileUpload({
-        useTempFiles: true,
-        tempFileDir: tmpFolder,
-      })
-    );
-
-    new FileActionsController(this.config, this.dataModelerService).setup(
-      this.app,
-      "/api/file"
-    );
+    this.setupMiddlewares();
+    this.setupControllers();
 
     this.socketServer = new SocketServer(
       config,
@@ -67,5 +55,48 @@ export class ExpressServer {
     await this.socketServer.init();
     this.server.listen(this.config.server.serverPort);
     console.log(`Server started at ${this.config.server.serverUrl}`);
+  }
+
+  private setupMiddlewares() {
+    this.app.use(
+      cors({
+        origin: this.config.server.uiUrl,
+      })
+    );
+    this.app.use(bodyParser.json());
+
+    const tmpFolder = `${this.config.projectFolder}/tmp`;
+    if (!existsSync(tmpFolder)) mkdirSync(tmpFolder);
+    this.app.use(
+      fileUpload({
+        useTempFiles: true,
+        tempFileDir: tmpFolder,
+      })
+    );
+  }
+
+  private setupControllers() {
+    new FileActionsController(
+      this.config,
+      this.dataModelerService,
+      this.rillDeveloperService
+    ).setup(this.app, "/api/file");
+    if (!this.rillDeveloperService) return;
+
+    new MetricsDefinitionController(
+      this.config,
+      this.dataModelerService,
+      this.rillDeveloperService
+    ).setup(this.app, "/api/metrics");
+    new MetricsDimensionController(
+      this.config,
+      this.dataModelerService,
+      this.rillDeveloperService
+    ).setup(this.app, "/api/metrics");
+    new MetricsMeasureController(
+      this.config,
+      this.dataModelerService,
+      this.rillDeveloperService
+    ).setup(this.app, "/api/metrics");
   }
 }

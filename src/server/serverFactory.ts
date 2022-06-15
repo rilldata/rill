@@ -29,6 +29,11 @@ import { existsSync, readFileSync } from "fs";
 import { LocalConfigFile } from "$common/config/ConfigFolders";
 import { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
 import { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { RillDeveloper } from "$server/RillDeveloper";
+import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
+import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
+import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
+import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 
 let PACKAGE_JSON = "";
 try {
@@ -114,32 +119,19 @@ export function dataModelerServiceFactory(config: RootConfig) {
 
   const notificationService = new SocketNotificationService();
 
-  const tableActions = new TableActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
-  const modelActions = new ModelActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
-  const profileColumnActions = new ProfileColumnActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
-  const applicationActions = new ApplicationActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
   const dataModelerService = new DataModelerService(
     dataModelerStateService,
     databaseService,
     notificationService,
     metricsService,
-    [tableActions, modelActions, profileColumnActions, applicationActions]
+    [TableActions, ModelActions, ProfileColumnActions, ApplicationActions].map(
+      (DataModelerActionsClass) =>
+        new DataModelerActionsClass(
+          config,
+          dataModelerStateService,
+          databaseService
+        )
+    )
   );
 
   return {
@@ -148,6 +140,22 @@ export function dataModelerServiceFactory(config: RootConfig) {
     notificationService,
     metricsService,
   };
+}
+
+export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
+  return new RillDeveloperService(
+    rillDeveloper.dataModelerStateService,
+    rillDeveloper.dataModelerService,
+    rillDeveloper.dataModelerService.getDatabaseService(),
+    [MetricsDefinitionActions, DimensionsActions, MeasuresActions].map(
+      (RillDeveloperActionsClass) =>
+        new RillDeveloperActionsClass(
+          rillDeveloper.config,
+          rillDeveloper.dataModelerStateService,
+          rillDeveloper.dataModelerService.getDatabaseService()
+        )
+    )
+  );
 }
 
 export function serverFactory(config: RootConfig) {

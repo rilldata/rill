@@ -11,7 +11,7 @@ type Message = {
 };
 
 export class RillActionsChannel {
-  private messages: Array<Message>;
+  private messages = new Array<Message>();
   private isDone = false;
 
   public pushMessage(action: string, args: Array<any>) {
@@ -24,7 +24,7 @@ export class RillActionsChannel {
 
   public async *getActions(): AsyncGenerator {
     while (!this.isDone) {
-      await waitUntil(() => this.messages.length > 0, -1);
+      await waitUntil(() => this.messages.length > 0 || this.isDone, -1);
       while (this.messages.length > 0) {
         yield this.messages.pop();
       }

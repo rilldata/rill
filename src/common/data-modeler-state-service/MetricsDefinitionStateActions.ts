@@ -30,7 +30,7 @@ export class MetricsDefinitionStateActions extends StateActions {
   }
 
   @StateActions.MetricsDefinitionAction()
-  public updateMetricsDefinitionTime(
+  public updateMetricsDefinitionTimestamp(
     { draftState, stateService }: MetricsDefinitionStateActionArg,
     metricsDefId: string,
     timeDimension: string
