@@ -32,7 +32,7 @@
     }))
 
     function addDeviationLabels() {
-      const intervals = [["µ", mean]];
+      const intervals: [string, number][] = [["µ", mean]];
 
       if (max >= (mean + outlierDeviationThreshold*sd) && sd !== 0) {
         const deviation = (max-mean)/sd;
@@ -46,7 +46,7 @@
         intervals.push([label, min])
       }
 
-      // push labels only if not extreme outliers present
+      // push labels only if no extreme outliers present
       if (intervals.length == 1) {
         ["1σ", "2σ", "3σ"].forEach((label, i) => {
           // push interval only if it can be displayed on the plot
