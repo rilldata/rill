@@ -1,8 +1,16 @@
 import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
-import type { Router, Request, Response } from "express";
+import type { Request, Response, Router } from "express";
+import {
+  EntityType,
+  StateType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export class MetricsDefinitionController extends RillDeveloperController {
   protected setupRouter(router: Router) {
+    router.get("/", (req: Request, res: Response) =>
+      this.handleGetAll(req, res)
+    );
     router.put("/", (req: Request, res: Response) =>
       this.handleCreate(req, res)
     );
@@ -11,6 +19,31 @@ export class MetricsDefinitionController extends RillDeveloperController {
     );
     router.post("/:id/updateTimestamp", (req: Request, res: Response) =>
       this.handleTimestampUpdate(req, res)
+    );
+    router.delete("/:id", (req: Request, res: Response) =>
+      this.handleDelete(req, res)
+    );
+  }
+
+  private async handleGetAll(req: Request, res: Response) {
+    res.setHeader("ContentType", "application/json");
+    res.send(
+      JSON.stringify({
+        data: this.rillDeveloperService.dataModelerStateService
+          .getEntityStateService(
+            EntityType.MetricsDefinition,
+            StateType.Persistent
+          )
+          .getCurrentState()
+          .entities.map((metricsDefinition) => {
+            return {
+              id: metricsDefinition.id,
+              metricDefLabel: metricsDefinition.metricDefLabel,
+              sourceModelId: metricsDefinition.sourceModelId,
+              timeDimension: metricsDefinition.timeDimension,
+            } as MetricsDefinitionEntity;
+          }),
+      })
     );
   }
 
@@ -37,6 +70,14 @@ export class MetricsDefinitionController extends RillDeveloperController {
         "updateMetricsDefinitionTimestamp",
         [req.params.id, req.body.timeDimension]
       )
+    );
+  }
+
+  private async handleDelete(req: Request, res: Response) {
+    return this.wrapHttpStream(res, (context) =>
+      this.rillDeveloperService.dispatch(context, "deleteMetricsDefinition", [
+        req.params.id,
+      ])
     );
   }
 }

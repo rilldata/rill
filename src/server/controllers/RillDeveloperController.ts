@@ -6,6 +6,10 @@ import { RillRequestContext } from "$common/rill-developer-service/RillRequestCo
 import { RillActionsChannel } from "$common/utils/RillActionsChannel";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
+import type {
+  EntityType,
+  StateType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export abstract class RillDeveloperController {
   public constructor(
@@ -24,17 +28,19 @@ export abstract class RillDeveloperController {
 
   protected async wrapHttpStream(
     res: Response,
-    callback: (context: RillRequestContext<any, any>) => Promise<ActionResponse>
+    callback: (
+      context: RillRequestContext<EntityType, StateType>
+    ) => Promise<ActionResponse>
   ) {
     const context = new RillRequestContext(new RillActionsChannel());
     res.writeHead(200, {
       Connection: "keep-alive",
-      "Content-Type": "text/event-stream",
+      "Content-Type": "application/json",
       "Cache-Control": "no-cache",
     });
     const promise = callback(context);
     for await (const data of context.actionsChannel.getActions()) {
-      res.write(`data: ${JSON.stringify(data)}`);
+      res.write(JSON.stringify(data) + "\x01");
     }
     await promise;
     res.end();

@@ -105,6 +105,18 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
     );
   }
 
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async deleteMetricsDefinition(
+    rillRequestContext: MetricsDefinitionContext,
+    metricsDefId: string
+  ) {
+    this.dataModelerStateService.dispatch("deleteEntity", [
+      EntityType.MetricsDefinition,
+      StateType.Persistent,
+      metricsDefId,
+    ]);
+  }
+
   private async inferFromColumn(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefinition: MetricsDefinitionEntity,

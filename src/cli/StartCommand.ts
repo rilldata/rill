@@ -1,6 +1,10 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
 import { ExpressServer } from "$server/ExpressServer";
+import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
+import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
+import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
+import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 
 export class StartCommand extends DataModelerCliCommand {
   public getCommand(): Command {
@@ -22,8 +26,19 @@ export class StartCommand extends DataModelerCliCommand {
     return new ExpressServer(
       this.config,
       this.dataModelerService,
-      // not exposed to users just yet.
-      undefined,
+      new RillDeveloperService(
+        this.dataModelerStateService,
+        this.dataModelerService,
+        this.dataModelerService.getDatabaseService(),
+        [MetricsDefinitionActions, DimensionsActions, MeasuresActions].map(
+          (RillDeveloperActionsClass) =>
+            new RillDeveloperActionsClass(
+              this.config,
+              this.dataModelerStateService,
+              this.dataModelerService.getDatabaseService()
+            )
+        )
+      ),
       this.dataModelerStateService,
       this.notificationService,
       this.metricsService

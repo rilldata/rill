@@ -3,7 +3,7 @@
  * One end will push redux actions after processing a request.
  * The other end will pop them and send it over an HTTP streaming connection.
  */
-import { waitUntil } from "$common/utils/waitUtils";
+import { asyncWait, waitUntil } from "$common/utils/waitUtils";
 
 type Message = {
   action: string;

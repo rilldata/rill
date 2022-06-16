@@ -1,108 +1,29 @@
 import { expect, Page, PlaywrightTestArgs } from "@playwright/test";
-
-import { exec } from "node:child_process";
-import { promisify } from "util";
-import terminate from "terminate/promise";
-
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import { PlaywrightSuiteSetup } from "@adityahegde/typescript-test-utils/dist/playwright/PlaywrightSuiteSetup";
+import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
 import {
-  DataProviderData,
-  TestBase,
-  TestSuiteSetup,
-  TestSuiteParameter,
-} from "@adityahegde/typescript-test-utils";
-import { waitUntil } from "$common/utils/waitUtils";
-import { isPortOpen } from "$common/utils/isPortOpen";
-import { CLI_COMMAND } from "../utils/getCliCommand";
-
-const execPromise = promisify(exec);
+  TestServerSetup,
+  TestServerSetupParameter,
+} from "../utils/ServerSetup";
 
 const PORT = 8080;
-const DEV_PORT = 3000;
 const URL = `http://localhost:${PORT}/`;
-const CLI_TEST_FOLDER = "temp/test-ui";
-const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
-
-let serverStarted = false;
-
-class ServerSetup extends TestSuiteSetup {
-  child: import("child_process").ChildProcess;
-
-  setupTest(
-    testSuiteParameter: TestSuiteParameter,
-    testContext: Record<any, any>
-  ): Promise<void> {
-    return Promise.resolve();
-  }
-  teardownTest(
-    testSuiteParameter: TestSuiteParameter,
-    testContext: Record<any, any>
-  ): Promise<void> {
-    return Promise.resolve();
-  }
-  async teardownSuite(testSuiteParameter: TestSuiteParameter): Promise<void> {
-    await terminate(this.child.pid);
-    return undefined;
-  }
-
-  public async setupSuite(
-    testSuiteParameter: TestSuiteParameter
-  ): Promise<void> {
-    // Test to see if server is already running on PORT.
-    [PORT, DEV_PORT].forEach(async (port) => {
-      if (await isPortOpen(port)) {
-        console.error(
-          `Cannot run UI tests, server is already running on ${port}`
-        );
-        process.exit(1);
-      }
-    });
-
-    await execPromise(`mkdir -p ${CLI_TEST_FOLDER}`);
-    await execPromise(`rm -rf ${CLI_TEST_FOLDER}/*`);
-
-    await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
-    await execPromise(
-      `${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/Users.parquet`
-    );
-    await execPromise(
-      `${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/AdImpressions.parquet`
-    );
-    await execPromise(
-      `${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/AdBids.parquet`
-    );
-
-    // Run Rill Developer in the background, logging to stdout.
-    this.child = exec(`${CLI_COMMAND} start ${CLI_TEST_FOLDER_ARG}`);
-    this.child.stdout.pipe(process.stdout);
-    // Watch for server startup in output.
-    this.child.stdout.on("data", (data) => {
-      if (data.startsWith("Server started at")) {
-        serverStarted = true;
-      }
-    });
-    // Terminate if the process exits.
-    process.on("exit", async () => {
-      await terminate(this.child.pid);
-    });
-  }
-}
 
 type CostOutput = string;
 type ErrorOutput = string;
 
-@TestBase.Suite
+@TestBase.ParameterizedSuite([
+  {
+    cliFolder: "temp/test-ui",
+    serverPort: PORT,
+    uiPort: 3000,
+  } as TestServerSetupParameter,
+])
 @TestBase.TestLibrary(JestTestLibrary)
-@TestBase.TestSuiteSetup(ServerSetup)
+@TestBase.TestSuiteSetup(TestServerSetup)
 @TestBase.TestSuiteSetup(PlaywrightSuiteSetup)
-export class DataModelerTest extends TestBase {
-  @TestBase.BeforeSuite()
-  public async setup() {
-    // Wait for server startup
-    await waitUntil(() => serverStarted);
-  }
-
+export class DataModelerTest extends TestBase<TestServerSetupParameter> {
   public queryDataProvider(): DataProviderData<[string, CostOutput]> {
     type Args = [string, CostOutput];
 

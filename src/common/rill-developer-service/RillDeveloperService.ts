@@ -18,11 +18,11 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 type RillDeveloperActionsClasses = PickActionFunctions<
-  RillRequestContext<any, any>,
+  RillRequestContext<EntityType, StateType>,
   MetricsDefinitionActions & DimensionsActions & MeasuresActions
 >;
 export type RillDeveloperActionsDefinition = ExtractActionTypeDefinitions<
-  RillRequestContext<any, any>,
+  RillRequestContext<EntityType, StateType>,
   RillDeveloperActionsClasses
 >;
 
@@ -36,7 +36,7 @@ export class RillDeveloperService {
   } = {};
 
   public constructor(
-    protected readonly dataModelerStateService: DataModelerStateService,
+    public readonly dataModelerStateService: DataModelerStateService,
     private readonly dataModelerService: DataModelerService,
     private readonly databaseService: DatabaseService,
     private readonly rillDeveloperActions: Array<RillDeveloperActions>
@@ -51,7 +51,7 @@ export class RillDeveloperService {
   }
 
   public async dispatch<Action extends keyof RillDeveloperActionsDefinition>(
-    context: RillRequestContext<any, any>,
+    context: RillRequestContext<EntityType, StateType>,
     action: Action,
     args: RillDeveloperActionsDefinition[Action]
   ): Promise<ActionResponse> {
@@ -78,8 +78,6 @@ export class RillDeveloperService {
       args
     );
 
-    console.log(context, action, args);
-
     let returnResponse: ActionResponse;
     try {
       returnResponse = await actionsInstance[action].call(
@@ -90,7 +88,6 @@ export class RillDeveloperService {
       if (!returnResponse)
         returnResponse = ActionResponseFactory.getSuccessResponse();
     } catch (err) {
-      console.log(err);
       returnResponse = ActionResponseFactory.getErrorResponse(err);
     }
 
@@ -104,13 +101,13 @@ export class RillDeveloperService {
   private updateRillContext<
     Action extends keyof RillDeveloperActionsDefinition
   >(
-    context: RillRequestContext<any, any>,
+    context: RillRequestContext<EntityType, StateType>,
     entityType: EntityType,
     stateType: StateType,
     args: RillDeveloperActionsDefinition[Action]
-  ): RillRequestContext<any, any> {
+  ): RillRequestContext<EntityType, StateType> {
     if (context.entityStateService) {
-      context = new RillRequestContext<any, any>(
+      context = new RillRequestContext<EntityType, StateType>(
         context.actionsChannel,
         context.level + 1
       );
@@ -118,8 +115,8 @@ export class RillDeveloperService {
 
     context.setEntityStateService(
       this.dataModelerStateService.getEntityStateService(
-        entityType ?? (args[0] as any),
-        stateType ?? (args[1] as any)
+        entityType ?? (args[0] as EntityType),
+        stateType ?? (args[1] as StateType)
       )
     );
     if (entityType) {
@@ -127,9 +124,17 @@ export class RillDeveloperService {
         context.setEntityInfo(args[0], entityType, stateType);
       }
     } else if (stateType) {
-      context.setEntityInfo(args[1] as string, args[0], stateType);
+      context.setEntityInfo(
+        args[1] as string,
+        args[0] as EntityType,
+        stateType
+      );
     } else {
-      context.setEntityInfo(args[2] as string, args[0], args[1]);
+      context.setEntityInfo(
+        args[2] as string,
+        args[0] as never,
+        args[1] as StateType
+      );
     }
 
     return context;
