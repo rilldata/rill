@@ -49,11 +49,11 @@
   } from "@codemirror/autocomplete";
   import { lintKeymap } from "@codemirror/lint";
   import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
-  import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+    DerivedSourceStore,
+    PersistentSourceStore,
+  } from "$lib/application-state-stores/source-stores";
+  import type { DerivedSourceEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedSourceEntityService";
+  import type { PersistentSourceEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentSourceEntityService";
   import { Debounce } from "$common/utils/Debounce";
 
   const dispatch = createEventDispatcher();
@@ -136,26 +136,26 @@
 
   let autocompleteCompartment = new Compartment();
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const persistentSourceStore = getContext(
+    "rill:app:persistent-source-store"
+  ) as PersistentSourceStore;
+  const derivedSourceStore = getContext(
+    "rill:app:derived-source-store"
+  ) as DerivedSourceStore;
 
   let schema: { [table: string]: string[] };
   $: {
-    schema = $persistentTableStore.entities.reduce(
-      (acc, persistentTable: PersistentTableEntity) => {
-        const derivedTable: DerivedTableEntity =
-          $derivedTableStore.entities.find(
-            (derivedTable) => persistentTable.id === derivedTable.id
+    schema = $persistentSourceStore.entities.reduce(
+      (acc, persistentSource: PersistentSourceEntity) => {
+        const derivedSource: DerivedSourceEntity =
+          $derivedSourceStore.entities.find(
+            (derivedSource) => persistentSource.id === derivedSource.id
           );
-        // defensive check since persistentTableStore updates incrementally and can
-        // have transition states where tables are defined but none of their attributes are
-        if (derivedTable?.profile) {
-          const columnNames = derivedTable?.profile.map((col) => col.name);
-          acc[persistentTable.tableName] = columnNames;
+        // defensive check since persistentSourceStore updates incrementally and can
+        // have transition states where sources are defined but none of their attributes are
+        if (derivedSource?.profile) {
+          const columnNames = derivedSource?.profile.map((col) => col.name);
+          acc[persistentSource.sourceName] = columnNames;
         }
         return acc;
       },

@@ -3,7 +3,7 @@ import type { TestDataColumns } from "../data/DataLoader.data";
 import {
   ModelQueryTestData,
   ModelQueryTestDataProvider,
-  SingleTableQuery,
+  SingleSourceQuery,
 } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
 import {
@@ -16,8 +16,8 @@ import { ActionStatus } from "$common/data-modeler-service/response/ActionRespon
 @FunctionalTestBase.Suite
 export class ModelQuerySpec extends FunctionalTestBase {
   @FunctionalTestBase.BeforeSuite()
-  public async setupTables(): Promise<void> {
-    await this.loadTestTables();
+  public async setupSources(): Promise<void> {
+    await this.loadTestSources();
     await this.clientDataModelerService.dispatch("addModel", [
       { name: "query_0", query: "" },
     ]);
@@ -32,7 +32,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     query: string,
     columns: TestDataColumns
   ): Promise<void> {
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     await this.clientDataModelerService.dispatch("updateModelQuery", [
       model.id,
       query,
@@ -40,7 +40,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     await this.waitForModels();
 
     const [persistentModel, derivedModel] = this.getModels(
-      "tableName",
+      "sourceName",
       "query_0"
     );
     expect(derivedModel.error).toBeUndefined();
@@ -58,7 +58,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
       StateType.Persistent
     );
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "newModel", query: SingleTableQuery },
+      { name: "newModel", query: SingleSourceQuery },
     ]);
 
     await asyncWait(50);
@@ -101,7 +101,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
   public async shouldReturnModelQueryError(): Promise<void> {
     const INVALID_QUERY = "slect * from AdBids";
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     // invalid query
     let response = await this.clientDataModelerService.dispatch(
       "updateModelQuery",
@@ -110,7 +110,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     await this.waitForModels();
     expect(response.status).toBe(ActionStatus.Failure);
     expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
-    let [, derivedModel] = this.getModels("tableName", "query_0");
+    let [, derivedModel] = this.getModels("sourceName", "query_0");
     expect(derivedModel.error).toBe(response.messages[0].message);
 
     response = await this.clientDataModelerService.dispatch(
@@ -120,7 +120,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     await this.waitForModels();
     expect(response.status).toBe(ActionStatus.Failure);
     expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
-    [, derivedModel] = this.getModels("tableName", "query_0");
+    [, derivedModel] = this.getModels("sourceName", "query_0");
     expect(derivedModel.error).toBe(response.messages[0].message);
 
     // clearing query should clear the error
@@ -130,7 +130,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     );
     expect(response.status).toBe(ActionStatus.Success);
     expect(response.messages.length).toBe(0);
-    [, derivedModel] = this.getModels("tableName", "query_0");
+    [, derivedModel] = this.getModels("sourceName", "query_0");
     expect(derivedModel.error).toBeUndefined();
   }
 
@@ -170,7 +170,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
   }
 
   @FunctionalTestBase.Test()
-  public async shouldNotCreateOrRenameWithExistingTableName() {
+  public async shouldNotCreateOrRenameWithExistingSourceName() {
     const resp = await this.clientDataModelerService.dispatch("addModel", [
       { name: "AdBids", query: "" },
     ]);
@@ -185,7 +185,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     ]);
     await this.waitForModels();
 
-    const [model] = this.getModels("tableName", "modelRename");
+    const [model] = this.getModels("sourceName", "modelRename");
     const renameResp = await this.clientDataModelerService.dispatch(
       "updateModelName",
       [model.id, "AdBids"]

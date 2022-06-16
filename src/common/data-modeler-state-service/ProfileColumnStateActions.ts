@@ -5,13 +5,13 @@ import type { EntityType } from "$common/data-modeler-state-service/entity-state
 import { shallowCopy } from "$common/utils/shallowCopy";
 
 export enum ColumnarItemType {
-  Table,
+  Source,
   Model,
 }
 export const ColumnarItemTypeMap: {
   [type in ColumnarItemType]: ColumnarTypeKeys;
 } = {
-  [ColumnarItemType.Table]: "tables",
+  [ColumnarItemType.Source]: "sources",
   [ColumnarItemType.Model]: "models",
 };
 

@@ -15,7 +15,7 @@ import { DatabaseActionQueuePriority } from "$common/priority-action-queue/Datab
 import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
 const ColumnProfilePriorityMap = {
-  [EntityType.Table]: DatabaseActionQueuePriority.TableProfile,
+  [EntityType.Source]: DatabaseActionQueuePriority.SourceProfile,
   [EntityType.Model]: DatabaseActionQueuePriority.ActiveModelProfile,
 };
 
@@ -44,7 +44,7 @@ export class ProfileColumnActions extends DataModelerActions {
           this.collectColumnInfo(
             entityType,
             entityId,
-            persistentEntity.tableName,
+            persistentEntity.sourceName,
             column
           )
         )
@@ -57,29 +57,29 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectColumnInfo(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn
   ): Promise<void> {
     const promises = [];
     if (CATEGORICALS.has(column.type) || BOOLEANS.has(column.type)) {
       promises.push(
-        this.collectTopKAndCardinality(entityType, entityId, tableName, column)
+        this.collectTopKAndCardinality(entityType, entityId, sourceName, column)
       );
     } else {
       if (NUMERICS.has(column.type)) {
         promises.push(
-          this.collectNumericHistogram(entityType, entityId, tableName, column)
+          this.collectNumericHistogram(entityType, entityId, sourceName, column)
         );
       }
       if (TIMESTAMPS.has(column.type)) {
         promises.push(
-          this.collectTimeRange(entityType, entityId, tableName, column)
+          this.collectTimeRange(entityType, entityId, sourceName, column)
         );
         promises.push(
           this.collectSmallestTimegrainEstimate(
             entityType,
             entityId,
-            tableName,
+            sourceName,
             column
           )
         );
@@ -87,7 +87,7 @@ export class ProfileColumnActions extends DataModelerActions {
           this.collectTimestampRollup(
             entityType,
             entityId,
-            tableName,
+            sourceName,
             column,
             // use the medium width for the spark line
             COLUMN_PROFILE_CONFIG.summaryVizWidth.medium,
@@ -99,14 +99,14 @@ export class ProfileColumnActions extends DataModelerActions {
           this.collectDescriptiveStatistics(
             entityType,
             entityId,
-            tableName,
+            sourceName,
             column
           )
         );
       }
     }
     promises.push(
-      this.collectNullCount(entityType, entityId, tableName, column)
+      this.collectNullCount(entityType, entityId, sourceName, column)
     );
     await Promise.all(promises);
   }
@@ -114,7 +114,7 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectTopKAndCardinality(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn
   ): Promise<void> {
     this.dataModelerStateService.dispatch("updateColumnSummary", [
@@ -124,7 +124,7 @@ export class ProfileColumnActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
         "getTopKAndCardinality",
-        [tableName, column.name]
+        [sourceName, column.name]
       ),
     ]);
   }
@@ -132,7 +132,7 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectSmallestTimegrainEstimate(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn
   ): Promise<void> {
     this.dataModelerStateService.dispatch("updateColumnSummary", [
@@ -142,7 +142,7 @@ export class ProfileColumnActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
         "estimateSmallestTimeGrain",
-        [tableName, column.name]
+        [sourceName, column.name]
       ),
     ]);
   }
@@ -150,7 +150,7 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectTimestampRollup(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn,
     pixels: number = undefined,
     sampleSize: number = undefined
@@ -163,7 +163,7 @@ export class ProfileColumnActions extends DataModelerActions {
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
 
         "estimateTimestampRollup",
-        [tableName, column.name, pixels, sampleSize]
+        [sourceName, column.name, pixels, sampleSize]
       ),
     ]);
   }
@@ -171,7 +171,7 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectNumericHistogram(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn
   ): Promise<void> {
     this.dataModelerStateService.dispatch("updateColumnSummary", [
@@ -181,7 +181,7 @@ export class ProfileColumnActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
         "getNumericHistogram",
-        [tableName, column.name, column.type]
+        [sourceName, column.name, column.type]
       ),
     ]);
   }
@@ -189,7 +189,7 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectTimeRange(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn
   ): Promise<void> {
     this.dataModelerStateService.dispatch("updateColumnSummary", [
@@ -199,7 +199,7 @@ export class ProfileColumnActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
         "getTimeRange",
-        [tableName, column.name]
+        [sourceName, column.name]
       ),
     ]);
   }
@@ -207,7 +207,7 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectDescriptiveStatistics(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn
   ): Promise<void> {
     this.dataModelerStateService.dispatch("updateColumnSummary", [
@@ -217,7 +217,7 @@ export class ProfileColumnActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
         "getDescriptiveStatistics",
-        [tableName, column.name]
+        [sourceName, column.name]
       ),
     ]);
   }
@@ -225,7 +225,7 @@ export class ProfileColumnActions extends DataModelerActions {
   private async collectNullCount(
     entityType: EntityType,
     entityId: string,
-    tableName: string,
+    sourceName: string,
     column: ProfileColumn
   ): Promise<void> {
     this.dataModelerStateService.dispatch("updateNullCount", [
@@ -235,7 +235,7 @@ export class ProfileColumnActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
         "getNullCount",
-        [tableName, column.name]
+        [sourceName, column.name]
       ),
     ]);
   }

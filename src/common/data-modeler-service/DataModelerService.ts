@@ -1,5 +1,5 @@
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import type { TableActions } from "$common/data-modeler-service/TableActions";
+import type { SourceActions } from "$common/data-modeler-service/SourceActions";
 import type {
   ExtractActionTypeDefinitions,
   PickActionFunctions,
@@ -27,7 +27,7 @@ import type {
 
 type DataModelerActionsClasses = PickActionFunctions<
   EntityStateActionArg<any>,
-  TableActions & ProfileColumnActions & ModelActions & ApplicationActions
+  SourceActions & ProfileColumnActions & ModelActions & ApplicationActions
 >;
 /**
  * Style definition for Rill Developer actions.

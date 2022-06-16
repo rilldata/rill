@@ -2,8 +2,8 @@ import { DataModelerStateService } from "$common/data-modeler-state-service/Data
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import { DataModelerSocketService } from "$common/socket/DataModelerSocketService";
 import type { RootConfig } from "$common/config/RootConfig";
-import { PersistentTableEntityService } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import { DerivedTableEntityService } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import { PersistentSourceEntityService } from "$common/data-modeler-state-service/entity-state-service/PersistentSourceEntityService";
+import { DerivedSourceEntityService } from "$common/data-modeler-state-service/entity-state-service/DerivedSourceEntityService";
 import { PersistentModelEntityService } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { DerivedModelEntityService } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { ApplicationStateService } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
@@ -14,8 +14,8 @@ export function dataModelerStateServiceClientFactory() {
   return new DataModelerStateService(
     [],
     [
-      PersistentTableEntityService,
-      DerivedTableEntityService,
+      PersistentSourceEntityService,
+      DerivedSourceEntityService,
       PersistentModelEntityService,
       DerivedModelEntityService,
       ApplicationStateService,

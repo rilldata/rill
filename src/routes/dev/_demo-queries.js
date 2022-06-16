@@ -1,6 +1,6 @@
 export const queries = [
   `
-WITH x AS (select a, b, c, d, whatevewr from table)
+WITH x AS (select a, b, c, d, whatevewr from source)
    select     a, b+c as   next_val, whatever        
    
    

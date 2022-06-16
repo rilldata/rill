@@ -24,9 +24,9 @@ import { ActionStatus } from "$common/data-modeler-service/response/ActionRespon
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 import {
-  extractTableName,
-  sanitizeTableName,
-} from "$lib/util/extract-table-name";
+  extractSourceName,
+  sanitizeSourceName,
+} from "$lib/util/extract-source-name";
 
 export enum FileExportType {
   Parquet = "exportToParquet",
@@ -36,16 +36,16 @@ export enum FileExportType {
 export class ModelActions extends DataModelerActions {
   @DataModelerActions.PersistentModelAction()
   public async clearAllModels({ stateService }: PersistentModelStateActionArg) {
-    stateService.getCurrentState().entities.forEach((table) => {
+    stateService.getCurrentState().entities.forEach((source) => {
       this.dataModelerStateService.dispatch("deleteEntity", [
         EntityType.Model,
         StateType.Persistent,
-        table.id,
+        source.id,
       ]);
       this.dataModelerStateService.dispatch("deleteEntity", [
         EntityType.Model,
         StateType.Derived,
-        table.id,
+        source.id,
       ]);
     });
   }
@@ -133,7 +133,7 @@ export class ModelActions extends DataModelerActions {
     // validate query with the original query first.
     const validationResponse = await this.validateModelQuery(model, query);
     if (validationResponse) {
-      this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
+      this.dataModelerStateService.dispatch("clearSources", [modelId]);
       return this.setModelError(modelId, validationResponse);
     }
     this.dataModelerStateService.dispatch("clearModelError", [modelId]);
@@ -178,7 +178,10 @@ export class ModelActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: modelId, priority: DatabaseActionQueuePriority.ActiveModel },
         "createViewOfQuery",
-        [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]
+        [
+          persistentModel.sourceName,
+          sanitizeQuery(persistentModel.query, false),
+        ]
       );
     } catch (error) {
       return this.setModelError(
@@ -198,7 +201,7 @@ export class ModelActions extends DataModelerActions {
       profileColumns = await this.databaseActionQueue.enqueue(
         { id: modelId, priority: DatabaseActionQueuePriority.ActiveModel },
         "getProfileColumns",
-        [persistentModel.tableName]
+        [persistentModel.sourceName]
       );
     } catch (error) {
       return this.setModelError(
@@ -209,8 +212,8 @@ export class ModelActions extends DataModelerActions {
     // clear any model error if we get this far.
     this.dataModelerStateService.dispatch("clearModelError", [modelId]);
 
-    // retrieve the source table references from the query directly.
-    this.dataModelerStateService.dispatch("getModelSourceTables", [
+    // retrieve the source references from the query directly.
+    this.dataModelerStateService.dispatch("getModelSources", [
       model.id,
       persistentModel.query,
     ]);
@@ -236,7 +239,7 @@ export class ModelActions extends DataModelerActions {
                   priority: DatabaseActionQueuePriority.ActiveModel,
                 },
                 "getFirstNOfTable",
-                [persistentModel.tableName, MODEL_PREVIEW_COUNT]
+                [persistentModel.sourceName, MODEL_PREVIEW_COUNT]
               ),
             ]),
           // get the total number of rows first, since many parts of the iterative profiling
@@ -250,7 +253,7 @@ export class ModelActions extends DataModelerActions {
                   priority: DatabaseActionQueuePriority.ActiveModelProfile,
                 },
                 "getCardinalityOfTable",
-                [persistentModel.tableName]
+                [persistentModel.sourceName]
               ),
             ]),
           async () =>
@@ -269,7 +272,7 @@ export class ModelActions extends DataModelerActions {
                     priority: DatabaseActionQueuePriority.ActiveModelProfile,
                   },
                   "getDestinationSize",
-                  [persistentModel.tableName]
+                  [persistentModel.sourceName]
                 ),
               ]
             ),
@@ -460,9 +463,9 @@ export class ModelActions extends DataModelerActions {
       .entities.find(
         (model) => cleanModelName(model.name) === name && model.id !== id
       );
-    const existingTable = this.dataModelerStateService
-      .getEntityStateService(EntityType.Table, StateType.Persistent)
-      .getByField("tableName", sanitizeTableName(extractTableName(name)));
+    const existingSource = this.dataModelerStateService
+      .getEntityStateService(EntityType.Source, StateType.Persistent)
+      .getByField("sourceName", sanitizeSourceName(extractSourceName(name)));
 
     if (existing) {
       this.notificationService.notify({
@@ -472,13 +475,13 @@ export class ModelActions extends DataModelerActions {
       return ActionResponseFactory.getExisingEntityError(
         `Another model with the name ${name} already exists`
       );
-    } else if (existingTable) {
+    } else if (existingSource) {
       this.notificationService.notify({
-        message: `Another table with the sanitised table name ${existingTable.tableName} already exists`,
+        message: `Another source with the sanitised source name ${existingSource.sourceName} already exists`,
         type: "error",
       });
       return ActionResponseFactory.getExisingEntityError(
-        `Another table with the sanitised table name ${existingTable.tableName} already exists`
+        `Another source with the sanitised source name ${existingSource.sourceName} already exists`
       );
     }
     return undefined;

@@ -5,9 +5,9 @@
    * in an isolated way, with a number of real-world use-cases.
    */
   import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
+    DerivedSourceStore,
+    PersistentSourceStore,
+  } from "$lib/application-state-stores/source-stores";
   import {
     TimestampDetail,
     TimestampSpark,
@@ -16,12 +16,12 @@
 
   import { getContext } from "svelte";
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const persistentSourceStore = getContext(
+    "rill:app:persistent-source-store"
+  ) as PersistentSourceStore;
+  const derivedSourceStore = getContext(
+    "rill:app:derived-source-store"
+  ) as DerivedSourceStore;
 
   function convertTimestampPreview(d) {
     return d.map((di) => {
@@ -34,12 +34,12 @@
 
 <h1 class="text-xl pb-6">All Available TIMESTAMP columns</h1>
 <div class="flex flex-wrap gap-8">
-  {#each $persistentTableStore?.entities || [] as table}
-    {@const derivedTable = $derivedTableStore.entities.find(
+  {#each $persistentSourceStore?.entities || [] as table}
+    {@const derivedSource = $derivedSourceStore.entities.find(
       (t) => t.id == table.id
     )}
-    {#if derivedTable && derivedTable?.profile}
-      {#each derivedTable.profile as column}
+    {#if derivedSource && derivedSource?.profile}
+      {#each derivedSource.profile as column}
         <!-- {#if TIMESTAMPS.has(column.type) && column?.summary?.rollup}{JSON.stringify(
           column?.summary
         )}{/if} -->
@@ -51,7 +51,7 @@
                 style:grid-template-columns="max-content max-content"
                 class="font-normal grid justify-between justify-items-stretch text-gray-600 italic"
               >
-                from {table.tableName}
+                from {table.sourceName}
                 <TimestampSpark
                   data={convertTimestampPreview(column.summary.rollup.spark)}
                   xAccessor="ts"

@@ -101,7 +101,7 @@ export class InitCommand extends DataModelerCliCommand {
     }
 
     console.log(
-      `Importing tables from Duckdb database : ${duckDbPath} .\n` +
+      `Importing sources from Duckdb database : ${duckDbPath} .\n` +
         `Make sure to close any write connections to this database before running this.`
     );
 
@@ -112,7 +112,7 @@ export class InitCommand extends DataModelerCliCommand {
       );
     } else {
       console.log(
-        `Note: Any table imports and drops will directly import/drop from this connected database.`
+        `Note: Any source imports and drops will directly import/drop from this connected database.`
       );
     }
 

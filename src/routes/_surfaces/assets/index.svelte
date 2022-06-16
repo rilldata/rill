@@ -7,7 +7,7 @@
     layout,
   } from "$lib/application-state-stores/layout-store";
 
-  import TableAssets from "./TableAssets.svelte";
+  import SourceAssets from "./SourceAssets.svelte";
   import ModelAssets from "./ModelAssets.svelte";
 </script>
 
@@ -55,7 +55,7 @@
           <div class="font-bold">Rill Developer</div>
         </h1>
       </header>
-      <TableAssets />
+      <SourceAssets />
       <ModelAssets />
     </div>
     <!-- assets pane footer. -->

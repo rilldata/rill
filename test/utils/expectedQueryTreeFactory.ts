@@ -6,58 +6,58 @@ import type { QueryTreeJSON } from "$common/query-parser/tree/QueryTree";
 import type { QueryTreeNodeJSON } from "$common/query-parser/tree/QueryTreeNode";
 import { QueryTreeNodeType } from "$common/query-parser/tree/QueryTreeNodeType";
 import type { SelectNodeJSON } from "$common/query-parser/tree/SelectNode";
-import type { TableNodeJSON } from "$common/query-parser/tree/TableNode";
+import type { SourceNodeJSON } from "$common/query-parser/tree/SourceNode";
 
 export function expectedQueryTree(
   root: QueryTreeNodeJSON,
-  sourceTables: Array<TableNodeJSON>
+  sources: Array<SourceNodeJSON>
 ): QueryTreeJSON {
   return {
     root,
-    sourceTables,
+    sources,
   };
 }
 
 export function expectedCTE(
-  tables: Array<TableNodeJSON>,
+  sources: Array<SourceNodeJSON>,
   select: SelectNodeJSON
 ): CTENodeJSON {
   return {
     type: QueryTreeNodeType.CTE,
-    tables,
+    sources,
     select,
   };
 }
 
 export function expectedSelect(
-  tables: Array<TableNodeJSON>,
+  sources: Array<SourceNodeJSON>,
   columns: Array<ColumnNodeJSON>
 ): SelectNodeJSON {
   return {
     type: QueryTreeNodeType.Select,
-    tables,
+    sources,
     columns,
   };
 }
 
-export function expectedTable(
-  tableName: string,
+export function expectedSource(
+  sourceName: string,
   alias?: string
-): TableNodeJSON {
+): SourceNodeJSON {
   return {
-    type: QueryTreeNodeType.Table,
-    tableName,
-    alias: alias ?? tableName,
-    isSourceTable: false,
+    type: QueryTreeNodeType.Source,
+    sourceName,
+    alias: alias ?? sourceName,
+    isSource: false,
   };
 }
-export function expectedSourceTable(
-  tableName: string,
+export function expectedSource(
+  sourceName: string,
   alias?: string
-): TableNodeJSON {
+): SourceNodeJSON {
   return {
-    ...expectedTable(tableName, alias),
-    isSourceTable: true,
+    ...expectedSource(sourceName, alias),
+    isSource: true,
   };
 }
 export function expectedNestedSelect(
@@ -68,7 +68,7 @@ export function expectedNestedSelect(
     type: QueryTreeNodeType.NestedSelect,
     select,
     alias,
-    isSourceTable: false,
+    isSource: false,
   };
 }
 

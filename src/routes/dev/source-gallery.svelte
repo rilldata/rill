@@ -2,21 +2,21 @@
   import { getContext } from "svelte";
 
   import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
+    DerivedSourceStore,
+    PersistentSourceStore,
+  } from "$lib/application-state-stores/source-stores";
 
   import ParquetIcon from "$lib/components/icons/Parquet.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
 
   let innerWidth = 0;
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const persistentSourceStore = getContext(
+    "rill:app:persistent-source-store"
+  ) as PersistentSourceStore;
+  const derivedSourceStore = getContext(
+    "rill:app:derived-source-store"
+  ) as DerivedSourceStore;
 </script>
 
 <svelte:window bind:innerWidth />
@@ -31,9 +31,9 @@
   <!-- Drawer Handler -->
   <div class="assets">
     <div class="grid grid-cols-3">
-      {#if $persistentTableStore && $derivedTableStore && $persistentTableStore?.entities?.length && $derivedTableStore?.entities?.length}
-        {#each $persistentTableStore.entities as { tableName, id } (id)}
-          {@const derivedTable = $derivedTableStore.entities.find(
+      {#if $persistentSourceStore && $derivedSourceStore && $persistentSourceStore?.entities?.length && $derivedSourceStore?.entities?.length}
+        {#each $persistentSourceStore.entities as { sourceName, id } (id)}
+          {@const derivedSource = $derivedSourceStore.entities.find(
             (t) => t["id"] === id
           )}
           <div
@@ -41,11 +41,11 @@
             style:width="{innerWidth / 3 - 6}px"
           >
             <CollapsibleTableSummary
-              name={tableName}
-              cardinality={derivedTable?.cardinality ?? 0}
-              profile={derivedTable?.profile ?? []}
-              head={derivedTable?.preview ?? []}
-              sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+              name={sourceName}
+              cardinality={derivedSource?.cardinality ?? 0}
+              profile={derivedSource?.profile ?? []}
+              head={derivedSource?.preview ?? []}
+              sizeInBytes={derivedSource?.sizeInBytes ?? 0}
             />
           </div>
         {/each}

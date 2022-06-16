@@ -1,8 +1,8 @@
 export enum DatabaseActionQueuePriority {
-  TableImport,
+  SourceImport,
   ActiveModel,
   ActiveModelProfile,
-  TableProfile,
+  SourceProfile,
   ModelExport,
   InactiveModelProfile,
 }

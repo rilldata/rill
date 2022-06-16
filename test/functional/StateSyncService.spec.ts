@@ -10,10 +10,10 @@ import { asyncWait } from "$common/utils/waitUtils";
 import { TestBase } from "@adityahegde/typescript-test-utils";
 import { UserColumnsTestData } from "../data/DataLoader.data";
 import {
-  SingleTableQuery,
-  SingleTableQueryColumnsTestData,
-  TwoTableJoinQuery,
-  TwoTableJoinQueryColumnsTestData,
+  SingleSourceQuery,
+  SingleSourceQueryColumnsTestData,
+  TwoSourceJoinQuery,
+  TwoSourceJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
 import { DataModelerStateSyncService } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 
@@ -49,26 +49,26 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
     await this.secondDataModelerService.init();
     await this.secondDataModelerSyncService.init();
 
-    await this.secondDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.secondDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdBids.parquet",
     ]);
-    await this.secondDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.secondDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdImpressions.parquet",
     ]);
     await asyncWait(100);
   }
 
   @FunctionalTestBase.Test()
-  public async clientShouldPickupNewTables(): Promise<void> {
-    let instances = this.getTables("name", "Users");
+  public async clientShouldPickupNewSources(): Promise<void> {
+    let instances = this.getSources("name", "Users");
     expect(instances[0]).toBeUndefined();
 
-    await this.secondDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.secondDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/Users.parquet",
     ]);
     await asyncWait(500);
 
-    instances = this.getTables("name", "Users");
+    instances = this.getSources("name", "Users");
     expect(instances[0].name).toBe("Users");
     this.assertColumns(instances[1].profile, UserColumnsTestData);
   }
@@ -76,25 +76,25 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
   @FunctionalTestBase.Test()
   public async clientShouldPickupModelUpdates(): Promise<void> {
     await this.secondDataModelerService.dispatch("addModel", [
-      { name: "newModel", query: SingleTableQuery },
+      { name: "newModel", query: SingleSourceQuery },
     ]);
     await asyncWait(1000);
     await this.waitForModels();
-    const [model, derivedModel] = this.getModels("tableName", "newModel");
+    const [model, derivedModel] = this.getModels("sourceName", "newModel");
     expect(model.name).toBe("newModel.sql");
-    this.assertColumns(derivedModel.profile, SingleTableQueryColumnsTestData);
+    this.assertColumns(derivedModel.profile, SingleSourceQueryColumnsTestData);
 
     await this.clientDataModelerService.dispatch("updateModelQuery", [
       model.id,
-      TwoTableJoinQuery,
+      TwoSourceJoinQuery,
     ]);
     await asyncWait(1000);
     await this.waitForModels();
-    const [, updatedDerivedModel] = this.getModels("tableName", "newModel");
+    const [, updatedDerivedModel] = this.getModels("sourceName", "newModel");
     expect(model.name).toBe("newModel.sql");
     this.assertColumns(
       updatedDerivedModel.profile,
-      TwoTableJoinQueryColumnsTestData
+      TwoSourceJoinQueryColumnsTestData
     );
   }
 
@@ -102,17 +102,17 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
   // There is no parallel delete just yet. We should fix this in the future
   public async clientShouldPickupModelDeletion(): Promise<void> {
     await this.secondDataModelerService.dispatch("addModel", [
-      { name: "newModelDelete", query: SingleTableQuery },
+      { name: "newModelDelete", query: SingleSourceQuery },
     ]);
     await asyncWait(1000);
     await this.waitForModels();
-    const [model] = this.getModels("tableName", "newModelDelete");
+    const [model] = this.getModels("sourceName", "newModelDelete");
     expect(model.name).toBe("newModelDelete.sql");
 
     await this.clientDataModelerService.dispatch("deleteModel", [model.id]);
     await asyncWait(1000);
     await this.waitForModels();
-    const updatedModels = this.getModels("tableName", "newModelDelete");
+    const updatedModels = this.getModels("sourceName", "newModelDelete");
     expect(updatedModels[0]).toBeUndefined();
     expect(updatedModels[1]).toBeUndefined();
   }

@@ -7,7 +7,7 @@
   import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
   import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
 
-  import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
+  import ImportingSource from "$lib/components/overlay/ImportingSource.svelte";
   import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
 
   import type {
@@ -15,9 +15,9 @@
     DerivedModelStore,
   } from "$lib/application-state-stores/model-stores";
   import type {
-    PersistentTableStore,
-    DerivedTableStore,
-  } from "$lib/application-state-stores/table-stores";
+    PersistentSourceStore,
+    DerivedSourceStore,
+  } from "$lib/application-state-stores/source-stores";
 
   import { config } from "$lib/application-state-stores/application-store";
 
@@ -34,12 +34,12 @@
   let assetsHovered = false;
   let inspectorHovered = false;
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const persistentSourceStore = getContext(
+    "rill:app:persistent-source-store"
+  ) as PersistentSourceStore;
+  const derivedSourceStore = getContext(
+    "rill:app:derived-source-store"
+  ) as DerivedSourceStore;
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
@@ -47,12 +47,12 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  // get any importing tables
-  $: derivedImportedTable = $derivedTableStore?.entities?.find(
-    (table) => table.status === EntityStatus.Importing
+  // get any importing sources
+  $: derivedImportedSource = $derivedSourceStore?.entities?.find(
+    (source) => source.status === EntityStatus.Importing
   );
-  $: persistentImportedTable = $persistentTableStore?.entities?.find(
-    (table) => table.id === derivedImportedTable?.id
+  $: persistentImportedSource = $persistentSourceStore?.entities?.find(
+    (source) => source.id === derivedImportedSource?.id
   );
   // get any exporting datasets.
   $: derivedExportedModel = $derivedModelStore?.entities?.find(
@@ -65,13 +65,13 @@
 
 {#if derivedExportedModel && persistentExportedModel}
   <ExportingDataset
-    tableName={persistentExportedModel.name}
+    sourceName={persistentExportedModel.name}
     path={`${config.database.exportFolder}/`}
   />
-{:else if derivedImportedTable && persistentImportedTable}
-  <ImportingTable
-    importName={persistentImportedTable.path}
-    tableName={persistentImportedTable.name}
+{:else if derivedImportedSource && persistentImportedSource}
+  <ImportingSource
+    importName={persistentImportedSource.path}
+    sourceName={persistentImportedSource.name}
   />
 {/if}
 
@@ -91,7 +91,7 @@
       mode={$assetsVisible ? "right" : "hamburger"}
     />
     <svelte:fragment slot="tooltip-content">
-      {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and tables
+      {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and sources
     </svelte:fragment>
   </SurfaceControlButton>
 

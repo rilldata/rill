@@ -96,14 +96,14 @@ export class DataModelerStateSyncService {
   ) {
     if (
       stateType === StateType.Derived &&
-      (entityType === EntityType.Model || entityType === EntityType.Table)
+      (entityType === EntityType.Model || entityType === EntityType.Source)
     ) {
       return new DerivedEntityUpdateHandler(
         config,
         dataModelerService,
         entityType === EntityType.Model
           ? "collectModelInfo"
-          : "collectTableInfo"
+          : "collectSourceInfo"
       );
     } else if (
       stateType === StateType.Persistent &&

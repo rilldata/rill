@@ -3,15 +3,15 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {
-  PersistentTableEntity,
-  PersistentTableEntityService,
-  PersistentTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  PersistentSourceEntity,
+  PersistentSourceEntityService,
+  PersistentSourceStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/PersistentSourceEntityService";
 import type {
-  DerivedTableEntity,
-  DerivedTableEntityService,
-  DerivedTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+  DerivedSourceEntity,
+  DerivedSourceEntityService,
+  DerivedSourceStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/DerivedSourceEntityService";
 import type {
   PersistentModelEntity,
   PersistentModelEntityService,
@@ -29,9 +29,9 @@ import type {
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 export type EntityStateServicesMapType = {
-  [EntityType.Table]?: {
-    [StateType.Persistent]?: PersistentTableEntityService;
-    [StateType.Derived]?: DerivedTableEntityService;
+  [EntityType.Source]?: {
+    [StateType.Persistent]?: PersistentSourceEntityService;
+    [StateType.Derived]?: DerivedSourceEntityService;
   };
   [EntityType.Model]?: {
     [StateType.Persistent]?: PersistentModelEntityService;
@@ -44,9 +44,9 @@ export type EntityStateServicesMapType = {
 };
 
 export type EntityRecordMapType = {
-  [EntityType.Table]: {
-    [StateType.Persistent]: PersistentTableEntity;
-    [StateType.Derived]: DerivedTableEntity;
+  [EntityType.Source]: {
+    [StateType.Persistent]: PersistentSourceEntity;
+    [StateType.Derived]: DerivedSourceEntity;
   };
   [EntityType.Model]: {
     [StateType.Persistent]: PersistentModelEntity;
@@ -58,9 +58,9 @@ export type EntityRecordMapType = {
   };
 };
 export type EntityStateActionArgMapType = {
-  [EntityType.Table]: {
-    [StateType.Persistent]: PersistentTableStateActionArg;
-    [StateType.Derived]: DerivedTableStateActionArg;
+  [EntityType.Source]: {
+    [StateType.Persistent]: PersistentSourceStateActionArg;
+    [StateType.Derived]: DerivedSourceStateActionArg;
   };
   [EntityType.Model]: {
     [StateType.Persistent]: PersistentModelStateActionArg;

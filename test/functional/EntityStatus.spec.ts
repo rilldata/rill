@@ -5,7 +5,7 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { EntityStatusTracker } from "../utils/EntityStatusTracker";
 import { asyncWait } from "$common/utils/waitUtils";
-import { TwoTableJoinQuery } from "../data/ModelQuery.data";
+import { TwoSourceJoinQuery } from "../data/ModelQuery.data";
 import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 @FunctionalTestBase.Suite
@@ -22,18 +22,18 @@ export class EntityStatusSpec extends FunctionalTestBase {
 
   @FunctionalTestBase.BeforeEachTest()
   public async setupTests() {
-    await this.clientDataModelerService.dispatch("clearAllTables", []);
+    await this.clientDataModelerService.dispatch("clearAllSources", []);
     await this.clientDataModelerService.dispatch("clearAllModels", []);
     this.entityStatusTracker.init();
   }
 
   // @FunctionalTestBase.Test()
-  // public async shouldHaveCorrectStatusWhileImportingTable() {
-  //     this.entityStatusTracker.startTracker(EntityType.Table);
+  // public async shouldHaveCorrectStatusWhileImportingSource() {
+  //     this.entityStatusTracker.startTracker(EntityType.Source);
   //     await asyncWait(50);
 
   //     await this.clientDataModelerService.dispatch(
-  //         "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
+  //         "addOrUpdateSourceFromFile", ["test/data/AdBids.csv"]);
   //     await asyncWait(50);
 
   //     expect(this.entityStatusTracker.getStatusChangeOrder()).toEqual([
@@ -51,8 +51,8 @@ export class EntityStatusSpec extends FunctionalTestBase {
   // @FunctionalTestBase.Test()
   // public async shouldHaveCorrectStatusWhileUpdatingModelQuery() {
   //     await this.clientDataModelerService.dispatch(
-  //         "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
-  //     await this.waitForTables();
+  //         "addOrUpdateSourceFromFile", ["test/data/AdBids.csv"]);
+  //     await this.waitForSources();
   //     await this.clientDataModelerService.dispatch(
   //         "addModel", [{name: "query_0", query: ""}]);
   //     await asyncWait(50);
@@ -62,7 +62,7 @@ export class EntityStatusSpec extends FunctionalTestBase {
   //     await asyncWait(50);
 
   //     await this.clientDataModelerService.dispatch(
-  //         "updateModelQuery", [model.id, SingleTableQuery]);
+  //         "updateModelQuery", [model.id, SingleSourceQuery]);
   //     await asyncWait(50);
 
   //     expect(this.entityStatusTracker.getStatusChangeOrder()).toEqual([
@@ -80,15 +80,15 @@ export class EntityStatusSpec extends FunctionalTestBase {
 
   @FunctionalTestBase.Test()
   public async shouldHaveCorrectStatusWhileExportingModel() {
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdBids.csv",
     ]);
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdImpressions.tsv",
     ]);
-    await this.waitForTables();
+    await this.waitForSources();
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: TwoTableJoinQuery },
+      { name: "query_0", query: TwoSourceJoinQuery },
     ]);
     await asyncWait(50);
 
@@ -125,19 +125,19 @@ export class EntityStatusSpec extends FunctionalTestBase {
   //     const [model0] = this.getModels("name", "query_0.sql");
   //     const [model1] = this.getModels("name", "query_1.sql");
 
-  //     this.entityStatusTracker.startTracker(EntityType.Table);
+  //     this.entityStatusTracker.startTracker(EntityType.Source);
   //     await asyncWait(50);
 
   //     const promises = [];
   //     promises.push(this.clientDataModelerService.dispatch(
-  //         "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]));
+  //         "addOrUpdateSourceFromFile", ["test/data/AdBids.csv"]));
   //     promises.push(this.clientDataModelerService.dispatch(
-  //         "addOrUpdateTableFromFile", ["test/data/AdImpressions.tsv"]));
+  //         "addOrUpdateSourceFromFile", ["test/data/AdImpressions.tsv"]));
   //     await asyncWait(50);
   //     promises.push(this.clientDataModelerService.dispatch(
-  //         "updateModelQuery", [model0.id, SingleTableQuery]));
+  //         "updateModelQuery", [model0.id, SingleSourceQuery]));
   //     promises.push(this.clientDataModelerService.dispatch(
-  //         "updateModelQuery", [model1.id, TwoTableJoinQuery]));
+  //         "updateModelQuery", [model1.id, TwoSourceJoinQuery]));
   //     await Promise.all(promises);
   //     await asyncWait(50);
 

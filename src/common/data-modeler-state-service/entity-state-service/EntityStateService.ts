@@ -5,7 +5,7 @@ import { applyPatches, produce } from "immer";
 import type { Patch } from "immer";
 
 export enum EntityType {
-  Table = "Table",
+  Source = "Source",
   Model = "Model",
   Application = "Application",
 }

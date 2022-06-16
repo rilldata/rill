@@ -31,21 +31,21 @@ export class InfoCommand extends DataModelerCliCommand {
     console.log("*** Project Info ***");
     console.log(`Project Path: ${projectPath}`);
 
-    this.displayTablesInfo(dataModelerStateService);
+    this.displaySourcesInfo(dataModelerStateService);
     this.displayModelsInfo(dataModelerStateService);
   }
 
-  private static displayTablesInfo(
+  private static displaySourcesInfo(
     dataModelerStateService: DataModelerStateService
   ) {
-    const tableState = dataModelerStateService
-      .getEntityStateService(EntityType.Table, StateType.Persistent)
+    const sourceState = dataModelerStateService
+      .getEntityStateService(EntityType.Source, StateType.Persistent)
       .getCurrentState();
-    if (!tableState?.entities.length) return;
+    if (!sourceState?.entities.length) return;
 
-    console.log("Imported Tables:");
-    tableState.entities.forEach((table) =>
-      console.log(`${table.tableName} (${table.path})`)
+    console.log("Imported Sources:");
+    sourceState.entities.forEach((source) =>
+      console.log(`${source.sourceName} (${source.path})`)
     );
   }
 

@@ -4,15 +4,15 @@ import { QueryParser } from "$common/query-parser/QueryParser";
 import {
   CTE,
   NestedQuery,
-  SingleTableQuery,
-  TwoTableJoinQuery,
+  SingleSourceQuery,
+  TwoSourceJoinQuery,
 } from "../data/ModelQuery.data";
 import type { QueryTreeJSON } from "$common/query-parser/tree/QueryTree";
 import {
   CTEQueryTree,
   NestedQueryTree,
-  SingleTableQueryTree,
-  TwoTableJoinQueryTree,
+  SingleSourceQueryTree,
+  TwoSourceJoinQueryTree,
 } from "../data/QueryParser.data";
 
 @TestBase.Suite
@@ -22,12 +22,12 @@ export class QueryParserSpec extends TestBase {
     return {
       subData: [
         {
-          title: "SingleTableQuery",
-          args: [SingleTableQuery, SingleTableQueryTree],
+          title: "SingleSourceQuery",
+          args: [SingleSourceQuery, SingleSourceQueryTree],
         },
         {
-          title: "TwoTableJoinQuery",
-          args: [TwoTableJoinQuery, TwoTableJoinQueryTree],
+          title: "TwoSourceJoinQuery",
+          args: [TwoSourceJoinQuery, TwoSourceJoinQueryTree],
         },
         {
           title: "NestedQuery",

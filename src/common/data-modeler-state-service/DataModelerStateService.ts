@@ -1,5 +1,5 @@
 import type { DataModelerState } from "$lib/types";
-import type { TableStateActions } from "./TableStateActions";
+import type { SourceStateActions } from "./SourceStateActions";
 import type { ModelStateActions } from "./ModelStateActions";
 import type { ProfileColumnStateActions } from "./ProfileColumnStateActions";
 import type { ExtractActionTypeDefinitions } from "$common/ServiceBase";
@@ -34,7 +34,7 @@ enablePatches();
 
 type DataModelerStateActionsClasses = PickActionFunctions<
   EntityStateActionArg<any>,
-  TableStateActions &
+  SourceStateActions &
     ModelStateActions &
     ProfileColumnStateActions &
     CommonStateActions &

@@ -9,11 +9,11 @@ import {
 import { DATA_FOLDER } from "../data/generator/data-constants";
 import {
   extractFileExtension,
-  extractTableName,
-} from "$lib/util/extract-table-name";
+  extractSourceName,
+} from "$lib/util/extract-source-name";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
-import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
+import { SingleSourceQuery, TwoSourceJoinQuery } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
 
 const UserFile = "test/data/Users.csv";
@@ -22,7 +22,7 @@ const UserFile = "test/data/Users.csv";
 export class DataLoaderSpec extends FunctionalTestBase {
   @FunctionalTestBase.BeforeEachTest()
   public async setupTests() {
-    await this.clientDataModelerService.dispatch("clearAllTables", []);
+    await this.clientDataModelerService.dispatch("clearAllSources", []);
   }
 
   public fileImportTestData(): FileImportTestDataProvider {
@@ -32,86 +32,89 @@ export class DataLoaderSpec extends FunctionalTestBase {
   }
 
   // @TestBase.Test("fileImportTestData")
-  public async shouldImportTableFromFile(
+  public async shouldImportSourceFromFile(
     inputFile: string,
     cardinality: number,
     columns: TestDataColumns
   ): Promise<void> {
     const actualFilePath = `${DATA_FOLDER}/${inputFile}`;
 
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       actualFilePath,
-      `${extractTableName(inputFile)}_${extractFileExtension(inputFile)}`,
+      `${extractSourceName(inputFile)}_${extractFileExtension(inputFile)}`,
     ]);
-    await this.waitForTables();
+    await this.waitForSources();
     await asyncWait(250);
 
-    const [table, derivedTable] = this.getTables("path", actualFilePath);
+    const [source, derivedSource] = this.getSources("path", actualFilePath);
 
-    expect(table.path).toBe(actualFilePath);
-    expect(derivedTable.cardinality).toBe(cardinality);
+    expect(source.path).toBe(actualFilePath);
+    expect(derivedSource.cardinality).toBe(cardinality);
 
-    this.assertColumns(derivedTable.profile, columns);
+    this.assertColumns(derivedSource.profile, columns);
   }
 
   @TestBase.Test()
-  public async shouldUseTableNameFromArgs(): Promise<void> {
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+  public async shouldUseSourceNameFromArgs(): Promise<void> {
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       UserFile,
-      "UsersTable",
+      "UsersSource",
     ]);
-    await this.waitForTables();
+    await this.waitForSources();
 
-    const [table] = this.getTables("name", "UsersTable");
+    const [source] = this.getSources("name", "UsersSource");
 
-    expect(table.path).toBe(UserFile);
-    expect(table.name).toBe("UsersTable");
+    expect(source.path).toBe(UserFile);
+    expect(source.name).toBe("UsersSource");
   }
 
   @TestBase.Test()
-  public async shouldNotLoadInvalidTable(): Promise<void> {
+  public async shouldNotLoadInvalidSource(): Promise<void> {
     const response = await this.clientDataModelerService.dispatch(
-      "addOrUpdateTableFromFile",
-      ["test/data/AdBids", "AdBidsTableInvalid"]
+      "addOrUpdateSourceFromFile",
+      ["test/data/AdBids", "AdBidsSourceInvalid"]
     );
-    await this.waitForTables();
+    await this.waitForSources();
 
-    const [table] = this.getTables("name", "AdBidsTableInvalid");
+    const [source] = this.getSources("name", "AdBidsSourceInvalid");
 
-    expect(table).toBeUndefined();
+    expect(source).toBeUndefined();
     expect(response.status).toBe(ActionStatus.Failure);
-    expect(response.messages[0].errorType).toBe(ActionErrorType.ImportTable);
+    expect(response.messages[0].errorType).toBe(ActionErrorType.ImportSource);
   }
 
   @TestBase.Test()
-  public async shouldDropTable(): Promise<void> {
+  public async shouldDropSource(): Promise<void> {
     await Promise.all([
-      this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+      this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
         "test/data/AdBids.csv",
       ]),
-      this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+      this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
         "test/data/AdImpressions.csv",
       ]),
     ]);
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: SingleTableQuery },
+      { name: "query_0", query: SingleSourceQuery },
     ]);
-    await this.waitForTables();
+    await this.waitForSources();
     await this.waitForModels();
 
-    await this.clientDataModelerService.dispatch("dropTable", [
+    await this.clientDataModelerService.dispatch("dropSource", [
       "AdImpressions",
     ]);
     await asyncWait(100);
 
-    const [table, derivedTable] = this.getTables("tableName", "AdImpressions");
-    expect(table).toBeUndefined();
-    expect(derivedTable).toBeUndefined();
+    const [source, derivedSource] = this.getSources(
+      "sourceName",
+      "AdImpressions"
+    );
+    expect(source).toBeUndefined();
+    expect(derivedSource).toBeUndefined();
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     const response = await this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model.id, TwoTableJoinQuery]
+      [model.id, TwoSourceJoinQuery]
     );
     expect(response.status).toBe(ActionStatus.Failure);
   }
@@ -123,10 +126,10 @@ export class DataLoaderSpec extends FunctionalTestBase {
     ]);
     await this.waitForModels();
     const resp = await this.clientDataModelerService.dispatch(
-      "addOrUpdateTableFromFile",
+      "addOrUpdateSourceFromFile",
       ["test/data/AdBids.csv", "ExistingModel"]
     );
-    await this.waitForTables();
+    await this.waitForSources();
 
     expect(resp.status).toBe(ActionStatus.Failure);
     expect(resp.messages[0].errorType).toBe(

@@ -25,9 +25,9 @@
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
+    DerivedSourceStore,
+    PersistentSourceStore,
+  } from "$lib/application-state-stores/source-stores";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -37,12 +37,12 @@
 
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const persistentSourceStore = getContext(
+    "rill:app:persistent-source-store"
+  ) as PersistentSourceStore;
+  const derivedSourceStore = getContext(
+    "rill:app:derived-source-store"
+  ) as DerivedSourceStore;
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
@@ -63,12 +63,12 @@
   }
 
   let rollup;
-  let tables;
-  // get source tables?
-  let sourceTableReferences;
+  let sources;
+  // get source sources?
+  let sourceReferences;
   let showColumns = true;
   let showExportOptions = true;
-  let sourceTableNames = [];
+  let sourceSourceNames = [];
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
@@ -88,26 +88,26 @@
     activeEntityID && $derivedModelStore?.entities
       ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
-  // get source table references.
+  // get source references.
   $: if (currentDerivedModel?.sources) {
-    sourceTableReferences = currentDerivedModel?.sources;
+    sourceReferences = currentDerivedModel?.sources;
   }
 
-  // map and filter these source tables.
-  $: if (sourceTableReferences?.length) {
-    tables = sourceTableReferences
-      .map((sourceTableReference) => {
-        const table = $persistentTableStore.entities.find(
-          (t) => sourceTableReference.name === t.tableName
+  // map and filter these sources.
+  $: if (sourceReferences?.length) {
+    sources = sourceReferences
+      .map((sourceReference) => {
+        const source = $persistentSourceStore.entities.find(
+          (t) => sourceReference.name === t.sourceName
         );
-        if (!table) return undefined;
-        return $derivedTableStore.entities.find(
-          (derivedTable) => derivedTable.id === table.id
+        if (!source) return undefined;
+        return $derivedSourceStore.entities.find(
+          (derivedSource) => derivedSource.id === source.id
         );
       })
       .filter((t) => !!t);
   } else {
-    tables = [];
+    sources = [];
   }
 
   $: outputRowCardinalityValue = currentDerivedModel?.cardinality;
@@ -117,8 +117,8 @@
   ) {
     outputRowCardinality.set(outputRowCardinalityValue);
   }
-  $: inputRowCardinalityValue = tables?.length
-    ? tables.reduce((acc, v) => acc + v.cardinality, 0)
+  $: inputRowCardinalityValue = sources?.length
+    ? sources.reduce((acc, v) => acc + v.cardinality, 0)
     : 0;
   $: if (
     inputRowCardinalityValue !== undefined &&
@@ -134,7 +134,7 @@
   $: if (rollup !== undefined && !isNaN(rollup)) bigRollupNumber.set(rollup);
 
   // toggle state for inspector sections
-  let showSourceTables = true;
+  let showSources = true;
 
   let container;
   let containerWidth = 0;
@@ -159,7 +159,7 @@
 
 {#key currentModel?.id}
   <div bind:this={container}>
-    {#if currentModel && currentModel.query.trim().length && tables}
+    {#if currentModel && currentModel.query.trim().length && sources}
       <div
         style:height="var(--header-height)"
         class:text-gray-300={currentDerivedModel?.error}
@@ -248,8 +248,7 @@
               <TooltipContent slot="tooltip-content">
                 <div class="pt-1 pb-1 font-bold">the rollup percentage</div>
                 <div style:width="240px" class="pb-1">
-                  the ratio of destination table rows to source table rows, as a
-                  percentage
+                  the ratio of result set rows to source rows, as a percentage
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -265,26 +264,26 @@
         <div class="pt-4 pb-4">
           <div class=" pl-4 pr-4">
             <CollapsibleSectionTitle
-              tooltipText="source tables"
-              bind:active={showSourceTables}
+              tooltipText="sources"
+              bind:active={showSources}
             >
-              Source Tables
+              Sources
             </CollapsibleSectionTitle>
           </div>
-          {#if showSourceTables}
+          {#if showSources}
             <div transition:slide|local={{ duration: 200 }} class="mt-1">
-              {#if sourceTableReferences?.length && tables}
-                {#each sourceTableReferences as reference, index (reference.name)}
-                  {@const correspondingTableCardinality =
-                    tables[index]?.cardinality}
+              {#if sourceReferences?.length && sources}
+                {#each sourceReferences as reference, index (reference.name)}
+                  {@const correspondingSourceCardinality =
+                    sources[index]?.cardinality}
                   <div
                     class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                     style:grid-template-columns="auto max-content"
                     on:focus={() => {
-                      queryHighlight.set(reference.tables);
+                      queryHighlight.set(reference.sources);
                     }}
                     on:mouseover={() => {
-                      queryHighlight.set(reference.tables);
+                      queryHighlight.set(reference.sources);
                     }}
                     on:mouseleave={() => {
                       queryHighlight.set(undefined);
@@ -299,10 +298,10 @@
                       {reference.name}
                     </div>
                     <div class="text-gray-500 italic">
-                      <!-- is there a source table with this name and cardinality established? -->
-                      {#if correspondingTableCardinality}
+                      <!-- is there a source with this name and cardinality established? -->
+                      {#if correspondingSourceCardinality}
                         {`${formatInteger(
-                          correspondingTableCardinality
+                          correspondingSourceCardinality
                         )} rows` || ""}
                       {/if}
                     </div>
@@ -322,7 +321,7 @@
         <div class="pb-4 pt-4">
           <div class=" pl-4 pr-4">
             <CollapsibleSectionTitle
-              tooltipText="source tables"
+              tooltipText="sources"
               bind:active={showColumns}
             >
               selected columns

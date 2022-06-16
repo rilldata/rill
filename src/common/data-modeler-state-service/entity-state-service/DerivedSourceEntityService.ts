@@ -9,20 +9,20 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataProfileEntity } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 
-export interface DerivedTableEntity extends DataProfileEntity {
-  type: EntityType.Table;
+export interface DerivedSourceEntity extends DataProfileEntity {
+  type: EntityType.Source;
 }
-export type DerivedTableState = EntityState<DerivedTableEntity>;
-export type DerivedTableStateActionArg = EntityStateActionArg<
-  DerivedTableEntity,
-  DerivedTableState,
-  DerivedTableEntityService
+export type DerivedSourceState = EntityState<DerivedSourceEntity>;
+export type DerivedSourceStateActionArg = EntityStateActionArg<
+  DerivedSourceEntity,
+  DerivedSourceState,
+  DerivedSourceEntityService
 >;
 
-export class DerivedTableEntityService extends EntityStateService<
-  DerivedTableEntity,
-  DerivedTableState
+export class DerivedSourceEntityService extends EntityStateService<
+  DerivedSourceEntity,
+  DerivedSourceState
 > {
-  public readonly entityType = EntityType.Table;
+  public readonly entityType = EntityType.Source;
   public readonly stateType = StateType.Derived;
 }

@@ -3,7 +3,7 @@ import type {DataProviderData} from "@adityahegde/typescript-test-utils";
 
 type Args = [string, TestDataColumns];
 
-export const SingleTableQueryColumnsTestData: TestDataColumns = [{
+export const SingleSourceQueryColumnsTestData: TestDataColumns = [{
     name: "impressions",
     type: "BIGINT",
     isNull: false,
@@ -16,10 +16,10 @@ export const SingleTableQueryColumnsTestData: TestDataColumns = [{
     type: "VARCHAR",
     isNull: false,
 }];
-export const SingleTableQuery = "select count(*) as impressions, publisher, domain from AdBids group by publisher, domain";
-const SingleTableQueryTestData: Args = [SingleTableQuery, SingleTableQueryColumnsTestData];
+export const SingleSourceQuery = "select count(*) as impressions, publisher, domain from AdBids group by publisher, domain";
+const SingleSourceQueryTestData: Args = [SingleSourceQuery, SingleSourceQueryColumnsTestData];
 
-export const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
+export const TwoSourceJoinQueryColumnsTestData: TestDataColumns = [{
     name: "impressions",
     type: "BIGINT",
     isNull: false,
@@ -44,12 +44,12 @@ export const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
     type: "VARCHAR",
     isNull: false,
 }];
-export const TwoTableJoinQuery = `
+export const TwoSourceJoinQuery = `
 select count(*) as impressions, avg(bid.bid_price) as bid_price, bid.publisher, bid.domain, imp.city, imp.country
 from AdBids bid join AdImpressions imp on bid.id = imp.id
 group by bid.publisher, bid.domain, imp.city, imp.country
 `;
-const TwoTableJoinQueryTestData: Args = [TwoTableJoinQuery, TwoTableJoinQueryColumnsTestData];
+const TwoSourceJoinQueryTestData: Args = [TwoSourceJoinQuery, TwoSourceJoinQueryColumnsTestData];
 
 export const NestedQuery = `
 select
@@ -112,11 +112,11 @@ with
 export type ModelQueryTestDataProvider = DataProviderData<Args>;
 export const ModelQueryTestData: ModelQueryTestDataProvider = {
     subData: [{
-        title: "Single table group",
-        args: SingleTableQueryTestData,
+        title: "Single source group",
+        args: SingleSourceQueryTestData,
     }, {
-        title: "Two table join",
-        args: TwoTableJoinQueryTestData,
+        title: "Two source join",
+        args: TwoSourceJoinQueryTestData,
     }, {
         title: "Nested queries",
         args: NestedQueryTestData

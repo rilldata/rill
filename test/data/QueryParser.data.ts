@@ -1,8 +1,8 @@
-import { expectedQueryTree, expectedSelect, expectedColumn, expectedNestedSelect, expectedCTE, expectedSourceTable } from "../utils/expectedQueryTreeFactory";
+import { expectedQueryTree, expectedSelect, expectedColumn, expectedNestedSelect, expectedCTE, expectedSource } from "../utils/expectedQueryTreeFactory";
 
-const AdBidsAliased = expectedSourceTable("adbids", "bid");
-const AdImpressionsAliased = expectedSourceTable("adimpressions", "imp");
-const UsersAliased = expectedSourceTable("users", "u");
+const AdBidsAliased = expectedSource("adbids", "bid");
+const AdImpressionsAliased = expectedSource("adimpressions", "imp");
+const UsersAliased = expectedSource("users", "u");
 
 const AdBidsJoinImpressionsColumns = [
     expectedColumn(["bid.bid_price"], "bid_price"),
@@ -12,19 +12,19 @@ const AdBidsJoinImpressionsColumns = [
     expectedColumn(["imp.country"]),
 ];
 
-export const SingleTableQueryTree = expectedQueryTree(
+export const SingleSourceQueryTree = expectedQueryTree(
     expectedSelect(
-        [expectedSourceTable("adbids")],
+        [expectedSource("adbids")],
         [
             expectedColumn(["*"], "impressions"),
             expectedColumn(["publisher"]),
             expectedColumn(["domain"]),
         ],
     ),
-    [expectedSourceTable("adbids")],
+    [expectedSource("adbids")],
 );
 
-export const TwoTableJoinQueryTree = expectedQueryTree(
+export const TwoSourceJoinQueryTree = expectedQueryTree(
     expectedSelect(
         [AdBidsAliased, AdImpressionsAliased],
         [

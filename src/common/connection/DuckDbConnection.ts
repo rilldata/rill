@@ -8,11 +8,11 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import { DataConnection } from "./DataConnection";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { PersistentSourceEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentSourceEntityService";
 
 /**
  * Connects to an existing duck db.
- * Adds all existing table into the table states.
+ * Adds all existing tables into the source states.
  * Periodically syncs
  */
 export class DuckDbConnection extends DataConnection {
@@ -40,31 +40,31 @@ export class DuckDbConnection extends DataConnection {
       "SELECT table_name FROM information_schema.tables " +
         "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW';"
     );
-    const persistentTables = this.dataModelerStateService
-      .getEntityStateService(EntityType.Table, StateType.Persistent)
+    const persistentSources = this.dataModelerStateService
+      .getEntityStateService(EntityType.Source, StateType.Persistent)
       .getCurrentState().entities;
 
-    const existingTables = new Map<string, PersistentTableEntity>();
-    persistentTables.forEach((persistentTable) =>
-      existingTables.set(persistentTable.tableName, persistentTable)
+    const existingSources = new Map<string, PersistentSourceEntity>();
+    persistentSources.forEach((persistentSource) =>
+      existingSources.set(persistentSource.sourceName, persistentSource)
     );
 
     for (const table of tables) {
-      const tableName = table.table_name;
-      if (existingTables.has(tableName)) {
-        await this.dataModelerService.dispatch("syncTable", [
-          existingTables.get(tableName).id,
+      const sourceName = table.table_name;
+      if (existingSources.has(sourceName)) {
+        await this.dataModelerService.dispatch("syncSource", [
+          existingSources.get(sourceName).id,
         ]);
-        existingTables.delete(tableName);
+        existingSources.delete(sourceName);
       } else {
-        await this.dataModelerService.dispatch("addOrSyncTableFromDB", [
-          tableName,
+        await this.dataModelerService.dispatch("addOrSyncSourceFromDB", [
+          sourceName,
         ]);
       }
     }
-    for (const removedTable of existingTables.values()) {
-      await this.dataModelerService.dispatch("dropTable", [
-        removedTable.tableName,
+    for (const removedSource of existingSources.values()) {
+      await this.dataModelerService.dispatch("dropSource", [
+        removedSource.sourceName,
         true,
       ]);
     }

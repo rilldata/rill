@@ -25,30 +25,31 @@ export class ProfilingTest extends FunctionalTestBase {
     await super.setup(config);
   }
 
-  public async verifyLargeImport(tablePath: string): Promise<void> {
+  public async verifyLargeImport(sourcePath: string): Promise<void> {
     await this.setup();
 
-    console.log(`Importing ${tablePath}`);
-    console.time(tablePath);
+    console.log(`Importing ${sourcePath}`);
+    console.time(sourcePath);
 
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
-      tablePath,
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
+      sourcePath,
     ]);
 
-    console.timeEnd(tablePath);
+    console.timeEnd(sourcePath);
 
     await this.teardown();
   }
 
-  public async verifyLargeModel(tablePaths: Array<string>, query: string) {
+  public async verifyLargeModel(sourcePaths: Array<string>, query: string) {
     await this.setup();
-    for (const tablePath of tablePaths) {
-      console.log(`Importing ${tablePath}`);
-      await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
-        tablePath,
-      ]);
+    for (const sourcePath of sourcePaths) {
+      console.log(`Importing ${sourcePath}`);
+      await this.clientDataModelerService.dispatch(
+        "addOrUpdateSourceFromFile",
+        [sourcePath]
+      );
     }
-    await this.waitForTables();
+    await this.waitForSources();
 
     console.log(`Querying ${query}`);
     await this.clientDataModelerService.dispatch("addModel", [
@@ -58,7 +59,7 @@ export class ProfilingTest extends FunctionalTestBase {
     console.time(query);
     const model = await this.clientDataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
-      .getByField("tableName", "query");
+      .getByField("sourceName", "query");
     await this.clientDataModelerService.dispatch("updateModelQuery", [
       model.id,
       query,

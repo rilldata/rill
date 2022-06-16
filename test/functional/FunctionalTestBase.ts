@@ -19,8 +19,8 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { PersistentSourceEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentSourceEntityService";
+import type { DerivedSourceEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedSourceEntityService";
 import { dataModelerStateServiceClientFactory } from "$common/clientFactory";
 import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
@@ -75,20 +75,20 @@ export class FunctionalTestBase extends TestBase {
     await this.socketServer?.destroy();
   }
 
-  protected async loadTestTables(): Promise<void> {
+  protected async loadTestSources(): Promise<void> {
     await Promise.all(
       ParquetFileTestData.subData.map(async (parquetFileData) => {
         await this.clientDataModelerService.dispatch(
-          "addOrUpdateTableFromFile",
+          "addOrUpdateSourceFromFile",
           [`${DATA_FOLDER}/${parquetFileData.title}`]
         );
       })
     );
-    await this.waitForTables();
+    await this.waitForSources();
   }
 
-  protected async waitForTables(): Promise<void> {
-    await this.waitForEntity(EntityType.Table);
+  protected async waitForSources(): Promise<void> {
+    await this.waitForEntity(EntityType.Source);
     await asyncWait(100);
   }
   protected async waitForModels(): Promise<void> {
@@ -96,13 +96,13 @@ export class FunctionalTestBase extends TestBase {
     await asyncWait(100);
   }
 
-  protected getTables(
+  protected getSources(
     field: string,
     value: any
-  ): [PersistentTableEntity, DerivedTableEntity] {
-    return this.getStatesForEntityType(EntityType.Table, field, value) as [
-      PersistentTableEntity,
-      DerivedTableEntity
+  ): [PersistentSourceEntity, DerivedSourceEntity] {
+    return this.getStatesForEntityType(EntityType.Source, field, value) as [
+      PersistentSourceEntity,
+      DerivedSourceEntity
     ];
   }
   protected getModels(

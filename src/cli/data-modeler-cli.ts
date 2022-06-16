@@ -2,10 +2,10 @@
 import "../moduleAlias";
 import { Command } from "commander";
 import { InitCommand } from "$cli/InitCommand";
-import { ImportTableCommand } from "$cli/ImportTableCommand";
+import { ImportSourceCommand } from "$cli/ImportSourceCommand";
 import { StartCommand } from "$cli/StartCommand";
 import { InfoCommand } from "$cli/InfoCommand";
-import { DropTableCommand } from "$cli/DropTableCommand";
+import { DropSourceCommand } from "$cli/DropSourceCommand";
 import { ExampleProjectCommand } from "$cli/ExampleProjectCommand";
 
 const program = new Command();
@@ -24,9 +24,9 @@ program
 
 [
   InitCommand,
-  ImportTableCommand,
+  ImportSourceCommand,
   StartCommand,
-  DropTableCommand,
+  DropSourceCommand,
   InfoCommand,
   ExampleProjectCommand,
 ].forEach((CommandClass) =>

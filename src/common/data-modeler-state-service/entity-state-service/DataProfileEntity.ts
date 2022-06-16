@@ -9,7 +9,7 @@ export interface DataProfileEntity extends DerivedEntityRecord {
   profile?: ProfileColumn[];
   cardinality?: number;
   /**
-   * sizeInBytes is the total size of the previewed table.
+   * sizeInBytes is the total size of the previewed source.
    * It is not generated until the user exports the query.
    */
   sizeInBytes?: number;

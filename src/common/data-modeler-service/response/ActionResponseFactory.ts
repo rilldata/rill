@@ -1,7 +1,7 @@
 import { ActionResponseMessageType } from "$common/data-modeler-service/response/ActionResponseMessage";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
-import { ImportTableError } from "$common/errors/ImportTableError";
+import { ImportSourceError } from "$common/errors/ImportSourceError";
 import { ModelQueryError } from "$common/errors/ModelQueryError";
 import { EntityError } from "$common/errors/EntityError";
 import { ExistingEntityError } from "$common/errors/ExistingEntityError";
@@ -39,8 +39,8 @@ export class ActionResponseFactory {
     return this.getErrorResponse(new EntityError(message));
   }
 
-  public static getImportTableError(message: string): ActionResponse {
-    return this.getErrorResponse(new ImportTableError(message));
+  public static getImportSourceError(message: string): ActionResponse {
+    return this.getErrorResponse(new ImportSourceError(message));
   }
 
   public static getModelQueryError(message: string): ActionResponse {

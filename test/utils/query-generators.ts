@@ -20,7 +20,7 @@ export function ctas(table: string, selectStatement: string, temp = true) {
 /**
  * Creates a temporary table that contains a single TIMESTAMP column, "ts", that contains a range of data between
  * start, end, and at the specified DuckDB interval.
- * @param table the table name you
+ * @param table the table name
  * @param start a timestamp string specifying the start of the series
  * @param end a timestamp string specifying the end of the series
  * @param interval an interval string specifying the interval size (e.g. "1 day")

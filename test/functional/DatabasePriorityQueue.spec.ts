@@ -1,10 +1,10 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import { assert } from "sinon";
 import {
-  SingleTableQuery,
-  SingleTableQueryColumnsTestData,
-  TwoTableJoinQuery,
-  TwoTableJoinQueryColumnsTestData,
+  SingleSourceQuery,
+  SingleSourceQueryColumnsTestData,
+  TwoSourceJoinQuery,
+  TwoSourceJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -13,7 +13,7 @@ import { EntityType } from "$common/data-modeler-state-service/entity-state-serv
 export class DatabasePriorityQueueSpec extends FunctionalTestBase {
   @FunctionalTestBase.BeforeEachTest()
   public async setupTests() {
-    await this.clientDataModelerService.dispatch("clearAllTables", []);
+    await this.clientDataModelerService.dispatch("clearAllSources", []);
     await this.clientDataModelerService.dispatch("clearAllModels", []);
     await this.clientDataModelerService.dispatch("addModel", [
       { name: "query_0", query: "" },
@@ -21,17 +21,17 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
   }
 
   @FunctionalTestBase.Test()
-  public async shouldDePrioritiseTableProfiling() {
+  public async shouldDePrioritiseSourceProfiling() {
     const importPromise = this.clientDataModelerService.dispatch(
-      "addOrUpdateTableFromFile",
+      "addOrUpdateSourceFromFile",
       ["test/data/AdBids.parquet"]
     );
     await asyncWait(1);
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     const modelQueryPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model.id, SingleTableQuery]
+      [model.id, SingleSourceQuery]
     );
 
     await this.waitAndAssertPromiseOrder(modelQueryPromise, importPromise);
@@ -39,58 +39,58 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
 
   @FunctionalTestBase.Test()
   public async shouldStopOlderQueriesOfModel() {
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdBids.parquet",
     ]);
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdImpressions.parquet",
     ]);
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     const modelQueryOnePromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model.id, TwoTableJoinQuery]
+      [model.id, TwoSourceJoinQuery]
     );
     await asyncWait(100);
     const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model.id, SingleTableQuery]
+      [model.id, SingleSourceQuery]
     );
 
     await this.waitAndAssertPromiseOrder(
       modelQueryOnePromise,
       modelQueryTwoPromise
     );
-    const [, derivedModel] = this.getModels("tableName", "query_0");
-    this.assertColumns(derivedModel.profile, SingleTableQueryColumnsTestData);
+    const [, derivedModel] = this.getModels("sourceName", "query_0");
+    this.assertColumns(derivedModel.profile, SingleSourceQueryColumnsTestData);
   }
 
   @FunctionalTestBase.Test()
   public async shouldDePrioritiseInactiveModel() {
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdBids.parquet",
     ]);
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdImpressions.parquet",
     ]);
     await this.clientDataModelerService.dispatch("addModel", [
       { name: "query_1", query: "" },
     ]);
 
-    const [model0] = this.getModels("tableName", "query_1");
+    const [model0] = this.getModels("sourceName", "query_1");
     const modelQueryOnePromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model0.id, TwoTableJoinQuery]
+      [model0.id, TwoSourceJoinQuery]
     );
     await this.clientDataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
       model0.id,
     ]);
     await asyncWait(50);
-    const [model1] = this.getModels("tableName", "query_0");
+    const [model1] = this.getModels("sourceName", "query_0");
     const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model1.id, SingleTableQuery]
+      [model1.id, SingleSourceQuery]
     );
     await asyncWait(50);
     await this.clientDataModelerService.dispatch("setActiveAsset", [
@@ -106,27 +106,27 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
 
   @FunctionalTestBase.Test()
   public async shouldContinueModelProfileAfterAppendingSpaces() {
-    await this.clientDataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.clientDataModelerService.dispatch("addOrUpdateSourceFromFile", [
       "test/data/AdImpressions.parquet",
     ]);
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model.id, TwoTableJoinQuery]
+      [model.id, TwoSourceJoinQuery]
     );
     await asyncWait(25);
     const modelQueryOnePromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
-      [model.id, TwoTableJoinQuery + "   \n"]
+      [model.id, TwoSourceJoinQuery + "   \n"]
     );
 
     await this.waitAndAssertPromiseOrder(
       modelQueryOnePromise,
       modelQueryTwoPromise
     );
-    const [, derivedModel] = this.getModels("tableName", "query_0");
-    this.assertColumns(derivedModel.profile, TwoTableJoinQueryColumnsTestData);
+    const [, derivedModel] = this.getModels("sourceName", "query_0");
+    this.assertColumns(derivedModel.profile, TwoSourceJoinQueryColumnsTestData);
   }
 
   private async waitAndAssertPromiseOrder(...promises: Array<Promise<any>>) {

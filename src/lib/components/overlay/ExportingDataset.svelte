@@ -1,6 +1,6 @@
 <script lang="ts">
   import BlockingOverlayContainer from "./BlockingOverlayContainer.svelte";
-  export let tableName;
+  export let sourceName;
   export let path;
 </script>
 
@@ -9,7 +9,7 @@
 >
   <div slot="title">
     <span class="font-bold">Exporting dataset</span>
-    <div class="italic">{tableName}</div>
+    <div class="italic">{sourceName}</div>
     <div>to <span class="font-bold">{path}</span></div>
   </div>
 </BlockingOverlayContainer>

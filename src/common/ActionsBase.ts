@@ -40,11 +40,11 @@ export abstract class ActionsBase {
   }
 
   // aliases for easy access
-  public static PersistentTableAction() {
-    return this.Action(EntityType.Table, StateType.Persistent);
+  public static PersistentSourceAction() {
+    return this.Action(EntityType.Source, StateType.Persistent);
   }
-  public static DerivedTableAction() {
-    return this.Action(EntityType.Table, StateType.Derived);
+  public static DerivedSourceAction() {
+    return this.Action(EntityType.Source, StateType.Derived);
   }
   public static PersistentModelAction() {
     return this.Action(EntityType.Model, StateType.Persistent);

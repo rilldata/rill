@@ -3,7 +3,7 @@
    * TimestampSpark.svelte
    * ---------------------
    * This simple component is a basic sparkline, meant to be used
-   * in a table / model profile preview.
+   * in a source / model profile preview.
    * It optionally enables the user to determine a "window", which
    * is just a box emcompassing the zoomWindowXMin and zoomWindowXMax values.
    */

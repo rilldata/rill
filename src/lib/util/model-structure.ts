@@ -279,7 +279,7 @@ export function extractFromStatements(query: string) {
   const restOfQuery = query.replace(/[\s\t\r\n]/g, " ");
   const finds = getAllIndexes(restOfQuery.toLowerCase(), " from ");
 
-  const sourceTables = [];
+  const sources = [];
 
   finds.forEach((fi) => {
     const ei = fi + " from ".length;
@@ -314,7 +314,7 @@ export function extractFromStatements(query: string) {
           }
         });
 
-        // we hit the end of the table def.
+        // we hit the end of the source def.
         let rightCorrection = 0;
         let leftCorrection = 0;
 
@@ -349,7 +349,7 @@ export function extractFromStatements(query: string) {
         );
         const [name, ...remainder] = finalSeq.split(" ");
         const remainingChars = remainder.join(" ");
-        sourceTables.push({
+        sources.push({
           name: name.trim(),
           start: ei + latest + leftCorrection,
           end:
@@ -363,7 +363,7 @@ export function extractFromStatements(query: string) {
       }
     }
   });
-  return sourceTables;
+  return sources;
   // get all FROM locations.
 }
 
@@ -512,7 +512,7 @@ export function extractJoins(query) {
   return matches;
 }
 
-export function extractSourceTables(query) {
+export function extractSources(query) {
   const CTEs = extractCTEs(query);
   const cteAliases = new Set(CTEs.map((cte) => cte.name));
   const froms = extractFromStatements(query).filter(
@@ -522,17 +522,17 @@ export function extractSourceTables(query) {
     (statement) => !cteAliases.has(statement.name)
   );
   const all = [
-    ...froms.map((table) => ({ ...table, type: "from" })),
-    ...joins.map((table) => ({ ...table, type: "join" })),
+    ...froms.map((source) => ({ ...source, type: "from" })),
+    ...joins.map((source) => ({ ...source, type: "join" })),
   ];
   // now let's coalesce.
   // get uniques.
-  const names = [...new Set(all.map((table) => table.name))];
+  const names = [...new Set(all.map((source) => source.name))];
   return names.map((name) => {
-    const tables = all.filter((table) => table.name === name);
+    const sources = all.filter((source) => source.name === name);
     return {
       name,
-      tables,
+      sources,
     };
   });
 }

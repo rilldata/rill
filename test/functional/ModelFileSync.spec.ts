@@ -5,10 +5,10 @@ import { StateConfig } from "$common/config/StateConfig";
 import {
   NestedQuery,
   NestedQueryColumnsTestData,
-  SingleTableQuery,
-  SingleTableQueryColumnsTestData,
-  TwoTableJoinQuery,
-  TwoTableJoinQueryColumnsTestData,
+  SingleSourceQuery,
+  SingleSourceQueryColumnsTestData,
+  TwoSourceJoinQuery,
+  TwoSourceJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { expect } from "@playwright/test";
@@ -34,8 +34,8 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
   }
 
   @FunctionalTestBase.BeforeSuite()
-  public async setupTables(): Promise<void> {
-    await this.loadTestTables();
+  public async setupSources(): Promise<void> {
+    await this.loadTestSources();
   }
 
   @FunctionalTestBase.BeforeEachTest()
@@ -53,35 +53,35 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     await this.waitForModels();
     expect(existsSync(QUERY_0_FILE)).toBe(true);
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     await this.clientDataModelerService.dispatch("updateModelQuery", [
       model.id,
-      SingleTableQuery,
+      SingleSourceQuery,
     ]);
     await this.waitForModels();
 
     // updating query from client should update the file
-    expect(readFileSync(QUERY_0_FILE).toString()).toBe(SingleTableQuery);
-    const [, persistentModel] = this.getModels("tableName", "query_0");
+    expect(readFileSync(QUERY_0_FILE).toString()).toBe(SingleSourceQuery);
+    const [, persistentModel] = this.getModels("sourceName", "query_0");
     this.assertColumns(
       persistentModel.profile,
-      SingleTableQueryColumnsTestData
+      SingleSourceQueryColumnsTestData
     );
 
     // updating query from file should update profiling data
-    writeFileSync(QUERY_0_FILE, TwoTableJoinQuery);
+    writeFileSync(QUERY_0_FILE, TwoSourceJoinQuery);
     await this.waitForModels();
-    const [, newPersistentModel] = this.getModels("tableName", "query_0");
+    const [, newPersistentModel] = this.getModels("sourceName", "query_0");
     this.assertColumns(
       newPersistentModel.profile,
-      TwoTableJoinQueryColumnsTestData
+      TwoSourceJoinQueryColumnsTestData
     );
   }
 
   @FunctionalTestBase.Test()
   public async shouldDeleteModelOnFileDelete() {
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: SingleTableQuery },
+      { name: "query_0", query: SingleSourceQuery },
     ]);
     await this.waitForModels();
     expect(existsSync(QUERY_0_FILE)).toBe(true);
@@ -89,7 +89,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     // file is recreated if deleted.
     execSync(`rm ${QUERY_0_FILE}`);
     await this.waitForModels();
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("sourceName", "query_0");
     expect(model).toBe(undefined);
     expect(existsSync(QUERY_0_FILE)).toBe(false);
   }
@@ -97,7 +97,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
   @FunctionalTestBase.Test()
   public async shouldRenameModelOnFileRename() {
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: SingleTableQuery },
+      { name: "query_0", query: SingleSourceQuery },
     ]);
     await this.waitForModels();
     expect(existsSync(QUERY_0_FILE)).toBe(true);
@@ -106,14 +106,14 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     // file is renamed if deleted.
     execSync(`mv ${QUERY_0_FILE} ${QUERY_1_FILE}`);
     await this.waitForModels();
-    const [model0] = this.getModels("tableName", "query_0");
-    const [model1, persistentModel1] = this.getModels("tableName", "query_1");
+    const [model0] = this.getModels("sourceName", "query_0");
+    const [model1, persistentModel1] = this.getModels("sourceName", "query_1");
     expect(model0).toBe(undefined);
     expect(existsSync(QUERY_0_FILE)).toBe(false);
-    expect(model1.query).toBe(SingleTableQuery);
+    expect(model1.query).toBe(SingleSourceQuery);
     this.assertColumns(
       persistentModel1.profile,
-      SingleTableQueryColumnsTestData
+      SingleSourceQueryColumnsTestData
     );
     expect(existsSync(QUERY_1_FILE)).toBe(true);
   }
@@ -124,10 +124,10 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     const QUERY_10_FILE = `${MODEL_FOLDER}/query_10.sql`;
 
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: SingleTableQuery },
+      { name: "query_0", query: SingleSourceQuery },
     ]);
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_1", query: TwoTableJoinQuery },
+      { name: "query_1", query: TwoSourceJoinQuery },
     ]);
     await this.waitForModels();
     expect(existsSync(QUERY_0_FILE)).toBe(true);
@@ -135,8 +135,8 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     expect(existsSync(QUERY_1_FILE)).toBe(true);
     expect(existsSync(QUERY_10_FILE)).toBe(false);
 
-    const [model0] = this.getModels("tableName", "query_0");
-    const [model1] = this.getModels("tableName", "query_1");
+    const [model0] = this.getModels("sourceName", "query_0");
+    const [model1] = this.getModels("sourceName", "query_1");
 
     // rename query_0 => query_00, query_1 => query_10 then add a new file query_0.sql
     await this.clientDataModelerService.dispatch("updateModelName", [
@@ -151,20 +151,20 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     writeFileSync(QUERY_0_FILE, NestedQuery);
     await this.waitForModels();
     expect(readFileSync(QUERY_0_FILE).toString()).toBe(NestedQuery);
-    expect(readFileSync(QUERY_00_FILE).toString()).toBe(SingleTableQuery);
+    expect(readFileSync(QUERY_00_FILE).toString()).toBe(SingleSourceQuery);
     expect(existsSync(QUERY_1_FILE)).toBe(false);
-    expect(readFileSync(QUERY_10_FILE).toString()).toBe(TwoTableJoinQuery);
+    expect(readFileSync(QUERY_10_FILE).toString()).toBe(TwoSourceJoinQuery);
 
-    const [, persistentModel0] = this.getModels("tableName", "query_00");
-    const [, persistentModel1] = this.getModels("tableName", "query_10");
-    const [, persistentModel2] = this.getModels("tableName", "query_0");
+    const [, persistentModel0] = this.getModels("sourceName", "query_00");
+    const [, persistentModel1] = this.getModels("sourceName", "query_10");
+    const [, persistentModel2] = this.getModels("sourceName", "query_0");
     this.assertColumns(
       persistentModel0?.profile,
-      SingleTableQueryColumnsTestData
+      SingleSourceQueryColumnsTestData
     );
     this.assertColumns(
       persistentModel1?.profile,
-      TwoTableJoinQueryColumnsTestData
+      TwoSourceJoinQueryColumnsTestData
     );
     this.assertColumns(persistentModel2?.profile, NestedQueryColumnsTestData);
   }
@@ -173,7 +173,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
   public async shouldDeleteNonSqlFiles() {
     const INVALID_FILE = "query_0.sq";
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: SingleTableQuery },
+      { name: "query_0", query: SingleSourceQuery },
     ]);
     await this.waitForModels();
     expect(existsSync(QUERY_0_FILE)).toBe(true);
@@ -181,7 +181,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     // file is renamed to invalid file. model is deleted
     execSync(`mv ${QUERY_0_FILE} ${INVALID_FILE}`);
     await this.waitForModels();
-    let [model] = this.getModels("tableName", "query_0");
+    let [model] = this.getModels("sourceName", "query_0");
     expect(model).toBe(undefined);
     expect(existsSync(QUERY_0_FILE)).toBe(false);
     // invalid file is not deleted
@@ -190,9 +190,9 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     // file is renamed back to .sql file
     execSync(`mv ${INVALID_FILE} ${QUERY_0_FILE}`);
     await this.waitForModels();
-    [model] = this.getModels("tableName", "query_0");
-    expect(model.tableName).toBe("query_0");
-    expect(readFileSync(QUERY_0_FILE).toString()).toBe(SingleTableQuery);
+    [model] = this.getModels("sourceName", "query_0");
+    expect(model.sourceName).toBe("query_0");
+    expect(readFileSync(QUERY_0_FILE).toString()).toBe(SingleSourceQuery);
     expect(existsSync(INVALID_FILE)).toBe(false);
   }
 }

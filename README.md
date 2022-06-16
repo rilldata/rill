@@ -70,14 +70,14 @@ rill init
 Import datasets of interest into the Rill Developer [duckDB](https://duckdb.org/docs/sql/introduction) database to make them available. We currently support .parquet, .csv, and .tsv.
 
 ```
-rill import-table /path/to/data_1.parquet
-rill import-table /path/to/data_2.csv
-rill import-table /path/to/data_3.tsv
+rill import-source /path/to/data_1.parquet
+rill import-source /path/to/data_2.csv
+rill import-source /path/to/data_3.tsv
 ```
 
 ## Start Your Project
 
-Start the User Interface to interact with your imported tables and revisit projects you have created.
+Start the User Interface to interact with your imported sources and revisit projects you have created.
 
 ```
 rill start
@@ -103,30 +103,30 @@ Rill works best if you have `cd`ed into the project directory, since it assumes 
 
 ```
 rill init --project /path/to/a/new/project
-rill import-table /path/to/data_1.parquet --project /path/to/a/new/project
+rill import-source /path/to/data_1.parquet --project /path/to/a/new/project
 rill start --project /path/to/a/new/project
 ```
 
-By default the table name will be a sanitized version of the dataset file name. You can specify a name using the --name option.
+By default the source name will be a sanitized version of the dataset file name. You can specify a name using the --name option.
 
 ```
-rill import-table  /path/to/data_1.parquet --name my_table
+rill import-source  /path/to/data_1.parquet --name my_source
 ```
 
-If you have added a table to Rill Developer that you want to drop, you can do so using the --drop-table option.
+If you have added a source to Rill Developer that you want to drop, you can do so using the --drop-source option.
 
 ```
-rill drop-table my_table
+rill drop-source my_source
 ```
 
 If you have a dataset that is delimited by a character other than a comma or tab, you can use the --delimiter option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
 
 ```
-rill import-table /path/to/data_4.txt --delimiter "|"
+rill import-source /path/to/data_4.txt --delimiter "|"
 ```
 
 You can connect to an existing duckdb database by passing --db with path to the db file.
-Any updates made directly to the tables in the database will reflect in Rill Developer.
+Any updates made directly to the sources in the database will reflect in Rill Developer.
 Similarly, any changes made by Rill Developer will modify the database.
 Make sure to have only one connection open to the database, otherwise there will be some unexpected issues.
 
@@ -181,7 +181,7 @@ https://hub.docker.com/r/rilldata/rill-developer
    ```
    docker exec -it rill-developer /bin/bash
 
-   rill import-table ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
+   rill import-source ${PROJECT_BASE}/${PROJECT}/data/<fileName> \
        --project ${PROJECT_BASE}/${PROJECT}
    ```
 

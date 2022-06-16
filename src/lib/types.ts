@@ -24,9 +24,9 @@ export interface QueryElementReference {
   end: number;
 }
 
-export interface SourceTable {
+export interface Source {
   name: string;
-  tables: QueryElementReference[];
+  sources: QueryElementReference[];
 }
 
 export interface Model extends ColumnarItem {
@@ -36,7 +36,7 @@ export interface Model extends ColumnarItem {
   sanitizedQuery: string;
   /** name is used for the filename and exported file */
   name: string;
-  tableName?: string;
+  sourceName?: string;
   /** cardinality is the total number of rows of the previewed table */
   cardinality?: number;
   /** sizeInBytes is the total size of the previewed table.
@@ -44,39 +44,22 @@ export interface Model extends ColumnarItem {
    * */
   sizeInBytes?: number; // TODO: make sure this is just size
   error?: string;
-  sources?: SourceTable[];
+  sources?: Source[];
   preview?: any;
   destinationProfile?: any;
 }
 
-export enum TableSourceType {
+export enum SourceType {
   ParquetFile,
   CSVFile,
-  // table is loaded from an existing duckdb table
+  // source is loaded from an existing duckdb table
   DuckDB,
 }
-export const FILE_EXTENSION_TO_TABLE_TYPE = {
-  parquet: TableSourceType.ParquetFile,
-  csv: TableSourceType.CSVFile,
-  tsv: TableSourceType.CSVFile,
+export const FILE_EXTENSION_TO_SOURCE_TYPE = {
+  parquet: SourceType.ParquetFile,
+  csv: SourceType.CSVFile,
+  tsv: SourceType.CSVFile,
 };
-
-export interface Table extends ColumnarItem {
-  path: string;
-  name?: string;
-  // we have a separate field to maintain different names in the future.
-  // currently, name = tableName
-  tableName?: string;
-
-  sourceType?: TableSourceType;
-  csvDelimiter?: string;
-
-  head: any[];
-  cardinality?: number;
-  sizeInBytes?: number;
-  nullCounts?: any;
-  lastUpdated?: number;
-}
 
 export type ProfileColumnSummary =
   | CategoricalSummary
@@ -198,14 +181,14 @@ export interface ExploreConfiguration {
 export interface DataModelerState {
   activeAsset?: Asset;
   models: Model[];
-  tables: Table[];
+  sources: Source[];
   metricsModels: MetricsModel[];
   exploreConfigurations: ExploreConfiguration[];
   status: string;
 }
 
 export type ColumnarTypeKeys = {
-  [K in keyof DataModelerState]: DataModelerState[K] extends Model[] | Table[]
+  [K in keyof DataModelerState]: DataModelerState[K] extends Model[] | Source[]
     ? K
     : never;
 }[keyof DataModelerState];

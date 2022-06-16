@@ -43,7 +43,7 @@ export class ExpressServer {
       })
     );
 
-    this.app.post("/api/table-upload", (req: any, res) => {
+    this.app.post("/api/source-upload", (req: any, res) => {
       this.handleFileUpload((req as any).files.file);
       res.send("OK");
     });
@@ -81,7 +81,7 @@ export class ExpressServer {
   }) {
     const filePath = `${this.config.projectFolder}/tmp/${file.name}`;
     file.mv(filePath);
-    await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+    await this.dataModelerService.dispatch("addOrUpdateSourceFromFile", [
       filePath,
     ]);
   }

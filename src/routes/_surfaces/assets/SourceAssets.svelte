@@ -11,21 +11,21 @@
 
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
+    DerivedSourceStore,
+    PersistentSourceStore,
+  } from "$lib/application-state-stores/source-stores";
 
   import { onSourceDrop, uploadFilesWithDialog } from "$lib/util/file-upload";
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
+  const persistentSourceStore = getContext(
+    "rill:app:persistent-source-store"
+  ) as PersistentSourceStore;
 
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const derivedSourceStore = getContext(
+    "rill:app:derived-source-store"
+  ) as DerivedSourceStore;
 
-  let showTables = true;
+  let showSources = true;
 </script>
 
 <div
@@ -37,21 +37,21 @@
   on:dragover|preventDefault|stopPropagation
   on:dragleave|preventDefault|stopPropagation
 >
-  <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
+  <CollapsibleSectionTitle tooltipText={"sources"} bind:active={showSources}>
     <h4 class="flex flex-row items-center gap-x-2">
-      <ParquetIcon size="16px" /> Tables
+      <ParquetIcon size="16px" /> Sources
     </h4>
   </CollapsibleSectionTitle>
 
   <ContextButton
-    id={"create-table-button"}
-    tooltipText="import csv or parquet file into a table"
+    id={"create-source-button"}
+    tooltipText="import a csv or parquet file"
     on:click={uploadFilesWithDialog}
   >
     <AddIcon />
   </ContextButton>
 </div>
-{#if showTables}
+{#if showSources}
   <div
     class="pb-6"
     transition:slide|local={{ duration: 200 }}
@@ -61,22 +61,22 @@
     on:dragover|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation
   >
-    {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
+    {#if $persistentSourceStore?.entities && $derivedSourceStore?.entities}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
-      {#each $persistentTableStore.entities as { tableName, id } (id)}
-        {@const derivedTable = $derivedTableStore.entities.find(
+      {#each $persistentSourceStore.entities as { sourceName, id } (id)}
+        {@const derivedSource = $derivedSourceStore.entities.find(
           (t) => t["id"] === id
         )}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             indentLevel={1}
-            name={tableName}
-            cardinality={derivedTable?.cardinality ?? 0}
-            profile={derivedTable?.profile ?? []}
-            head={derivedTable?.preview ?? []}
-            sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+            name={sourceName}
+            cardinality={derivedSource?.cardinality ?? 0}
+            profile={derivedSource?.profile ?? []}
+            head={derivedSource?.preview ?? []}
+            sizeInBytes={derivedSource?.sizeInBytes ?? 0}
             on:delete={() => {
-              dataModelerService.dispatch("dropTable", [tableName]);
+              dataModelerService.dispatch("dropSource", [sourceName]);
             }}
           />
         </div>

@@ -1,37 +1,37 @@
 import type { DataModelerState, Model } from "$lib/types";
 import { guidGenerator } from "$lib/util/guid";
 import {
-  extractTableName,
-  sanitizeTableName,
-} from "$lib/util/extract-table-name";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  extractSourceName,
+  sanitizeSourceName,
+} from "$lib/util/extract-source-name";
+import type { PersistentSourceEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentSourceEntityService";
 import {
   EntityStatus,
   EntityType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { DerivedSourceEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedSourceEntityService";
 
 interface NewModelArguments {
   query?: string;
   name?: string;
 }
 
-export function getNewTable(): PersistentTableEntity {
+export function getNewSource(): PersistentSourceEntity {
   return {
     id: guidGenerator(),
-    type: EntityType.Table,
+    type: EntityType.Source,
     path: "",
     lastUpdated: 0,
   };
 }
-export function getNewDerivedTable(
-  table: PersistentTableEntity
-): DerivedTableEntity {
+export function getNewDerivedSource(
+  source: PersistentSourceEntity
+): DerivedSourceEntity {
   return {
-    id: table.id,
-    type: EntityType.Table,
+    id: source.id,
+    type: EntityType.Source,
     profile: [],
     lastUpdated: 0,
     status: EntityStatus.Idle,
@@ -54,7 +54,7 @@ export function getNewModel(
     type: EntityType.Model,
     query,
     name,
-    tableName: sanitizeTableName(extractTableName(name)),
+    sourceName: sanitizeSourceName(extractSourceName(name)),
     lastUpdated: 0,
   };
 }
@@ -75,7 +75,7 @@ export function getNewDerivedModel(
 export function initialState(): DataModelerState {
   return {
     models: [],
-    tables: [],
+    sources: [],
     metricsModels: [],
     exploreConfigurations: [],
     status: "disconnected",

@@ -10,9 +10,9 @@
 
   import { createQueryHighlightStore } from "$lib/application-state-stores/query-highlight-store";
   import {
-    createDerivedTableStore,
-    createPersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
+    createDerivedSourceStore,
+    createPersistentSourceStore,
+  } from "$lib/application-state-stores/source-stores";
   import {
     createDerivedModelStore,
     createPersistentModelStore,
@@ -25,8 +25,11 @@
     store = createStore();
     setContext("rill:app:store", store);
     setContext("rill:app:query-highlight", queryHighlight);
-    setContext(`rill:app:persistent-table-store`, createPersistentTableStore());
-    setContext(`rill:app:derived-table-store`, createDerivedTableStore());
+    setContext(
+      `rill:app:persistent-source-store`,
+      createPersistentSourceStore()
+    );
+    setContext(`rill:app:derived-source-store`, createDerivedSourceStore());
     setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
     setContext(`rill:app:derived-model-store`, createDerivedModelStore());
     notification.listenToSocket(store.socket);

@@ -6,8 +6,8 @@ import {
   AdBidsColumnsTestData,
   AdImpressionColumnsTestData,
 } from "../data/DataLoader.data";
-import type { DerivedTableState } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import type { PersistentTableState } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DerivedSourceState } from "$common/data-modeler-state-service/entity-state-service/DerivedSourceEntityService";
+import type { PersistentSourceState } from "$common/data-modeler-state-service/entity-state-service/PersistentSourceEntityService";
 import { CLI_COMMAND } from "../utils/getCliCommand";
 
 const execPromise = promisify(exec);
@@ -31,25 +31,27 @@ export class CLISpec extends FunctionalTestBase {
   @FunctionalTestBase.Test()
   public async shouldInitProject(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
-    expect(existsSync(`${CLI_TEST_FOLDER}/persistent_table_state.json`));
+    expect(existsSync(`${CLI_TEST_FOLDER}/persistent_source_state.json`));
     expect(existsSync(`${CLI_TEST_FOLDER}/stage.db`));
   }
 
   @FunctionalTestBase.Test()
-  public async shouldAddTables(): Promise<void> {
+  public async shouldAddSources(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`
     );
 
-    const persistentState: PersistentTableState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
+    const persistentState: PersistentSourceState = JSON.parse(
+      readFileSync(
+        `${CLI_STATE_FOLDER}/persistent_source_state.json`
+      ).toString()
     );
-    const derivedState: DerivedTableState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/derived_table_state.json`).toString()
+    const derivedState: DerivedSourceState = JSON.parse(
+      readFileSync(`${CLI_STATE_FOLDER}/derived_source_state.json`).toString()
     );
     expect(persistentState.entities[0].name).toBe("AdBids");
     this.assertColumns(derivedState.entities[0].profile, AdBidsColumnsTestData);
@@ -64,41 +66,45 @@ export class CLISpec extends FunctionalTestBase {
   public async shouldErrorIfSourceFileIsMalformed(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER}`);
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
     // import the broken dataset.
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/BrokenCSV.csv ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/BrokenCSV.csv ${CLI_TEST_FOLDER_ARG}`
     );
 
-    let persistentState: PersistentTableState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
+    let persistentState: PersistentSourceState = JSON.parse(
+      readFileSync(
+        `${CLI_STATE_FOLDER}/persistent_source_state.json`
+      ).toString()
     );
-    const derivedState: DerivedTableState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/derived_table_state.json`).toString()
+    const derivedState: DerivedSourceState = JSON.parse(
+      readFileSync(`${CLI_STATE_FOLDER}/derived_source_state.json`).toString()
     );
 
     // BrokenCSV should not be present in the state.
     const brokenCSVState = persistentState.entities.find(
-      (entity) => entity.tableName === "BrokenCSV"
+      (entity) => entity.sourceName === "BrokenCSV"
     );
     expect(brokenCSVState).toBeUndefined();
 
     // let's get the state for AdBids before we attempt to import a broken dataset into it.
     const adBids = persistentState.entities.find(
-      (entity) => entity.tableName === "AdBids"
+      (entity) => entity.sourceName === "AdBids"
     );
     // let's try to replace AdBids
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`
     );
     // check to see if the sources are the same.
     persistentState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
+      readFileSync(
+        `${CLI_STATE_FOLDER}/persistent_source_state.json`
+      ).toString()
     );
 
     const newAdBids = persistentState.entities.find(
-      (entity) => entity.tableName === "AdBids"
+      (entity) => entity.sourceName === "AdBids"
     );
     const oldStateObject = { ...adBids };
 
@@ -110,23 +116,27 @@ export class CLISpec extends FunctionalTestBase {
   }
 
   @FunctionalTestBase.Test()
-  public async shouldDropTable(): Promise<void> {
+  public async shouldDropSource(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
 
-    let persistentState: PersistentTableState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
+    let persistentState: PersistentSourceState = JSON.parse(
+      readFileSync(
+        `${CLI_STATE_FOLDER}/persistent_source_state.json`
+      ).toString()
     );
     expect(persistentState.entities[0].name).toBe("AdBids");
 
     await execPromise(
-      `${CLI_COMMAND} drop-table AdBids ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} drop-source AdBids ${CLI_TEST_FOLDER_ARG}`
     );
 
     persistentState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
+      readFileSync(
+        `${CLI_STATE_FOLDER}/persistent_source_state.json`
+      ).toString()
     );
     expect(persistentState.entities.length).toBe(0);
   }

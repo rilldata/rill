@@ -1,21 +1,21 @@
-import { extractFileExtension } from "$lib/util/extract-table-name";
-import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
+import { extractFileExtension } from "$lib/util/extract-source-name";
+import { FILE_EXTENSION_TO_SOURCE_TYPE } from "$lib/types";
 import notifications from "$lib/components/notifications";
 import { config } from "$lib/application-state-stores/application-store";
 
 /**
- * uploadTableFiles
+ * uploadSourceFiles
  * --------
  * Attempts to upload all files passed in.
  * Will return the list of files that are not valid.
  */
-export function uploadTableFiles(files, apiBase: string) {
+export function uploadSourceFiles(files, apiBase: string) {
   const invalidFiles = [];
   const validFiles = [];
 
   [...files].forEach((file: File) => {
     const fileExtension = extractFileExtension(file.name);
-    if (fileExtension in FILE_EXTENSION_TO_TABLE_TYPE) {
+    if (fileExtension in FILE_EXTENSION_TO_SOURCE_TYPE) {
       validFiles.push(file);
     } else {
       invalidFiles.push(file);
@@ -23,7 +23,7 @@ export function uploadTableFiles(files, apiBase: string) {
   });
 
   validFiles.forEach((validFile) =>
-    uploadFile(validFile, `${apiBase}/table-upload`)
+    uploadFile(validFile, `${apiBase}/source-upload`)
   );
   return invalidFiles;
 }
@@ -57,7 +57,7 @@ function reportFileErrors(invalidFiles: File[]) {
 export function handleFileUploads(filesArray: File[]) {
   let invalidFiles = [];
   if (filesArray) {
-    invalidFiles = uploadTableFiles(
+    invalidFiles = uploadSourceFiles(
       filesArray,
       `${config.server.serverUrl}/api`
     );
@@ -67,7 +67,7 @@ export function handleFileUploads(filesArray: File[]) {
   }
 }
 
-/** a drag and drop callback to kick off a source table import */
+/** a drag and drop callback to kick off a source import */
 export function onSourceDrop(e: DragEvent) {
   const files = e?.dataTransfer?.files;
   if (files) {
@@ -75,7 +75,7 @@ export function onSourceDrop(e: DragEvent) {
   }
 }
 
-/** an event callback when a source table file is chosen manually */
+/** an event callback when a source file is chosen manually */
 export function onManualSourceUpload(e: Event) {
   const files = (<HTMLInputElement>e.target)?.files as FileList;
   if (files) {

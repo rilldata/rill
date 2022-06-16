@@ -14,7 +14,7 @@ export interface PersistentModelEntity extends EntityRecord {
   query: string;
   /** name is used for the filename and exported file */
   name: string;
-  tableName?: string;
+  sourceName?: string;
 }
 export interface PersistentModelState
   extends EntityState<PersistentModelEntity> {
