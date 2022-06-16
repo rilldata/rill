@@ -20,22 +20,9 @@
   export let columnNames: ColumnName[];
   export let rows: any[];
 
-  let visualCellField = undefined;
-  let visualCellValue = undefined;
-  let visualCellType = undefined;
-
   let selectedColumns = [];
 
   let activeIndex;
-
-  function setActiveElement(value, name, index) {
-    visualCellValue = value;
-    visualCellField = name;
-    visualCellType = columnNames.find(
-      (column) => column.name === visualCellField
-    )?.type;
-    activeIndex = index;
-  }
 
   function columnIsPinned(name, selectedCols) {
     return selectedCols.map((column) => column.name).includes(name);
@@ -54,12 +41,7 @@
 </script>
 
 <div class="flex relative">
-  <Table
-    on:mouseleave={() => {
-      visualCellValue = undefined;
-      setActiveElement(undefined, undefined, undefined);
-    }}
-  >
+  <Table>
     <!-- headers -->
     <TableRow>
       {#each columnNames as { name, type } (name)}
@@ -79,9 +61,6 @@
       <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
         {#each columnNames as { name, type } (index + name)}
           <TableCell
-            on:inspect={() => {
-              setActiveElement(row[name], name, index);
-            }}
             {name}
             {type}
             value={row[name]}
@@ -116,9 +95,6 @@
           >
             {#each selectedColumns as { name, type }}
               <TableCell
-                on:inspect={() => {
-                  setActiveElement(row[name], name, index);
-                }}
                 {name}
                 {type}
                 {index}
@@ -132,18 +108,3 @@
     </div>
   {/if}
 </div>
-
-{#if visualCellValue !== undefined}
-  <div
-    transition:slide={{ duration: 100 }}
-    class="sticky bottom-0 left-0 bg-white p-3 border border-t-1 border-gray-200 pointer-events-none z-30 grid grid-flow-col justify-start gap-x-3 items-baseline"
-    style:box-shadow="0 -4px 2px 0 rgb(0 0 0 / 0.05)"
-  >
-    <span class="font-bold pr-5">{visualCellField}</span>
-    <FormattedDataType
-      value={visualCellValue}
-      type={visualCellType}
-      isNull={visualCellValue === null}
-    />
-  </div>
-{/if}
