@@ -89,32 +89,6 @@ button {
   color: black;
 }
 
-.table-container {
-  width: max-content;
-}
-
-.table-container table {
-  font-size: 13px;
-  text-align: right;
-  hyphens: none;
-  word-break: keep-all;
-  min-width: 100%;
-}
-
-.table-container td,
-.table-container th {
-  padding: 0px 0.5rem;
-}
-
-.table-container td {
-  vertical-align: top;
-  white-space: nowrap;
-}
-
-.table-container th {
-  font-weight: 500;
-  font-style: italic;
-}
 .hljs-punctuation {
   color: #bbb;
 }
