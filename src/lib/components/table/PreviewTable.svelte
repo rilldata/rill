@@ -5,12 +5,8 @@
    * Its goal it so utilize all of the other container components
    * and provide the interactions needed to do things with the table.
    */
-  import { slide } from "svelte/transition";
   import { Table, TableRow, TableCell } from "$lib/components/table/";
-  import { FormattedDataType } from "$lib/components/data-types/";
   import PreviewTableHeader from "./PreviewTableHeader.svelte";
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
-  import { standardTimestampFormat } from "$lib/util/formatters";
 
   interface ColumnName {
     name: string;
