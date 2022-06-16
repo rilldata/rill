@@ -74,7 +74,6 @@
     on:blur={() => {
       activeCell = false;
     }}
-    title={value}
     class="
         p-2
         pl-4
