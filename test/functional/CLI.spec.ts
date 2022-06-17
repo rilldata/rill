@@ -39,10 +39,10 @@ export class CLISpec extends FunctionalTestBase {
   public async shouldAddTables(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`
     );
 
     const persistentState: PersistentTableState = JSON.parse(
@@ -64,11 +64,11 @@ export class CLISpec extends FunctionalTestBase {
   public async shouldErrorIfSourceFileIsMalformed(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER}`);
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
     // import the broken dataset.
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/BrokenCSV.csv ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/BrokenCSV.csv ${CLI_TEST_FOLDER_ARG}`
     );
 
     let persistentState: PersistentTableState = JSON.parse(
@@ -90,7 +90,7 @@ export class CLISpec extends FunctionalTestBase {
     );
     // let's try to replace AdBids
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`
     );
     // check to see if the sources are the same.
     persistentState = JSON.parse(
@@ -113,7 +113,7 @@ export class CLISpec extends FunctionalTestBase {
   public async shouldDropTable(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
     await execPromise(
-      `${CLI_COMMAND} import-table test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
 
     let persistentState: PersistentTableState = JSON.parse(
@@ -122,7 +122,7 @@ export class CLISpec extends FunctionalTestBase {
     expect(persistentState.entities[0].name).toBe("AdBids");
 
     await execPromise(
-      `${CLI_COMMAND} drop-table AdBids ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} drop-source AdBids ${CLI_TEST_FOLDER_ARG}`
     );
 
     persistentState = JSON.parse(
