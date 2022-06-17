@@ -12,13 +12,6 @@
 
   import Spacer from "$lib/components/icons/Spacer.svelte";
 
-  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
-  import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-
   import {
     defaultSort,
     sortByNullity,
@@ -73,35 +66,17 @@
 <div bind:this={container}>
   {#if showTitle}
     <div {draggable} class="active:cursor-grabbing">
-      <Tooltip location="right">
-        <CollapsibleTableHeader
-          bind:contextMenuOpen
-          bind:menuX
-          bind:menuY
-          bind:name
-          bind:show
-          {contextMenu}
-          {cardinality}
-          {sizeInBytes}
-          {emphasizeTitle}
-        />
-        <TooltipContent slot="tooltip-content">
-          <TooltipTitle>
-            <svelte:fragment slot="name">
-              {name}
-            </svelte:fragment>
-            <svelte:fragment slot="description" />
-          </TooltipTitle>
-          <TooltipShortcutContainer>
-            <div>open in workspace</div>
-            <Shortcut>click</Shortcut>
-            <div>
-              <StackingWord>copy</StackingWord> to clipboard
-            </div>
-            <Shortcut>shift + click</Shortcut>
-          </TooltipShortcutContainer>
-        </TooltipContent>
-      </Tooltip>
+      <CollapsibleTableHeader
+        bind:contextMenuOpen
+        bind:menuX
+        bind:menuY
+        bind:name
+        bind:show
+        {contextMenu}
+        {cardinality}
+        {sizeInBytes}
+        {emphasizeTitle}
+      />
     </div>
     {#if contextMenuOpen}
       <!-- place this above codemirror.-->
