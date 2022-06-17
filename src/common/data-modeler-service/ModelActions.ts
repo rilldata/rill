@@ -123,7 +123,6 @@ export class ModelActions extends DataModelerActions {
     this.dataModelerStateService.dispatch("updateModelQuery", [
       modelId,
       query,
-      sanitizedQuery,
     ]);
     this.dataModelerStateService.dispatch("updateModelSanitizedQuery", [
       modelId,

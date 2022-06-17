@@ -5,7 +5,6 @@
 
 <script lang="ts">
   // NOTE: this component was borrowed from a gist
-  import { browser } from "$app/env";
   import { afterUpdate, onMount } from "svelte";
 
   let current = componentNames[0];
@@ -30,10 +29,10 @@
     current = name;
   };
 
-  const onPropsChange = (e) => {
-    const value = e.target.propContent.value;
-    props = JSON.parse(value);
-  };
+  // const onPropsChange = (e) => {
+  //   const value = e.target.propContent.value;
+  //   props = JSON.parse(value);
+  // };
 
   const setViewerWidth = (w: number) => () => {
     viewerWidth = w;

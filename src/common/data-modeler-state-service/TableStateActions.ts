@@ -3,9 +3,6 @@ import type {
   PersistentTableEntity,
   PersistentTableStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import type { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { DataProfileStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
-import type { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export class TableStateActions extends StateActions {
   @StateActions.PersistentTableAction()

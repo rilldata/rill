@@ -88,7 +88,7 @@
     <button
       class="text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       use:shiftClickAction
-      on:shift-click={async (event) => {
+      on:shift-click={async () => {
         let exportedValue = value;
         if (INTERVALS.has(type)) {
           exportedValue = formatDataType(value, type);

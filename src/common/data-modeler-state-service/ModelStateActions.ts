@@ -52,7 +52,6 @@ export class ModelStateActions extends StateActions {
     { stateService, draftState }: PersistentModelStateActionArg,
     modelId: string,
     query: string,
-    sanitizedQuery: string
   ): void {
     stateService.updateEntityField(draftState, modelId, "query", query);
   }

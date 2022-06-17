@@ -51,7 +51,7 @@
     <button
       use:shiftClickAction
       on:shift-click
-      on:click={(evt) => {
+      on:click={() => {
         dispatch("select-body");
       }}
       on:focus={() => {

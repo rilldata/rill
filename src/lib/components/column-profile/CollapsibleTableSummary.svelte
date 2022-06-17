@@ -58,7 +58,7 @@
   let container;
 
   onMount(() => {
-    const observer = new ResizeObserver((entries) => {
+    const observer = new ResizeObserver(() => {
       containerWidth = container?.clientWidth ?? 0;
     });
     observer.observe(container);
@@ -110,7 +110,7 @@
           await navigator.clipboard.writeText(name);
           notificationStore.send({ message: `copied "${name}" to clipboard` });
         }}
-        on:select-body={async (event) => {
+        on:select-body={async () => {
           dispatch("select");
         }}
         on:expand={() => {
