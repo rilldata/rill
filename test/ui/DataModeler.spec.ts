@@ -244,7 +244,7 @@ export class DataModelerTest extends TestBase {
   ) {
     await page.goto(URL);
 
-    const error = page.locator(".error");
+    const error = page.locator(".error").first();
 
     await this.execute(page, query);
 
@@ -276,7 +276,7 @@ export class DataModelerTest extends TestBase {
    * @param sql {string} - SQL to execute.
    */
   private async execute(page: Page, sql: string) {
-    const activeLine = page.locator(".cm-activeLine");
+    const activeLine = page.locator(".cm-activeLine").first();
 
     await activeLine.fill(sql);
 
