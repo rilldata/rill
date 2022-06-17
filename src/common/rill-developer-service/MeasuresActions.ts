@@ -63,7 +63,7 @@ export class MeasuresActions extends RillDeveloperActions {
           : ValidationState.ERROR,
       },
     ]);
-    rillRequestContext.actionsChannel.pushMessage("addNewMeasure", [
+    rillRequestContext.actionsChannel.pushMessage("updateMeasure", [
       metricsDefId,
       measureId,
       {
@@ -93,7 +93,7 @@ export class MeasuresActions extends RillDeveloperActions {
       measureId,
       modifications,
     ]);
-    rillRequestContext.actionsChannel.pushMessage("addNewMeasure", [
+    rillRequestContext.actionsChannel.pushMessage("updateMeasure", [
       metricsDefId,
       measureId,
       modifications,

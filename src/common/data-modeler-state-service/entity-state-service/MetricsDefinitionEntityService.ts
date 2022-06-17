@@ -54,9 +54,11 @@ export interface MetricsDefinitionEntity extends EntityRecord {
   metricDefLabel: string;
   sourceModelId: UUID | undefined;
   timeDimension: string | undefined;
+  creationTime: number;
   rollupInterval?: RollupInterval;
   measures: MeasureDefinition[];
   dimensions: DimensionDefinition[];
+  summaryExpandedInNav?: boolean;
 }
 
 export interface MetricsDefinitionState

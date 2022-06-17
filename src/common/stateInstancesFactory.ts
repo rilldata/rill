@@ -77,6 +77,7 @@ export function getMetricsDefinition(counter: number): MetricsDefinitionEntity {
   return {
     id: guidGenerator(),
     type: EntityType.MetricsDefinition,
+    creationTime: Date.now(),
     metricDefLabel: `metric definition ${counter}`,
     sourceModelId: undefined,
     timeDimension: undefined,

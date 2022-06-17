@@ -30,6 +30,8 @@
     SIDE_PAD,
   } from "$lib/application-state-stores/layout-store";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { HttpStreamClient } from "$lib/util/HttpStreamClient";
+  import { store } from "$lib/redux-store/store-root";
 
   let assetsHovered = false;
   let inspectorHovered = false;
@@ -61,6 +63,8 @@
   $: persistentExportedModel = $persistentModelStore?.entities?.find(
     (model) => model.id === derivedExportedModel?.id
   );
+
+  HttpStreamClient.create(`${config.server.serverUrl}/api`, store.dispatch);
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
