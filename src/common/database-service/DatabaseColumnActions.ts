@@ -482,11 +482,20 @@ export class DatabaseColumnActions extends DatabaseActions {
     columnType: string
   ): Promise<NumericSummary> {
     const sanitizedColumnName = sanitizeColumn(columnName);
-    // use approx_count_distinct to get the immediate cardinality of this column.
-    const [buckets] = await this.databaseClient.execute(
-      `SELECT approx_count_distinct(${sanitizedColumnName}) as count from ${tableName}`
+
+    const [columnProperties] = await this.databaseClient.execute(
+      `SELECT
+        reservoir_quantile(${sanitizedColumnName},0.75)-reservoir_quantile(${sanitizedColumnName},0.25) as IQR,
+        approx_count_distinct(${sanitizedColumnName}) as count,
+        max(${sanitizedColumnName})-min(${sanitizedColumnName}) as range
+      FROM ${tableName}`
     );
-    const bucketSize = Math.min(40, buckets.count);
+
+    // Use Freedman–Diaconis rule for calculating number of bins
+    const bucketWidth = 2*columnProperties.IQR/Math.cbrt(columnProperties.count);
+    const FDEstimatorBucketSize = Math.ceil(columnProperties.range/bucketWidth)
+    const bucketSize = Math.min(40,FDEstimatorBucketSize);
+
     const result = await this.databaseClient.execute(`
           WITH data_table AS (
             SELECT ${
