@@ -7,7 +7,7 @@ import { TwoTableJoinQuery } from "../data/ModelQuery.data";
 import { asyncWait } from "$common/utils/waitUtils";
 import axios from "axios";
 import type { PersistentModelState } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import { HttpStreamClient } from "$lib/util/HttpStreamClient";
+import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
 
 const CLI_FOLDER = "temp/metrics-def";
 const PORT = 8080;
@@ -22,7 +22,7 @@ const URL = `http://localhost:${PORT}`;
 @TestBase.TestLibrary(JestTestLibrary)
 @TestBase.TestSuiteSetup(TestServerSetup)
 export class MetricsDefinitionSpec extends TestBase<TestServerSetupParameter> {
-  private httpStreamClient = new HttpStreamClient(`${URL}/api`);
+  private httpStreamClient = new HttpStreamClient(`${URL}/api`, () => {});
 
   @TestBase.BeforeSuite()
   public async setupFiles() {
@@ -45,11 +45,8 @@ export class MetricsDefinitionSpec extends TestBase<TestServerSetupParameter> {
       readFileSync(`${CLI_FOLDER}/state/derived_model_state.json`).toString()
     );
 
-    await this.httpStreamClient.request(
-      `/metrics/${id}/updateModel`,
-      "POST",
-      { modelId: modelState.entities[0].id },
-      console.log
-    );
+    await this.httpStreamClient.request(`/metrics/${id}/updateModel`, "POST", {
+      modelId: modelState.entities[0].id,
+    });
   }
 }

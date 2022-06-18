@@ -48,7 +48,14 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       metricsDefId,
       modelId,
     ]);
+    rillRequestContext.actionsChannel.pushMessage(
+      "updateMetricsDefinitionModel",
+      [metricsDefId, modelId]
+    );
     this.dataModelerStateService.dispatch("clearMetricsDefinition", [
+      metricsDefId,
+    ]);
+    rillRequestContext.actionsChannel.pushMessage("clearMetricsDimension", [
       metricsDefId,
     ]);
     await this.rillDeveloperService.dispatch(

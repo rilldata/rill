@@ -30,7 +30,7 @@ export class RillActionsChannel {
     while (!this.isDone) {
       await waitUntil(() => this.messages.length > 0 || this.isDone, -1);
       while (this.messages.length > 0) {
-        yield this.messages.pop();
+        yield this.messages.shift();
       }
     }
   }

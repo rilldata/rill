@@ -19,8 +19,9 @@
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { UUID } from "$common/state-slice-types/metrics-defintion-types";
-  import { HttpStreamClient } from "$lib/util/HttpStreamClient";
-  export let metricsDefId: UUID;
+  import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
+  import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
+  export let metricsDefId: string;
   $: metricsDef = $reduxReadable?.metricsDefinition?.entities[metricsDefId];
   $: name = metricsDef?.metricDefLabel;
   $: summaryExpanded = metricsDef.summaryExpandedInNav;
@@ -50,7 +51,7 @@
     }
   };
   const dispatchDeleteMetricsDef = () => {
-    HttpStreamClient.instance.request(`/metrics/${metricsDefId}`, "DELETE");
+    MetricsDefinitionClient.instance.delete(metricsDefId);
   };
   const dispatchToggleSummaryInNav = () => {
     // store.dispatch(toggleSummaryInNav(metricsDefId));

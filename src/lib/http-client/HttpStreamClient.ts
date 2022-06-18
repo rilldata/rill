@@ -37,6 +37,7 @@ export class HttpStreamClient {
   }
 
   private dispatchMessage(message: string) {
+    if (!message) return;
     try {
       const messageJson: Message<any> = JSON.parse(message);
       this.dispatch(

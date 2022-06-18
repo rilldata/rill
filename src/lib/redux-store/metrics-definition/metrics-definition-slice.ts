@@ -70,6 +70,14 @@ export const metricsDefSlice = createSlice({
       prepare: (id, timeDimension) => ({ payload: { id, timeDimension } }),
     },
 
+    clearMetricsDimension: {
+      reducer: (state, action: PayloadAction<{ id: string }>) => {
+        state.entities[action.payload.id].dimensions = [];
+        state.entities[action.payload.id].measures = [];
+      },
+      prepare: (id) => ({ payload: { id } }),
+    },
+
     addNewDimension: {
       reducer: (
         state,
@@ -81,6 +89,22 @@ export const metricsDefSlice = createSlice({
       },
       prepare: (id: string, dimension: DimensionDefinition) => ({
         payload: { id, dimension },
+      }),
+    },
+
+    setDimensions: {
+      reducer: (
+        state,
+        action: PayloadAction<{
+          id: string;
+          dimensions: Array<DimensionDefinition>;
+        }>
+      ) => {
+        state.entities[action.payload.id].dimensions =
+          action.payload.dimensions;
+      },
+      prepare: (id: string, dimensions: Array<DimensionDefinition>) => ({
+        payload: { id, dimensions },
       }),
     },
 
@@ -119,6 +143,21 @@ export const metricsDefSlice = createSlice({
       }),
     },
 
+    setMeasures: {
+      reducer: (
+        state,
+        action: PayloadAction<{
+          id: string;
+          measures: Array<MeasureDefinition>;
+        }>
+      ) => {
+        state.entities[action.payload.id].measures = action.payload.measures;
+      },
+      prepare: (id: string, measures: Array<MeasureDefinition>) => ({
+        payload: { id, measures },
+      }),
+    },
+
     updateMeasure: {
       reducer: (
         state,
@@ -147,12 +186,18 @@ export const metricsDefSlice = createSlice({
 export const {
   bootstrapMetricsDefState,
   addEmptyMetricsDef,
+
   updateMetricsDefLabel,
   updateMetricsDefinitionModel,
   updateMetricsDefinitionTimestamp,
+  clearMetricsDimension,
+
   addNewDimension,
+  setDimensions,
   updateDimension,
+
   addNewMeasure,
+  setMeasures,
   updateMeasure,
 } = metricsDefSlice.actions;
 export const MetricsDefSliceActions = metricsDefSlice.actions;

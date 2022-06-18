@@ -6,16 +6,13 @@
    * and provide the interactions needed to do things with the table.
    */
   import { slide } from "svelte/transition";
-  import { Table, TableRow, TableCell } from "$lib/components/table/";
   import { FormattedDataType } from "$lib/components/data-types/";
-  import PreviewTableHeader from "./PreviewTableHeader.svelte";
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
-  import { standardTimestampFormat } from "$lib/util/formatters";
+  import PinnableTable from "./PinnableTable.svelte";
+  import { createEventDispatcher } from "svelte";
+  import type { ColumnName } from "$lib/components/table/pinnableUtils";
+  import { togglePin } from "$lib/components/table/pinnableUtils.js";
 
-  interface ColumnName {
-    name: string;
-    type: string;
-  }
+  const dispatch = createEventDispatcher();
 
   export let columnNames: ColumnName[];
   export let rows: any[];
@@ -36,99 +33,53 @@
     )?.type;
     activeIndex = index;
   }
-
-  function columnIsPinned(name, selectedCols) {
-    return selectedCols.map((column) => column.name).includes(name);
-  }
-
-  function togglePin(name, type, selectedCols) {
-    // if column is already pinned, remove.
-    if (columnIsPinned(name, selectedCols)) {
-      selectedColumns = [
-        ...selectedCols.filter((column) => column.name !== name),
-      ];
-    } else {
-      selectedColumns = [...selectedCols, { name, type }];
-    }
-  }
 </script>
 
 <div class="flex relative">
-  <Table
+  <PinnableTable
     on:mouseleave={() => {
       visualCellValue = undefined;
       setActiveElement(undefined, undefined, undefined);
     }}
-  >
-    <!-- headers -->
-    <TableRow>
-      {#each columnNames as { name, type } (name)}
-        {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-        <PreviewTableHeader
-          {name}
-          {type}
-          pinned={thisColumnIsPinned}
-          on:pin={() => {
-            togglePin(name, type, selectedColumns);
-          }}
-        />
-      {/each}
-    </TableRow>
-    <!-- values -->
-    {#each rows as row, index}
-      <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
-        {#each columnNames as { name, type } (index + name)}
-          <TableCell
-            on:inspect={() => {
-              setActiveElement(row[name], name, index);
-            }}
-            {name}
-            {type}
-            value={row[name]}
-            isNull={row[name] === null}
-          />
-        {/each}
-      </TableRow>
-    {/each}
-  </Table>
+    on:pin={(evt) => {
+      selectedColumns = togglePin(
+        evt.detail.name,
+        evt.detail.type,
+        selectedColumns
+      );
+    }}
+    on:activeElement={(evt) => {
+      setActiveElement(evt.detail.value, evt.detail.name, evt.detail.index);
+    }}
+    on:change={(evt) => dispatch("change", evt.detail)}
+    on:add={() => dispatch("add")}
+    {activeIndex}
+    {columnNames}
+    {selectedColumns}
+    {rows}
+  />
 
   {#if selectedColumns.length}
     <div
       class="sticky right-0 z-20 bg-white border border-l-4 border-t-0 border-b-0 border-r-0 border-gray-300"
     >
-      <Table>
-        <TableRow>
-          {#each selectedColumns as { name, type } (name)}
-            {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-            <PreviewTableHeader
-              {name}
-              {type}
-              pinned={thisColumnIsPinned}
-              on:pin={() => {
-                togglePin(name, type, selectedColumns);
-              }}
-            />
-          {/each}
-        </TableRow>
-        {#each rows as row, index}
-          <TableRow
-            hovered={activeIndex === index && activeIndex !== undefined}
-          >
-            {#each selectedColumns as { name, type }}
-              <TableCell
-                on:inspect={() => {
-                  setActiveElement(row[name], name, index);
-                }}
-                {name}
-                {type}
-                {index}
-                isNull={row[name] === null}
-                value={row[name]}
-              />
-            {/each}
-          </TableRow>
-        {/each}
-      </Table>
+      <PinnableTable
+        on:pin={(evt) => {
+          selectedColumns = togglePin(
+            evt.detail.name,
+            evt.detail.type,
+            selectedColumns
+          );
+        }}
+        on:activeElement={(evt) => {
+          setActiveElement(evt.detail.value, evt.detail.name, evt.detail.index);
+        }}
+        on:change={(evt) => dispatch("change", evt.detail)}
+        {activeIndex}
+        columnNames={selectedColumns}
+        {selectedColumns}
+        {rows}
+      />
     </div>
   {/if}
 </div>

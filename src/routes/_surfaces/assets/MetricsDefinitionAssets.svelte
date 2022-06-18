@@ -6,10 +6,9 @@
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import { store, reduxReadable } from "$lib/redux-store/store-root";
   import CollapsibleMetricsDefinitionSummary from "$lib/components/metrics-definition/CollapsibleMetricsDefinitionSummary.svelte";
-  import { HttpStreamClient } from "$lib/util/HttpStreamClient";
   import { onMount } from "svelte";
-  import { config } from "$lib/application-state-stores/application-store";
   import { bootstrapMetricsDefState } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
+  import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
   let metricsDefIds = new Array<string>();
   $: metricsDefIds =
     $reduxReadable !== undefined ? $reduxReadable.metricsDefinition.ids : [];
@@ -18,13 +17,13 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    HttpStreamClient.instance.request("/metrics", "PUT");
+    MetricsDefinitionClient.instance.create();
   };
 
   onMount(() => {
-    fetch(`${config.server.serverUrl}/api/metrics`).then(async (resp) => {
-      store.dispatch(bootstrapMetricsDefState((await resp.json()).data));
-    });
+    MetricsDefinitionClient.instance
+      .getAll()
+      .then((metrics) => store.dispatch(bootstrapMetricsDefState(metrics)));
   });
 </script>
 

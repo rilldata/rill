@@ -21,5 +21,5 @@
   <ModelView />
 {:else if useMetricsDefWorkspace}
   <MetricsDefWorkspaceHeader metricsDefId={activeEntityID} />
-  <MetricsDefWorkspace />
+  <MetricsDefWorkspace metricsDefId={activeEntityID} />
 {/if}

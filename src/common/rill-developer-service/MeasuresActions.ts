@@ -7,6 +7,7 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { guidGenerator } from "$lib/util/guid";
 
 export class MeasuresActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -17,7 +18,7 @@ export class MeasuresActions extends RillDeveloperActions {
     const measure: MeasureDefinition = {
       expression: "",
       sqlName: "",
-      id: "",
+      id: guidGenerator(),
       expressionIsValid: ValidationState.ERROR,
       sqlNameIsValid: ValidationState.ERROR,
       sparkLineId: "",
@@ -88,6 +89,25 @@ export class MeasuresActions extends RillDeveloperActions {
       sqlNameIsValid:
         sqlName !== "" ? ValidationState.OK : ValidationState.ERROR,
     };
+    this.dataModelerStateService.dispatch("updateMeasure", [
+      metricsDefId,
+      measureId,
+      modifications,
+    ]);
+    rillRequestContext.actionsChannel.pushMessage("updateMeasure", [
+      metricsDefId,
+      measureId,
+      modifications,
+    ]);
+  }
+
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async updateMeasure(
+    rillRequestContext: MetricsDefinitionContext,
+    metricsDefId: string,
+    measureId: string,
+    modifications: Partial<MeasureDefinition>
+  ) {
     this.dataModelerStateService.dispatch("updateMeasure", [
       metricsDefId,
       measureId,

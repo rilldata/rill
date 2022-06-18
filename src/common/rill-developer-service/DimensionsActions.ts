@@ -8,6 +8,7 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { CategoricalSummary } from "$lib/types";
+import { guidGenerator } from "$lib/util/guid";
 
 /**
  * select
@@ -27,7 +28,7 @@ export class DimensionsActions extends RillDeveloperActions {
   ) {
     const dimensions: DimensionDefinition = {
       dimensionColumn: columnName,
-      id: "",
+      id: guidGenerator(),
       dimensionIsValid:
         columnName === "" ? ValidationState.OK : ValidationState.ERROR,
       sqlNameIsValid: ValidationState.OK,
@@ -107,6 +108,25 @@ export class DimensionsActions extends RillDeveloperActions {
         model.tableName
       );
     }
+  }
+
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async updateDimension(
+    rillRequestContext: MetricsDefinitionContext,
+    metricsDefId: string,
+    dimensionId: string,
+    modifications: Partial<DimensionDefinition>
+  ) {
+    this.dataModelerStateService.dispatch("updateDimension", [
+      metricsDefId,
+      dimensionId,
+      modifications,
+    ]);
+    rillRequestContext.actionsChannel.pushMessage("updateDimension", [
+      metricsDefId,
+      dimensionId,
+      modifications,
+    ]);
   }
 
   private async collectDimensionSummary(
