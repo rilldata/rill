@@ -9,12 +9,12 @@
   import { FormattedDataType } from "$lib/components/data-types/";
   import PinnableTable from "./PinnableTable.svelte";
   import { createEventDispatcher } from "svelte";
-  import type { ColumnName } from "$lib/components/table/pinnableUtils";
+  import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import { togglePin } from "$lib/components/table/pinnableUtils.js";
 
   const dispatch = createEventDispatcher();
 
-  export let columnNames: ColumnName[];
+  export let columnNames: ColumnConfig[];
   export let rows: any[];
 
   let visualCellField = undefined;

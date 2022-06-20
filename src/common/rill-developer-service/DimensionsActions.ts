@@ -26,22 +26,28 @@ export class DimensionsActions extends RillDeveloperActions {
     metricsDefId: string,
     columnName: string
   ) {
-    const dimensions: DimensionDefinition = {
-      dimensionColumn: columnName,
+    const dimension: DimensionDefinition = {
+      dimensionColumn: "",
       id: guidGenerator(),
-      dimensionIsValid:
-        columnName === "" ? ValidationState.OK : ValidationState.ERROR,
+      dimensionIsValid: ValidationState.ERROR,
       sqlNameIsValid: ValidationState.OK,
     };
 
     this.dataModelerStateService.dispatch("addNewDimension", [
       metricsDefId,
-      dimensions,
+      dimension,
     ]);
     rillRequestContext.actionsChannel.pushMessage("addNewDimension", [
       metricsDefId,
-      dimensions,
+      dimension,
     ]);
+    if (columnName) {
+      await this.rillDeveloperService.dispatch(
+        rillRequestContext,
+        "updateDimensionColumn",
+        [metricsDefId, dimension.id, columnName]
+      );
+    }
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()

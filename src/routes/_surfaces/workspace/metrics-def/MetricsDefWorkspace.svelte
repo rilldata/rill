@@ -3,7 +3,11 @@
   import { layout } from "$lib/application-state-stores/layout-store";
   import PreviewTable from "$lib/components/table/PreviewTable.svelte";
   import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type {
+    DimensionDefinition,
+    MeasureDefinition,
+    MetricsDefinitionEntity,
+  } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import {
     setDimensions,
     setMeasures,
@@ -17,6 +21,8 @@
   import { MetricsMeasureClient } from "$lib/components/metrics-definition/MetricsMeasureClient";
   import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient.js";
   import type { ProfileColumn } from "$lib/types";
+  import EditableTableCell from "$lib/components/table/EditableTableCell.svelte";
+  import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
 
   export let metricsDefId;
 
@@ -24,18 +30,34 @@
   const tableContainerDivClass =
     "rounded border border-gray-200 border-2  overflow-auto ";
 
-  const MetricsColumns = ["label", "sqlName", "description"].map((col) => ({
+  const MeasuresColumns: Array<ColumnConfig> = [
+    "label",
+    "sqlName",
+    "expression",
+    "description",
+  ].map((col) => ({
     name: col,
     type: "VARCHAR",
-    cellType: "editable",
+    renderer: EditableTableCell,
   }));
-  const DimensionColumns = ["sqlName", "dimensionColumn", "description"].map(
-    (col) => ({
-      name: col,
-      type: "VARCHAR",
-      cellType: "editable",
-    })
-  );
+  MeasuresColumns[1].validation = (row: MeasureDefinition) =>
+    row.sqlNameIsValid;
+  MeasuresColumns[2].validation = (row: MeasureDefinition) =>
+    row.expressionIsValid;
+
+  const DimensionColumns: Array<ColumnConfig> = [
+    "sqlName",
+    "dimensionColumn",
+    "description",
+  ].map((col) => ({
+    name: col,
+    type: "VARCHAR",
+    renderer: EditableTableCell,
+  }));
+  DimensionColumns[0].validation = (row: DimensionDefinition) =>
+    row.sqlNameIsValid;
+  DimensionColumns[1].validation = (row: DimensionDefinition) =>
+    row.dimensionIsValid;
 
   let selectedMetricsDef: MetricsDefinitionEntity;
   $: if ($reduxReadable?.metricsDefinition?.entities[metricsDefId]?.id) {
@@ -120,7 +142,7 @@
     <div style:flex="1" class={tableContainerDivClass}>
       <PreviewTable
         rows={selectedMetricsDef?.measures ?? []}
-        columnNames={MetricsColumns}
+        columnNames={MeasuresColumns}
         on:change={(evt) => {
           MetricsMeasureClient.instance.updateField(
             selectedMetricsDef?.measures[evt.detail.index].id,

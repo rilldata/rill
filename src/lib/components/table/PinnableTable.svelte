@@ -4,23 +4,18 @@
   import TableCell from "$lib/components/table/TableCell.svelte";
   import { createEventDispatcher } from "svelte";
   import PreviewTableHeader from "$lib/components/table/PreviewTableHeader.svelte";
-  import EditableTableCell from "$lib/components/table/EditableTableCell.svelte";
-  import type { ColumnName } from "$lib/components/table/pinnableUtils";
+  import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import { columnIsPinned } from "$lib/components/table/pinnableUtils.js";
   import AddIcon from "$lib/components/icons/AddIcon.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
   const dispatch = createEventDispatcher();
 
-  export let columnNames: ColumnName[];
-  export let selectedColumns: ColumnName[];
+  export let columnNames: ColumnConfig[];
+  export let selectedColumns: ColumnConfig[];
   export let rows: any[];
   export let activeIndex: number;
-  // export let
-
-  const CellTypeToComponent = {
-    editable: EditableTableCell,
-  };
 </script>
 
 <Table>
@@ -41,20 +36,24 @@
   <!-- values -->
   {#each rows as row, index}
     <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
-      {#each columnNames as { name, type, cellType, cellComponent } (index + name)}
-        {@const comp =
-          CellTypeToComponent[cellType] ?? cellComponent ?? TableCell}
-        <svelte:component
-          this={comp}
+      {#each columnNames as column (index + column.name)}
+        <TableCell
           on:inspect={() => {
-            dispatch("activeElement", { name, index, value: row[name] });
+            dispatch("activeElement", {
+              name: column.name,
+              index,
+              value: row[column.name],
+            });
           }}
           on:change={(evt) => dispatch("change", evt.detail)}
-          {name}
-          {type}
+          {column}
           {index}
-          value={row[name]}
-          isNull={row[name] === null}
+          {row}
+          validation={column.validation
+            ? column.validation(row, row[column.name])
+            : ValidationState.OK}
+          value={row[column.name]}
+          isNull={row[column.name] === null}
         />
       {/each}
     </TableRow>

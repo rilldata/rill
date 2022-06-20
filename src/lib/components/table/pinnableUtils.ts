@@ -1,11 +1,20 @@
-export interface ColumnName {
+import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+
+export interface ColumnConfig {
   name: string;
   type: string;
-  cellType?: string;
-  cellComponent?: unknown;
+
+  renderer?: unknown;
+
+  validation?: (
+    row: Record<string, unknown>,
+    value: unknown
+  ) => ValidationState;
+
+  copyable?: boolean;
 }
 
-export function columnIsPinned(name, selectedColumns: Array<ColumnName>) {
+export function columnIsPinned(name, selectedColumns: Array<ColumnConfig>) {
   return selectedColumns.map((column) => column.name).includes(name);
 }
 

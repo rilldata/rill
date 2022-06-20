@@ -51,6 +51,7 @@ export class MeasuresActions extends RillDeveloperActions {
       parsedExpression.isValid &&
       parsedExpression.columns.every(
         (columnName) =>
+          columnName === "*" ||
           model.profile.findIndex((column) => column.name === columnName) >= 0
       );
 
