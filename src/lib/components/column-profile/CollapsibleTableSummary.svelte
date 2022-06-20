@@ -69,6 +69,7 @@
   {#if showTitle}
     <div {draggable} class="active:cursor-grabbing">
       <CollapsibleTableHeader
+        on:select={() => dispatch("select")}
         bind:contextMenuOpen={contextMenuOpen}
         bind:menuX={menuX}
         bind:menuY={menuY}
