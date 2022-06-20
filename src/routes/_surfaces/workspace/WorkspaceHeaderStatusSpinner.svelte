@@ -24,7 +24,7 @@
     [EntityStatus.Idle]: "idle",
     [EntityStatus.Running]: "running",
     [EntityStatus.Exporting]: "exporting a model resultset",
-    [EntityStatus.Importing]: "importing a table",
+    [EntityStatus.Importing]: "importing a source",
     [EntityStatus.Profiling]: "profiling",
   };
 

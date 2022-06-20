@@ -2,7 +2,7 @@ This is prototype-quality code, subject to radical change as we figure out what 
 
 # CLI
 
-Initializing a project, adding datasets as tables, and starting a project are currently only supported through our CLI.
+Initializing a project, adding datasets as sources, and starting a project are currently only supported through our CLI.
 
 ### Installing
 
@@ -32,20 +32,20 @@ npm run cli --silent -- init --project /path/to/project
 Note: This is not explicitly necessary.
 Running the other commands on a non-existing directory or a fresh directory will automatically initialize the project.
 
-### Importing a table from a file
+### Importing a source from a file
 
 ```
-# import table from /path/to/table/file into project under /path/to/project
-npm run cli --silent -- import-table /path/to/table/file --project /path/to/project
+# import source from /path/to/source/file into project under /path/to/project
+npm run cli --silent -- import-source /path/to/source/file --project /path/to/project
 
 # Optionally pass a delimiter to override auto detected delimiter by duckdb.
 # Only applies to a csv file
-npm run cli --silent -- import-table /path/to/table/csvfile --project /path/to/project --delimiter "|"
+npm run cli --silent -- import-source /path/to/source/csvfile --project /path/to/project --delimiter "|"
 ```
 
 `--project` is optional. Will default to current directory if not specified.
 
-Table name can be customisable using `--name` argument. By default, it uses file name without extension for table name.
+Source name can be customisable using `--name` argument. By default, it uses file name without extension for source name.
 
 **File types currently supported:**
 
@@ -62,11 +62,11 @@ npm run cli --silent -- start --project /path/to/project
 
 `--project` is optional. Will default to current directory if not specified.
 
-### Dropping a table
+### Dropping a source
 
 ```
-# Drop a table 'tableToDrop' from project under /path/to/project
-npm run cli --silent -- drop-table tableToDrop --project /path/to/project
+# Drop a source 'sourceToDrop' from project under /path/to/project
+npm run cli --silent -- drop-source sourceToDrop --project /path/to/project
 ```
 
 `--project` is optional. Will default to current directory if not specified.

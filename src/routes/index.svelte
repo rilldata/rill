@@ -91,7 +91,7 @@
       mode={$assetsVisible ? "right" : "hamburger"}
     />
     <svelte:fragment slot="tooltip-content">
-      {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and tables
+      {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and sources
     </svelte:fragment>
   </SurfaceControlButton>
 

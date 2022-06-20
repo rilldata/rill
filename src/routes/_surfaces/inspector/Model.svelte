@@ -248,8 +248,7 @@
               <TooltipContent slot="tooltip-content">
                 <div class="pt-1 pb-1 font-bold">the rollup percentage</div>
                 <div style:width="240px" class="pb-1">
-                  the ratio of destination table rows to source table rows, as a
-                  percentage
+                  the ratio of resultset rows to source rows, as a percentage
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -265,10 +264,10 @@
         <div class="pt-4 pb-4">
           <div class=" pl-4 pr-4">
             <CollapsibleSectionTitle
-              tooltipText="source tables"
+              tooltipText="sources"
               bind:active={showSourceTables}
             >
-              Source Tables
+              Sources
             </CollapsibleSectionTitle>
           </div>
           {#if showSourceTables}
