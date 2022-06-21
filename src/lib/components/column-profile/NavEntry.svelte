@@ -6,9 +6,11 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
+  import { createCommandClickAction } from "$lib/util/command-click-action";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+  const { commandClickAction } = createCommandClickAction();
   const { shiftClickAction } = createShiftClickAction();
   const dispatch = createEventDispatcher();
 
@@ -48,6 +50,12 @@
   </ExpanderButton>
   <Tooltip location="right">
     <button
+      use:commandClickAction
+      on:command-click={() => {
+        if (entityType == EntityType.Table) {
+          dispatch("query");
+        }
+      }}
       use:shiftClickAction
       on:shift-click
       on:click={(evt) => {

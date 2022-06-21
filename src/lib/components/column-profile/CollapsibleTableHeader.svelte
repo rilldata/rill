@@ -61,6 +61,7 @@
   expanded={show}
   selected={emphasizeTitle}
   bind:hovered={titleElementHovered}
+  on:query
   on:shift-click={async () => {
     await navigator.clipboard.writeText(name);
     notificationStore.send({ message: `copied "${name}" to clipboard` });
@@ -78,12 +79,18 @@
       <svelte:fragment slot="description" />
     </TooltipTitle>
     <TooltipShortcutContainer>
+      {#if entityType == EntityType.Table}
+        <div>
+          <StackingWord key="command">query</StackingWord> in workspace
+        </div>
+        <Shortcut>command + click</Shortcut>
+      {/if}
       {#if entityType == EntityType.Model}
         <div>open in workspace</div>
         <Shortcut>click</Shortcut>
       {/if}
       <div>
-        <StackingWord>copy</StackingWord> to clipboard
+        <StackingWord key="shift">copy</StackingWord> to clipboard
       </div>
       <Shortcut>shift + click</Shortcut>
     </TooltipShortcutContainer>

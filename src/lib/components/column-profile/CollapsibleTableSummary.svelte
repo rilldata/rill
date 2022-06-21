@@ -70,6 +70,7 @@
     <div {draggable} class="active:cursor-grabbing">
       <CollapsibleTableHeader
         on:select
+        on:query
         bind:contextMenuOpen
         bind:menuX
         bind:menuY
@@ -105,7 +106,7 @@
                   dispatch("query");
                 }}
               >
-                query {name} in workspace
+                query {name}
               </MenuItem>
             {/if}
             <MenuItem
