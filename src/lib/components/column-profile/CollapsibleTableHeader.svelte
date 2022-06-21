@@ -119,7 +119,7 @@
         <span
           class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap "
         >
-          {#if titleElementHovered || emphasizeTitle}
+          {#if titleElementHovered || emphasizeTitle || contextMenuOpen}
             <span>
               <span>
                 {cardinality !== undefined && !isNaN(cardinality)
@@ -131,8 +131,8 @@
             <span class="self-center">
               <ContextButton
                 id={contextButtonId}
-                tooltipText="delete"
-                suppressTooltip={contextMenuOpen}
+                tooltipText=""
+                suppressTooltip={true}
                 on:click={async (event) => {
                   contextMenuOpen = !contextMenuOpen;
                   menuX = event.clientX;
