@@ -25,11 +25,10 @@ You can create and augment your own projects in Rill Developer using the [CLI](h
 rill init
 rill import-source /path/to/data_1.parquet
 rill start
-
 ```
 
 ## more information
-See our [documentation]() for more information.
+See our [documentation](https://github.com/rilldata/rill-developer/blob/main/docs) for more information.
 
 ## legal
 By downloading and using our application you are agreeing to the [Rill Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
