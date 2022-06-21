@@ -16,6 +16,7 @@
   } from "$lib/application-state-stores/table-stores";
 
   import { onSourceDrop, uploadFilesWithDialog } from "$lib/util/file-upload";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -69,6 +70,7 @@
         )}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
+            entityType={EntityType.Table}
             indentLevel={1}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}

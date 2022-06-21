@@ -7,10 +7,12 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
   import { createShiftClickAction } from "$lib/util/shift-click-action";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   const { shiftClickAction } = createShiftClickAction();
   const dispatch = createEventDispatcher();
 
+  export let entityType: EntityType;
   export let expanded = true;
   export let selected = false;
   export let hovered = false;
@@ -49,7 +51,13 @@
       use:shiftClickAction
       on:shift-click
       on:click={(evt) => {
-        dispatch("select-body");
+        dispatch("select");
+        if (
+          entityType == EntityType.Table ||
+          (entityType == EntityType.Model && selected)
+        ) {
+          dispatch("expand");
+        }
       }}
       on:focus={() => {
         hovered = true;

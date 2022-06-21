@@ -19,7 +19,9 @@
   } from "$lib/components/column-profile/sort-utils";
 
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+  export let entityType: EntityType;
   export let name: string;
   export let cardinality: number;
   export let profile: any;
@@ -47,7 +49,6 @@
     return () => observer.unobserve(container);
   });
 
-
   let sortedProfile;
   const sortByOriginalOrder = null;
 
@@ -62,19 +63,19 @@
 
   let menuX;
   let menuY;
-
 </script>
 
 <div bind:this={container}>
   {#if showTitle}
     <div {draggable} class="active:cursor-grabbing">
       <CollapsibleTableHeader
-        on:select={() => dispatch("select")}
-        bind:contextMenuOpen={contextMenuOpen}
-        bind:menuX={menuX}
-        bind:menuY={menuY}
-        bind:name={name}
-        bind:show={show}
+        on:select
+        bind:contextMenuOpen
+        bind:menuX
+        bind:menuY
+        bind:name
+        bind:show
+        {entityType}
         {contextMenu}
         {cardinality}
         {sizeInBytes}
