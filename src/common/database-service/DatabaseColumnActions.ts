@@ -545,7 +545,66 @@ export class DatabaseColumnActions extends DatabaseActions {
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
 	      `);
-    return { histogram: result };
+
+    const outlierPseudoBucketSize = 500
+    const outlierResults = await this.databaseClient.execute(`
+          WITH data_table AS (
+            SELECT ${
+              TIMESTAMPS.has(columnType)
+                ? `epoch(${sanitizedColumnName})`
+                : `${sanitizedColumnName}::DOUBLE`
+            } as ${sanitizedColumnName}
+            FROM ${tableName}
+            WHERE ${sanitizedColumnName} IS NOT NULL
+          ), S AS (
+            SELECT
+              min(${sanitizedColumnName}) as minVal,
+              max(${sanitizedColumnName}) as maxVal,
+              (max(${sanitizedColumnName}) - min(${sanitizedColumnName})) as range
+              FROM data_table
+          ), values AS (
+            SELECT ${sanitizedColumnName} as value from data_table
+            WHERE ${sanitizedColumnName} IS NOT NULL
+          ), buckets AS (
+            SELECT
+              range as bucket,
+              (range) * (select range FROM S) / ${outlierPseudoBucketSize} + (select minVal from S) as low,
+              (range + 1) * (select range FROM S) / ${outlierPseudoBucketSize} + (select minVal from S) as high
+            FROM range(0, ${outlierPseudoBucketSize}, 1)
+          ),
+          histogram_stage AS (
+          SELECT
+              bucket,
+              low,
+              high,
+              count(values.value) as count
+            FROM buckets
+            LEFT JOIN values ON (values.value >= low and values.value < high)
+            GROUP BY bucket, low, high
+            ORDER BY BUCKET
+          ),
+          -- calculate the right edge, sine in histogram_stage we don't look at the values that
+          -- might be the largest.
+          right_edge AS (
+            SELECT count(*) as c from values WHERE value = (select maxVal from S)
+          ), histrogram_with_edge AS (
+          SELECT
+            bucket,
+            low,
+            high,
+            -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
+            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
+            FROM histogram_stage
+          )
+          SELECT
+            bucket,
+            low,
+            high,
+            CASE WHEN count>0 THEN true ELSE false END AS present
+          FROM histrogram_with_edge
+          WHERE present=true
+        `);
+    return { histogram: result, outliers: outlierResults };
   }
 
   public async getTimeRange(
