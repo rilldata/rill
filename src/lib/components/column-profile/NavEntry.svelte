@@ -12,7 +12,6 @@
   const dispatch = createEventDispatcher();
 
   export let expanded = true;
-  export let expandable = true;
   export let selected = false;
   export let hovered = false;
 </script>
@@ -37,16 +36,14 @@
         pl-4 pr-4 
     "
 >
-  {#if expandable}
-    <ExpanderButton
-      rotated={expanded}
-      on:click={() => {
-        dispatch("expand");
-      }}
-    >
-      <CaretDownIcon size="14px" />
-    </ExpanderButton>
-  {/if}
+  <ExpanderButton
+    rotated={expanded}
+    on:click={() => {
+      dispatch("expand");
+    }}
+  >
+    <CaretDownIcon size="14px" />
+  </ExpanderButton>
   <Tooltip location="right">
     <button
       use:shiftClickAction
