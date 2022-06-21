@@ -15,6 +15,7 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
+  import notificationStore from "$lib/components/notifications/";
 
   import { onSourceDrop, uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -105,6 +106,10 @@
                 EntityType.Model,
                 response.id,
               ]);
+
+              notificationStore.send({
+                message: `queried ${tableName} in workspace`,
+              });
             }}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
