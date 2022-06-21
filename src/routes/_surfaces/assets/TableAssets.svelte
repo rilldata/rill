@@ -14,6 +14,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
+  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
 
   import { onSourceDrop, uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -25,6 +26,10 @@
   const derivedTableStore = getContext(
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
+
+  const persistentModelStore = getContext(
+    "rill:app:persistent-model-store"
+  ) as PersistentModelStore;
 
   let showTables = true;
 </script>
@@ -77,6 +82,30 @@
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+            on:query={async () => {
+              // check existing models to avoid a name conflict
+              const existingNames = $persistentModelStore?.entities
+                .filter((model) => model.name.includes(`query_${tableName}`))
+                .map((model) => model.tableName)
+                .sort();
+              const nextName =
+                existingNames.length === 0
+                  ? `query_${tableName}`
+                  : `query_${tableName}_${existingNames.length + 1}`;
+
+              const response = await dataModelerService.dispatch("addModel", [
+                {
+                  name: nextName,
+                  query: `select * from ${tableName}`,
+                },
+              ]);
+
+              // change the active asset to the new model
+              await dataModelerService.dispatch("setActiveAsset", [
+                EntityType.Model,
+                response.id,
+              ]);
+            }}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
             }}

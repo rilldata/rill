@@ -99,6 +99,15 @@
               contextMenuOpen = false;
             }}
           >
+            {#if entityType == EntityType.Table}
+              <MenuItem
+                on:select={() => {
+                  dispatch("query");
+                }}
+              >
+                query {name} in workspace
+              </MenuItem>
+            {/if}
             <MenuItem
               on:select={() => {
                 dispatch("delete");
