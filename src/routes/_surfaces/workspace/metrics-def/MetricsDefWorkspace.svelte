@@ -11,15 +11,15 @@
   import {
     setDimensions,
     setMeasures,
-  } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
+  } from "$lib/redux-store/metrics-definition-slice";
   import { getContext } from "svelte";
   import {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import { MetricsDimensionClient } from "$lib/components/metrics-definition/MetricsDimensionClient.js";
+  import { MetricsDimensionClient } from "$lib/components/metrics-definition/MetricsDimensionClient";
   import { MetricsMeasureClient } from "$lib/components/metrics-definition/MetricsMeasureClient";
-  import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient.js";
+  import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
   import type { ProfileColumn } from "$lib/types";
   import EditableTableCell from "$lib/components/table/EditableTableCell.svelte";
   import type { ColumnConfig } from "$lib/components/table/pinnableUtils";

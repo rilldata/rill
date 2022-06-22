@@ -14,13 +14,12 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { reduxReadable } from "$lib/redux-store/store-root";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  // FIXME: wnat to remove svelte stores and contexts
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-  import type { UUID } from "$common/state-slice-types/metrics-defintion-types";
-  import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
   import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
+  import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
+
   export let metricsDefId: string;
   $: metricsDef = $reduxReadable?.metricsDefinition?.entities[metricsDefId];
   $: name = metricsDef?.metricDefLabel;
@@ -71,7 +70,7 @@
   on:select-body={async (event) => {
     dataModelerService.dispatch("setActiveAsset", [
       EntityType.MetricsDefinition,
-      metricsDefId.toString(), // FIXME: should not need to do this type conversion
+      metricsDefId,
     ]);
   }}
   on:expand={dispatchToggleSummaryInNav}
@@ -109,10 +108,22 @@
         {#if titleElementHovered || emphasizeTitle}
           <span class="self-center">
             <ContextButton
-              id={metricsDefId.toString()}
+              id={metricsDefId}
               tooltipText="delete"
               suppressTooltip={contextMenuOpen}
               on:click={contextButtonClickHandler}><MoreIcon /></ContextButton
+            >
+          </span>
+          <span class="self-center">
+            <ContextButton
+              id={metricsDefId}
+              tooltipText="expand"
+              on:click={() => {
+                dataModelerService.dispatch("setActiveAsset", [
+                  EntityType.MetricsLeaderboard,
+                  metricsDefId,
+                ]);
+              }}><ExpandCaret /></ContextButton
             >
           </span>
         {/if}

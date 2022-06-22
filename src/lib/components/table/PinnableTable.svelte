@@ -5,7 +5,7 @@
   import { createEventDispatcher } from "svelte";
   import PreviewTableHeader from "$lib/components/table/PreviewTableHeader.svelte";
   import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
-  import { columnIsPinned } from "$lib/components/table/pinnableUtils.js";
+  import { columnIsPinned } from "$lib/components/table/pinnableUtils";
   import AddIcon from "$lib/components/icons/AddIcon.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";

@@ -15,6 +15,7 @@ import type { RillDeveloperService } from "$common/rill-developer-service/RillDe
 import { MetricsDefinitionController } from "$server/controllers/MetricsDefinitionController";
 import { MetricsDimensionController } from "$server/controllers/MetricsDimensionController";
 import { MetricsMeasureController } from "$server/controllers/MetricsMeasureController";
+import { MetricsExploreController } from "$server/controllers/MetricsExploreController";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -83,20 +84,17 @@ export class ExpressServer {
     ).setup(this.app, "/api/file");
     if (!this.rillDeveloperService) return;
 
-    new MetricsDefinitionController(
-      this.config,
-      this.dataModelerService,
-      this.rillDeveloperService
-    ).setup(this.app, "/api/metrics");
-    new MetricsDimensionController(
-      this.config,
-      this.dataModelerService,
-      this.rillDeveloperService
-    ).setup(this.app, "/api/metrics");
-    new MetricsMeasureController(
-      this.config,
-      this.dataModelerService,
-      this.rillDeveloperService
-    ).setup(this.app, "/api/metrics");
+    [
+      MetricsDefinitionController,
+      MetricsDimensionController,
+      MetricsMeasureController,
+      MetricsExploreController,
+    ].forEach((MetricsControllerClass) =>
+      new MetricsControllerClass(
+        this.config,
+        this.dataModelerService,
+        this.rillDeveloperService
+      ).setup(this.app, "/api/metrics")
+    );
   }
 }

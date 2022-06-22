@@ -34,6 +34,8 @@ import { RillDeveloperService } from "$common/rill-developer-service/RillDevelop
 import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
 import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
+import { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
+import { LeaderboardActions } from "$common/rill-developer-service/LeaderboardActions";
 
 let PACKAGE_JSON = "";
 try {
@@ -44,23 +46,18 @@ try {
 
 export function databaseServiceFactory(config: RootConfig) {
   const duckDbClient = DuckDBClient.getInstance(config.database);
-  const databaseDataLoaderActions = new DatabaseDataLoaderActions(
-    config.database,
-    duckDbClient
+  return new DatabaseService(
+    duckDbClient,
+    [
+      DatabaseDataLoaderActions,
+      DatabaseTableActions,
+      DatabaseColumnActions,
+      DatabaseMetricsExploreActions,
+    ].map(
+      (DatabaseActionsClass) =>
+        new DatabaseActionsClass(config.database, duckDbClient)
+    )
   );
-  const databaseTableActions = new DatabaseTableActions(
-    config.database,
-    duckDbClient
-  );
-  const databaseColumnActions = new DatabaseColumnActions(
-    config.database,
-    duckDbClient
-  );
-  return new DatabaseService(duckDbClient, [
-    databaseDataLoaderActions,
-    databaseTableActions,
-    databaseColumnActions,
-  ]);
 }
 
 export function dataModelerStateServiceFactory(config: RootConfig) {
@@ -147,7 +144,12 @@ export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
     rillDeveloper.dataModelerStateService,
     rillDeveloper.dataModelerService,
     rillDeveloper.dataModelerService.getDatabaseService(),
-    [MetricsDefinitionActions, DimensionsActions, MeasuresActions].map(
+    [
+      MetricsDefinitionActions,
+      DimensionsActions,
+      MeasuresActions,
+      LeaderboardActions,
+    ].map(
       (RillDeveloperActionsClass) =>
         new RillDeveloperActionsClass(
           rillDeveloper.config,

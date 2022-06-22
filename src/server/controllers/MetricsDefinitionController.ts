@@ -34,15 +34,7 @@ export class MetricsDefinitionController extends RillDeveloperController {
             EntityType.MetricsDefinition,
             StateType.Persistent
           )
-          .getCurrentState()
-          .entities.map((metricsDefinition) => {
-            return {
-              id: metricsDefinition.id,
-              metricDefLabel: metricsDefinition.metricDefLabel,
-              sourceModelId: metricsDefinition.sourceModelId,
-              timeDimension: metricsDefinition.timeDimension,
-            } as MetricsDefinitionEntity;
-          }),
+          .getCurrentState().entities,
       })
     );
   }

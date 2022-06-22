@@ -7,7 +7,7 @@
   import { store, reduxReadable } from "$lib/redux-store/store-root";
   import CollapsibleMetricsDefinitionSummary from "$lib/components/metrics-definition/CollapsibleMetricsDefinitionSummary.svelte";
   import { onMount } from "svelte";
-  import { bootstrapMetricsDefState } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
+  import { bootstrapMetricsDefState } from "$lib/redux-store/metrics-definition-slice";
   import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
   let metricsDefIds = new Array<string>();
   $: metricsDefIds =

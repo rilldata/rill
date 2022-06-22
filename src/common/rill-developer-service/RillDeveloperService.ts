@@ -16,10 +16,14 @@ import type {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { LeaderboardActions } from "$common/rill-developer-service/LeaderboardActions";
 
 type RillDeveloperActionsClasses = PickActionFunctions<
   RillRequestContext<EntityType, StateType>,
-  MetricsDefinitionActions & DimensionsActions & MeasuresActions
+  MetricsDefinitionActions &
+    DimensionsActions &
+    MeasuresActions &
+    LeaderboardActions
 >;
 export type RillDeveloperActionsDefinition = ExtractActionTypeDefinitions<
   RillRequestContext<EntityType, StateType>,

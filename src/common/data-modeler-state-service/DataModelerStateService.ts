@@ -97,7 +97,8 @@ export class DataModelerStateService {
       });
     });
     entityStateServices.forEach((entityStateService) => {
-      this.entityStateServicesMap[entityStateService.entityType] ??= {};
+      (this.entityStateServicesMap[entityStateService.entityType] as any) ??=
+        {};
       (this.entityStateServicesMap[entityStateService.entityType] as any)[
         entityStateService.stateType
       ] = entityStateService;

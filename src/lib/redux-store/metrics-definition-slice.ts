@@ -6,8 +6,7 @@ import * as reduxToolkit from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinition } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { shallowCopy } from "$common/utils/shallowCopy";
-import { createEntityAdapter } from "@reduxjs/toolkit";
-const { createSlice } = reduxToolkit;
+const { createSlice, createEntityAdapter } = reduxToolkit;
 
 const metricsDefAdapter = createEntityAdapter<MetricsDefinitionEntity>({
   sortComparer: (a, b) => a.creationTime - b.creationTime,
@@ -203,4 +202,4 @@ export const {
 export const MetricsDefSliceActions = metricsDefSlice.actions;
 export type MetricsDefSliceActionTypes = typeof MetricsDefSliceActions;
 
-export default metricsDefSlice.reducer;
+export const metricsDefinitionReducer = metricsDefSlice.reducer;
