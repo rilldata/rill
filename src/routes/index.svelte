@@ -28,8 +28,10 @@
     inspectorVisibilityTween,
     inspectorVisible,
     SIDE_PAD,
+    importOverlayVisible,
   } from "$lib/application-state-stores/layout-store";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
 
   let assetsHovered = false;
   let inspectorHovered = false;
@@ -73,6 +75,8 @@
     importName={persistentImportedTable.path}
     tableName={persistentImportedTable.name}
   />
+{:else if $importOverlayVisible}
+  <PreparingImport />
 {/if}
 
 <div class="absolute w-screen h-screen bg-gray-100">

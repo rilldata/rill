@@ -2,6 +2,7 @@ import { extractFileExtension } from "$lib/util/extract-table-name";
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
 import notifications from "$lib/components/notifications";
 import { config } from "$lib/application-state-stores/application-store";
+import { importOverlayVisible } from "$lib/application-state-stores/layout-store";
 
 /**
  * uploadTableFiles
@@ -22,6 +23,10 @@ export function uploadTableFiles(files, apiBase: string) {
     }
   });
 
+  if (validFiles) {
+    importOverlayVisible.set(true)
+  }
+
   validFiles.forEach((validFile) =>
     uploadFile(validFile, `${apiBase}/table-upload`)
   );
@@ -37,7 +42,8 @@ export function uploadFile(file: File, url: string) {
     body: formData,
   })
     .then((...args) => console.error(...args))
-    .catch((...args) => console.error(...args));
+    .catch((...args) => console.error(...args))
+    .finally(() => importOverlayVisible.set(false));
 }
 
 function reportFileErrors(invalidFiles: File[]) {
