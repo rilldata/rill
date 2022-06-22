@@ -177,22 +177,22 @@ export class DataModelerTest extends TestBase {
     };
   }
 
-  @TestBase.Test()
-  public async testActiveInitializeModel({ page }: PlaywrightTestArgs) {
-    await page.goto(URL);
-    const defaultActiveModel = page.locator(
-      "#assets-model-list .collapsible-table-summary-title"
-    );
-    const modelName = await defaultActiveModel.textContent();
-    const count = await defaultActiveModel.count();
+  // @TestBase.Test()
+  // public async testActiveInitializeModel({ page }: PlaywrightTestArgs) {
+  //   await page.goto(URL);
+  //   const defaultActiveModel = page.locator(
+  //     "#assets-model-list .collapsible-table-summary-title"
+  //   );
+  //   const modelName = await defaultActiveModel.textContent();
+  //   const count = await defaultActiveModel.count();
 
-    // we start with one model.
-    expect(count).toBe(1);
+  //   // we start with one model.
+  //   expect(count).toBe(1);
 
-    // the model is the selected one.
-    const modelTitleElement = await page.inputValue("input#model-title-input");
-    expect(modelName.includes(modelTitleElement)).toBeTruthy();
-  }
+  //   // the model is the selected one.
+  //   const modelTitleElement = await page.inputValue("input#model-title-input");
+  //   expect(modelName.includes(modelTitleElement)).toBeTruthy();
+  // }
 
   // @TestBase.Test('queryDataProvider')
   // public async testCostEstimates(query: string, result: string, { page }: PlaywrightTestArgs) {
@@ -208,33 +208,33 @@ export class DataModelerTest extends TestBase {
   //   expect(actualCost).toEqual(expectedCost);
   // }
 
-  @TestBase.Test()
-  public async testNewModelCreation({ page }: PlaywrightTestArgs) {
-    await page.goto(URL);
+  // @TestBase.Test()
+  // public async testNewModelCreation({ page }: PlaywrightTestArgs) {
+  //   await page.goto(URL);
 
-    const oldModelCount = await page
-      .locator("#assets-model-list > div")
-      .count();
+  //   const oldModelCount = await page
+  //     .locator("#assets-model-list > div")
+  //     .count();
 
-    await page.click("button#create-model-button");
+  //   await page.click("button#create-model-button");
 
-    await this.delay(300);
+  //   await this.delay(300);
 
-    const newModelCount = await page
-      .locator("#assets-model-list > div")
-      .count();
-    expect(newModelCount).toBe(oldModelCount + 1);
+  //   const newModelCount = await page
+  //     .locator("#assets-model-list > div")
+  //     .count();
+  //   expect(newModelCount).toBe(oldModelCount + 1);
 
-    // get the text of the last model and compare to the title element in the workspace.
-    const modelName = await page
-      .locator("#assets-model-list > div")
-      .last()
-      .textContent();
+  //   // get the text of the last model and compare to the title element in the workspace.
+  //   const modelName = await page
+  //     .locator("#assets-model-list > div")
+  //     .last()
+  //     .textContent();
 
-    // check the modelName against the model title input element.
-    const modelTitleElement = await page.inputValue("input#model-title-input");
-    expect(modelName.includes(modelTitleElement)).toBeTruthy();
-  }
+  //   // check the modelName against the model title input element.
+  //   const modelTitleElement = await page.inputValue("input#model-title-input");
+  //   expect(modelName.includes(modelTitleElement)).toBeTruthy();
+  // }
 
   @TestBase.Test("errorDataProvider")
   public async testInvalidSql(
