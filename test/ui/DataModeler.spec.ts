@@ -183,7 +183,10 @@ export class DataModelerTest extends TestBase {
     const defaultActiveModel = page.locator(
       "#assets-model-list .collapsible-table-summary-title"
     );
-    const modelName = await defaultActiveModel.textContent();
+    const modelName = (await defaultActiveModel.textContent()).replace(
+      /\s/g,
+      ""
+    );
     const count = await defaultActiveModel.count();
 
     // we start with one model.
@@ -226,10 +229,9 @@ export class DataModelerTest extends TestBase {
     expect(newModelCount).toBe(oldModelCount + 1);
 
     // get the text of the last model and compare to the title element in the workspace.
-    const modelName = await page
-      .locator("#assets-model-list > div")
-      .last()
-      .textContent();
+    const modelName = (
+      await page.locator("#assets-model-list > div").last().textContent()
+    ).replace(/\s/g, "");
 
     // check the modelName against the model title input element.
     const modelTitleElement = await page.inputValue("input#model-title-input");

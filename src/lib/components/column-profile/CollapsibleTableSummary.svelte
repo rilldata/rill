@@ -47,7 +47,6 @@
     return () => observer.unobserve(container);
   });
 
-
   let sortedProfile;
   const sortByOriginalOrder = null;
 
@@ -62,7 +61,6 @@
 
   let menuX;
   let menuY;
-
 </script>
 
 <div bind:this={container}>
@@ -70,11 +68,11 @@
     <div {draggable} class="active:cursor-grabbing">
       <CollapsibleTableHeader
         on:select={() => dispatch("select")}
-        bind:contextMenuOpen={contextMenuOpen}
-        bind:menuX={menuX}
-        bind:menuY={menuY}
-        bind:name={name}
-        bind:show={show}
+        bind:contextMenuOpen
+        bind:menuX
+        bind:menuY
+        bind:name
+        bind:show
         {contextMenu}
         {cardinality}
         {sizeInBytes}

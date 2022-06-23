@@ -492,9 +492,12 @@ export class DatabaseColumnActions extends DatabaseActions {
     );
 
     // Use Freedman–Diaconis rule for calculating number of bins
-    const bucketWidth = 2*columnProperties.IQR/Math.cbrt(columnProperties.count);
-    const FDEstimatorBucketSize = Math.ceil(columnProperties.range/bucketWidth)
-    const bucketSize = Math.min(40,FDEstimatorBucketSize);
+    const bucketWidth =
+      (2 * columnProperties.IQR) / Math.cbrt(columnProperties.count);
+    const FDEstimatorBucketSize = Math.ceil(
+      columnProperties.range / bucketWidth
+    );
+    const bucketSize = Math.min(40, FDEstimatorBucketSize);
 
     const result = await this.databaseClient.execute(`
           WITH data_table AS (
@@ -546,7 +549,7 @@ export class DatabaseColumnActions extends DatabaseActions {
             FROM histogram_stage
 	      `);
 
-    const outlierPseudoBucketSize = 500
+    const outlierPseudoBucketSize = 500;
     const outlierResults = await this.databaseClient.execute(`
           WITH data_table AS (
             SELECT ${
