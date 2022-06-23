@@ -42,51 +42,12 @@ body {
   overscroll-behavior: none;
 }
 
-button {
-  font-family: "MD IO";
-}
-
 .stack-list > * + * {
   margin-top: var(--gap, 1rem);
 }
 
 .stack + .stack {
   margin-top: var(--gap, 1rem);
-}
-
-.button {
-  padding: 0;
-  margin: 0;
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  background-color: black;
-  color: white;
-  border: none;
-}
-
-.small-action-button,
-.inspector-button {
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  border: 1px solid transparent;
-  font-size: 0.75rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  color: hsl(217, 5%, 60%);
-  display: inline-grid;
-  place-items: center;
-}
-
-.small-action-button:hover {
-  background-color: hsl(217, 15%, 95%);
-  cursor: pointer;
-  color: black;
-}
-
-.small-action-button.selected {
-  background-color: hsl(217, 15%, 85%);
-  color: black;
 }
 
 .hljs-punctuation {
