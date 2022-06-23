@@ -8,4 +8,5 @@ export enum ActionStatus {
 export interface ActionResponse {
   status: ActionStatus;
   messages: Array<ActionResponseMessage>;
+  data?: unknown;
 }

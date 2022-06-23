@@ -12,18 +12,30 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import notificationStore from "$lib/components/notifications/";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { reduxReadable } from "$lib/redux-store/store-root";
+  import { reduxReadable, store } from "$lib/redux-store/store-root";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-  import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
   import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
+  import { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { metricsDefinitionsApi } from "$lib/redux-store/metricsDefinitionsApi";
 
   export let metricsDefId: string;
-  $: metricsDef = $reduxReadable?.metricsDefinition?.entities[metricsDefId];
-  $: name = metricsDef?.metricDefLabel;
-  $: summaryExpanded = metricsDef.summaryExpandedInNav;
+
+  const {
+    endpoints: { getOneMetricsDefinition, deleteMetricsDefinition },
+  } = metricsDefinitionsApi;
+  let selectedMetricsDef: MetricsDefinitionEntity;
+  $: ({ data: selectedMetricsDef } =
+    getOneMetricsDefinition.select(metricsDefId)($reduxReadable));
+  $: if (metricsDefId) {
+    store.dispatch(getOneMetricsDefinition.initiate(metricsDefId));
+  }
+
+  let name: string;
+  $: name = selectedMetricsDef?.metricDefLabel;
+  $: summaryExpanded = selectedMetricsDef?.summaryExpandedInNav;
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   $: emphasizeTitle = $rillAppStore?.activeEntity?.id === metricsDefId;
   let contextMenu;
@@ -50,7 +62,7 @@
     }
   };
   const dispatchDeleteMetricsDef = () => {
-    MetricsDefinitionClient.instance.delete(metricsDefId);
+    store.dispatch(deleteMetricsDefinition.initiate(metricsDefId));
   };
   const dispatchToggleSummaryInNav = () => {
     // store.dispatch(toggleSummaryInNav(metricsDefId));

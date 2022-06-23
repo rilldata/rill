@@ -17,8 +17,8 @@
   import { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { setMeasureId } from "$lib/redux-store/metrics-leaderboard-slice.js";
-  import { updateDisplay } from "./utils.js";
+  import { setMeasureId } from "$lib/redux-store/metrics-leaderboard-slice";
+  import { updateDisplay } from "./utils";
 
   export let metricsDefId: string;
   export let whichReferenceValue = "global";

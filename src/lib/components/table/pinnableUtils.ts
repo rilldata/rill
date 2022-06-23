@@ -1,4 +1,5 @@
 import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export interface ColumnConfig {
   name: string;
@@ -6,10 +7,7 @@ export interface ColumnConfig {
 
   renderer?: unknown;
 
-  validation?: (
-    row: Record<string, unknown>,
-    value: unknown
-  ) => ValidationState;
+  validation?: (row: EntityRecord, value: unknown) => ValidationState;
 
   copyable?: boolean;
 }

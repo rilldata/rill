@@ -94,7 +94,7 @@ export class ExpressServer {
         this.config,
         this.dataModelerService,
         this.rillDeveloperService
-      ).setup(this.app, "/api/metrics")
+      ).setup(this.app, "/api")
     );
   }
 }

@@ -1,68 +1,61 @@
-import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
-import type { Router, Request, Response } from "express";
+import type { Request, Response } from "express";
 import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityController } from "$server/controllers/EntityController";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import type { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
 
-export class MetricsDimensionController extends RillDeveloperController {
-  protected setupRouter(router: Router) {
-    // metrics ID is here because express doesn't forward params from router path
-    router.get("/:id/dimensions", (req: Request, res: Response) =>
-      this.handleGetForMetricsDef(req, res)
-    );
-    router.put("/:id/dimensions", (req: Request, res: Response) =>
-      this.handleCreate(req, res)
-    );
-    router.post("/:id/dimensions/:dimId", (req: Request, res: Response) =>
-      this.handleUpdateDimension(req, res)
-    );
-    router.post(
-      "/:id/dimensions/:dimId/updateColumn",
-      (req: Request, res: Response) => this.handleUpdateColumn(req, res)
-    );
-  }
+export class MetricsDimensionController extends EntityController {
+  protected static entityPath = "dimensions";
+  protected static entityType = EntityType.DimensionDefinition;
 
-  private async handleGetForMetricsDef(req: Request, res: Response) {
+  protected async getAll(req: Request, res: Response): Promise<void> {
+    const metricsDefId = req.query.metricsDefId as string;
+    const dimensionsStateService =
+      this.rillDeveloperService.dataModelerStateService.getEntityStateService(
+        EntityType.DimensionDefinition,
+        StateType.Persistent
+      );
+    const dimensions = dimensionsStateService
+      .getCurrentState()
+      .entities.filter((dimension) => dimension.metricsDefId === metricsDefId);
+
     res.setHeader("ContentType", "application/json");
     res.send(
       JSON.stringify({
-        data: this.rillDeveloperService.dataModelerStateService
-          .getEntityStateService(
-            EntityType.MetricsDefinition,
-            StateType.Persistent
-          )
-          .getById(req.params.id).dimensions,
+        data: dimensions,
       })
     );
   }
 
-  private async handleCreate(req: Request, res: Response) {
-    return this.wrapHttpStream(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "addNewDimension", [
-        req.params.id,
-        req.body.column,
-      ])
-    );
+  protected createAction(
+    context: RillRequestContext,
+    req: Request
+  ): Promise<ActionResponse> {
+    return this.rillDeveloperService.dispatch(context, "addNewDimension", [
+      req.body.metricsDefId,
+      req.body.columnName,
+    ]);
   }
 
-  private async handleUpdateDimension(req: Request, res: Response) {
-    return this.wrapHttpStream(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "updateDimension", [
-        req.params.id,
-        req.params.dimId,
-        req.body,
-      ])
-    );
+  protected updateAction(
+    context: RillRequestContext,
+    req: Request
+  ): Promise<ActionResponse> {
+    return this.rillDeveloperService.dispatch(context, "updateDimension", [
+      req.params.id,
+      req.body,
+    ]);
   }
 
-  private async handleUpdateColumn(req: Request, res: Response) {
-    return this.wrapHttpStream(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "updateDimensionColumn", [
-        req.params.id,
-        req.params.dimId,
-        req.body.column,
-      ])
-    );
+  protected deleteAction(
+    context: RillRequestContext,
+    req: Request
+  ): Promise<ActionResponse> {
+    return this.rillDeveloperService.dispatch(context, "deleteDimension", [
+      req.params.id,
+    ]);
   }
 }

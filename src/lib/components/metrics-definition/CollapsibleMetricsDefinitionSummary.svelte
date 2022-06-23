@@ -7,7 +7,7 @@
   export let metricsDefId: EntityId;
   $: summaryExpanded =
     $reduxReadable?.metricsDefinition?.entities[metricsDefId]
-      .summaryExpandedInNav;
+      ?.summaryExpandedInNav;
   export let indentLevel = 0;
   let containerWidth = 0;
   let contextMenuOpen = false;

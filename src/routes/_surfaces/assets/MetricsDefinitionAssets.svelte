@@ -7,23 +7,26 @@
   import { store, reduxReadable } from "$lib/redux-store/store-root";
   import CollapsibleMetricsDefinitionSummary from "$lib/components/metrics-definition/CollapsibleMetricsDefinitionSummary.svelte";
   import { onMount } from "svelte";
-  import { bootstrapMetricsDefState } from "$lib/redux-store/metrics-definition-slice";
-  import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
-  let metricsDefIds = new Array<string>();
-  $: metricsDefIds =
-    $reduxReadable !== undefined ? $reduxReadable.metricsDefinition.ids : [];
+  import { metricsDefinitionsApi } from "$lib/redux-store/metricsDefinitionsApi";
+  import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+
+  const {
+    endpoints: { getAllMetricsDefinitions, createMetricsDefinition },
+  } = metricsDefinitionsApi;
+
+  let metricsDefinitions = new Array<MetricsDefinitionEntity>();
+  $: ({ data: metricsDefinitions } =
+    getAllMetricsDefinitions.select()($reduxReadable));
   let showMetricsDefs = true;
   const dispatch_addEmptyMetricsDef = () => {
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    MetricsDefinitionClient.instance.create();
+    store.dispatch(createMetricsDefinition.initiate());
   };
 
   onMount(() => {
-    MetricsDefinitionClient.instance
-      .getAll()
-      .then((metrics) => store.dispatch(bootstrapMetricsDefState(metrics)));
+    store.dispatch(getAllMetricsDefinitions.initiate());
   });
 </script>
 
@@ -48,13 +51,13 @@
     <AddIcon />
   </ContextButton>
 </div>
-{#if showMetricsDefs}
+{#if showMetricsDefs && metricsDefinitions}
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: 200 }}
     id="assets-model-list"
   >
-    {#each metricsDefIds as id}
+    {#each metricsDefinitions as { id } (id)}
       <CollapsibleMetricsDefinitionSummary metricsDefId={id} indentLevel={1} />
     {/each}
   </div>

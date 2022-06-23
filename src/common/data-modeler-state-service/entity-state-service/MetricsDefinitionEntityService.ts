@@ -1,18 +1,14 @@
-import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+  EntityRecord,
+  EntityState,
+  EntityStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
   EntityStateService,
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type {
-  EntityState,
-  EntityStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
-import type { ProfileColumnSummary } from "$lib/types";
-
-// or whatever we're usng for ids
-export type UUID = string;
 
 export enum ValidationState {
   OK = "OK",
@@ -20,44 +16,15 @@ export enum ValidationState {
   ERROR = "ERROR",
 }
 
-export type MeasureDefinition = {
-  // mandatory user defined metadata
-  expression: string;
-  // optional user defined metadata
-  sqlName?: string;
-  label?: string;
-  description?: string;
-  // internal state for rendering etc
-  id: UUID;
-  expressionIsValid: ValidationState;
-  sqlNameIsValid: ValidationState;
-  sparkLineId: UUID;
-};
-
-export type DimensionDefinition = {
-  // mandatory user defined data
-  dimensionColumn: string;
-  // optional user defined metadata
-  sqlName?: string;
-  nameSingle?: string;
-  namePlural?: string;
-  description?: string;
-  // internal state for rendering etc
-  id: UUID;
-  dimensionIsValid: ValidationState;
-  sqlNameIsValid: ValidationState;
-  summary?: ProfileColumnSummary;
-};
-
 export interface MetricsDefinitionEntity extends EntityRecord {
   type: EntityType.MetricsDefinition;
   metricDefLabel: string;
-  sourceModelId: UUID | undefined;
+  sourceModelId: string | undefined;
   timeDimension: string | undefined;
   creationTime: number;
   rollupInterval?: RollupInterval;
-  measures: MeasureDefinition[];
-  dimensions: DimensionDefinition[];
+  measureIds: Array<string>;
+  dimensionIds: Array<string>;
   summaryExpandedInNav?: boolean;
 }
 

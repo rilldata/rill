@@ -36,6 +36,8 @@ import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions"
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
 import { LeaderboardActions } from "$common/rill-developer-service/LeaderboardActions";
+import { MeasureDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { DimensionDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
 let PACKAGE_JSON = "";
 try {
@@ -77,6 +79,8 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
       DerivedModelEntityService,
       ApplicationStateService,
       MetricsDefinitionStateService,
+      MeasureDefinitionStateService,
+      DimensionDefinitionStateService,
     ].map((EntityStateService) => new EntityStateService()),
     config
   );

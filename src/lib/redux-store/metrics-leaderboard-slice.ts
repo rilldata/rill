@@ -29,17 +29,17 @@ export const metricsLeaderboardSlice = createSlice({
   reducers: {
     initMetricsLeaderboard: {
       reducer: (state, action: PayloadAction<MetricsDefinitionEntity>) => {
-        metricsLeaderboardAdapter.addOne(state, {
-          id: action.payload.id,
-          measureId: "",
-          bigNumber: 0,
-          referenceValue: 0,
-          leaderboards: action.payload.dimensions.map((column) => ({
-            values: [],
-            displayName: column.dimensionColumn,
-          })),
-          activeValues: {},
-        });
+        // metricsLeaderboardAdapter.addOne(state, {
+        //   id: action.payload.id,
+        //   measureId: action.payload.measures?.[0]?.id ?? "",
+        //   bigNumber: 0,
+        //   referenceValue: 0,
+        //   leaderboards: action.payload.dimensions.map((column) => ({
+        //     values: [],
+        //     displayName: column.dimensionColumn,
+        //   })),
+        //   activeValues: {},
+        // });
       },
       prepare: (metricsDef: MetricsDefinitionEntity) => ({
         payload: metricsDef,

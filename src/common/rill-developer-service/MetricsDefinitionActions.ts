@@ -32,9 +32,26 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       StateType.Persistent,
       metricsDefinition,
     ]);
-    rillRequestContext.actionsChannel.pushMessage("addEmptyMetricsDef", [
-      metricsDefinition,
+    return metricsDefinition;
+  }
+
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async updateMetricsDefinition(
+    rillRequestContext: MetricsDefinitionContext,
+    metricsDefId: string,
+    modifications: MetricsDefinitionEntity
+  ) {
+    // TODO: validate ids
+    modifications.id = metricsDefId;
+    this.dataModelerStateService.dispatch("updateEntity", [
+      EntityType.MetricsDefinition,
+      StateType.Persistent,
+      modifications,
     ]);
+
+    return this.dataModelerStateService
+      .getMetricsDefinitionService()
+      .getById(metricsDefId);
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -48,19 +65,19 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       metricsDefId,
       modelId,
     ]);
-    rillRequestContext.actionsChannel.pushMessage(
-      "updateMetricsDefinitionModel",
-      [metricsDefId, modelId]
-    );
-    this.dataModelerStateService.dispatch("clearMetricsDefinition", [
-      metricsDefId,
-    ]);
-    rillRequestContext.actionsChannel.pushMessage("clearMetricsDimension", [
-      metricsDefId,
-    ]);
+    // rillRequestContext.actionsChannel.pushMessage(
+    //   "updateMetricsDefinitionModel",
+    //   [metricsDefId, modelId]
+    // );
+    // this.dataModelerStateService.dispatch("clearMetricsDefinition", [
+    //   metricsDefId,
+    // ]);
+    // rillRequestContext.actionsChannel.pushMessage("clearMetricsDimension", [
+    //   metricsDefId,
+    // ]);
     await this.rillDeveloperService.dispatch(
       rillRequestContext,
-      "inferMeasuresAndDimensions",
+      "inferDimensions",
       [metricsDefId]
     );
   }
@@ -94,7 +111,7 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
-  public async inferMeasuresAndDimensions(
+  public async inferDimensions(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string
   ) {

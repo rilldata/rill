@@ -1,6 +1,5 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
-import type { DimensionDefinition } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import {
@@ -8,7 +7,8 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { CategoricalSummary } from "$lib/types";
-import { guidGenerator } from "$lib/util/guid";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { getDimensionDefinition } from "$common/stateInstancesFactory";
 
 /**
  * select
@@ -24,30 +24,48 @@ export class DimensionsActions extends RillDeveloperActions {
   public async addNewDimension(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
-    columnName: string
+    columnName?: string
   ) {
-    const dimension: DimensionDefinition = {
-      dimensionColumn: "",
-      id: guidGenerator(),
-      dimensionIsValid: ValidationState.ERROR,
-      sqlNameIsValid: ValidationState.OK,
-    };
+    const dimension = getDimensionDefinition(metricsDefId);
+    dimension.dimensionColumn = columnName ?? "";
 
-    this.dataModelerStateService.dispatch("addNewDimension", [
-      metricsDefId,
+    this.dataModelerStateService.dispatch("addEntity", [
+      EntityType.DimensionDefinition,
+      StateType.Persistent,
       dimension,
     ]);
-    rillRequestContext.actionsChannel.pushMessage("addNewDimension", [
-      metricsDefId,
-      dimension,
+
+    return dimension;
+  }
+
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async updateDimension(
+    rillRequestContext: MetricsDefinitionContext,
+    dimensionId: string,
+    modifications: DimensionDefinitionEntity
+  ) {
+    modifications.id = dimensionId;
+    this.dataModelerStateService.dispatch("updateEntity", [
+      EntityType.DimensionDefinition,
+      StateType.Persistent,
+      modifications,
     ]);
-    if (columnName) {
-      await this.rillDeveloperService.dispatch(
-        rillRequestContext,
-        "updateDimensionColumn",
-        [metricsDefId, dimension.id, columnName]
-      );
-    }
+
+    return this.dataModelerStateService
+      .getDimensionDefinitionService()
+      .getById(dimensionId);
+  }
+
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async deleteDimension(
+    rillRequestContext: MetricsDefinitionContext,
+    dimensionId: string
+  ) {
+    this.dataModelerStateService.dispatch("deleteEntity", [
+      EntityType.DimensionDefinition,
+      StateType.Persistent,
+      dimensionId,
+    ]);
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -58,17 +76,17 @@ export class DimensionsActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
-    await Promise.all(
-      rillRequestContext.record.dimensions.map((dimension) =>
-        this.collectDimensionSummary(
-          rillRequestContext,
-          metricsDefId,
-          dimension.id,
-          dimension.dimensionColumn,
-          model.tableName
-        )
-      )
-    );
+    // await Promise.all(
+    //   rillRequestContext.record.dimensions.map((dimension) =>
+    //     this.collectDimensionSummary(
+    //       rillRequestContext,
+    //       metricsDefId,
+    //       dimension.id,
+    //       dimension.dimensionColumn,
+    //       model.tableName
+    //     )
+    //   )
+    // );
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -85,7 +103,7 @@ export class DimensionsActions extends RillDeveloperActions {
       .getEntityStateService(EntityType.Model, StateType.Derived)
       .getById(rillRequestContext.record.sourceModelId);
 
-    const modifications: Partial<DimensionDefinition> = {
+    const modifications: Partial<DimensionDefinitionEntity> = {
       dimensionColumn: columnName,
       dimensionIsValid:
         derivedModel.profile.findIndex(
@@ -94,16 +112,16 @@ export class DimensionsActions extends RillDeveloperActions {
           ? ValidationState.OK
           : ValidationState.ERROR,
     };
-    this.dataModelerStateService.dispatch("updateDimension", [
-      metricsDefId,
-      dimensionId,
-      modifications,
-    ]);
-    rillRequestContext.actionsChannel.pushMessage("updateDimension", [
-      metricsDefId,
-      dimensionId,
-      modifications,
-    ]);
+    // this.dataModelerStateService.dispatch("updateDimension", [
+    //   metricsDefId,
+    //   dimensionId,
+    //   modifications,
+    // ]);
+    // rillRequestContext.actionsChannel.pushMessage("updateDimension", [
+    //   metricsDefId,
+    //   dimensionId,
+    //   modifications,
+    // ]);
 
     if (modifications.dimensionIsValid) {
       await this.collectDimensionSummary(
@@ -114,25 +132,6 @@ export class DimensionsActions extends RillDeveloperActions {
         model.tableName
       );
     }
-  }
-
-  @RillDeveloperActions.MetricsDefinitionAction()
-  public async updateDimension(
-    rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string,
-    dimensionId: string,
-    modifications: Partial<DimensionDefinition>
-  ) {
-    this.dataModelerStateService.dispatch("updateDimension", [
-      metricsDefId,
-      dimensionId,
-      modifications,
-    ]);
-    rillRequestContext.actionsChannel.pushMessage("updateDimension", [
-      metricsDefId,
-      dimensionId,
-      modifications,
-    ]);
   }
 
   private async collectDimensionSummary(
@@ -147,22 +146,22 @@ export class DimensionsActions extends RillDeveloperActions {
       "getTopKAndCardinality",
       [tableName, dimensionColumn]
     );
-    const modifications: Partial<DimensionDefinition> = {
+    const modifications: Partial<DimensionDefinitionEntity> = {
       summary,
       dimensionIsValid:
         summary.cardinality >= HIGH_CARDINALITY_THRESHOLD
           ? ValidationState.WARNING
           : ValidationState.OK,
     };
-    this.dataModelerStateService.dispatch("updateDimension", [
-      metricsDefId,
-      dimensionId,
-      modifications,
-    ]);
-    rillRequestContext.actionsChannel.pushMessage("updateDimension", [
-      metricsDefId,
-      dimensionId,
-      modifications,
-    ]);
+    // this.dataModelerStateService.dispatch("updateDimension", [
+    //   metricsDefId,
+    //   dimensionId,
+    //   modifications,
+    // ]);
+    // rillRequestContext.actionsChannel.pushMessage("updateDimension", [
+    //   metricsDefId,
+    //   dimensionId,
+    //   modifications,
+    // ]);
   }
 }

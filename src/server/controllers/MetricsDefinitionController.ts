@@ -1,31 +1,17 @@
-import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
-import type { Request, Response, Router } from "express";
+import type { Request, Response } from "express";
 import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { EntityController } from "$server/controllers/EntityController";
+import type { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 
-export class MetricsDefinitionController extends RillDeveloperController {
-  protected setupRouter(router: Router) {
-    router.get("/", (req: Request, res: Response) =>
-      this.handleGetAll(req, res)
-    );
-    router.put("/", (req: Request, res: Response) =>
-      this.handleCreate(req, res)
-    );
-    router.post("/:id/updateModel", (req: Request, res: Response) =>
-      this.handleModelUpdate(req, res)
-    );
-    router.post("/:id/updateTimestamp", (req: Request, res: Response) =>
-      this.handleTimestampUpdate(req, res)
-    );
-    router.delete("/:id", (req: Request, res: Response) =>
-      this.handleDelete(req, res)
-    );
-  }
+export class MetricsDefinitionController extends EntityController {
+  protected static entityPath = "metrics";
+  protected static entityType = EntityType.MetricsDefinition;
 
-  private async handleGetAll(req: Request, res: Response) {
+  protected async getAll(req: Request, res: Response) {
     res.setHeader("ContentType", "application/json");
     res.send(
       JSON.stringify({
@@ -39,37 +25,33 @@ export class MetricsDefinitionController extends RillDeveloperController {
     );
   }
 
-  private async handleCreate(req: Request, res: Response) {
-    return this.wrapHttpStream(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "createMetricsDefinition", [])
+  protected createAction(context: RillRequestContext): Promise<ActionResponse> {
+    return this.rillDeveloperService.dispatch(
+      context,
+      "createMetricsDefinition",
+      []
     );
   }
 
-  private async handleModelUpdate(req: Request, res: Response) {
-    return this.wrapHttpStream(res, (context) =>
-      this.rillDeveloperService.dispatch(
-        context,
-        "updateMetricsDefinitionModel",
-        [req.params.id, req.body.modelId]
-      )
+  protected updateAction(
+    context: RillRequestContext,
+    req: Request
+  ): Promise<ActionResponse> {
+    return this.rillDeveloperService.dispatch(
+      context,
+      "updateMetricsDefinition",
+      [req.params.id, req.body]
     );
   }
 
-  private async handleTimestampUpdate(req: Request, res: Response) {
-    return this.wrapHttpStream(res, (context) =>
-      this.rillDeveloperService.dispatch(
-        context,
-        "updateMetricsDefinitionTimestamp",
-        [req.params.id, req.body.timeDimension]
-      )
-    );
-  }
-
-  private async handleDelete(req: Request, res: Response) {
-    return this.wrapHttpStream(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "deleteMetricsDefinition", [
-        req.params.id,
-      ])
+  protected deleteAction(
+    context: RillRequestContext,
+    req: Request
+  ): Promise<ActionResponse> {
+    return this.rillDeveloperService.dispatch(
+      context,
+      "deleteMetricsDefinition",
+      [req.params.id]
     );
   }
 }

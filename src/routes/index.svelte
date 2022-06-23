@@ -32,9 +32,6 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
   import { store } from "$lib/redux-store/store-root";
-  import { MetricsDefinitionClient } from "$lib/components/metrics-definition/MetricsDefinitionClient";
-  import { MetricsDimensionClient } from "$lib/components/metrics-definition/MetricsDimensionClient";
-  import { MetricsMeasureClient } from "$lib/components/metrics-definition/MetricsMeasureClient";
 
   let assetsHovered = false;
   let inspectorHovered = false;
@@ -68,9 +65,6 @@
   );
 
   HttpStreamClient.create(`${config.server.serverUrl}/api`, store.dispatch);
-  MetricsDefinitionClient.create();
-  MetricsDimensionClient.create();
-  MetricsMeasureClient.create();
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}

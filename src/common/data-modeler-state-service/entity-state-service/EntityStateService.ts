@@ -9,6 +9,8 @@ export enum EntityType {
   Model = "Model",
   Application = "Application",
   MetricsDefinition = "MetricsDefinition",
+  MeasureDefinition = "MeasureDefinition",
+  DimensionDefinition = "DimensionDefinition",
   MetricsLeaderboard = "MetricsLeaderboard",
 }
 

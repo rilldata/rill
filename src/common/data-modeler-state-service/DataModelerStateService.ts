@@ -210,6 +210,24 @@ export class DataModelerStateService {
       StateType.Derived
     ).getCurrentState();
   }
+  public getMetricsDefinitionService() {
+    return this.getEntityStateService(
+      EntityType.MetricsDefinition,
+      StateType.Persistent
+    );
+  }
+  public getMeasureDefinitionService() {
+    return this.getEntityStateService(
+      EntityType.MeasureDefinition,
+      StateType.Persistent
+    );
+  }
+  public getDimensionDefinitionService() {
+    return this.getEntityStateService(
+      EntityType.DimensionDefinition,
+      StateType.Persistent
+    );
+  }
 
   public getEntityById<
     EntityTypeArg extends EntityType,

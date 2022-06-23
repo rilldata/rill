@@ -12,7 +12,10 @@ import type {
  * The class that will contain context for a request like user etc.
  * For now, it will have the {@link RillActionsChannel} instance mainly along with target entity details.
  */
-export class RillRequestContext<ET extends EntityType, ST extends StateType> {
+export class RillRequestContext<
+  ET extends EntityType = EntityType,
+  ST extends StateType = StateType
+> {
   public entityStateService: EntityStateServicesMapType[ET][ST];
 
   /**

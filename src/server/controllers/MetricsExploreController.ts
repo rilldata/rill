@@ -5,10 +5,10 @@ import { RillActionsChannel } from "$common/utils/RillActionsChannel";
 
 export class MetricsExploreController extends RillDeveloperController {
   protected setupRouter(router: Router) {
-    router.post("/:id/leaderboards", (req: Request, res: Response) =>
+    router.post("/metrics/:id/leaderboards", (req: Request, res: Response) =>
       this.handleGetLeaderboards(req, res)
     );
-    router.post("/:id/bigNumber", (req: Request, res: Response) =>
+    router.post("/metrics/:id/bigNumber", (req: Request, res: Response) =>
       this.bigNumber(req, res)
     );
   }

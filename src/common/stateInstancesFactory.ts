@@ -13,6 +13,9 @@ import type { PersistentModelEntity } from "$common/data-modeler-state-service/e
 import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
 interface NewModelArguments {
   query?: string;
@@ -81,8 +84,34 @@ export function getMetricsDefinition(counter: number): MetricsDefinitionEntity {
     metricDefLabel: `metric definition ${counter}`,
     sourceModelId: undefined,
     timeDimension: undefined,
-    measures: [],
-    dimensions: [],
+    measureIds: [],
+    dimensionIds: [],
+    lastUpdated: 0,
+  };
+}
+
+export function getMeasureDefinition(
+  metricsDefId: string,
+  expression = ""
+): MeasureDefinitionEntity {
+  return {
+    id: guidGenerator(),
+    metricsDefId,
+    type: EntityType.MeasureDefinition,
+    expression,
+    sparkLineId: "",
+    lastUpdated: 0,
+  };
+}
+
+export function getDimensionDefinition(
+  metricsDefId: string
+): DimensionDefinitionEntity {
+  return {
+    id: guidGenerator(),
+    metricsDefId,
+    type: EntityType.MeasureDefinition,
+    dimensionColumn: "",
     lastUpdated: 0,
   };
 }
