@@ -42,6 +42,15 @@ body {
   overscroll-behavior: none;
 }
 
+input {
+  border: 1px solid #7b7b7b;
+  border-radius: 0.25rem;
+  font-family: "MD IO";
+  font-size: 12px;
+  padding: 0.25rem 0.5rem;
+  width: 100%;
+}
+
 .stack-list > * + * {
   margin-top: var(--gap, 1rem);
 }
