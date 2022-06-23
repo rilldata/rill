@@ -37,15 +37,15 @@
   on:dragover|preventDefault|stopPropagation
   on:dragleave|preventDefault|stopPropagation
 >
-  <CollapsibleSectionTitle tooltipText={"tables"} bind:active={showTables}>
+  <CollapsibleSectionTitle tooltipText={"sources"} bind:active={showTables}>
     <h4 class="flex flex-row items-center gap-x-2">
-      <ParquetIcon size="16px" /> Tables
+      <ParquetIcon size="16px" /> Sources
     </h4>
   </CollapsibleSectionTitle>
 
   <ContextButton
     id={"create-table-button"}
-    tooltipText="import csv or parquet file into a table"
+    tooltipText="import csv or parquet file as a source"
     on:click={uploadFilesWithDialog}
   >
     <AddIcon />

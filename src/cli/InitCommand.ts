@@ -112,7 +112,7 @@ export class InitCommand extends DataModelerCliCommand {
       );
     } else {
       console.log(
-        `Note: Any table imports and drops will directly import/drop from this connected database.`
+        `Note: Any source imports and drops will directly import/drop from this connected database.`
       );
     }
 

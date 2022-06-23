@@ -64,13 +64,13 @@ class ServerSetup extends TestSuiteSetup {
 
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
     await execPromise(
-      `${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/Users.parquet`
+      `${CLI_COMMAND} import-source  ${CLI_TEST_FOLDER_ARG} ./test/data/Users.parquet`
     );
     await execPromise(
-      `${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/AdImpressions.parquet`
+      `${CLI_COMMAND} import-source  ${CLI_TEST_FOLDER_ARG} ./test/data/AdImpressions.parquet`
     );
     await execPromise(
-      `${CLI_COMMAND} import-table  ${CLI_TEST_FOLDER_ARG} ./test/data/AdBids.parquet`
+      `${CLI_COMMAND} import-source  ${CLI_TEST_FOLDER_ARG} ./test/data/AdBids.parquet`
     );
 
     // Run Rill Developer in the background, logging to stdout.
@@ -183,7 +183,10 @@ export class DataModelerTest extends TestBase {
     const defaultActiveModel = page.locator(
       "#assets-model-list .collapsible-table-summary-title"
     );
-    const modelName = await defaultActiveModel.textContent();
+    const modelName = (await defaultActiveModel.textContent()).replace(
+      /\s/g,
+      ""
+    );
     const count = await defaultActiveModel.count();
 
     // we start with one model.
@@ -226,10 +229,9 @@ export class DataModelerTest extends TestBase {
     expect(newModelCount).toBe(oldModelCount + 1);
 
     // get the text of the last model and compare to the title element in the workspace.
-    const modelName = await page
-      .locator("#assets-model-list > div")
-      .last()
-      .textContent();
+    const modelName = (
+      await page.locator("#assets-model-list > div").last().textContent()
+    ).replace(/\s/g, "");
 
     // check the modelName against the model title input element.
     const modelTitleElement = await page.inputValue("input#model-title-input");
@@ -244,7 +246,7 @@ export class DataModelerTest extends TestBase {
   ) {
     await page.goto(URL);
 
-    const error = page.locator(".error");
+    const error = page.locator(".error").first();
 
     await this.execute(page, query);
 
@@ -276,7 +278,7 @@ export class DataModelerTest extends TestBase {
    * @param sql {string} - SQL to execute.
    */
   private async execute(page: Page, sql: string) {
-    const activeLine = page.locator(".cm-activeLine");
+    const activeLine = page.locator(".cm-activeLine").first();
 
     await activeLine.fill(sql);
 

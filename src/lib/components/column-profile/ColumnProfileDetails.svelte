@@ -11,6 +11,7 @@
 
   import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
   import NumericHistogram from "$lib/components/viz/histogram/NumericHistogram.svelte";
+  import OutlierHistogram from "$lib/components/viz/histogram/OutlierHistogram.svelte";
   import { TimestampDetail } from "../data-graphic/compositions/timestamp-profile";
 
   export let type;
@@ -52,6 +53,17 @@
           mean={summary.statistics.mean}
           max={summary.statistics.max}
         />
+        {#if summary?.outliers && summary?.outliers?.length}
+          <OutlierHistogram
+            width={containerWidth - (indentLevel === 1 ? 20 + 24 + 44 : 32)}
+            height={15}
+            data={summary.outliers}
+            mean={summary.statistics.mean}
+            sd={summary.statistics.sd}
+            min={summary.statistics.min}
+            max={summary.statistics.max}
+          />
+        {/if}
       </div>
     {:else if TIMESTAMPS.has(type) && summary?.rollup}
       <div class="pl-{indentLevel === 1 ? 16 : 10}">
