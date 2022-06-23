@@ -10,7 +10,7 @@ xattr -d com.apple.quarantine ./rill-macos-arm64
 # CLI commands
 To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](https://github.com/rilldata/rill-developer/blob/main/docs/cli.md) commands by replacing the name of the file you installed with `rill`.
 ```
-cd downloads/rill-macos-arm64
+cd downloads
 rill-macos-arm64 init
 rill-macos-arm64 import-source /path/to/data_1.parquet
 rill-macos-arm64 start
