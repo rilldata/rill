@@ -53,7 +53,7 @@
           mean={summary.statistics.mean}
           max={summary.statistics.max}
         />
-        {#if (summary?.outliers && summary?.outliers?.length)}
+        {#if summary?.outliers && summary?.outliers?.length}
           <OutlierHistogram
             width={containerWidth - (indentLevel === 1 ? 20 + 24 + 44 : 32)}
             height={15}
