@@ -16,6 +16,11 @@
   } from "$lib/application-state-stores/table-stores";
 
   import { onSourceDrop, uploadFilesWithDialog } from "$lib/util/file-upload";
+  import Modal from "$lib/components/modal/Modal.svelte";
+  import ModalAction from "$lib/components/modal/ModalAction.svelte";
+  import ModalActions from "$lib/components/modal/ModalActions.svelte";
+  import ModalContent from "$lib/components/modal/ModalContent.svelte";
+  import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -26,6 +31,9 @@
   ) as DerivedTableStore;
 
   let showTables = true;
+  let showRenameModal = false;
+  let sourceToRename = null;
+  let newName;
 </script>
 
 <div
@@ -75,6 +83,10 @@
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+            on:rename={() => {
+              showRenameModal = true;
+              sourceToRename = tableName;
+            }}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
             }}
@@ -82,5 +94,44 @@
         </div>
       {/each}
     {/if}
+    <Modal
+      bind:open={showRenameModal}
+      onBackdropClick={() => (showRenameModal = false)}
+    >
+      <ModalTitle>
+        rename <span class="text-gray-500 italic">{sourceToRename}</span>
+      </ModalTitle>
+      <ModalContent>
+        <form>
+          <label for="source-name" class="text-xs">source name</label>
+          <input
+            type="text"
+            id="source-name"
+            bind:value={newName}
+            class="focus:outline-blue-500"
+          />
+        </form>
+      </ModalContent>
+      <ModalActions>
+        <ModalAction onClick={() => (showRenameModal = false)}>
+          cancel
+        </ModalAction>
+        <ModalAction
+          primary
+          onClick={() => {
+            console.log("newName", newName);
+            // dataModelerService.dispatch("renameTable", [
+            //   sourceToRename,
+            //   newName,
+            // ]);
+            sourceToRename = null;
+            newName = null;
+            showRenameModal = false;
+          }}
+        >
+          submit
+        </ModalAction>
+      </ModalActions>
+    </Modal>
   </div>
 {/if}
