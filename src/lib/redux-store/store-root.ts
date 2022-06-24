@@ -1,9 +1,7 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
-import { createLogger } from "redux-logger";
 import { metricsDefinitionReducer } from "./metrics-definition-slice";
 import { metricsLeaderboardReducer } from "./metrics-leaderboard-slice";
 import { readable } from "svelte/store";
-import { browser } from "$app/env";
 import { measureDefSliceReducer } from "$lib/redux-store/measure-definition-slice";
 import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition-slice";
 
@@ -16,15 +14,8 @@ export const store = configureStore({
     measureDefinition: measureDefSliceReducer,
     dimensionDefinition: dimensionDefSliceReducer,
   },
-  middleware: (getDefaultMiddleware) => {
-    if (browser && process.env.NODE_ENV === `development`) {
-      // calling `createLogger()` outside the browser causes SSR errors
-      const logger = createLogger();
-      return getDefaultMiddleware().concat(logger);
-    }
-    return getDefaultMiddleware();
-  },
 });
+
 const state = store.getState();
 export type RillReduxState = typeof state;
 
