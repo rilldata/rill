@@ -23,7 +23,6 @@
 
 <TableHeader>
   <div
-    style:grid-template-columns="210px max-content"
     use:shiftClickAction
     on:shift-click={async () => {
       await navigator.clipboard.writeText(name);
@@ -32,15 +31,17 @@
       });
     }}
     class="
-           grid
+           flex
            items-center
-           justify-items-start
            justify-stretch
            select-none
-           gap-x-3"
+           gap-x-2
+           "
   >
     <Tooltip location="top" alignment="middle" distance={16}>
-      <div class="w-full pr-5  flex flex-row gap-x-2 items-center">
+      <div
+        class="w-full pr-5 flex flex-row gap-x-2 items-center cursor-pointer"
+      >
         <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         <span class="text-ellipsis overflow-hidden whitespace-nowrap ">
           {name}
