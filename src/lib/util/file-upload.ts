@@ -24,7 +24,7 @@ export function uploadTableFiles(files, apiBase: string) {
   });
 
   if (validFiles) {
-    importOverlayVisible.set(true)
+    importOverlayVisible.set(true);
   }
 
   validFiles.forEach((validFile) =>
