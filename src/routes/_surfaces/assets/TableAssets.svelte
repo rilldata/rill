@@ -31,17 +31,22 @@
   ) as DerivedTableStore;
 
   let showTables = true;
-  let showRenameModal = false;
-  let sourceIDToRename = null;
-  let sourceToRename = null;
-  let newName;
-
-  const onSubmitRenameForm = () => {
-    dataModelerService.dispatch("updateTableName", [sourceIDToRename, newName]);
-    sourceToRename = null;
-    sourceIDToRename = null;
-    newName = null;
-    showRenameModal = false;
+  let showRenameTableDialog = false;
+  let renameTableID = null;
+  let renameTableCurrentName = null;
+  let renameTableNewName = null;
+  let formValidationError = null;
+  const onSubmitRenameForm = (tableID: string, newName: string) => {
+    if (!newName || newName.length === 0) {
+      formValidationError = "source name cannot be empty";
+      return;
+    }
+    if (newName === renameTableCurrentName) {
+      formValidationError = "new name must be different from current name";
+      return;
+    }
+    dataModelerService.dispatch("updateTableName", [tableID, newName]);
+    showRenameTableDialog = false;
   };
 </script>
 
@@ -93,9 +98,11 @@
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             on:rename={() => {
-              showRenameModal = true;
-              sourceToRename = tableName;
-              sourceIDToRename = id;
+              showRenameTableDialog = true;
+              renameTableCurrentName = tableName;
+              renameTableID = id;
+              renameTableNewName = null;
+              formValidationError = null;
             }}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
@@ -104,30 +111,40 @@
         </div>
       {/each}
     {/if}
-    <Modal
-      bind:open={showRenameModal}
-      onBackdropClick={() => (showRenameModal = false)}
-    >
-      <ModalTitle>
-        rename <span class="text-gray-500 italic">{sourceToRename}</span>
-      </ModalTitle>
-      <ModalContent>
-        <form on:submit={onSubmitRenameForm}>
-          <label for="source-name" class="text-xs">source name</label>
-          <input
-            type="text"
-            id="source-name"
-            bind:value={newName}
-            class="focus:outline-blue-500"
-          />
-        </form>
-      </ModalContent>
-      <ModalActions>
-        <ModalAction onClick={() => (showRenameModal = false)}>
-          cancel
-        </ModalAction>
-        <ModalAction primary onClick={onSubmitRenameForm}>submit</ModalAction>
-      </ModalActions>
-    </Modal>
   </div>
+  <Modal
+    open={showRenameTableDialog}
+    onBackdropClick={() => (showRenameTableDialog = false)}
+  >
+    <ModalTitle>
+      rename <span class="text-gray-500 italic">{renameTableCurrentName}</span>
+    </ModalTitle>
+    <ModalContent>
+      <form
+        on:submit|preventDefault={() =>
+          onSubmitRenameForm(renameTableID, renameTableNewName)}
+      >
+        <label for="source-name" class="text-xs">source name</label>
+        <input
+          type="text"
+          id="source-name"
+          bind:value={renameTableNewName}
+          class="focus:outline-blue-500"
+        />
+        {#if formValidationError}
+          <div class="text-red-500 text-xs">{formValidationError}</div>
+        {/if}
+      </form>
+    </ModalContent>
+    <ModalActions>
+      <ModalAction onClick={() => (showRenameTableDialog = false)}
+        >cancel</ModalAction
+      >
+      <ModalAction
+        primary
+        onClick={() => onSubmitRenameForm(renameTableID, renameTableNewName)}
+        >submit</ModalAction
+      >
+    </ModalActions>
+  </Modal>
 {/if}
