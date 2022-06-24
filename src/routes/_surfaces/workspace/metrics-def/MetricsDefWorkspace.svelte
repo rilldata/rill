@@ -8,7 +8,7 @@
   } from "$lib/redux-store/store-root";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { getContext } from "svelte";
-  import {
+  import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
