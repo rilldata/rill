@@ -1,6 +1,6 @@
 <script lang="ts">
   export let onClick: (event: any) => Promise<void> | void;
-  export let primary: boolean = false;
+  export let primary = false;
 </script>
 
 <button

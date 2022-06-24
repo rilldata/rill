@@ -1,8 +1,8 @@
 <script lang="ts">
   import Portal from "../Portal.svelte";
 
-  export let open: boolean = false;
-  export let onBackdropClick: () => void = () => {};
+  export let open = false;
+  export let onBackdropClick: () => void;
 </script>
 
 {#if open}
