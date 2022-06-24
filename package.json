@@ -125,5 +125,8 @@
       "build/**/*",
       "package.json"
     ]
-  }
+  },
+  "workspaces": [
+    "docs"
+  ]
 }

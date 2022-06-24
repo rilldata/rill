@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 # Why we believe in a strong community policy
 
 Our goal is to foster a community that can grow in our data practice and build new tools that break the mold on what people think is possible today. Trust and safety is critical in building a strong community where we can share ideas and ask questions. This is impossible if people feel threatened, harassed or discriminated against.

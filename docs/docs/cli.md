@@ -1,3 +1,8 @@
+---
+sidebar_position: 10
+title: CLI
+---
+
 # quick start new project
 You can create and augment projects in Rill Developer using the CLI.  Every project starts by initializing the experience. Once initialized, you can ingest data into the project and start the UI.
 

@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 # using docker
  Docker is a containerization platform that packages our application and all its dependencies together to make sure it works seamlessly in any environment. You can install Rill Developer using our [docker container](https://hub.docker.com/r/rilldata/rill-developer
 ).

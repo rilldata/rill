@@ -41,3 +41,7 @@ last-query-output.json
 staging-databases
 projects/
 rilldata
+
+# Docusaurus
+.docusaurus
+.cache-loader
