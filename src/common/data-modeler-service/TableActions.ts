@@ -7,8 +7,10 @@ import {
 import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import {
   extractFileExtension,
+  extractTableName,
   getTableNameFromFile,
   INVALID_CHARS,
+  sanitizeTableName,
 } from "$lib/util/extract-table-name";
 import type {
   PersistentTableEntity,
@@ -218,6 +220,43 @@ export class TableActions extends DataModelerActions {
     } catch (err) {
       return ActionResponseFactory.getErrorResponse(err);
     }
+  }
+
+  @DataModelerActions.PersistentTableAction()
+  public async updateTableName(
+    { stateService }: PersistentTableStateActionArg,
+    tableId: string,
+    name: string
+  ): Promise<ActionResponse> {
+    const newName = sanitizeTableName(extractTableName(name));
+    const existingTable = this.dataModelerStateService
+      .getEntityStateService(EntityType.Table, StateType.Persistent)
+      .getByField("tableName", newName);
+
+    if (existingTable) {
+      this.notificationService.notify({
+        message: `Another table with the name ${existingTable.tableName} already exists`,
+        type: "error",
+      });
+      return ActionResponseFactory.getExisingEntityError(
+        `Another table with the sanitised table name ${existingTable.tableName} already exists`
+      );
+    }
+
+    const table = this.dataModelerStateService
+      .getEntityStateService(EntityType.Table, StateType.Persistent)
+      .getById(tableId);
+    const currentName = table.tableName;
+
+    this.dataModelerStateService.dispatch("updateTableName", [
+      tableId,
+      newName,
+    ]);
+    this.databaseService.dispatch("renameTable", [currentName, newName]);
+    this.notificationService.notify({
+      message: `renamed table from "${currentName}" to "${newName}"`,
+      type: "info",
+    });
   }
 
   @DataModelerActions.PersistentTableAction()
