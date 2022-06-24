@@ -3,8 +3,6 @@
   import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import ExpanderButton from "$lib/components/column-profile/ExpanderButton.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
   import { createShiftClickAction } from "$lib/util/shift-click-action";
 
@@ -47,45 +45,41 @@
       <CaretDownIcon size="14px" />
     </ExpanderButton>
   {/if}
-  <Tooltip location="right">
-    <button
-      use:shiftClickAction
-      on:shift-click
-      on:click={(evt) => {
-        dispatch("select-body");
-      }}
-      on:focus={() => {
-        hovered = true;
-      }}
-      on:blur={() => {
-        hovered = false;
-      }}
-      style:grid-column="body"
-      style:grid-template-columns="[icon] max-content [text] 1fr"
-      class="
+
+  <button
+    use:shiftClickAction
+    on:shift-click
+    on:click={(evt) => {
+      dispatch("select-body");
+    }}
+    on:focus={() => {
+      hovered = true;
+    }}
+    on:blur={() => {
+      hovered = false;
+    }}
+    style:grid-column="body"
+    style:grid-template-columns="[icon] max-content [text] 1fr"
+    class="
                 w-full 
                 justify-start
                 text-left 
                 grid 
                 items-center
                 p-0"
-    >
-      <div
-        style:grid-column="text"
-        class="
+  >
+    <div
+      style:grid-column="text"
+      class="
                     w-full
                     justify-self-auto
                     text-ellipsis 
                     overflow-hidden 
                     whitespace-nowrap"
-      >
-        <slot />
-      </div>
-    </button>
-    <TooltipContent slot="tooltip-content">
-      <slot name="tooltip-content" />
-    </TooltipContent>
-  </Tooltip>
+    >
+      <slot />
+    </div>
+  </button>
   <div style:grid-column="contextual-information" class="justify-self-end">
     <slot name="contextual-information" />
   </div>
