@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte/internal";
+
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
@@ -12,17 +13,12 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import notificationStore from "$lib/components/notifications/";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import {
-    createReadableStoreWithSelector,
-    store,
-  } from "$lib/redux-store/store-root";
+  import { reduxReadable, store } from "$lib/redux-store/store-root";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
-  import { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { Readable } from "svelte/store";
   import {
     deleteMetricsDefsApi,
     singleMetricsDefSelector,
@@ -31,16 +27,10 @@
 
   export let metricsDefId: string;
 
-  let selectedMetricsDef: Readable<MetricsDefinitionEntity>;
-  $: if (metricsDefId) {
-    selectedMetricsDef = createReadableStoreWithSelector(
-      singleMetricsDefSelector(metricsDefId)
-    );
-  }
+  $: thisMetricsDef = singleMetricsDefSelector(metricsDefId)($reduxReadable);
 
-  let name: string;
-  $: name = $selectedMetricsDef?.metricDefLabel;
-  $: summaryExpanded = $selectedMetricsDef?.summaryExpandedInNav;
+  $: name = thisMetricsDef?.metricDefLabel;
+  $: summaryExpanded = thisMetricsDef?.summaryExpandedInNav;
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   $: emphasizeTitle = $rillAppStore?.activeEntity?.id === metricsDefId;
   let contextMenu;
