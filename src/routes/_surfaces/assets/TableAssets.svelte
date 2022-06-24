@@ -15,7 +15,7 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
 
-  import { onSourceDrop, uploadFilesWithDialog } from "$lib/util/file-upload";
+  import { uploadFilesWithDialog } from "$lib/util/file-upload";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -31,11 +31,6 @@
 <div
   class="pl-4 pb-3 pr-4 pt-5 grid justify-between"
   style="grid-template-columns: auto max-content;"
-  on:drop|preventDefault|stopPropagation={onSourceDrop}
-  on:drag|preventDefault|stopPropagation
-  on:dragenter|preventDefault|stopPropagation
-  on:dragover|preventDefault|stopPropagation
-  on:dragleave|preventDefault|stopPropagation
 >
   <CollapsibleSectionTitle tooltipText={"sources"} bind:active={showTables}>
     <h4 class="flex flex-row items-center gap-x-2">
@@ -52,15 +47,7 @@
   </ContextButton>
 </div>
 {#if showTables}
-  <div
-    class="pb-6"
-    transition:slide|local={{ duration: 200 }}
-    on:drop|preventDefault|stopPropagation={onSourceDrop}
-    on:drag|preventDefault|stopPropagation
-    on:dragenter|preventDefault|stopPropagation
-    on:dragover|preventDefault|stopPropagation
-    on:dragleave|preventDefault|stopPropagation
-  >
+  <div class="pb-6" transition:slide|local={{ duration: 200 }}>
     {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $persistentTableStore.entities as { tableName, id } (id)}

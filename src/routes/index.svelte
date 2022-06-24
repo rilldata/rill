@@ -9,6 +9,7 @@
 
   import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
   import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
+  import FileDrop from "$lib/components/overlay/FileDrop.svelte";
 
   import type {
     PersistentModelStore,
@@ -31,6 +32,7 @@
   } from "$lib/application-state-stores/layout-store";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+  let showDropOverlay = false;
   let assetsHovered = false;
   let inspectorHovered = false;
 
@@ -73,9 +75,20 @@
     importName={persistentImportedTable.path}
     tableName={persistentImportedTable.name}
   />
+{:else if showDropOverlay}
+  <FileDrop bind:showDropOverlay />
 {/if}
 
-<div class="absolute w-screen h-screen bg-gray-100">
+<div
+  class="absolute w-screen h-screen bg-gray-100"
+  on:drop|preventDefault|stopPropagation
+  on:drag|preventDefault|stopPropagation
+  on:dragenter|preventDefault|stopPropagation
+  on:dragover|preventDefault|stopPropagation={() => {
+    showDropOverlay = true;
+  }}
+  on:dragleave|preventDefault|stopPropagation
+>
   <!-- left assets pane expansion button -->
   <!-- make this the first element to select with tab by placing it first.-->
   <SurfaceControlButton
