@@ -1,28 +1,32 @@
 <script lang="ts">
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import { metricsDefinitionsApi } from "$lib/redux-store/metricsDefinitionsApi";
+  import {
+    createReadableStoreWithSelector,
+    store,
+  } from "$lib/redux-store/store-root";
   import { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { Readable } from "svelte/store";
+  import {
+    singleMetricsDefSelector,
+    updateMetricsDefsApi,
+  } from "$lib/redux-store/metrics-definition-slice";
 
   export let metricsDefId;
 
-  const {
-    endpoints: { getOneMetricsDefinition, updateMetricsDefinition },
-  } = metricsDefinitionsApi;
-  let selectedMetricsDef: MetricsDefinitionEntity;
-  $: ({ data: selectedMetricsDef } =
-    getOneMetricsDefinition.select(metricsDefId)($reduxReadable));
+  let selectedMetricsDef: Readable<MetricsDefinitionEntity>;
   $: if (metricsDefId) {
-    store.dispatch(getOneMetricsDefinition.initiate(metricsDefId));
+    selectedMetricsDef = createReadableStoreWithSelector(
+      singleMetricsDefSelector(metricsDefId)
+    );
   }
 
   let titleInput;
-  $: titleInput = selectedMetricsDef?.metricDefLabel;
+  $: titleInput = $selectedMetricsDef?.metricDefLabel;
   const onChangeCallback = async (e) => {
     store.dispatch(
-      updateMetricsDefinition.initiate({
+      updateMetricsDefsApi({
         id: metricsDefId,
-        metricsDef: { metricDefLabel: e.target.value },
+        changes: { metricDefLabel: e.target.value },
       })
     );
   };

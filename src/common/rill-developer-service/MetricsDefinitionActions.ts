@@ -9,6 +9,7 @@ import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service
 import type { ProfileColumn } from "$lib/types";
 import { CATEGORICALS } from "$lib/duckdb-data-types";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 
 export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -32,7 +33,7 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       StateType.Persistent,
       metricsDefinition,
     ]);
-    return metricsDefinition;
+    return ActionResponseFactory.getSuccessResponse("", metricsDefinition);
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -49,9 +50,12 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       modifications,
     ]);
 
-    return this.dataModelerStateService
-      .getMetricsDefinitionService()
-      .getById(metricsDefId);
+    return ActionResponseFactory.getSuccessResponse(
+      "",
+      this.dataModelerStateService
+        .getMetricsDefinitionService()
+        .getById(metricsDefId)
+    );
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()

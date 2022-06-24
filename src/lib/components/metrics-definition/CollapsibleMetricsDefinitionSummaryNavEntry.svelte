@@ -12,30 +12,35 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import notificationStore from "$lib/components/notifications/";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
+  import {
+    createReadableStoreWithSelector,
+    store,
+  } from "$lib/redux-store/store-root";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
   import { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { metricsDefinitionsApi } from "$lib/redux-store/metricsDefinitionsApi";
+  import { Readable } from "svelte/store";
+  import {
+    deleteMetricsDefsApi,
+    singleMetricsDefSelector,
+    toggleMetricsDefSummaryInNav,
+  } from "$lib/redux-store/metrics-definition-slice";
 
   export let metricsDefId: string;
 
-  const {
-    endpoints: { getOneMetricsDefinition, deleteMetricsDefinition },
-  } = metricsDefinitionsApi;
-  let selectedMetricsDef: MetricsDefinitionEntity;
-  $: ({ data: selectedMetricsDef } =
-    getOneMetricsDefinition.select(metricsDefId)($reduxReadable));
+  let selectedMetricsDef: Readable<MetricsDefinitionEntity>;
   $: if (metricsDefId) {
-    store.dispatch(getOneMetricsDefinition.initiate(metricsDefId));
+    selectedMetricsDef = createReadableStoreWithSelector(
+      singleMetricsDefSelector(metricsDefId)
+    );
   }
 
   let name: string;
-  $: name = selectedMetricsDef?.metricDefLabel;
-  $: summaryExpanded = selectedMetricsDef?.summaryExpandedInNav;
+  $: name = $selectedMetricsDef?.metricDefLabel;
+  $: summaryExpanded = $selectedMetricsDef?.summaryExpandedInNav;
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   $: emphasizeTitle = $rillAppStore?.activeEntity?.id === metricsDefId;
   let contextMenu;
@@ -62,10 +67,10 @@
     }
   };
   const dispatchDeleteMetricsDef = () => {
-    store.dispatch(deleteMetricsDefinition.initiate(metricsDefId));
+    store.dispatch(deleteMetricsDefsApi(metricsDefId));
   };
   const dispatchToggleSummaryInNav = () => {
-    // store.dispatch(toggleSummaryInNav(metricsDefId));
+    store.dispatch(toggleMetricsDefSummaryInNav(metricsDefId));
   };
   // state for title bar hover.
   let titleElementHovered = false;

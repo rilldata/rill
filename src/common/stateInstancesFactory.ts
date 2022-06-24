@@ -96,6 +96,7 @@ export function getMeasureDefinition(
 ): MeasureDefinitionEntity {
   return {
     id: guidGenerator(),
+    creationTime: Date.now(),
     metricsDefId,
     type: EntityType.MeasureDefinition,
     expression,
@@ -109,6 +110,7 @@ export function getDimensionDefinition(
 ): DimensionDefinitionEntity {
   return {
     id: guidGenerator(),
+    creationTime: Date.now(),
     metricsDefId,
     type: EntityType.MeasureDefinition,
     dimensionColumn: "",

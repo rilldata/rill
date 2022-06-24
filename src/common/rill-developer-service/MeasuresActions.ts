@@ -8,6 +8,7 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { getMeasureDefinition } from "$common/stateInstancesFactory";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 
 export class MeasuresActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -23,7 +24,7 @@ export class MeasuresActions extends RillDeveloperActions {
       measure,
     ]);
 
-    return measure;
+    return ActionResponseFactory.getSuccessResponse("", measure);
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -38,9 +39,12 @@ export class MeasuresActions extends RillDeveloperActions {
       StateType.Persistent,
       modifications,
     ]);
-    return this.dataModelerStateService
-      .getMeasureDefinitionService()
-      .getById(measureId);
+    return ActionResponseFactory.getSuccessResponse(
+      "",
+      this.dataModelerStateService
+        .getMeasureDefinitionService()
+        .getById(measureId)
+    );
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()

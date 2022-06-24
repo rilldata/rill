@@ -4,29 +4,34 @@
   import AddIcon from "$lib/components/icons/Add.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-  import { store, reduxReadable } from "$lib/redux-store/store-root";
+  import {
+    store,
+    createReadableStoreWithSelector,
+  } from "$lib/redux-store/store-root";
   import CollapsibleMetricsDefinitionSummary from "$lib/components/metrics-definition/CollapsibleMetricsDefinitionSummary.svelte";
   import { onMount } from "svelte";
-  import { metricsDefinitionsApi } from "$lib/redux-store/metricsDefinitionsApi";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import {
+    createMetricsDefsApi,
+    fetchManyMetricsDefsApi,
+    manyMetricsDefsSelector,
+  } from "$lib/redux-store/metrics-definition-slice";
+  import type { Readable } from "svelte/store";
 
-  const {
-    endpoints: { getAllMetricsDefinitions, createMetricsDefinition },
-  } = metricsDefinitionsApi;
-
-  let metricsDefinitions = new Array<MetricsDefinitionEntity>();
-  $: ({ data: metricsDefinitions } =
-    getAllMetricsDefinitions.select()($reduxReadable));
+  let metricsDefinitions: Readable<Array<MetricsDefinitionEntity>>;
+  $: metricsDefinitions = createReadableStoreWithSelector(
+    manyMetricsDefsSelector
+  );
   let showMetricsDefs = true;
   const dispatch_addEmptyMetricsDef = () => {
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    store.dispatch(createMetricsDefinition.initiate());
+    store.dispatch(createMetricsDefsApi());
   };
 
   onMount(() => {
-    store.dispatch(getAllMetricsDefinitions.initiate());
+    store.dispatch(fetchManyMetricsDefsApi());
   });
 </script>
 
@@ -51,13 +56,13 @@
     <AddIcon />
   </ContextButton>
 </div>
-{#if showMetricsDefs && metricsDefinitions}
+{#if showMetricsDefs && $metricsDefinitions}
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: 200 }}
     id="assets-model-list"
   >
-    {#each metricsDefinitions as { id } (id)}
+    {#each $metricsDefinitions as { id } (id)}
       <CollapsibleMetricsDefinitionSummary metricsDefId={id} indentLevel={1} />
     {/each}
   </div>

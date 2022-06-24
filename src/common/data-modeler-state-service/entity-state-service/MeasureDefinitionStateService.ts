@@ -12,6 +12,7 @@ import {
 
 export interface MeasureDefinitionEntity extends EntityRecord {
   metricsDefId: string;
+  creationTime: number;
   // mandatory user defined metadata
   expression: string;
   // optional user defined metadata
@@ -38,3 +39,14 @@ export class MeasureDefinitionStateService extends EntityStateService<
   public readonly entityType = EntityType.MeasureDefinition;
   public readonly stateType = StateType.Persistent;
 }
+
+// fields only saved on the server
+export const MeasureServerFields: Array<keyof MeasureDefinitionEntity> = [
+  "metricsDefId",
+  "creationTime",
+  "expression",
+  "sqlName",
+  "label",
+  "description",
+  "sparkLineId",
+];

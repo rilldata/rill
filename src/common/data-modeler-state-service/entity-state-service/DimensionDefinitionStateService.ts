@@ -11,6 +11,7 @@ import {
 
 export interface DimensionDefinitionEntity extends EntityRecord {
   metricsDefId: string;
+  creationTime: number;
   // mandatory user defined data
   dimensionColumn: string;
   // optional user defined metadata

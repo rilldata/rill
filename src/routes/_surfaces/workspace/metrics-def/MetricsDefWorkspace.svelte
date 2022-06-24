@@ -2,7 +2,10 @@
   import SectionDragHandle from "./SectionDragHandle.svelte";
   import { layout } from "$lib/application-state-stores/layout-store";
   import PreviewTable from "$lib/components/table/PreviewTable.svelte";
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
+  import {
+    createReadableStoreWithSelector,
+    store,
+  } from "$lib/redux-store/store-root";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { getContext } from "svelte";
   import {
@@ -14,19 +17,25 @@
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
   import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
-  import { metricsDefinitionsApi } from "$lib/redux-store/metricsDefinitionsApi";
-  import { measuresApi } from "$lib/redux-store/measuresApi";
-  import { dimensionsApi } from "$lib/redux-store/dimensionsApi";
-
-  const {
-    endpoints: { getOneMetricsDefinition, updateMetricsDefinition },
-  } = metricsDefinitionsApi;
-  const {
-    endpoints: { getAllMeasures, createMeasure, updateMeasure },
-  } = measuresApi;
-  const {
-    endpoints: { getAllDimensions, createDimension, updateDimension },
-  } = dimensionsApi;
+  import {
+    fetchManyMeasuresApi,
+    createMeasuresApi,
+    updateMeasuresApi,
+    manyMeasuresSelector,
+  } from "$lib/redux-store/measure-definition-slice";
+  import type { Readable } from "svelte/store";
+  import {
+    fetchManyDimensionsApi,
+    manyDimensionsSelector,
+  } from "$lib/redux-store/dimension-definition-slice";
+  import {
+    createDimensionsApi,
+    updateDimensionsApi,
+  } from "$lib/redux-store/dimension-definition-slice.js";
+  import {
+    singleMetricsDefSelector,
+    updateMetricsDefsApi,
+  } from "$lib/redux-store/metrics-definition-slice";
 
   export let metricsDefId;
 
@@ -34,22 +43,23 @@
   const tableContainerDivClass =
     "rounded border border-gray-200 border-2  overflow-auto ";
 
-  let selectedMetricsDef: MetricsDefinitionEntity;
-  $: ({ data: selectedMetricsDef } =
-    getOneMetricsDefinition.select(metricsDefId)($reduxReadable));
+  let selectedMetricsDef: Readable<MetricsDefinitionEntity>;
 
-  let measures: Array<MeasureDefinitionEntity>;
-  let dimensions: Array<DimensionDefinitionEntity>;
+  let measures: Readable<Array<MeasureDefinitionEntity>>;
+  let dimensions: Readable<Array<DimensionDefinitionEntity>>;
   $: if (metricsDefId) {
-    store.dispatch(getOneMetricsDefinition.initiate(metricsDefId));
-    store.dispatch(getAllMeasures.initiate(metricsDefId));
-    store.dispatch(getAllDimensions.initiate(metricsDefId));
+    store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
+    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
+    selectedMetricsDef = createReadableStoreWithSelector(
+      singleMetricsDefSelector(metricsDefId)
+    );
+    measures = createReadableStoreWithSelector(
+      manyMeasuresSelector(metricsDefId)
+    );
+    dimensions = createReadableStoreWithSelector(
+      manyDimensionsSelector(metricsDefId)
+    );
   }
-  $: if (metricsDefId)
-    ({ data: measures } = getAllMeasures.select(metricsDefId)($reduxReadable));
-  $: if (metricsDefId)
-    ({ data: dimensions } =
-      getAllDimensions.select(metricsDefId)($reduxReadable));
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -59,9 +69,9 @@
   ) as DerivedModelStore;
 
   let derivedModelColumns: Array<ProfileColumn>;
-  $: if (selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
+  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
     derivedModelColumns = $derivedModelStore?.entities.find(
-      (model) => model.id === selectedMetricsDef.sourceModelId
+      (model) => model.id === $selectedMetricsDef.sourceModelId
     ).profile;
   } else {
     derivedModelColumns = [];
@@ -71,9 +81,9 @@
     metricsDef: Partial<MetricsDefinitionEntity>
   ) {
     store.dispatch(
-      updateMetricsDefinition.initiate({
+      updateMetricsDefsApi({
         id: metricsDefId,
-        metricsDef,
+        changes: metricsDef,
       })
     );
   }
@@ -92,7 +102,7 @@
       <div style:height="40px">
         <select
           class="pl-1 mb-2"
-          value={selectedMetricsDef?.sourceModelId}
+          value={$selectedMetricsDef?.sourceModelId}
           on:change={(evt) => {
             updateMetricsDefinitionHandler({ sourceModelId: evt.target.value });
           }}
@@ -105,7 +115,7 @@
       <div style:height="40px">
         <select
           class="pl-1 mb-2"
-          value={selectedMetricsDef?.timeDimension}
+          value={$selectedMetricsDef?.timeDimension}
           on:change={(evt) => {
             updateMetricsDefinitionHandler({ timeDimension: evt.target.value });
           }}
@@ -118,20 +128,20 @@
     </div>
     <div style:flex="1" class={tableContainerDivClass}>
       <PreviewTable
-        rows={measures ?? []}
+        rows={$measures ?? []}
         columnNames={MeasuresColumns}
         on:change={(evt) => {
           store.dispatch(
-            updateMeasure.initiate({
-              id: measures[evt.detail.index].id,
-              measure: {
+            updateMeasuresApi({
+              id: $measures[evt.detail.index].id,
+              changes: {
                 [evt.detail.name]: evt.detail.value,
               },
             })
           );
         }}
         on:add={() => {
-          store.dispatch(createMeasure.initiate(selectedMetricsDef?.id));
+          store.dispatch(createMeasuresApi({ metricsDefId }));
         }}
       />
     </div>
@@ -142,20 +152,20 @@
   <div style:height="{$layout.modelPreviewHeight}px" class="p-6 ">
     <div class={tableContainerDivClass + " h-full"}>
       <PreviewTable
-        rows={dimensions ?? []}
+        rows={$dimensions ?? []}
         columnNames={DimensionColumns}
         on:change={(evt) => {
           store.dispatch(
-            updateDimension.initiate({
-              id: dimensions[evt.detail.index].id,
-              dimension: {
+            updateDimensionsApi({
+              id: $dimensions[evt.detail.index].id,
+              changes: {
                 [evt.detail.name]: evt.detail.value,
               },
             })
           );
         }}
         on:add={() => {
-          store.dispatch(createDimension.initiate(selectedMetricsDef?.id));
+          store.dispatch(createDimensionsApi({ metricsDefId }));
         }}
       />
     </div>

@@ -9,6 +9,7 @@ import {
 import type { CategoricalSummary } from "$lib/types";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { getDimensionDefinition } from "$common/stateInstancesFactory";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 
 /**
  * select
@@ -35,7 +36,7 @@ export class DimensionsActions extends RillDeveloperActions {
       dimension,
     ]);
 
-    return dimension;
+    return ActionResponseFactory.getSuccessResponse("", dimension);
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -51,9 +52,12 @@ export class DimensionsActions extends RillDeveloperActions {
       modifications,
     ]);
 
-    return this.dataModelerStateService
-      .getDimensionDefinitionService()
-      .getById(dimensionId);
+    return ActionResponseFactory.getSuccessResponse(
+      "",
+      this.dataModelerStateService
+        .getDimensionDefinitionService()
+        .getById(dimensionId)
+    );
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
