@@ -32,8 +32,17 @@
 
   let showTables = true;
   let showRenameModal = false;
+  let sourceIDToRename = null;
   let sourceToRename = null;
   let newName;
+
+  const onSubmitRenameForm = () => {
+    dataModelerService.dispatch("updateTableName", [sourceIDToRename, newName]);
+    sourceToRename = null;
+    sourceIDToRename = null;
+    newName = null;
+    showRenameModal = false;
+  };
 </script>
 
 <div
@@ -86,6 +95,7 @@
             on:rename={() => {
               showRenameModal = true;
               sourceToRename = tableName;
+              sourceIDToRename = id;
             }}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
@@ -102,7 +112,7 @@
         rename <span class="text-gray-500 italic">{sourceToRename}</span>
       </ModalTitle>
       <ModalContent>
-        <form>
+        <form on:submit={onSubmitRenameForm}>
           <label for="source-name" class="text-xs">source name</label>
           <input
             type="text"
@@ -116,21 +126,7 @@
         <ModalAction onClick={() => (showRenameModal = false)}>
           cancel
         </ModalAction>
-        <ModalAction
-          primary
-          onClick={() => {
-            console.log("newName", newName);
-            // dataModelerService.dispatch("renameTable", [
-            //   sourceToRename,
-            //   newName,
-            // ]);
-            sourceToRename = null;
-            newName = null;
-            showRenameModal = false;
-          }}
-        >
-          submit
-        </ModalAction>
+        <ModalAction primary onClick={onSubmitRenameForm}>submit</ModalAction>
       </ModalActions>
     </Modal>
   </div>
