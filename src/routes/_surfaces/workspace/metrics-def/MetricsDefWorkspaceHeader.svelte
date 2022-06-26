@@ -1,11 +1,6 @@
 <script lang="ts">
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
-  import {
-    createReadableStoreWithSelector,
-    store,
-  } from "$lib/redux-store/store-root";
-  import { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import type { Readable } from "svelte/store";
+  import { store, reduxReadable } from "$lib/redux-store/store-root";
   import {
     singleMetricsDefSelector,
     updateMetricsDefsApi,
@@ -13,15 +8,11 @@
 
   export let metricsDefId;
 
-  let selectedMetricsDef: Readable<MetricsDefinitionEntity>;
-  $: if (metricsDefId) {
-    selectedMetricsDef = createReadableStoreWithSelector(
-      singleMetricsDefSelector(metricsDefId)
-    );
-  }
+  $: selectedMetricsDef =
+    singleMetricsDefSelector(metricsDefId)($reduxReadable);
 
-  let titleInput;
-  $: titleInput = $selectedMetricsDef?.metricDefLabel;
+  $: titleInput = selectedMetricsDef?.metricDefLabel;
+
   const onChangeCallback = async (e) => {
     store.dispatch(
       updateMetricsDefsApi({

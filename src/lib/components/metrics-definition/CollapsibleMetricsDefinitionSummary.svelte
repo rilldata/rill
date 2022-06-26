@@ -1,23 +1,17 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import type { EntityId } from "@reduxjs/toolkit";
   import CollapsibleMetricsDefinitionSummaryNavEntry from "./CollapsibleMetricsDefinitionSummaryNavEntry.svelte";
-  import { createReadableStoreWithSelector } from "$lib/redux-store/store-root";
-  import { Readable } from "svelte/store";
-  import { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { reduxReadable } from "$lib/redux-store/store-root";
   import { singleMetricsDefSelector } from "$lib/redux-store/metrics-definition-slice";
 
-  export let metricsDefId: EntityId;
+  export let metricsDefId: string;
 
-  let selectedMetricsDef: Readable<MetricsDefinitionEntity>;
-  $: if (metricsDefId) {
-    selectedMetricsDef = createReadableStoreWithSelector(
-      singleMetricsDefSelector(metricsDefId)
-    );
-  }
+  $: selectedMetricsDef =
+    singleMetricsDefSelector(metricsDefId)($reduxReadable);
 
-  $: summaryExpanded = $selectedMetricsDef?.summaryExpandedInNav;
+  $: summaryExpanded = selectedMetricsDef?.summaryExpandedInNav;
+
   export let indentLevel = 0;
   let containerWidth = 0;
   let contextMenuOpen = false;
