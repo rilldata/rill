@@ -16,7 +16,7 @@
 
 <section
   bind:this={leaderboardContainer}
-  class="grid items-stretch leaderboard-layout w-screen h-screen bg-white p-8"
+  class="grid items-stretch leaderboard-layout bg-white p-8"
   style:grid-template-rows="var(--header) 1fr"
 >
   <slot {columns} />

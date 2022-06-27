@@ -10,10 +10,10 @@
   import {
     createMetricsDefsApi,
     fetchManyMetricsDefsApi,
-    manyMetricsDefsSelector,
-  } from "$lib/redux-store/metrics-definition-slice";
+  } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { selectAllMetricsDefinitions } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
 
-  $: metricsDefinitions = manyMetricsDefsSelector($reduxReadable);
+  $: metricsDefinitions = selectAllMetricsDefinitions($reduxReadable);
 
   let showMetricsDefs = true;
   const dispatch_addEmptyMetricsDef = () => {

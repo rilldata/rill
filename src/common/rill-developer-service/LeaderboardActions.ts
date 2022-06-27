@@ -1,6 +1,6 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import {
   EntityType,
@@ -17,19 +17,23 @@ export class LeaderboardActions extends RillDeveloperActions {
     measureId: string,
     filters: ActiveValues
   ) {
-    // const measure = rillRequestContext.record.measures.find(
-    //   (measure) => measure.id === measureId
-    // );
-    // await Promise.all(
-    //   rillRequestContext.record.dimensions.map((dimension) =>
-    //     this.getLeaderboardValuesForDimension(
-    //       rillRequestContext,
-    //       measure,
-    //       dimension,
-    //       filters
-    //     )
-    //   )
-    // );
+    const measure = this.dataModelerStateService
+      .getMeasureDefinitionService()
+      .getById(measureId);
+    const dimensions = this.dataModelerStateService
+      .getDimensionDefinitionService()
+      .getCurrentState()
+      .entities.filter((dimension) => dimension.metricsDefId === metricsDefId);
+    await Promise.all(
+      dimensions.map((dimension) =>
+        this.getLeaderboardValuesForDimension(
+          rillRequestContext,
+          measure,
+          dimension,
+          filters
+        )
+      )
+    );
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -39,10 +43,9 @@ export class LeaderboardActions extends RillDeveloperActions {
     measureId: string,
     filters: ActiveValues
   ) {
-    // const measure = rillRequestContext.record.measures.find(
-    //   (measure) => measure.id === measureId
-    // );
-    const measure = null;
+    const measure = this.dataModelerStateService
+      .getMeasureDefinitionService()
+      .getById(measureId);
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
@@ -54,7 +57,7 @@ export class LeaderboardActions extends RillDeveloperActions {
       "getBigNumber",
       [model.tableName, measure?.expression, filters]
     );
-    return bigNumberValues.value;
+    return bigNumberValues[0]?.value;
   }
 
   private async getLeaderboardValuesForDimension(
@@ -66,10 +69,9 @@ export class LeaderboardActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
-    rillRequestContext.actionsChannel.pushMessage("setDimensionLeaderboard", [
-      rillRequestContext.id,
-      dimension.dimensionColumn,
-      await this.databaseActionQueue.enqueue(
+    rillRequestContext.actionsChannel.pushMessage({
+      dimensionName: dimension.dimensionColumn,
+      values: await this.databaseActionQueue.enqueue(
         {
           id: rillRequestContext.id,
           priority: DatabaseActionQueuePriority.ActiveModel,
@@ -82,6 +84,6 @@ export class LeaderboardActions extends RillDeveloperActions {
           filters,
         ]
       ),
-    ]);
+    });
   }
 }

@@ -1,15 +1,13 @@
 <script lang="ts">
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
   import { store, reduxReadable } from "$lib/redux-store/store-root";
-  import {
-    singleMetricsDefSelector,
-    updateMetricsDefsApi,
-  } from "$lib/redux-store/metrics-definition-slice";
+  import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
 
   export let metricsDefId;
 
   $: selectedMetricsDef =
-    singleMetricsDefSelector(metricsDefId)($reduxReadable);
+    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
 
   $: titleInput = selectedMetricsDef?.metricDefLabel;
 

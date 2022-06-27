@@ -30,6 +30,8 @@ export class DuckDbConnection extends DataConnection {
   public async init(): Promise<void> {
     await this.sync();
 
+    await this.dataModelerService.dispatch("loadModels", []);
+
     this.syncTimer = setInterval(() => {
       this.sync();
     }, DATABASE_POLLING_INTERVAL);

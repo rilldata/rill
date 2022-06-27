@@ -1,5 +1,5 @@
 import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 import { config } from "$lib/application-state-stores/application-store";
 
 export class MetricsExploreClient {

@@ -3,12 +3,12 @@
   import { slide } from "svelte/transition";
   import CollapsibleMetricsDefinitionSummaryNavEntry from "./CollapsibleMetricsDefinitionSummaryNavEntry.svelte";
   import { reduxReadable } from "$lib/redux-store/store-root";
-  import { singleMetricsDefSelector } from "$lib/redux-store/metrics-definition-slice";
+  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
 
   export let metricsDefId: string;
 
   $: selectedMetricsDef =
-    singleMetricsDefSelector(metricsDefId)($reduxReadable);
+    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
 
   $: summaryExpanded = selectedMetricsDef?.summaryExpandedInNav;
 

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import BarAndLabel from "$lib/components/BarAndLabel.svelte";
   import CheckerFull from "$lib/components/icons/CheckerFull.svelte";
   import CheckerHalf from "$lib/components/icons/CheckerHalf.svelte";
@@ -14,31 +13,24 @@
   import { cubicIn } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard-slice";
+  import { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { setMeasureId } from "$lib/redux-store/metrics-leaderboard-slice";
-  import { updateDisplay } from "./utils";
+  import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
+  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
+  import { clearLeaderboardAndUpdate } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
 
   export let metricsDefId: string;
   export let whichReferenceValue = "global";
 
   let metricsLeaderboard: MetricsLeaderboardEntity;
-  $: if (
-    metricsDefId &&
-    $reduxReadable?.metricsLeaderboard?.entities?.[metricsDefId]
-  ) {
-    metricsLeaderboard =
-      $reduxReadable.metricsLeaderboard.entities[metricsDefId];
-  }
+  $: metricsLeaderboard =
+    singleMetricsLeaderboardSelector(metricsDefId)($reduxReadable);
 
   let metricsDefinition: MetricsDefinitionEntity;
-  $: if (
-    metricsDefId &&
-    $reduxReadable?.metricsDefinition?.entities?.[metricsDefId]
-  ) {
-    metricsDefinition = $reduxReadable.metricsDefinition.entities[metricsDefId];
-  }
+  $: metricsDefinition =
+    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
 
   const metricFormatters = {
     simpleSummable: formatInteger,
@@ -53,25 +45,7 @@
   $: bigNumberTween.set(bigNumber);
   $: anythingSelected = isAnythingSelected(metricsLeaderboard?.activeValues);
   function clearAllFilters() {
-    // // this is a reset everything command?
-    // leaderboardStore.initializeActiveValues();
-    // // leaderboardStore.setAvailableDimensions([]);
-    // leaderboardStore.setBigNumber(0);
-    // leaderboardStore.setReferenceValue(0);
-    // // bigNumberTween.set(0, { duration: 0 });
-    // //bigNumber = 0;
-    // leaderboardStore.socket.emit("getBigNumber", {
-    //   entityType: EntityType.Table,
-    //   entityID: $leaderboardStore.activeEntityID,
-    //   expression: "count(*)",
-    // });
-    // $leaderboardStore.availableDimensions.forEach((dimensionName) => {
-    //   leaderboardStore.socket.emit("getDimensionLeaderboard", {
-    //     dimensionName,
-    //     entityType: EntityType.Table,
-    //     entityID: $leaderboardStore.activeEntityID,
-    //   });
-    // });
+    clearLeaderboardAndUpdate(store.dispatch, metricsDefId);
   }
 </script>
 
@@ -80,20 +54,7 @@
   class="pb-6 pt-6 grid w-full bg-white"
 >
   <div>
-    {#if metricsLeaderboard && metricsDefinition}
-      <select
-        class="pl-1 mb-2"
-        on:change={(event) => {
-          store.dispatch(setMeasureId(metricsDefId, event.target.value));
-          updateDisplay(metricsDefId, metricsLeaderboard, anythingSelected);
-        }}
-      >
-        <option value="">Select One</option>
-        {#each metricsDefinition.measures as measure}
-          <option value={measure.id}>{measure.expression}</option>
-        {/each}
-      </select>
-    {/if}
+    <LeaderboardMeasureSelector {metricsDefId} />
     <h1 style:line-height="1.1">
       <div class="pl-2 text-gray-600 font-normal" style:font-size="1.5rem">
         Total Records
@@ -163,55 +124,6 @@
     </div>
     <div class="pt-3">
       {#if anythingSelected}
-        <!-- FIXME: we should be generalizing whatever this button is -->
-        <!-- <div class="flex flex-col gap-y-1">
-              {#each Object.keys(activeValues) as dimension, i}
-                {#if activeValues[dimension].length}
-                  <FilterSet>
-                    <div transition:fly={{ duration: 200, x: -16 }} slot="name">
-                      {dimension}
-                    </div>
-                    <svelte:fragment slot="values">
-                      {#each activeValues[dimension] as value (dimension + value)}
-                        <div
-                          animate:flip={{ duration: 200 }}
-                          transition:fly={{ duration: 200, x: 16 }}
-                        >
-                          <Filter
-                            on:click={() => {
-                              activeValues[dimension] = activeValues[
-                                dimension
-                              ]?.filter((b) => b !== value);
-                              if (browser) {
-                                const filters = prune(activeValues);
-                                bigNumber = 0;
-                                store.socket.emit("getBigNumber", {
-                                  entityType: EntityType.Table,
-                                  entityID: currentTable,
-                                  expression: "count(*)",
-                                  filters,
-                                });
-                                availableDimensions.forEach((dimensionName) => {
-                                  // invalidate the exiting leaderboard?
-                                  store.socket.emit("getDimensionLeaderboard", {
-                                    dimensionName,
-                                    entityType: EntityType.Table,
-                                    entityID: currentTable,
-                                    filters,
-                                  });
-                                });
-                              }
-                            }}
-                          >
-                            {value}
-                          </Filter>
-                        </div>
-                      {/each}
-                    </svelte:fragment>
-                  </FilterSet>
-                {/if}
-              {/each}
-            </div> -->
         <button
           transition:fly={{ duration: 200, y: 5 }}
           on:click={clearAllFilters}

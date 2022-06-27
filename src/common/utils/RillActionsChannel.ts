@@ -6,27 +6,19 @@
 import { waitUntil } from "$common/utils/waitUtils";
 import type { ReduxActionDefinitions } from "$lib/redux-store/ActionTypes";
 
-export type Message<Action extends keyof ReduxActionDefinitions> = {
-  action: Action;
-  args: ReduxActionDefinitions[Action];
-};
-
 export class RillActionsChannel {
-  private messages = new Array<Message<any>>();
+  private messages = new Array<Record<string, unknown>>();
   private isDone = false;
 
-  public pushMessage<Action extends keyof ReduxActionDefinitions>(
-    action: Action,
-    args: ReduxActionDefinitions[Action]
-  ) {
-    this.messages.push({ action, args });
+  public pushMessage(rec: Record<string, unknown>) {
+    this.messages.push(rec);
   }
 
   public end() {
     this.isDone = true;
   }
 
-  public async *getActions(): AsyncGenerator<Message<any>> {
+  public async *getActions(): AsyncGenerator<Record<string, unknown>> {
     while (!this.isDone) {
       await waitUntil(() => this.messages.length > 0 || this.isDone, -1);
       while (this.messages.length > 0) {

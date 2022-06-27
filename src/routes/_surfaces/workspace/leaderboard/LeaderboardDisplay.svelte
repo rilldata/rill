@@ -1,30 +1,20 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
-  import { browser } from "$app/env";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import type {
-    ActiveValues,
-    MetricsLeaderboardEntity,
-  } from "$lib/redux-store/metrics-leaderboard-slice";
-  import {
-    setBigNumber,
-    setReferenceValue,
-    toggleLeaderboardActiveValue,
-  } from "$lib/redux-store/metrics-leaderboard-slice";
-  import { MetricsExploreClient } from "$lib/components/leaderboard/MetricsExploreClient";
+  import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
-  import { updateDisplay } from "./utils";
+  import { toggleValueAndUpdateLeaderboard } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
+  import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
 
   export let metricsDefId: string;
   export let columns: number;
   export let referenceValue: number;
 
   let metricsLeaderboard: MetricsLeaderboardEntity;
-  $: if (metricsDefId && $reduxReadable)
-    metricsLeaderboard =
-      $reduxReadable.metricsLeaderboard.entities[metricsDefId];
+  $: metricsLeaderboard =
+    singleMetricsLeaderboardSelector(metricsDefId)($reduxReadable);
 
   const dispatch = createEventDispatcher();
   let leaderboardExpanded;
@@ -37,13 +27,12 @@
       dimensionName: item.displayName,
     });
 
-    store.dispatch(
-      toggleLeaderboardActiveValue(metricsDefId, item.displayName, event.detail)
+    toggleValueAndUpdateLeaderboard(
+      store.dispatch,
+      metricsDefId,
+      item.displayName,
+      event.detail
     );
-
-    if (browser && metricsLeaderboard.measureId) {
-      updateDisplay(metricsDefId, metricsLeaderboard, anythingSelected);
-    }
   }
 </script>
 
@@ -55,7 +44,7 @@
     <VirtualizedGrid
       {columns}
       height="100%"
-      items={metricsLeaderboard.leaderboards}
+      items={metricsLeaderboard.leaderboards ?? []}
       let:item
     >
       <!-- the single virtual element -->

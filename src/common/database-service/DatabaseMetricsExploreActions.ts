@@ -1,6 +1,6 @@
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 
 export class DatabaseMetricsExploreActions extends DatabaseActions {
   public async getLeaderboardValues(
@@ -17,13 +17,6 @@ export class DatabaseMetricsExploreActions extends DatabaseActions {
       filters && Object.keys(isolatedFilters).length
         ? `AND ${this.getFilterFromFilters(isolatedFilters)}`
         : "";
-    console.log(`
-      SELECT ${expression} as value, "${column}" as label from "${table}"
-      WHERE "${column}" IS NOT NULL ${whereClause}
-      GROUP BY "${column}"
-      ORDER BY value desc
-      LIMIT 15
-    `);
     return this.databaseClient.execute(`
       SELECT ${expression} as value, "${column}" as label from "${table}"
       WHERE "${column}" IS NOT NULL ${whereClause}
@@ -43,10 +36,6 @@ export class DatabaseMetricsExploreActions extends DatabaseActions {
       filters && Object.keys(filters).length
         ? `WHERE ${this.getFilterFromFilters(filters)}`
         : "";
-    console.log(`
-      SELECT ${expression} as value from "${table}"
-      ${whereClause};
-    `);
     return this.databaseClient.execute(`
       SELECT ${expression} as value from "${table}"
       ${whereClause};

@@ -1,9 +1,9 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
-import { metricsDefinitionReducer } from "./metrics-definition-slice";
-import { metricsLeaderboardReducer } from "./metrics-leaderboard-slice";
+import { metricsDefinitionReducer } from "./metrics-definition/metrics-definition-slice";
+import { metricsLeaderboardReducer } from "./metrics-leaderboard/metrics-leaderboard-slice";
 import { readable } from "svelte/store";
-import { measureDefSliceReducer } from "$lib/redux-store/measure-definition-slice";
-import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition-slice";
+import { measureDefSliceReducer } from "$lib/redux-store/measure-definition/measure-definition-slice";
+import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
 
 const { configureStore } = reduxToolkit;
 
@@ -24,11 +24,3 @@ export const reduxReadable = readable(store.getState(), (set) => {
     set(store.getState());
   });
 });
-
-export function createReadableStoreWithSelector(selector) {
-  return readable(selector(store.getState()), (set) => {
-    return store.subscribe(() => {
-      set(selector(store.getState()));
-    });
-  });
-}

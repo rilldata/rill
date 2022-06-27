@@ -1,6 +1,6 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
 const { createSlice, createEntityAdapter } = reduxToolkit;
 
@@ -18,6 +18,7 @@ export interface MetricsLeaderboardEntity {
   referenceValue: number;
   leaderboards: Array<LeaderboardValues>;
   activeValues: ActiveValues;
+  selectedCount: number;
 }
 
 const metricsLeaderboardAdapter =
@@ -28,21 +29,35 @@ export const metricsLeaderboardSlice = createSlice({
   initialState: metricsLeaderboardAdapter.getInitialState(),
   reducers: {
     initMetricsLeaderboard: {
-      reducer: (state, action: PayloadAction<MetricsDefinitionEntity>) => {
-        // metricsLeaderboardAdapter.addOne(state, {
-        //   id: action.payload.id,
-        //   measureId: action.payload.measures?.[0]?.id ?? "",
-        //   bigNumber: 0,
-        //   referenceValue: 0,
-        //   leaderboards: action.payload.dimensions.map((column) => ({
-        //     values: [],
-        //     displayName: column.dimensionColumn,
-        //   })),
-        //   activeValues: {},
-        // });
+      reducer: (
+        state,
+        {
+          payload: { id, dimensions },
+        }: PayloadAction<{
+          id: string;
+          dimensions: Array<DimensionDefinitionEntity>;
+        }>
+      ) => {
+        if (state.entities[id]) return;
+        const metricsLeaderboard = {
+          id,
+          measureId: "",
+          bigNumber: 0,
+          referenceValue: 0,
+          leaderboards: dimensions.map((column) => ({
+            values: [],
+            displayName: column.dimensionColumn,
+          })),
+          activeValues: {},
+          selectedCount: 0,
+        };
+        dimensions.forEach((column) => {
+          state.entities[id].activeValues[column.dimensionColumn] = [];
+        });
+        metricsLeaderboardAdapter.addOne(state, metricsLeaderboard);
       },
-      prepare: (metricsDef: MetricsDefinitionEntity) => ({
-        payload: metricsDef,
+      prepare: (id: string, dimensions: Array<DimensionDefinitionEntity>) => ({
+        payload: { id, dimensions },
       }),
     },
 
@@ -73,7 +88,6 @@ export const metricsLeaderboardSlice = createSlice({
       ) => {
         if (!state.entities[payload.id]) return;
         const metricsLeaderboard = state.entities[payload.id];
-
         const existingIndex = metricsLeaderboard.activeValues[
           payload.dimensionName
         ]?.findIndex(([value]) => value === payload.dimensionValue);
@@ -89,6 +103,7 @@ export const metricsLeaderboardSlice = createSlice({
               metricsLeaderboard.activeValues[payload.dimensionName].filter(
                 (activeValue) => activeValue !== payload.dimensionValue
               );
+            metricsLeaderboard.selectedCount--;
           } else {
             // else toggle the 'include' of the value
             metricsLeaderboard.activeValues[payload.dimensionName][
@@ -98,9 +113,10 @@ export const metricsLeaderboardSlice = createSlice({
         } else {
           // add the value if not present
           metricsLeaderboard.activeValues[payload.dimensionName] = [
-            ...metricsLeaderboard.activeValues[payload.dimensionName],
+            ...(metricsLeaderboard.activeValues[payload.dimensionName] ?? []),
             [payload.dimensionValue, payload.include],
           ];
+          metricsLeaderboard.selectedCount++;
         }
       },
       prepare: (
@@ -152,24 +168,28 @@ export const metricsLeaderboardSlice = createSlice({
       ) => {
         if (!state.entities[action.payload.id]) return;
         state.entities[action.payload.id].bigNumber = action.payload.bigNumber;
+        if (state.entities[action.payload.id].selectedCount > 0) {
+          state.entities[action.payload.id].referenceValue =
+            action.payload.bigNumber;
+        }
       },
       prepare: (id: string, bigNumber: number) => ({
         payload: { id, bigNumber },
       }),
     },
 
-    setReferenceValue: {
-      reducer: (
-        state,
-        action: PayloadAction<{ id: string; referenceValue: number }>
-      ) => {
-        if (!state.entities[action.payload.id]) return;
-        state.entities[action.payload.id].referenceValue =
-          action.payload.referenceValue;
+    clearLeaderboard: {
+      reducer: (state, { payload: id }: PayloadAction<string>) => {
+        if (!state.entities[id]) return;
+        state.entities[id].activeValues = {};
+        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
+          (leaderboard) => ({
+            displayName: leaderboard.displayName,
+            values: [],
+          })
+        );
       },
-      prepare: (id: string, referenceValue: number) => ({
-        payload: { id, referenceValue },
-      }),
+      prepare: (id) => ({ payload: id }),
     },
   },
 });
@@ -180,7 +200,7 @@ export const {
   toggleLeaderboardActiveValue,
   setDimensionLeaderboard,
   setBigNumber,
-  setReferenceValue,
+  clearLeaderboard,
 } = metricsLeaderboardSlice.actions;
 export const MetricsLeaderboardSliceActions = metricsLeaderboardSlice.actions;
 export type MetricsLeaderboardSliceTypes =

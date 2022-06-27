@@ -40,7 +40,7 @@ export abstract class RillDeveloperController {
     });
     const promise = callback(context);
     for await (const data of context.actionsChannel.getActions()) {
-      res.write(JSON.stringify(data) + "\x01");
+      res.write(JSON.stringify(data) + "\n");
     }
     await promise;
     res.end();
