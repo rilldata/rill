@@ -120,11 +120,7 @@ export class ModelActions extends DataModelerActions {
     this.databaseActionQueue.clearQueue(modelId);
     await this.setModelStatus(modelId, EntityStatus.Validating);
 
-    this.dataModelerStateService.dispatch("updateModelQuery", [
-      modelId,
-      query,
-      sanitizedQuery,
-    ]);
+    this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query]);
     this.dataModelerStateService.dispatch("updateModelSanitizedQuery", [
       modelId,
       sanitizedQuery,

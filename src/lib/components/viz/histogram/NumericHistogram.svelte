@@ -74,7 +74,6 @@
           anchorBuffer +
           i * (fontSize + buffer + anchorBuffer / 2) +
           anchorBuffer * 2}
-        {@const anchor = x(value) < width / 2 ? "start" : "end"}
 
         <line
           x1={left}

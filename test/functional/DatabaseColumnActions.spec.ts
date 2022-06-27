@@ -14,7 +14,7 @@ export class DatabaseColumns extends FunctionalTestBase {
       input,
     ]);
     await this.waitForModels();
-    const [_, derivedModel] = this.getModels("tableName", "query_0");
+    const [, derivedModel] = this.getModels("tableName", "query_0");
     expect(derivedModel.profile[0].summary.histogram).toEqual(output);
   }
 

@@ -4,7 +4,6 @@ import { execSync } from "node:child_process";
 import { ImportTableCommand } from "$cli/ImportTableCommand";
 import { InitCommand } from "$cli/InitCommand";
 import { StartCommand } from "$cli/StartCommand";
-import { ExpressServer } from "$server/ExpressServer";
 
 export class ExampleProjectCommand extends DataModelerCliCommand {
   public getCommand(): Command {
