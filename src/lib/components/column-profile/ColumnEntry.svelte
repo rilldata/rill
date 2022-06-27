@@ -29,7 +29,7 @@
     class:bg-gray-50={active}
     use:shiftClickAction
     on:shift-click
-    on:click={(event) => {
+    on:click={() => {
       dispatch("select");
     }}
   >

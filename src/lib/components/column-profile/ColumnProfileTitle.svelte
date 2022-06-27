@@ -46,7 +46,7 @@
 
     {#if totalRows}
       <TooltipShortcutContainer>
-        <SlidingWords {active} hovered={titleTooltip}>
+        <SlidingWords {active}>
           {#if CATEGORICALS.has(type)}
             the top 10 values
           {:else if TIMESTAMPS.has(type)}

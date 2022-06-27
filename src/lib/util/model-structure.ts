@@ -41,7 +41,6 @@ export function sortByCTEDependency(a: CTE, b: CTE) {
   if (aReferencedInB) {
     return -1;
   }
-  const aQuery = a.substring.toLowerCase() + " ";
   const bSet = viableReferences(b.name);
   const bReferencedInA = bSet.some((reference) => bQuery.includes(reference));
   // check to see if the b CTE alias is mentioned in a somehow
@@ -221,8 +220,8 @@ export function extractCoreSelectStatements(query: string) {
         const end = firstCharacterAt(string.split("").reverse().join(""));
         return [start, end];
       };
-      const [_, nameEnd] = getStartAndEnd(name);
-      const [expressionStart, __] = getStartAndEnd(expression);
+      const [, nameEnd] = getStartAndEnd(name);
+      const [expressionStart,] = getStartAndEnd(expression);
       // look at the start of expression and trim the start.
 
       columnSelects.push({
@@ -437,7 +436,6 @@ export function extractCoreWhereClauses(query: string) {
           normalized.endsWith(" or ")) &&
         nestLevel === 0
       ) {
-        const ci = ei;
         // this is where we split up and say the relation.
         // ok let's goooo
         const clauseType = normalized.endsWith(" and ") ? " and " : " or ";
@@ -479,7 +477,6 @@ export function extractCoreWhereClauses(query: string) {
 }
 
 export function extractJoins(query) {
-  const latest = 0;
   const restOfQuery = query.replace(/[\s\t\r\n]/gi, " ");
 
   const finds = getAllIndexes(restOfQuery.toLowerCase(), " join ");

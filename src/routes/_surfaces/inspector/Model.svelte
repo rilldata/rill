@@ -53,26 +53,14 @@
   const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
 
-  function tableDestinationCompute(key, table, destination) {
-    let inputs = table.reduce((acc, v) => acc + v[key], 0);
-    return destination[key] / inputs;
-  }
-
-  function computeRollup(table, destination) {
-    return tableDestinationCompute("cardinality", table, destination);
-  }
-
   let rollup;
   let tables;
   // get source tables?
   let sourceTableReferences;
   let showColumns = true;
-  let showExportOptions = true;
-  let sourceTableNames = [];
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
-  let inputRowCardinality = tweened(0, { duration: 200, easing });
   let outputRowCardinality = tweened(0, { duration: 250, easing });
 
   /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
@@ -149,7 +137,7 @@
   }
 
   onMount(() => {
-    const observer = new ResizeObserver((entries) => {
+    const observer = new ResizeObserver(() => {
       containerWidth = container.clientWidth;
     });
     observer.observe(container);

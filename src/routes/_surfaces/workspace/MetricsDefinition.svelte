@@ -25,14 +25,14 @@
         on:process={() => {
           //dataModelerService.dispatch('createExploreConfiguration', [{ metricsModelID: currentModel.id, name: currentModel.name }]);
         }}
-        on:rename={(event) => {
+        on:rename={() => {
           //dataModelerService.dispatch('updateMetricsModelName', [{ id: currentModel.id, name: event.detail} ])
         }}
         on:delete={() => {
           //dataModelerService.dispatch('deleteMetricsModel', [{ id: currentModel.id }])
         }}
-        on:write={(event) => {
-          const newSpec = event.detail.content;
+        on:write={() => {
+          // const newSpec = event.detail.content;
           //dataModelerService.dispatch('updateMetricsModelSpec', [{ id: currentModel.id, newSpec }])
         }}
       >

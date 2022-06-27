@@ -5,8 +5,6 @@
   import { tweened } from "svelte/motion";
   import { cubicInOut as easing } from "svelte/easing";
   import { timeFormat } from "d3-time-format";
-  import { writable } from "svelte/store";
-  import { tick } from "svelte";
   export let width = 400;
   export let height = 120;
   export let data: any;
@@ -133,7 +131,7 @@
     }
   }}
   on:blur
-  on:mouseleave={(event) => {
+  on:mouseleave={() => {
     hoveredDate = undefined;
   }}
 >
