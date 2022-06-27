@@ -50,6 +50,21 @@ export class ModelActions extends DataModelerActions {
     });
   }
 
+  // Load all model queries and views. This is not persisted by duckdb!
+  @DataModelerActions.PersistentModelAction()
+  public async loadModels({ stateService }: PersistentModelStateActionArg) {
+    const models = stateService.getCurrentState().entities;
+    await Promise.all(
+      models.map((model) =>
+        this.databaseActionQueue.enqueue(
+          { id: model.id, priority: DatabaseActionQueuePriority.ActiveModel },
+          "createViewOfQuery",
+          [model.tableName, sanitizeQuery(model.query, false)]
+        )
+      )
+    );
+  }
+
   @DataModelerActions.PersistentModelAction()
   public async addModel(
     { stateService }: PersistentModelStateActionArg,

@@ -1,9 +1,12 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import { generateApis } from "$lib/redux-store/slice-utils";
+import {
+  generateApis,
+  generateFilteredSelectors,
+} from "$lib/redux-store/slice-utils";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { measureDefSlice } from "$lib/redux-store/measure-definition-slice";
+import { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 const { createSlice, createEntityAdapter } = reduxToolkit;
 
@@ -70,16 +73,11 @@ export const {
   "dimensions"
 );
 
-export const manyDimensionsSelector = (metricsDefId) => {
-  return (state: RillReduxState) =>
-    state.dimensionDefinition.ids
-      .filter(
-        (id) =>
-          state.dimensionDefinition.entities[id].metricsDefId === metricsDefId
-      )
-      .map((id) => state.dimensionDefinition.entities[id]);
-};
-export const singleDimensionSelector = (dimensionId: number | string) => {
-  return (state: RillReduxState) =>
-    state.dimensionDefinition.entities[dimensionId];
-};
+export const {
+  singleSelector: singleDimensionSelector,
+  manySelector: manyDimensionsSelector,
+} = generateFilteredSelectors(
+  "dimensionDefinition",
+  (entity: DimensionDefinitionEntity, metricsDefId: string) =>
+    entity.metricsDefId === metricsDefId
+);

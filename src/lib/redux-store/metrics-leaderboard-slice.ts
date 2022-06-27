@@ -1,8 +1,13 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { generateBasicSelectors } from "$lib/redux-store/slice-utils";
+import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
+import type { RillReduxState } from "$lib/redux-store/store-root";
+import { prune } from "../../routes/_surfaces/workspace/leaderboard/utils";
 
-const { createSlice, createEntityAdapter } = reduxToolkit;
+const { createSlice, createEntityAdapter, createAsyncThunk } = reduxToolkit;
 
 export interface LeaderboardValues {
   values: Array<unknown>;
@@ -18,6 +23,7 @@ export interface MetricsLeaderboardEntity {
   referenceValue: number;
   leaderboards: Array<LeaderboardValues>;
   activeValues: ActiveValues;
+  selectedCount: number;
 }
 
 const metricsLeaderboardAdapter =
@@ -28,21 +34,35 @@ export const metricsLeaderboardSlice = createSlice({
   initialState: metricsLeaderboardAdapter.getInitialState(),
   reducers: {
     initMetricsLeaderboard: {
-      reducer: (state, action: PayloadAction<MetricsDefinitionEntity>) => {
-        // metricsLeaderboardAdapter.addOne(state, {
-        //   id: action.payload.id,
-        //   measureId: action.payload.measures?.[0]?.id ?? "",
-        //   bigNumber: 0,
-        //   referenceValue: 0,
-        //   leaderboards: action.payload.dimensions.map((column) => ({
-        //     values: [],
-        //     displayName: column.dimensionColumn,
-        //   })),
-        //   activeValues: {},
-        // });
+      reducer: (
+        state,
+        {
+          payload: { id, dimensions },
+        }: PayloadAction<{
+          id: string;
+          dimensions: Array<DimensionDefinitionEntity>;
+        }>
+      ) => {
+        if (state.entities[id]) return;
+        const metricsLeaderboard = {
+          id,
+          measureId: "",
+          bigNumber: 0,
+          referenceValue: 0,
+          leaderboards: dimensions.map((column) => ({
+            values: [],
+            displayName: column.dimensionColumn,
+          })),
+          activeValues: {},
+          selectedCount: 0,
+        };
+        dimensions.forEach((column) => {
+          state.entities[id].activeValues[column.dimensionColumn] = [];
+        });
+        metricsLeaderboardAdapter.addOne(state, metricsLeaderboard);
       },
-      prepare: (metricsDef: MetricsDefinitionEntity) => ({
-        payload: metricsDef,
+      prepare: (id: string, dimensions: Array<DimensionDefinitionEntity>) => ({
+        payload: { id, dimensions },
       }),
     },
 
@@ -73,7 +93,6 @@ export const metricsLeaderboardSlice = createSlice({
       ) => {
         if (!state.entities[payload.id]) return;
         const metricsLeaderboard = state.entities[payload.id];
-
         const existingIndex = metricsLeaderboard.activeValues[
           payload.dimensionName
         ]?.findIndex(([value]) => value === payload.dimensionValue);
@@ -89,6 +108,7 @@ export const metricsLeaderboardSlice = createSlice({
               metricsLeaderboard.activeValues[payload.dimensionName].filter(
                 (activeValue) => activeValue !== payload.dimensionValue
               );
+            metricsLeaderboard.selectedCount--;
           } else {
             // else toggle the 'include' of the value
             metricsLeaderboard.activeValues[payload.dimensionName][
@@ -98,9 +118,10 @@ export const metricsLeaderboardSlice = createSlice({
         } else {
           // add the value if not present
           metricsLeaderboard.activeValues[payload.dimensionName] = [
-            ...metricsLeaderboard.activeValues[payload.dimensionName],
+            ...(metricsLeaderboard.activeValues[payload.dimensionName] ?? []),
             [payload.dimensionValue, payload.include],
           ];
+          metricsLeaderboard.selectedCount++;
         }
       },
       prepare: (
@@ -152,24 +173,28 @@ export const metricsLeaderboardSlice = createSlice({
       ) => {
         if (!state.entities[action.payload.id]) return;
         state.entities[action.payload.id].bigNumber = action.payload.bigNumber;
+        if (state.entities[action.payload.id].selectedCount > 0) {
+          state.entities[action.payload.id].referenceValue =
+            action.payload.bigNumber;
+        }
       },
       prepare: (id: string, bigNumber: number) => ({
         payload: { id, bigNumber },
       }),
     },
 
-    setReferenceValue: {
-      reducer: (
-        state,
-        action: PayloadAction<{ id: string; referenceValue: number }>
-      ) => {
-        if (!state.entities[action.payload.id]) return;
-        state.entities[action.payload.id].referenceValue =
-          action.payload.referenceValue;
+    clearLeaderboard: {
+      reducer: (state, { payload: id }: PayloadAction<string>) => {
+        if (!state.entities[id]) return;
+        state.entities[id].activeValues = {};
+        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
+          (leaderboard) => ({
+            displayName: leaderboard.displayName,
+            values: [],
+          })
+        );
       },
-      prepare: (id: string, referenceValue: number) => ({
-        payload: { id, referenceValue },
-      }),
+      prepare: (id) => ({ payload: id }),
     },
   },
 });
@@ -180,10 +205,88 @@ export const {
   toggleLeaderboardActiveValue,
   setDimensionLeaderboard,
   setBigNumber,
-  setReferenceValue,
+  clearLeaderboard,
 } = metricsLeaderboardSlice.actions;
 export const MetricsLeaderboardSliceActions = metricsLeaderboardSlice.actions;
 export type MetricsLeaderboardSliceTypes =
   typeof MetricsLeaderboardSliceActions;
 
 export const metricsLeaderboardReducer = metricsLeaderboardSlice.reducer;
+
+export const updateLeaderboardMeasure = (
+  dispatch,
+  id: string,
+  measureId: string
+) => {
+  dispatch(setMeasureId(id, measureId));
+  dispatch(updateLeaderboardApi(id));
+};
+
+export const toggleValueAndUpdateLeaderboard = (
+  dispatch,
+  id: string,
+  dimensionName: string,
+  dimensionValue: unknown,
+  include = true
+) => {
+  dispatch(
+    toggleLeaderboardActiveValue(id, dimensionName, dimensionValue, include)
+  );
+  dispatch(updateLeaderboardApi(id));
+};
+
+export const clearLeaderboardAndUpdate = (dispatch, id: string) => {
+  dispatch(clearLeaderboard(id));
+  dispatch(updateLeaderboardApi(id));
+};
+
+export const updateLeaderboardApi = createAsyncThunk(
+  `${EntityType.MetricsLeaderboard}/updateLeaderboard`,
+  async (id: string, thunkAPI) => {
+    const metricsLeaderboard: MetricsLeaderboardEntity = (
+      thunkAPI.getState() as RillReduxState
+    ).metricsLeaderboard.entities[id];
+    const filters = prune(metricsLeaderboard.activeValues);
+    const requestBody = {
+      measureId: metricsLeaderboard.measureId,
+      filters,
+    };
+
+    thunkAPI.dispatch(
+      setBigNumber(
+        metricsLeaderboard.id,
+        await fetchWrapper(
+          `metrics/${metricsLeaderboard.id}/bigNumber`,
+          "POST",
+          requestBody
+        )
+      )
+    );
+    const stream = streamingFetchWrapper<{
+      dimensionName: string;
+      values: Array<unknown>;
+    }>(`metrics/${metricsLeaderboard.id}/leaderboards`, "POST", requestBody);
+    for await (const dimensionData of stream) {
+      thunkAPI.dispatch(
+        setDimensionLeaderboard(
+          metricsLeaderboard.id,
+          dimensionData.dimensionName,
+          dimensionData.values
+        )
+      );
+    }
+  },
+  {
+    condition: (id: string, { getState }) => {
+      const metricsLeaderboard: MetricsLeaderboardEntity = (
+        getState() as RillReduxState
+      ).metricsLeaderboard.entities[id];
+      return metricsLeaderboard.measureId !== "";
+    },
+  }
+);
+
+export const {
+  manySelector: manyMetricsLeaderboardSelector,
+  singleSelector: singleMetricsLeaderboardSelector,
+} = generateBasicSelectors("metricsLeaderboard");

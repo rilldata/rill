@@ -4,27 +4,30 @@
   import LeaderboardDisplay from "./LeaderboardDisplay.svelte";
   import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard-slice";
   import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import { initMetricsLeaderboard } from "$lib/redux-store/metrics-leaderboard-slice";
+  import {
+    initMetricsLeaderboard,
+    singleMetricsLeaderboardSelector,
+  } from "$lib/redux-store/metrics-leaderboard-slice";
+  import {
+    fetchManyDimensionsApi,
+    manyDimensionsSelector,
+  } from "$lib/redux-store/dimension-definition-slice";
+  import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
   export let metricsDefId: string;
+
   let metricsLeaderboard: MetricsLeaderboardEntity;
-  $: if (
-    metricsDefId &&
-    $reduxReadable?.metricsLeaderboard?.entities[metricsDefId]
-  ) {
-    metricsLeaderboard =
-      $reduxReadable.metricsLeaderboard.entities[metricsDefId];
+  $: metricsLeaderboard =
+    singleMetricsLeaderboardSelector(metricsDefId)($reduxReadable);
+  $: if (metricsDefId) {
+    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
   }
 
-  $: if (
-    metricsDefId &&
-    $reduxReadable?.metricsDefinition?.entities[metricsDefId]
-  ) {
-    store.dispatch(
-      initMetricsLeaderboard(
-        $reduxReadable?.metricsDefinition?.entities[metricsDefId]
-      )
-    );
+  let dimensions: Array<DimensionDefinitionEntity>;
+  $: dimensions = manyDimensionsSelector(metricsDefId)($reduxReadable);
+
+  $: if (dimensions) {
+    store.dispatch(initMetricsLeaderboard(metricsDefId, dimensions));
   }
 
   /** State for the reference value toggle */

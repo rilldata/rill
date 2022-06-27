@@ -24,11 +24,3 @@ export const reduxReadable = readable(store.getState(), (set) => {
     set(store.getState());
   });
 });
-
-export function createReadableStoreWithSelector(selector) {
-  return readable(selector(store.getState()), (set) => {
-    return store.subscribe(() => {
-      set(selector(store.getState()));
-    });
-  });
-}
