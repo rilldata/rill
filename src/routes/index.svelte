@@ -32,7 +32,6 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   let assetsHovered = false;
-  let inspectorHovered = false;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -133,18 +132,6 @@
   <div
     class="fixed"
     aria-hidden={!$inspectorVisible}
-    on:mouseover={() => {
-      inspectorHovered = true;
-    }}
-    on:mouseleave={() => {
-      inspectorHovered = false;
-    }}
-    on:focus={() => {
-      inspectorHovered = true;
-    }}
-    on:blur={() => {
-      inspectorHovered = false;
-    }}
     style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
   >
     <InspectorSidebar />

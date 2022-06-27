@@ -421,12 +421,13 @@ export function extractCoreWhereClauses(query: string) {
         (endsWith(substring, postWhereClauses) && nestLevel === 0)
       ) {
         // let's split on  ' and ' and ' or '
-        const whereClause = substring; // we need to massage this
-        const matches = [];
-        const andsAndOrs = [
-          ...getAllIndexes(normalized, " and "),
-          getAllIndexes(normalized, " or "),
-        ];
+
+        // const whereClause = substring; // we need to massage this
+        // const matches = [];
+        // const andsAndOrs = [
+        //   ...getAllIndexes(normalized, " and "),
+        //   getAllIndexes(normalized, " or "),
+        // ];
       }
 
       // wait until we get to an AND or OR statement.

@@ -354,10 +354,6 @@ export class TableActions extends DataModelerActions {
         EntityStatus.Importing,
       ]);
     }
-    this.dataModelerStateService.dispatch("addOrUpdateTableToState", [
-      table,
-      isNew,
-    ]);
 
     const response = await this.importTableDataByType(table);
     if (
