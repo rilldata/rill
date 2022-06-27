@@ -5,14 +5,12 @@
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { getContext } from "svelte";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-  import {
-    singleMetricsDefSelector,
-    updateMetricsDefsApi,
-  } from "$lib/redux-store/metrics-definition-slice";
+  import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
 
   export let metricsDefId;
   $: selectedMetricsDef =
-    singleMetricsDefSelector(metricsDefId)($reduxReadable);
+    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
 
   $: sourceModelDisplayValue =
     selectedMetricsDef?.sourceModelId || "__DEFAULT_VALUE__";

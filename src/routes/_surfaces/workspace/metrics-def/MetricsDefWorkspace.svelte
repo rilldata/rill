@@ -5,20 +5,20 @@
   import { reduxReadable, store } from "$lib/redux-store/store-root";
   import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
   import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
-  import {
-    fetchManyMeasuresApi,
-    createMeasuresApi,
-    updateMeasuresApi,
-    manyMeasuresSelector,
-  } from "$lib/redux-store/measure-definition-slice";
-  import {
-    fetchManyDimensionsApi,
-    manyDimensionsSelector,
-    createDimensionsApi,
-    updateDimensionsApi,
-  } from "$lib/redux-store/dimension-definition-slice";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
+  import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+  import {
+    createDimensionsApi,
+    updateDimensionsApi,
+  } from "$lib/redux-store/dimension-definition/dimension-definition-apis.js";
+  import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
+  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
+  import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+  import {
+    createMeasuresApi,
+    updateMeasuresApi,
+  } from "$lib/redux-store/measure-definition/measure-definition-apis.js";
 
   export let metricsDefId;
 
@@ -26,8 +26,8 @@
   const tableContainerDivClass =
     "rounded border border-gray-200 border-2  overflow-auto ";
 
-  $: measures = manyMeasuresSelector(metricsDefId)($reduxReadable);
-  $: dimensions = manyDimensionsSelector(metricsDefId)($reduxReadable);
+  $: measures = selectMeasuresByMetricsId(metricsDefId)($reduxReadable);
+  $: dimensions = selectDimensionsByMetricsId(metricsDefId)($reduxReadable);
 
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));

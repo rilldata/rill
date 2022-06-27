@@ -3,12 +3,10 @@
   import Leaderboard from "./Leaderboard.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard-slice";
-  import {
-    singleMetricsLeaderboardSelector,
-    toggleValueAndUpdateLeaderboard,
-  } from "$lib/redux-store/metrics-leaderboard-slice";
+  import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
+  import { toggleValueAndUpdateLeaderboard } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
+  import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
 
   export let metricsDefId: string;
   export let columns: number;

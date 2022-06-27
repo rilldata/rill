@@ -1,6 +1,6 @@
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 
 export class DatabaseMetricsExploreActions extends DatabaseActions {
   public async getLeaderboardValues(

@@ -1,4 +1,4 @@
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 
 // prepare the activeFilters to be sent to the server
 export function prune(actives) {

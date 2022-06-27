@@ -13,17 +13,13 @@
   import { cubicIn } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import {
-    clearLeaderboardAndUpdate,
-    MetricsLeaderboardEntity,
-    singleMetricsLeaderboardSelector,
-  } from "$lib/redux-store/metrics-leaderboard-slice";
+  import { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { setMeasureId } from "$lib/redux-store/metrics-leaderboard-slice";
-  import { updateDisplay } from "./utils";
-  import { singleMetricsDefSelector } from "$lib/redux-store/metrics-definition-slice";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
+  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
+  import { clearLeaderboardAndUpdate } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
 
   export let metricsDefId: string;
   export let whichReferenceValue = "global";
@@ -33,7 +29,8 @@
     singleMetricsLeaderboardSelector(metricsDefId)($reduxReadable);
 
   let metricsDefinition: MetricsDefinitionEntity;
-  $: metricsDefinition = singleMetricsDefSelector(metricsDefId)($reduxReadable);
+  $: metricsDefinition =
+    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
 
   const metricFormatters = {
     simpleSummable: formatInteger,

@@ -1,14 +1,12 @@
 <script lang="ts">
-  import {
-    fetchManyMeasuresApi,
-    manyMeasuresSelector,
-  } from "$lib/redux-store/measure-definition-slice";
   import { reduxReadable, store } from "$lib/redux-store/store-root";
-  import { updateLeaderboardMeasure } from "$lib/redux-store/metrics-leaderboard-slice.js";
+  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
+  import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+  import { updateLeaderboardMeasure } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis.js";
 
   export let metricsDefId;
 
-  $: measures = manyMeasuresSelector(metricsDefId)($reduxReadable);
+  $: measures = selectMeasuresByMetricsId(metricsDefId)($reduxReadable);
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
   }

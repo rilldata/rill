@@ -19,15 +19,13 @@
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
-  import {
-    deleteMetricsDefsApi,
-    singleMetricsDefSelector,
-    toggleMetricsDefSummaryInNav,
-  } from "$lib/redux-store/metrics-definition-slice";
+  import { toggleMetricsDefSummaryInNav } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
+  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import { deleteMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
 
   export let metricsDefId: string;
 
-  $: thisMetricsDef = singleMetricsDefSelector(metricsDefId)($reduxReadable);
+  $: thisMetricsDef = selectMetricsDefinitionById(metricsDefId)($reduxReadable);
 
   $: name = thisMetricsDef?.metricDefLabel;
   $: summaryExpanded = thisMetricsDef?.summaryExpandedInNav;

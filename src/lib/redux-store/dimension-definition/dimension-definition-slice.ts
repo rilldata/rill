@@ -1,12 +1,5 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { RillReduxState } from "$lib/redux-store/store-root";
-import {
-  generateApis,
-  generateFilteredSelectors,
-} from "$lib/redux-store/slice-utils";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 const { createSlice, createEntityAdapter } = reduxToolkit;
 
@@ -54,30 +47,3 @@ export const {
 } = dimensionDefSlice.actions;
 
 export const dimensionDefSliceReducer = dimensionDefSlice.reducer;
-
-export const {
-  fetchManyApi: fetchManyDimensionsApi,
-  createApi: createDimensionsApi,
-  updateApi: updateDimensionsApi,
-  deleteApi: deleteDimensionsApi,
-} = generateApis<
-  EntityType.DimensionDefinition,
-  { metricsDefId: string },
-  { metricsDefId: string }
->(
-  EntityType.DimensionDefinition,
-  addManyDimensions,
-  addOneDimension,
-  updateDimension,
-  removeDimension,
-  "dimensions"
-);
-
-export const {
-  singleSelector: singleDimensionSelector,
-  manySelector: manyDimensionsSelector,
-} = generateFilteredSelectors(
-  "dimensionDefinition",
-  (entity: DimensionDefinitionEntity, metricsDefId: string) =>
-    entity.metricsDefId === metricsDefId
-);

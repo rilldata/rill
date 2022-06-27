@@ -1,6 +1,6 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import {
   EntityType,

@@ -5,17 +5,15 @@
   import { getContext } from "svelte";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import type { ProfileColumn } from "$lib/types";
-  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition-slice";
-  import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition-slice";
-  import {
-    singleMetricsDefSelector,
-    updateMetricsDefsApi,
-  } from "$lib/redux-store/metrics-definition-slice";
+  import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
+  import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
 
   export let metricsDefId;
 
   $: selectedMetricsDef =
-    singleMetricsDefSelector(metricsDefId)($reduxReadable);
+    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
   $: timeColumnSelectedValue =
     selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
 
