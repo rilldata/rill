@@ -10,6 +10,7 @@ import type { SocketNotificationService } from "$common/socket/SocketNotificatio
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { existsSync, mkdirSync } from "fs";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import path from "node:path";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -101,7 +102,11 @@ export class ExpressServer {
         "Content-Disposition",
         `attachment; filename="${fileName}"`
       );
-      res.sendFile(`${this.config.database.exportFolder}/${fileName}`);
+      res.sendFile(
+        ExpressServer.getAbsoluteFilePath(
+          `${this.config.database.exportFolder}/${fileName}`
+        )
+      );
     } else {
       res.status(500);
       res.send(
@@ -110,5 +115,11 @@ export class ExpressServer {
           .join("\n")}`
       );
     }
+  }
+
+  private static getAbsoluteFilePath(filePath: string) {
+    return path.isAbsolute(filePath)
+      ? filePath
+      : `${process.cwd()}/${filePath}`;
   }
 }
