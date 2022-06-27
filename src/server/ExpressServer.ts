@@ -88,7 +88,9 @@ export class ExpressServer {
 
   private async handleFileExport(req: Request, res: Response) {
     const fileName = decodeURIComponent(req.query.fileName as string);
-    const fullPath = ExpressServer.getAbsoluteFilePath(`${this.config.database.exportFolder}/${fileName}`)
+    const fullPath = ExpressServer.getAbsoluteFilePath(
+      `${this.config.database.exportFolder}/${fileName}`
+    );
     if (existsSync(fullPath)) {
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
