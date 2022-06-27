@@ -67,10 +67,7 @@
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
-  <ExportingDataset
-    tableName={persistentExportedModel.name}
-    path={`${config.database.exportFolder}/`}
-  />
+  <ExportingDataset tableName={persistentExportedModel.name} />
 {:else if derivedImportedTable && persistentImportedTable}
   <ImportingTable
     importName={persistentImportedTable.path}

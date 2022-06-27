@@ -14,7 +14,10 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import { config as appConfig } from "$lib/application-state-stores/application-store";
 
   import {
@@ -24,6 +27,7 @@
 
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
   import type {
     DerivedTableStore,
     PersistentTableStore,
@@ -340,27 +344,46 @@
         }}
       >
         <MenuItem
-          on:select={() => {
+          on:select={async () => {
             const exportFilename = currentModel.name.replace(
               ".sql",
               ".parquet"
             );
-            window.open(
-              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
-                `&type=parquet&fileName=${encodeURIComponent(exportFilename)}`
+
+            const exportResp = await dataModelerService.dispatch(
+              "exportToParquet",
+              [currentModel.id, exportFilename]
             );
-            //dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
+
+            if (exportResp.status === ActionStatus.Success) {
+              window.open(
+                `${
+                  appConfig.server.serverUrl
+                }/api/export?fileName=${encodeURIComponent(exportFilename)}`
+              );
+            }
+            // Add modal with message in case of Failure
           }}
         >
           Export as Parquet
         </MenuItem>
         <MenuItem
-          on:select={() => {
+          on:select={async () => {
             const exportFilename = currentModel.name.replace(".sql", ".csv");
-            window.open(
-              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
-                `&type=csv&fileName=${encodeURIComponent(exportFilename)}`
+
+            const exportResp = await dataModelerService.dispatch(
+              "exportToCsv",
+              [currentModel.id, exportFilename]
             );
+
+            if (exportResp.status === ActionStatus.Success) {
+              window.open(
+                `${
+                  appConfig.server.serverUrl
+                }/api/export?fileName=${encodeURIComponent(exportFilename)}`
+              );
+            }
+            // Add modal with message in case of Failure
           }}
         >
           Export as CSV
