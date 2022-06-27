@@ -21,6 +21,7 @@
   import ModalActions from "$lib/components/modal/ModalActions.svelte";
   import ModalContent from "$lib/components/modal/ModalContent.svelte";
   import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
+  import Input from "$lib/components/Input.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -124,16 +125,12 @@
         on:submit|preventDefault={() =>
           onSubmitRenameForm(renameTableID, renameTableNewName)}
       >
-        <label for="source-name" class="text-xs">source name</label>
-        <input
-          type="text"
+        <Input
           id="source-name"
+          label="source name"
           bind:value={renameTableNewName}
-          class="focus:outline-blue-500"
+          error={formValidationError}
         />
-        {#if formValidationError}
-          <div class="text-red-500 text-xs">{formValidationError}</div>
-        {/if}
       </form>
     </ModalContent>
     <ModalActions>
