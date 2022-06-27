@@ -117,7 +117,7 @@ export class TableActions extends DataModelerActions {
   @DataModelerActions.DerivedTableAction()
   @DataModelerActions.ResetStateToIdle(EntityType.Table)
   public async collectTableInfo(
-    _ : DerivedTableStateActionArg,
+    _: DerivedTableStateActionArg,
     tableId: string
   ): Promise<ActionResponse> {
     const persistentTable = this.dataModelerStateService.getEntityById(

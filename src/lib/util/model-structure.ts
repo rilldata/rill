@@ -221,7 +221,7 @@ export function extractCoreSelectStatements(query: string) {
         return [start, end];
       };
       const [, nameEnd] = getStartAndEnd(name);
-      const [expressionStart,] = getStartAndEnd(expression);
+      const [expressionStart] = getStartAndEnd(expression);
       // look at the start of expression and trim the start.
 
       columnSelects.push({
