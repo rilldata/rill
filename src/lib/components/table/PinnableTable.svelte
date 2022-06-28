@@ -21,14 +21,17 @@
 <Table>
   <!-- headers -->
   <TableRow>
-    {#each columnNames as { name, type } (name)}
-      {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
+    {#each columnNames as columnConfig (columnConfig.name)}
+      {@const thisColumnIsPinned = columnIsPinned(
+        columnConfig.name,
+        selectedColumns
+      )}
       <PreviewTableHeader
-        {name}
-        {type}
+        name={columnConfig.label ?? columnConfig.name}
+        type={columnConfig.type}
         pinned={thisColumnIsPinned}
         on:pin={() => {
-          dispatch("pin", { name, type });
+          dispatch("pin", { columnConfig });
         }}
       />
     {/each}

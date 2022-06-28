@@ -11,14 +11,14 @@
   import {
     createDimensionsApi,
     updateDimensionsApi,
-  } from "$lib/redux-store/dimension-definition/dimension-definition-apis.js";
+  } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
   import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
   import {
     createMeasuresApi,
     updateMeasuresApi,
-  } from "$lib/redux-store/measure-definition/measure-definition-apis.js";
+  } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
 
   export let metricsDefId;
@@ -38,7 +38,7 @@
   function handleCreateMeasure() {
     store.dispatch(createMeasuresApi({ metricsDefId }));
   }
-  function handleUpdateDimension(evt) {
+  function handleUpdateMeasure(evt) {
     store.dispatch(
       updateMeasuresApi({
         id: measures[evt.detail.index].id,
@@ -48,10 +48,11 @@
       })
     );
   }
+
   function handleCreateDimension() {
     store.dispatch(createDimensionsApi({ metricsDefId }));
   }
-  function handleUpdateMeasure(evt) {
+  function handleUpdateDimension(evt) {
     store.dispatch(
       updateDimensionsApi({
         id: dimensions[evt.detail.index].id,

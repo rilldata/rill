@@ -20,14 +20,6 @@ export class MeasuresActions extends RillDeveloperActions {
     const measure = getMeasureDefinition(metricsDefId);
     if (expression) {
       measure.expression = expression;
-      const expressionValidationResp = await this.rillDeveloperService.dispatch(
-        rillRequestContext,
-        "validateMeasureExpression",
-        [metricsDefId, expression]
-      );
-      measure.expressionIsValid = (
-        expressionValidationResp?.data as any
-      ).expressionIsValid;
     }
 
     this.dataModelerStateService.dispatch("addEntity", [
@@ -36,7 +28,19 @@ export class MeasuresActions extends RillDeveloperActions {
       measure,
     ]);
 
-    return ActionResponseFactory.getSuccessResponse("", measure);
+    const newMeasure = { ...measure };
+    if (expression) {
+      const expressionValidationResp = await this.rillDeveloperService.dispatch(
+        rillRequestContext,
+        "validateMeasureExpression",
+        [metricsDefId, expression]
+      );
+      newMeasure.expressionIsValid = (
+        expressionValidationResp?.data as any
+      ).expressionIsValid;
+    }
+
+    return ActionResponseFactory.getSuccessResponse("", newMeasure);
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()

@@ -23,8 +23,8 @@ const timeSeriesSlice = createSlice({
   reducers: {
     updateTimeSeries: {
       reducer: timeSeriesAdapter.upsertOne,
-      prepare: (id: string, changes: Partial<TimeSeriesEntity>) => ({
-        payload: { id, changes },
+      prepare: (timeSeriesEntity: TimeSeriesEntity) => ({
+        payload: timeSeriesEntity,
       }),
     },
   },

@@ -38,7 +38,8 @@ export const generateTimeSeriesApi = createAsyncThunk(
     );
     for await (const timeSeriesResponse of stream) {
       thunkAPI.dispatch(
-        updateTimeSeries(timeSeriesResponse.id, {
+        updateTimeSeries({
+          id: timeSeriesResponse.id,
           values: timeSeriesResponse.results,
           rollupInterval: timeSeriesResponse.rollupInterval,
           spark: timeSeriesResponse.spark,

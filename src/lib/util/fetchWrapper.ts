@@ -18,11 +18,17 @@ export async function* streamingFetchWrapper<T>(
   method: string,
   body?: Record<string, unknown>
 ): AsyncGenerator<T> {
-  const response = await fetch(`${config.server.serverUrl}/api/${path}`, {
-    method,
-    ...(body ? { body: JSON.stringify(body) } : {}),
-    headers: { "Content-Type": "application/json" },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${config.server.serverUrl}/api/${path}`, {
+      method,
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error(err);
+    return;
+  }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
 

@@ -20,7 +20,7 @@
 
   import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
   import { TimestampSpark } from "../data-graphic/compositions/timestamp-profile";
-  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview.js";
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
 
   export let type;
   export let summary;

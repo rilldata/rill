@@ -1,18 +1,16 @@
 <script lang="ts">
   import { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import TimestampSpark from "$lib/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
-  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview.js";
-  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config.js";
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
+  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
   import { selectTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-selectors";
-  import { reduxReadable } from "$lib/redux-store/store-root";
+  import { reduxReadable, store } from "$lib/redux-store/store-root";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
-  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
-  import {
-    MetricsDefinitionEntity,
-    ValidationState,
-  } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { Debounce } from "$common/utils/Debounce";
+  import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
 
   export let value;
   export let index;
@@ -21,27 +19,40 @@
 
   let measure: MeasureDefinitionEntity;
   $: if (value) measure = selectMeasureById(value)($reduxReadable);
+  let metricsDefId: string;
+  let expression: string;
+  let expressionIsValid: ValidationState;
+  $: if (measure) {
+    metricsDefId = measure.metricsDefId;
+    expression = measure.expression;
+    expressionIsValid = measure.expressionIsValid;
+  }
 
-  let metricsDef: MetricsDefinitionEntity;
-  $: if (measure?.metricsDefId)
-    metricsDef = selectMetricsDefinitionById(measure.metricsDefId)(
-      $reduxReadable
+  const debounce = new Debounce();
+  function generateSparkLine() {
+    debounce.debounce(
+      value,
+      () => {
+        store.dispatch(
+          generateTimeSeriesApi({
+            metricsDefId,
+            measures: [measure],
+            filters: {},
+            pixels: COLUMN_PROFILE_CONFIG.summaryVizWidth.medium,
+          })
+        );
+      },
+      1000
     );
-
-  $: if (
-    measure?.expressionIsValid === ValidationState.OK &&
-    metricsDef?.sourceModelId &&
-    metricsDef?.timeDimension
-  ) {
-    console.log(
-      measure.expression,
-      metricsDef.sourceModelId,
-      metricsDef.timeDimension
-    );
+  }
+  $: if (expression && expressionIsValid === ValidationState.OK) {
+    generateSparkLine();
   }
 
   let timeSeries: TimeSeriesEntity;
-  $: if (value) timeSeries = selectTimeSeriesById(value)($reduxReadable);
+  $: if (value) {
+    timeSeries = selectTimeSeriesById(value)($reduxReadable);
+  }
 </script>
 
 {#if timeSeries?.spark}
@@ -50,7 +61,7 @@
     xAccessor="ts"
     yAccessor="count"
     width={COLUMN_PROFILE_CONFIG.summaryVizWidth.medium}
-    height={32}
+    height={20}
     top={0}
     bottom={0}
     left={0}

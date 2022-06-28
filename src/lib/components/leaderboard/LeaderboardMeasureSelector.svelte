@@ -2,7 +2,7 @@
   import { reduxReadable, store } from "$lib/redux-store/store-root";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
-  import { updateLeaderboardMeasure } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis.js";
+  import { updateLeaderboardMeasure } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
 
   export let metricsDefId;
 

@@ -26,10 +26,11 @@ export class MetricsExploreActions extends RillDeveloperActions {
     }
   ) {
     if (
-      !rillRequestContext.record.sourceModelId ||
-      !rillRequestContext.record.timeDimension
+      !rillRequestContext.record?.sourceModelId ||
+      !rillRequestContext.record?.timeDimension
     )
       return;
+
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);

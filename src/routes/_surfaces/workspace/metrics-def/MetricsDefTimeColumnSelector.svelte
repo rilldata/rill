@@ -9,6 +9,8 @@
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 
   export let metricsDefId;
 
@@ -33,6 +35,9 @@
   } else {
     derivedModelColumns = [];
   }
+
+  let measures: Array<MeasureDefinitionEntity>;
+  $: measures = selectMeasuresByMetricsId(metricsDefId)($reduxReadable);
 
   function updateMetricsDefinitionHandler(
     metricsDef: Partial<MetricsDefinitionEntity>
