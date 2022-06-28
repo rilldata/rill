@@ -119,7 +119,7 @@ export class TableActions extends DataModelerActions {
   @DataModelerActions.DerivedTableAction()
   @DataModelerActions.ResetStateToIdle(EntityType.Table)
   public async collectTableInfo(
-    { stateService }: DerivedTableStateActionArg,
+    _: DerivedTableStateActionArg,
     tableId: string
   ): Promise<ActionResponse> {
     const persistentTable = this.dataModelerStateService.getEntityById(
@@ -393,10 +393,6 @@ export class TableActions extends DataModelerActions {
         EntityStatus.Importing,
       ]);
     }
-    this.dataModelerStateService.dispatch("addOrUpdateTableToState", [
-      table,
-      isNew,
-    ]);
 
     const response = await this.importTableDataByType(table);
     if (

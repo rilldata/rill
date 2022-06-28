@@ -43,7 +43,7 @@
       message: `copied column name "${name}" to clipboard`,
     });
   }}
-  on:select={async (event) => {
+  on:select={async () => {
     // we should only allow activation when there are rows present.
     if (totalRows) {
       active = !active;

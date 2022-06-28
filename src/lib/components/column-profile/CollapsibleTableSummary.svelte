@@ -40,7 +40,7 @@
   let container;
 
   onMount(() => {
-    const observer = new ResizeObserver((entries) => {
+    const observer = new ResizeObserver(() => {
       containerWidth = container?.clientWidth ?? 0;
     });
     observer.observe(container);

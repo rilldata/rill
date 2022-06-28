@@ -68,7 +68,7 @@
       await navigator.clipboard.writeText(name);
       notificationStore.send({ message: `copied "${name}" to clipboard` });
     }}
-    on:select-body={async (event) => {
+    on:select-body={async () => {
       dispatch("select");
     }}
     on:expand={() => {

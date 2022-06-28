@@ -74,9 +74,6 @@ export class CLISpec extends FunctionalTestBase {
     let persistentState: PersistentTableState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
     );
-    const derivedState: DerivedTableState = JSON.parse(
-      readFileSync(`${CLI_STATE_FOLDER}/derived_table_state.json`).toString()
-    );
 
     // BrokenCSV should not be present in the state.
     const brokenCSVState = persistentState.entities.find(

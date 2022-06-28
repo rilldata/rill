@@ -30,24 +30,24 @@ class ServerSetup extends TestSuiteSetup {
   child: import("child_process").ChildProcess;
 
   setupTest(
-    testSuiteParameter: TestSuiteParameter,
-    testContext: Record<any, any>
+    _testSuiteParameter: TestSuiteParameter,
+    _testContext: Record<any, any>
   ): Promise<void> {
     return Promise.resolve();
   }
   teardownTest(
-    testSuiteParameter: TestSuiteParameter,
-    testContext: Record<any, any>
+    _testSuiteParameter: TestSuiteParameter,
+    _testContext: Record<any, any>
   ): Promise<void> {
     return Promise.resolve();
   }
-  async teardownSuite(testSuiteParameter: TestSuiteParameter): Promise<void> {
+  async teardownSuite(_testSuiteParameter: TestSuiteParameter): Promise<void> {
     await terminate(this.child.pid);
     return undefined;
   }
 
   public async setupSuite(
-    testSuiteParameter: TestSuiteParameter
+    _testSuiteParameter: TestSuiteParameter
   ): Promise<void> {
     // Test to see if server is already running on PORT.
     [PORT, DEV_PORT].forEach(async (port) => {
