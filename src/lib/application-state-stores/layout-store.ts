@@ -45,3 +45,5 @@ export const modelPreviewVisible = writable(true);
 modelPreviewVisible.subscribe((tf) => {
   modelPreviewVisibilityTween.set(tf ? 0 : 1);
 });
+
+export const importOverlayVisible = writable(false);
