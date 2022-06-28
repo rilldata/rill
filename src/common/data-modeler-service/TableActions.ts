@@ -229,9 +229,7 @@ export class TableActions extends DataModelerActions {
     name: string
   ): Promise<ActionResponse> {
     const newName = sanitizeTableName(extractTableName(name));
-    const existingTable = this.dataModelerStateService
-      .getEntityStateService(EntityType.Table, StateType.Persistent)
-      .getByField("tableName", newName);
+    const existingTable = stateService.getByField("tableName", newName);
 
     if (existingTable) {
       this.notificationService.notify({
@@ -243,9 +241,7 @@ export class TableActions extends DataModelerActions {
       );
     }
 
-    const table = this.dataModelerStateService
-      .getEntityStateService(EntityType.Table, StateType.Persistent)
-      .getById(tableId);
+    const table = stateService.getById(tableId);
     const currentName = table.tableName;
 
     this.dataModelerStateService.dispatch("updateTableName", [
