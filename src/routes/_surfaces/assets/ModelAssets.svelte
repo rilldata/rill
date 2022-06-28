@@ -94,6 +94,7 @@
   >
     {#each availableModels as { id, tableSummaryProps }, i (id)}
       <CollapsibleTableSummary
+        entityType={EntityType.Model}
         on:select={() => {
           dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
         }}
