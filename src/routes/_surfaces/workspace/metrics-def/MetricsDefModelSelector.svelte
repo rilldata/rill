@@ -1,19 +1,19 @@
 <script lang="ts">
   import ModelIcon from "$lib/components/icons/Code.svelte";
 
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
+  import { store } from "$lib/redux-store/store-root";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { getContext } from "svelte";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
-  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
 
-  export let metricsDefId;
-  $: selectedMetricsDef =
-    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
+  export let metricsDefId: string;
+
+  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
 
   $: sourceModelDisplayValue =
-    selectedMetricsDef?.sourceModelId || "__DEFAULT_VALUE__";
+    $selectedMetricsDef?.sourceModelId || "__DEFAULT_VALUE__";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"

@@ -2,15 +2,13 @@
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import CollapsibleMetricsDefinitionSummaryNavEntry from "./CollapsibleMetricsDefinitionSummaryNavEntry.svelte";
-  import { reduxReadable } from "$lib/redux-store/store-root";
-  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
 
   export let metricsDefId: string;
 
-  $: selectedMetricsDef =
-    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
+  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
 
-  $: summaryExpanded = selectedMetricsDef?.summaryExpandedInNav;
+  $: summaryExpanded = $selectedMetricsDef?.summaryExpandedInNav;
 
   export let indentLevel = 0;
   let containerWidth = 0;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import TimestampIcon from "$lib/components/icons/TimestampType.svelte";
-  import { store, reduxReadable } from "$lib/redux-store/store-root";
+  import { store } from "$lib/redux-store/store-root";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { getContext } from "svelte";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
@@ -8,16 +8,14 @@
   import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
-  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
-  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
 
   export let metricsDefId;
 
-  $: selectedMetricsDef =
-    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
+  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+
   $: timeColumnSelectedValue =
-    selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
+    $selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
 
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
@@ -28,16 +26,13 @@
   ) as DerivedModelStore;
 
   let derivedModelColumns: Array<ProfileColumn>;
-  $: if (selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
+  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
     derivedModelColumns = $derivedModelStore?.entities.find(
-      (model) => model.id === selectedMetricsDef.sourceModelId
+      (model) => model.id === $selectedMetricsDef.sourceModelId
     ).profile;
   } else {
     derivedModelColumns = [];
   }
-
-  let measures: Array<MeasureDefinitionEntity>;
-  $: measures = selectMeasuresByMetricsId(metricsDefId)($reduxReadable);
 
   function updateMetricsDefinitionHandler(
     metricsDef: Partial<MetricsDefinitionEntity>
@@ -56,7 +51,7 @@
     <TimestampIcon size="16px" /> timestamp
   </div>
   <div>
-    {#if selectedMetricsDef?.sourceModelId === undefined}
+    {#if $selectedMetricsDef?.sourceModelId === undefined}
       <em>select a model before selecting a timestamp</em>
     {:else if derivedModelColumns.length === 0}
       <em>the selected model has no timestamp columns</em>

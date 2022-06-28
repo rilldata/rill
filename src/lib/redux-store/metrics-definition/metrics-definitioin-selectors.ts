@@ -1,6 +1,7 @@
-import { generateBasicSelectors } from "$lib/redux-store/utils/selector-utils";
+import { generateEntitySelectors } from "$lib/redux-store/utils/selector-utils";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export const {
   manySelector: selectAllMetricsDefinitions,
   singleSelector: selectMetricsDefinitionById,
-} = generateBasicSelectors("metricsDefinition");
+} = generateEntitySelectors<MetricsDefinitionEntity>("metricsDefinition");
