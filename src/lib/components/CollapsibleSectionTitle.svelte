@@ -46,7 +46,7 @@
       </div>
     </button>
     <TooltipContent slot="tooltip-content">
-      <SlidingWords {active} hovered={tooltipActive}>
+      <SlidingWords {active}>
         {tooltipText}
       </SlidingWords>
       <!-- <div class="relative">

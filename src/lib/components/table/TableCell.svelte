@@ -75,20 +75,17 @@
       activeCell = false;
     }}
     class="
-        p-2
-        pl-4
-        pr-4
+        py-2
+        px-4
         border
         border-gray-200
         {activeCell && 'bg-gray-200'}
     "
-    style:width="var(--table-column-width-{name}, 210px)"
-    style:max-width="var(--table-column-width-{name}, 210px)"
   >
     <button
       class="text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       use:shiftClickAction
-      on:shift-click={async (event) => {
+      on:shift-click={async () => {
         let exportedValue = value;
         if (INTERVALS.has(type)) {
           exportedValue = formatDataType(value, type);

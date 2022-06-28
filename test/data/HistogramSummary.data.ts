@@ -1,4 +1,3 @@
-import type { DataProviderData } from "@adityahegde/typescript-test-utils";
 import type { NumericHistogramBin } from "$lib/types";
 
 interface NumericHistogramTestCase {

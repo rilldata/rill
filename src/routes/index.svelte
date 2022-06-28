@@ -9,6 +9,7 @@
 
   import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
   import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
+  import FileDrop from "$lib/components/overlay/FileDrop.svelte";
 
   import type {
     PersistentModelStore,
@@ -28,11 +29,13 @@
     inspectorVisibilityTween,
     inspectorVisible,
     SIDE_PAD,
+    importOverlayVisible,
   } from "$lib/application-state-stores/layout-store";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
 
+  let showDropOverlay = false;
   let assetsHovered = false;
-  let inspectorHovered = false;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -73,9 +76,22 @@
     importName={persistentImportedTable.path}
     tableName={persistentImportedTable.name}
   />
+{:else if $importOverlayVisible}
+  <PreparingImport />
+{:else if showDropOverlay}
+  <FileDrop bind:showDropOverlay />
 {/if}
 
-<div class="absolute w-screen h-screen bg-gray-100">
+<div
+  class="absolute w-screen h-screen bg-gray-100"
+  on:drop|preventDefault|stopPropagation
+  on:drag|preventDefault|stopPropagation
+  on:dragenter|preventDefault|stopPropagation
+  on:dragover|preventDefault|stopPropagation={() => {
+    showDropOverlay = true;
+  }}
+  on:dragleave|preventDefault|stopPropagation
+>
   <!-- left assets pane expansion button -->
   <!-- make this the first element to select with tab by placing it first.-->
   <SurfaceControlButton
@@ -133,18 +149,6 @@
   <div
     class="fixed"
     aria-hidden={!$inspectorVisible}
-    on:mouseover={() => {
-      inspectorHovered = true;
-    }}
-    on:mouseleave={() => {
-      inspectorHovered = false;
-    }}
-    on:focus={() => {
-      inspectorHovered = true;
-    }}
-    on:blur={() => {
-      inspectorHovered = false;
-    }}
     style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
   >
     <InspectorSidebar />

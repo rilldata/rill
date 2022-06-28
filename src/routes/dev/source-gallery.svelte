@@ -6,7 +6,6 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
 
-  import ParquetIcon from "$lib/components/icons/Parquet.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tweened } from "svelte/motion";
-  import { fly, fade } from "svelte/transition";
+  import { fly } from "svelte/transition";
   import { cubicOut as easing } from "svelte/easing";
   import { scaleLinear } from "d3-scale";
   import { format } from "d3-format";
