@@ -21,11 +21,10 @@
     on:dragleave|preventDefault|stopPropagation
   >
     <div
-      class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all"
-      style:font-size="32px"
+      class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all text-3xl"
     >
       <span class="place-content-center">
-        Drop your files to add new source
+        drop your files to add new source
       </span>
     </div>
   </div>
