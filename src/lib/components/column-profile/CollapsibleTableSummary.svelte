@@ -19,7 +19,9 @@
   } from "$lib/components/column-profile/sort-utils";
 
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+  export let entityType: EntityType;
   export let name: string;
   export let cardinality: number;
   export let profile: any;
@@ -67,12 +69,14 @@
   {#if showTitle}
     <div {draggable} class="active:cursor-grabbing">
       <CollapsibleTableHeader
-        on:select={() => dispatch("select")}
+        on:select
+        on:query
         bind:contextMenuOpen
         bind:menuX
         bind:menuY
         bind:name
         bind:show
+        {entityType}
         {contextMenu}
         {cardinality}
         {sizeInBytes}
@@ -96,6 +100,15 @@
               contextMenuOpen = false;
             }}
           >
+            {#if entityType == EntityType.Table}
+              <MenuItem
+                on:select={() => {
+                  dispatch("query");
+                }}
+              >
+                query {name}
+              </MenuItem>
+            {/if}
             <MenuItem
               on:select={() => {
                 dispatch("delete");

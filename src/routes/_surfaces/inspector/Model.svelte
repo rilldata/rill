@@ -36,6 +36,7 @@
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Button from "$lib/components/Button.svelte";
 
   const persistentTableStore = getContext(
@@ -303,6 +304,7 @@
           {#if currentDerivedModel?.profile && showColumns}
             <div transition:slide|local={{ duration: 200 }}>
               <CollapsibleTableSummary
+                entityType={EntityType.Model}
                 showTitle={false}
                 showContextButton={false}
                 show={showColumns}

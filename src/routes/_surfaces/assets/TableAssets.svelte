@@ -14,8 +14,11 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
+  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
+  import notificationStore from "$lib/components/notifications/";
 
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -24,6 +27,10 @@
   const derivedTableStore = getContext(
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
+
+  const persistentModelStore = getContext(
+    "rill:app:persistent-model-store"
+  ) as PersistentModelStore;
 
   let showTables = true;
 </script>
@@ -56,12 +63,41 @@
         )}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
+            entityType={EntityType.Table}
             indentLevel={1}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+            on:query={async () => {
+              // check existing models to avoid a name conflict
+              const existingNames = $persistentModelStore?.entities
+                .filter((model) => model.name.includes(`query_${tableName}`))
+                .map((model) => model.tableName)
+                .sort();
+              const nextName =
+                existingNames.length === 0
+                  ? `query_${tableName}`
+                  : `query_${tableName}_${existingNames.length + 1}`;
+
+              const response = await dataModelerService.dispatch("addModel", [
+                {
+                  name: nextName,
+                  query: `select * from ${tableName}`,
+                },
+              ]);
+
+              // change the active asset to the new model
+              await dataModelerService.dispatch("setActiveAsset", [
+                EntityType.Model,
+                response.id,
+              ]);
+
+              notificationStore.send({
+                message: `queried ${tableName} in workspace`,
+              });
+            }}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
             }}
