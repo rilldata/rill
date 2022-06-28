@@ -16,6 +16,22 @@
   export let expanded = true;
   export let selected = false;
   export let hovered = false;
+
+  const commandClickHandler = () => {
+    if (entityType == EntityType.Table) {
+      dispatch("query");
+    }
+  };
+
+  const clickHandler = () => {
+    dispatch("select");
+    if (
+      entityType == EntityType.Table ||
+      (entityType == EntityType.Model && selected)
+    ) {
+      dispatch("expand");
+    }
+  };
 </script>
 
 <div
@@ -28,66 +44,29 @@
   style:height="24px"
   style:grid-template-columns="[left-control] max-content [body] auto
   [contextual-information] max-content"
-  class="
-        {selected ? 'bg-gray-100' : 'bg-transparent'}
-        grid
-        grid-flow-col
-        gap-2
-        items-center
-        hover:bg-gray-200
-        pl-4 pr-4 
+  class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {selected
+    ? 'bg-gray-100'
+    : 'bg-transparent'}
     "
 >
-  <ExpanderButton
-    rotated={expanded}
-    on:click={() => {
-      dispatch("expand");
-    }}
-  >
+  <ExpanderButton rotated={expanded} on:click={() => dispatch("expand")}>
     <CaretDownIcon size="14px" />
   </ExpanderButton>
   <button
     use:commandClickAction
-    on:command-click={() => {
-      if (entityType == EntityType.Table) {
-        dispatch("query");
-      }
-    }}
+    on:command-click={commandClickHandler}
     use:shiftClickAction
     on:shift-click
-    on:click={() => {
-      dispatch("select");
-      if (
-        entityType == EntityType.Table ||
-        (entityType == EntityType.Model && selected)
-      ) {
-        dispatch("expand");
-      }
-    }}
-    on:focus={() => {
-      hovered = true;
-    }}
-    on:blur={() => {
-      hovered = false;
-    }}
+    on:click={clickHandler}
+    on:focus={() => (hovered = true)}
+    on:blur={() => (hovered = false)}
     style:grid-column="body"
     style:grid-template-columns="[icon] max-content [text] 1fr"
-    class="
-                w-full 
-                justify-start
-                text-left 
-                grid 
-                items-center
-                p-0"
+    class="w-full justify-start text-left grid items-center p-0"
   >
     <div
       style:grid-column="text"
-      class="
-                    w-full
-                    justify-self-auto
-                    text-ellipsis 
-                    overflow-hidden 
-                    whitespace-nowrap"
+      class="w-full justify-self-auto text-ellipsis overflow-hidden whitespace-nowrap"
     >
       <slot />
     </div>

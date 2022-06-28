@@ -56,6 +56,8 @@
 
   // state for title bar hover.
   let titleElementHovered = false;
+  $: showEntityDetails =
+    titleElementHovered || emphasizeTitle || contextMenuOpen;
 </script>
 
 <Tooltip location="right">
@@ -105,7 +107,7 @@
           <span
             class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap "
           >
-            {#if titleElementHovered || emphasizeTitle || contextMenuOpen}
+            {#if showEntityDetails}
               <span>
                 <span>
                   {cardinality !== undefined && !isNaN(cardinality)
