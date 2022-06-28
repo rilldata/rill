@@ -29,8 +29,10 @@
     inspectorVisibilityTween,
     inspectorVisible,
     SIDE_PAD,
+    importOverlayVisible,
   } from "$lib/application-state-stores/layout-store";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
 
   let showDropOverlay = false;
   let assetsHovered = false;
@@ -74,6 +76,8 @@
     importName={persistentImportedTable.path}
     tableName={persistentImportedTable.name}
   />
+{:else if $importOverlayVisible}
+  <PreparingImport />
 {:else if showDropOverlay}
   <FileDrop bind:showDropOverlay />
 {/if}
