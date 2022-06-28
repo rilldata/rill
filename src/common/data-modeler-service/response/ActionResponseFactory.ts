@@ -21,7 +21,7 @@ export class ActionResponseFactory {
           ]
         : [],
       status: ActionStatus.Success,
-      ...(data ? { data } : {}),
+      ...(data !== undefined ? { data } : {}),
     };
   }
 

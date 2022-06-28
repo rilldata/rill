@@ -3,6 +3,7 @@ import type { EntityRecord } from "$common/data-modeler-state-service/entity-sta
 
 export interface ColumnConfig {
   name: string;
+  label?: string;
   type: string;
 
   renderer?: unknown;

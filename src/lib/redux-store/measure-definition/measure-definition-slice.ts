@@ -1,5 +1,6 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 const { createSlice, createEntityAdapter } = reduxToolkit;
 
@@ -36,10 +37,27 @@ export const measureDefSlice = createSlice({
       reducer: measureDefAdapter.removeOne,
       prepare: (id: string) => ({ payload: id }),
     },
+
+    clearMeasuresForMetricsDefId: {
+      reducer: (state, action: PayloadAction<string>) => {
+        measureDefAdapter.removeMany(
+          state,
+          state.ids.filter(
+            (id) => state.entities[id].metricsDefId === action.payload
+          )
+        );
+      },
+      prepare: (id: string) => ({ payload: id }),
+    },
   },
 });
 
-export const { addManyMeasures, addOneMeasure, updateMeasure, removeMeasure } =
-  measureDefSlice.actions;
+export const {
+  addManyMeasures,
+  addOneMeasure,
+  updateMeasure,
+  removeMeasure,
+  clearMeasuresForMetricsDefId,
+} = measureDefSlice.actions;
 
 export const measureDefSliceReducer = measureDefSlice.reducer;

@@ -6,20 +6,22 @@
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 
   import {
-    formatInteger,
     formatCompactInteger,
+    formatInteger,
     singleDigitPercentage,
   } from "$lib/util/formatters";
   import {
+    BOOLEANS,
     CATEGORICALS,
+    DATA_TYPE_COLORS,
     NUMERICS,
     TIMESTAMPS,
-    DATA_TYPE_COLORS,
-    BOOLEANS,
   } from "$lib/duckdb-data-types";
 
   import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
   import { TimestampSpark } from "../data-graphic/compositions/timestamp-profile";
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview.js";
+
   export let type;
   export let summary;
   export let totalRows: number;
@@ -44,15 +46,6 @@
     containerWidth > COLUMN_PROFILE_CONFIG.compactBreakpoint
       ? formatInteger
       : formatCompactInteger;
-
-  /** used to convert a timestamp preview from the server for a sparkline. */
-  function convertTimestampPreview(d) {
-    return d.map((di) => {
-      let pi = { ...di };
-      pi.ts = new Date(pi.ts);
-      return pi;
-    });
-  }
 </script>
 
 <div class="flex gap-2 items-center" class:hidden={view !== "summaries"}>

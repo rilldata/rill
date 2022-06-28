@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, Response, Router } from "express";
 import {
   EntityType,
   StateType,
@@ -10,6 +10,13 @@ import type { RillRequestContext } from "$common/rill-developer-service/RillRequ
 export class MetricsDimensionController extends EntityController {
   protected static entityPath = "dimensions";
   protected static entityType = EntityType.DimensionDefinition;
+
+  protected setupRouter(router: Router) {
+    router.post("/dimensions/validate-dimension-column", (req, res) =>
+      this.validateDimensionColumn(req, res)
+    );
+    super.setupRouter(router);
+  }
 
   protected async getAll(req: Request, res: Response): Promise<void> {
     const metricsDefId = req.query.metricsDefId as string;
@@ -57,5 +64,14 @@ export class MetricsDimensionController extends EntityController {
     return this.rillDeveloperService.dispatch(context, "deleteDimension", [
       req.params.id,
     ]);
+  }
+
+  protected async validateDimensionColumn(req: Request, res: Response) {
+    await EntityController.wrapAction(res, async (context) =>
+      this.rillDeveloperService.dispatch(context, "validateDimensionColumn", [
+        req.body.metricsDefId,
+        req.body.dimensionColumn,
+      ])
+    );
   }
 }

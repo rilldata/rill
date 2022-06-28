@@ -32,7 +32,8 @@ export async function* streamingFetchWrapper<T>(
     for (const part of parts) {
       if (part === "") continue;
       try {
-        yield JSON.parse(part);
+        const json = JSON.parse(part);
+        yield json;
       } catch (err) {
         console.error(err);
       }

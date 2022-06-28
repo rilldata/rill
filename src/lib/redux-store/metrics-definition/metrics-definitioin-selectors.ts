@@ -1,4 +1,4 @@
-import { generateBasicSelectors } from "$lib/redux-store/slice-utils";
+import { generateBasicSelectors } from "$lib/redux-store/utils/selector-utils";
 
 export const {
   manySelector: selectAllMetricsDefinitions,

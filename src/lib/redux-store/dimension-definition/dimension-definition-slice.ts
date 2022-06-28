@@ -1,5 +1,6 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 const { createSlice, createEntityAdapter } = reduxToolkit;
 
@@ -36,6 +37,18 @@ export const dimensionDefSlice = createSlice({
       reducer: dimensionDefAdapter.removeOne,
       prepare: (id: string) => ({ payload: id }),
     },
+
+    clearDimensionsForMetricsDefId: {
+      reducer: (state, action: PayloadAction<string>) => {
+        dimensionDefAdapter.removeMany(
+          state,
+          state.ids.filter(
+            (id) => state.entities[id].metricsDefId === action.payload
+          )
+        );
+      },
+      prepare: (id: string) => ({ payload: id }),
+    },
   },
 });
 
@@ -44,6 +57,7 @@ export const {
   addOneDimension,
   updateDimension,
   removeDimension,
+  clearDimensionsForMetricsDefId,
 } = dimensionDefSlice.actions;
 
 export const dimensionDefSliceReducer = dimensionDefSlice.reducer;

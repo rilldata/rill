@@ -8,8 +8,57 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { TimeSeriesRollup } from "$common/database-service/DatabaseTimeSeriesActions";
 
-export class LeaderboardActions extends RillDeveloperActions {
+export class MetricsExploreActions extends RillDeveloperActions {
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async generateTimeSeries(
+    rillRequestContext: MetricsDefinitionContext,
+    metricsDefId: string,
+    {
+      expressionEntries,
+      filters,
+      pixels,
+    }: {
+      expressionEntries: Array<[id: string, expression: string]>;
+      filters: ActiveValues;
+      pixels: number;
+    }
+  ) {
+    if (
+      !rillRequestContext.record.sourceModelId ||
+      !rillRequestContext.record.timeDimension
+    )
+      return;
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    await Promise.all(
+      expressionEntries.map(async ([id, expression]) => {
+        if (!expression) return;
+        const timeSeries: TimeSeriesRollup =
+          await this.databaseActionQueue.enqueue(
+            {
+              id: metricsDefId,
+              priority: DatabaseActionQueuePriority.ActiveModel,
+            },
+            "generateTimeSeries",
+            [
+              {
+                tableName: model.tableName,
+                timestampColumn: rillRequestContext.record.timeDimension,
+                expression,
+                filters,
+                pixels,
+              },
+            ]
+          );
+        timeSeries.rollup.id = id;
+        rillRequestContext.actionsChannel.pushMessage(timeSeries.rollup as any);
+      })
+    );
+  }
+
   @RillDeveloperActions.MetricsDefinitionAction()
   public async getLeaderboardValues(
     rillRequestContext: MetricsDefinitionContext,

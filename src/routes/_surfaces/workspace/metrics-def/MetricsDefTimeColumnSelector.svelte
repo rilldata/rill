@@ -17,10 +17,6 @@
   $: timeColumnSelectedValue =
     selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
 
-  $: {
-    console.log("timeColumnSelectedValue", timeColumnSelectedValue);
-  }
-
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
     store.dispatch(fetchManyDimensionsApi({ metricsDefId }));

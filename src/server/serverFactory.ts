@@ -35,9 +35,10 @@ import { MetricsDefinitionActions } from "$common/rill-developer-service/Metrics
 import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
-import { LeaderboardActions } from "$common/rill-developer-service/LeaderboardActions";
+import { MetricsExploreActions } from "$common/rill-developer-service/MetricsExploreActions";
 import { MeasureDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DimensionDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
 
 let PACKAGE_JSON = "";
 try {
@@ -55,6 +56,7 @@ export function databaseServiceFactory(config: RootConfig) {
       DatabaseTableActions,
       DatabaseColumnActions,
       DatabaseMetricsExploreActions,
+      DatabaseTimeSeriesActions,
     ].map(
       (DatabaseActionsClass) =>
         new DatabaseActionsClass(config.database, duckDbClient)
@@ -152,7 +154,7 @@ export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
       MetricsDefinitionActions,
       DimensionsActions,
       MeasuresActions,
-      LeaderboardActions,
+      MetricsExploreActions,
     ].map(
       (RillDeveloperActionsClass) =>
         new RillDeveloperActionsClass(

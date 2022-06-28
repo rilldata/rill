@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, Response, Router } from "express";
 import {
   EntityType,
   StateType,
@@ -10,6 +10,15 @@ import type { ActionResponse } from "$common/data-modeler-service/response/Actio
 export class MetricsDefinitionController extends EntityController {
   protected static entityPath = "metrics";
   protected static entityType = EntityType.MetricsDefinition;
+
+  protected setupRouter(router: Router) {
+    super.setupRouter(router);
+    router.post(
+      "/metrics/:id/generate-measures-dimensions",
+      (req: Request, res: Response) =>
+        this.handleGenerateMeasuresAndDimensions(req, res)
+    );
+  }
 
   protected async getAll(req: Request, res: Response) {
     res.setHeader("ContentType", "application/json");
@@ -52,6 +61,19 @@ export class MetricsDefinitionController extends EntityController {
       context,
       "deleteMetricsDefinition",
       [req.params.id]
+    );
+  }
+
+  protected async handleGenerateMeasuresAndDimensions(
+    req: Request,
+    res: Response
+  ) {
+    await this.wrapHttpStream(res, (context) =>
+      this.rillDeveloperService.dispatch(
+        context,
+        "generateMeasuresAndDimensions",
+        [req.params.id]
+      )
     );
   }
 }

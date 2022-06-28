@@ -21,7 +21,6 @@ export interface MeasureDefinitionEntity extends EntityRecord {
   description?: string;
   expressionIsValid?: ValidationState;
   sqlNameIsValid?: ValidationState;
-  sparkLineId: string;
 }
 
 export type MeasureDefinitionState = EntityState<MeasureDefinitionEntity>;
@@ -39,14 +38,3 @@ export class MeasureDefinitionStateService extends EntityStateService<
   public readonly entityType = EntityType.MeasureDefinition;
   public readonly stateType = StateType.Persistent;
 }
-
-// fields only saved on the server
-export const MeasureServerFields: Array<keyof MeasureDefinitionEntity> = [
-  "metricsDefId",
-  "creationTime",
-  "expression",
-  "sqlName",
-  "label",
-  "description",
-  "sparkLineId",
-];

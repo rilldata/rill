@@ -1,6 +1,7 @@
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+import { getFilterFromFilters } from "./utils";
 
 export class DatabaseMetricsExploreActions extends DatabaseActions {
   public async getLeaderboardValues(
@@ -15,7 +16,7 @@ export class DatabaseMetricsExploreActions extends DatabaseActions {
     delete isolatedFilters[column];
     const whereClause =
       filters && Object.keys(isolatedFilters).length
-        ? `AND ${this.getFilterFromFilters(isolatedFilters)}`
+        ? `AND ${getFilterFromFilters(isolatedFilters)}`
         : "";
     return this.databaseClient.execute(`
       SELECT ${expression} as value, "${column}" as label from "${table}"
@@ -34,23 +35,11 @@ export class DatabaseMetricsExploreActions extends DatabaseActions {
   ) {
     const whereClause =
       filters && Object.keys(filters).length
-        ? `WHERE ${this.getFilterFromFilters(filters)}`
+        ? `WHERE ${getFilterFromFilters(filters)}`
         : "";
     return this.databaseClient.execute(`
       SELECT ${expression} as value from "${table}"
       ${whereClause};
     `);
-  }
-
-  private getFilterFromFilters(filters: ActiveValues): string {
-    return Object.keys(filters)
-      .map((field) => {
-        return filters[field]
-          .map(([value, filterType]) =>
-            filterType ? `"${field}" = '${value}'` : `"${field}" != '${value}'`
-          )
-          .join(" OR ");
-      })
-      .join(" AND ");
   }
 }

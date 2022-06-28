@@ -1,0 +1,333 @@
+import { DatabaseActions } from "$common/database-service/DatabaseActions";
+import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { getFilterFromFilters } from "$common/database-service/utils";
+import { PreviewRollupInterval } from "$lib/duckdb-data-types";
+import { MICROS } from "$common/database-service/DatabaseColumnActions";
+import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
+
+export interface TimeSeriesResponse {
+  id?: string;
+  results: Array<TimeSeriesValue>;
+  spark?: Array<TimeSeriesValue>;
+  rollupInterval: string;
+  sampleSize?: number;
+}
+export interface TimeSeriesRollup {
+  rollup: TimeSeriesResponse;
+}
+
+export class DatabaseTimeSeriesActions extends DatabaseActions {
+  /**
+   * A single-pass heuristic for generating a `expression` or count(*) over an entire timestamp column,
+   * rolled up to a hopefully useful timegrain.
+   * It will make a reasonable estimate of how the column should be rolled up,
+   * then produce both the final rolled up result and a reduced M4-like spark representation
+   * using the same temporary table.
+   * A sampleSize argument is provided to provide an "optimistic query" option for the user
+   * if speed is a concern. A reasonable 1,000,000 row sample should speed things up
+   * in extreme cases.
+   */
+  public async generateTimeSeries(
+    metadata: DatabaseMetadata,
+    {
+      tableName,
+      expression,
+      timestampColumn,
+      rollupInterval,
+      filters,
+      pixels,
+      sampleSize,
+    }: {
+      tableName: string;
+      expression?: string;
+      timestampColumn: string;
+      rollupInterval?: RollupInterval;
+      filters?: ActiveValues;
+      pixels?: number;
+      sampleSize?: number;
+    }
+  ): Promise<TimeSeriesRollup> {
+    expression ??= "count(*)";
+    rollupInterval ??= await this.estimateIdealRollupInterval(
+      metadata,
+      tableName,
+      timestampColumn
+    );
+
+    const filter =
+      filters && Object.keys(filters).length > 0
+        ? " WHERE " + getFilterFromFilters(filters)
+        : "";
+
+    const rollupTime = rollupInterval.rollupInterval.split(" ")[1];
+
+    /**
+     * Generate the rolled up time series as a temporary table and
+     * then compute the result set + any M4-like reduction on it.
+     * We first create a resultset of zero-values,
+     * then join this result set against the empirical counts.
+     */
+    try {
+      await this.databaseClient.execute(`CREATE TEMPORARY TABLE _ts_ AS (
+        -- generate a time series column that has the intended range
+        WITH template as (
+          SELECT 
+            generate_series as ts 
+          FROM 
+            generate_series(
+              date_trunc(
+                '${rollupTime}', 
+                TIMESTAMP '${rollupInterval.minValue.toISOString()}'
+              ), 
+              date_trunc(
+                '${rollupTime}', 
+                TIMESTAMP '${rollupInterval.maxValue.toISOString()}'
+              ), 
+              interval ${rollupInterval.rollupInterval})
+        ),
+        -- transform the original data, and optionally sample it.
+        transformed AS (
+          SELECT 
+            date_trunc('${rollupTime}', "${timestampColumn}") as ts 
+          FROM "${tableName}" ${filter}
+        ),
+        -- roll up the transformed data
+        series AS (
+          SELECT ${expression} as count, ts from transformed 
+          GROUP BY ts ORDER BY ts
+        )
+        -- join the transformed data with the generated time series column,
+        -- coalescing the first value to get the 0-default when the rolled up data
+        -- does not have that value.
+        SELECT COALESCE(series.count, 0) as count, template.ts from template
+        LEFT OUTER JOIN series ON template.ts = series.ts
+        ORDER BY template.ts
+      )`);
+    } catch (err) {
+      await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
+    }
+
+    let spark;
+
+    if (pixels) {
+      /**
+       * Generate the M4-like reduction of this time series.
+       * This variation will produce 4 points per pixel – the left bound, right bound,
+       * the max, and the min.
+       */
+      spark = await this.createTimestampRollupReduction(
+        metadata,
+        "_ts_",
+        "ts",
+        "count",
+        pixels
+      );
+    }
+
+    const results = await this.databaseClient.execute(`SELECT * from _ts_`);
+    await this.databaseClient.execute(`DROP TABLE _ts_`);
+
+    return {
+      rollup: {
+        results,
+        rollupInterval: rollupInterval.rollupInterval,
+        spark,
+        sampleSize,
+      },
+    };
+  }
+
+  /**
+   * Contains an as-of-this-commit unpublished algorithm for an M4-like line density reduction.
+   * This will take in an n-length time series and produce a pixels * 4 reduction of the time series
+   * that preserves the shape and trends.
+   *
+   * This algorithm expects the source table to have a timestamp column and some kind of value column,
+   * meaning it expects the data to essentially already be aggregated.
+   *
+   * It's important to note that this implemention is NOT the original M4 aggregation method, but a method
+   * that has the same basic understanding but is much faster.
+   *
+   * Nonetheless, we mostly use this to reduce a many-thousands-point-long time series to about 120 * 4 pixels.
+   * Importantly, this function runs very fast. For more information about the original M4 method,
+   * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
+   */
+  public async createTimestampRollupReduction(
+    metadata: DatabaseMetadata,
+    table: string,
+    timestampColumn: string,
+    valueColumn: string,
+    pixels: number
+  ) {
+    const [timeSeriesLength] = await this.databaseClient.execute(`
+        SELECT count(*) as c FROM "${table}"
+    `);
+    if (timeSeriesLength.c < pixels * 4) {
+      return this.databaseClient.execute(`
+          SELECT "${timestampColumn}" as ts, "${valueColumn}" as count FROM "${table}"
+      `);
+    }
+
+    const reduction = await this.databaseClient.execute(`
+      -- extract unix time
+      WITH Q as (
+        SELECT extract('epoch' from "${timestampColumn}") as t, "${valueColumn}" as v FROM "${table}"
+      ),
+      -- generate bounds
+      M as (
+        SELECT min(t) as t1, max(t) as t2, max(t) - min(t) as diff FROM Q
+      )
+      -- core logic
+      SELECT 
+        -- left boundary point
+        min(t) * 1000  as min_t, 
+        arg_min(v, t) as argmin_tv, 
+
+        -- right boundary point
+        max(t) * 1000 as max_t, 
+        arg_max(v, t) as argmax_tv,
+
+        -- smallest point within boundary
+        min(v) as min_v, 
+        arg_min(t, v) * 1000  as argmin_vt,
+
+        -- largest point within boundary
+        max(v) as max_v, 
+        arg_max(t, v) * 1000  as argmax_vt,
+
+        round(${pixels} * (t - (SELECT t1 FROM M)) / (SELECT diff FROM M)) AS bin
+  
+      FROM Q GROUP BY bin
+      ORDER BY bin
+    `);
+
+    return reduction
+      .map((di) => {
+        /**
+         * Extract the four prototype points for each pixel bin,
+         * sort the points, then flatten the entire array.
+         */
+        let points = [
+          {
+            ts: new Date(di.min_t),
+            count: di.argmin_tv,
+            bin: di.bin,
+          },
+          {
+            ts: new Date(di.argmin_vt),
+            count: di.min_v,
+            bin: di.bin,
+          },
+          {
+            ts: new Date(di.argmax_vt),
+            count: di.max_v,
+            bin: di.bin,
+          },
+          {
+            ts: new Date(di.max_t),
+            count: di.argmax_tv,
+            bin: di.bin,
+          },
+        ];
+        /** Sort the final point set. */
+        points = points.sort((a, b) => {
+          if (a.ts === b.ts) return 0;
+          return a.ts < b.ts ? -1 : 1;
+        });
+        return points;
+      })
+      .flat();
+  }
+
+  /**
+   * Estimates a reasonable rollup timegrain for the given table & timestamp column.
+   * This is currently based on a heuristic method that largely looks at
+   * the time range of the timestamp column and guesses a good rollup grain.
+   * @returns {RollupInterval} the rollup interval information, an object with a rollupInterval, minValue, maxValue
+   */
+  public async estimateIdealRollupInterval(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string
+  ): Promise<RollupInterval> {
+    function rollupTimegrainReturnFormat(
+      rollupInterval,
+      minValue,
+      maxValue
+    ): RollupInterval {
+      return {
+        rollupInterval,
+        minValue,
+        maxValue,
+      };
+    }
+
+    const [timeRange] = await this.databaseClient.execute(`SELECT 
+        max("${columnName}") - min("${columnName}") as r,
+        max("${columnName}") as max_value,
+        min("${columnName}") as min_value,
+        count(*) as count
+        from 
+      ${tableName}`);
+
+    const { r, max_value: maxValue, min_value: minValue } = timeRange;
+
+    const range = typeof r === "number" ? { days: r, micros: 0, months: 0 } : r;
+
+    if (range.days === 0 && range.micros <= MICROS.minute) {
+      return rollupTimegrainReturnFormat(
+        PreviewRollupInterval.ms,
+        minValue,
+        maxValue
+      );
+    }
+
+    if (
+      range.days === 0 &&
+      range.micros > MICROS.minute &&
+      range.micros <= MICROS.hour
+    ) {
+      return rollupTimegrainReturnFormat(
+        PreviewRollupInterval.second,
+        minValue,
+        maxValue
+      );
+    }
+
+    if (range.days === 0 && range.micros <= MICROS.day) {
+      return rollupTimegrainReturnFormat(
+        PreviewRollupInterval.minute,
+        minValue,
+        maxValue
+      );
+    }
+    if (range.days <= 7) {
+      return rollupTimegrainReturnFormat(
+        PreviewRollupInterval.hour,
+        minValue,
+        maxValue
+      );
+    }
+    if (range.days <= 365 * 20) {
+      return rollupTimegrainReturnFormat(
+        PreviewRollupInterval.day,
+        minValue,
+        maxValue
+      );
+    }
+    if (range.days <= 365 * 500) {
+      return rollupTimegrainReturnFormat(
+        PreviewRollupInterval.month,
+        minValue,
+        maxValue
+      );
+    }
+    return rollupTimegrainReturnFormat(
+      PreviewRollupInterval.year,
+      minValue,
+      maxValue
+    );
+  }
+}

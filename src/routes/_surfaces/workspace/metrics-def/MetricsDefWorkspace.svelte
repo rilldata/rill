@@ -19,6 +19,7 @@
     createMeasuresApi,
     updateMeasuresApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis.js";
+  import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
 
   export let metricsDefId;
 
@@ -32,6 +33,33 @@
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
     store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
+  }
+
+  function handleCreateMeasure() {
+    store.dispatch(createMeasuresApi({ metricsDefId }));
+  }
+  function handleUpdateDimension(evt) {
+    store.dispatch(
+      updateMeasuresApi({
+        id: measures[evt.detail.index].id,
+        changes: {
+          [evt.detail.name]: evt.detail.value,
+        },
+      })
+    );
+  }
+  function handleCreateDimension() {
+    store.dispatch(createDimensionsApi({ metricsDefId }));
+  }
+  function handleUpdateMeasure(evt) {
+    store.dispatch(
+      updateDimensionsApi({
+        id: dimensions[evt.detail.index].id,
+        changes: {
+          [evt.detail.name]: evt.detail.value,
+        },
+      })
+    );
   }
 </script>
 
@@ -47,24 +75,14 @@
     <div>
       <MetricsDefModelSelector {metricsDefId} />
       <MetricsDefTimeColumnSelector {metricsDefId} />
+      <MetricsDefinitionGenerateButton {metricsDefId} />
     </div>
     <div style:flex="1" class={tableContainerDivClass}>
       <PreviewTable
         rows={measures ?? []}
         columnNames={MeasuresColumns}
-        on:change={(evt) => {
-          store.dispatch(
-            updateMeasuresApi({
-              id: measures[evt.detail.index].id,
-              changes: {
-                [evt.detail.name]: evt.detail.value,
-              },
-            })
-          );
-        }}
-        on:add={() => {
-          store.dispatch(createMeasuresApi({ metricsDefId }));
-        }}
+        on:change={handleUpdateMeasure}
+        on:add={handleCreateMeasure}
       />
     </div>
   </div>
@@ -76,19 +94,8 @@
       <PreviewTable
         rows={dimensions ?? []}
         columnNames={DimensionColumns}
-        on:change={(evt) => {
-          store.dispatch(
-            updateDimensionsApi({
-              id: dimensions[evt.detail.index].id,
-              changes: {
-                [evt.detail.name]: evt.detail.value,
-              },
-            })
-          );
-        }}
-        on:add={() => {
-          store.dispatch(createDimensionsApi({ metricsDefId }));
-        }}
+        on:change={handleUpdateDimension}
+        on:add={handleCreateDimension}
       />
     </div>
   </div>
