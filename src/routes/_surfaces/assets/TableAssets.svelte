@@ -99,6 +99,7 @@
               renameTableID = id;
               renameTableNewName = null;
               formValidationError = null;
+            }}
             on:query={async () => {
               // check existing models to avoid a name conflict
               const existingNames = $persistentModelStore?.entities
