@@ -63,6 +63,11 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
 
     const rollupTime = rollupInterval.rollupInterval.split(" ")[1];
 
+    if (typeof rollupInterval.maxValue === "number") {
+      rollupInterval.maxValue = new Date(rollupInterval.maxValue);
+      rollupInterval.minValue = new Date(rollupInterval.minValue);
+    }
+
     /**
      * Generate the rolled up time series as a temporary table and
      * then compute the result set + any M4-like reduction on it.
@@ -106,6 +111,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
         ORDER BY template.ts
       )`);
     } catch (err) {
+      console.error(err);
       await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
     }
 

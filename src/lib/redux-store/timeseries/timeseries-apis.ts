@@ -5,6 +5,9 @@ import { EntityType } from "$common/data-modeler-state-service/entity-state-serv
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSeriesActions";
 import { updateTimeSeries } from "$lib/redux-store/timeseries/timeseries-slice";
+import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+import type { RillReduxState } from "$lib/redux-store/store-root";
+import { prune } from "../../../routes/_surfaces/workspace/leaderboard/utils";
 
 const { createAsyncThunk } = reduxToolkit;
 
@@ -24,6 +27,12 @@ export const generateTimeSeriesApi = createAsyncThunk(
     },
     thunkAPI
   ) => {
+    if (!filters) {
+      const metricsLeaderboard: MetricsLeaderboardEntity = (
+        thunkAPI.getState() as RillReduxState
+      ).metricsLeaderboard.entities[metricsDefId];
+      filters = prune(metricsLeaderboard.activeValues);
+    }
     const stream = streamingFetchWrapper<TimeSeriesResponse>(
       `metrics/${metricsDefId}/time-series`,
       "POST",

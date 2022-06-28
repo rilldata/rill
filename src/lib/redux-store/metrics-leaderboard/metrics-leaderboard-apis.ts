@@ -11,16 +11,24 @@ import {
   toggleLeaderboardActiveValue,
 } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 import * as reduxToolkit from "@reduxjs/toolkit";
+import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
 
 const { createAsyncThunk } = reduxToolkit;
 
 export const updateLeaderboardMeasure = (
   dispatch,
   id: string,
-  measureId: string
+  measureId: string,
+  expression: string
 ) => {
   dispatch(setMeasureId(id, measureId));
   dispatch(updateLeaderboardApi(id));
+  dispatch(
+    generateTimeSeriesApi({
+      metricsDefId: id,
+      measures: [{ id, expression } as any],
+    })
+  );
 };
 
 export const toggleValueAndUpdateLeaderboard = (
@@ -28,17 +36,34 @@ export const toggleValueAndUpdateLeaderboard = (
   id: string,
   dimensionName: string,
   dimensionValue: unknown,
-  include = true
+  include: boolean,
+  expression: string
 ) => {
   dispatch(
     toggleLeaderboardActiveValue(id, dimensionName, dimensionValue, include)
   );
   dispatch(updateLeaderboardApi(id));
+  dispatch(
+    generateTimeSeriesApi({
+      metricsDefId: id,
+      measures: [{ id, expression } as any],
+    })
+  );
 };
 
-export const clearLeaderboardAndUpdate = (dispatch, id: string) => {
+export const clearLeaderboardAndUpdate = (
+  dispatch,
+  id: string,
+  expression: string
+) => {
   dispatch(clearLeaderboard(id));
   dispatch(updateLeaderboardApi(id));
+  dispatch(
+    generateTimeSeriesApi({
+      metricsDefId: id,
+      measures: [{ id, expression } as any],
+    })
+  );
 };
 
 export const updateLeaderboardApi = createAsyncThunk(

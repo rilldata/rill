@@ -15,11 +15,11 @@
   import { reduxReadable, store } from "$lib/redux-store/store-root";
   import { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
-  import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
-  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
   import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
   import { clearLeaderboardAndUpdate } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
+  import { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 
   export let metricsDefId: string;
   export let whichReferenceValue = "global";
@@ -28,9 +28,10 @@
   $: metricsLeaderboard =
     singleMetricsLeaderboardSelector(metricsDefId)($reduxReadable);
 
-  let metricsDefinition: MetricsDefinitionEntity;
-  $: metricsDefinition =
-    selectMetricsDefinitionById(metricsDefId)($reduxReadable);
+  let measure: MeasureDefinitionEntity;
+  $: if (metricsLeaderboard?.measureId) {
+    measure = selectMeasureById(metricsLeaderboard?.measureId)($reduxReadable);
+  }
 
   const metricFormatters = {
     simpleSummable: formatInteger,
@@ -45,7 +46,7 @@
   $: bigNumberTween.set(bigNumber);
   $: anythingSelected = isAnythingSelected(metricsLeaderboard?.activeValues);
   function clearAllFilters() {
-    clearLeaderboardAndUpdate(store.dispatch, metricsDefId);
+    clearLeaderboardAndUpdate(store.dispatch, metricsDefId, measure.expression);
   }
 </script>
 

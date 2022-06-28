@@ -10,19 +10,19 @@
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
   }
+
+  function handleMeasureUpdate(event) {
+    updateLeaderboardMeasure(
+      store.dispatch,
+      metricsDefId,
+      event.target.value,
+      measures.find((measure) => measure.id === event.target.value)?.expression
+    );
+  }
 </script>
 
 {#if measures}
-  <select
-    class="pl-1 mb-2"
-    on:change={(event) => {
-      updateLeaderboardMeasure(
-        store.dispatch,
-        metricsDefId,
-        event.target.value
-      );
-    }}
-  >
+  <select class="pl-1 mb-2" on:change={handleMeasureUpdate}>
     <option value="">Select One</option>
     {#each measures as measure}
       <option value={measure.id}>{measure.expression}</option>

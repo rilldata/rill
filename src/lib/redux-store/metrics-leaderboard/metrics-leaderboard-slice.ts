@@ -52,7 +52,7 @@ export const metricsLeaderboardSlice = createSlice({
           selectedCount: 0,
         };
         dimensions.forEach((column) => {
-          state.entities[id].activeValues[column.dimensionColumn] = [];
+          metricsLeaderboard.activeValues[column.dimensionColumn] = [];
         });
         metricsLeaderboardAdapter.addOne(state, metricsLeaderboard);
       },
