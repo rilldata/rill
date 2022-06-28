@@ -3,6 +3,7 @@ import type { EntityRecord } from "$common/data-modeler-state-service/entity-sta
 
 export interface ColumnConfig {
   name: string;
+  label?: string;
   type: string;
 
   renderer?: unknown;
@@ -16,11 +17,13 @@ export function columnIsPinned(name, selectedColumns: Array<ColumnConfig>) {
   return selectedColumns.map((column) => column.name).includes(name);
 }
 
-export function togglePin(name, type, selectedColumns) {
+export function togglePin(columnConfig: ColumnConfig, selectedColumns) {
   // if column is already pinned, remove.
-  if (columnIsPinned(name, selectedColumns)) {
-    return [...selectedColumns.filter((column) => column.name !== name)];
+  if (columnIsPinned(columnConfig.name, selectedColumns)) {
+    return [
+      ...selectedColumns.filter((column) => column.name !== columnConfig.name),
+    ];
   } else {
-    return [...selectedColumns, { name, type }];
+    return [...selectedColumns, columnConfig];
   }
 }

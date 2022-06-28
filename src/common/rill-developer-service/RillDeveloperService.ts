@@ -16,14 +16,14 @@ import type {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { LeaderboardActions } from "$common/rill-developer-service/LeaderboardActions";
+import type { MetricsExploreActions } from "$common/rill-developer-service/MetricsExploreActions";
 
 type RillDeveloperActionsClasses = PickActionFunctions<
   RillRequestContext<EntityType, StateType>,
   MetricsDefinitionActions &
     DimensionsActions &
     MeasuresActions &
-    LeaderboardActions
+    MetricsExploreActions
 >;
 export type RillDeveloperActionsDefinition = ExtractActionTypeDefinitions<
   RillRequestContext<EntityType, StateType>,
@@ -92,6 +92,7 @@ export class RillDeveloperService {
       if (!returnResponse)
         returnResponse = ActionResponseFactory.getSuccessResponse();
     } catch (err) {
+      console.log(err);
       returnResponse = ActionResponseFactory.getErrorResponse(err);
     }
 

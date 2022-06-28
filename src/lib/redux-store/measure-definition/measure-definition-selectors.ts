@@ -1,4 +1,4 @@
-import { generateFilteredSelectors } from "$lib/redux-store/slice-utils";
+import { generateFilteredSelectors } from "$lib/redux-store/utils/selector-utils";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 export const {

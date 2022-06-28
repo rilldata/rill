@@ -5,7 +5,7 @@ import { RillDeveloperService } from "$common/rill-developer-service/RillDevelop
 import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
-import { LeaderboardActions } from "$common/rill-developer-service/LeaderboardActions";
+import { MetricsExploreActions } from "$common/rill-developer-service/MetricsExploreActions";
 
 export class StartCommand extends DataModelerCliCommand {
   public getCommand(): Command {
@@ -35,7 +35,7 @@ export class StartCommand extends DataModelerCliCommand {
           MetricsDefinitionActions,
           DimensionsActions,
           MeasuresActions,
-          LeaderboardActions,
+          MetricsExploreActions,
         ].map(
           (RillDeveloperActionsClass) =>
             new RillDeveloperActionsClass(

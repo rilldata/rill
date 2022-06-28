@@ -4,6 +4,7 @@ import { metricsLeaderboardReducer } from "./metrics-leaderboard/metrics-leaderb
 import { readable } from "svelte/store";
 import { measureDefSliceReducer } from "$lib/redux-store/measure-definition/measure-definition-slice";
 import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
+import { timeSeriesReducer } from "$lib/redux-store/timeseries/timeseries-slice";
 
 const { configureStore } = reduxToolkit;
 
@@ -13,6 +14,7 @@ export const store = configureStore({
     metricsLeaderboard: metricsLeaderboardReducer,
     measureDefinition: measureDefSliceReducer,
     dimensionDefinition: dimensionDefSliceReducer,
+    timeSeries: timeSeriesReducer,
   },
 });
 

@@ -90,7 +90,7 @@ export abstract class EntityController extends RillDeveloperController {
     return this.constructor as typeof EntityController;
   }
 
-  private static async wrapAction(
+  public static async wrapAction(
     res: Response,
     callback: (context: RillRequestContext) => Promise<ActionResponse>
   ) {
@@ -98,9 +98,16 @@ export abstract class EntityController extends RillDeveloperController {
       const response = await callback(
         new RillRequestContext(new RillActionsChannel())
       );
-      if (response.status === ActionStatus.Failure) {
+      if (!response || response.status === ActionStatus.Failure) {
         res.status(500);
-        res.send(JSON.stringify(response));
+        res.send(
+          JSON.stringify(
+            response ??
+              ActionResponseFactory.getErrorResponse(
+                new Error("Missing response")
+              )
+          )
+        );
       } else {
         res.status(200);
         res.send(

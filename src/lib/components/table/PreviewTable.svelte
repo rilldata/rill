@@ -25,7 +25,11 @@
 
   let activeIndex;
 
-  function setActiveElement(value, name, index) {
+  function handlePin({ detail: { columnConfig } }) {
+    selectedColumns = togglePin(columnConfig, selectedColumns);
+  }
+
+  function setActiveElement({ detail: { value, index, name } }) {
     visualCellValue = value;
     visualCellField = name;
     visualCellType = columnNames.find(
@@ -39,18 +43,10 @@
   <PinnableTable
     on:mouseleave={() => {
       visualCellValue = undefined;
-      setActiveElement(undefined, undefined, undefined);
+      setActiveElement({ detail: {} });
     }}
-    on:pin={(evt) => {
-      selectedColumns = togglePin(
-        evt.detail.name,
-        evt.detail.type,
-        selectedColumns
-      );
-    }}
-    on:activeElement={(evt) => {
-      setActiveElement(evt.detail.value, evt.detail.name, evt.detail.index);
-    }}
+    on:pin={handlePin}
+    on:activeElement={setActiveElement}
     on:change={(evt) => dispatch("change", evt.detail)}
     on:add={() => dispatch("add")}
     {activeIndex}
@@ -64,16 +60,8 @@
       class="sticky right-0 z-20 bg-white border border-l-4 border-t-0 border-b-0 border-r-0 border-gray-300"
     >
       <PinnableTable
-        on:pin={(evt) => {
-          selectedColumns = togglePin(
-            evt.detail.name,
-            evt.detail.type,
-            selectedColumns
-          );
-        }}
-        on:activeElement={(evt) => {
-          setActiveElement(evt.detail.value, evt.detail.name, evt.detail.index);
-        }}
+        on:pin={handlePin}
+        on:activeElement={setActiveElement}
         on:change={(evt) => dispatch("change", evt.detail)}
         {activeIndex}
         columnNames={selectedColumns}

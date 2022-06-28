@@ -7,6 +7,10 @@
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import { toggleValueAndUpdateLeaderboard } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
   import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+  import { prune } from "./utils";
+  import MetricsExploreTimeChart from "$lib/components/leaderboard/MetricsExploreTimeChart.svelte";
 
   export let metricsDefId: string;
   export let columns: number;
@@ -21,6 +25,11 @@
   let anythingSelected: boolean;
   $: anythingSelected = isAnythingSelected(metricsLeaderboard?.activeValues);
 
+  let measure: MeasureDefinitionEntity;
+  $: if (metricsLeaderboard?.measureId) {
+    measure = selectMeasureById(metricsLeaderboard?.measureId)($reduxReadable);
+  }
+
   function onSelectItem(event, item) {
     dispatch("select-item", {
       fieldName: event.detail,
@@ -31,7 +40,9 @@
       store.dispatch,
       metricsDefId,
       item.displayName,
-      event.detail
+      event.detail,
+      true,
+      measure.expression
     );
   }
 </script>
@@ -41,6 +52,7 @@
   class="border-t border-gray-200 overflow-auto"
 >
   {#if metricsLeaderboard}
+    <MetricsExploreTimeChart {metricsDefId} />
     <VirtualizedGrid
       {columns}
       height="100%"

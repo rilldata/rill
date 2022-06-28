@@ -1,14 +1,18 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
-import type { ActionCreatorWithPreparedPayload } from "@reduxjs/toolkit";
 import type {
   EntityRecord,
   EntityType,
+  StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { fetchWrapper } from "$lib/util/fetchWrapper";
+import type { ActionCreatorWithPreparedPayload } from "@reduxjs/toolkit";
 import type { EntityRecordMapType } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
-import type { StateType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { fetchWrapper } from "$lib/util/fetchWrapper";
+import type { ValidationConfig } from "$lib/redux-store/utils/validation-utils";
+import {
+  validateEntity,
+  validationSucceeded,
+} from "$lib/redux-store/utils/validation-utils";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import { retry } from "@reduxjs/toolkit/query";
 
 const { createAsyncThunk } = reduxToolkit;
 
@@ -21,20 +25,19 @@ export function generateApis<
   Type extends EntityType,
   FetchManyParams extends Record<string, any> = Record<string, unknown>,
   CreateParams extends Record<string, any> = Record<string, unknown>,
-  Entity = EntityRecordMapType[Type][StateType.Persistent]
+  Entity extends EntityRecord = EntityRecordMapType[Type][StateType.Persistent]
 >(
-  entityType: EntityType,
-  addManyAction: ActionCreatorWithPreparedPayload<
-    [entities: Array<Entity>],
-    Array<Entity>
-  >,
-  addOneAction: ActionCreatorWithPreparedPayload<[entity: Entity], Entity>,
-  updateAction: ActionCreatorWithPreparedPayload<
-    [id: string, changes: Partial<Entity>],
-    { id: string; changes: Partial<Entity> }
-  >,
-  removeAction: ActionCreatorWithPreparedPayload<[id: string], string>,
-  endpoint: string
+  [entityType, sliceName, endpoint]: [EntityType, keyof RillReduxState, string],
+  [addManyAction, addOneAction, updateAction, removeAction]: [
+    ActionCreatorWithPreparedPayload<[entities: Array<Entity>], Array<Entity>>,
+    ActionCreatorWithPreparedPayload<[entity: Entity], Entity>,
+    ActionCreatorWithPreparedPayload<
+      [id: string, changes: Partial<Entity>],
+      { id: string; changes: Partial<Entity> }
+    >,
+    ActionCreatorWithPreparedPayload<[id: string], string>
+  ],
+  validations: Array<ValidationConfig<Entity>>
 ) {
   return {
     fetchManyApi: createAsyncThunk(
@@ -45,8 +48,7 @@ export function generateApis<
             await fetchWrapper(`${endpoint}${getQueryArgs(args)}`, "GET")
           )
         );
-      },
-      {}
+      }
     ),
     createApi: createAsyncThunk(
       `${entityType}/createApi`,
@@ -59,15 +61,26 @@ export function generateApis<
     updateApi: createAsyncThunk(
       `${entityType}/updateApi`,
       async (
-        { id, changes }: { id: string; changes: Partial<Entity> },
+        {
+          id,
+          changes,
+          callback,
+        }: { id: string; changes: Partial<Entity>; callback?: () => void },
         thunkAPI
       ) => {
+        const validationChanges = await validateEntity(
+          thunkAPI.getState()[sliceName].entities[id] as Entity,
+          changes,
+          validations
+        );
+        thunkAPI.dispatch(updateAction(id, validationChanges));
         thunkAPI.dispatch(
           updateAction(
             id,
             await fetchWrapper(`${endpoint}/${id}`, "POST", changes)
           )
         );
+        if (callback) callback();
       }
     ),
     deleteApi: createAsyncThunk(
@@ -77,32 +90,5 @@ export function generateApis<
         thunkAPI.dispatch(removeAction(id));
       }
     ),
-  };
-}
-
-export function generateBasicSelectors(sliceKey: keyof RillReduxState) {
-  return {
-    manySelector: (state: RillReduxState) =>
-      state[sliceKey].ids.map((id) => state[sliceKey].entities[id]),
-    singleSelector: (id: string) => {
-      return (state: RillReduxState) => state[sliceKey].entities[id];
-    },
-  };
-}
-
-export function generateFilteredSelectors<FilterArgs extends Array<unknown>>(
-  sliceKey: keyof RillReduxState,
-  filter: (entity: unknown, ...args: FilterArgs) => boolean
-) {
-  return {
-    manySelector: (...args: FilterArgs) => {
-      return (state: RillReduxState) =>
-        state[sliceKey].ids
-          .filter((id) => filter(state[sliceKey].entities[id], ...args))
-          .map((id) => state[sliceKey].entities[id]);
-    },
-    singleSelector: (id: string) => {
-      return (state: RillReduxState) => state[sliceKey].entities[id];
-    },
   };
 }

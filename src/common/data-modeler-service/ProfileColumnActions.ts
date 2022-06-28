@@ -161,9 +161,15 @@ export class ProfileColumnActions extends DataModelerActions {
       column.name,
       await this.databaseActionQueue.enqueue(
         { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
-
-        "estimateTimestampRollup",
-        [tableName, column.name, pixels, sampleSize]
+        "generateTimeSeries",
+        [
+          {
+            tableName,
+            timestampColumn: column.name,
+            pixels,
+            sampleSize,
+          },
+        ]
       ),
     ]);
   }

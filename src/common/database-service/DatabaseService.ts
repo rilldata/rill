@@ -11,13 +11,15 @@ import {
 } from "$common/ServiceBase";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
+import type { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
 
 type DatabaseActionsClasses = PickActionFunctions<
   DatabaseMetadata,
   DatabaseDataLoaderActions &
     DatabaseTableActions &
     DatabaseColumnActions &
-    DatabaseMetricsExploreActions
+    DatabaseMetricsExploreActions &
+    DatabaseTimeSeriesActions
 >;
 export type DatabaseActionsDefinition = ExtractActionTypeDefinitions<
   DatabaseMetadata,

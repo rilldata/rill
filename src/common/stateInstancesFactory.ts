@@ -14,7 +14,6 @@ import type { DerivedModelEntity } from "$common/data-modeler-state-service/enti
 import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
 interface NewModelArguments {
@@ -100,7 +99,6 @@ export function getMeasureDefinition(
     metricsDefId,
     type: EntityType.MeasureDefinition,
     expression,
-    sparkLineId: "",
     lastUpdated: 0,
   };
 }
@@ -112,7 +110,7 @@ export function getDimensionDefinition(
     id: guidGenerator(),
     creationTime: Date.now(),
     metricsDefId,
-    type: EntityType.MeasureDefinition,
+    type: EntityType.DimensionDefinition,
     dimensionColumn: "",
     lastUpdated: 0,
   };

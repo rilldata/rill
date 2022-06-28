@@ -73,6 +73,29 @@ export class DimensionsActions extends RillDeveloperActions {
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
+  public async validateDimensionColumn(
+    rillRequestContext: MetricsDefinitionContext,
+    metricsDefId: string,
+    columnName: string
+  ) {
+    if (!metricsDefId || !rillRequestContext.record)
+      return ActionResponseFactory.getEntityError(
+        `No metrics definition found for id=${metricsDefId}`
+      );
+
+    const derivedModel = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(rillRequestContext.record.sourceModelId);
+    const columnFindIndex = derivedModel.profile.findIndex(
+      (column) => column.name === columnName
+    );
+    return ActionResponseFactory.getSuccessResponse("", {
+      dimensionIsValid:
+        columnFindIndex >= 0 ? ValidationState.OK : ValidationState.ERROR,
+    });
+  }
+
+  @RillDeveloperActions.MetricsDefinitionAction()
   public async collectDimensionsInfo(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string
@@ -91,51 +114,6 @@ export class DimensionsActions extends RillDeveloperActions {
     //     )
     //   )
     // );
-  }
-
-  @RillDeveloperActions.MetricsDefinitionAction()
-  public async updateDimensionColumn(
-    rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string,
-    dimensionId: string,
-    columnName: string
-  ) {
-    const model = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Persistent)
-      .getById(rillRequestContext.record.sourceModelId);
-    const derivedModel = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Derived)
-      .getById(rillRequestContext.record.sourceModelId);
-
-    const modifications: Partial<DimensionDefinitionEntity> = {
-      dimensionColumn: columnName,
-      dimensionIsValid:
-        derivedModel.profile.findIndex(
-          (column) => column.name === columnName
-        ) >= 0
-          ? ValidationState.OK
-          : ValidationState.ERROR,
-    };
-    // this.dataModelerStateService.dispatch("updateDimension", [
-    //   metricsDefId,
-    //   dimensionId,
-    //   modifications,
-    // ]);
-    // rillRequestContext.actionsChannel.pushMessage("updateDimension", [
-    //   metricsDefId,
-    //   dimensionId,
-    //   modifications,
-    // ]);
-
-    if (modifications.dimensionIsValid) {
-      await this.collectDimensionSummary(
-        rillRequestContext,
-        metricsDefId,
-        dimensionId,
-        columnName,
-        model.tableName
-      );
-    }
   }
 
   private async collectDimensionSummary(

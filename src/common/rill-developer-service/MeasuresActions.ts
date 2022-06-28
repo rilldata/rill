@@ -1,5 +1,4 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
-import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
 import { parseExpression } from "$common/utils/parseQuery";
 import {
@@ -9,14 +8,19 @@ import {
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { getMeasureDefinition } from "$common/stateInstancesFactory";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export class MeasuresActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
   public async addNewMeasure(
     rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string
+    metricsDefId: string,
+    expression?: string
   ) {
     const measure = getMeasureDefinition(metricsDefId);
+    if (expression) {
+      measure.expression = expression;
+    }
 
     this.dataModelerStateService.dispatch("addEntity", [
       EntityType.MeasureDefinition,
@@ -24,7 +28,19 @@ export class MeasuresActions extends RillDeveloperActions {
       measure,
     ]);
 
-    return ActionResponseFactory.getSuccessResponse("", measure);
+    const newMeasure = { ...measure };
+    if (expression) {
+      const expressionValidationResp = await this.rillDeveloperService.dispatch(
+        rillRequestContext,
+        "validateMeasureExpression",
+        [metricsDefId, expression]
+      );
+      newMeasure.expressionIsValid = (
+        expressionValidationResp?.data as any
+      ).expressionIsValid;
+    }
+
+    return ActionResponseFactory.getSuccessResponse("", newMeasure);
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -60,13 +76,16 @@ export class MeasuresActions extends RillDeveloperActions {
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
-  public async updateMeasureExpression(
+  public async validateMeasureExpression(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
-    measureId: string,
     expression: string
   ) {
-    // TODO: validations
+    if (!metricsDefId || !rillRequestContext.record)
+      return ActionResponseFactory.getEntityError(
+        `No metrics definition found for id=${metricsDefId}`
+      );
+
     const parsedExpression = parseExpression(expression);
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Derived)
@@ -80,50 +99,10 @@ export class MeasuresActions extends RillDeveloperActions {
           model.profile.findIndex((column) => column.name === columnName) >= 0
       );
 
-    // this.dataModelerStateService.dispatch("updateMeasure", [
-    //   metricsDefId,
-    //   measureId,
-    //   {
-    //     expression,
-    //     expressionIsValid: expressionIsValid
-    //       ? ValidationState.OK
-    //       : ValidationState.ERROR,
-    //   },
-    // ]);
-    // rillRequestContext.actionsChannel.pushMessage("updateMeasure", [
-    //   metricsDefId,
-    //   measureId,
-    //   {
-    //     expression,
-    //     expressionIsValid: expressionIsValid
-    //       ? ValidationState.OK
-    //       : ValidationState.ERROR,
-    //   },
-    // ]);
-  }
-
-  @RillDeveloperActions.MetricsDefinitionAction()
-  public async updateMeasureSqlName(
-    rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string,
-    measureId: string,
-    sqlName: string
-  ) {
-    // TODO: validations
-    const modifications: Partial<MeasureDefinitionEntity> = {
-      sqlName,
-      sqlNameIsValid:
-        sqlName !== "" ? ValidationState.OK : ValidationState.ERROR,
-    };
-    // this.dataModelerStateService.dispatch("updateMeasure", [
-    //   metricsDefId,
-    //   measureId,
-    //   modifications,
-    // ]);
-    // rillRequestContext.actionsChannel.pushMessage("updateMeasure", [
-    //   metricsDefId,
-    //   measureId,
-    //   modifications,
-    // ]);
+    return ActionResponseFactory.getSuccessResponse("", {
+      expressionIsValid: expressionIsValid
+        ? ValidationState.OK
+        : ValidationState.ERROR,
+    });
   }
 }
