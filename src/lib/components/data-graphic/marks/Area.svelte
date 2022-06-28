@@ -2,9 +2,8 @@
   import { getContext, onDestroy } from "svelte";
   import { extent } from "d3-array";
 
-  import { lineFactory } from "$lib/components/data-graphic/utils";
+  import { areaFactory } from "$lib/components/data-graphic/utils";
   import { guidGenerator } from "$lib/util/guid";
-  import { contexts } from "../contexts";
 
   const markID = guidGenerator();
 
@@ -13,8 +12,7 @@
   export let xAccessor = "x";
   export let yAccessor = "y";
 
-  export let color = "hsla(217,70%, 60%, 1)";
-  export let lineThickness = 1;
+  export let color = "hsla(217,70%, 80%, .4)";
   export let alpha = 1;
 
   export let xMin = undefined;
@@ -22,10 +20,10 @@
   export let yMin = undefined;
   export let yMax = undefined;
 
-  const xMinStore = getContext(contexts.min("x"));
-  const xMaxStore = getContext(contexts.max("x"));
-  const yMinStore = getContext(contexts.min("y"));
-  const yMaxStore = getContext(contexts.max("y"));
+  const xMinStore = getContext("rill:data-graphic:x-min");
+  const xMaxStore = getContext("rill:data-graphic:x-max");
+  const yMinStore = getContext("rill:data-graphic:y-min");
+  const yMaxStore = getContext("rill:data-graphic:y-max");
 
   // get extents
   $: [xMinValue, xMaxValue] = extent(data, (d) => d[xAccessor]);
@@ -48,9 +46,9 @@
     yMaxStore.removeKey(markID);
   });
 
-  let lineFcn;
-  $: if ($xScale && $yScale) {
-    lineFcn = lineFactory({
+  let areaFcn;
+  $: if ($xScale) {
+    areaFcn = areaFactory({
       xScale: $xScale,
       yScale: $yScale,
       curve,
@@ -59,12 +57,16 @@
   }
 </script>
 
-{#if lineFcn}
+{#if areaFcn}
+  <defs>
+    <linearGradient id="gradient-{markID}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="5%" stop-color={color} />
+      <stop offset="95%" stop-color={color} stop-opacity={0.3} />
+    </linearGradient>
+  </defs>
   <path
-    d={lineFcn(yAccessor)(data)}
-    stroke={color}
-    stroke-width={lineThickness}
-    fill="none"
+    d={areaFcn(yAccessor)(data)}
+    fill="url(#gradient-{markID})"
     opacity={alpha}
   />
 {/if}

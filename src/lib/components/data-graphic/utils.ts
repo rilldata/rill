@@ -66,7 +66,7 @@ export function lineFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     line()
       .x((d) => args.xScale(d[args.xAccessor]))
-      .y((d) => Math.min(args.yScale.range()[0], args.yScale(d[yAccessor])))
+      .y((d) => args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
       .defined(isDefined(yAccessor));
 }

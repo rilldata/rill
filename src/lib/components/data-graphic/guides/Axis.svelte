@@ -1,0 +1,166 @@
+<script lang="ts">
+  import { getContext } from "svelte";
+  import { timeFormat } from "d3-time-format";
+  // fetch the scale context.
+  export let side = "left";
+  export let tickLength = 4;
+  export let tickBuffer = 4;
+  export let fontSize = 12;
+
+  export let placement = "middle";
+
+  export let formatter: Function = undefined;
+
+  let container;
+  let mainScale;
+  let xOrY;
+  const isVertical = side === "left" || side == "right";
+  if (isVertical) {
+    // get Y scale
+    mainScale = getContext("rill:data-graphic:y-scale");
+    xOrY = "y";
+  } else {
+    // get X Scale
+    mainScale = getContext("rill:data-graphic:x-scale");
+    xOrY = "x";
+  }
+
+  /** make any adjustments to the scale to get what we need */
+  $: scale =
+    $plotConfig[`${xOrY}Type`] === "date"
+      ? $mainScale.copy().nice()
+      : $mainScale.copy();
+
+  const plotConfig = getContext("rill:data-graphic:plot-config");
+
+  // text-anchor
+  let textAnchor;
+  $: if (side === "left") {
+    textAnchor = "end";
+  } else if (side === "right") {
+    textAnchor = "start";
+  } else {
+    textAnchor = placement; // middle by default
+  }
+
+  function x(side, value) {
+    if (side === "left") {
+      return $plotConfig.left - tickLength - tickBuffer;
+    } else if (side === "right") {
+      return $plotConfig.width - $plotConfig.right + tickLength + tickBuffer;
+    }
+    return scale(value);
+  }
+
+  function y(side, value) {
+    if (side === "top") {
+      return $plotConfig.top - tickLength - tickBuffer;
+    } else if (side === "bottom") {
+      return $plotConfig.height - $plotConfig.bottom + fontSize + tickLength;
+    }
+    return scale(value);
+  }
+
+  function dy(side) {
+    if (side === "top") {
+      return 0;
+    } else if (side === "bottom") {
+      return 0;
+    }
+    // left and right
+    return ".35em";
+  }
+
+  function placeTick(side, value) {
+    if (side === "top") {
+      return {
+        x1: scale(value),
+        x2: scale(value),
+        y1: $plotConfig.top,
+        y2: $plotConfig.top - tickLength,
+      };
+    } else if (side === "bottom") {
+      return {
+        x1: scale(value),
+        x2: scale(value),
+        y1: $plotConfig.height - $plotConfig.bottom,
+        y2: $plotConfig.height - $plotConfig.bottom + tickLength,
+      };
+    } else if (side === "left") {
+      return {
+        x1: scale.left,
+        x2: scale.left - tickLength,
+        y1: scale(value),
+        y2: scale(value),
+      };
+    }
+    // right
+    return {
+      x1: $plotConfig.width - $plotConfig.right,
+      x2: $plotConfig.width - $plotConfig.right + tickLength,
+      y1: scale(value),
+      y2: scale(value),
+    };
+  }
+
+  function createTimeFormat(scaleDomain) {
+    const diff = Math.abs(scaleDomain[1] - scaleDomain[0]) / 1000;
+
+    const millisecondDiff = diff < 1;
+    const secondDiff = diff < 60;
+    const dayDiff = diff / (60 * 60) < 24;
+    const fourDaysDiff = diff / (60 * 60) < 24 * 4;
+    const manyDaysDiff = diff / (60 * 60 * 24) < 60;
+    const manyMonthsDiff = diff / (60 * 60 * 24) < 365;
+
+    return millisecondDiff
+      ? timeFormat("%M:%S.%L")
+      : secondDiff
+      ? timeFormat("%M:%S")
+      : dayDiff
+      ? timeFormat("%H:%M")
+      : fourDaysDiff || manyDaysDiff || manyMonthsDiff
+      ? timeFormat("%b %d")
+      : timeFormat("%Y");
+  }
+
+  let formatterFunction;
+
+  $: if ($plotConfig[`${isVertical ? "y" : "x"}Type`] === "date") {
+    formatterFunction = createTimeFormat($mainScale.domain());
+  } else {
+    formatterFunction = formatter || ((v) => v);
+  }
+  let axisLength;
+  let tickCount = 0;
+  $: if (container) {
+    axisLength =
+      container.getBoundingClientRect()[isVertical ? "height" : "width"];
+    // do we ensure different spacing in one case vs. another?
+    tickCount = ~~(axisLength / 20);
+    tickCount = Math.max(3, ~~(axisLength / 100));
+  }
+</script>
+
+<g bind:this={container}>
+  {#each scale.ticks(tickCount) as tick}
+    {@const tickPlacement = placeTick(side, tick)}
+    <text
+      x={x(side, tick)}
+      y={y(side, tick)}
+      dy={dy(side)}
+      text-anchor={textAnchor}
+    >
+      {formatterFunction(tick)}
+    </text>
+    <!-- tick mark -->
+    <line
+      class="stroke-gray-400"
+      x1={tickPlacement.x1}
+      x2={tickPlacement.x2}
+      y1={tickPlacement.y1}
+      y2={tickPlacement.y2}
+      stroke="black"
+    />
+  {/each}
+</g>
