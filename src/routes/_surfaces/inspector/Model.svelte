@@ -36,6 +36,7 @@
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import Button from "$lib/components/Button.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -160,9 +161,8 @@
             distance={16}
             suppress={contextMenuOpen}
           >
-            <button
-              bind:this={contextMenu}
-              on:click={async (event) => {
+            <Button
+              onClick={async (event) => {
                 contextMenuOpen = !contextMenuOpen;
                 menuX = event.clientX;
                 menuY = event.clientY;
@@ -173,26 +173,10 @@
                   }, contextMenu);
                 }
               }}
-              style:grid-column="left-control"
-              class="
-          hover:bg-gray-300
-          hover:border-gray-300
-          border-black
-          transition-tranform 
-          duration-100
-          items-center
-          justify-center
-          border
-          border-transparent
-          rounded
-          flex flex-row gap-x-2
-          pl-4 pr-4
-          pt-2 pb-2
-        "
             >
               export
               <Export size="16px" />
-            </button>
+            </Button>
             <TooltipContent slot="tooltip-content">
               export this model as a dataset
             </TooltipContent>
