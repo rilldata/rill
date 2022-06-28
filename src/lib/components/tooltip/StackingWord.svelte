@@ -4,6 +4,8 @@
   export let isStacked = false;
   export let key: "command" | "shift";
 
+  // NOTE: Using these two different contexts is tech debt. Ideally, we would have one "click-action-callbacks".
+  // We have to refactor `shift-click-action.ts` to account for multiple kinds of key clicks.
   let keyCallbacks;
   if (key === "command") {
     keyCallbacks = getContext("rill:app:ui:command-click-action-callbacks");
