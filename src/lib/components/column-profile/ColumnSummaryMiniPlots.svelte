@@ -126,7 +126,7 @@
       <Tooltip location="right" alignment="center" distance={8}>
         <BarAndLabel
           showBackground={nullCount !== 0}
-          color={DATA_TYPE_COLORS[type].bgClass}
+          color={DATA_TYPE_COLORS[type.split("(")[0]].bgClass}
           value={nullCount / totalRows || 0}
         >
           <span class:text-gray-300={nullCount === 0}
