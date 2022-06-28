@@ -3,7 +3,7 @@ import { store } from "../store-root";
 import {
   selectMetricsDefinitionById,
   selectAllMetricsDefinitions,
-} from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+} from "$lib/redux-store/metrics-definition/metrics-definition-selectors";
 import { createReadableFactoryWithSelector } from "../svelte-readables-wrapper";
 
 export const getMetricsDefReadableById = createReadableFactoryWithSelector(
