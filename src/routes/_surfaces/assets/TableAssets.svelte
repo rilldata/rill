@@ -44,7 +44,8 @@
   let renameTableCurrentName = null;
   let renameTableNewName = null;
   let formValidationError = null;
-  const onSubmitRenameForm = (tableID: string, newName: string) => {
+
+  const submitRenameFormHandler = (tableID: string, newName: string) => {
     if (!newName || newName.length === 0) {
       formValidationError = "source name cannot be empty";
       return;
@@ -55,6 +56,43 @@
     }
     dataModelerService.dispatch("updateTableName", [tableID, newName]);
     showRenameTableDialog = false;
+  };
+
+  const renameHandler = (tableName: string, tableID: string) => {
+    showRenameTableDialog = true;
+    renameTableCurrentName = tableName;
+    renameTableID = tableID;
+    renameTableNewName = null;
+    formValidationError = null;
+  };
+
+  const queryHandler = async (tableName: string) => {
+    // check existing models to avoid a name conflict
+    const existingNames = $persistentModelStore?.entities
+      .filter((model) => model.name.includes(`query_${tableName}`))
+      .map((model) => model.tableName)
+      .sort();
+    const nextName =
+      existingNames.length === 0
+        ? `query_${tableName}`
+        : `query_${tableName}_${existingNames.length + 1}`;
+
+    const response = await dataModelerService.dispatch("addModel", [
+      {
+        name: nextName,
+        query: `select * from ${tableName}`,
+      },
+    ]);
+
+    // change the active asset to the new model
+    await dataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      response.id,
+    ]);
+
+    notificationStore.send({
+      message: `queried ${tableName} in workspace`,
+    });
   };
 </script>
 
@@ -93,44 +131,10 @@
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:rename={() => {
-              showRenameTableDialog = true;
-              renameTableCurrentName = tableName;
-              renameTableID = id;
-              renameTableNewName = null;
-              formValidationError = null;
-            }}
-            on:query={async () => {
-              // check existing models to avoid a name conflict
-              const existingNames = $persistentModelStore?.entities
-                .filter((model) => model.name.includes(`query_${tableName}`))
-                .map((model) => model.tableName)
-                .sort();
-              const nextName =
-                existingNames.length === 0
-                  ? `query_${tableName}`
-                  : `query_${tableName}_${existingNames.length + 1}`;
-
-              const response = await dataModelerService.dispatch("addModel", [
-                {
-                  name: nextName,
-                  query: `select * from ${tableName}`,
-                },
-              ]);
-
-              // change the active asset to the new model
-              await dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Model,
-                response.id,
-              ]);
-
-              notificationStore.send({
-                message: `queried ${tableName} in workspace`,
-              });
-            }}
-            on:delete={() => {
-              dataModelerService.dispatch("dropTable", [tableName]);
-            }}
+            on:rename={() => renameHandler(tableName, id)}
+            on:query={() => queryHandler(tableName)}
+            on:delete={() =>
+              dataModelerService.dispatch("dropTable", [tableName])}
           />
         </div>
       {/each}
@@ -146,7 +150,7 @@
     <ModalContent>
       <form
         on:submit|preventDefault={() =>
-          onSubmitRenameForm(renameTableID, renameTableNewName)}
+          submitRenameFormHandler(renameTableID, renameTableNewName)}
       >
         <Input
           id="source-name"
@@ -162,7 +166,8 @@
       >
       <ModalAction
         primary
-        onClick={() => onSubmitRenameForm(renameTableID, renameTableNewName)}
+        onClick={() =>
+          submitRenameFormHandler(renameTableID, renameTableNewName)}
         >submit</ModalAction
       >
     </ModalActions>
