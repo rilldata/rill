@@ -2,37 +2,39 @@
   import { tick } from "svelte/internal";
   import { tweened } from "svelte/motion";
   import { cubicInOut as easing } from "svelte/easing";
-
   import { format } from "d3-format";
-
-  import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-
+  import ExpanderButton from "$lib/components/column-profile/ExpanderButton.svelte";
+  import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
-
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { guidGenerator } from "$lib/util/guid";
-
   import notificationStore from "$lib/components/notifications/";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { createEventDispatcher } from "svelte";
+  import { createCommandClickAction } from "$lib/util/command-click-action";
+  import { createShiftClickAction } from "$lib/util/shift-click-action";
 
   export let entityType: EntityType;
   export let name: string;
   export let cardinality: number;
   export let sizeInBytes: number = undefined;
-  export let emphasizeTitle = false;
+  export let emphasizeTitle = false; // TODO: probably rename this to "selected", which is what it was in NavEntry
   export let menuX: number = undefined;
   export let menuY: number = undefined;
   export let show = false;
   export let contextMenuOpen = false;
   export let contextMenu: any;
+
+  const dispatch = createEventDispatcher();
+  const { commandClickAction } = createCommandClickAction();
+  const { shiftClickAction } = createShiftClickAction();
 
   const formatInteger = format(",");
 
@@ -55,45 +57,100 @@
   }
 
   // state for title bar hover.
-  let titleElementHovered = false;
+  let titleElementHovered = false; // TODO: rename this to "hovered", which is what it was in NavEntry
   $: showEntityDetails =
     titleElementHovered || emphasizeTitle || contextMenuOpen;
+
+  const commandClickHandler = () => {
+    if (entityType == EntityType.Table) {
+      dispatch("query");
+    }
+  };
+
+  const shiftClickHandler = async () => {
+    await navigator.clipboard.writeText(name);
+    notificationStore.send({ message: `copied "${name}" to clipboard` });
+  };
+
+  const clickHandler = () => {
+    dispatch("select");
+    if (
+      entityType == EntityType.Table ||
+      (entityType == EntityType.Model && emphasizeTitle)
+    ) {
+      show = !show;
+    }
+  };
+
+  const clickContextButtonHandler = async (event) => {
+    contextMenuOpen = !contextMenuOpen;
+    menuX = event.clientX;
+    menuY = event.clientY;
+
+    if (!clickOutsideListener) {
+      await tick();
+      clickOutsideListener = onClickOutside(() => {
+        contextMenuOpen = false;
+      }, contextMenu);
+    }
+  };
 </script>
 
 <Tooltip location="right">
-  <NavEntry
-    {entityType}
-    expanded={show}
-    selected={emphasizeTitle}
-    bind:hovered={titleElementHovered}
-    on:query
-    on:shift-click={async () => {
-      await navigator.clipboard.writeText(name);
-      notificationStore.send({ message: `copied "${name}" to clipboard` });
+  <div
+    on:mouseenter={() => {
+      titleElementHovered = true;
     }}
-    on:select
-    on:expand={() => {
-      show = !show;
+    on:mouseleave={() => {
+      titleElementHovered = false;
     }}
+    style:height="24px"
+    style:grid-template-columns="[left-control] max-content [body] auto
+    [contextual-information] max-content"
+    class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {emphasizeTitle
+      ? 'bg-gray-100'
+      : 'bg-transparent'}
+    "
   >
-    <!-- note: the classes in this span are also used for UI tests. -->
-    <span
-      class="collapsible-table-summary-title w-full"
-      class:is-active={emphasizeTitle}
-      class:font-bold={emphasizeTitle}
-      class:italic={selectingColumns}
+    <ExpanderButton rotated={show} on:click={() => dispatch("expand")}>
+      <CaretDownIcon size="14px" />
+    </ExpanderButton>
+    <button
+      use:commandClickAction
+      on:command-click={commandClickHandler}
+      use:shiftClickAction
+      on:shift-click={shiftClickHandler}
+      on:click={clickHandler}
+      on:focus={() => (titleElementHovered = true)}
+      on:blur={() => (titleElementHovered = false)}
+      style:grid-column="body"
+      style:grid-template-columns="[icon] max-content [text] 1fr"
+      class="w-full justify-start text-left grid items-center p-0"
     >
-      {#if name.split(".").length > 1}
-        {name.split(".").slice(0, -1).join(".")}
-        <span class="text-gray-500 italic pl-1">
-          .{name.split(".").slice(-1).join(".")}
+      <div
+        style:grid-column="text"
+        class="w-full justify-self-auto text-ellipsis overflow-hidden whitespace-nowrap"
+      >
+        <!-- note: the classes in this span are also used for UI tests. -->
+        <span
+          class="collapsible-table-summary-title w-full"
+          class:is-active={emphasizeTitle}
+          class:font-bold={emphasizeTitle}
+          class:italic={selectingColumns}
+        >
+          {#if name.split(".").length > 1}
+            {name.split(".").slice(0, -1).join(".")}
+            <span class="text-gray-500 italic pl-1">
+              .{name.split(".").slice(-1).join(".")}
+            </span>
+          {:else}
+            {name}
+          {/if}
+          {#if selectingColumns}&nbsp;<span class="font-bold"> *</span>{/if}
         </span>
-      {:else}
-        {name}
-      {/if}
-      {#if selectingColumns}&nbsp;<span class="font-bold"> *</span>{/if}
-    </span>
-    <svelte:fragment slot="contextual-information">
+      </div>
+    </button>
+    <div style:grid-column="contextual-information" class="justify-self-end">
       <div class="italic text-gray-600">
         {#if selectingColumns}
           <span>
@@ -121,18 +178,7 @@
                   id={contextButtonId}
                   tooltipText=""
                   suppressTooltip={true}
-                  on:click={async (event) => {
-                    contextMenuOpen = !contextMenuOpen;
-                    menuX = event.clientX;
-                    menuY = event.clientY;
-
-                    if (!clickOutsideListener) {
-                      await tick();
-                      clickOutsideListener = onClickOutside(() => {
-                        contextMenuOpen = false;
-                      }, contextMenu);
-                    }
-                  }}
+                  on:click={clickContextButtonHandler}
                 >
                   <MoreIcon />
                 </ContextButton>
@@ -141,8 +187,8 @@
           </span>
         {/if}
       </div>
-    </svelte:fragment>
-  </NavEntry>
+    </div>
+  </div>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>
       <svelte:fragment slot="name">
