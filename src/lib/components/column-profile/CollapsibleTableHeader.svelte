@@ -25,7 +25,7 @@
   export let name: string;
   export let cardinality: number;
   export let sizeInBytes: number = undefined;
-  export let emphasizeTitle = false; // TODO: probably rename this to "selected", which is what it was in NavEntry
+  export let active = false;
   export let menuX: number = undefined;
   export let menuY: number = undefined;
   export let show = false;
@@ -56,10 +56,8 @@
     clickOutsideListener = undefined;
   }
 
-  // state for title bar hover.
-  let titleElementHovered = false; // TODO: rename this to "hovered", which is what it was in NavEntry
-  $: showEntityDetails =
-    titleElementHovered || emphasizeTitle || contextMenuOpen;
+  let hovered = false;
+  $: showEntityDetails = hovered || active || contextMenuOpen;
 
   const commandClickHandler = () => {
     if (entityType == EntityType.Table) {
@@ -72,11 +70,11 @@
     notificationStore.send({ message: `copied "${name}" to clipboard` });
   };
 
-  const clickHandler = () => {
+  const clickEntityNameHandler = () => {
     dispatch("select");
     if (
       entityType == EntityType.Table ||
-      (entityType == EntityType.Model && emphasizeTitle)
+      (entityType == EntityType.Model && active)
     ) {
       show = !show;
     }
@@ -99,15 +97,15 @@
 <Tooltip location="right">
   <div
     on:mouseenter={() => {
-      titleElementHovered = true;
+      hovered = true;
     }}
     on:mouseleave={() => {
-      titleElementHovered = false;
+      hovered = false;
     }}
     style:height="24px"
     style:grid-template-columns="[left-control] max-content [body] auto
     [contextual-information] max-content"
-    class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {emphasizeTitle
+    class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {active
       ? 'bg-gray-100'
       : 'bg-transparent'}
     "
@@ -120,9 +118,9 @@
       on:command-click={commandClickHandler}
       use:shiftClickAction
       on:shift-click={shiftClickHandler}
-      on:click={clickHandler}
-      on:focus={() => (titleElementHovered = true)}
-      on:blur={() => (titleElementHovered = false)}
+      on:click={clickEntityNameHandler}
+      on:focus={() => (hovered = true)}
+      on:blur={() => (hovered = false)}
       style:grid-column="body"
       style:grid-template-columns="[icon] max-content [text] 1fr"
       class="w-full justify-start text-left grid items-center p-0"
@@ -134,8 +132,8 @@
         <!-- note: the classes in this span are also used for UI tests. -->
         <span
           class="collapsible-table-summary-title w-full"
-          class:is-active={emphasizeTitle}
-          class:font-bold={emphasizeTitle}
+          class:is-active={active}
+          class:font-bold={active}
           class:italic={selectingColumns}
         >
           {#if name.split(".").length > 1}

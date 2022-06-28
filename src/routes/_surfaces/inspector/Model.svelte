@@ -312,7 +312,7 @@
                 cardinality={currentDerivedModel?.cardinality ?? 0}
                 profile={currentDerivedModel?.profile ?? []}
                 head={currentDerivedModel?.preview ?? []}
-                emphasizeTitle={currentModel?.id === $store?.activeEntity?.id}
+                active={currentModel?.id === $store?.activeEntity?.id}
               />
             </div>
           {/if}
