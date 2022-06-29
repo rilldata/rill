@@ -1,34 +1,35 @@
 <script lang="ts">
   import ParquetIcon from "$lib/components/icons/Parquet.svelte";
   import Code from "$lib/components/icons/Code.svelte";
-  import Database from "$lib/components/icons/Database.svelte";
-  import SurfaceView from "$lib/components/icons/SurfaceView.svelte";
+  // import Database from "$lib/components/icons/Database.svelte";
+  // import SurfaceView from "$lib/components/icons/SurfaceView.svelte";
 
   const steps = [
     {
       heading: "import your data source",
       description:
-        "Add sources by dragging and dropping your csv or parquet file to this window.",
-      icon: SurfaceView,
-    },
-    {
-      heading: "transform your source into one big table",
-      description:
-        "Leverage column profiling on sources to create one big table that has already been joined, normalized, and optimized for insights that scale.",
-      icon: Database,
-    },
-    {
-      heading: "define your metrics and dimensions",
-      description:
-        "Create scalable metrics definitions to represent the analytical logic used for aggregation and decomposition of transformed data.",
-      icon: Code,
-    },
-    {
-      heading: "explore your metrics dashboard",
-      description:
-        "Interactively explore line charts and leaderboards representing transformed sources, their metrics definitions, and dimensions.",
+        "Add to your sources by dragging a csv or parquet file to this window.",
       icon: ParquetIcon,
     },
+    {
+      heading: "model your sources into one big table",
+      description:
+        "Build intuition about your sources and model them into an analytics-ready resource.",
+      icon: Code,
+    },
+    // ACTIVATE WHEN WE RELEASE METRICS EXPLORE
+    // {
+    //   heading: "define your metrics and dimensions",
+    //   description:
+    //     "Define interesting aggregate metrics and break out dimensions for your modeled data.",
+    //   icon: SurfaceView,
+    // },
+    // {
+    //   heading: "explore your metrics dashboard",
+    //   description:
+    //     "Interactively explore line charts and leaderboards to uncover insights.",
+    //   icon: Database,
+    // },
   ];
 </script>
 

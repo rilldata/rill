@@ -14,7 +14,7 @@
   ) as PersistentModelStore;
 
   $: useModelWorkspace = $rillAppStore?.activeEntity?.type === EntityType.Model;
-  $: currentModel =
+  $: isModelActive =
     $rillAppStore?.activeEntity && $persistentModelStore?.entities
       ? $persistentModelStore.entities.find(
           (q) => q.id === $rillAppStore.activeEntity.id
@@ -22,9 +22,15 @@
       : undefined;
 </script>
 
-{#if useModelWorkspace && currentModel}
+{#if useModelWorkspace}
+  {#if !isModelActive}
+    <Onboarding />
+  {:else}
+    <ModelWorkspaceHeader />
+    <ModelView />
+  {/if}
+{:else}
+  <!-- FIXME: this placeholder is here to show where you would plug in another kind of workspace component -->
   <ModelWorkspaceHeader />
   <ModelView />
-{:else}
-  <Onboarding />
 {/if}
