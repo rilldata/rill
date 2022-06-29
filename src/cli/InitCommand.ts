@@ -1,10 +1,6 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
 import { existsSync, mkdirSync, copyFileSync } from "fs";
-import {
-  EntityType,
-  StateType,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export class InitCommand extends DataModelerCliCommand {
   private alreadyInitialised: boolean;
