@@ -18,11 +18,13 @@
   import notificationStore from "$lib/components/notifications/";
 
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import ModalAction from "$lib/components/modal/ModalAction.svelte";
-  import ModalActions from "$lib/components/modal/ModalActions.svelte";
-  import ModalContent from "$lib/components/modal/ModalContent.svelte";
-  import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
+  import {
+    Modal,
+    ModalAction,
+    ModalActions,
+    ModalContent,
+    ModalTitle,
+  } from "$lib/components/modal";
   import Input from "$lib/components/Input.svelte";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
