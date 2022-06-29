@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let position = "top";
+  export let position: "top" | "left" | "top-left" = "top";
 </script>
 
 <th
