@@ -20,10 +20,14 @@ export const createReadableFactoryWithSelector = <
 ) => {
   return (...selectorArgs: U) =>
     readable(selector(store.getState(), ...selectorArgs), (set) => {
+      let prevState: T;
       // redux `store.subscribe()` returns an un
-      const unsubscribe = store.subscribe(() => {
-        set(selector(store.getState(), ...selectorArgs));
+      return store.subscribe(() => {
+        const curState = selector(store.getState(), ...selectorArgs);
+        if (prevState !== curState) {
+          prevState = curState;
+          set(prevState);
+        }
       });
-      return unsubscribe;
     });
 };
