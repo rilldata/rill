@@ -9,7 +9,6 @@
   import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
-  import { prune } from "./utils";
   import MetricsExploreTimeChart from "$lib/components/leaderboard/MetricsExploreTimeChart.svelte";
 
   export let metricsDefId: string;

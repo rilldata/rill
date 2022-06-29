@@ -3,7 +3,7 @@
   import { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
   import { selectTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-selectors";
   import TimestampSpark from "$lib/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
-  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview.js";
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
 
   export let metricsDefId: string;
 

@@ -1,4 +1,4 @@
-import * as reduxToolkit from "@reduxjs/toolkit";
+import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type {
   EntityRecord,
   EntityType,
@@ -8,13 +8,8 @@ import type { ActionCreatorWithPreparedPayload } from "@reduxjs/toolkit";
 import type { EntityRecordMapType } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import { fetchWrapper } from "$lib/util/fetchWrapper";
 import type { ValidationConfig } from "$lib/redux-store/utils/validation-utils";
-import {
-  validateEntity,
-  validationSucceeded,
-} from "$lib/redux-store/utils/validation-utils";
+import { validateEntity } from "$lib/redux-store/utils/validation-utils";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-
-const { createAsyncThunk } = reduxToolkit;
 
 function getQueryArgs(args: Record<string, any>) {
   if (!args) return "";

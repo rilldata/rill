@@ -1,8 +1,9 @@
-import * as reduxToolkit from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createEntityAdapter,
+} from "$lib/redux-store/redux-toolkit-wrapper";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-
-const { createSlice, createEntityAdapter } = reduxToolkit;
 
 export interface LeaderboardValues {
   values: Array<unknown>;

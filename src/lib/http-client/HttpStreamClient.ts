@@ -1,4 +1,3 @@
-import type { Message } from "$common/utils/RillActionsChannel";
 import { ReduxActions } from "$lib/redux-store/ActionTypes";
 
 export class HttpStreamClient {
@@ -39,7 +38,7 @@ export class HttpStreamClient {
   private dispatchMessage(message: string) {
     if (!message) return;
     try {
-      const messageJson: Message<any> = JSON.parse(message);
+      const messageJson: any = JSON.parse(message);
       this.dispatch(
         ReduxActions[messageJson.action].apply(null, messageJson.args)
       );

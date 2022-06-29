@@ -1,8 +1,9 @@
-import * as reduxToolkit from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createEntityAdapter,
+} from "$lib/redux-store/redux-toolkit-wrapper";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { PayloadAction } from "@reduxjs/toolkit";
-
-const { createSlice, createEntityAdapter } = reduxToolkit;
 
 const dimensionDefAdapter = createEntityAdapter<DimensionDefinitionEntity>({
   sortComparer: (a, b) => a.creationTime - b.creationTime,

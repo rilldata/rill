@@ -1,8 +1,9 @@
-import * as reduxToolkit from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createEntityAdapter,
+} from "$lib/redux-store/redux-toolkit-wrapper";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { PayloadAction } from "@reduxjs/toolkit";
-
-const { createSlice, createEntityAdapter } = reduxToolkit;
 
 const measureDefAdapter = createEntityAdapter<MeasureDefinitionEntity>({
   sortComparer: (a, b) => a.creationTime - b.creationTime,
