@@ -14,6 +14,12 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
+  import Modal from "$lib/components/modal/Modal.svelte";
+  import ModalAction from "$lib/components/modal/ModalAction.svelte";
+  import ModalActions from "$lib/components/modal/ModalActions.svelte";
+  import ModalContent from "$lib/components/modal/ModalContent.svelte";
+  import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
+
   import {
     ApplicationStore,
     dataModelerService,
@@ -64,6 +70,9 @@
   // get source tables?
   let sourceTableReferences;
   let showColumns = true;
+
+  let showExportErrorModal = false;
+  let exportErrorMessage = "";
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
@@ -361,8 +370,12 @@
                   appConfig.server.serverUrl
                 }/api/export?fileName=${encodeURIComponent(exportFilename)}`
               );
+            } else if (exportResp.status === ActionStatus.Failure) {
+              exportErrorMessage = `Failed to export.\n${exportResp.messages
+                .map((message) => message.message)
+                .join("\n")}`;
+              showExportErrorModal = true;
             }
-            // Add modal with message in case of Failure
           }}
         >
           Export as Parquet
@@ -382,8 +395,12 @@
                   appConfig.server.serverUrl
                 }/api/export?fileName=${encodeURIComponent(exportFilename)}`
               );
+            } else if (exportResp.status === ActionStatus.Failure) {
+              exportErrorMessage = `Failed to export.\n${exportResp.messages
+                .map((message) => message.message)
+                .join("\n")}`;
+              showExportErrorModal = true;
             }
-            // Add modal with message in case of Failure
           }}
         >
           Export as CSV
@@ -391,6 +408,18 @@
       </Menu>
     </FloatingElement>
   </div>
+  <Modal
+    open={showExportErrorModal}
+    onBackdropClick={() => (showExportErrorModal = false)}
+  >
+    <ModalTitle>error</ModalTitle>
+    <ModalContent>{exportErrorMessage}</ModalContent>
+    <ModalActions>
+      <ModalAction onClick={() => (showExportErrorModal = false)}>
+        close
+      </ModalAction>
+    </ModalActions>
+  </Modal>
 {/if}
 
 <style lang="postcss">
