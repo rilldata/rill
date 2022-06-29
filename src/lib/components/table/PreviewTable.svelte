@@ -9,12 +9,14 @@
   import { FormattedDataType } from "$lib/components/data-types/";
   import PinnableTable from "./PinnableTable.svelte";
   import { createEventDispatcher } from "svelte";
-  import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import { togglePin } from "$lib/components/table/pinnableUtils";
+  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import type { TableConfig } from "$lib/components/table/TableConfig";
 
   const dispatch = createEventDispatcher();
 
   export let columnNames: ColumnConfig[];
+  export let tableConfig: TableConfig;
   export let rows: any[];
 
   let visualCellField = undefined;
@@ -49,6 +51,7 @@
     on:activeElement={setActiveElement}
     on:change={(evt) => dispatch("change", evt.detail)}
     on:add={() => dispatch("add")}
+    {tableConfig}
     {activeIndex}
     {columnNames}
     {selectedColumns}
@@ -63,6 +66,7 @@
         on:pin={handlePin}
         on:activeElement={setActiveElement}
         on:change={(evt) => dispatch("change", evt.detail)}
+        {tableConfig}
         {activeIndex}
         columnNames={selectedColumns}
         {selectedColumns}
@@ -72,7 +76,7 @@
   {/if}
 </div>
 
-{#if visualCellValue !== undefined}
+{#if tableConfig.enablePreview && visualCellValue !== undefined}
   <div
     transition:slide={{ duration: 100 }}
     class="sticky bottom-0 left-0 bg-white p-3 border border-t-1 border-gray-200 pointer-events-none z-30 grid grid-flow-col justify-start gap-x-3 items-baseline"

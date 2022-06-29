@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import TimestampSpark from "$lib/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
@@ -11,6 +10,7 @@
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { Debounce } from "$common/utils/Debounce";
   import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
+  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
 
   export let value;
   export let index;

@@ -5,9 +5,7 @@ import {
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
-const measureDefAdapter = createEntityAdapter<MeasureDefinitionEntity>({
-  sortComparer: (a, b) => a.creationTime - b.creationTime,
-});
+const measureDefAdapter = createEntityAdapter<MeasureDefinitionEntity>();
 
 export const measureDefSlice = createSlice({
   name: "measureDefinition",

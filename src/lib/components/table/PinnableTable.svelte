@@ -4,14 +4,16 @@
   import TableCell from "$lib/components/table/TableCell.svelte";
   import { createEventDispatcher } from "svelte";
   import PreviewTableHeader from "$lib/components/table/PreviewTableHeader.svelte";
-  import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import { columnIsPinned } from "$lib/components/table/pinnableUtils";
   import AddIcon from "$lib/components/icons/AddIcon.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import { TableConfig } from "$lib/components/table/TableConfig";
 
   const dispatch = createEventDispatcher();
 
+  export let tableConfig: TableConfig;
   export let columnNames: ColumnConfig[];
   export let selectedColumns: ColumnConfig[];
   export let rows: any[];
@@ -61,17 +63,19 @@
       {/each}
     </TableRow>
   {/each}
-  <TableRow>
-    <td
-      class="p-2
+  {#if tableConfig.enableAdd}
+    <TableRow>
+      <td
+        class="p-2
         pl-4
         pr-4
         border
         border-gray-200"
-    >
-      <ContextButton on:click={() => dispatch("add")}>
-        <AddIcon />
-      </ContextButton>
-    </td>
-  </TableRow>
+      >
+        <ContextButton on:click={() => dispatch("add")}>
+          <AddIcon />
+        </ContextButton>
+      </td>
+    </TableRow>
+  {/if}
 </Table>

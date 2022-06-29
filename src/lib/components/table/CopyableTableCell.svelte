@@ -3,9 +3,9 @@
   import { INTERVALS, TIMESTAMPS } from "$lib/duckdb-data-types";
   import { formatDataType } from "$lib/util/formatters";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
-  import { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import { fade } from "svelte/transition";
   import { createNotificationStore as notificationStore } from "$lib/components/notifications/index";
+  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
 
   const { shiftClickAction } = createShiftClickAction();
 

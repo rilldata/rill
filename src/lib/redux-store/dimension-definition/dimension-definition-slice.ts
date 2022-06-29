@@ -5,9 +5,7 @@ import {
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
-const dimensionDefAdapter = createEntityAdapter<DimensionDefinitionEntity>({
-  sortComparer: (a, b) => a.creationTime - b.creationTime,
-});
+const dimensionDefAdapter = createEntityAdapter<DimensionDefinitionEntity>();
 
 export const dimensionDefSlice = createSlice({
   name: "dimensionDefinition",

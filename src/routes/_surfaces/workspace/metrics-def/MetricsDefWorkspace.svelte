@@ -80,6 +80,7 @@
     </div>
     <div style:flex="1" class={tableContainerDivClass}>
       <PreviewTable
+        tableConfig={{ enableAdd: true }}
         rows={measures ?? []}
         columnNames={MeasuresColumns}
         on:change={handleUpdateMeasure}
@@ -93,6 +94,7 @@
   <div style:height="{$layout.modelPreviewHeight}px" class="p-6 ">
     <div class={tableContainerDivClass + " h-full"}>
       <PreviewTable
+        tableConfig={{ enableAdd: true }}
         rows={dimensions ?? []}
         columnNames={DimensionColumns}
         on:change={handleUpdateDimension}
