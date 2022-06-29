@@ -20,8 +20,6 @@
     DerivedTableStore,
   } from "$lib/application-state-stores/table-stores";
 
-  import { config } from "$lib/application-state-stores/application-store";
-
   import {
     layout,
     assetVisibilityTween,
