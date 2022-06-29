@@ -4,16 +4,16 @@
   import AddIcon from "$lib/components/icons/Add.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-  import { store, reduxReadable } from "$lib/redux-store/store-root";
+  import { store } from "$lib/redux-store/store-root";
   import CollapsibleMetricsDefinitionSummary from "$lib/components/metrics-definition/CollapsibleMetricsDefinitionSummary.svelte";
   import { onMount } from "svelte";
   import {
     createMetricsDefsApi,
     fetchManyMetricsDefsApi,
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
-  import { selectAllMetricsDefinitions } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import { getAllMetricsDefinitionsReadable } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
 
-  $: metricsDefinitions = selectAllMetricsDefinitions($reduxReadable);
+  const metricsDefinitions = getAllMetricsDefinitionsReadable();
 
   let showMetricsDefs = true;
   const dispatch_addEmptyMetricsDef = () => {
@@ -49,13 +49,13 @@
     <AddIcon />
   </ContextButton>
 </div>
-{#if showMetricsDefs && metricsDefinitions}
+{#if showMetricsDefs && $metricsDefinitions}
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: 200 }}
     id="assets-model-list"
   >
-    {#each metricsDefinitions as { id } (id)}
+    {#each $metricsDefinitions as { id } (id)}
       <CollapsibleMetricsDefinitionSummary metricsDefId={id} indentLevel={1} />
     {/each}
   </div>

@@ -13,22 +13,22 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import notificationStore from "$lib/components/notifications/";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
+  import { store } from "$lib/redux-store/store-root";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
   import { toggleMetricsDefSummaryInNav } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
-  import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definitioin-selectors";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { deleteMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
 
   export let metricsDefId: string;
 
-  $: thisMetricsDef = selectMetricsDefinitionById(metricsDefId)($reduxReadable);
+  $: thisMetricsDef = getMetricsDefReadableById(metricsDefId);
 
-  $: name = thisMetricsDef?.metricDefLabel;
-  $: summaryExpanded = thisMetricsDef?.summaryExpandedInNav;
+  $: name = $thisMetricsDef?.metricDefLabel;
+  $: summaryExpanded = $thisMetricsDef?.summaryExpandedInNav;
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   $: emphasizeTitle = $rillAppStore?.activeEntity?.id === metricsDefId;
   let contextMenu;

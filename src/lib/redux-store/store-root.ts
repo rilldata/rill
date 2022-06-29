@@ -18,6 +18,7 @@ export const store = configureStore({
 
 const state = store.getState();
 export type RillReduxState = typeof state;
+export type RillReduxStore = typeof store;
 
 export const reduxReadable = readable(store.getState(), (set) => {
   return store.subscribe(() => {
