@@ -72,7 +72,7 @@
     await navigator.clipboard.writeText(name);
     notificationStore.send({ message: `copied "${name}" to clipboard` });
   }}
-  on:select-body={async (event) => {
+  on:select={async (event) => {
     dataModelerService.dispatch("setActiveAsset", [
       EntityType.MetricsDefinition,
       metricsDefId,
