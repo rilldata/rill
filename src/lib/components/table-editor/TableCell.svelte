@@ -15,8 +15,8 @@
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import ErrorIcon from "$lib/components/icons/CrossIcon.svelte";
   import WarningIcon from "$lib/components/icons/WarningIcon.svelte";
-  import CopyableTableCell from "$lib/components/table/CopyableTableCell.svelte";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import CopyableTableCell from "$lib/components/table-editor/CopyableTableCell.svelte";
+  import type { ColumnConfig } from "$lib/components/table-editor/ColumnConfig";
 
   export let value;
   export let column: ColumnConfig;

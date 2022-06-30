@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import type { ColumnConfig } from "$lib/components/table-editor/ColumnConfig";
 
   export let value;
   export let index;
@@ -16,7 +16,6 @@
   id="model-title-input"
   on:input={() => (editing = true)}
   class="rounded pl-2 pr-2 cursor-pointer w-full"
-  class:font-bold={editing === false}
   on:blur={() => {
     editing = false;
   }}

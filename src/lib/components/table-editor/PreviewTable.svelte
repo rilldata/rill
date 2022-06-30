@@ -7,9 +7,9 @@
    */
   import PinnableTable from "./PinnableTable.svelte";
   import { createEventDispatcher } from "svelte";
-  import { togglePin } from "$lib/components/table/pinnableUtils";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
-  import type { TableConfig } from "$lib/components/table/TableConfig";
+  import { togglePin } from "$lib/components/table-editor/pinnableUtils";
+  import type { ColumnConfig } from "$lib/components/table-editor/ColumnConfig";
+  import type { TableConfig } from "$lib/components/table-editor/TableConfig";
 
   const dispatch = createEventDispatcher();
 
