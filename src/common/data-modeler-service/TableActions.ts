@@ -228,8 +228,11 @@ export class TableActions extends DataModelerActions {
     tableId: string,
     name: string
   ): Promise<ActionResponse> {
-    const newName = sanitizeTableName(extractTableName(name));
-    const existingTable = stateService.getByField("tableName", newName);
+    const sanitizedNewName = sanitizeTableName(extractTableName(name));
+    const existingTable = stateService.getByField(
+      "tableName",
+      sanitizedNewName
+    );
 
     if (existingTable) {
       return ActionResponseFactory.getExisingEntityError(
@@ -242,9 +245,15 @@ export class TableActions extends DataModelerActions {
 
     this.dataModelerStateService.dispatch("updateTableName", [
       tableId,
-      newName,
+      sanitizedNewName,
     ]);
-    this.databaseService.dispatch("renameTable", [currentName, newName]);
+    this.databaseService.dispatch("renameTable", [
+      currentName,
+      sanitizedNewName,
+    ]);
+    return ActionResponseFactory.getSuccessResponse(
+      JSON.stringify({ sanitizedNewName: sanitizedNewName })
+    );
   }
 
   @DataModelerActions.PersistentTableAction()

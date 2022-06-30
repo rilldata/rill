@@ -37,8 +37,11 @@
       .dispatch("updateTableName", [tableID, newTableName])
       .then((response) => {
         if (response.status === 0) {
+          const sanitizedNewName = JSON.parse(
+            response.messages[0].message
+          ).sanitizedNewName;
           notifications.send({
-            message: `table ${currentTableName} renamed to ${newTableName}`,
+            message: `table ${currentTableName} renamed to ${sanitizedNewName}`,
           });
           resetVariablesAndCloseDialog();
         } else if (response.status === 1) {
