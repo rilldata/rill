@@ -8,6 +8,7 @@
   } from "$lib/components/modal";
   import Input from "$lib/components/Input.svelte";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import notifications from "$lib/components/notifications/";
 
   export let openDialog = false;
   export let closeDialog: () => void;
@@ -17,9 +18,10 @@
   let newTableName = null;
   let error = null;
 
-  const clearVariables = () => {
+  const resetVariablesAndCloseDialog = () => {
     newTableName = null;
     error = null;
+    closeDialog();
   };
 
   const submitHandler = (tableID: string, newTableName: string) => {
@@ -31,14 +33,22 @@
       error = "new name must be different from current name";
       return;
     }
-    dataModelerService.dispatch("updateTableName", [tableID, newTableName]);
-
-    clearVariables();
-    closeDialog();
+    dataModelerService
+      .dispatch("updateTableName", [tableID, newTableName])
+      .then((response) => {
+        if (response.status === 0) {
+          notifications.send({
+            message: `table ${currentTableName} renamed to ${newTableName}`,
+          });
+          resetVariablesAndCloseDialog();
+        } else if (response.status === 1) {
+          error = response.messages[0].message;
+        }
+      });
   };
 </script>
 
-<Modal open={openDialog} onBackdropClick={() => (openDialog = false)}>
+<Modal open={openDialog} onBackdropClick={() => resetVariablesAndCloseDialog()}>
   <ModalTitle>
     rename <span class="text-gray-500 italic">{currentTableName}</span>
   </ModalTitle>
@@ -53,12 +63,7 @@
     </form>
   </ModalContent>
   <ModalActions>
-    <ModalAction
-      onClick={() => {
-        clearVariables();
-        closeDialog();
-      }}
-    >
+    <ModalAction onClick={() => resetVariablesAndCloseDialog()}>
       cancel
     </ModalAction>
     <ModalAction primary onClick={() => submitHandler(tableID, newTableName)}>

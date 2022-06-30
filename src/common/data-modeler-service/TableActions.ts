@@ -232,12 +232,8 @@ export class TableActions extends DataModelerActions {
     const existingTable = stateService.getByField("tableName", newName);
 
     if (existingTable) {
-      this.notificationService.notify({
-        message: `Another table with the name ${existingTable.tableName} already exists`,
-        type: "error",
-      });
       return ActionResponseFactory.getExisingEntityError(
-        `Another table with the sanitised table name ${existingTable.tableName} already exists`
+        `another source named "${existingTable.tableName}" already exists`
       );
     }
 
@@ -249,10 +245,6 @@ export class TableActions extends DataModelerActions {
       newName,
     ]);
     this.databaseService.dispatch("renameTable", [currentName, newName]);
-    this.notificationService.notify({
-      message: `renamed table from "${currentName}" to "${newName}"`,
-      type: "info",
-    });
   }
 
   @DataModelerActions.PersistentTableAction()
