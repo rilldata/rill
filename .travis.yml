@@ -18,7 +18,6 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-      if: tag IS present #TODO: disabling for test purpose
 
       before_install: &python-setup
         - echo "Installing python 3.7.0 needed during npm install"
@@ -51,7 +50,6 @@ jobs:
 
     - stage: Test
       name: "Verify docker build"
-      if: tag IS present # TODO: disabling for test purpose
 
       install: docker --version
       script:
