@@ -5,14 +5,11 @@
   import { data01 } from "./_hist-data";
   let x = 50;
   let y = 500;
-  let entered = false;
   let location = "left";
   let alignment = "middle";
   let hoverElement;
 
   let activated = true;
-  // for dragging debouncing
-  let debouncedID;
 
   function changeActivation(event) {
     if (event.key === "Escape") {
@@ -21,7 +18,6 @@
   }
 
   function handleDrag(event) {
-    // if (entered) {
     if (activated) {
       x = Math.max(
         20,
@@ -134,18 +130,6 @@
       style:top="{y}px"
       style:width="200px"
       bind:this={hoverElement}
-      on:mousedown={() => {
-        entered = true;
-      }}
-      on:mouseup={() => {
-        entered = false;
-      }}
-      on:mouseleave={() => {
-        if (debouncedID) clearTimeout(debouncedID);
-        debouncedID = setTimeout(() => {
-          entered = false;
-        }, 1000);
-      }}
     >
       drag this one around 🚐
     </div>

@@ -1,4 +1,5 @@
 import type { RillReduxState } from "$lib/redux-store/store-root";
+import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export function generateBasicSelectors(sliceKey: keyof RillReduxState) {
   return {
@@ -15,12 +16,14 @@ export function generateBasicSelectors(sliceKey: keyof RillReduxState) {
 // this made writing the svelte readable wrapper a bit  easier.
 // I added this version alongside yours for now because I wasn't sure whether you needed the curried
 // function style version for specific some application.
-export function generateEntitySelectors<T>(sliceKey: keyof RillReduxState) {
+export function generateEntitySelectors<Entity>(
+  sliceKey: keyof RillReduxState
+) {
   return {
     manySelector: (state: RillReduxState) =>
-      state[sliceKey].ids.map((id) => <T>state[sliceKey].entities[id]),
+      state[sliceKey].ids.map((id) => <Entity>state[sliceKey].entities[id]),
     singleSelector: (state: RillReduxState, id: string) =>
-      <T>state[sliceKey].entities[id],
+      <Entity>state[sliceKey].entities[id],
   };
 }
 
@@ -38,5 +41,22 @@ export function generateFilteredSelectors<FilterArgs extends Array<unknown>>(
     singleSelector: (id: string) => {
       return (state: RillReduxState) => state[sliceKey].entities[id];
     },
+  };
+}
+
+export function generateFilteredEntitySelectors<
+  FilterArgs extends Array<unknown>,
+  Entity
+>(
+  sliceKey: keyof RillReduxState,
+  filter: (entity: unknown, ...args: FilterArgs) => boolean
+) {
+  return {
+    manySelector: (state: RillReduxState, ...args: FilterArgs) =>
+      state[sliceKey].ids
+        .filter((id) => filter(state[sliceKey].entities[id], ...args))
+        .map((id) => <Entity>state[sliceKey].entities[id]),
+    singleSelector: (state: RillReduxState, id: string) =>
+      <Entity>state[sliceKey].entities[id],
   };
 }

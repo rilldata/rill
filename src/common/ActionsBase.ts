@@ -23,7 +23,7 @@ export abstract class ActionsBase {
       target: ActionsBase,
       propertyKey: string,
       // make sure the decorator and the state action arg match using this
-      descriptor: TypedPropertyDescriptor<
+      _descriptor: TypedPropertyDescriptor<
         (
           stateArg: EntityStateActionArgMapType[EntityTypeArg][StateTypeArg],
           ...args: any[]
@@ -86,7 +86,7 @@ export abstract class ActionsBase {
       target: ActionsBase,
       propertyKey: string,
       // make sure the decorator and the state action arg match using this
-      descriptor: TypedPropertyDescriptor<
+      _descriptor: TypedPropertyDescriptor<
         (
           stateArg: EntityStateActionArg<any>,
           entityType: EntityType,
@@ -119,7 +119,7 @@ export abstract class ActionsBase {
       target: ActionsBase,
       propertyKey: string,
       // make sure the decorator and the state action arg match using this
-      descriptor: TypedPropertyDescriptor<
+      _descriptor: TypedPropertyDescriptor<
         (
           stateArg: EntityStateActionArg<any>,
           entityType: EntityType,

@@ -3,9 +3,7 @@
 </script>
 
 <th
-  class="
-    p-0
-"
+  class="p-0"
   class:sticky={!!sticky}
   class:top-0={sticky === "top"}
   class:left-0={sticky === "left"}
@@ -13,9 +11,8 @@
 >
   <div
     class="
-            p-3
-            pl-4
-            pr-4
+            py-3
+            px-4
             border
             border-gray-200
             border-t-0

@@ -4,8 +4,11 @@ import { ActionStatus } from "$common/data-modeler-service/response/ActionRespon
 
 export class DropTableCommand extends DataModelerCliCommand {
   public getCommand(): Command {
-    return this.applyCommonSettings(new Command("drop-table"), "Drop a table.")
-      .argument("<tableName>", "Name of the table to drop.")
+    return this.applyCommonSettings(
+      new Command("drop-source"),
+      "Drop a source."
+    )
+      .argument("<sourceName>", "Name of the source to drop.")
       .action((tableName, opts, command: Command) => {
         const { project } = command.optsWithGlobals();
         return this.run({ projectPath: project }, tableName);

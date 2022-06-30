@@ -1,6 +1,6 @@
-import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
 import EditableTableCell from "$lib/components/table/EditableTableCell.svelte";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
 
 export const DimensionColumns: Array<ColumnConfig> = [
   "sqlName",

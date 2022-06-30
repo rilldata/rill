@@ -91,6 +91,7 @@ export interface CategoricalSummary {
 export interface NumericSummary {
   histogram?: NumericHistogramBin[];
   statistics?: NumericStatistics;
+  outliers?: NumericOutliers[];
 }
 
 export interface TopKEntry {
@@ -113,6 +114,13 @@ export interface NumericStatistics {
   q50: number;
   q75: number;
   sd: number;
+}
+
+export interface NumericOutliers {
+  bucket: number;
+  low: number;
+  high: number;
+  present: boolean;
 }
 
 export interface TimeRangeSummary {

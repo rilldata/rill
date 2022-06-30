@@ -12,25 +12,25 @@
   } from "$lib/util/formatters";
   import { cubicIn } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
+  import { store } from "$lib/redux-store/store-root";
   import { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
-  import { singleMetricsLeaderboardSelector } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-selectors";
   import { clearLeaderboardAndUpdate } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
   import { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+  import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import type { Readable } from "svelte/store";
+  import { getMetricsLeaderboardById } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-readables";
 
   export let metricsDefId: string;
   export let whichReferenceValue = "global";
 
-  let metricsLeaderboard: MetricsLeaderboardEntity;
-  $: metricsLeaderboard =
-    singleMetricsLeaderboardSelector(metricsDefId)($reduxReadable);
+  let metricsLeaderboard: Readable<MetricsLeaderboardEntity>;
+  $: metricsLeaderboard = getMetricsLeaderboardById(metricsDefId);
 
-  let measure: MeasureDefinitionEntity;
-  $: if (metricsLeaderboard?.measureId) {
-    measure = selectMeasureById(metricsLeaderboard?.measureId)($reduxReadable);
+  let measure: Readable<MeasureDefinitionEntity>;
+  $: if ($metricsLeaderboard?.measureId) {
+    measure = getMeasureById($metricsLeaderboard?.measureId);
   }
 
   const metricFormatters = {
@@ -42,11 +42,15 @@
     delay: 200,
     easing: cubicIn,
   });
-  $: bigNumber = metricsLeaderboard?.bigNumber || 0;
+  $: bigNumber = $metricsLeaderboard?.bigNumber || 0;
   $: bigNumberTween.set(bigNumber);
-  $: anythingSelected = isAnythingSelected(metricsLeaderboard?.activeValues);
+  $: anythingSelected = isAnythingSelected($metricsLeaderboard?.activeValues);
   function clearAllFilters() {
-    clearLeaderboardAndUpdate(store.dispatch, metricsDefId, measure.expression);
+    clearLeaderboardAndUpdate(
+      store.dispatch,
+      metricsDefId,
+      $measure.expression
+    );
   }
 </script>
 
@@ -66,8 +70,8 @@
             justify="stretch"
             showBackground={anythingSelected}
             color={!anythingSelected ? "bg-transparent" : "bg-blue-200"}
-            value={metricsLeaderboard?.bigNumber /
-              metricsLeaderboard?.referenceValue || 0}
+            value={$metricsLeaderboard?.bigNumber /
+              $metricsLeaderboard?.referenceValue || 0}
           >
             <div
               style:grid-template-columns="auto auto"
@@ -77,9 +81,9 @@
                 {metricFormatters.simpleSummable(~~$bigNumberTween)}
               </div>
               <div class="font-normal text-gray-600 italic text-right">
-                {#if $bigNumberTween && metricsLeaderboard?.referenceValue}
+                {#if $bigNumberTween && $metricsLeaderboard?.referenceValue}
                   {formatBigNumberPercentage(
-                    $bigNumberTween / metricsLeaderboard?.referenceValue
+                    $bigNumberTween / $metricsLeaderboard?.referenceValue
                   )}
                 {/if}
               </div>

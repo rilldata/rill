@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { ColumnConfig } from "$lib/components/table/pinnableUtils";
+  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
 
   export let value;
   export let index;
@@ -15,7 +15,7 @@
 <input
   id="model-title-input"
   on:input={() => (editing = true)}
-  class="bg-gray-100 border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
+  class="rounded pl-2 pr-2 cursor-pointer w-full"
   class:font-bold={editing === false}
   on:blur={() => {
     editing = false;

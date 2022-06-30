@@ -1,9 +1,4 @@
 <script lang="ts">
-  /** This component is newer than the CollapsibleTitle, which should primarily be used
-   * for expandable asset elements. By contrast, this element is used as a header element
-   * for asset sections.
-   */
-
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
@@ -51,7 +46,7 @@
       </div>
     </button>
     <TooltipContent slot="tooltip-content">
-      <SlidingWords {active} hovered={tooltipActive}>
+      <SlidingWords {active}>
         {tooltipText}
       </SlidingWords>
       <!-- <div class="relative">

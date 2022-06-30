@@ -12,11 +12,11 @@
   import StackingWord from "../tooltip/StackingWord.svelte";
   import Shortcut from "../tooltip/Shortcut.svelte";
   import TooltipTitle from "../tooltip/TooltipTitle.svelte";
-  import type { ColumnConfig } from "$lib/components/table/pinnableUtils";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import ErrorIcon from "$lib/components/icons/CrossIcon.svelte";
   import WarningIcon from "$lib/components/icons/WarningIcon.svelte";
   import CopyableTableCell from "$lib/components/table/CopyableTableCell.svelte";
+  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
 
   export let value;
   export let column: ColumnConfig;
@@ -48,17 +48,13 @@
     on:blur={() => {
       activeCell = false;
     }}
-    title={value}
     class="
-        p-2
-        pl-4
-        pr-4
+        py-2
+        px-4
         border
         border-gray-200
         {activeCell && 'bg-gray-200'}
     "
-    style:width="var(--table-column-width-{column.name}, 210px)"
-    style:max-width="var(--table-column-width-{column.name}, 210px)"
   >
     <svelte:component
       this={renderer}

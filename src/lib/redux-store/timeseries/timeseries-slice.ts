@@ -1,6 +1,7 @@
-import * as reduxToolkit from "@reduxjs/toolkit";
-
-const { createSlice, createEntityAdapter } = reduxToolkit;
+import {
+  createSlice,
+  createEntityAdapter,
+} from "$lib/redux-store/redux-toolkit-wrapper";
 
 export interface TimeSeriesValue {
   ts: string;

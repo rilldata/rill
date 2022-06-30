@@ -10,10 +10,8 @@ import {
   setMeasureId,
   toggleLeaderboardActiveValue,
 } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
-import * as reduxToolkit from "@reduxjs/toolkit";
+import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
-
-const { createAsyncThunk } = reduxToolkit;
 
 export const updateLeaderboardMeasure = (
   dispatch,

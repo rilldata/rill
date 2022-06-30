@@ -2,7 +2,6 @@ import {
   extractCTEs,
   extractCoreSelectStatements,
   extractFromStatements,
-  extractCoreWhereClauses,
   extractJoins,
 } from "./model-structure";
 

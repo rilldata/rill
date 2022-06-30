@@ -6,7 +6,7 @@ import {
   updateMetricsDef,
 } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
-import * as reduxToolkit from "@reduxjs/toolkit";
+import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
@@ -19,8 +19,6 @@ import {
   clearDimensionsForMetricsDefId,
 } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
 import { asyncWait } from "$common/utils/waitUtils";
-
-const { createAsyncThunk } = reduxToolkit;
 
 export const {
   fetchManyApi: fetchManyMetricsDefsApi,

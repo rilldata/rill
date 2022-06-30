@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { reduxReadable } from "$lib/redux-store/store-root";
   import { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
-  import { selectTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-selectors";
   import TimestampSpark from "$lib/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
-  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview.js";
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
+  import type { Readable } from "svelte/store";
+  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
 
   export let metricsDefId: string;
 
-  let timeSeries: TimeSeriesEntity;
+  let timeSeries: Readable<TimeSeriesEntity>;
   $: if (metricsDefId) {
-    timeSeries = selectTimeSeriesById(metricsDefId)($reduxReadable);
+    timeSeries = getTimeSeriesById(metricsDefId);
   }
 </script>
 
-{#if timeSeries?.values}
+{#if $timeSeries?.values}
   <TimestampSpark
-    data={convertTimestampPreview(timeSeries.values)}
+    data={convertTimestampPreview($timeSeries.values)}
     xAccessor="ts"
     yAccessor="count"
     width={800}

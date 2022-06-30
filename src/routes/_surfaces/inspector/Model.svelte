@@ -36,6 +36,8 @@
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import Button from "$lib/components/Button.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -53,26 +55,14 @@
   const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
 
-  function tableDestinationCompute(key, table, destination) {
-    let inputs = table.reduce((acc, v) => acc + v[key], 0);
-    return destination[key] / inputs;
-  }
-
-  function computeRollup(table, destination) {
-    return tableDestinationCompute("cardinality", table, destination);
-  }
-
   let rollup;
   let tables;
   // get source tables?
   let sourceTableReferences;
   let showColumns = true;
-  let showExportOptions = true;
-  let sourceTableNames = [];
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
-  let inputRowCardinality = tweened(0, { duration: 200, easing });
   let outputRowCardinality = tweened(0, { duration: 250, easing });
 
   /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
@@ -149,7 +139,7 @@
   }
 
   onMount(() => {
-    const observer = new ResizeObserver((entries) => {
+    const observer = new ResizeObserver(() => {
       containerWidth = container.clientWidth;
     });
     observer.observe(container);
@@ -172,9 +162,8 @@
             distance={16}
             suppress={contextMenuOpen}
           >
-            <button
-              bind:this={contextMenu}
-              on:click={async (event) => {
+            <Button
+              onClick={async (event) => {
                 contextMenuOpen = !contextMenuOpen;
                 menuX = event.clientX;
                 menuY = event.clientY;
@@ -185,26 +174,10 @@
                   }, contextMenu);
                 }
               }}
-              style:grid-column="left-control"
-              class="
-          hover:bg-gray-300
-          hover:border-gray-300
-          border-black
-          transition-tranform 
-          duration-100
-          items-center
-          justify-center
-          border
-          border-transparent
-          rounded
-          flex flex-row gap-x-2
-          pl-4 pr-4
-          pt-2 pb-2
-        "
             >
               export
               <Export size="16px" />
-            </button>
+            </Button>
             <TooltipContent slot="tooltip-content">
               export this model as a dataset
             </TooltipContent>
@@ -248,8 +221,7 @@
               <TooltipContent slot="tooltip-content">
                 <div class="pt-1 pb-1 font-bold">the rollup percentage</div>
                 <div style:width="240px" class="pb-1">
-                  the ratio of destination table rows to source table rows, as a
-                  percentage
+                  the ratio of resultset rows to source rows, as a percentage
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -265,10 +237,10 @@
         <div class="pt-4 pb-4">
           <div class=" pl-4 pr-4">
             <CollapsibleSectionTitle
-              tooltipText="source tables"
+              tooltipText="sources"
               bind:active={showSourceTables}
             >
-              Source Tables
+              Sources
             </CollapsibleSectionTitle>
           </div>
           {#if showSourceTables}
@@ -332,6 +304,7 @@
           {#if currentDerivedModel?.profile && showColumns}
             <div transition:slide|local={{ duration: 200 }}>
               <CollapsibleTableSummary
+                entityType={EntityType.Model}
                 showTitle={false}
                 showContextButton={false}
                 show={showColumns}
