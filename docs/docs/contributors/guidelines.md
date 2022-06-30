@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+title: Community policy
 ---
 
 # Why we believe in a strong community policy

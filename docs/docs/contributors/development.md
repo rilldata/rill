@@ -1,5 +1,6 @@
 ---
-sidebar_position: 1
+title: Developer guide
+Description: How to get started contributing to Rill Developer.
 ---
 
 # Installing
@@ -11,7 +12,7 @@ Run the following script from checkout directory to install the command globally
 npm run install-and-build
 ```
 
-# Developer Guide
+# Developer guide
 
 ## Getting started
 Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).

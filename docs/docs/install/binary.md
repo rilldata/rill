@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # using a binary
 The fastest path to installing the application is using our binary. Find the link that is relevant for your OS and architecture in our most recent [release assets](https://github.com/rilldata/rill-developer/releases).
 

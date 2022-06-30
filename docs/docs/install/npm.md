@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+description: You can use `npm` to globally install Rill Developer on your local computer. This will give you access to the CLI to start the server.
 ---
 
 # using npm

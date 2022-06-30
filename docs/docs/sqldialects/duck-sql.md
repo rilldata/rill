@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+description: Data transformations in Rill Developer are powered by duckDB and their dialect of SQL.
 ---
 
 # duckSQL
