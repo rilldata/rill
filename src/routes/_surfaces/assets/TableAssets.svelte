@@ -16,16 +16,8 @@
   } from "$lib/application-state-stores/table-stores";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import notificationStore from "$lib/components/notifications/";
-
+  import RenameTable from "$lib/components/table/RenameTable.svelte";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
-  import {
-    Modal,
-    ModalAction,
-    ModalActions,
-    ModalContent,
-    ModalTitle,
-  } from "$lib/components/modal";
-  import Input from "$lib/components/Input.svelte";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   const persistentTableStore = getContext(
@@ -43,29 +35,12 @@
   let showTables = true;
   let showRenameTableDialog = false;
   let renameTableID = null;
-  let renameTableCurrentName = null;
-  let renameTableNewName = null;
-  let formValidationError = null;
+  let renameTableName = null;
 
-  const submitRenameFormHandler = (tableID: string, newName: string) => {
-    if (!newName || newName.length === 0) {
-      formValidationError = "source name cannot be empty";
-      return;
-    }
-    if (newName === renameTableCurrentName) {
-      formValidationError = "new name must be different from current name";
-      return;
-    }
-    dataModelerService.dispatch("updateTableName", [tableID, newName]);
-    showRenameTableDialog = false;
-  };
-
-  const renameHandler = (tableName: string, tableID: string) => {
+  const openRenameTableDialog = (tableID: string, tableName: string) => {
     showRenameTableDialog = true;
-    renameTableCurrentName = tableName;
     renameTableID = tableID;
-    renameTableNewName = null;
-    formValidationError = null;
+    renameTableName = tableName;
   };
 
   const queryHandler = async (tableName: string) => {
@@ -133,7 +108,7 @@
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:rename={() => renameHandler(tableName, id)}
+            on:rename={() => openRenameTableDialog(id, tableName)}
             on:query={() => queryHandler(tableName)}
             on:delete={() =>
               dataModelerService.dispatch("dropTable", [tableName])}
@@ -142,36 +117,10 @@
       {/each}
     {/if}
   </div>
-  <Modal
-    open={showRenameTableDialog}
-    onBackdropClick={() => (showRenameTableDialog = false)}
-  >
-    <ModalTitle>
-      rename <span class="text-gray-500 italic">{renameTableCurrentName}</span>
-    </ModalTitle>
-    <ModalContent>
-      <form
-        on:submit|preventDefault={() =>
-          submitRenameFormHandler(renameTableID, renameTableNewName)}
-      >
-        <Input
-          id="source-name"
-          label="source name"
-          bind:value={renameTableNewName}
-          error={formValidationError}
-        />
-      </form>
-    </ModalContent>
-    <ModalActions>
-      <ModalAction onClick={() => (showRenameTableDialog = false)}
-        >cancel</ModalAction
-      >
-      <ModalAction
-        primary
-        onClick={() =>
-          submitRenameFormHandler(renameTableID, renameTableNewName)}
-        >submit</ModalAction
-      >
-    </ModalActions>
-  </Modal>
+  <RenameTable
+    openDialog={showRenameTableDialog}
+    closeDialog={() => (showRenameTableDialog = false)}
+    tableID={renameTableID}
+    currentTableName={renameTableName}
+  />
 {/if}
