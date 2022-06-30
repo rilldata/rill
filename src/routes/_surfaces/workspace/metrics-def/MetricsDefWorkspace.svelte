@@ -1,6 +1,4 @@
 <script lang="ts">
-  import SectionDragHandle from "./SectionDragHandle.svelte";
-  import { layout } from "$lib/application-state-stores/layout-store";
   import PreviewTable from "$lib/components/table/PreviewTable.svelte";
   import { store } from "$lib/redux-store/store-root";
   import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
@@ -24,8 +22,6 @@
   export let metricsDefId;
 
   let innerHeight;
-  const tableContainerDivClass =
-    "rounded border border-gray-200 border-2  overflow-auto ";
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
@@ -62,44 +58,67 @@
       })
     );
   }
+
+  const tableContainerDivClass =
+    "rounded border border-gray-200 border-2 overflow-auto flex-1";
+  const h4Class =
+    "text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase pt-6 pb-2 flex-none";
 </script>
 
 <svelte:window bind:innerHeight />
 
-<div class="editor-pane bg-gray-100">
-  <div
-    style:height="calc({innerHeight}px - {$layout.modelPreviewHeight}px -
-    var(--header-height))"
-    style="display: flex; flex-flow: column;"
-    class="p-6 pt-0"
-  >
-    <div>
-      <MetricsDefModelSelector {metricsDefId} />
-      <MetricsDefTimeColumnSelector {metricsDefId} />
-      <MetricsDefinitionGenerateButton {metricsDefId} />
-    </div>
-    <div style:flex="1" class={tableContainerDivClass}>
-      <PreviewTable
-        tableConfig={{ enableAdd: true }}
-        rows={$measures ?? []}
-        columnNames={MeasuresColumns}
-        on:change={handleUpdateMeasure}
-        on:add={handleCreateMeasure}
-      />
-    </div>
+<div
+  class="editor-pane bg-gray-100 p-6 pt-0 flex-col-container"
+  style:height="calc(100vh - var(--header-height))"
+>
+  <div class="flex-none">
+    <MetricsDefModelSelector {metricsDefId} />
+    <MetricsDefTimeColumnSelector {metricsDefId} />
+    <MetricsDefinitionGenerateButton {metricsDefId} />
   </div>
 
-  <SectionDragHandle />
+  <div
+    style="display: flex; flex-direction:column; overflow-y:hidden;"
+    class="flex-1"
+  >
+    <div class="metrics-def-section">
+      <h4 class={h4Class}>Measures</h4>
+      <div class={tableContainerDivClass}>
+        <PreviewTable
+          tableConfig={{ enableAdd: true }}
+          rows={$measures ?? []}
+          columnNames={MeasuresColumns}
+          on:change={handleUpdateMeasure}
+          on:add={handleCreateMeasure}
+        />
+      </div>
+    </div>
 
-  <div style:height="{$layout.modelPreviewHeight}px" class="p-6 ">
-    <div class={tableContainerDivClass + " h-full"}>
-      <PreviewTable
-        tableConfig={{ enableAdd: true }}
-        rows={$dimensions ?? []}
-        columnNames={DimensionColumns}
-        on:change={handleUpdateDimension}
-        on:add={handleCreateDimension}
-      />
+    <div class="metrics-def-section">
+      <h4 class={h4Class}>Dimensions</h4>
+      <div class={tableContainerDivClass}>
+        <PreviewTable
+          tableConfig={{ enableAdd: true }}
+          rows={$dimensions ?? []}
+          columnNames={DimensionColumns}
+          on:change={handleUpdateDimension}
+          on:add={handleCreateDimension}
+        />
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+  .flex-col-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metrics-def-section {
+    max-height: 50%;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+</style>
