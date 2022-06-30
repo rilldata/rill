@@ -2,7 +2,7 @@
   import SectionDragHandle from "./SectionDragHandle.svelte";
   import { layout } from "$lib/application-state-stores/layout-store";
   import PreviewTable from "$lib/components/table/PreviewTable.svelte";
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
+  import { store } from "$lib/redux-store/store-root";
   import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
   import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
@@ -12,14 +12,14 @@
     createDimensionsApi,
     updateDimensionsApi,
   } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
-  import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
   import {
     createMeasuresApi,
     updateMeasuresApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
+  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
 
   export let metricsDefId;
 
@@ -27,8 +27,8 @@
   const tableContainerDivClass =
     "rounded border border-gray-200 border-2  overflow-auto ";
 
-  $: measures = selectMeasuresByMetricsId(metricsDefId)($reduxReadable);
-  $: dimensions = selectDimensionsByMetricsId(metricsDefId)($reduxReadable);
+  $: measures = getMeasuresByMetricsId(metricsDefId);
+  $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
@@ -41,7 +41,7 @@
   function handleUpdateMeasure(evt) {
     store.dispatch(
       updateMeasuresApi({
-        id: measures[evt.detail.index].id,
+        id: $measures[evt.detail.index].id,
         changes: {
           [evt.detail.name]: evt.detail.value,
         },
@@ -55,7 +55,7 @@
   function handleUpdateDimension(evt) {
     store.dispatch(
       updateDimensionsApi({
-        id: dimensions[evt.detail.index].id,
+        id: $dimensions[evt.detail.index].id,
         changes: {
           [evt.detail.name]: evt.detail.value,
         },
@@ -81,7 +81,7 @@
     <div style:flex="1" class={tableContainerDivClass}>
       <PreviewTable
         tableConfig={{ enableAdd: true }}
-        rows={measures ?? []}
+        rows={$measures ?? []}
         columnNames={MeasuresColumns}
         on:change={handleUpdateMeasure}
         on:add={handleCreateMeasure}
@@ -95,7 +95,7 @@
     <div class={tableContainerDivClass + " h-full"}>
       <PreviewTable
         tableConfig={{ enableAdd: true }}
-        rows={dimensions ?? []}
+        rows={$dimensions ?? []}
         columnNames={DimensionColumns}
         on:change={handleUpdateDimension}
         on:add={handleCreateDimension}

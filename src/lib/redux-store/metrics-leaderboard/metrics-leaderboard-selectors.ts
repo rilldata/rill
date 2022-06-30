@@ -1,6 +1,7 @@
-import { generateBasicSelectors } from "$lib/redux-store/utils/selector-utils";
+import { generateEntitySelectors } from "$lib/redux-store/utils/selector-utils";
+import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 
 export const {
-  manySelector: manyMetricsLeaderboardSelector,
-  singleSelector: singleMetricsLeaderboardSelector,
-} = generateBasicSelectors("metricsLeaderboard");
+  manySelector: selectMetricsLeaderboards,
+  singleSelector: selectMetricsLeaderboardById,
+} = generateEntitySelectors<MetricsLeaderboardEntity>("metricsLeaderboard");

@@ -3,29 +3,30 @@
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
-  import { selectTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-selectors";
-  import { reduxReadable, store } from "$lib/redux-store/store-root";
+  import { store } from "$lib/redux-store/store-root";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { Debounce } from "$common/utils/Debounce";
   import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
   import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import type { Readable } from "svelte/store";
+  import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
 
   export let value;
   export let index;
   export let column: ColumnConfig;
   export let isNull = false;
 
-  let measure: MeasureDefinitionEntity;
-  $: if (value) measure = selectMeasureById(value)($reduxReadable);
+  let measure: Readable<MeasureDefinitionEntity>;
+  $: measure = getMeasureById(value);
   let metricsDefId: string;
   let expression: string;
   let expressionIsValid: ValidationState;
-  $: if (measure) {
-    metricsDefId = measure.metricsDefId;
-    expression = measure.expression;
-    expressionIsValid = measure.expressionIsValid;
+  $: if ($measure) {
+    metricsDefId = $measure.metricsDefId;
+    expression = $measure.expression;
+    expressionIsValid = $measure.expressionIsValid;
   }
 
   const debounce = new Debounce();
@@ -36,7 +37,7 @@
         store.dispatch(
           generateTimeSeriesApi({
             metricsDefId,
-            measures: [measure],
+            measures: [$measure],
             filters: {},
             pixels: COLUMN_PROFILE_CONFIG.summaryVizWidth.medium,
           })
@@ -49,15 +50,15 @@
     generateSparkLine();
   }
 
-  let timeSeries: TimeSeriesEntity;
+  let timeSeries: Readable<TimeSeriesEntity>;
   $: if (value) {
-    timeSeries = selectTimeSeriesById(value)($reduxReadable);
+    timeSeries = getTimeSeriesById(value);
   }
 </script>
 
-{#if timeSeries?.spark}
+{#if $timeSeries?.spark}
   <TimestampSpark
-    data={convertTimestampPreview(timeSeries.spark)}
+    data={convertTimestampPreview($timeSeries.spark)}
     xAccessor="ts"
     yAccessor="count"
     width={COLUMN_PROFILE_CONFIG.summaryVizWidth.medium}
