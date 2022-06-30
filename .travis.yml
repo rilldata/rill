@@ -5,6 +5,7 @@ node_js:
 cache:
   directories:
     - "$HOME/.npm"
+    - "$HOME/.cache"
     - "$TRAVIS_BUILD_DIR/data"
     - "node_modules"
 
