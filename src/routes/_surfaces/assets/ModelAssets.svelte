@@ -17,6 +17,7 @@
   } from "$lib/application-state-stores/model-stores";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -101,9 +102,20 @@
         on:delete={() => {
           dataModelerService.dispatch("deleteModel", [id]);
         }}
-        indentLevel={1}
-        {...tableSummaryProps}
-      />
+        cardinality={tableSummaryProps.cardinality}
+        name={tableSummaryProps.name}
+        sizeInBytes={tableSummaryProps.sizeInBytes}
+        emphasizeTitle={tableSummaryProps.emphasizeTitle}
+      >
+        <svelte:fragment slot="summary" let:containerWidth>
+          <ColumnProfileNavEntry
+            indentLevel={1}
+            {containerWidth}
+            profile={tableSummaryProps.profile}
+            head={tableSummaryProps.head}
+          />
+        </svelte:fragment>
+      </CollapsibleTableSummary>
     {/each}
   </div>
 {/if}

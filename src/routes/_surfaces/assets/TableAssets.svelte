@@ -19,6 +19,7 @@
 
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -33,6 +34,35 @@
   ) as PersistentModelStore;
 
   let showTables = true;
+
+  async function handleQueryEvent(tableName: string) {
+    // check existing models to avoid a name conflict
+    const existingNames = $persistentModelStore?.entities
+      .filter((model) => model.name.includes(`query_${tableName}`))
+      .map((model) => model.tableName)
+      .sort();
+    const nextName =
+      existingNames.length === 0
+        ? `query_${tableName}`
+        : `query_${tableName}_${existingNames.length + 1}`;
+
+    const response = await dataModelerService.dispatch("addModel", [
+      {
+        name: nextName,
+        query: `select * from ${tableName}`,
+      },
+    ]);
+
+    // change the active asset to the new model
+    await dataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      response.id,
+    ]);
+
+    notificationStore.send({
+      message: `queried ${tableName} in workspace`,
+    });
+  }
 </script>
 
 <div
@@ -64,44 +94,25 @@
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             entityType={EntityType.Table}
-            indentLevel={1}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
-            profile={derivedTable?.profile ?? []}
-            head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:query={async () => {
-              // check existing models to avoid a name conflict
-              const existingNames = $persistentModelStore?.entities
-                .filter((model) => model.name.includes(`query_${tableName}`))
-                .map((model) => model.tableName)
-                .sort();
-              const nextName =
-                existingNames.length === 0
-                  ? `query_${tableName}`
-                  : `query_${tableName}_${existingNames.length + 1}`;
-
-              const response = await dataModelerService.dispatch("addModel", [
-                {
-                  name: nextName,
-                  query: `select * from ${tableName}`,
-                },
-              ]);
-
-              // change the active asset to the new model
-              await dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Model,
-                response.id,
-              ]);
-
-              notificationStore.send({
-                message: `queried ${tableName} in workspace`,
-              });
+            on:query={() => {
+              handleQueryEvent(tableName);
             }}
             on:delete={() => {
               dataModelerService.dispatch("dropTable", [tableName]);
             }}
-          />
+          >
+            <svelte:fragment slot="summary" let:containerWidth>
+              <ColumnProfileNavEntry
+                indentLevel={1}
+                {containerWidth}
+                profile={derivedTable?.profile ?? []}
+                head={derivedTable?.preview ?? []}
+              />
+            </svelte:fragment>
+          </CollapsibleTableSummary>
         </div>
       {/each}
     {/if}
