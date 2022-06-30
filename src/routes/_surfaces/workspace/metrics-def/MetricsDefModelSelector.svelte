@@ -31,7 +31,7 @@
   }
 </script>
 
-<div style:height="40px" class="flex items-center pl-1 mb-2">
+<div class="flex items-center mb-3">
   <div class="flex items-center gap-x-2 pr-5">
     <ModelIcon size="16px" /> model
   </div>

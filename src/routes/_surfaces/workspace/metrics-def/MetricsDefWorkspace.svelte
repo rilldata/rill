@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+  import PreviewTable from "$lib/components/table-editor/PreviewTable.svelte";
   import { store } from "$lib/redux-store/store-root";
   import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
   import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
@@ -21,7 +21,7 @@
 
   export let metricsDefId;
 
-  let innerHeight;
+  // let innerHeight;
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
@@ -60,12 +60,10 @@
   }
 
   const tableContainerDivClass =
-    "rounded border border-gray-200 border-2 overflow-auto flex-1";
+    "rounded border border-gray-200 border-2 overflow-auto flex-1 w-fit";
   const h4Class =
     "text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase pt-6 pb-2 flex-none";
 </script>
-
-<svelte:window bind:innerHeight />
 
 <div
   class="editor-pane bg-gray-100 p-6 pt-0 flex-col-container"
