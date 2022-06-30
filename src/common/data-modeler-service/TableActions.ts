@@ -252,7 +252,7 @@ export class TableActions extends DataModelerActions {
       sanitizedNewName,
     ]);
     return ActionResponseFactory.getSuccessResponse(
-      JSON.stringify({ sanitizedNewName: sanitizedNewName })
+      `source ${currentName} renamed to ${sanitizedNewName}`
     );
   }
 
