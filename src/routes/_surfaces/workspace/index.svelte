@@ -17,6 +17,7 @@
   $: useMetricsLeaderboard =
     $rillAppStore?.activeEntity?.type === EntityType.MetricsLeaderboard;
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
+  $: console.log(useMetricsLeaderboard, useMetricsDefWorkspace);
 </script>
 
 {#if useModelWorkspace}

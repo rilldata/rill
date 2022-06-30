@@ -20,16 +20,16 @@ interface ImportTableCommandOptions {
 export class ImportTableCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
-      new Command("import-table"),
-      "Import a table from the supplied table source file."
+      new Command("import-source"),
+      "Import a source from the supplied source file."
     )
       .argument(
-        "<tableSourceFile>",
-        "File to import the table from. Supported file types: .parquet, .csv, .tsv."
+        "<sourceFile>",
+        "File to import the source from. Supported file types: .parquet, .csv, .tsv."
       )
       .option(
-        "--name <tableName>",
-        "Optional name of the table. Defaults to file name without the folder path and extension."
+        "--name <sourceName>",
+        "Optional name of the source. Defaults to file name without the folder path and extension."
       )
       .option(
         "--delimiter <delimiter>",
@@ -38,8 +38,8 @@ export class ImportTableCommand extends DataModelerCliCommand {
       )
       .option(
         "--force",
-        "Option to force overwrite if the table already exists. " +
-          "Without this, there will be a prompt to overwrite the table if it exists."
+        "Option to force overwrite if the source already exists. " +
+          "Without this, there will be a prompt to overwrite the source if it exists."
       )
       .action((tableSourceFile, opts, command: Command) => {
         const options: ImportTableCommandOptions = command.optsWithGlobals();

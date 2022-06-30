@@ -1,14 +1,12 @@
 <script lang="ts">
-  import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
 
   export let active;
-  export let hovered = false;
   let mounted = false;
   let duration = 0;
   let timer;
 
-  function setDuration(sentinel: any, another_sentinel) {
+  function setDuration() {
     if (!mounted) {
       mounted = true;
       return;
@@ -20,7 +18,7 @@
     }, 150);
   }
 
-  $: setDuration(active, hovered);
+  $: setDuration();
 
   /**
    * because transitions in keyed blocks don't reactively update their parameters, ya gotta do it the old fashioned way

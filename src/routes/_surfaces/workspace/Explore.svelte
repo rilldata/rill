@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { min, max } from "d3-array";
-  import { timeFormat } from "d3-time-format";
+  import { max } from "d3-array";
   import type { AppStore } from "$lib/application-state-stores/application-store";
   import ExploreChart from "$lib/components/viz/ExploreChart.svelte";
   import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
@@ -24,8 +23,6 @@
   );
 
   // generate some buttons.
-
-  const fmt = timeFormat("%a %b %Y %I:%M:%S");
 
   $: latestDate = max(preparedData, (d) => d._ts);
   let thirtyDaysBefore;

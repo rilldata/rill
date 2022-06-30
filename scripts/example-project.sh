@@ -12,7 +12,7 @@ curl -s http://pkg.rilldata.com/rill-developer-example/data/flightlist.zip --out
 unzip ${PROJECT_BASE}/rill-developer-example/flightlist.zip -d ${PROJECT_BASE}/rill-developer-example/
 
 echo "Importing example dataset into the project..."
-npm run cli --silent -- import-table ${PROJECT_BASE}/rill-developer-example/data/flightlist_2022_02.csv --project ${PROJECT_BASE}/rill-developer-example
+npm run cli --silent -- import-source ${PROJECT_BASE}/rill-developer-example/data/flightlist_2022_02.csv --project ${PROJECT_BASE}/rill-developer-example
 
 # start the modeler
 npm run cli --silent -- start --project ${PROJECT_BASE}/rill-developer-example

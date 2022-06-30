@@ -16,10 +16,6 @@ import {
 import { asyncWait } from "$common/utils/waitUtils";
 import type { ActiveEvent } from "$common/metrics-service/MetricsTypes";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import {
-  EntityType,
-  StateType,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 const CommonUserMetricsData = {
   browser: "chrome",

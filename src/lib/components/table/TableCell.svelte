@@ -48,17 +48,13 @@
     on:blur={() => {
       activeCell = false;
     }}
-    title={value}
     class="
-        p-2
-        pl-4
-        pr-4
+        py-2
+        px-4
         border
         border-gray-200
         {activeCell && 'bg-gray-200'}
     "
-    style:width="var(--table-column-width-{column.name}, 210px)"
-    style:max-width="var(--table-column-width-{column.name}, 210px)"
   >
     <svelte:component
       this={renderer}
