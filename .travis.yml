@@ -83,8 +83,7 @@ jobs:
       name: "Build & Publish npm module"
       #if: tag IS present
 
-      #install: *slow-npm-ci
-      install: docker --version #TODO: another test
+      install: *slow-npm-ci
 
       script:
         - echo "Setting up NPM registry"
