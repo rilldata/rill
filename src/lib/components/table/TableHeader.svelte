@@ -1,27 +1,24 @@
 <script lang="ts">
-  export let position = "top";
+  export let sticky = "top";
 </script>
 
 <th
-  class="
-          p-0
-          sticky
-          {position === 'top' && 'top-0'}
-          {position === 'left' && 'left-0'}
-          {position === 'top-left' && 'top-0 left-0 z-10'}
-      "
+  class="p-0"
+  class:sticky={!!sticky}
+  class:top-0={sticky === "top"}
+  class:left-0={sticky === "left"}
+  class:z-10={!!sticky}
 >
   <div
     class="
+            py-3
             px-4
             border
             border-gray-200
             border-t-0
             border-l-0
+            text-left
             bg-gray-100
-            {position === 'top' && 'py-3 text-left'}
-            {position === 'left' && 'py-2'}
-            {position === 'top-left' && 'py-3'}
         "
   >
     <slot />
