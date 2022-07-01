@@ -26,7 +26,7 @@ jobs:
         - pyenv global 3.7.0
 
       # in order to achieve npm ci (clean install) delete the travis cache.
-      install: &slow-npm-ci
+      install: &npm-install
         - echo "NPM Install can take up to 15 mins"
         - npm i
 
@@ -80,16 +80,17 @@ jobs:
     # Publish binaries and npm on the release
     - stage: Release
       name: "Build & Publish npm module"
-      #if: tag IS present
+      if: tag IS present
 
-      install: *slow-npm-ci
+      install:
+        - echo "NPM Clean Install can take up to 15 mins"
+        - travis_wait 30 npm ci
 
       script:
         - echo "Setting up NPM registry"
         - echo "//registry.npmjs.org/:_authToken=${NPMJS_TOKEN}" >> /home/travis/.npmrc
-        - cp /home/travis/.npmrc . #TODO: Need to check this
 
-        - npm whoami
+        - npm publish
 
     - stage: Release
       name: "Build & Publish Mac os binary"
@@ -98,7 +99,7 @@ jobs:
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
-      install: *slow-npm-ci
+      install: *npm-install
 
       script: &build-vercel-pkg
         - echo "Build the entire application"
@@ -130,7 +131,7 @@ jobs:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
       before_install: *python-setup
-      install: *slow-npm-ci
+      install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
 
@@ -145,6 +146,6 @@ jobs:
         - echo "Installing python 3"
         - choco install python3
 
-      install: *slow-npm-ci
+      install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
