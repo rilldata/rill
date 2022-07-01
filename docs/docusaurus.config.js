@@ -12,21 +12,22 @@ def;
 const config = {
   title: "Rill",
   tagline: "A simple alternative to complex BI stacks",
+
   // netlify settings
-  url: "https://rill-developer.netlify.app",
-  baseUrl: "/",
-  // gitpages
-  // url: "https://rilldata.github.io",
-  // baseUrl: "/rill-developer/",
+  // url: "https://rill-developer.netlify.app",
+  // baseUrl: "/",
+
+  // gitpages settings
+  url: "https://rilldata.github.io",
+  baseUrl: "/rill-developer/",
+  organizationName: "rilldata",
+  projectName: "rill-developer",
+  deploymentBranch: "430-publish-docs-directory-with-docusaurus",
+  trailingSlash: true,
+
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
-
-  // GitHub pages deployment config.
-  // organizationName: "rilldata",
-  // projectName: "rill-developer",
-  // deploymentBranch: "gh-pages",
-  trailingSlash: true,
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
