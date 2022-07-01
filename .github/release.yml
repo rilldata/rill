@@ -3,15 +3,18 @@ changelog:
     labels:
       - release
   categories:
-    - title: Breaking Changes 🛠
+    - title: Breaking changes 🛠
       labels:
         - breaking-change
-    - title: Exciting New Features 🎉
+    - title: Exciting new features 🎉
       labels:
         - enhancement
-    - title: Bug Fixes 🔨
+        - task
+        - request
+    - title: Bug fixes 🔨
       labels:
         - bug
-    - title: Other Changes
+        - nit
+    - title: Other changes
       labels:
         - "*"
