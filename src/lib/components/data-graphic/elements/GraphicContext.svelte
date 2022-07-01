@@ -39,58 +39,60 @@ for any of its children.
   export let yMin: number | Date = undefined;
   export let yMax: number | Date = undefined;
 
-  export let shareXScale: boolean = true;
-  export let shareYScale: boolean = true;
+  export let shareXScale = true;
+  export let shareYScale = true;
   let k = true;
-  const config: SimpleConfigurationStore =
-    cascadingContextStore<SimpleDataGraphicConfigurationArguments>(
-      contexts.config,
-      {
-        width,
-        height,
-        top,
-        bottom,
-        left,
-        right,
-        fontSize,
-        textGap,
-        xType,
-        yType,
-        xMin,
-        xMax,
-        yMin,
-        yMax,
-        bodyBuffer,
-        marginBuffer,
-      },
-      /** these values are derived from the existing SimpleDataGraphicConfigurationArguments */
-      {
-        plotLeft: (config: SimpleDataGraphicConfiguration) => config.left,
-        plotRight: (config: SimpleDataGraphicConfiguration) =>
-          config.width - config.right,
-        plotTop: (config: SimpleDataGraphicConfiguration) => config.top,
-        plotBottom: (config: SimpleDataGraphicConfiguration) =>
-          config.height - config.bottom,
-        bodyLeft: (config: SimpleDataGraphicConfiguration) =>
-          config.left + config.bodyBuffer || 0,
-        bodyRight: (config: SimpleDataGraphicConfiguration) =>
-          config.width - config.right - config.bodyBuffer || 0,
-        bodyTop: (config: SimpleDataGraphicConfiguration) =>
-          config.top + config.bodyBuffer || 0,
-        bodyBottom: (config: SimpleDataGraphicConfiguration) =>
-          config.height - config.bottom - config.bodyBuffer || 0,
-        graphicWidth: (config: SimpleDataGraphicConfiguration) =>
-          config.width -
-          config.left -
-          config.right -
-          2 * (config.bodyBuffer || 0),
-        graphicHeight: (config: SimpleDataGraphicConfiguration) =>
-          config.height -
-          config.top -
-          config.bottom -
-          2 * (config.bodyBuffer || 0),
-      }
-    );
+  const config: SimpleConfigurationStore = cascadingContextStore<
+    SimpleDataGraphicConfigurationArguments,
+    SimpleDataGraphicConfiguration
+  >(
+    contexts.config,
+    {
+      width,
+      height,
+      top,
+      bottom,
+      left,
+      right,
+      fontSize,
+      textGap,
+      xType,
+      yType,
+      xMin,
+      xMax,
+      yMin,
+      yMax,
+      bodyBuffer,
+      marginBuffer,
+    },
+    /** these values are derived from the existing SimpleDataGraphicConfigurationArguments */
+    {
+      plotLeft: (config: SimpleDataGraphicConfiguration) => config.left,
+      plotRight: (config: SimpleDataGraphicConfiguration) =>
+        config.width - config.right,
+      plotTop: (config: SimpleDataGraphicConfiguration) => config.top,
+      plotBottom: (config: SimpleDataGraphicConfiguration) =>
+        config.height - config.bottom,
+      bodyLeft: (config: SimpleDataGraphicConfiguration) =>
+        config.left + config.bodyBuffer || 0,
+      bodyRight: (config: SimpleDataGraphicConfiguration) =>
+        config.width - config.right - config.bodyBuffer || 0,
+      bodyTop: (config: SimpleDataGraphicConfiguration) =>
+        config.top + config.bodyBuffer || 0,
+      bodyBottom: (config: SimpleDataGraphicConfiguration) =>
+        config.height - config.bottom - config.bodyBuffer || 0,
+      graphicWidth: (config: SimpleDataGraphicConfiguration) =>
+        config.width -
+        config.left -
+        config.right -
+        2 * (config.bodyBuffer || 0),
+      graphicHeight: (config: SimpleDataGraphicConfiguration) =>
+        config.height -
+        config.top -
+        config.bottom -
+        2 * (config.bodyBuffer || 0),
+    }
+  );
 
   $: config.reconcileProps({
     width,

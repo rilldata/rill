@@ -16,8 +16,8 @@ Optionally allows borders (see the `border` & associated props) & a background (
    *  ----------
    * A Body element has an optional background.
    */
-  export let bg: boolean = false;
-  export let bgColor: string = "rgb(200,200,200)";
+  export let bg = false;
+  export let bgColor = "rgb(200,200,200)";
   export let bgOpacity = 0.4;
 
   /** Border

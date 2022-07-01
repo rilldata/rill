@@ -12,7 +12,7 @@
 
   export let placement = "middle";
 
-  export let formatter: Function = undefined;
+  export let formatter: (arg0: number | Date) => string = undefined;
 
   let container;
   let xOrY;

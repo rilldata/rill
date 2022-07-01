@@ -1,7 +1,8 @@
 import { get, writable } from "svelte/store";
 import { setContext, getContext, hasContext } from "svelte";
+import type { CascadingContextStore } from "./types";
 
-function prune(props: object) {
+function prune<T>(props: T) {
   return Object.keys(props).reduce((next, prop) => {
     if (props[prop] !== undefined) next[prop] = props[prop];
     return next;
@@ -27,11 +28,11 @@ function addDerivations(store, derivations) {
  * reactive data viz component compositions.
  * Most consumers of the data graphic components won't need to worry about this store.
  */
-export function cascadingContextStore<T>(namespace: string, props, derivations = {}) {
+export function cascadingContextStore<T, V>(namespace: string, props: T, derivations = {}): CascadingContextStore<T, V> {
   // check to see if namespace exists.
   const hasParentCascade = hasContext(namespace);
 
-  const prunedProps = prune(props);
+  const prunedProps = prune<T>(props);
 
   let lastProps;
   const store = writable(prunedProps);
