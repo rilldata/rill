@@ -82,15 +82,15 @@ jobs:
       name: "Build & Publish npm module"
       if: tag IS present
 
-      install:
-        - echo "NPM Clean Install can take up to 15 mins"
-        - travis_wait 30 npm ci
+      install: *npm-install
 
-      script:
-        - echo "Setting up NPM registry"
-        - echo "//registry.npmjs.org/:_authToken=${NPMJS_TOKEN}" >> /home/travis/.npmrc
-
-        - npm publish
+      deploy:
+        provider: npm
+        email: ops@rilldata.com
+        api_key: ${NPMJS_TOKEN}
+        skip_cleanup: true
+        on:
+          tags: true
 
     - stage: Release
       name: "Build & Publish Mac os binary"
