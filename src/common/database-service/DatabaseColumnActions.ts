@@ -26,8 +26,8 @@ export enum EstimatedSmallestTimeGrain {
 
 export interface RollupInterval {
   rollupInterval: string;
-  minValue: Date;
-  maxValue: Date;
+  minValue: Date | string | number;
+  maxValue: Date | string | number;
 }
 
 /** These are used for duckdb interval conversions. */

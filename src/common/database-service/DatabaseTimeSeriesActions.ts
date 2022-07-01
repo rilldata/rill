@@ -63,7 +63,10 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
 
     const rollupTime = rollupInterval.rollupInterval.split(" ")[1];
 
-    if (typeof rollupInterval.maxValue === "number") {
+    if (
+      typeof rollupInterval.maxValue === "number" ||
+      typeof rollupInterval.maxValue === "string"
+    ) {
       rollupInterval.maxValue = new Date(rollupInterval.maxValue);
       rollupInterval.minValue = new Date(rollupInterval.minValue);
     }
