@@ -10,18 +10,18 @@
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import notifications from "$lib/components/notifications/";
 
-  export let openDialog = false;
-  export let closeDialog: () => void;
+  export let openModal = false;
+  export let closeModal: () => void;
   export let tableID = null;
   export let currentTableName = null;
 
   let newTableName = null;
   let error = null;
 
-  const resetVariablesAndCloseDialog = () => {
+  const resetVariablesAndCloseModal = () => {
     newTableName = null;
     error = null;
-    closeDialog();
+    closeModal();
   };
 
   const submitHandler = (tableID: string, newTableName: string) => {
@@ -38,7 +38,7 @@
       .then((response) => {
         if (response.status === 0) {
           notifications.send({ message: response.messages[0].message });
-          resetVariablesAndCloseDialog();
+          resetVariablesAndCloseModal();
         } else if (response.status === 1) {
           error = response.messages[0].message;
         }
@@ -46,7 +46,7 @@
   };
 </script>
 
-<Modal open={openDialog} onBackdropClick={() => resetVariablesAndCloseDialog()}>
+<Modal open={openModal} onBackdropClick={() => resetVariablesAndCloseModal()}>
   <ModalTitle>
     rename <span class="text-gray-500 italic">{currentTableName}</span>
   </ModalTitle>
@@ -61,7 +61,7 @@
     </form>
   </ModalContent>
   <ModalActions>
-    <ModalAction onClick={() => resetVariablesAndCloseDialog()}>
+    <ModalAction onClick={() => resetVariablesAndCloseModal()}>
       cancel
     </ModalAction>
     <ModalAction primary onClick={() => submitHandler(tableID, newTableName)}>

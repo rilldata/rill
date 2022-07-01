@@ -16,7 +16,7 @@
   } from "$lib/application-state-stores/table-stores";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import notificationStore from "$lib/components/notifications/";
-  import RenameTable from "$lib/components/table/RenameTable.svelte";
+  import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
@@ -33,12 +33,12 @@
   ) as PersistentModelStore;
 
   let showTables = true;
-  let showRenameTableDialog = false;
+  let showRenameTableModal = false;
   let renameTableID = null;
   let renameTableName = null;
 
-  const openRenameTableDialog = (tableID: string, tableName: string) => {
-    showRenameTableDialog = true;
+  const openRenameTableModal = (tableID: string, tableName: string) => {
+    showRenameTableModal = true;
     renameTableID = tableID;
     renameTableName = tableName;
   };
@@ -108,7 +108,7 @@
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:rename={() => openRenameTableDialog(id, tableName)}
+            on:rename={() => openRenameTableModal(id, tableName)}
             on:query={() => queryHandler(tableName)}
             on:delete={() =>
               dataModelerService.dispatch("dropTable", [tableName])}
@@ -117,9 +117,9 @@
       {/each}
     {/if}
   </div>
-  <RenameTable
-    openDialog={showRenameTableDialog}
-    closeDialog={() => (showRenameTableDialog = false)}
+  <RenameTableModal
+    openModal={showRenameTableModal}
+    closeModal={() => (showRenameTableModal = false)}
     tableID={renameTableID}
     currentTableName={renameTableName}
   />
