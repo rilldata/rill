@@ -31,6 +31,7 @@
     on:pin={handlePin}
     on:change={(evt) => dispatch("change", evt.detail)}
     on:add={() => dispatch("add")}
+    on:delete={(evt) => dispatch("delete", evt.detail)}
     {tableConfig}
     {activeIndex}
     {columnNames}
@@ -45,7 +46,8 @@
       <PinnableTable
         on:pin={handlePin}
         on:change={(evt) => dispatch("change", evt.detail)}
-        {tableConfig}
+        on:delete={(evt) => dispatch("delete", evt.detail)}
+        tableConfig={{ ...tableConfig, enableAdd: false }}
         {activeIndex}
         columnNames={selectedColumns}
         {selectedColumns}

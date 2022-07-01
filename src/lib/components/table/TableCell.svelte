@@ -59,6 +59,7 @@
     <svelte:component
       this={renderer}
       on:change={(evt) => dispatch("change", evt.detail)}
+      on:delete={(evt) => dispatch("delete", evt.detail)}
       {value}
       {isNull}
       {index}

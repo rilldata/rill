@@ -7,12 +7,18 @@
   import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
-  import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+  import {
+    deleteDimensionsApi,
+    fetchManyDimensionsApi,
+  } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
   import {
     createDimensionsApi,
     updateDimensionsApi,
   } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
-  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
+  import {
+    deleteMeasuresApi,
+    fetchManyMeasuresApi,
+  } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import {
     createMeasuresApi,
     updateMeasuresApi,
@@ -48,6 +54,9 @@
       })
     );
   }
+  function handleDeleteMeasure(evt) {
+    store.dispatch(deleteMeasuresApi(evt.detail));
+  }
 
   function handleCreateDimension() {
     store.dispatch(createDimensionsApi({ metricsDefId }));
@@ -61,6 +70,9 @@
         },
       })
     );
+  }
+  function handleDeleteDimension(evt) {
+    store.dispatch(deleteDimensionsApi(evt.detail));
   }
 </script>
 
@@ -85,6 +97,7 @@
         columnNames={MeasuresColumns}
         on:change={handleUpdateMeasure}
         on:add={handleCreateMeasure}
+        on:delete={handleDeleteMeasure}
       />
     </div>
   </div>
@@ -99,6 +112,7 @@
         columnNames={DimensionColumns}
         on:change={handleUpdateDimension}
         on:add={handleCreateDimension}
+        on:delete={handleDeleteDimension}
       />
     </div>
   </div>

@@ -91,6 +91,7 @@
           <ContextButton
             {id}
             tooltipText="expand"
+            location="left"
             on:click={() => {
               dataModelerService.dispatch("setActiveAsset", [
                 EntityType.MetricsLeaderboard,
