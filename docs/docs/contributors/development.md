@@ -1,9 +1,10 @@
 ---
-title: Developer guide
 Description: How to get started contributing to Rill Developer.
 ---
 
-# Installing
+# Developer guide
+
+## Installing
 Download and install nodejs 16+ from https://nodejs.org/en/download/.
 
 Run the following script from checkout directory to install the command globally. This will take about 5mins to finish when run for the first time.
@@ -11,8 +12,6 @@ Run the following script from checkout directory to install the command globally
 ```
 npm run install-and-build
 ```
-
-# Developer guide
 
 ## Getting started
 Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).
@@ -22,7 +21,7 @@ Run `npm build` to build the application.
 ## Starting a dev server
 Run `npm run dev` to start the UI and backend dev servers. UI will be available on http://localhost:3000
 
-# developer CLI
+## Developer CLI
 Initializing a project, adding datasets as sources, and starting a project are currently supported through our [CLI](https://github.com/rilldata/rill-developer/blob/main/docs/cli.md).
 
 ## Creating a project
@@ -46,7 +45,6 @@ npm run cli --silent -- start --project /path/to/project
 ```
 `--project` is optional. Will default to current directory if not specified.
 
-
 ## Importing a source from a file
 Import source from /path/to/source/file into project under /path/to/project
 
@@ -62,11 +60,9 @@ npm run cli --silent -- import-source /path/to/source/csvfile --project /path/to
   
 Source name can be customisable using `--name` argument. By default, it uses file name without extension for source name.
 
-**File types currently supported:**
+File types currently supported:
 - .parquet
-
 - .csv
-
 - .tsv
 
 ## Dropping a source

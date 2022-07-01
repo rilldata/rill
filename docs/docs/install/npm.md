@@ -2,9 +2,9 @@
 description: You can use `npm` to globally install Rill Developer on your local computer. This will give you access to the CLI to start the server.
 ---
 
-# using npm
+# Using npm
 
-## prerequisites
+## Prerequisites
 
 Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
 
@@ -18,7 +18,7 @@ On Ubuntu, you'll also need to make sure you have `g++` installed in order to co
 sudo apt install g++
 ```
   
-## install or update with npm
+## Install or update with npm
 You can use `npm` to globally install Rill Developer on your local computer. This will give you access to the CLI to start the server.
 
 ```

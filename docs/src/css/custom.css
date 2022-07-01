@@ -35,6 +35,7 @@
   --ifm-color-primary-light: #00CBD7;
   --ifm-color-primary-lighter: #01D4E0;
   --ifm-color-primary-lightest: #01DCE9;
+  --ifm-color-secondary-contrast-background: #efefef;
   --ifm-font-family-base: 'Proxima Nova', sans-serif;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
