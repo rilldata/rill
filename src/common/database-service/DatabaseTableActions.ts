@@ -60,6 +60,16 @@ export class DatabaseTableActions extends DatabaseActions {
     return this.databaseClient.prepare(query);
   }
 
+  public async renameTable(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    newTableName: string
+  ): Promise<void> {
+    await this.databaseClient.execute(
+      `ALTER TABLE ${tableName} RENAME TO ${newTableName};`
+    );
+  }
+
   public async dropTable(
     metadata: DatabaseMetadata,
     tableName: string
