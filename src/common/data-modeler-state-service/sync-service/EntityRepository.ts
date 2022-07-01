@@ -42,7 +42,7 @@ export class EntityRepository<Entity extends EntityRecord> {
   /**
    * Save a specific entity
    */
-  public async save(entity: Entity): Promise<void> {
+  public async save(_entity: Entity): Promise<void> {
     return Promise.resolve();
   }
 
@@ -68,7 +68,7 @@ export class EntityRepository<Entity extends EntityRecord> {
   /**
    * Update specific fields in entity based on id or any other field
    */
-  public async update(entity: Entity): Promise<boolean> {
+  public async update(_entity: Entity): Promise<boolean> {
     return false;
   }
 }

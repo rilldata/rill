@@ -13,10 +13,6 @@ import type {
   CommonFields,
   MetricsEvent,
 } from "$common/metrics-service/MetricsTypes";
-import {
-  EntityType,
-  StateType,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 /**
  * We have DataModelerStateService as the 1st arg to have a structure for PickActionFunctions

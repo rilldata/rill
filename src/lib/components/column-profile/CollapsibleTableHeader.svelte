@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { tick } from "svelte/internal";
   import { tweened } from "svelte/motion";
   import { cubicInOut as easing } from "svelte/easing";
@@ -22,7 +21,9 @@
   import { guidGenerator } from "$lib/util/guid";
 
   import notificationStore from "$lib/components/notifications/";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+  export let entityType: EntityType;
   export let name: string;
   export let cardinality: number;
   export let sizeInBytes: number = undefined;
@@ -32,8 +33,6 @@
   export let show = false;
   export let contextMenuOpen = false;
   export let contextMenu: any;
-
-  const dispatch = createEventDispatcher();
 
   const formatInteger = format(",");
 
@@ -57,42 +56,26 @@
 
   // state for title bar hover.
   let titleElementHovered = false;
+  $: showEntityDetails =
+    titleElementHovered || emphasizeTitle || contextMenuOpen;
 </script>
 
 <Tooltip location="right">
   <NavEntry
+    {entityType}
     expanded={show}
     selected={emphasizeTitle}
     bind:hovered={titleElementHovered}
+    on:query
     on:shift-click={async () => {
       await navigator.clipboard.writeText(name);
       notificationStore.send({ message: `copied "${name}" to clipboard` });
     }}
-    on:select-body={async (event) => {
-      dispatch("select");
-    }}
+    on:select
     on:expand={() => {
       show = !show;
-      // pass up expand
-      dispatch("expand");
     }}
   >
-    <svelte:fragment slot="tooltip-content">
-      <TooltipTitle>
-        <svelte:fragment slot="name">
-          {name}
-        </svelte:fragment>
-        <svelte:fragment slot="description" />
-      </TooltipTitle>
-      <TooltipShortcutContainer>
-        <div>open in workspace</div>
-        <Shortcut>click</Shortcut>
-        <div>
-          <StackingWord>copy</StackingWord> to clipboard
-        </div>
-        <Shortcut>shift + click</Shortcut>
-      </TooltipShortcutContainer>
-    </svelte:fragment>
     <!-- note: the classes in this span are also used for UI tests. -->
     <span
       class="collapsible-table-summary-title w-full"
@@ -124,7 +107,7 @@
           <span
             class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap "
           >
-            {#if titleElementHovered || emphasizeTitle}
+            {#if showEntityDetails}
               <span>
                 <span>
                   {cardinality !== undefined && !isNaN(cardinality)
@@ -136,8 +119,8 @@
               <span class="self-center">
                 <ContextButton
                   id={contextButtonId}
-                  tooltipText="delete"
-                  suppressTooltip={contextMenuOpen}
+                  tooltipText=""
+                  suppressTooltip={true}
                   on:click={async (event) => {
                     contextMenuOpen = !contextMenuOpen;
                     menuX = event.clientX;
@@ -168,10 +151,18 @@
       <svelte:fragment slot="description" />
     </TooltipTitle>
     <TooltipShortcutContainer>
-      <div>open in workspace</div>
-      <Shortcut>click</Shortcut>
+      {#if entityType == EntityType.Table}
+        <div>
+          <StackingWord key="command">query</StackingWord> in workspace
+        </div>
+        <Shortcut>command + click</Shortcut>
+      {/if}
+      {#if entityType == EntityType.Model}
+        <div>open in workspace</div>
+        <Shortcut>click</Shortcut>
+      {/if}
       <div>
-        <StackingWord>copy</StackingWord> to clipboard
+        <StackingWord key="shift">copy</StackingWord> to clipboard
       </div>
       <Shortcut>shift + click</Shortcut>
     </TooltipShortcutContainer>

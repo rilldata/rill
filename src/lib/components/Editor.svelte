@@ -62,7 +62,7 @@
   export let selections: any[] = [];
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
-  const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
+  // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
   let componentContainer;
 
@@ -281,27 +281,27 @@
 
   // REACTIVE FUNCTIONS
 
-  function updateEditorContents(newContent: string) {
-    if (editor) {
-      let curContent = editor.state.doc.toString();
-      if (newContent != curContent) {
-        latestContent = newContent;
-        debounce.debounce(
-          "update",
-          () => {
-            editor.dispatch({
-              changes: {
-                from: 0,
-                to: latestContent.length,
-                insert: latestContent,
-              },
-            });
-          },
-          QUERY_SYNC_DEBOUNCE_TIMEOUT
-        );
-      }
-    }
-  }
+  // function updateEditorContents(newContent: string) {
+  //   if (editor) {
+  //     let curContent = editor.state.doc.toString();
+  //     if (newContent != curContent) {
+  //       latestContent = newContent;
+  //       debounce.debounce(
+  //         "update",
+  //         () => {
+  //           editor.dispatch({
+  //             changes: {
+  //               from: 0,
+  //               to: latestContent.length,
+  //               insert: latestContent,
+  //             },
+  //           });
+  //         },
+  //         QUERY_SYNC_DEBOUNCE_TIMEOUT
+  //       );
+  //     }
+  //   }
+  // }
 
   function updateAutocompleteSources(schema: { [table: string]: string[] }) {
     if (editor) {
