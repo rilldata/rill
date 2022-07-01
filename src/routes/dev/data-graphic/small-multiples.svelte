@@ -59,8 +59,6 @@
           right={20}
           top={4}
           bottom={16}
-          xType="date"
-          yType="number"
           bind:mouseoverValues
           let:xScale
           let:yScale
