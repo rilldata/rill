@@ -12,16 +12,20 @@ def;
 const config = {
   title: "Rill",
   tagline: "A simple alternative to complex BI stacks",
-  url: "https://rilldata.github.io",
-  baseUrl: "/rill-developer/",
+  // netlify settings
+  url: "https://rill-developer.netlify.app",
+  baseUrl: "/",
+  // gitpages
+  // url: "https://rilldata.github.io",
+  // baseUrl: "/rill-developer/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
 
   // GitHub pages deployment config.
-  organizationName: "rilldata",
-  projectName: "rill-developer",
-  deploymentBranch: "gh-pages",
+  // organizationName: "rilldata",
+  // projectName: "rill-developer",
+  // deploymentBranch: "gh-pages",
   trailingSlash: true,
 
   // Even if you don't use internalization, you can use this field to set useful
