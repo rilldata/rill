@@ -13,12 +13,7 @@
 
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import ModalAction from "$lib/components/modal/ModalAction.svelte";
-  import ModalActions from "$lib/components/modal/ModalActions.svelte";
-  import ModalContent from "$lib/components/modal/ModalContent.svelte";
-  import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
+  import ExportError from "$lib/components/modal/ExportError.svelte";
 
   import {
     ApplicationStore,
@@ -48,6 +43,7 @@
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Button from "$lib/components/Button.svelte";
+  import { FileExportType } from "$common/data-modeler-service/ModelActions";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -71,8 +67,8 @@
   let sourceTableReferences;
   let showColumns = true;
 
-  let showExportErrorModal = false;
-  let exportErrorMessage = "";
+  let showExportErrorModal: boolean;
+  let exportErrorMessage: string;
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
@@ -150,6 +146,32 @@
     clickOutsideListener();
     clickOutsideListener = undefined;
   }
+
+  const onExport = async (fileType: FileExportType) => {
+    let extension = ".csv";
+    if (fileType === FileExportType.Parquet) {
+      extension = ".parquet";
+    }
+    const exportFilename = currentModel.name.replace(".sql", extension);
+
+    const exportResp = await dataModelerService.dispatch(fileType, [
+      currentModel.id,
+      exportFilename,
+    ]);
+
+    if (exportResp.status === ActionStatus.Success) {
+      window.open(
+        `${appConfig.server.serverUrl}/api/export?fileName=${encodeURIComponent(
+          exportFilename
+        )}`
+      );
+    } else if (exportResp.status === ActionStatus.Failure) {
+      exportErrorMessage = `Failed to export.\n${exportResp.messages
+        .map((message) => message.message)
+        .join("\n")}`;
+      showExportErrorModal = true;
+    }
+  };
 
   onMount(() => {
     const observer = new ResizeObserver(() => {
@@ -352,74 +374,16 @@
           contextMenuOpen = false;
         }}
       >
-        <MenuItem
-          on:select={async () => {
-            const exportFilename = currentModel.name.replace(
-              ".sql",
-              ".parquet"
-            );
-
-            const exportResp = await dataModelerService.dispatch(
-              "exportToParquet",
-              [currentModel.id, exportFilename]
-            );
-
-            if (exportResp.status === ActionStatus.Success) {
-              window.open(
-                `${
-                  appConfig.server.serverUrl
-                }/api/export?fileName=${encodeURIComponent(exportFilename)}`
-              );
-            } else if (exportResp.status === ActionStatus.Failure) {
-              exportErrorMessage = `Failed to export.\n${exportResp.messages
-                .map((message) => message.message)
-                .join("\n")}`;
-              showExportErrorModal = true;
-            }
-          }}
-        >
+        <MenuItem on:select={() => onExport(FileExportType.Parquet)}>
           Export as Parquet
         </MenuItem>
-        <MenuItem
-          on:select={async () => {
-            const exportFilename = currentModel.name.replace(".sql", ".csv");
-
-            const exportResp = await dataModelerService.dispatch(
-              "exportToCsv",
-              [currentModel.id, exportFilename]
-            );
-
-            if (exportResp.status === ActionStatus.Success) {
-              window.open(
-                `${
-                  appConfig.server.serverUrl
-                }/api/export?fileName=${encodeURIComponent(exportFilename)}`
-              );
-            } else if (exportResp.status === ActionStatus.Failure) {
-              exportErrorMessage = `Failed to export.\n${exportResp.messages
-                .map((message) => message.message)
-                .join("\n")}`;
-              showExportErrorModal = true;
-            }
-          }}
-        >
+        <MenuItem on:select={() => onExport(FileExportType.CSV)}>
           Export as CSV
         </MenuItem>
       </Menu>
     </FloatingElement>
   </div>
-  <Modal
-    open={showExportErrorModal}
-    onBackdropClick={() => (showExportErrorModal = false)}
-  >
-    <ModalTitle>error</ModalTitle>
-    <ModalContent>{exportErrorMessage}</ModalContent>
-    <ModalActions>
-      <ModalAction onClick={() => (showExportErrorModal = false)}>
-        close
-      </ModalAction>
-    </ModalActions>
-  </Modal>
+  <ExportError bind:exportErrorMessage bind:showExportErrorModal />
 {/if}
 
 <style lang="postcss">
