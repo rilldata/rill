@@ -9,6 +9,7 @@ import {
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { TimeSeriesRollup } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export class MetricsExploreActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -19,10 +20,12 @@ export class MetricsExploreActions extends RillDeveloperActions {
       expressionEntries,
       filters,
       pixels,
+      rollupInterval,
     }: {
       expressionEntries: Array<[id: string, expression: string]>;
       filters: ActiveValues;
       pixels: number;
+      rollupInterval: RollupInterval;
     }
   ) {
     if (
@@ -51,6 +54,7 @@ export class MetricsExploreActions extends RillDeveloperActions {
                 expression,
                 filters,
                 pixels,
+                rollupInterval,
               },
             ]
           );

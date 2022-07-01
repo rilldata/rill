@@ -13,7 +13,7 @@
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService.js";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
     ApplicationStore,

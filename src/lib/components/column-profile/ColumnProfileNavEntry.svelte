@@ -6,7 +6,7 @@
   import {
     sortByName,
     sortByNullity,
-  } from "$lib/components/column-profile/sort-utils.js";
+  } from "$lib/components/column-profile/sort-utils";
   import Spacer from "$lib/components/icons/Spacer.svelte";
 
   export let containerWidth = 0;
