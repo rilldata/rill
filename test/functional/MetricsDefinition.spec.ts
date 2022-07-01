@@ -45,7 +45,7 @@ export class MetricsDefinitionSpec extends TestBase<TestServerSetupParameter> {
       readFileSync(`${CLI_FOLDER}/state/derived_model_state.json`).toString()
     );
 
-    await this.httpStreamClient.request(`/metrics/${id}/updateModel`, "POST", {
+    await axios.post(`/metrics/${id}/updateModel`, {
       modelId: modelState.entities[0].id,
     });
   }

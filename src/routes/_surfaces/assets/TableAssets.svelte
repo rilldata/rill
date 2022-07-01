@@ -108,6 +108,7 @@
               <ColumnProfileNavEntry
                 indentLevel={1}
                 {containerWidth}
+                cardinality={derivedTable?.cardinality ?? 0}
                 profile={derivedTable?.profile ?? []}
                 head={derivedTable?.preview ?? []}
               />

@@ -111,6 +111,7 @@
           <ColumnProfileNavEntry
             indentLevel={1}
             {containerWidth}
+            cardinality={tableSummaryProps.cardinality}
             profile={tableSummaryProps.profile}
             head={tableSummaryProps.head}
           />
