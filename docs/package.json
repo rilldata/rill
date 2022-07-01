@@ -1,7 +1,6 @@
 {
   "name": "docs",
   "version": "0.0.1",
-  "private": true,
   "scripts": {
     "dev": "docusaurus start --port 4002",
     "build": "docusaurus build --out-dir dist",
