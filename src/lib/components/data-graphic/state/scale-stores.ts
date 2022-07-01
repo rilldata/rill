@@ -30,7 +30,6 @@ export function initializeScale(args): ScaleStore {
   const minStore = getContext(contexts.min(args.namespace)) as Writable<(number | Date)>;
   const maxStore = getContext(contexts.max(args.namespace)) as Writable<(number | Date)>;
   const config = getContext(contexts.config) as SimpleConfigurationStore;
-  console.log(args)
   const scaleStore = derived([minStore, maxStore, config], ([$min, $max, $config]) => {
     const scale = SCALES[args.scaleType];
     const minRangeValue: (number | Date) = typeof args.rangeMin === 'function' ? args.rangeMin($config) : args.rangeMin;

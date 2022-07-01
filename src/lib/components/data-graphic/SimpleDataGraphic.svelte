@@ -44,7 +44,13 @@
 </script>
 
 <GraphicContext {...parameters}>
-  <SimpleSVGContainer bind:mouseoverValues let:xScale let:yScale let:config>
-    <slot {xScale} {yScale} {mouseoverValues} {config} />
+  <SimpleSVGContainer
+    bind:mouseoverValues
+    let:xScale
+    let:yScale
+    let:config
+    let:hovered
+  >
+    <slot {xScale} {yScale} {mouseoverValues} {config} {hovered} />
   </SimpleSVGContainer>
 </GraphicContext>

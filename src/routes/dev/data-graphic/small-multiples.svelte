@@ -1,5 +1,6 @@
 <script lang="ts">
   import { format } from "d3-format";
+  import { fade } from "svelte/transition";
 
   import Body from "$lib/components/data-graphic/elements/Body.svelte";
   import GraphicContext from "$lib/components/data-graphic/elements/GraphicContext.svelte";
@@ -10,6 +11,7 @@
   import WithBisector from "$lib/components/data-graphic/functional-components/WithBisector.svelte";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
+  import Area from "$lib/components/data-graphic/marks/Area.svelte";
 
   function smooth(data, accessor, windowSize = 7) {
     return data.map((datum, i) => {
@@ -52,42 +54,64 @@
   <GraphicContext xType="date" yType="number">
     <div class="flex flex-row flex-wrap gap-3 w-max-screen">
       {#each $datasets as data, i (i)}
-        <SimpleDataGraphic
-          width={180}
-          height={120}
-          left={20}
-          right={20}
-          top={4}
-          bottom={16}
-          bind:mouseoverValues
-          let:xScale
-          let:yScale
-        >
-          <Body bottomBorder>
-            <Line {data} xAccessor="period" yAccessor="y" />
-          </Body>
-          {#if i === 0}
-            <Axis side="bottom" />
-          {/if}
-          {#if mouseoverValues?.x}
-            <WithBisector
-              {data}
-              value={mouseoverValues.x}
-              callback={(datum) => datum.period}
-              let:point
-            >
-              <PointLabel
-                variant="fixed"
-                lineEnd="point"
-                lineColor="hsla(1,30%, 70%, .3)"
-                lineThickness="scale"
-                format={format(".4r")}
-                x={point.period}
-                y={point.y}
+        <div>
+          <h2 class="pl-5">Group {i + 1}</h2>
+          <SimpleDataGraphic
+            width={180}
+            height={120}
+            left={20}
+            right={20}
+            top={4}
+            bottom={16}
+            bind:mouseoverValues
+            let:hovered
+          >
+            <Body bottomBorder>
+              {#if hovered}
+                <g transition:fade={{ duration: 100 }}>
+                  <Area
+                    {data}
+                    xAccessor="period"
+                    yAccessor="y"
+                    color="hsla(1, 50%, 90%)"
+                  />
+                </g>
+              {/if}
+              <Line
+                {data}
+                xAccessor="period"
+                yAccessor="y"
+                color={hovered ? "hsl(1,50%, 50%)" : "hsl(217, 50%, 50%)"}
               />
-            </WithBisector>
-          {/if}
-        </SimpleDataGraphic>
+            </Body>
+            {#if i === 0 || (hovered && !(i === 0))}
+              <g transition:fade={{ duration: 50 }}>
+                <Axis side="bottom" />
+              </g>
+            {/if}
+            {#if mouseoverValues?.x}
+              <g transition:fade={{ duration: 50 }}>
+                <WithBisector
+                  {data}
+                  value={mouseoverValues.x}
+                  callback={(datum) => datum.period}
+                  let:point
+                >
+                  <PointLabel
+                    variant="fixed"
+                    lineStart="bodyBottom"
+                    lineEnd="point"
+                    lineColor="hsla(1,30%, 70%, .3)"
+                    lineThickness="scale"
+                    format={format(".4r")}
+                    x={point.period}
+                    y={point.y}
+                  />
+                </WithBisector>
+              </g>
+            {/if}
+          </SimpleDataGraphic>
+        </div>
       {/each}
     </div>
   </GraphicContext>

@@ -16,5 +16,11 @@
 </script>
 
 <svg use:mousePositionToDomain width={$config.width} height={$config.height}>
-  <slot {config} xScale={$xScale} yScale={$yScale} {mouseoverValues} />
+  <slot
+    {config}
+    xScale={$xScale}
+    yScale={$yScale}
+    {mouseoverValues}
+    hovered={$coordinates.x !== undefined}
+  />
 </svg>
