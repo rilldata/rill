@@ -1,8 +1,6 @@
-export interface DomainCoordinates {
-  x: (number | Date),
-  y: (number | Date)
-}
-export const DEFAULT_COORDINATES = { x: undefined, y: undefined };
+import type { DomainCoordinates } from "../constants";
+
+export const DEFAULT_COORDINATES: DomainCoordinates = { x: undefined, y: undefined };
 
 export const contexts = {
   config: 'rill:data-graphic:plot-config',
