@@ -1,6 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
+/* eslint @typescript-eslint/no-var-requires: "off" */
 const lightCodeTheme = require("prism-react-renderer/themes/github");
 const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 
@@ -142,6 +143,15 @@ const config = {
         darkTheme: darkCodeTheme,
       },
     }),
+  
+  plugins: [
+    [
+      require.resolve('docusaurus-gtm-plugin'),
+      {
+        id: 'GTM-TH485ZV',
+      }
+    ]
+  ]
 };
 
 module.exports = config;
