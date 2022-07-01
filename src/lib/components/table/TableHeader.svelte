@@ -1,5 +1,6 @@
 <script lang="ts">
   export let sticky = "top";
+  export let maxWidth = "";
 </script>
 
 <th
@@ -8,6 +9,7 @@
   class:top-0={sticky === "top"}
   class:left-0={sticky === "left"}
   class:z-10={!!sticky}
+  style={maxWidth && `max-width: ${maxWidth}`}
 >
   <div
     class="
