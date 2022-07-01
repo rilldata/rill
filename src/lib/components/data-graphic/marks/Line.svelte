@@ -4,7 +4,7 @@
 
   import { lineFactory } from "$lib/components/data-graphic/utils";
   import { guidGenerator } from "$lib/util/guid";
-  import { contexts } from "../contexts";
+  import { contexts } from "../constants";
 
   const markID = guidGenerator();
 

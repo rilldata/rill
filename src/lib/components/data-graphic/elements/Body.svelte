@@ -6,7 +6,8 @@ Optionally allows borders (see the `border` & associated props) & a background (
 -->
 <script lang="ts">
   import { getContext } from "svelte";
-  import { contexts } from "../contexts";
+  import { contexts } from "../constants";
+  import type { SimpleConfigurationStore } from "../state/types";
 
   /** By default, we clip any child outside of the body bounds. */
   export let clipOutsideBounds = true;
@@ -44,8 +45,7 @@ Optionally allows borders (see the `border` & associated props) & a background (
   export let topBorderColor = borderColor;
   export let bottomBorderColor = borderColor;
 
-  const config = getContext(contexts.config);
-  $: console.log($config.bodyLeft, $config.plotLeft);
+  const config = getContext(contexts.config) as SimpleConfigurationStore;
 </script>
 
 <clipPath id="data-graphic-{$config.id}">
@@ -61,7 +61,7 @@ Optionally allows borders (see the `border` & associated props) & a background (
   <rect
     fill={bgColor}
     opacity={bgOpacity}
-    x={$config.bodyLet}
+    x={$config.bodyLeft}
     y={$config.bodyTop}
     width={$config.graphicWidth}
     height={$config.graphicHeight}

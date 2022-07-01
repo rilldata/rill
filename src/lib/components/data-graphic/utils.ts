@@ -1,31 +1,13 @@
 import { line, area, curveLinear, curveStep } from "d3-shape";
 import type { ScaleLinear } from "d3-scale";
 
-export interface PlotConfig {
-  width: number;
-  height: number;
-  devicePixelRatio: number;
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-  buffer: number;
-  plotTop: number;
-  plotBottom: number;
-  plotLeft: number;
-  plotRight: number;
-  fontSize: number;
-  textGap: number;
-  id: string;
-}
-
 /**
  * Creates a string to be fed into the d attribute of a path,
  * producing a single path definition for one circle.
  * These completed, segmented arcs will not overlap in a way where
  * we can overplot if part of the same path.
  */
-export function circlePath(cx: number, cy: number, r: number) {
+export function circlePath(cx: number, cy: number, r: number): string {
   return `
     M ${cx - r}, ${cy}
       a ${r},${r} 0 1,0 ${r * 2},0
@@ -62,6 +44,11 @@ interface LineGeneratorArguments {
   curve: string;
 }
 
+/** 
+ * A convenience function to generate a nice SVG path for a time series.
+ * FIXME: rename to timeSeriesLineFactory.
+ * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.
+ */
 export function lineFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     line()
@@ -71,6 +58,11 @@ export function lineFactory(args: LineGeneratorArguments) {
       .defined(isDefined(yAccessor));
 }
 
+/** 
+ * A convenience function to generate a nice SVG area path for a time series.
+ * FIXME: rename to timeSeriesAreaFactory.
+ * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.
+ */
 export function areaFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     area()

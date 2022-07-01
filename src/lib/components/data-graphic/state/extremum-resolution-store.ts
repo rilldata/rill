@@ -1,6 +1,5 @@
 /**
- * extremum-resolution-store
- * -------------------------
+ * @module extremum-resolution-store
  * This specialized store handles the resolution of plot bounds based
  * on multiple extrema. If multiple components set a maximum value within
  * the same namespace, the store will automatically pick the largest

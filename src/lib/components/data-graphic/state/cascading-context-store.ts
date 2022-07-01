@@ -1,12 +1,11 @@
 import { get, writable } from "svelte/store";
 import { setContext, getContext, hasContext } from "svelte";
 
-function prune(props) {
-  let next = {};
-  Object.keys(props).forEach(prop => {
+function prune(props: object) {
+  return Object.keys(props).reduce((next, prop) => {
     if (props[prop] !== undefined) next[prop] = props[prop];
-  })
-  return next;
+    return next;
+  }, {})
 }
 
 function addDerivations(store, derivations) {
@@ -18,7 +17,17 @@ function addDerivations(store, derivations) {
   })
 }
 
-export function cascadingContextStore(namespace, props, derivations = {}) {
+/** Creates a store that passes itself down as a context.
+ * If any children of the parent that created the store create a cascadingContextStore,
+ * the store value will look like {...parentProps, ...childProps}.
+ * In this case, the child component calling the new cascadingContextStore will pass the
+ * new store down to its children, reconciling any differences downstream.
+ * 
+ * this may seem complicated, but it does enable a lot of important 
+ * reactive data viz component compositions.
+ * Most consumers of the data graphic components won't need to worry about this store.
+ */
+export function cascadingContextStore<T>(namespace: string, props, derivations = {}) {
   // check to see if namespace exists.
   const hasParentCascade = hasContext(namespace);
 
@@ -53,7 +62,7 @@ export function cascadingContextStore(namespace, props, derivations = {}) {
   return {
     hasParentCascade,
     subscribe: store.subscribe,
-    reconcileProps(props) {
+    reconcileProps(props: T) {
       lastProps = { ...props };
 
       /** let's update the store with the latest props. */

@@ -1,8 +1,11 @@
 <script lang="ts">
   import { getContext } from "svelte";
   import { timeFormat } from "d3-time-format";
+  import { contexts } from "../constants";
+  import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
+  import type { AxisSide } from "./types.d";
   // fetch the scale context.
-  export let side = "left";
+  export let side: AxisSide = "left";
   export let tickLength = 4;
   export let tickBuffer = 4;
   export let fontSize = 12;
@@ -12,26 +15,24 @@
   export let formatter: Function = undefined;
 
   let container;
-  let mainScale;
   let xOrY;
-  const isVertical = side === "left" || side == "right";
+  const isVertical = side === "left" || side === "right";
   if (isVertical) {
     // get Y scale
-    mainScale = getContext("rill:data-graphic:y-scale");
     xOrY = "y";
   } else {
     // get X Scale
-    mainScale = getContext("rill:data-graphic:x-scale");
     xOrY = "x";
   }
+
+  const mainScale = getContext(contexts.scale(xOrY)) as ScaleStore;
+  const plotConfig = getContext(contexts.config) as SimpleConfigurationStore;
 
   /** make any adjustments to the scale to get what we need */
   $: scale =
     $plotConfig[`${xOrY}Type`] === "date"
       ? $mainScale.copy().nice()
       : $mainScale.copy();
-
-  const plotConfig = getContext("rill:data-graphic:plot-config");
 
   // text-anchor
   let textAnchor;
@@ -43,7 +44,7 @@
     textAnchor = placement; // middle by default
   }
 
-  function x(side, value) {
+  function x(side: AxisSide, value) {
     if (side === "left") {
       return $plotConfig.left - tickLength - tickBuffer;
     } else if (side === "right") {
@@ -52,7 +53,7 @@
     return scale(value);
   }
 
-  function y(side, value) {
+  function y(side: AxisSide, value) {
     if (side === "top") {
       return $plotConfig.top - tickLength - tickBuffer;
     } else if (side === "bottom") {
@@ -61,7 +62,7 @@
     return scale(value);
   }
 
-  function dy(side) {
+  function dy(side: AxisSide) {
     if (side === "top") {
       return 0;
     } else if (side === "bottom") {
@@ -71,7 +72,7 @@
     return ".35em";
   }
 
-  function placeTick(side, value) {
+  function placeTick(side: AxisSide, value) {
     if (side === "top") {
       return {
         x1: scale(value),
@@ -88,8 +89,8 @@
       };
     } else if (side === "left") {
       return {
-        x1: scale.left,
-        x2: scale.left - tickLength,
+        x1: $plotConfig.left,
+        x2: $plotConfig.left - tickLength,
         y1: scale(value),
         y2: scale(value),
       };
@@ -133,6 +134,8 @@
   }
   let axisLength;
   let tickCount = 0;
+  // FIXME: we should be generalizing anything like this!
+  // we also have a similar codeblock in Grid.svelte
   $: if (container) {
     axisLength =
       container.getBoundingClientRect()[isVertical ? "height" : "width"];

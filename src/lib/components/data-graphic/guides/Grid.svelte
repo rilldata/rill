@@ -1,10 +1,11 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { contexts } from "../contexts";
+  import { contexts } from "../constants";
+  import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
-  const xScale = getContext(contexts.scale("x"));
-  const yScale = getContext(contexts.scale("y"));
-  const config = getContext(contexts.config);
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const yScale = getContext(contexts.scale("y")) as ScaleStore;
+  const config = getContext(contexts.config) as SimpleConfigurationStore;
 
   export let showX = true;
   export let showY = true;

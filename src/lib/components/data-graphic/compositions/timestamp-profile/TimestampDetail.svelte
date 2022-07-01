@@ -21,14 +21,14 @@
   import { scaleLinear } from "d3-scale";
   import type { ScaleLinear } from "d3-scale";
   import { DEFAULT_COORDINATES } from "$lib/components/data-graphic/constants";
-  import { createScrubAction } from "$lib/components/data-graphic/scrub-action-factory";
+  import { createScrubAction } from "$lib/components/data-graphic/actions/scrub-action-factory";
   import { extent, bisector, max, min } from "d3-array";
-  import { outline } from "$lib/components/data-graphic/outline";
+  import { outline } from "$lib/components/data-graphic/actions/outline";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import type { Interval } from "$lib/duckdb-data-types";
   import { writable } from "svelte/store";
   import type { Writable } from "svelte/store";
-  import { createExtremumResolutionStore } from "../../extremum-resolution-store";
+  import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
 
   import TimestampBound from "./TimestampBound.svelte";
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";

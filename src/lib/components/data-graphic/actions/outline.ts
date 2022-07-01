@@ -9,14 +9,14 @@ interface OutlineAction {
   destroy: () => void;
 }
 
-export function outline(node: SVGElement): OutlineAction {
+export function outline(node: SVGElement, args = { color: "white" }): OutlineAction {
   const enclosingSVG = node.ownerSVGElement;
 
   // create a clone of the element.
   const clonedElement = node.cloneNode(true) as SVGElement;
   node.parentElement.insertBefore(clonedElement, node);
-  clonedElement.setAttribute("fill", "white");
-  clonedElement.style.fill = "white";
+  clonedElement.setAttribute("fill", args.color);
+  clonedElement.style.fill = args.color;
   clonedElement.setAttribute("filter", "url(#outline-filter)");
   // apply the filter to this svg element.
   let outlineFilter = enclosingSVG.querySelector("#outline-filter");

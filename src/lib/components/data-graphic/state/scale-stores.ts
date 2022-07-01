@@ -1,9 +1,9 @@
-import { ScaleLinear, scaleLinear, ScaleTime, scaleTime } from "d3-scale";
-import { getContext, setContext, getAllContexts } from "svelte";
-import { derived, Readable, Writable, get } from "svelte/store";
-import { contexts } from "../contexts";
-import { createExtremumResolutionStore } from "../extremum-resolution-store";
-import type { PlotConfig } from "../utils";
+import { scaleLinear, scaleTime } from "d3-scale";
+import { getContext, setContext } from "svelte";
+import { derived, Writable } from "svelte/store";
+import { contexts } from "../constants";
+import { createExtremumResolutionStore } from "./extremum-resolution-store";
+import type { ScaleStore, SimpleConfigurationStore } from "./types.d";
 
 const SCALES = {
   number: scaleLinear,
@@ -26,10 +26,11 @@ export function initializeMaxMinStores({
   return { minStore, maxStore };
 }
 
-export function initializeScale(args) {
+export function initializeScale(args): ScaleStore {
   const minStore = getContext(contexts.min(args.namespace)) as Writable<(number | Date)>;
   const maxStore = getContext(contexts.max(args.namespace)) as Writable<(number | Date)>;
-  const config = getContext(contexts.config) as PlotConfig;
+  const config = getContext(contexts.config) as SimpleConfigurationStore;
+  console.log(args)
   const scaleStore = derived([minStore, maxStore, config], ([$min, $max, $config]) => {
     const scale = SCALES[args.scaleType];
     const minRangeValue: (number | Date) = typeof args.rangeMin === 'function' ? args.rangeMin($config) : args.rangeMin;
@@ -39,5 +40,5 @@ export function initializeScale(args) {
   });
   scaleStore.type = args.scaleType;
   setContext(contexts.scale(args.namespace), scaleStore);
-  return scaleStore;
+  return scaleStore as ScaleStore;
 }

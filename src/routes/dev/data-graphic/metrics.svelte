@@ -3,12 +3,16 @@
   import { cubicOut as easing, sineInOut } from "svelte/easing";
   import { derived } from "svelte/store";
   import { format } from "d3-format";
+
   import GraphicContext from "$lib/components/data-graphic/elements/GraphicContext.svelte";
   import Body from "$lib/components/data-graphic/elements/Body.svelte";
   import Line from "$lib/components/data-graphic/marks/Line.svelte";
   import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
   import Area from "$lib/components/data-graphic/marks/Area.svelte";
   import Grid from "$lib/components/data-graphic/guides/Grid.svelte";
+  import WithBisector from "$lib/components/data-graphic/functional-components/WithBisector.svelte";
+  import PointLabel from "$lib/components/data-graphic/guides/PointLabel.svelte";
+  import type { PointLabelVariant } from "$lib/components/data-graphic/guides/types";
 
   function makeData(intervalSize = 1000000) {
     let v1 = 36;
@@ -84,6 +88,15 @@
       formatAxis: format(".0%"),
     },
   ];
+
+  let mouseover = undefined;
+
+  let mouseoverStyle: PointLabelVariant = "fixed";
+  function style(style: PointLabelVariant) {
+    return () => {
+      mouseoverStyle = style;
+    };
+  }
 </script>
 
 <button
@@ -91,6 +104,17 @@
     data1.set(makeData());
   }}>randomize</button
 >
+
+<div>
+  <button
+    class:bg-gray-100={mouseoverStyle === "fixed"}
+    on:click={style("fixed")}>top right</button
+  >
+  <button
+    class:bg-gray-100={mouseoverStyle === "moving"}
+    on:click={style("moving")}>with mouse</button
+  >
+</div>
 
 <div
   style="
@@ -117,31 +141,63 @@
         <Axis side="top" />
       </svg>
     </GraphicContext>
-    {#each metrics as { name, accessor, formatBigNumber, formatAxis }, i}
-      <div>
-        <h2>
-          {name}
-        </h2>
-        <div
-          style:font-size="1.5rem"
-          style:font-weight="light"
-          class="text-gray-600"
-        >
-          {formatBigNumber
-            ? formatBigNumber($bigNum1[accessor])
-            : $bigNum1[accessor]}
+    <WithBisector
+      data={$data1}
+      callback={(datum) => datum.period}
+      value={mouseover}
+      let:point
+    >
+      {#each metrics as { name, accessor, formatBigNumber, formatAxis }, i}
+        <div>
+          <h2>
+            {name}
+          </h2>
+          <div
+            style:font-size="1.5rem"
+            style:font-weight="light"
+            class="text-gray-600"
+          >
+            {formatBigNumber
+              ? formatBigNumber($bigNum1[accessor])
+              : $bigNum1[accessor]}
+          </div>
         </div>
-      </div>
-      <GraphicContext shareYScale={false} yType="number" yMin={0} let:config>
-        <svg width={config.width} height={config.height}>
-          <Body>
-            <Line data={$data1} xAccessor="period" yAccessor={accessor} />
-            <Area data={$data1} xAccessor="period" yAccessor={accessor} />
-          </Body>
-          <Grid showY={false} />
-          <Axis side="right" formatter={formatAxis} />
-        </svg>
-      </GraphicContext>
-    {/each}
+        <GraphicContext
+          shareYScale={false}
+          yType="number"
+          yMin={0}
+          let:config
+          let:xScale
+        >
+          <svg
+            on:mousemove={(event) => {
+              let bound = event.offsetX;
+              mouseover = xScale.invert(bound);
+            }}
+            on:mouseleave={() => {
+              mouseover = undefined;
+            }}
+            width={config.width}
+            height={config.height}
+          >
+            <Body border borderColor="rgba(0,0,0,.1)">
+              <Line data={$data1} xAccessor="period" yAccessor={accessor} />
+              <Area data={$data1} xAccessor="period" yAccessor={accessor} />
+            </Body>
+            <Grid showY={false} />
+            <Axis side="right" formatter={formatAxis} />
+            {#if point}
+              <PointLabel
+                tweenProps={{ duration: 50 }}
+                variant={mouseoverStyle}
+                x={point.period}
+                y={point[accessor]}
+                format={formatBigNumber}
+              />
+            {/if}
+          </svg>
+        </GraphicContext>
+      {/each}
+    </WithBisector>
   </GraphicContext>
 </div>

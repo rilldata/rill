@@ -1,12 +1,22 @@
+<!--
+@component
+A functional component that cascades its props to its children.
+If a GraphicContext is a child of another GraphicContext, it will inherit its props and
+honor any new props passed into it, thereby reconciling the props between it and its parent
+for any of its children.
+-->
 <script lang="ts">
-  import type { PlotConfig } from "../utils";
-  import { contexts } from "../contexts";
-  import { cascadingContextStore } from "../state/cascading-context-store";
+  import { contexts } from "../constants";
   import {
+    cascadingContextStore,
     initializeMaxMinStores,
     initializeScale,
-  } from "../state/scale-stores";
-  import { hasContext } from "svelte";
+  } from "../state";
+  import type {
+    SimpleConfigurationStore,
+    SimpleDataGraphicConfiguration,
+    SimpleDataGraphicConfigurationArguments,
+  } from "../state/types";
 
   export let width: number = undefined;
   export let height: number = undefined;
@@ -14,7 +24,6 @@
   export let bottom: number = undefined;
   export let left: number = undefined;
   export let right: number = undefined;
-  export let buffer: number = undefined;
 
   export let fontSize: number = undefined;
   export let textGap: number = undefined;
@@ -32,51 +41,56 @@
 
   export let shareXScale: boolean = true;
   export let shareYScale: boolean = true;
-
-  const config = cascadingContextStore(
-    contexts.config,
-    {
-      width,
-      height,
-      top,
-      bottom,
-      left,
-      right,
-      buffer,
-      fontSize,
-      textGap,
-      xType,
-      yType,
-      xMin,
-      xMax,
-      yMin,
-      yMax,
-      bodyBuffer,
-      marginBuffer,
-    },
-    {
-      plotLeft: (config) => config.left,
-      plotRight: (config) => config.width - config.right,
-      plotTop: (config) => config.top,
-      plotBottom: (config) => config.height - config.bottom,
-      bodyLeft: (config) => config.left + config.bodyBuffer || 0,
-      bodyRight: (config) =>
-        config.width - config.right - config.bodyBuffer || 0,
-      bodyTop: (config) => config.top + config.bodyBuffer || 0,
-      bodyBottom: (config) =>
-        config.height - config.bottom - config.bodyBuffer || 0,
-      graphicWidth: (config) =>
-        config.width -
-        config.left -
-        config.right -
-        2 * (config.bodyBuffer || 0),
-      graphicHeight: (config) =>
-        config.height -
-        config.top -
-        config.bottom -
-        2 * (config.bodyBuffer || 0),
-    }
-  );
+  let k = true;
+  const config: SimpleConfigurationStore =
+    cascadingContextStore<SimpleDataGraphicConfigurationArguments>(
+      contexts.config,
+      {
+        width,
+        height,
+        top,
+        bottom,
+        left,
+        right,
+        fontSize,
+        textGap,
+        xType,
+        yType,
+        xMin,
+        xMax,
+        yMin,
+        yMax,
+        bodyBuffer,
+        marginBuffer,
+      },
+      /** these values are derived from the existing SimpleDataGraphicConfigurationArguments */
+      {
+        plotLeft: (config: SimpleDataGraphicConfiguration) => config.left,
+        plotRight: (config: SimpleDataGraphicConfiguration) =>
+          config.width - config.right,
+        plotTop: (config: SimpleDataGraphicConfiguration) => config.top,
+        plotBottom: (config: SimpleDataGraphicConfiguration) =>
+          config.height - config.bottom,
+        bodyLeft: (config: SimpleDataGraphicConfiguration) =>
+          config.left + config.bodyBuffer || 0,
+        bodyRight: (config: SimpleDataGraphicConfiguration) =>
+          config.width - config.right - config.bodyBuffer || 0,
+        bodyTop: (config: SimpleDataGraphicConfiguration) =>
+          config.top + config.bodyBuffer || 0,
+        bodyBottom: (config: SimpleDataGraphicConfiguration) =>
+          config.height - config.bottom - config.bodyBuffer || 0,
+        graphicWidth: (config: SimpleDataGraphicConfiguration) =>
+          config.width -
+          config.left -
+          config.right -
+          2 * (config.bodyBuffer || 0),
+        graphicHeight: (config: SimpleDataGraphicConfiguration) =>
+          config.height -
+          config.top -
+          config.bottom -
+          2 * (config.bodyBuffer || 0),
+      }
+    );
 
   $: config.reconcileProps({
     width,
@@ -85,7 +99,6 @@
     bottom,
     left,
     right,
-    buffer,
     fontSize,
     textGap,
     xType,
@@ -98,10 +111,7 @@
     marginBuffer,
   });
 
-  /** we will need to (1) reset the derived scale store and (2) (if we're not sharing the x scale) we need
-   * FIRST to regenerate the extrema.
-   */
-
+  /** Reset any extremum values if we aren't sharing the scale or there is no parent cascade. */
   if (!config.hasParentCascade || !shareYScale) {
     initializeMaxMinStores({
       namespace: "y",
@@ -123,16 +133,16 @@
    */
   const xScale = initializeScale({
     namespace: "x",
-    scaleType: "date",
-    rangeMin: (config: PlotConfig) => config.bodyLeft,
-    rangeMax: (config: PlotConfig) => config.bodyRight,
+    scaleType: xType || $config.yType,
+    rangeMin: (config: SimpleDataGraphicConfiguration) => config.bodyLeft,
+    rangeMax: (config: SimpleDataGraphicConfiguration) => config.bodyRight,
   });
   const yScale = initializeScale({
     namespace: "y",
-    scaleType: "number",
-    rangeMin: (config: PlotConfig) => config.bodyBottom,
-    rangeMax: (config: PlotConfig) => config.bodyTop,
+    scaleType: yType || $config.yType,
+    rangeMin: (config: SimpleDataGraphicConfiguration) => config.bodyBottom,
+    rangeMax: (config: SimpleDataGraphicConfiguration) => config.bodyTop,
   });
 </script>
 
-<slot config={{ ...$config }} xScale={$xScale} yScale={$yScale} />
+<slot config={$config} xScale={$xScale} yScale={$yScale} />
