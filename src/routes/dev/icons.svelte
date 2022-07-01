@@ -14,7 +14,8 @@
       i.includes("Code") ||
       i.includes("List") ||
       i.includes("Explore") ||
-      i.includes("PlayCircle")
+      i.includes("PlayCircle") ||
+      i.includes("Parquet")
   );
 
   const others = Object.keys(icons).filter(
