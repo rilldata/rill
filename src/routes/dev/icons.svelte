@@ -25,28 +25,26 @@
 
 <h1 class="text-xl mb-4">Iconography</h1>
 
-<div>
+<div class="flex flex-row flex-wrap w-screen gap-x-16">
   {#each [["view icons", viewIcons], ["form icons", formIcons], ["data types", typeIcons], ["others", others]] as [name, iconSet]}
-    <h2 class="mb-1 mt-3">{name}</h2>
-    <div
-      class="grid gap-x-3 gap-y-2 items-center"
-      style:grid-template-columns="max-content max-content max-content
-      max-content"
-    >
-      {#each iconSet as iconName}
-        <div style:width="200px">
-          {iconName.split("/").slice(-1)[0]}
-        </div>
-        <div style:font-size="2rem">
-          <svelte:component this={icons[iconName].default} />
-        </div>
-        <div style:font-size="1rem">
-          <svelte:component this={icons[iconName].default} />
-        </div>
-        <div style:font-size="12px">
-          <svelte:component this={icons[iconName].default} />
-        </div>
-      {/each}
+    <div>
+      <h2 class="mb-1 mt-3">{name}</h2>
+      <div
+        class="grid gap-x-3 gap-y-2 items-center"
+        style:grid-template-columns="max-content max-content max-content"
+      >
+        {#each iconSet as iconName}
+          <div style:width="200px">
+            {iconName.split("/").slice(-1)[0]}
+          </div>
+          <div style:font-size="2rem">
+            <svelte:component this={icons[iconName].default} />
+          </div>
+          <div style:font-size="1rem">
+            <svelte:component this={icons[iconName].default} />
+          </div>
+        {/each}
+      </div>
     </div>
   {/each}
 </div>
