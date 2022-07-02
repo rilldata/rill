@@ -1,3 +1,6 @@
+<!--
+  Draws grid lines according to the specified axis ticks.
+-->
 <script lang="ts">
   import { getContext } from "svelte";
   import { contexts } from "../constants";

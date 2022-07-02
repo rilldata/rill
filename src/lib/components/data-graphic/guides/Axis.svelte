@@ -1,3 +1,6 @@
+<!-- @component
+This component will draw an axis on the specified side.
+-->
 <script lang="ts">
   import { getContext } from "svelte";
   import { timeFormat } from "d3-time-format";

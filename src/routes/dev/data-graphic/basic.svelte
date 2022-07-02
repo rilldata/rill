@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SimpleDataGraphic from "$lib/components/data-graphic/SimpleDataGraphic.svelte";
+  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import Body from "$lib/components/data-graphic/elements/Body.svelte";
   import Line from "$lib/components/data-graphic/marks/Line.svelte";
   import Axis from "$lib/components/data-graphic/guides/Axis.svelte";

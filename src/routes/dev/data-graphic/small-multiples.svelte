@@ -7,11 +7,17 @@
   import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
   import PointLabel from "$lib/components/data-graphic/guides/PointLabel.svelte";
   import Line from "$lib/components/data-graphic/marks/Line.svelte";
-  import SimpleDataGraphic from "$lib/components/data-graphic/SimpleDataGraphic.svelte";
+  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import WithBisector from "$lib/components/data-graphic/functional-components/WithBisector.svelte";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import Area from "$lib/components/data-graphic/marks/Area.svelte";
+  import type { DomainCoordinates } from "$lib/components/data-graphic/constants/types";
+
+  /** bind the mouseoverValue of a graph to this variable to share
+   * with other graphs
+   */
+  let mouseoverValue: DomainCoordinates;
 
   function smooth(data, accessor, windowSize = 7) {
     return data.map((datum, i) => {
@@ -35,7 +41,7 @@
     });
     return smooth(data, 7);
   }
-  let mouseoverValues;
+
   let datasets = tweened(
     Array.from({ length: 36 }).map(() => makeData(60)),
     { duration: 500, easing: cubicOut }
@@ -63,7 +69,7 @@
             right={20}
             top={4}
             bottom={16}
-            bind:mouseoverValues
+            bind:mouseoverValue
             let:hovered
           >
             <Body bottomBorder>
@@ -89,11 +95,11 @@
                 <Axis side="bottom" />
               </g>
             {/if}
-            {#if mouseoverValues?.x}
+            {#if mouseoverValue?.x}
               <g transition:fade={{ duration: 50 }}>
                 <WithBisector
                   {data}
-                  value={mouseoverValues.x}
+                  value={mouseoverValue.x}
                   callback={(datum) => datum.period}
                   let:point
                 >

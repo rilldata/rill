@@ -1,3 +1,7 @@
+<!-- @component
+A convenience container that creates an svg element and slots in scales, mouseover values, and the configuration object
+to the props.
+-->
 <script lang="ts">
   import { getContext } from "svelte";
   import { mousePositionToDomainActionFactory } from "../actions/mouse-position-to-domain-action-factory";
@@ -10,9 +14,9 @@
   const { coordinates, mousePositionToDomain } =
     mousePositionToDomainActionFactory();
 
-  export let mouseoverValues;
+  export let mouseoverValue;
 
-  $: mouseoverValues = $coordinates;
+  $: mouseoverValue = $coordinates;
 </script>
 
 <svg use:mousePositionToDomain width={$config.width} height={$config.height}>
@@ -20,7 +24,7 @@
     {config}
     xScale={$xScale}
     yScale={$yScale}
-    {mouseoverValues}
+    {mouseoverValue}
     hovered={$coordinates.x !== undefined}
   />
 </svg>

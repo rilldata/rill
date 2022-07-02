@@ -1,3 +1,6 @@
+<!-- @component
+  draws an "area under the curve" shape as a <path>
+-->
 <script lang="ts">
   import { getContext, onDestroy } from "svelte";
   import { extent } from "d3-array";

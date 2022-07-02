@@ -1,6 +1,6 @@
 <script lang="ts">
   import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
-  import SimpleDataGraphic from "$lib/components/data-graphic/SimpleDataGraphic.svelte";
+  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   const width = 132;
   const height = 132;
   const leftRight = 36;

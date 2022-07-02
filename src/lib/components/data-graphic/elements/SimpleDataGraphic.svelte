@@ -1,3 +1,6 @@
+<!-- @component
+A simple composable container for SVG-based data graphics.
+-->
 <script lang="ts">
   import GraphicContext from "./elements/GraphicContext.svelte";
   import { mousePositionToDomainActionFactory } from "./actions/mouse-position-to-domain-action-factory";
@@ -21,7 +24,7 @@
   export let yMin = undefined;
   export let yMax = undefined;
 
-  export let mouseoverValues;
+  export let mouseoverValue;
 
   $: parameters = {
     width,
@@ -45,12 +48,12 @@
 
 <GraphicContext {...parameters}>
   <SimpleSVGContainer
-    bind:mouseoverValues
+    bind:mouseoverValue
     let:xScale
     let:yScale
     let:config
     let:hovered
   >
-    <slot {xScale} {yScale} {mouseoverValues} {config} {hovered} />
+    <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
   </SimpleSVGContainer>
 </GraphicContext>
