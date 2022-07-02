@@ -62,7 +62,7 @@ export function createExtremumResolutionStore(
     });
   }
 
-  function _remove(key) {
+  function _remove(key:string) {
     storedValues.update((storeValue) => {
       delete storeValue[key];
       return storeValue;

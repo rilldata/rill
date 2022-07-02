@@ -6,45 +6,52 @@
  */
 import { getContext } from "svelte";
 import { get, Readable, writable } from "svelte/store";
-import { DEFAULT_COORDINATES, DomainCoordinates } from "../constants"
+import { DEFAULT_COORDINATES } from "../constants";
+
 import { contexts } from "../constants";
 import type { ScaleStore } from "../state/types";
-import type { Action, ActionReturn } from "svelte/action"
+import type { Action, ActionReturn } from "svelte/action";
+import type { DomainCoordinates } from "../constants/types";
 
 export interface MousePositionToDomainActionSet {
   coordinates: Readable<DomainCoordinates>;
-  mousePositionToDomain: Action<(HTMLElement | SVGElement)>
+  mousePositionToDomain: Action<HTMLElement | SVGElement>;
 }
 
 export function mousePositionToDomainActionFactory(): MousePositionToDomainActionSet {
-  const coordinateStore = writable<DomainCoordinates>({ ...DEFAULT_COORDINATES });
-  const xScale = getContext(contexts.scale('x')) as ScaleStore;
-  const yScale = getContext(contexts.scale('y')) as ScaleStore;
+  const coordinateStore = writable<DomainCoordinates>({
+    ...DEFAULT_COORDINATES,
+  });
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const yScale = getContext(contexts.scale("y")) as ScaleStore;
 
   let offsetX: number;
   let offsetY: number;
   let mouseover = false;
 
-  const unsubscribeFromXScale = xScale.subscribe(xs => {
+  const unsubscribeFromXScale = xScale.subscribe((xs) => {
     if (mouseover) {
-      coordinateStore.update(coords => {
-        return { ...coords, x: xs(offsetX) }
-      })
+      coordinateStore.update((coords) => {
+        return { ...coords, x: xs(offsetX) };
+      });
     }
-  })
-  const unsubscribeFromYScale = yScale.subscribe(ys => {
+  });
+  const unsubscribeFromYScale = yScale.subscribe((ys) => {
     if (mouseover) {
-      coordinateStore.update(coords => {
-        return { ...coords, y: ys(offsetY) }
-      })
+      coordinateStore.update((coords) => {
+        return { ...coords, y: ys(offsetY) };
+      });
     }
-  })
+  });
 
   function onMouseMove(event) {
     offsetX = event.offsetX;
     offsetY = event.offsetY;
 
-    coordinateStore.set({ x: get(xScale).invert(offsetX), y: get(yScale).invert(offsetY) });
+    coordinateStore.set({
+      x: get(xScale).invert(offsetX),
+      y: get(yScale).invert(offsetY),
+    });
     mouseover = true;
   }
 
@@ -52,20 +59,22 @@ export function mousePositionToDomainActionFactory(): MousePositionToDomainActio
     coordinateStore.set({ ...DEFAULT_COORDINATES });
     mouseover = false;
   }
-  const coordinates = ({ subscribe: coordinateStore.subscribe }) as Readable<DomainCoordinates>;
+  const coordinates = {
+    subscribe: coordinateStore.subscribe,
+  } as Readable<DomainCoordinates>;
   return {
     coordinates,
-    mousePositionToDomain(node: (HTMLElement | SVGElement)): ActionReturn<void> {
-      node.addEventListener('mousemove', onMouseMove);
-      node.addEventListener('mouseleave', onMouseLeave);
+    mousePositionToDomain(node: HTMLElement | SVGElement): ActionReturn<void> {
+      node.addEventListener("mousemove", onMouseMove);
+      node.addEventListener("mouseleave", onMouseLeave);
       return {
         destroy(): void {
           unsubscribeFromXScale();
           unsubscribeFromYScale();
-          node.removeEventListener('mousemove', onMouseMove);
-          node.removeEventListener('mouseleave', onMouseLeave);
-        }
-      }
-    }
-  }
+          node.removeEventListener("mousemove", onMouseMove);
+          node.removeEventListener("mouseleave", onMouseLeave);
+        },
+      };
+    },
+  };
 }
