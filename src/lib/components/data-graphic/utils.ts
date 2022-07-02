@@ -1,5 +1,5 @@
 import { line, area, curveLinear, curveStep } from "d3-shape";
-import type { ScaleLinear } from "d3-scale";
+import type { ScaleLinear, ScaleTime } from "d3-scale";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -39,12 +39,12 @@ function isDefined(yAccessor: string) {
 
 interface LineGeneratorArguments {
   xAccessor: string;
-  xScale: ScaleLinear<number, number>;
-  yScale: ScaleLinear<number, number>;
+  xScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
+  yScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
   curve: string;
 }
 
-/** 
+/**
  * A convenience function to generate a nice SVG path for a time series.
  * FIXME: rename to timeSeriesLineFactory.
  * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.
@@ -58,7 +58,7 @@ export function lineFactory(args: LineGeneratorArguments) {
       .defined(isDefined(yAccessor));
 }
 
-/** 
+/**
  * A convenience function to generate a nice SVG area path for a time series.
  * FIXME: rename to timeSeriesAreaFactory.
  * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.

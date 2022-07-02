@@ -4,6 +4,7 @@
 
   import { areaFactory } from "$lib/components/data-graphic/utils";
   import { guidGenerator } from "$lib/util/guid";
+  import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
 
   const markID = guidGenerator();
 
@@ -20,10 +21,18 @@
   export let yMin = undefined;
   export let yMax = undefined;
 
-  const xMinStore = getContext("rill:data-graphic:x-min");
-  const xMaxStore = getContext("rill:data-graphic:x-max");
-  const yMinStore = getContext("rill:data-graphic:y-min");
-  const yMaxStore = getContext("rill:data-graphic:y-max");
+  const xMinStore = getContext(
+    "rill:data-graphic:x-min"
+  ) as ExtremumResolutionStore;
+  const xMaxStore = getContext(
+    "rill:data-graphic:x-max"
+  ) as ExtremumResolutionStore;
+  const yMinStore = getContext(
+    "rill:data-graphic:y-min"
+  ) as ExtremumResolutionStore;
+  const yMaxStore = getContext(
+    "rill:data-graphic:y-max"
+  ) as ExtremumResolutionStore;
 
   // get extents
   $: [xMinValue, xMaxValue] = extent(data, (d) => d[xAccessor]);
@@ -36,8 +45,8 @@
   $: yMaxStore.setWithKey(markID, yMax || yMaxValue);
   // we should set the extrema here.
 
-  const xScale = getContext("rill:data-graphic:x-scale");
-  const yScale = getContext("rill:data-graphic:y-scale");
+  const xScale = getContext("rill:data-graphic:x-scale") as ScaleStore;
+  const yScale = getContext("rill:data-graphic:y-scale") as ScaleStore;
 
   onDestroy(() => {
     xMinStore.removeKey(markID);

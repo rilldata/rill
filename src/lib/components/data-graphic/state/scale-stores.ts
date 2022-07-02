@@ -36,8 +36,8 @@ export function initializeScale(args): ScaleStore {
     const maxRangeValue: (number | Date) = typeof args.rangeMax === 'function' ? args.rangeMax($config) : args.rangeMax;
     return scale()
       .domain([$min, $max]).range([minRangeValue, maxRangeValue])
-  });
+  }) as ScaleStore;
   scaleStore.type = args.scaleType;
   setContext(contexts.scale(args.namespace), scaleStore);
-  return scaleStore as ScaleStore;
+  return scaleStore;
 }

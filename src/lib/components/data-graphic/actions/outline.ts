@@ -9,7 +9,10 @@ interface OutlineAction {
   destroy: () => void;
 }
 
-export function outline(node: SVGElement, args = { color: "white" }): OutlineAction {
+export function outline(
+  node: SVGElement,
+  args = { color: "white" }
+): OutlineAction {
   const enclosingSVG = node.ownerSVGElement;
 
   // create a clone of the element.

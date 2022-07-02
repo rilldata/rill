@@ -1,11 +1,16 @@
 import type { ScaleLinear, ScaleTime } from "d3-scale";
 import type { Readable } from "svelte/store";
 
+export interface ExtremumResolutionStore extends Readable<number | Date> {
+  setWithKey: (arg0: string, arg1: (number | Date)) => void;
+  removeKey: (arg0: string) => void
+}
 export interface ScaleStore extends Readable<ScaleLinear<number, number> | ScaleTime<Date, number>> {
   type: string
 };
 
 export interface SimpleDataGraphicConfigurationArguments {
+  id: string,
   width: number;
   height: number;
   left: number;

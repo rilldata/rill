@@ -6,6 +6,8 @@ honor any new props passed into it, thereby reconciling the props between it and
 for any of its children.
 -->
 <script lang="ts">
+  import { guidGenerator } from "$lib/util/guid";
+
   import { contexts } from "../constants";
   import {
     cascadingContextStore,
@@ -41,7 +43,9 @@ for any of its children.
 
   export let shareXScale = true;
   export let shareYScale = true;
-  let k = true;
+
+  const id = guidGenerator();
+
   const config: SimpleConfigurationStore = cascadingContextStore<
     SimpleDataGraphicConfigurationArguments,
     SimpleDataGraphicConfiguration
@@ -64,6 +68,7 @@ for any of its children.
       yMax,
       bodyBuffer,
       marginBuffer,
+      id,
     },
     /** these values are derived from the existing SimpleDataGraphicConfigurationArguments */
     {
@@ -111,6 +116,7 @@ for any of its children.
     yMax,
     bodyBuffer,
     marginBuffer,
+    id,
   });
 
   /** Reset any extremum values if we aren't sharing the scale or there is no parent cascade. */
