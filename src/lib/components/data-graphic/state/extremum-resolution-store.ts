@@ -60,6 +60,9 @@ export function createExtremumResolutionStore(
       storeValue[key].override = override;
       return storeValue;
     });
+  };
+  if (initialValue) {
+    _update('__initial_value__', initialValue);
   }
 
   function _remove(key:string) {
