@@ -206,7 +206,7 @@
         <Shortcut>click</Shortcut>
       {/if}
       <div>
-        <StackingWord key="shift">copy</StackingWord> to clipboard
+        <StackingWord key="shift">copy</StackingWord> name to clipboard
       </div>
       <Shortcut>shift + click</Shortcut>
     </TooltipShortcutContainer>
