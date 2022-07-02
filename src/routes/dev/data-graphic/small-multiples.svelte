@@ -49,13 +49,14 @@
 </script>
 
 <section>
-  <h1 class="text-xl mb-6">Small Multiples</h1>
-  <button
-    class="p-3 pt-1 pb-1 bg-gray-100 rounded mb-6 hover:bg-gray-200"
-    on:click={() => {
-      datasets.set(Array.from({ length: 36 }).map(() => makeData(60)));
-    }}>randomize</button
-  >
+  <h1 class="text-xl">
+    Small Multiples <button
+      class="text-sm font-normal p-3 pt-1 pb-1 bg-gray-100 rounded mb-6 hover:bg-gray-200"
+      on:click={() => {
+        datasets.set(Array.from({ length: 36 }).map(() => makeData(60)));
+      }}>randomize</button
+    >
+  </h1>
 
   <GraphicContext xType="date" yType="number">
     <div class="flex flex-row flex-wrap gap-3 w-max-screen">
@@ -64,11 +65,12 @@
           <h2 class="pl-5">Group {i + 1}</h2>
           <SimpleDataGraphic
             width={180}
-            height={120}
-            left={20}
+            height={116}
+            left={32}
             right={20}
             top={4}
             bottom={16}
+            fontSize={10}
             bind:mouseoverValue
             let:hovered
           >
@@ -79,7 +81,7 @@
                     {data}
                     xAccessor="period"
                     yAccessor="y"
-                    color="hsla(1, 50%, 90%)"
+                    color="hsla(1, 50%, 90%, .5)"
                   />
                 </g>
               {/if}
@@ -93,6 +95,7 @@
             {#if i === 0 || (hovered && !(i === 0))}
               <g transition:fade={{ duration: 50 }}>
                 <Axis side="bottom" />
+                <Axis side="left" />
               </g>
             {/if}
             {#if mouseoverValue?.x}

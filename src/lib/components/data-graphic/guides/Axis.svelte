@@ -7,15 +7,13 @@ This component will draw an axis on the specified side.
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import type { AxisSide } from "./types.d";
-  // fetch the scale context.
+
   export let side: AxisSide = "left";
+  export let formatter: (arg0: number | Date) => string = undefined;
   export let tickLength = 4;
   export let tickBuffer = 4;
-  export let fontSize = 12;
-
+  export let fontSize: number = undefined;
   export let placement = "middle";
-
-  export let formatter: (arg0: number | Date) => string = undefined;
 
   let container;
   let xOrY;
@@ -30,6 +28,9 @@ This component will draw an axis on the specified side.
 
   const mainScale = getContext(contexts.scale(xOrY)) as ScaleStore;
   const plotConfig = getContext(contexts.config) as SimpleConfigurationStore;
+
+  /** set a font size variable here */
+  $: innerFontSize = $plotConfig.fontSize || fontSize || 12;
 
   /** make any adjustments to the scale to get what we need */
   $: scale =
@@ -60,7 +61,12 @@ This component will draw an axis on the specified side.
     if (side === "top") {
       return $plotConfig.top - tickLength - tickBuffer;
     } else if (side === "bottom") {
-      return $plotConfig.height - $plotConfig.bottom + fontSize + tickLength;
+      return (
+        $plotConfig.height -
+        $plotConfig.bottom +
+        (innerFontSize || 0) +
+        tickLength
+      );
     }
     return scale(value);
   }
@@ -146,6 +152,7 @@ This component will draw an axis on the specified side.
     tickCount = ~~(axisLength / 20);
     tickCount = Math.max(3, ~~(axisLength / 100));
   }
+  $: if (xOrY === "x") console.log($plotConfig, tickLength);
 </script>
 
 <g bind:this={container}>
@@ -156,6 +163,7 @@ This component will draw an axis on the specified side.
       y={y(side, tick)}
       dy={dy(side)}
       text-anchor={textAnchor}
+      font-size={innerFontSize}
     >
       {formatterFunction(tick)}
     </text>
@@ -166,6 +174,7 @@ This component will draw an axis on the specified side.
       x2={tickPlacement.x2}
       y1={tickPlacement.y1}
       y2={tickPlacement.y2}
+      font-size={innerFontSize}
       stroke="black"
     />
   {/each}

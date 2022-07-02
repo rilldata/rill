@@ -2,9 +2,9 @@
 A simple composable container for SVG-based data graphics.
 -->
 <script lang="ts">
-  import GraphicContext from "./elements/GraphicContext.svelte";
-  import { mousePositionToDomainActionFactory } from "./actions/mouse-position-to-domain-action-factory";
-  import SimpleSVGContainer from "./elements/SimpleSVGContainer.svelte";
+  import GraphicContext from "../elements/GraphicContext.svelte";
+  import { mousePositionToDomainActionFactory } from "../actions/mouse-position-to-domain-action-factory";
+  import SimpleSVGContainer from "../elements/SimpleSVGContainer.svelte";
 
   export let top = 40;
   export let bottom = 40;
