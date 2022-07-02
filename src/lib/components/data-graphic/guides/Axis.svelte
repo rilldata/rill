@@ -145,17 +145,23 @@ This component will draw an axis on the specified side.
   let tickCount = 0;
   // FIXME: we should be generalizing anything like this!
   // we also have a similar codeblock in Grid.svelte
-  $: if (container) {
-    axisLength =
-      container.getBoundingClientRect()[isVertical ? "height" : "width"];
+  $: if ($plotConfig && container) {
+    if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
+    else axisLength = $plotConfig.graphicHeight;
+    // use graphicWidth or graphicHeight
     // do we ensure different spacing in one case vs. another?
     tickCount = ~~(axisLength / 20);
-    tickCount = Math.max(3, ~~(axisLength / 100));
+    tickCount = Math.max(4, ~~(axisLength / 100));
   }
-  $: if (xOrY === "x") console.log($plotConfig, tickLength);
+
+  $: if (xOrY === "x") console.log(tickCount);
 </script>
 
-<g bind:this={container}>
+<g
+  width={$plotConfig.graphicWidth}
+  height={$plotConfig.graphicHeight}
+  bind:this={container}
+>
   {#each scale.ticks(tickCount) as tick}
     {@const tickPlacement = placeTick(side, tick)}
     <text

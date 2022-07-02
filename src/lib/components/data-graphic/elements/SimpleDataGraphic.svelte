@@ -3,7 +3,6 @@ A simple composable container for SVG-based data graphics.
 -->
 <script lang="ts">
   import GraphicContext from "../elements/GraphicContext.svelte";
-  import { mousePositionToDomainActionFactory } from "../actions/mouse-position-to-domain-action-factory";
   import SimpleSVGContainer from "../elements/SimpleSVGContainer.svelte";
 
   export let top = 40;
@@ -24,7 +23,7 @@ A simple composable container for SVG-based data graphics.
   export let yMin = undefined;
   export let yMax = undefined;
 
-  export let mouseoverValue;
+  export let mouseoverValue = undefined;
 
   $: parameters = {
     width,
