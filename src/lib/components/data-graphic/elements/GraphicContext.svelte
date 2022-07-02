@@ -46,7 +46,7 @@ for any of its children.
 
   const id = guidGenerator();
 
-  const config: SimpleConfigurationStore = cascadingContextStore<
+  const config = cascadingContextStore<
     SimpleDataGraphicConfigurationArguments,
     SimpleDataGraphicConfiguration
   >(
