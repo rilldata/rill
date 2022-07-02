@@ -16,7 +16,7 @@
   } from "$lib/application-state-stores/table-stores";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import notificationStore from "$lib/components/notifications/";
-
+  import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
@@ -33,6 +33,44 @@
   ) as PersistentModelStore;
 
   let showTables = true;
+  let showRenameTableModal = false;
+  let renameTableID = null;
+  let renameTableName = null;
+
+  const openRenameTableModal = (tableID: string, tableName: string) => {
+    showRenameTableModal = true;
+    renameTableID = tableID;
+    renameTableName = tableName;
+  };
+
+  const queryHandler = async (tableName: string) => {
+    // check existing models to avoid a name conflict
+    const existingNames = $persistentModelStore?.entities
+      .filter((model) => model.name.includes(`query_${tableName}`))
+      .map((model) => model.tableName)
+      .sort();
+    const nextName =
+      existingNames.length === 0
+        ? `query_${tableName}`
+        : `query_${tableName}_${existingNames.length + 1}`;
+
+    const response = await dataModelerService.dispatch("addModel", [
+      {
+        name: nextName,
+        query: `select * from ${tableName}`,
+      },
+    ]);
+
+    // change the active asset to the new model
+    await dataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      response.id,
+    ]);
+
+    notificationStore.send({
+      message: `queried ${tableName} in workspace`,
+    });
+  };
 </script>
 
 <div
@@ -70,40 +108,19 @@
             profile={derivedTable?.profile ?? []}
             head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:query={async () => {
-              // check existing models to avoid a name conflict
-              const existingNames = $persistentModelStore?.entities
-                .filter((model) => model.name.includes(`query_${tableName}`))
-                .map((model) => model.tableName)
-                .sort();
-              const nextName =
-                existingNames.length === 0
-                  ? `query_${tableName}`
-                  : `query_${tableName}_${existingNames.length + 1}`;
-
-              const response = await dataModelerService.dispatch("addModel", [
-                {
-                  name: nextName,
-                  query: `select * from ${tableName}`,
-                },
-              ]);
-
-              // change the active asset to the new model
-              await dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Model,
-                response.id,
-              ]);
-
-              notificationStore.send({
-                message: `queried ${tableName} in workspace`,
-              });
-            }}
-            on:delete={() => {
-              dataModelerService.dispatch("dropTable", [tableName]);
-            }}
+            on:rename={() => openRenameTableModal(id, tableName)}
+            on:query={() => queryHandler(tableName)}
+            on:delete={() =>
+              dataModelerService.dispatch("dropTable", [tableName])}
           />
         </div>
       {/each}
     {/if}
   </div>
+  <RenameTableModal
+    openModal={showRenameTableModal}
+    closeModal={() => (showRenameTableModal = false)}
+    tableID={renameTableID}
+    currentTableName={renameTableName}
+  />
 {/if}
