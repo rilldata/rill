@@ -28,7 +28,7 @@
   }
 
   function makeData(length = 180) {
-    let y = 100;
+    let y = Math.random() * 150;
     const data = Array.from({ length }).map((_, i) => {
       y += (Math.random() - 0.5) * 30;
       if (y < 0) y = 1;
@@ -57,7 +57,6 @@
       }}>randomize</button
     >
   </h1>
-
   <GraphicContext xType="date" yType="number">
     <div class="flex flex-row flex-wrap gap-3 w-max-screen">
       {#each $datasets as data, i (i)}

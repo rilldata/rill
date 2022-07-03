@@ -5,8 +5,11 @@ of the value.
 -->
 <script lang="ts">
   import { tweened } from "svelte/motion";
+  import type { EasingFunction } from "svelte/transition";
   export let value: any;
-  export let tweenProps = { duration: 25 };
+  export let tweenProps: { duration?: number; easing?: EasingFunction } = {
+    duration: 25,
+  };
   const tween = tweened(value, tweenProps);
   $: tween.set(value);
 </script>

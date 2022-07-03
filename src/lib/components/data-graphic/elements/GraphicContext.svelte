@@ -7,12 +7,14 @@ for any of its children.
 -->
 <script lang="ts">
   import { guidGenerator } from "$lib/util/guid";
+  import { hasContext } from "svelte";
 
   import { contexts } from "../constants";
   import {
     cascadingContextStore,
     initializeMaxMinStores,
     initializeScale,
+    pruneProps,
   } from "../state";
   import type {
     SimpleConfigurationStore,
@@ -46,12 +48,23 @@ for any of its children.
 
   const id = guidGenerator();
 
-  const config = cascadingContextStore<
-    SimpleDataGraphicConfigurationArguments,
-    SimpleDataGraphicConfiguration
-  >(
-    contexts.config,
-    {
+  const DEFAULTS = hasContext(contexts.config)
+    ? {}
+    : {
+        width: 300,
+        height: 200,
+        top: 12,
+        bottom: 12,
+        left: 12,
+        right: 12,
+        fontSize: 12,
+        textGap: 4,
+        bodyBuffer: 4,
+        marginBuffer: 4,
+      };
+  let parameters = {
+    ...DEFAULTS,
+    ...pruneProps({
       width,
       height,
       top,
@@ -69,7 +82,38 @@ for any of its children.
       bodyBuffer,
       marginBuffer,
       id,
-    },
+    }),
+  };
+
+  $: parameters = {
+    ...DEFAULTS,
+    ...pruneProps({
+      width,
+      height,
+      top,
+      bottom,
+      left,
+      right,
+      fontSize,
+      textGap,
+      xType,
+      yType,
+      xMin,
+      xMax,
+      yMin,
+      yMax,
+      bodyBuffer,
+      marginBuffer,
+      id,
+    }),
+  };
+
+  const config = cascadingContextStore<
+    SimpleDataGraphicConfigurationArguments,
+    SimpleDataGraphicConfiguration
+  >(
+    contexts.config,
+    parameters,
     /** these values are derived from the existing SimpleDataGraphicConfigurationArguments */
     {
       plotLeft: (config: SimpleDataGraphicConfiguration) => config.left,
@@ -99,25 +143,7 @@ for any of its children.
     }
   );
 
-  $: config.reconcileProps({
-    width,
-    height,
-    top,
-    bottom,
-    left,
-    right,
-    fontSize,
-    textGap,
-    xType,
-    yType,
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-    bodyBuffer,
-    marginBuffer,
-    id,
-  });
+  $: config.reconcileProps(parameters);
 
   /** Reset any extremum values if we aren't sharing the scale or there is no parent cascade. */
   if (!config.hasParentCascade || !shareYScale) {

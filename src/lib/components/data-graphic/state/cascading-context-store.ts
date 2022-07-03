@@ -1,8 +1,7 @@
-
 import { get, writable } from "svelte/store";
 import { setContext, getContext, hasContext } from "svelte";
 
-function prune<T>(props: T) : T {
+export function pruneProps<T>(props: T) : T {
   return Object.keys(props).reduce((next, prop) => {
     if (props[prop] !== undefined) next[prop] = props[prop];
     return next;
@@ -32,7 +31,7 @@ export function cascadingContextStore<Props, StoreValue>(namespace: string, prop
   // check to see if namespace exists.
   const hasParentCascade = hasContext(namespace);
 
-  const prunedProps = prune<Props>(props);
+  const prunedProps = pruneProps<Props>(props);
 
   let lastProps = props;
   let lastParentState = {};
@@ -53,10 +52,11 @@ export function cascadingContextStore<Props, StoreValue>(namespace: string, prop
       lastParentState = {...parentState};
       store.set({
         ...parentState, // the parent state
-        ...prune((lastProps)) // last props to be reconciled overrides clashing keys with current state
+        ...pruneProps((lastProps)) // last props to be reconciled overrides clashing keys with current state
       });
       // add the derived values into the final store.
       addDerivations(store, derivations);
+
     })
   } 
   addDerivations(store, derivations);
@@ -69,7 +69,7 @@ export function cascadingContextStore<Props, StoreValue>(namespace: string, prop
       lastProps = { ...props };
 
       /** let's update the store with the latest props. */
-      store.set({...lastParentState,  ...prune(lastProps) })
+      store.set({...lastParentState,  ...pruneProps(lastProps) });
       addDerivations(store, derivations);
     }
   }

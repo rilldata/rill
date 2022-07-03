@@ -18,7 +18,7 @@ Optionally allows borders (see the `border` & associated props) & a background (
    */
   export let bg = false;
   export let bgColor = "rgb(200,200,200)";
-  export let bgOpacity = 0.4;
+  export let bgOpacity = 1;
 
   /** Border
    *  ------

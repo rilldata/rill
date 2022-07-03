@@ -5,16 +5,16 @@ A simple composable container for SVG-based data graphics.
   import GraphicContext from "../elements/GraphicContext.svelte";
   import SimpleSVGContainer from "../elements/SimpleSVGContainer.svelte";
 
-  export let top = 40;
-  export let bottom = 40;
-  export let left = 42;
-  export let right = 42;
-  export let bodyBuffer = 4;
-  export let marginBuffer = 0;
-  export let width = 360;
-  export let height = 120;
-  export let fontSize = 12;
-  export let textGap = 4;
+  export let top = undefined;
+  export let bottom = undefined;
+  export let left = undefined;
+  export let right = undefined;
+  export let bodyBuffer = undefined;
+  export let marginBuffer = undefined;
+  export let width = undefined;
+  export let height = undefined;
+  export let fontSize = undefined;
+  export let textGap = undefined;
   export let xType = undefined;
   export let yType = undefined;
 
@@ -24,28 +24,26 @@ A simple composable container for SVG-based data graphics.
   export let yMax = undefined;
 
   export let mouseoverValue = undefined;
-
-  $: parameters = {
-    width,
-    height,
-    top,
-    bottom,
-    left,
-    right,
-    fontSize,
-    textGap,
-    xType,
-    yType,
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-    bodyBuffer,
-    marginBuffer,
-  };
 </script>
 
-<GraphicContext {...parameters}>
+<GraphicContext
+  {width}
+  {height}
+  {top}
+  {bottom}
+  {left}
+  {right}
+  {fontSize}
+  {textGap}
+  {xType}
+  {yType}
+  {xMin}
+  {xMax}
+  {yMin}
+  {yMax}
+  {bodyBuffer}
+  {marginBuffer}
+>
   <SimpleSVGContainer
     bind:mouseoverValue
     let:xScale

@@ -153,8 +153,6 @@ This component will draw an axis on the specified side.
     tickCount = ~~(axisLength / 20);
     tickCount = Math.max(2, ~~(axisLength / 100));
   }
-
-  $: if (xOrY === "x") console.log(tickCount);
 </script>
 
 <g width={$plotConfig.graphicWidth} height={$plotConfig.graphicHeight}>
