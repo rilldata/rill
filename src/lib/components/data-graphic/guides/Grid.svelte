@@ -27,13 +27,14 @@
   let yAxisLength;
   let xTickCount = 0;
   let yTickCount = 0;
-  $: if (container) {
-    xAxisLength = container.getBoundingClientRect().width;
+
+  $: if ($config) {
+    xAxisLength = $config.graphicWidth;
     // do we ensure different spacing in one case vs. another?
     xTickCount = ~~(xAxisLength / 20);
     xTickCount = Math.max(3, ~~(xTickCount / 100));
 
-    yAxisLength = container.getBoundingClientRect().height;
+    yAxisLength = $config.graphicHeight;
     // do we ensure different spacing in one case vs. another?
     yTickCount = ~~(yAxisLength / 20);
     yTickCount = Math.max(3, ~~(yTickCount / 100));
@@ -42,7 +43,7 @@
   $: yCopy = yScale.type === "date" ? $yScale.copy().nice() : $yScale;
 </script>
 
-<g bind:this={container} shape-rendering="crispEdges">
+<g shape-rendering="crispEdges">
   {#if showX}
     {#each xCopy.ticks(xTickCount) as tick}
       <line

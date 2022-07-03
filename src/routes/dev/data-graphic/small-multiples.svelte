@@ -93,7 +93,7 @@
               />
             </Body>
             {#if i === 0 || (hovered && !(i === 0))}
-              <g transition:fade={{ duration: 50 }}>
+              <g>
                 <Axis side="bottom" />
                 <Axis side="left" />
               </g>
