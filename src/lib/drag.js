@@ -6,7 +6,6 @@ export function drag(node, params) {
   let orientation_ = params?.orientation || "horizontal";
 
   let side_ = params?.side || "right";
-  let property = `--${side_}-sidebar-width`; //params?.property || '--left-sidebar-width';
   let moving = false;
   let space = minSize_;
 

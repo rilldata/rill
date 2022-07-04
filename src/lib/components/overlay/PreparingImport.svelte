@@ -1,13 +1,11 @@
 <script lang="ts">
   import BlockingOverlayContainer from "./BlockingOverlayContainer.svelte";
-  export let tableName;
 </script>
 
 <BlockingOverlayContainer
-  bg="linear-gradient(to right, rgba(0,0,50, .5), rgba(0, 30, 30,.6))"
+  bg="linear-gradient(to right, rgba(50,0,0,.6), rgba(50,0,30,.8))"
 >
   <div slot="title">
-    <span class="font-bold">Exporting dataset</span>
-    <div class="italic">{tableName}</div>
+    <span class="font-bold">Preparing source for import</span>
   </div>
 </BlockingOverlayContainer>

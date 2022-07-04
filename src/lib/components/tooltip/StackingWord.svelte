@@ -1,21 +1,29 @@
-<script>
+<script lang="ts">
   import { getContext } from "svelte";
   import transientBooleanStore from "$lib/util/transient-boolean-store";
-  const callbacks = getContext("rill:app:ui:shift-click-action-callbacks");
-  let shiftClicked = transientBooleanStore();
   export let isStacked = false;
+  export let key: "command" | "shift";
+
+  // NOTE: Using these two different contexts is tech debt. Ideally, we would have one "click-action-callbacks".
+  // We have to refactor `shift-click-action.ts` to account for multiple kinds of key clicks.
+  let keyCallbacks;
+  if (key === "command") {
+    keyCallbacks = getContext("rill:app:ui:command-click-action-callbacks");
+  } else if (key === "shift") {
+    keyCallbacks = getContext("rill:app:ui:shift-click-action-callbacks");
+  }
+
+  let keyClicked = transientBooleanStore();
   // if a parent component upstream triggers the shift-click action,
   // let's flip our transientBooleanStore to create the animation.
-  if (callbacks) {
-    callbacks.addCallback(() => {
-      shiftClicked.flip();
-    });
+  if (keyCallbacks) {
+    keyCallbacks.addCallback(() => keyClicked.flip());
   }
 </script>
 
 <span
   class="inline-block shiftable"
-  class:shiftClicked={!isStacked && $shiftClicked}
+  class:keyClicked={!isStacked && $keyClicked}
   class:stacked={isStacked}><slot /></span
 >
 
@@ -26,15 +34,13 @@
     transform: translateY(0px) translateX(-2px);
     transition: transform 200ms;
   }
-
-  .shiftClicked {
+  .keyClicked {
     animation: pulse 250ms;
     border-radius: 2px;
     position: relative;
     mix-blend-mode: screen;
     background-blend-mode: screen;
   }
-
   @keyframes pulse {
     0%,
     100% {

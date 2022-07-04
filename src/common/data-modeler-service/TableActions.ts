@@ -7,8 +7,10 @@ import {
 import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import {
   extractFileExtension,
+  extractTableName,
   getTableNameFromFile,
   INVALID_CHARS,
+  sanitizeTableName,
 } from "$lib/util/extract-table-name";
 import type {
   PersistentTableEntity,
@@ -117,7 +119,7 @@ export class TableActions extends DataModelerActions {
   @DataModelerActions.DerivedTableAction()
   @DataModelerActions.ResetStateToIdle(EntityType.Table)
   public async collectTableInfo(
-    { stateService }: DerivedTableStateActionArg,
+    _: DerivedTableStateActionArg,
     tableId: string
   ): Promise<ActionResponse> {
     const persistentTable = this.dataModelerStateService.getEntityById(
@@ -218,6 +220,40 @@ export class TableActions extends DataModelerActions {
     } catch (err) {
       return ActionResponseFactory.getErrorResponse(err);
     }
+  }
+
+  @DataModelerActions.PersistentTableAction()
+  public async updateTableName(
+    { stateService }: PersistentTableStateActionArg,
+    tableId: string,
+    name: string
+  ): Promise<ActionResponse> {
+    const sanitizedNewName = sanitizeTableName(extractTableName(name));
+    const existingTable = stateService.getByField(
+      "tableName",
+      sanitizedNewName
+    );
+
+    if (existingTable) {
+      return ActionResponseFactory.getExisingEntityError(
+        `another source named "${existingTable.tableName}" already exists`
+      );
+    }
+
+    const table = stateService.getById(tableId);
+    const currentName = table.tableName;
+
+    this.dataModelerStateService.dispatch("updateTableName", [
+      tableId,
+      sanitizedNewName,
+    ]);
+    this.databaseService.dispatch("renameTable", [
+      currentName,
+      sanitizedNewName,
+    ]);
+    return ActionResponseFactory.getSuccessResponse(
+      `source ${currentName} renamed to ${sanitizedNewName}`
+    );
   }
 
   @DataModelerActions.PersistentTableAction()
@@ -354,10 +390,6 @@ export class TableActions extends DataModelerActions {
         EntityStatus.Importing,
       ]);
     }
-    this.dataModelerStateService.dispatch("addOrUpdateTableToState", [
-      table,
-      isNew,
-    ]);
 
     const response = await this.importTableDataByType(table);
     if (

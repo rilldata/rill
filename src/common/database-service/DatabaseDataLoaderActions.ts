@@ -74,8 +74,8 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
   }
 
   public async getDestinationSize(
-    metadata: DatabaseMetadata,
-    path: string
+    _metadata: DatabaseMetadata,
+    _path: string
   ): Promise<number> {
     // Being worked on to handle this in a better way.
     // if (existsSync(path)) {

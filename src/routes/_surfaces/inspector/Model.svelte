@@ -13,8 +13,12 @@
 
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import ExportError from "$lib/components/modal/ExportError.svelte";
 
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import { config as appConfig } from "$lib/application-state-stores/application-store";
 
   import {
@@ -24,6 +28,7 @@
 
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
   import type {
     DerivedTableStore,
     PersistentTableStore,
@@ -36,6 +41,9 @@
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
 
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import Button from "$lib/components/Button.svelte";
+  import { FileExportType } from "$common/data-modeler-service/ModelActions";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -53,26 +61,17 @@
   const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
 
-  function tableDestinationCompute(key, table, destination) {
-    let inputs = table.reduce((acc, v) => acc + v[key], 0);
-    return destination[key] / inputs;
-  }
-
-  function computeRollup(table, destination) {
-    return tableDestinationCompute("cardinality", table, destination);
-  }
-
   let rollup;
   let tables;
   // get source tables?
   let sourceTableReferences;
   let showColumns = true;
-  let showExportOptions = true;
-  let sourceTableNames = [];
+
+  let showExportErrorModal: boolean;
+  let exportErrorMessage: string;
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
-  let inputRowCardinality = tweened(0, { duration: 200, easing });
   let outputRowCardinality = tweened(0, { duration: 250, easing });
 
   /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
@@ -148,8 +147,34 @@
     clickOutsideListener = undefined;
   }
 
+  const onExport = async (fileType: FileExportType) => {
+    let extension = ".csv";
+    if (fileType === FileExportType.Parquet) {
+      extension = ".parquet";
+    }
+    const exportFilename = currentModel.name.replace(".sql", extension);
+
+    const exportResp = await dataModelerService.dispatch(fileType, [
+      currentModel.id,
+      exportFilename,
+    ]);
+
+    if (exportResp.status === ActionStatus.Success) {
+      window.open(
+        `${appConfig.server.serverUrl}/api/export?fileName=${encodeURIComponent(
+          exportFilename
+        )}`
+      );
+    } else if (exportResp.status === ActionStatus.Failure) {
+      exportErrorMessage = `Failed to export.\n${exportResp.messages
+        .map((message) => message.message)
+        .join("\n")}`;
+      showExportErrorModal = true;
+    }
+  };
+
   onMount(() => {
-    const observer = new ResizeObserver((entries) => {
+    const observer = new ResizeObserver(() => {
       containerWidth = container.clientWidth;
     });
     observer.observe(container);
@@ -172,9 +197,8 @@
             distance={16}
             suppress={contextMenuOpen}
           >
-            <button
-              bind:this={contextMenu}
-              on:click={async (event) => {
+            <Button
+              onClick={async (event) => {
                 contextMenuOpen = !contextMenuOpen;
                 menuX = event.clientX;
                 menuY = event.clientY;
@@ -185,26 +209,10 @@
                   }, contextMenu);
                 }
               }}
-              style:grid-column="left-control"
-              class="
-          hover:bg-gray-300
-          hover:border-gray-300
-          border-black
-          transition-tranform 
-          duration-100
-          items-center
-          justify-center
-          border
-          border-transparent
-          rounded
-          flex flex-row gap-x-2
-          pl-4 pr-4
-          pt-2 pb-2
-        "
             >
               export
               <Export size="16px" />
-            </button>
+            </Button>
             <TooltipContent slot="tooltip-content">
               export this model as a dataset
             </TooltipContent>
@@ -331,6 +339,7 @@
           {#if currentDerivedModel?.profile && showColumns}
             <div transition:slide|local={{ duration: 200 }}>
               <CollapsibleTableSummary
+                entityType={EntityType.Model}
                 showTitle={false}
                 showContextButton={false}
                 show={showColumns}
@@ -365,35 +374,16 @@
           contextMenuOpen = false;
         }}
       >
-        <MenuItem
-          on:select={() => {
-            const exportFilename = currentModel.name.replace(
-              ".sql",
-              ".parquet"
-            );
-            window.open(
-              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
-                `&type=parquet&fileName=${encodeURIComponent(exportFilename)}`
-            );
-            //dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
-          }}
-        >
+        <MenuItem on:select={() => onExport(FileExportType.Parquet)}>
           Export as Parquet
         </MenuItem>
-        <MenuItem
-          on:select={() => {
-            const exportFilename = currentModel.name.replace(".sql", ".csv");
-            window.open(
-              `${appConfig.server.serverUrl}/api/export?id=${currentModel.id}` +
-                `&type=csv&fileName=${encodeURIComponent(exportFilename)}`
-            );
-          }}
-        >
+        <MenuItem on:select={() => onExport(FileExportType.CSV)}>
           Export as CSV
         </MenuItem>
       </Menu>
     </FloatingElement>
   </div>
+  <ExportError bind:exportErrorMessage bind:showExportErrorModal />
 {/if}
 
 <style lang="postcss">

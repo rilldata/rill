@@ -1,4 +1,4 @@
-import type { DataModelerState, Model } from "$lib/types";
+import type { DataModelerState } from "$lib/types";
 import { guidGenerator } from "$lib/util/guid";
 import {
   extractTableName,
