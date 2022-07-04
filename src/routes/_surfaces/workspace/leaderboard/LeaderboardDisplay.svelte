@@ -8,7 +8,10 @@
   import { toggleValueAndUpdateLeaderboard } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import MetricsExploreTimeChart from "$lib/components/leaderboard/MetricsExploreTimeChart.svelte";
-  import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import {
+    getMeasureById,
+    getMeasuresByMetricsId,
+  } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import type { Readable } from "svelte/store";
   import { getMetricsLeaderboardById } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-readables";
 
@@ -25,6 +28,8 @@
   $: anythingSelected = isAnythingSelected($metricsLeaderboard?.activeValues);
 
   let measure: Readable<MeasureDefinitionEntity>;
+
+  $: measures = getMeasuresByMetricsId(metricsDefId);
   $: if ($metricsLeaderboard?.measureId) {
     measure = getMeasureById($metricsLeaderboard?.measureId);
   }
@@ -46,37 +51,50 @@
   }
 </script>
 
-<div
-  style:height="calc(100vh - var(--header, 130px) - 4rem)"
-  class="border-t border-gray-200 overflow-auto"
->
-  {#if $metricsLeaderboard}
-    <MetricsExploreTimeChart {metricsDefId} />
-    <VirtualizedGrid
-      {columns}
-      height="100%"
-      items={$metricsLeaderboard.leaderboards ?? []}
-      let:item
-    >
-      <!-- the single virtual element -->
-      <div style:width="315px">
-        <Leaderboard
-          seeMore={leaderboardExpanded === item.displayName}
-          on:expand={() => {
-            if (leaderboardExpanded === item.displayName) {
-              leaderboardExpanded = undefined;
-            } else {
-              leaderboardExpanded = item.displayName;
-            }
-          }}
-          on:select-item={(event) => onSelectItem(event, item)}
-          activeValues={$metricsLeaderboard.activeValues[item.displayName] ??
-            []}
-          displayName={item.displayName}
-          values={item.values}
-          referenceValue={referenceValue || 0}
-        />
+<div class="grid gap-x-6" style:grid-template-columns="600px auto">
+  <!-- container for the metrics linechart components and controls -->
+  <div>
+    {#each $measures as measure}
+      <div class="grid grid grid-flow-col">
+        <div class="big-number">
+          BigNum {measure.id}
+        </div>
+        <MetricsExploreTimeChart {measure} metricsDefId={measure.id} />
       </div>
-    </VirtualizedGrid>
-  {/if}
+    {/each}
+  </div>
+  <!-- container for the metrics leaderboard components and controls -->
+  <div
+    style:height="calc(100vh - var(--header, 130px) - 4rem)"
+    class="border-t border-gray-200 overflow-auto"
+  >
+    {#if $metricsLeaderboard}
+      <VirtualizedGrid
+        {columns}
+        height="100%"
+        items={$metricsLeaderboard.leaderboards ?? []}
+        let:item
+      >
+        <!-- the single virtual element -->
+        <div style:width="315px">
+          <Leaderboard
+            seeMore={leaderboardExpanded === item.displayName}
+            on:expand={() => {
+              if (leaderboardExpanded === item.displayName) {
+                leaderboardExpanded = undefined;
+              } else {
+                leaderboardExpanded = item.displayName;
+              }
+            }}
+            on:select-item={(event) => onSelectItem(event, item)}
+            activeValues={$metricsLeaderboard.activeValues[item.displayName] ??
+              []}
+            displayName={item.displayName}
+            values={item.values}
+            referenceValue={referenceValue || 0}
+          />
+        </div>
+      </VirtualizedGrid>
+    {/if}
+  </div>
 </div>
