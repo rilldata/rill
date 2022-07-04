@@ -4,14 +4,10 @@
   import { derived } from "svelte/store";
   import { format } from "d3-format";
 
-  import GraphicContext from "$lib/components/data-graphic/elements/GraphicContext.svelte";
-  import Body from "$lib/components/data-graphic/elements/Body.svelte";
-  import Line from "$lib/components/data-graphic/marks/Line.svelte";
-  import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
-  import Area from "$lib/components/data-graphic/marks/Area.svelte";
-  import Grid from "$lib/components/data-graphic/guides/Grid.svelte";
-  import WithBisector from "$lib/components/data-graphic/functional-components/WithBisector.svelte";
-  import PointLabel from "$lib/components/data-graphic/guides/PointLabel.svelte";
+  import { GraphicContext, Body } from "$lib/components/data-graphic/elements";
+  import { Line, Area } from "$lib/components/data-graphic/marks";
+  import { Axis, Grid, PointLabel } from "$lib/components/data-graphic/guides";
+  import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import type { PointLabelVariant } from "$lib/components/data-graphic/guides/types";
 
   function makeData(intervalSize = 1000000) {

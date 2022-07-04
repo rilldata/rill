@@ -2,16 +2,16 @@
   import { format } from "d3-format";
   import { fade } from "svelte/transition";
 
-  import Body from "$lib/components/data-graphic/elements/Body.svelte";
-  import GraphicContext from "$lib/components/data-graphic/elements/GraphicContext.svelte";
-  import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
-  import PointLabel from "$lib/components/data-graphic/guides/PointLabel.svelte";
-  import Line from "$lib/components/data-graphic/marks/Line.svelte";
-  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import WithBisector from "$lib/components/data-graphic/functional-components/WithBisector.svelte";
+  import {
+    GraphicContext,
+    Body,
+    SimpleDataGraphic,
+  } from "$lib/components/data-graphic/elements";
+  import { Axis, PointLabel } from "$lib/components/data-graphic/guides";
+  import { Line, Area } from "$lib/components/data-graphic/marks";
+  import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import Area from "$lib/components/data-graphic/marks/Area.svelte";
   import type { DomainCoordinates } from "$lib/components/data-graphic/constants/types";
 
   /** bind the mouseoverValue of a graph to this variable to share

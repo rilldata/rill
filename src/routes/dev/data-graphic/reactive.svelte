@@ -1,15 +1,18 @@
 <script lang="ts">
   import { tweened } from "svelte/motion";
-  import GraphicContext from "$lib/components/data-graphic/elements/GraphicContext.svelte";
-  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
-  import Line from "$lib/components/data-graphic/marks/Line.svelte";
+  import {
+    GraphicContext,
+    SimpleDataGraphic,
+    Body,
+  } from "$lib/components/data-graphic/elements";
+  import { Axis } from "$lib/components/data-graphic/guides";
+  import { Line, Area } from "$lib/components/data-graphic/marks";
   import { makeTimeSeries } from "./_utils";
   import { cubicOut, elasticOut } from "svelte/easing";
-  import Body from "$lib/components/data-graphic/elements/Body.svelte";
-  import Area from "$lib/components/data-graphic/marks/Area.svelte";
-  import WithTween from "$lib/components/data-graphic/functional-components/WithTween.svelte";
-  import WithSimpleLinearScale from "$lib/components/data-graphic/functional-components/WithSimpleLinearScale.svelte";
+  import {
+    WithTween,
+    WithSimpleLinearScale,
+  } from "$lib/components/data-graphic/functional-components";
 
   const data1 = makeTimeSeries();
   const data2 = makeTimeSeries();

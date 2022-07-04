@@ -2,8 +2,7 @@
 A simple composable container for SVG-based data graphics.
 -->
 <script lang="ts">
-  import GraphicContext from "../elements/GraphicContext.svelte";
-  import SimpleSVGContainer from "../elements/SimpleSVGContainer.svelte";
+  import { GraphicContext, SimpleSVGContainer } from "../elements";
 
   export let top = undefined;
   export let bottom = undefined;

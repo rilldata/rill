@@ -1,8 +1,10 @@
 <script lang="ts">
-  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import Body from "$lib/components/data-graphic/elements/Body.svelte";
-  import Line from "$lib/components/data-graphic/marks/Line.svelte";
-  import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
+  import {
+    SimpleDataGraphic,
+    Body,
+  } from "$lib/components/data-graphic/elements";
+  import { Line } from "$lib/components/data-graphic/marks";
+  import { Axis } from "$lib/components/data-graphic/guides";
 
   function makeData(intervalSize = 1000) {
     let v = 50;

@@ -1,17 +1,19 @@
 <script lang="ts">
-  import Axis from "$lib/components/data-graphic/guides/Axis.svelte";
-  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { Axis } from "$lib/components/data-graphic/guides";
+  import { SimpleDataGraphic } from "$lib/components/data-graphic/elements";
+  import type { AxisSide } from "$lib/components/data-graphic/guides/types";
   const width = 132;
   const height = 132;
   const leftRight = 36;
   const topBottom = 24;
+  const sides: AxisSide[] = ["left", "right", "top", "bottom"];
 </script>
 
 <h1 class="text-xl">Graphic Components</h1>
 
 <h2 class="text-lg">Axis</h2>
 <section>
-  {#each ["left", "right", "top", "bottom"] as axis}
+  {#each sides as axis}
     <div>
       side=<i>"{axis}"</i>
       <div class="border border-gray-200 rounded">

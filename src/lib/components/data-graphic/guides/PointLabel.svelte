@@ -1,9 +1,8 @@
 <script lang="ts">
   import { getContext } from "svelte";
   import { outline } from "../actions/outline";
-  import WithTween from "../functional-components/WithTween.svelte";
+  import { WithTween, WithSimpleLinearScale } from "../functional-components";
   import type { PointLabelVariant } from "./types";
-  import WithSimpleLinearScale from "../functional-components/WithSimpleLinearScale.svelte";
   import { contexts } from "../constants";
 
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
