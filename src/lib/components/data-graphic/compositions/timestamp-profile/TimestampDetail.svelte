@@ -177,14 +177,14 @@
     duration: 300,
     easing,
     direction: "min",
+    alwaysOverrideInitialValue: true,
   });
   const xMax = createExtremumResolutionStore(xExtents[1], {
     duration: 300,
     easing,
+    direction: "max",
+    alwaysOverrideInitialValue: true,
   });
-
-  // setContext('rill:data-graphic:x-min', xMin);
-  // setContext
 
   $: xMin.setWithKey("x", zoomedXStart || xExtents[0]);
   $: xMax.setWithKey("x", zoomedXEnd || xExtents[1]);
@@ -286,7 +286,6 @@
     {interval}
     {rollupGrain}
   />
-
   <Tooltip location="right" alignment="center" distance={32}>
     <svg
       {width}

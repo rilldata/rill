@@ -17,12 +17,14 @@ const LINEAR_SCALE_STORE_DEFAULTS = {
   easing: cubicOut,
   direction: "min",
   namespace: undefined,
+  alwaysOverrideInitialValue: false
 };
 
 interface extremumArgs {
   duration?: number;
   easing?: EasingFunction;
   direction?: string;
+  alwaysOverrideInitialValue?: boolean
 }
 
 interface Extremum {
@@ -46,7 +48,6 @@ export function createExtremumResolutionStore(
     duration: args.duration,
     easing: args.easing,
   });
-
   function _update(key: string, value: number | Date, override = false) {
     // FIXME: there's an odd bug where if I don't check for equality first, I tend
     // to get an infinite loop with dates and the downstream scale.
@@ -61,7 +62,8 @@ export function createExtremumResolutionStore(
       return storeValue;
     });
   };
-  if (initialValue) {
+  /** add the initial value as its own key, if set by user. */
+  if (initialValue && args.alwaysOverrideInitialValue === false) {
     _update('__initial_value__', initialValue);
   }
 
@@ -76,7 +78,7 @@ export function createExtremumResolutionStore(
     storedValues,
     ($storedValues) => {
       let extremum;
-      const extrema: Extremum[] = [...Object.values($storedValues)]
+      const extrema: Extremum[] = [...Object.values($storedValues)];
       for (const entry of extrema) {
         if (entry.override) {
           extremum = entry.value;
@@ -87,16 +89,14 @@ export function createExtremumResolutionStore(
       }
       return extremum;
     },
-    undefined
+    initialValue
   );
 
   // set the final tween with the value.
   domainExtremum.subscribe((value) => {
     if (value !== undefined) {
       valueTween.set(value);
-    } else {
-      valueTween.set(args.direction == 'min' ? Infinity : -Infinity)
-    }
+    } 
   });
 
   const returnedStore = {

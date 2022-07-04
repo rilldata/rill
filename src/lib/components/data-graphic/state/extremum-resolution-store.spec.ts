@@ -4,7 +4,7 @@ import { get } from "svelte/store";
 describe('createExtremumResolutionStore', () => {
   it('instantiates either with undefined or with a concrete value', () => {
     const undefinedStore = createExtremumResolutionStore();
-    expect(get(undefinedStore)).toBe(Infinity);
+    expect(get(undefinedStore)).toBe(undefined);
     const storeWithPassedValue = createExtremumResolutionStore(10);
     expect(get(storeWithPassedValue)).toBe(10);
   });
@@ -62,7 +62,5 @@ describe('createExtremumResolutionStore', () => {
     expect(get(minStore)).toBe(3);
     minStore.removeKey('first');
     expect(get(minStore)).toBe(10);
-    minStore.removeKey('__initial_value__');
-    expect(get(minStore)).toBe(Infinity);
   })
 })
