@@ -20,7 +20,10 @@
     DerivedTableStore,
   } from "$lib/application-state-stores/table-stores";
 
-  import { config } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    config,
+  } from "$lib/application-state-stores/application-store";
 
   import {
     layout,
@@ -38,6 +41,8 @@
 
   let showDropOverlay = false;
   let assetsHovered = false;
+
+  const app = getContext("rill:app:store") as ApplicationStore;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -68,6 +73,29 @@
   );
 
   HttpStreamClient.create(`${config.server.serverUrl}/api`, store.dispatch);
+
+  /** Workaround for hiding inspector for now. Post July 19 2022 we will remove this
+   * in favor of ironing out more modular routing and suface management.
+   */
+  const views = {
+    Source: {
+      hasInspector: true,
+    },
+    Model: {
+      hasInspector: true,
+    },
+    MetricsDefinition: {
+      hasInspector: false,
+    },
+    MetricsLeaderboard: {
+      hasInspector: false,
+    },
+  };
+
+  $: activeEntityType = $app?.activeEntity?.type;
+  $: hasInspector = activeEntityType
+    ? views[activeEntityType].hasInspector
+    : false;
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
@@ -144,17 +172,25 @@
     style:padding-right="{$inspectorVisibilityTween * SIDE_PAD}px"
     style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
     style:top="0px"
-    style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
+    style:right="{hasInspector
+      ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
+      : 0}px"
   >
     <Workspace />
   </div>
 
   <!-- inspector sidebar -->
-  <div
-    class="fixed"
-    aria-hidden={!$inspectorVisible}
-    style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
-  >
-    <InspectorSidebar />
-  </div>
+  <!-- Workaround: hide the inspector on MetricsDefinition or 
+        on MetricsLeaderboard for now.
+      Once we refactor how layout routing works, we will have a better solution to this.
+  -->
+  {#if hasInspector}
+    <div
+      class="fixed"
+      aria-hidden={!$inspectorVisible}
+      style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
+    >
+      <InspectorSidebar />
+    </div>
+  {/if}
 </div>
