@@ -1,13 +1,18 @@
 <!-- @component
-  draws a line as a <path>
+  Connects points together with a <path> element
+    in the order they appear in the data.
 -->
 <script lang="ts">
   import { getContext, onDestroy } from "svelte";
   import { extent } from "d3-array";
 
-  import { lineFactory } from "$lib/components/data-graphic/utils";
+  import {
+    lineFactory,
+    pathDoesNotDropToZero,
+  } from "$lib/components/data-graphic/utils";
   import { guidGenerator } from "$lib/util/guid";
   import { contexts } from "../constants";
+  import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
 
   const markID = guidGenerator();
 
@@ -19,16 +24,17 @@
   export let color = "hsla(217,70%, 60%, 1)";
   export let lineThickness = 1;
   export let alpha = 1;
+  export let pathDefined = pathDoesNotDropToZero;
 
   export let xMin = undefined;
   export let xMax = undefined;
   export let yMin = undefined;
   export let yMax = undefined;
 
-  const xMinStore = getContext(contexts.min("x"));
-  const xMaxStore = getContext(contexts.max("x"));
-  const yMinStore = getContext(contexts.min("y"));
-  const yMaxStore = getContext(contexts.max("y"));
+  const xMinStore = getContext(contexts.min("x")) as ExtremumResolutionStore;
+  const xMaxStore = getContext(contexts.max("x")) as ExtremumResolutionStore;
+  const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
+  const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
 
   // get extents
   $: [xMinValue, xMaxValue] = extent(data, (d) => d[xAccessor]);
@@ -41,8 +47,8 @@
   $: yMaxStore.setWithKey(markID, yMax || yMaxValue);
   // we should set the extrema here.
 
-  const xScale = getContext("rill:data-graphic:x-scale");
-  const yScale = getContext("rill:data-graphic:y-scale");
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const yScale = getContext(contexts.scale("y")) as ScaleStore;
 
   onDestroy(() => {
     xMinStore.removeKey(markID);
@@ -58,6 +64,7 @@
       yScale: $yScale,
       curve,
       xAccessor,
+      pathDefined,
     });
   }
 </script>

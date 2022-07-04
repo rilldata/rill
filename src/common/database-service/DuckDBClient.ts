@@ -24,7 +24,7 @@ export class DuckDBClient {
   // duckdb doesn't work well with multiple connections to same db from same process
   // if we ever need to have different connections modify this to have a map of database to instance
   private static instance: DuckDBClient;
-  private constructor(private readonly databaseConfig: DatabaseConfig) { }
+  private constructor(private readonly databaseConfig: DatabaseConfig) {}
   public static getInstance(databaseConfig: DatabaseConfig) {
     if (!this.instance) this.instance = new DuckDBClient(databaseConfig);
     return this.instance;

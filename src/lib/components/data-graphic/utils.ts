@@ -20,7 +20,7 @@ const curves = {
   curveStep,
 };
 
-function isDefined(yAccessor: string) {
+export function pathDoesNotDropToZero(yAccessor: string) {
   return (d, i: number, arr) => {
     return (
       !isNaN(d[yAccessor]) &&
@@ -42,6 +42,7 @@ interface LineGeneratorArguments {
   xScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
   yScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
   curve: string;
+  pathDefined?: (datum: object, i: number, arr: ArrayLike<unknown>) => boolean;
 }
 
 /**
@@ -55,7 +56,7 @@ export function lineFactory(args: LineGeneratorArguments) {
       .x((d) => args.xScale(d[args.xAccessor]))
       .y((d) => args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
-      .defined(isDefined(yAccessor));
+      .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
 
 /**
@@ -70,5 +71,5 @@ export function areaFactory(args: LineGeneratorArguments) {
       .y0(~~args.yScale(0) + 0.5)
       .y1((d) => ~~args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
-      .defined(isDefined(yAccessor));
+      .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }

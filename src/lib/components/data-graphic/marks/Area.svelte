@@ -1,5 +1,6 @@
 <!-- @component
-  draws an "area under the curve" shape as a <path>
+  Draws an "area under the curve" shape as a <path>
+    in the order the points appear in the data.
 -->
 <script lang="ts">
   import { getContext, onDestroy } from "svelte";
@@ -8,6 +9,7 @@
   import { areaFactory } from "$lib/components/data-graphic/utils";
   import { guidGenerator } from "$lib/util/guid";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
+  import { contexts } from "../constants";
 
   const markID = guidGenerator();
 
@@ -24,18 +26,10 @@
   export let yMin = undefined;
   export let yMax = undefined;
 
-  const xMinStore = getContext(
-    "rill:data-graphic:x-min"
-  ) as ExtremumResolutionStore;
-  const xMaxStore = getContext(
-    "rill:data-graphic:x-max"
-  ) as ExtremumResolutionStore;
-  const yMinStore = getContext(
-    "rill:data-graphic:y-min"
-  ) as ExtremumResolutionStore;
-  const yMaxStore = getContext(
-    "rill:data-graphic:y-max"
-  ) as ExtremumResolutionStore;
+  const xMinStore = getContext(contexts.min("x")) as ExtremumResolutionStore;
+  const xMaxStore = getContext(contexts.max("x")) as ExtremumResolutionStore;
+  const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
+  const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
 
   // get extents
   $: [xMinValue, xMaxValue] = extent(data, (d) => d[xAccessor]);
