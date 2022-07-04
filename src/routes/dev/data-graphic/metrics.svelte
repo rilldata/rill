@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { tweened, spring } from "svelte/motion";
-  import { cubicOut as easing, sineInOut } from "svelte/easing";
+  import { tweened } from "svelte/motion";
+  import { cubicOut as easing } from "svelte/easing";
   import { derived } from "svelte/store";
   import { format } from "d3-format";
 

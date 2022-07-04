@@ -17,7 +17,6 @@ for any of its children.
     pruneProps,
   } from "../state";
   import type {
-    SimpleConfigurationStore,
     SimpleDataGraphicConfiguration,
     SimpleDataGraphicConfigurationArguments,
   } from "../state/types";

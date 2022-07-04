@@ -15,7 +15,6 @@ This component will draw an axis on the specified side.
   export let fontSize: number = undefined;
   export let placement = "middle";
 
-  let container;
   let xOrY;
   const isVertical = side === "left" || side === "right";
   if (isVertical) {

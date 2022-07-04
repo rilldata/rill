@@ -22,7 +22,6 @@
   export let yDashArray = "1,1";
   export let yThickness = 1;
 
-  let container;
   let xAxisLength;
   let yAxisLength;
   let xTickCount = 0;
