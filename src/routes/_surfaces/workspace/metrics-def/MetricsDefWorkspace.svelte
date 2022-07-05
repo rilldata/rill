@@ -89,6 +89,7 @@
       label={"Measures"}
       addEntityHandler={handleCreateMeasure}
       updateEntityHandler={handleUpdateMeasure}
+      deleteEntityHandler={handleDeleteMeasure}
       rows={$measures ?? []}
       columnNames={MeasuresColumns}
       tooltipText={"add a new measure"}
@@ -99,6 +100,7 @@
       label={"Dimensions"}
       addEntityHandler={handleCreateDimension}
       updateEntityHandler={handleUpdateDimension}
+      deleteEntityHandler={handleDeleteDimension}
       rows={$dimensions ?? []}
       columnNames={DimensionColumns}
       tooltipText={"add a new dimension"}

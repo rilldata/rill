@@ -5,6 +5,7 @@
 
   export let addEntityHandler;
   export let updateEntityHandler;
+  export let deleteEntityHandler;
   export let rows;
   export let columnNames;
   export let tooltipText;
@@ -32,6 +33,7 @@
       {rows}
       {columnNames}
       on:change={updateEntityHandler}
+      on:delete={deleteEntityHandler}
     />
   </div>
 </div>
