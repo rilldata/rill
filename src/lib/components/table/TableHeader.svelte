@@ -1,5 +1,6 @@
 <script lang="ts">
   export let position: "top" | "left" | "top-left" = "top";
+  export let maxWidth = "";
 </script>
 
 <th
@@ -10,6 +11,7 @@
           {position === 'left' && 'left-0'}
           {position === 'top-left' && 'top-0 left-0 z-10'}
       "
+  style={maxWidth && `max-width: ${maxWidth}`}
 >
   <div
     class="

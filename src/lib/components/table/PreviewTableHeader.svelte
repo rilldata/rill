@@ -16,12 +16,13 @@
   export let name: string;
   export let type: string;
   export let pinned = false;
+  export let maxWidth = "";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();
 </script>
 
-<TableHeader>
+<TableHeader {maxWidth}>
   <div
     use:shiftClickAction
     on:shift-click={async () => {
