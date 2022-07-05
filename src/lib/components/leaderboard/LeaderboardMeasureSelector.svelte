@@ -11,18 +11,31 @@
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
   }
 
-  function handleMeasureUpdate(event) {
+  function handleMeasureUpdate(measureID) {
     updateLeaderboardMeasure(
       store.dispatch,
       metricsDefId,
-      event.target.value,
-      $measures.find((measure) => measure.id === event.target.value)?.expression
+      measureID,
+      $measures.find((measure) => measure.id === measureID)?.expression
     );
+    selectedValue = measureID;
+  }
+
+  let selectedValue;
+  /** select the first measure available if no value has been selected on initialization. */
+  $: if (selectedValue === undefined && $measures?.length) {
+    handleMeasureUpdate($measures[0].id);
   }
 </script>
 
 {#if $measures}
-  <select class="pl-1 mb-2" on:change={handleMeasureUpdate}>
+  <select
+    class="pl-1 mb-2"
+    value={selectedValue}
+    on:change={(event) => {
+      handleMeasureUpdate(event.target.value);
+    }}
+  >
     <option value="">Select One</option>
     {#each $measures as measure (measure.id)}
       <option value={measure.id}>{measure.expression}</option>

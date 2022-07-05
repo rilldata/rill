@@ -1,7 +1,8 @@
 <script lang="ts">
-  import LeaderboardContainer from "./LeaderboardContainer.svelte";
-  import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import ExploreContainer from "./ExploreContainer.svelte";
+  import ExploreHeader from "./ExploreHeader.svelte";
   import LeaderboardDisplay from "./LeaderboardDisplay.svelte";
+  import MetricsTimeSeriesCharts from "./MetricsTimeSeriesCharts.svelte";
   import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
   import { store } from "$lib/redux-store/store-root";
   import { initMetricsLeaderboard } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
@@ -34,11 +35,18 @@
       : $metricsLeaderboard?.referenceValue;
 </script>
 
-<LeaderboardContainer let:columns>
-  <LeaderboardHeader bind:whichReferenceValue {metricsDefId} />
-  <LeaderboardDisplay
-    {columns}
-    referenceValue={stagedReferenceValue}
-    {metricsDefId}
-  />
-</LeaderboardContainer>
+<ExploreContainer let:columns>
+  <svelte:fragment slot="header">
+    <ExploreHeader bind:whichReferenceValue {metricsDefId} />
+  </svelte:fragment>
+  <svelte:fragment slot="metrics">
+    <MetricsTimeSeriesCharts {metricsDefId} />
+  </svelte:fragment>
+  <svelte:fragment slot="leaderboards">
+    <LeaderboardDisplay
+      {columns}
+      referenceValue={stagedReferenceValue}
+      {metricsDefId}
+    />
+  </svelte:fragment>
+</ExploreContainer>
