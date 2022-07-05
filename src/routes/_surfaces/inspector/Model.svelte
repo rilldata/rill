@@ -38,6 +38,7 @@
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Button from "$lib/components/Button.svelte";
+  import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -310,10 +311,18 @@
                 show={showColumns}
                 name={currentModel.name}
                 cardinality={currentDerivedModel?.cardinality ?? 0}
-                profile={currentDerivedModel?.profile ?? []}
-                head={currentDerivedModel?.preview ?? []}
                 emphasizeTitle={currentModel?.id === $store?.activeEntity?.id}
-              />
+              >
+                <svelte:fragment slot="summary" let:containerWidth>
+                  <ColumnProfileNavEntry
+                    indentLevel={1}
+                    {containerWidth}
+                    cardinality={currentDerivedModel?.cardinality ?? 0}
+                    profile={currentDerivedModel?.profile ?? []}
+                    head={currentDerivedModel?.preview ?? []}
+                  />
+                </svelte:fragment>
+              </CollapsibleTableSummary>
             </div>
           {/if}
         </div>

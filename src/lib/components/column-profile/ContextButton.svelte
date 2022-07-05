@@ -4,12 +4,13 @@
   export let rotated = false;
   export let suppressTooltip = false;
   export let tooltipText: string;
+  export let location = "right";
   // utilize the ID for easier UI testing.
   export let id: string;
 </script>
 
 <Tooltip
-  location="right"
+  {location}
   alignment="middle"
   distance={16}
   suppress={suppressTooltip || tooltipText === undefined}

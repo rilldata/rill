@@ -7,7 +7,8 @@ import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSe
 import { updateTimeSeries } from "$lib/redux-store/timeseries/timeseries-slice";
 import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import { prune } from "../../../routes/_surfaces/workspace/leaderboard/utils";
+import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
+import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export const generateTimeSeriesApi = createAsyncThunk(
   `${EntityType.MetricsLeaderboard}/generateTimeSeries`,
@@ -17,11 +18,13 @@ export const generateTimeSeriesApi = createAsyncThunk(
       measures,
       filters,
       pixels,
+      rollupInterval,
     }: {
       metricsDefId: string;
       measures: Array<MeasureDefinitionEntity>;
       filters?: ActiveValues;
       pixels?: number;
+      rollupInterval?: RollupInterval;
     },
     thunkAPI
   ) => {
@@ -41,6 +44,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
         ]),
         filters,
         pixels,
+        rollupInterval,
       }
     );
     for await (const timeSeriesResponse of stream) {

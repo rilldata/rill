@@ -23,7 +23,7 @@
 <Table>
   <!-- headers -->
   <TableRow>
-    {#each columnNames as columnConfig (columnConfig.name)}
+    {#each columnNames as columnConfig (columnConfig.name + columnConfig.label)}
       {@const thisColumnIsPinned = columnIsPinned(
         columnConfig.name,
         selectedColumns
@@ -41,7 +41,7 @@
   <!-- values -->
   {#each rows as row, index}
     <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
-      {#each columnNames as column (index + column.name)}
+      {#each columnNames as column (index + column.name + column.label)}
         <TableCell
           on:inspect={() => {
             dispatch("activeElement", {
@@ -51,6 +51,7 @@
             });
           }}
           on:change={(evt) => dispatch("change", evt.detail)}
+          on:delete={(evt) => dispatch("delete", evt.detail)}
           {column}
           {index}
           {row}

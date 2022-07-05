@@ -63,7 +63,10 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
 
     const rollupTime = rollupInterval.rollupInterval.split(" ")[1];
 
-    if (typeof rollupInterval.maxValue === "number") {
+    if (
+      typeof rollupInterval.maxValue === "number" ||
+      typeof rollupInterval.maxValue === "string"
+    ) {
       rollupInterval.maxValue = new Date(rollupInterval.maxValue);
       rollupInterval.minValue = new Date(rollupInterval.minValue);
     }
@@ -84,11 +87,11 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
             generate_series(
               date_trunc(
                 '${rollupTime}', 
-                TIMESTAMP '${rollupInterval.minValue.toISOString()}'
+                TIMESTAMP '${(rollupInterval.minValue as Date).toISOString()}'
               ), 
               date_trunc(
                 '${rollupTime}', 
-                TIMESTAMP '${rollupInterval.maxValue.toISOString()}'
+                TIMESTAMP '${(rollupInterval.maxValue as Date).toISOString()}'
               ), 
               interval ${rollupInterval.rollupInterval})
         ),

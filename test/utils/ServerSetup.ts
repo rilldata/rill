@@ -49,13 +49,13 @@ export class TestServerSetup extends TestSuiteSetup {
       `${CLI_COMMAND} init --project ${testSuiteParameter.cliFolder}`
     );
     await execPromise(
-      `${CLI_COMMAND} import-table --project ${testSuiteParameter.cliFolder} ./test/data/Users.parquet`
+      `${CLI_COMMAND} import-source --project ${testSuiteParameter.cliFolder} ./test/data/Users.parquet`
     );
     await execPromise(
-      `${CLI_COMMAND} import-table --project ${testSuiteParameter.cliFolder} ./test/data/AdImpressions.parquet`
+      `${CLI_COMMAND} import-source --project ${testSuiteParameter.cliFolder} ./test/data/AdImpressions.parquet`
     );
     await execPromise(
-      `${CLI_COMMAND} import-table --project ${testSuiteParameter.cliFolder} ./test/data/AdBids.parquet`
+      `${CLI_COMMAND} import-source --project ${testSuiteParameter.cliFolder} ./test/data/AdBids.parquet`
     );
 
     let serverStarted = false;
