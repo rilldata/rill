@@ -19,7 +19,7 @@ const config = {
 
   // gitpages settings
   url: "https://rilldata.github.io",
-  baseUrl: "/rill-developer/",
+  baseUrl: "/",
   organizationName: "rilldata",
   projectName: "rill-developer",
   deploymentBranch: "430-publish-docs-directory-with-docusaurus",
