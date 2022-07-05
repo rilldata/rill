@@ -16,8 +16,9 @@
   export let columnNames: ColumnName[];
   export let rows: any[];
 
-  let selectedColumns = [];
+  const MAX_COLUMN_WIDTH = "250px";
 
+  let selectedColumns = [];
   let activeIndex;
 
   function columnIsPinned(name, selectedCols) {
@@ -49,6 +50,7 @@
           on:pin={() => {
             togglePin(name, type, selectedColumns);
           }}
+          maxWidth={MAX_COLUMN_WIDTH}
         />
       {/each}
     </TableRow>
@@ -61,6 +63,7 @@
             {type}
             value={row[name]}
             isNull={row[name] === null}
+            maxWidth={MAX_COLUMN_WIDTH}
           />
         {/each}
       </TableRow>
@@ -78,6 +81,7 @@
             <PreviewTableHeader
               {name}
               {type}
+              maxWidth={MAX_COLUMN_WIDTH}
               pinned={thisColumnIsPinned}
               on:pin={() => {
                 togglePin(name, type, selectedColumns);
@@ -96,6 +100,7 @@
                 {index}
                 isNull={row[name] === null}
                 value={row[name]}
+                maxWidth={MAX_COLUMN_WIDTH}
               />
             {/each}
           </TableRow>
