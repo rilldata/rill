@@ -7,7 +7,7 @@ import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSe
 import { updateTimeSeries } from "$lib/redux-store/timeseries/timeseries-slice";
 import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import { prune } from "../../../routes/_surfaces/workspace/leaderboard/utils";
+import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export const generateTimeSeriesApi = createAsyncThunk(

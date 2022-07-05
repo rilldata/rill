@@ -8,7 +8,10 @@
   import { toggleValueAndUpdateLeaderboard } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import MetricsExploreTimeChart from "$lib/components/leaderboard/MetricsExploreTimeChart.svelte";
-  import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import {
+    getMeasureById,
+    getMeasuresByMetricsId,
+  } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import type { Readable } from "svelte/store";
   import { getMetricsLeaderboardById } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-readables";
 
@@ -46,12 +49,12 @@
   }
 </script>
 
+<!-- container for the metrics leaderboard components and controls -->
 <div
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
   class="border-t border-gray-200 overflow-auto"
 >
   {#if $metricsLeaderboard}
-    <MetricsExploreTimeChart {metricsDefId} />
     <VirtualizedGrid
       {columns}
       height="100%"
