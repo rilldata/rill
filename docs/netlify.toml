@@ -120,6 +120,202 @@
   to = "/index.html"
   status = 200
 
+[[redirects]]
+	from = "/docs/introduction"
+	to = "https://enterprise.rilldata.com/docs/introduction"
+	status = 301
+
+[[redirects]]
+	from = "/docs/core-concepts"
+	to = "https://enterprise.rilldata.com/docs/core-concepts"
+	status = 301
+
+[[redirects]]
+	from = "/docs/processing-batch-data"
+	to = "https://enterprise.rilldata.com/docs/processing-batch-data"
+	status = 301
+
+[[redirects]]
+	from = "/docs/aws-s3-bucket"
+	to = "https://enterprise.rilldata.com/docs/aws-s3-bucket"
+	status = 301
+
+[[redirects]]
+	from = "/docs/gcs-bucket"
+	to = "https://enterprise.rilldata.com/docs/gcs-bucket"
+	status = 301
+
+[[redirects]]
+	from = "/docs/google-bigquery"
+	to = "https://enterprise.rilldata.com/docs/google-bigquery"
+	status = 301
+
+[[redirects]]
+	from = "/docs/azure-storage-container"
+	to = "https://enterprise.rilldata.com/docs/azure-storage-container"
+	status = 301
+
+[[redirects]]
+	from = "/docs/tutorial-druid-ingestion"
+	to = "https://enterprise.rilldata.com/docs/tutorial-druid-ingestion"
+	status = 301
+
+[[redirects]]
+	from = "/docs/ingesting-from-big-query"
+	to = "https://enterprise.rilldata.com/docs/ingesting-from-big-query"
+	status = 301
+
+[[redirects]]
+	from = "/docs/process-streaming-data"
+	to = "https://enterprise.rilldata.com/docs/process-streaming-data"
+	status = 301
+
+[[redirects]]
+	from = "/docs/connecting-with-kafka"
+	to = "https://enterprise.rilldata.com/docs/connecting-with-kafka"
+	status = 301
+
+[[redirects]]
+	from = "/docs/tutorial-kafka-ingestion"
+	to = "https://enterprise.rilldata.com/docs/tutorial-kafka-ingestion"
+	status = 301
+
+[[redirects]]
+	from = "/docs/metadata-lookups"
+	to = "https://enterprise.rilldata.com/docs/metadata-lookups"
+	status = 301
+
+[[redirects]]
+	from = "/docs/data-ingestion-best-practices-1"
+	to = "https://enterprise.rilldata.com/docs/data-ingestion-best-practices-1"
+	status = 301
+
+[[redirects]]
+	from = "/docs/getting-access-to-rill-dashboards"
+	to = "https://enterprise.rilldata.com/docs/getting-access-to-rill-dashboards"
+	status = 301
+
+[[redirects]]
+	from = "/docs/getting-started"
+	to = "https://enterprise.rilldata.com/docs/getting-started"
+	status = 301
+
+[[redirects]]
+	from = "/docs/alerting"
+	to = "https://enterprise.rilldata.com/docs/alerting"
+	status = 301
+
+[[redirects]]
+	from = "/docs/scheduled-exports"
+	to = "https://enterprise.rilldata.com/docs/scheduled-exports"
+	status = 301
+
+[[redirects]]
+	from = "/docs/bookmarking"
+	to = "https://enterprise.rilldata.com/docs/bookmarking"
+	status = 301
+
+[[redirects]]
+	from = "/docs/facet-pivot-table-splits"
+	to = "https://enterprise.rilldata.com/docs/facet-pivot-table-splits"
+	status = 301
+
+[[redirects]]
+	from = "/docs/explore-admin"
+	to = "https://enterprise.rilldata.com/docs/explore-admin"
+	status = 301
+
+[[redirects]]
+	from = "/docs/adding-users"
+	to = "https://enterprise.rilldata.com/docs/adding-users"
+	status = 301
+
+[[redirects]]
+	from = "/docs/admin-security"
+	to = "https://enterprise.rilldata.com/docs/admin-security"
+	status = 301
+
+[[redirects]]
+	from = "/docs/create-an-external-dashboard"
+	to = "https://enterprise.rilldata.com/docs/create-an-external-dashboard"
+	status = 301
+
+[[redirects]]
+	from = "/docs/explore-json-examples"
+	to = "https://enterprise.rilldata.com/docs/explore-json-examples"
+	status = 301
+
+[[redirects]]
+	from = "/docs/embedding-explore"
+	to = "https://enterprise.rilldata.com/docs/embedding-explore"
+	status = 301
+
+[[redirects]]
+	from = "/docs/authenticating-integrated-applications"
+	to = "https://enterprise.rilldata.com/docs/authenticating-integrated-applications"
+	status = 301
+
+[[redirects]]
+	from = "/docs/api-password"
+	to = "https://enterprise.rilldata.com/docs/api-password"
+	status = 301
+
+[[redirects]]
+	from = "/docs/service-accounts"
+	to = "https://enterprise.rilldata.com/docs/service-accounts"
+	status = 301
+
+[[redirects]]
+	from = "/docs/api-access"
+	to = "https://enterprise.rilldata.com/docs/api-access"
+	status = 301
+
+[[redirects]]
+	from = "/docs/jdbc-connection"
+	to = "https://enterprise.rilldata.com/docs/jdbc-connection"
+	status = 301
+
+[[redirects]]
+	from = "/docs/jupyter"
+	to = "https://enterprise.rilldata.com/docs/jupyter"
+	status = 301
+
+[[redirects]]
+	from = "/docs/looker"
+	to = "https://enterprise.rilldata.com/docs/looker"
+	status = 301
+
+[[redirects]]
+	from = "/docs/superset"
+	to = "https://enterprise.rilldata.com/docs/superset"
+	status = 301
+
+[[redirects]]
+	from = "/docs/tableau"
+	to = "https://enterprise.rilldata.com/docs/tableau"
+	status = 301
+
+[[redirects]]
+	from = "/docs/aws-private-link"
+	to = "https://enterprise.rilldata.com/docs/aws-private-link"
+	status = 301
+
+[[redirects]]
+	from = "/docs/aws-encryption"
+	to = "https://enterprise.rilldata.com/docs/aws-encryption"
+	status = 301
+
+[[redirects]]
+	from = "/docs/faq"
+	to = "https://enterprise.rilldata.com/docs/faq"
+	status = 301
+
+[[redirects]]
+	from = "/docs/contact-support"
+	to = "https://enterprise.rilldata.com/docs/contact-support"
+	status = 301
+
+
 # [[headers]]
 #   # Define which paths this specific [[headers]] block will cover.
 #   for = "/*"
