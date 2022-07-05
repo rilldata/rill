@@ -9,7 +9,6 @@ import type { DataModelerStateService } from "$common/data-modeler-state-service
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { existsSync, mkdirSync } from "fs";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import path from "node:path";
 
 const STATIC_FILES = `${__dirname}/../../build`;
@@ -88,32 +87,20 @@ export class ExpressServer {
   }
 
   private async handleFileExport(req: Request, res: Response) {
-    const modelId = req.query.id as string;
-    const exportType =
-      req.query.type === "csv" ? "exportToCsv" : "exportToParquet";
     const fileName = decodeURIComponent(req.query.fileName as string);
-    const exportResp = await this.dataModelerService.dispatch(exportType, [
-      modelId,
-      fileName,
-    ]);
-    if (exportResp.status === ActionStatus.Success) {
+    const fullPath = ExpressServer.getAbsoluteFilePath(
+      `${this.config.database.exportFolder}/${fileName}`
+    );
+    if (existsSync(fullPath)) {
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${fileName}"`
       );
-      res.sendFile(
-        ExpressServer.getAbsoluteFilePath(
-          `${this.config.database.exportFolder}/${fileName}`
-        )
-      );
+      res.sendFile(fullPath);
     } else {
       res.status(500);
-      res.send(
-        `Failed to export.\n${exportResp.messages
-          .map((message) => message.message)
-          .join("\n")}`
-      );
+      res.send(`Failed to export file ${fileName}`);
     }
   }
 
