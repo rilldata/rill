@@ -15,7 +15,7 @@
   publish = "dist"
 
   # Default build command.
-  command = "npm run build -w docs"
+  command = "npm install && npm run build"
 
 # [[plugins]]
 #   # Installs the Lighthouse Build Plugin for all deploy contexts
@@ -28,7 +28,7 @@
 # values to keep them out of your source repository. 
 [context.production]
   publish = "dist"
-  command = "npm run build -w docs"
+  command = "npm install && npm run build"
   environment = { NODE_VERSION = "16.15.1" }
 
 # Deploy Preview context: all deploys generated from
