@@ -1,6 +1,6 @@
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import { prune } from "../../../routes/_surfaces/workspace/leaderboard/utils";
+import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import {
   clearLeaderboard,
