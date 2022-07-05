@@ -1,33 +1,43 @@
 import EditableTableCell from "$lib/components/table-editable/EditableTableCell.svelte";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import MeasureSparkLineCell from "$lib/components/metrics-definition/MeasureSparkLineCell.svelte";
-import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfigumnConfig";
+import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 import RowActionsCell from "$lib/components/table-editable/RowActionsCell.svelte";
 
-export const MeasuresColumns: Array<ColumnConfig> = [
-  "label",
-  "sqlName",
-  "expression",
-  "description",
-].map((col) => ({
-  name: col,
-  type: "VARCHAR",
-  renderer: EditableTableCell,
-}));
-MeasuresColumns[1].validation = (row: MeasureDefinitionEntity) =>
-  row.sqlNameIsValid;
-MeasuresColumns[2].validation = (row: MeasureDefinitionEntity) =>
-  row.expressionIsValid;
-
-MeasuresColumns.push({
-  name: "id",
-  label: "spark line",
-  type: "VARCHAR",
-  renderer: MeasureSparkLineCell,
-});
-MeasuresColumns.push({
-  name: "id",
-  label: "Actions",
-  type: "VARCHAR",
-  renderer: RowActionsCell,
-});
+export const MeasuresColumns: ColumnConfig[] = [
+  {
+    name: "label",
+    tooltip: "a human readable name for this measure",
+    renderer: EditableTableCell,
+  },
+  {
+    name: "expression",
+    tooltip: "a valid SQL aggregation expression for this measure",
+    renderer: EditableTableCell,
+    validation: (row: MeasureDefinitionEntity) => row.expressionIsValid,
+  },
+  {
+    name: "sqlName",
+    label: "identifier",
+    tooltip: "a unique SQL identifier for this measure",
+    renderer: EditableTableCell,
+    validation: (row: MeasureDefinitionEntity) => row.sqlNameIsValid,
+  },
+  {
+    name: "description",
+    tooltip: "a human readable description of this measure",
+    renderer: EditableTableCell,
+  },
+  {
+    name: "id",
+    label: "preview",
+    tooltip: "a preview of this measure over the selected time dimension",
+    renderer: MeasureSparkLineCell,
+  },
+  {
+    name: "id",
+    label: "actions",
+    tooltip: "actions affecting this row",
+    renderer: RowActionsCell,
+  },
+];

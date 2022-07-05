@@ -16,8 +16,8 @@ export interface DimensionDefinitionEntity extends EntityRecord {
   dimensionColumn: string;
   // optional user defined metadata
   sqlName?: string;
-  nameSingle?: string;
-  namePlural?: string;
+  labelSingle?: string;
+  labelPlural?: string;
   description?: string;
   dimensionIsValid?: ValidationState;
   sqlNameIsValid?: ValidationState;
