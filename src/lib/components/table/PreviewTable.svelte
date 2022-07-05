@@ -7,6 +7,7 @@
    */
   import { Table, TableRow, TableCell } from "$lib/components/table/";
   import PreviewTableHeader from "./PreviewTableHeader.svelte";
+  import TableHeader from "./TableHeader.svelte";
 
   interface ColumnName {
     name: string;
@@ -41,6 +42,7 @@
   <Table>
     <!-- headers -->
     <TableRow>
+      <TableHeader position="top-left">#</TableHeader>
       {#each columnNames as { name, type } (name)}
         {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
         <PreviewTableHeader
@@ -57,6 +59,7 @@
     <!-- values -->
     {#each rows as row, index}
       <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
+        <TableHeader position="left">{index + 1}</TableHeader>
         {#each columnNames as { name, type } (index + name)}
           <TableCell
             {name}
@@ -72,7 +75,7 @@
 
   {#if selectedColumns.length}
     <div
-      class="sticky right-0 z-20 bg-white border border-l-4 border-t-0 border-b-0 border-r-0 border-gray-300"
+      class="sticky right-0 z-20 bg-white border border-l-4 border-y-0 border-r-0 border-gray-300"
     >
       <Table>
         <TableRow>
