@@ -1,8 +1,8 @@
-import EditableTableCell from "$lib/components/table/EditableTableCell.svelte";
+import EditableTableCell from "$lib/components/table-editable/EditableTableCell.svelte";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import MeasureSparkLineCell from "$lib/components/metrics-definition/MeasureSparkLineCell.svelte";
-import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
-import RowActionsCell from "$lib/components/table/RowActionsCell.svelte";
+import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfigumnConfig";
+import RowActionsCell from "$lib/components/table-editable/RowActionsCell.svelte";
 
 export const MeasuresColumns: Array<ColumnConfig> = [
   "label",

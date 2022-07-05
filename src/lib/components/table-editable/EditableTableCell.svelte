@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 
   export let value;
   export let index;

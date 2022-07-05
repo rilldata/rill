@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+  import PreviewTable from "$lib/components/table-editable/PreviewTable.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 

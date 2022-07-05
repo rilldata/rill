@@ -15,7 +15,7 @@
     SIDE_PAD,
   } from "$lib/application-state-stores/layout-store";
 
-  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+  import PreviewTable from "$lib/components/table-editable/PreviewTable.svelte";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type {

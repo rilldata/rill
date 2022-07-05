@@ -8,7 +8,7 @@
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { Debounce } from "$common/utils/Debounce";
   import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
   import type { Readable } from "svelte/store";
   import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
