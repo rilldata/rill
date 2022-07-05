@@ -20,8 +20,6 @@
     DerivedTableStore,
   } from "$lib/application-state-stores/table-stores";
 
-  import { config } from "$lib/application-state-stores/application-store";
-
   import {
     layout,
     assetVisibilityTween,
@@ -67,10 +65,7 @@
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
-  <ExportingDataset
-    tableName={persistentExportedModel.name}
-    path={`${config.database.exportFolder}/`}
-  />
+  <ExportingDataset tableName={persistentExportedModel.name} />
 {:else if derivedImportedTable && persistentImportedTable}
   <ImportingTable
     importName={persistentImportedTable.path}
