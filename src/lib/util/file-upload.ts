@@ -27,17 +27,31 @@ export function uploadTableFiles(files, apiBase: string) {
     importOverlayVisible.set(true);
   }
 
-  validFiles.forEach((validFile) =>
-    uploadFile(validFile, `${apiBase}/table-upload`)
-  );
+  validFiles.forEach((validFile) => uploadFile(validFile, apiBase));
   return invalidFiles;
 }
 
-export function uploadFile(file: File, url: string) {
+export function uploadFile(file: File, apiBase: string) {
+  const tableUploadURL = `${apiBase}/table-upload`;
+  const tableValidateURL = `${apiBase}/validate-table`;
+  fetch(
+    tableValidateURL +
+      new URLSearchParams({
+        tableName: file.name,
+      })
+  )
+    .then((response) => response.json())
+    .then((d) => {
+      if (d.isDuplicate) {
+        // show modal
+        console.log("Show modal here");
+      }
+    });
+
   const formData = new FormData();
   formData.append("file", file);
 
-  fetch(url, {
+  fetch(tableUploadURL, {
     method: "POST",
     body: formData,
   })
