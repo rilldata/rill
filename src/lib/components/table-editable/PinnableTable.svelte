@@ -1,7 +1,10 @@
 <script lang="ts">
   import Table from "$lib/components/table-editable/Table.svelte";
   import TableRow from "$lib/components/table-editable/TableRow.svelte";
+  import TableRowWithMenu from "$lib/components/table-editable/TableRowWithMenu.svelte";
+
   import TableCell from "$lib/components/table-editable/TableCell.svelte";
+
   import { createEventDispatcher } from "svelte";
   import EditableTableHeader from "$lib/components/table-editable/EditableTableHeader.svelte";
 
@@ -37,7 +40,7 @@
   </TableRow>
   <!-- values -->
   {#each rows as row, index}
-    <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
+    <TableRowWithMenu on:delete={() => dispatch("delete", row.id)}>
       {#each columnNames as column (index + column.name + column.label)}
         <TableCell
           on:inspect={() => {
@@ -59,21 +62,6 @@
           isNull={row[column.name] === null}
         />
       {/each}
-    </TableRow>
+    </TableRowWithMenu>
   {/each}
-  {#if tableConfig.enableAdd}
-    <TableRow>
-      <td
-        class="p-2
-        pl-4
-        pr-4
-        border
-        border-gray-200"
-      >
-        <ContextButton on:click={() => dispatch("add")}>
-          <AddIcon />
-        </ContextButton>
-      </td>
-    </TableRow>
-  {/if}
 </Table>
