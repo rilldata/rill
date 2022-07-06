@@ -45,7 +45,6 @@ export function validateFile(file: File, apiBase: string) {
     .then(async (d) => {
       if (d.isDuplicate) {
         const userResponse = await getResponseFromModal(currentTableName);
-        duplicateSourceAction.set(DuplicateActions.None);
         if (userResponse == DuplicateActions.Cancel) {
           return;
         } else if (userResponse == DuplicateActions.KeepBoth) {
@@ -140,6 +139,7 @@ async function getResponseFromModal(
     const unsub = duplicateSourceAction.subscribe((action) => {
       if (action !== DuplicateActions.None) {
         unsub();
+        duplicateSourceAction.set(DuplicateActions.None);
         resolve(action);
       }
     });
