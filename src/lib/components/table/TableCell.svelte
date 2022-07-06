@@ -29,6 +29,7 @@
   export let name;
   export let index = undefined;
   export let isNull = false;
+  export let maxWidth = "";
 
   const dispatch = createEventDispatcher();
   /**
@@ -81,6 +82,7 @@
         border-gray-200
         {activeCell && 'bg-gray-200'}
     "
+    style={maxWidth && `max-width: ${maxWidth}`}
   >
     <button
       class="text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"

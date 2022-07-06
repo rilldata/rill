@@ -20,8 +20,6 @@
     DerivedTableStore,
   } from "$lib/application-state-stores/table-stores";
 
-  import { config } from "$lib/application-state-stores/application-store";
-
   import {
     layout,
     assetVisibilityTween,
@@ -64,13 +62,15 @@
   $: persistentExportedModel = $persistentModelStore?.entities?.find(
     (model) => model.id === derivedExportedModel?.id
   );
+
+  function isEventWithFiles(event: DragEvent) {
+    let types = event.dataTransfer.types;
+    return types && types.indexOf("Files") != -1;
+  }
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
-  <ExportingDataset
-    tableName={persistentExportedModel.name}
-    path={`${config.database.exportFolder}/`}
-  />
+  <ExportingDataset tableName={persistentExportedModel.name} />
 {:else if derivedImportedTable && persistentImportedTable}
   <ImportingTable
     importName={persistentImportedTable.path}
@@ -87,8 +87,8 @@
   on:drop|preventDefault|stopPropagation
   on:drag|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
-  on:dragover|preventDefault|stopPropagation={() => {
-    showDropOverlay = true;
+  on:dragover|preventDefault|stopPropagation={(e) => {
+    if (isEventWithFiles(e)) showDropOverlay = true;
   }}
   on:dragleave|preventDefault|stopPropagation
 >
