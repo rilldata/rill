@@ -63,6 +63,11 @@
   $: persistentExportedModel = $persistentModelStore?.entities?.find(
     (model) => model.id === derivedExportedModel?.id
   );
+
+  function isEventWithFiles(event: DragEvent) {
+    let types = event.dataTransfer.types;
+    return types && types.indexOf("Files") != -1;
+  }
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
@@ -85,8 +90,8 @@
   on:drop|preventDefault|stopPropagation
   on:drag|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
-  on:dragover|preventDefault|stopPropagation={() => {
-    showDropOverlay = true;
+  on:dragover|preventDefault|stopPropagation={(e) => {
+    if (isEventWithFiles(e)) showDropOverlay = true;
   }}
   on:dragleave|preventDefault|stopPropagation
 >
