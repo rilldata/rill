@@ -14,16 +14,16 @@ const config = {
   tagline: "A simple alternative to complex BI stacks",
 
   // netlify settings
-  // url: "https://rill-developer.netlify.app",
-  // baseUrl: "/",
+  url: "https://docs.rilldata.com",
+  baseUrl: "/",
 
   // gitpages settings
-  url: "https://rilldata.github.io",
-  baseUrl: "/",
-  organizationName: "rilldata",
-  projectName: "rill-developer",
-  deploymentBranch: "430-publish-docs-directory-with-docusaurus",
-  trailingSlash: true,
+  // url: "https://rilldata.github.io",
+  // baseUrl: "/",
+  // organizationName: "rilldata",
+  // projectName: "rill-developer",
+  // deploymentBranch: "docs",
+  // trailingSlash: true,
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
