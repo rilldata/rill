@@ -10,7 +10,8 @@
       "<rootDir>/.svelte-kit/build/runtime/app$1"
     ],
     "^\\$common(.*)$": "<rootDir>/src/common$1",
-    "^\\$server(.*)$": "<rootDir>/src/server$1"
+    "^\\$server(.*)$": "<rootDir>/src/server$1",
+    "^d3-(.*)$": "d3-$1/dist/d3-$1"
   },
   "extensionsToTreatAsEsm": [".svelte"],
   "moduleFileExtensions": ["ts", "js", "svelte"],

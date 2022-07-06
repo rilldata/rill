@@ -13,7 +13,7 @@ npm run install-and-build
 ## Getting started
 Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).<br>
 
-Run `npm build` to build the application.
+Run `npm run build` to build the application.
  
 ## Starting a dev server
 Run `npm run dev` to start the UI and backend dev servers. UI will be available on http://localhost:3000

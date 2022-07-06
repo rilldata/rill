@@ -1,23 +1,5 @@
 import { line, area, curveLinear, curveStep } from "d3-shape";
-import type { ScaleLinear } from "d3-scale";
-
-export interface PlotConfig {
-  width: number;
-  height: number;
-  devicePixelRatio: number;
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-  buffer: number;
-  plotTop: number;
-  plotBottom: number;
-  plotLeft: number;
-  plotRight: number;
-  fontSize: number;
-  textGap: number;
-  id: string;
-}
+import type { ScaleLinear, ScaleTime } from "d3-scale";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -25,7 +7,7 @@ export interface PlotConfig {
  * These completed, segmented arcs will not overlap in a way where
  * we can overplot if part of the same path.
  */
-export function circlePath(cx: number, cy: number, r: number) {
+export function circlePath(cx: number, cy: number, r: number): string {
   return `
     M ${cx - r}, ${cy}
       a ${r},${r} 0 1,0 ${r * 2},0
@@ -38,7 +20,7 @@ const curves = {
   curveStep,
 };
 
-function isDefined(yAccessor: string) {
+export function pathDoesNotDropToZero(yAccessor: string) {
   return (d, i: number, arr) => {
     return (
       !isNaN(d[yAccessor]) &&
@@ -57,20 +39,31 @@ function isDefined(yAccessor: string) {
 
 interface LineGeneratorArguments {
   xAccessor: string;
-  xScale: ScaleLinear<number, number>;
-  yScale: ScaleLinear<number, number>;
+  xScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
+  yScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
   curve: string;
+  pathDefined?: (datum: object, i: number, arr: ArrayLike<unknown>) => boolean;
 }
 
+/**
+ * A convenience function to generate a nice SVG path for a time series.
+ * FIXME: rename to timeSeriesLineFactory.
+ * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.
+ */
 export function lineFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     line()
       .x((d) => args.xScale(d[args.xAccessor]))
-      .y((d) => Math.min(args.yScale.range()[0], args.yScale(d[yAccessor])))
+      .y((d) => args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
-      .defined(isDefined(yAccessor));
+      .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
 
+/**
+ * A convenience function to generate a nice SVG area path for a time series.
+ * FIXME: rename to timeSeriesAreaFactory.
+ * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.
+ */
 export function areaFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     area()
@@ -78,5 +71,5 @@ export function areaFactory(args: LineGeneratorArguments) {
       .y0(~~args.yScale(0) + 0.5)
       .y1((d) => ~~args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
-      .defined(isDefined(yAccessor));
+      .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }

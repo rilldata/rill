@@ -1,7 +1,7 @@
 import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
 import type { Router, Request, Response } from "express";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import path from "path";
+import { existsSync } from "node:fs";
 
 export class FileActionsController extends RillDeveloperController {
   protected setupRouter(router: Router) {
@@ -30,32 +30,20 @@ export class FileActionsController extends RillDeveloperController {
   }
 
   private async handleFileExport(req: Request, res: Response) {
-    const modelId = req.query.id as string;
-    const exportType =
-      req.query.type === "csv" ? "exportToCsv" : "exportToParquet";
     const fileName = decodeURIComponent(req.query.fileName as string);
-    const exportResp = await this.dataModelerService.dispatch(exportType, [
-      modelId,
-      fileName,
-    ]);
-    if (exportResp.status === ActionStatus.Success) {
+    const fullPath = FileActionsController.getFile(
+      `${this.config.database.exportFolder}/${fileName}`
+    );
+    if (existsSync(fullPath)) {
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${fileName}"`
       );
-      res.sendFile(
-        FileActionsController.getFile(
-          `${this.config.database.exportFolder}/${fileName}`
-        )
-      );
+      res.sendFile(fullPath);
     } else {
       res.status(500);
-      res.send(
-        `Failed to export.\n${exportResp.messages
-          .map((message) => message.message)
-          .join("\n")}`
-      );
+      res.send(`Failed to export file ${fileName}`);
     }
   }
 

@@ -126,7 +126,8 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
           template.ts from template
         LEFT OUTER JOIN series ON template.ts = series.ts
         ORDER BY template.ts
-      ));
+      )`
+      );
     } catch (err) {
       console.error(err);
       await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
