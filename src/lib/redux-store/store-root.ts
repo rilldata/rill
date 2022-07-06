@@ -1,6 +1,6 @@
 import { configureStore } from "$lib/redux-store/redux-toolkit-wrapper";
 import { metricsDefinitionReducer } from "./metrics-definition/metrics-definition-slice";
-import { metricsLeaderboardReducer } from "./metrics-leaderboard/metrics-leaderboard-slice";
+import { metricsLeaderboardReducer } from "./explore/explore-slice";
 import { readable } from "svelte/store";
 import { measureDefSliceReducer } from "$lib/redux-store/measure-definition/measure-definition-slice";
 import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition/dimension-definition-slice";

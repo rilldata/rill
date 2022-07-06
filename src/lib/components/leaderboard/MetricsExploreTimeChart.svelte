@@ -6,6 +6,7 @@
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
 
   export let metricsDefId: string;
+  export let yAccessor: string;
 
   let timeSeries: Readable<TimeSeriesEntity>;
   $: if (metricsDefId) {
@@ -17,7 +18,7 @@
   <TimestampSpark
     data={convertTimestampPreview($timeSeries.values)}
     xAccessor="ts"
-    yAccessor="count"
+    {yAccessor}
     width={345}
     height={120}
     top={0}

@@ -4,6 +4,7 @@ import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service
 export const {
   singleSelector: selectMeasureById,
   manySelector: selectMeasuresByMetricsId,
+  manySelectorByIds: selectMeasuresByIds,
 } = generateFilteredEntitySelectors<[string], MeasureDefinitionEntity>(
   "measureDefinition",
   (entity: MeasureDefinitionEntity, metricsDefId: string) =>
