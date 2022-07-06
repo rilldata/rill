@@ -1,24 +1,27 @@
-# Installing
+---
+Description: How to get started contributing to Rill Developer.
+---
+
+# Developer guide
+
+## Installing
 Download and install nodejs 16+ from https://nodejs.org/en/download/.
 
 Run the following script from checkout directory to install the command globally. This will take about 5mins to finish when run for the first time.
 
 ```
 npm run install-and-build
-
 ```
 
-# Developer Guide
-
 ## Getting started
-Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).<br>
+Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).
 
 Run `npm run build` to build the application.
  
 ## Starting a dev server
 Run `npm run dev` to start the UI and backend dev servers. UI will be available on http://localhost:3000
 
-# developer CLI
+## Developer CLI
 Initializing a project, adding datasets as sources, and starting a project are currently supported through our [CLI](https://github.com/rilldata/rill-developer/blob/main/docs/cli.md).
 
 ## Creating a project
@@ -45,7 +48,7 @@ npm run cli --silent -- start --project /path/to/project
 
 
 ## Importing a source from a file
-import source from /path/to/source/file into project under /path/to/project
+Import source from /path/to/source/file into project under /path/to/project
 ```
 npm run cli --silent -- import-source /path/to/source/file --project /path/to/project
 ```
@@ -60,9 +63,7 @@ Source name can be customisable using `--name` argument. By default, it uses fil
 
 **File types currently supported:**
 - .parquet
-
 - .csv
-
 - .tsv
 
 ## Dropping a source
@@ -71,4 +72,3 @@ Drop a source 'sourceToDrop' from project under /path/to/project
 npm run cli --silent -- drop-source sourceToDrop --project /path/to/project
 ```
 `--project` is optional. Will default to current directory if not specified.
-
