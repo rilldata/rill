@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Local testing
 The test suite uses pre-generated data. This command generates `csv` and `parquet` files for AdBids, AdImpressions and User under `/data` before running the tests:
   

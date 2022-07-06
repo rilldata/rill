@@ -3,6 +3,8 @@
 module.exports = {
   plugins: {
     autoprefixer: {},
-    tailwindcss: {},
+    tailwindcss: {
+      content: ["./src/**/*.{html,js}"],
+    },
   },
 };

@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # Installing
 Download and install nodejs 16+ from https://nodejs.org/en/download/.
 
@@ -5,13 +9,12 @@ Run the following script from checkout directory to install the command globally
 
 ```
 npm run install-and-build
-
 ```
 
 # Developer Guide
 
 ## Getting started
-Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).<br>
+Run `npm install` to install all the dependencies and compile duckdb and other packages. This can take a long time to finish (~5mins).
 
 Run `npm run build` to build the application.
  
@@ -35,7 +38,6 @@ npm run cli --silent -- init --project /path/to/project
 
 Data modeler UI will be available at http://localhost:8080
 
-
 ## Starting the UI
 Start the UI using info from project under /path/to/project.
 ```
@@ -45,7 +47,8 @@ npm run cli --silent -- start --project /path/to/project
 
 
 ## Importing a source from a file
-import source from /path/to/source/file into project under /path/to/project
+Import source from /path/to/source/file into project under /path/to/project
+
 ```
 npm run cli --silent -- import-source /path/to/source/file --project /path/to/project
 ```
@@ -71,4 +74,3 @@ Drop a source 'sourceToDrop' from project under /path/to/project
 npm run cli --silent -- drop-source sourceToDrop --project /path/to/project
 ```
 `--project` is optional. Will default to current directory if not specified.
-
