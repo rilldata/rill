@@ -1,7 +1,6 @@
 import EditableTableCell from "$lib/components/table-editable/EditableTableCell.svelte";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
-import RowActionsCell from "$lib/components/table-editable/RowActionsCell.svelte";
 
 export const DimensionColumns: ColumnConfig[] = [
   {
@@ -44,12 +43,5 @@ export const DimensionColumns: ColumnConfig[] = [
     tooltip: "the number of unique values present in this dimension",
     // FIXME: need cardinality count cell here
     renderer: EditableTableCell,
-  },
-
-  {
-    name: "id",
-    label: "actions",
-    tooltip: "actions affecting this row",
-    renderer: RowActionsCell,
   },
 ];

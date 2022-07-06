@@ -2,7 +2,6 @@ import EditableTableCell from "$lib/components/table-editable/EditableTableCell.
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import MeasureSparkLineCell from "$lib/components/metrics-definition/MeasureSparkLineCell.svelte";
 import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
-import RowActionsCell from "$lib/components/table-editable/RowActionsCell.svelte";
 
 export const MeasuresColumns: ColumnConfig[] = [
   {
@@ -33,11 +32,5 @@ export const MeasuresColumns: ColumnConfig[] = [
     label: "preview",
     tooltip: "a preview of this measure over the selected time dimension",
     renderer: MeasureSparkLineCell,
-  },
-  {
-    name: "id",
-    label: "actions",
-    tooltip: "actions affecting this row",
-    renderer: RowActionsCell,
   },
 ];
