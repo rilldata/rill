@@ -5,12 +5,11 @@
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { fade } from "svelte/transition";
   import { createNotificationStore as notificationStore } from "$lib/components/notifications/index";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 
   const { shiftClickAction } = createShiftClickAction();
 
   export let value;
-  export let index;
   export let column: ColumnConfig;
   export let isNull = false;
 </script>

@@ -1,4 +1,4 @@
-import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 
 export function columnIsPinned(name, selectedColumns: Array<ColumnConfig>) {
   return selectedColumns.map((column) => column.name).includes(name);

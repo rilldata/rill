@@ -1,15 +1,17 @@
 <script lang="ts">
-  import Table from "$lib/components/table/Table.svelte";
-  import TableRow from "$lib/components/table/TableRow.svelte";
-  import TableCell from "$lib/components/table/TableCell.svelte";
+  import Table from "$lib/components/table-editable/Table.svelte";
+  import TableRow from "$lib/components/table-editable/TableRow.svelte";
+  import TableCell from "$lib/components/table-editable/TableCell.svelte";
   import { createEventDispatcher } from "svelte";
-  import PreviewTableHeader from "$lib/components/table/PreviewTableHeader.svelte";
-  import { columnIsPinned } from "$lib/components/table/pinnableUtils";
+  import EditableTableHeader from "$lib/components/table-editable/EditableTableHeader.svelte";
+
   import AddIcon from "$lib/components/icons/AddIcon.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
-  import { TableConfig } from "$lib/components/table/TableConfig";
+  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
+  import type { TableConfig } from "$lib/components/table-editable/TableConfig";
+
+  import { columnIsPinned } from "$lib/components/table-editable/pinnableUtils";
 
   const dispatch = createEventDispatcher();
 
@@ -24,14 +26,9 @@
   <!-- headers -->
   <TableRow>
     {#each columnNames as columnConfig (columnConfig.name + columnConfig.label)}
-      {@const thisColumnIsPinned = columnIsPinned(
-        columnConfig.name,
-        selectedColumns
-      )}
-      <PreviewTableHeader
-        name={columnConfig.label ?? columnConfig.name}
-        type={columnConfig.type}
-        pinned={thisColumnIsPinned}
+      <EditableTableHeader
+        {columnConfig}
+        pinned={columnIsPinned(columnConfig.name, selectedColumns)}
         on:pin={() => {
           dispatch("pin", { columnConfig });
         }}

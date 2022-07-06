@@ -1,7 +1,4 @@
 <script lang="ts">
-  import SectionDragHandle from "./SectionDragHandle.svelte";
-  import { layout } from "$lib/application-state-stores/layout-store";
-  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
   import { store } from "$lib/redux-store/store-root";
   import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
   import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
@@ -24,14 +21,12 @@
     updateMeasuresApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
+
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
+  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
 
   export let metricsDefId;
-
-  let innerHeight;
-  const tableContainerDivClass =
-    "rounded border border-gray-200 border-2  overflow-auto ";
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
@@ -76,44 +71,40 @@
   }
 </script>
 
-<svelte:window bind:innerHeight />
-
-<div class="editor-pane bg-gray-100">
-  <div
-    style:height="calc({innerHeight}px - {$layout.modelPreviewHeight}px -
-    var(--header-height))"
-    style="display: flex; flex-flow: column;"
-    class="p-6 pt-0"
-  >
-    <div>
-      <MetricsDefModelSelector {metricsDefId} />
-      <MetricsDefTimeColumnSelector {metricsDefId} />
-      <MetricsDefinitionGenerateButton {metricsDefId} />
-    </div>
-    <div style:flex="1" class={tableContainerDivClass}>
-      <PreviewTable
-        tableConfig={{ enableAdd: true }}
-        rows={$measures ?? []}
-        columnNames={MeasuresColumns}
-        on:change={handleUpdateMeasure}
-        on:add={handleCreateMeasure}
-        on:delete={handleDeleteMeasure}
-      />
-    </div>
+<div
+  class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
+  style:height="calc(100vh - var(--header-height))"
+>
+  <div class="flex-none">
+    <MetricsDefModelSelector {metricsDefId} />
+    <MetricsDefTimeColumnSelector {metricsDefId} />
+    <MetricsDefinitionGenerateButton {metricsDefId} />
   </div>
 
-  <SectionDragHandle />
+  <div
+    style="display: flex; flex-direction:column; overflow:hidden;"
+    class="flex-1"
+  >
+    <MetricsDefEntityTable
+      label={"Measures"}
+      addEntityHandler={handleCreateMeasure}
+      updateEntityHandler={handleUpdateMeasure}
+      deleteEntityHandler={handleDeleteMeasure}
+      rows={$measures ?? []}
+      columnNames={MeasuresColumns}
+      tooltipText={"add a new measure"}
+      addButtonId={"add-measure-button"}
+    />
 
-  <div style:height="{$layout.modelPreviewHeight}px" class="p-6 ">
-    <div class={tableContainerDivClass + " h-full"}>
-      <PreviewTable
-        tableConfig={{ enableAdd: true }}
-        rows={$dimensions ?? []}
-        columnNames={DimensionColumns}
-        on:change={handleUpdateDimension}
-        on:add={handleCreateDimension}
-        on:delete={handleDeleteDimension}
-      />
-    </div>
+    <MetricsDefEntityTable
+      label={"Dimensions"}
+      addEntityHandler={handleCreateDimension}
+      updateEntityHandler={handleUpdateDimension}
+      deleteEntityHandler={handleDeleteDimension}
+      rows={$dimensions ?? []}
+      columnNames={DimensionColumns}
+      tooltipText={"add a new dimension"}
+      addButtonId={"add-dimension-button"}
+    />
   </div>
 </div>
