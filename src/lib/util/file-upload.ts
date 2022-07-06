@@ -101,6 +101,7 @@ export function handleFileUploads(filesArray: File[]) {
     );
   }
   if (invalidFiles.length) {
+    importOverlayVisible.set(false);
     reportFileErrors(invalidFiles);
   }
 }
