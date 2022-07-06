@@ -20,13 +20,6 @@
   export let selectedColumns: ColumnConfig[];
   export let rows: any[];
   export let activeIndex: number;
-
-  // name={columnConfig.label ?? columnConfig.name}
-  //       type={columnConfig.type}
-  //
-  //       on:pin={() => {
-  //         dispatch("pin", { columnConfig });
-  //       }}
 </script>
 
 <Table>

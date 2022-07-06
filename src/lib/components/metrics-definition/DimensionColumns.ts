@@ -1,27 +1,7 @@
 import EditableTableCell from "$lib/components/table-editable/EditableTableCell.svelte";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfigumnConfig";
+import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 import RowActionsCell from "$lib/components/table-editable/RowActionsCell.svelte";
-
-// export const DimensionColumns: Array<ColumnConfig> = [
-//   "sqlName",
-//   "dimensionColumn",
-//   "description",
-// ].map((col) => ({
-//   name: col,
-//   type: "VARCHAR",
-//   renderer: EditableTableCell,
-// }));
-// DimensionColumns[0].validation = (row: DimensionDefinitionEntity) =>
-//   row.sqlNameIsValid;
-// DimensionColumns[1].validation = (row: DimensionDefinitionEntity) =>
-//   row.dimensionIsValid;
-// DimensionColumns.push({
-//   name: "id",
-//   label: "Actions",
-//   type: "VARCHAR",
-//   renderer: RowActionsCell,
-// });
 
 export const DimensionColumns: ColumnConfig[] = [
   {
@@ -37,6 +17,7 @@ export const DimensionColumns: ColumnConfig[] = [
     tooltip:
       "a categorical column from the data model that this metrics set is based on",
     renderer: EditableTableCell,
+    validation: (row: DimensionDefinitionEntity) => row.dimensionIsValid,
   },
   {
     name: "description",
