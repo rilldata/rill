@@ -35,8 +35,8 @@
 
 <div class="mt-10 p-2 place-content-center">
   <div class="text-center">
-    <div class="font-bold">getting started</div>
-    <p>building data intuition at every step of analysis</p>
+    <div class="font-bold">Getting started</div>
+    <p>Building data intuition at every step of analysis</p>
   </div>
   <div class="p-5 pt-2">
     {#each steps as step (step.heading)}
