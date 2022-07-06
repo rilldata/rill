@@ -8,13 +8,13 @@
     {
       heading: "import your data source",
       description:
-        "Add to your sources by dragging a csv or parquet file to this window.",
+        "Add to your sources by clicking on the + icon, or by dragging a csv or parquet file to this window.",
       icon: ParquetIcon,
     },
     {
       heading: "model your sources into one big table",
       description:
-        "Build intuition about your sources and model them into an analytics-ready resource.",
+        "Build intuition about your sources and use SQL to model them into an analytics-ready resource.",
       icon: Code,
     },
     // ACTIVATE WHEN WE RELEASE METRICS EXPLORE
