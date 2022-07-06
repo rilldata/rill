@@ -144,7 +144,7 @@ export class ExpressServer {
         "Content-Disposition",
         `attachment; filename="${fileName}"`
       );
-      res.sendFile(fullPath);
+      res.sendFile(path.resolve(fullPath));
     } else {
       res.status(500);
       res.send(`Failed to export file ${fileName}`);
