@@ -12,9 +12,9 @@
 </script>
 
 <Modal open={$duplicateSourceName !== null} onBackdropClick={() => undefined}>
-  <ModalTitle>duplicate source found</ModalTitle>
+  <ModalTitle>Duplicate Source Found</ModalTitle>
   <ModalContent
-    >a source with the name {$duplicateSourceName} already exists</ModalContent
+    >A source with the name <b>{$duplicateSourceName}</b> already exists</ModalContent
   >
   <ModalActions>
     <ModalAction
