@@ -5,11 +5,17 @@
   export let value;
   export let index;
   export let column: ColumnConfig;
-  export let isNull = false;
 
   const dispatch = createEventDispatcher();
 
   let editing = false;
+  const onchangeHandler = (evt) => {
+    dispatch("change", {
+      value: evt.target.value,
+      name: column.name,
+      index,
+    });
+  };
 </script>
 
 <input
@@ -20,12 +26,6 @@
   on:blur={() => {
     editing = false;
   }}
-  on:change={(evt) => {
-    dispatch("change", {
-      value: evt.target.value,
-      name: column.name,
-      index,
-    });
-  }}
+  on:change={onchangeHandler}
   value={value ?? ""}
 />
