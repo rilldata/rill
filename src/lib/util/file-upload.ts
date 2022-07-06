@@ -56,7 +56,8 @@ export function validateFile(file: File, apiBase: string) {
       } else {
         uploadFile(file, tableUploadURL);
       }
-    });
+    })
+    .catch((...args) => console.error(...args));
 }
 
 export function uploadFile(file: File, url: string, tableName?: string) {
