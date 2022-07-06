@@ -31,6 +31,7 @@
   } from "$lib/application-state-stores/layout-store";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
+  import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
 
   let showDropOverlay = false;
   let assetsHovered = false;
@@ -81,6 +82,8 @@
 {:else if showDropOverlay}
   <FileDrop bind:showDropOverlay />
 {/if}
+
+<DuplicateSource />
 
 <div
   class="absolute w-screen h-screen bg-gray-100"
