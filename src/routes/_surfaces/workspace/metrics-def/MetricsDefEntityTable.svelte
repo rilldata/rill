@@ -15,7 +15,7 @@
   export let label;
 
   const tableContainerDivClass =
-    "rounded border border-gray-200 overflow-auto flex-1 w-fit";
+    "rounded border border-gray-200 overflow-auto flex-1 max-w-[100%]";
 
   let sectionHeaderContainer;
   let sectionHeaderContainerHeight;
@@ -71,8 +71,9 @@
 
 <style>
   .metrics-def-section {
-    overflow-y: hidden;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
+    max-width: 100%;
   }
 </style>
