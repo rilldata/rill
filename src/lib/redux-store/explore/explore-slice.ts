@@ -4,6 +4,7 @@ import {
 } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 export interface LeaderboardValues {
   values: Array<unknown>;
@@ -12,8 +13,10 @@ export interface LeaderboardValues {
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 
-export interface MetricsLeaderboardEntity {
+export interface MetricsExploreEntity {
   id: string;
+  measureIds: Array<string>;
+  // this is used to show leaderboard values
   measureId: string;
   bigNumber: number;
   referenceValue: number;
@@ -22,27 +25,28 @@ export interface MetricsLeaderboardEntity {
   selectedCount: number;
 }
 
-const metricsLeaderboardAdapter =
-  createEntityAdapter<MetricsLeaderboardEntity>();
+const metricsExploreAdapter = createEntityAdapter<MetricsExploreEntity>();
 
-export const metricsLeaderboardSlice = createSlice({
+export const exploreSlice = createSlice({
   name: "metricsLeaderboard",
-  initialState: metricsLeaderboardAdapter.getInitialState(),
+  initialState: metricsExploreAdapter.getInitialState(),
   reducers: {
-    initMetricsLeaderboard: {
+    initMetricsExplore: {
       reducer: (
         state,
         {
-          payload: { id, dimensions },
+          payload: { id, dimensions, measures },
         }: PayloadAction<{
           id: string;
           dimensions: Array<DimensionDefinitionEntity>;
+          measures: Array<MeasureDefinitionEntity>;
         }>
       ) => {
         if (state.entities[id]) return;
         const metricsLeaderboard = {
           id,
-          measureId: "",
+          measureIds: measures.map((measure) => measure.id),
+          measureId: measures[0]?.id,
           bigNumber: 0,
           referenceValue: 0,
           leaderboards: dimensions.map((column) => ({
@@ -55,20 +59,50 @@ export const metricsLeaderboardSlice = createSlice({
         dimensions.forEach((column) => {
           metricsLeaderboard.activeValues[column.dimensionColumn] = [];
         });
-        metricsLeaderboardAdapter.addOne(state, metricsLeaderboard);
+        metricsExploreAdapter.addOne(state, metricsLeaderboard);
       },
-      prepare: (id: string, dimensions: Array<DimensionDefinitionEntity>) => ({
-        payload: { id, dimensions },
+      prepare: (
+        id: string,
+        dimensions: Array<DimensionDefinitionEntity>,
+        measures: Array<MeasureDefinitionEntity>
+      ) => ({
+        payload: { id, dimensions, measures },
+      }),
+    },
+
+    toggleExploreMeasure: {
+      reducer: (
+        state,
+        {
+          payload: { id, measureId },
+        }: PayloadAction<{ id: string; measureId: string }>
+      ) => {
+        if (!state.entities[id]) return;
+        const metricsExplore = state.entities[id];
+        const existingIndex = metricsExplore.measureIds.indexOf(measureId);
+
+        if (existingIndex >= 0) {
+          metricsExplore.measureIds = metricsExplore.measureIds.filter(
+            (selectedMeasureId) => selectedMeasureId === measureId
+          );
+        } else {
+          metricsExplore.measureIds = [...metricsExplore.measureIds, measureId];
+        }
+      },
+      prepare: (id: string, measureId: string) => ({
+        payload: { id, measureId },
       }),
     },
 
     setMeasureId: {
       reducer: (
         state,
-        action: PayloadAction<{ id: string; measureId: string }>
+        {
+          payload: { id, measureId },
+        }: PayloadAction<{ id: string; measureId: string }>
       ) => {
-        if (!state.entities[action.payload.id]) return;
-        state.entities[action.payload.id].measureId = action.payload.measureId;
+        if (!state.entities[id]) return;
+        state.entities[id].measureId = measureId;
       },
       prepare: (id: string, measureId: string) => ({
         payload: { id, measureId },
@@ -79,7 +113,7 @@ export const metricsLeaderboardSlice = createSlice({
       reducer: (
         state,
         {
-          payload,
+          payload: { id, dimensionName, dimensionValue, include },
         }: PayloadAction<{
           id: string;
           dimensionName: string;
@@ -87,37 +121,36 @@ export const metricsLeaderboardSlice = createSlice({
           include: boolean;
         }>
       ) => {
-        if (!state.entities[payload.id]) return;
-        const metricsLeaderboard = state.entities[payload.id];
-        const existingIndex = metricsLeaderboard.activeValues[
-          payload.dimensionName
-        ]?.findIndex(([value]) => value === payload.dimensionValue);
+        if (!state.entities[id]) return;
+        const metricsExplore = state.entities[id];
+        const existingIndex = metricsExplore.activeValues[
+          dimensionName
+        ]?.findIndex(([value]) => value === dimensionValue);
         const existing =
-          metricsLeaderboard.activeValues[payload.dimensionName]?.[
-            existingIndex
-          ];
+          metricsExplore.activeValues[dimensionName]?.[existingIndex];
 
         if (existing) {
-          if (existing[1] === payload.include) {
+          if (existing[1] === include) {
             // if existing value is an 'include' then remove the value
-            metricsLeaderboard.activeValues[payload.dimensionName] =
-              metricsLeaderboard.activeValues[payload.dimensionName].filter(
-                (activeValue) => activeValue !== payload.dimensionValue
+            metricsExplore.activeValues[dimensionName] =
+              metricsExplore.activeValues[dimensionName].filter(
+                (activeValue) => activeValue !== dimensionValue
               );
-            metricsLeaderboard.selectedCount--;
+            metricsExplore.selectedCount--;
           } else {
             // else toggle the 'include' of the value
-            metricsLeaderboard.activeValues[payload.dimensionName][
-              existingIndex
-            ] = [existing[0], payload.include];
+            metricsExplore.activeValues[dimensionName][existingIndex] = [
+              existing[0],
+              include,
+            ];
           }
         } else {
           // add the value if not present
-          metricsLeaderboard.activeValues[payload.dimensionName] = [
-            ...(metricsLeaderboard.activeValues[payload.dimensionName] ?? []),
-            [payload.dimensionValue, payload.include],
+          metricsExplore.activeValues[dimensionName] = [
+            ...(metricsExplore.activeValues[dimensionName] ?? []),
+            [dimensionValue, include],
           ];
-          metricsLeaderboard.selectedCount++;
+          metricsExplore.selectedCount++;
         }
       },
       prepare: (
@@ -130,29 +163,30 @@ export const metricsLeaderboardSlice = createSlice({
       }),
     },
 
-    setDimensionLeaderboard: {
+    setLeaderboardDimensionValues: {
       reducer: (
         state,
-        action: PayloadAction<{
+        {
+          payload: { id, dimensionName, values },
+        }: PayloadAction<{
           id: string;
           dimensionName: string;
           values: Array<unknown>;
         }>
       ) => {
-        if (!state.entities[action.payload.id]) return;
-        const existing = state.entities[action.payload.id].leaderboards.find(
-          (leaderboard) =>
-            leaderboard.displayName === action.payload.dimensionName
+        if (!state.entities[id]) return;
+        const existing = state.entities[id].leaderboards.find(
+          (leaderboard) => leaderboard.displayName === dimensionName
         );
         if (existing) {
-          existing.displayName = action.payload.dimensionName;
-          existing.values = action.payload.values;
+          existing.displayName = dimensionName;
+          existing.values = values;
         } else {
-          state.entities[action.payload.id].leaderboards = [
-            ...state.entities[action.payload.id].leaderboards,
+          state.entities[id].leaderboards = [
+            ...state.entities[id].leaderboards,
             {
-              displayName: action.payload.dimensionName,
-              values: action.payload.values,
+              displayName: dimensionName,
+              values: values,
             },
           ];
         }
@@ -179,7 +213,7 @@ export const metricsLeaderboardSlice = createSlice({
       }),
     },
 
-    clearLeaderboard: {
+    clearMetricsExplore: {
       reducer: (state, { payload: id }: PayloadAction<string>) => {
         if (!state.entities[id]) return;
         state.entities[id].activeValues = {};
@@ -196,15 +230,16 @@ export const metricsLeaderboardSlice = createSlice({
 });
 
 export const {
-  initMetricsLeaderboard,
+  initMetricsExplore,
+  toggleExploreMeasure,
   setMeasureId,
   toggleLeaderboardActiveValue,
-  setDimensionLeaderboard,
+  setLeaderboardDimensionValues,
   setBigNumber,
-  clearLeaderboard,
-} = metricsLeaderboardSlice.actions;
-export const MetricsLeaderboardSliceActions = metricsLeaderboardSlice.actions;
+  clearMetricsExplore,
+} = exploreSlice.actions;
+export const MetricsLeaderboardSliceActions = exploreSlice.actions;
 export type MetricsLeaderboardSliceTypes =
   typeof MetricsLeaderboardSliceActions;
 
-export const metricsLeaderboardReducer = metricsLeaderboardSlice.reducer;
+export const metricsLeaderboardReducer = exploreSlice.reducer;

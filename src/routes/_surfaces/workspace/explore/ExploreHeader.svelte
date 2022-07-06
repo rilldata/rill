@@ -13,25 +13,17 @@
   import { cubicIn } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { store } from "$lib/redux-store/store-root";
-  import { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+  import { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
-  import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
-  import { clearLeaderboardAndUpdate } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
-  import { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { clearLeaderboardAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import type { Readable } from "svelte/store";
-  import { getMetricsLeaderboardById } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-readables";
+  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
 
   export let metricsDefId: string;
   export let whichReferenceValue = "global";
 
-  let metricsLeaderboard: Readable<MetricsLeaderboardEntity>;
-  $: metricsLeaderboard = getMetricsLeaderboardById(metricsDefId);
-
-  let measure: Readable<MeasureDefinitionEntity>;
-  $: if ($metricsLeaderboard?.measureId) {
-    measure = getMeasureById($metricsLeaderboard?.measureId);
-  }
+  let metricsLeaderboard: Readable<MetricsExploreEntity>;
+  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
 
   const metricFormatters = {
     simpleSummable: formatInteger,
@@ -46,11 +38,7 @@
   $: bigNumberTween.set(bigNumber);
   $: anythingSelected = isAnythingSelected($metricsLeaderboard?.activeValues);
   function clearAllFilters() {
-    clearLeaderboardAndUpdate(
-      store.dispatch,
-      metricsDefId,
-      $measure.expression
-    );
+    clearLeaderboardAndUpdate(store.dispatch, metricsDefId);
   }
 </script>
 
@@ -59,7 +47,6 @@
   class="pb-6 pt-6 grid w-full bg-white"
 >
   <div>
-    <LeaderboardMeasureSelector {metricsDefId} />
     <h1 style:line-height="1.1">
       <div class="pl-2 text-gray-600 font-normal" style:font-size="1.5rem">
         Total Records

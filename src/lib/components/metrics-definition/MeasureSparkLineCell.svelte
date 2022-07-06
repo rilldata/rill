@@ -5,7 +5,6 @@
   import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
   import { store } from "$lib/redux-store/store-root";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { Debounce } from "$common/utils/Debounce";
   import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
   import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
@@ -20,13 +19,9 @@
 
   let measure: Readable<MeasureDefinitionEntity>;
   $: measure = getMeasureById(value);
-  let metricsDefId: string;
   let expression: string;
-  let expressionIsValid: ValidationState;
   $: if ($measure) {
-    metricsDefId = $measure.metricsDefId;
     expression = $measure.expression;
-    expressionIsValid = $measure.expressionIsValid;
   }
 
   const debounce = new Debounce();
@@ -36,7 +31,7 @@
       () => {
         store.dispatch(
           generateTimeSeriesApi({
-            metricsDefId,
+            id: $measure.id,
             measures: [$measure],
             filters: {},
             pixels: COLUMN_PROFILE_CONFIG.summaryVizWidth.medium,
@@ -46,7 +41,7 @@
       1000
     );
   }
-  $: if (expression && expressionIsValid === ValidationState.OK) {
+  $: if (expression) {
     generateSparkLine();
   }
 

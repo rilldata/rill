@@ -1,6 +1,6 @@
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import { getFilterFromFilters } from "./utils";
 
 export class DatabaseMetricsExploreActions extends DatabaseActions {

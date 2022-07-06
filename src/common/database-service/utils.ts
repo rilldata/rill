@@ -1,4 +1,4 @@
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 
 export function getFilterFromFilters(filters: ActiveValues): string {
   return Object.keys(filters)
