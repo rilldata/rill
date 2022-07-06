@@ -110,7 +110,7 @@
       : 'bg-transparent'}
     "
   >
-    <ExpanderButton rotated={show} on:click={() => dispatch("expand")}>
+    <ExpanderButton rotated={show} on:click={clickEntityNameHandler}>
       <CaretDownIcon size="14px" />
     </ExpanderButton>
     <button
