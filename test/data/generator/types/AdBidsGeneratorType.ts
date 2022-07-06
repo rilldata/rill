@@ -21,19 +21,24 @@ export class AdBidsGeneratorType extends DataGeneratorType {
   public columnsOrder = ["id", "timestamp", "publisher", "domain", "bid_price"];
 
   public generateRow(id: number): AdBid {
+    const pubFactor = Math.random() > 0.5;
+
     const timestamp = this.generateRandomTimestamp(START_DATE, END_DATE);
     const month = new Date(timestamp).getMonth();
     const publisherDomain = this.selectRandomEntry(
-      Math.random() > 0.5
-        ? PUBLISHER_DOMAINS_BY_MONTH[month]
-        : PUBLISHER_DOMAINS
+      pubFactor ? PUBLISHER_DOMAINS_BY_MONTH[month] : PUBLISHER_DOMAINS
     );
+
     const adBid: AdBid = {
       id,
       timestamp,
       domain: publisherDomain[1],
-      bid_price: this.generateRandomFloat(BID_START, BID_END),
+      bid_price: this.generateRandomFloat(
+        BID_START + (pubFactor ? 2 : 0),
+        BID_END + (pubFactor ? 4 : 0)
+      ),
     };
+
     if (Math.random() > PUBLISHER_NULL_CHANCE) {
       adBid.publisher = publisherDomain[0];
     }
