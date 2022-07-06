@@ -1,7 +1,15 @@
-import { extractFileExtension } from "$lib/util/extract-table-name";
+import {
+  extractFileExtension,
+  getTableNameFromFile,
+} from "$lib/util/extract-table-name";
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
 import notifications from "$lib/components/notifications";
-import { config } from "$lib/application-state-stores/application-store";
+import {
+  config,
+  DuplicateActions,
+  duplicateSourceAction,
+  duplicateSourceName,
+} from "$lib/application-state-stores/application-store";
 import { importOverlayVisible } from "$lib/application-state-stores/layout-store";
 
 /**
@@ -23,35 +31,45 @@ export function uploadTableFiles(files, apiBase: string) {
     }
   });
 
-  if (validFiles) {
-    importOverlayVisible.set(true);
-  }
-
-  validFiles.forEach((validFile) => uploadFile(validFile, apiBase));
+  validFiles.forEach((validFile) => validateFile(validFile, apiBase));
   return invalidFiles;
 }
 
-export function uploadFile(file: File, apiBase: string) {
+export function validateFile(file: File, apiBase: string) {
   const tableUploadURL = `${apiBase}/table-upload`;
   const tableValidateURL = `${apiBase}/validate-table`;
-  fetch(
-    tableValidateURL +
-      new URLSearchParams({
-        tableName: file.name,
-      })
-  )
+
+  const currentTableName = getTableNameFromFile(file.name);
+  fetch(tableValidateURL + `?tableName=${currentTableName}`)
     .then((response) => response.json())
-    .then((d) => {
+    .then(async (d) => {
       if (d.isDuplicate) {
-        // show modal
-        console.log("Show modal here");
+        const userResponse = await getResponseFromModal(currentTableName);
+        duplicateSourceAction.set(DuplicateActions.None);
+        if (userResponse == DuplicateActions.Cancel) {
+          return;
+        } else if (userResponse == DuplicateActions.KeepBoth) {
+          uploadFile(file, tableUploadURL, d.name);
+        } else if (userResponse == DuplicateActions.Overwrite) {
+          uploadFile(file, tableUploadURL);
+        }
+      } else {
+        uploadFile(file, tableUploadURL);
       }
     });
+}
+
+export function uploadFile(file: File, url: string, tableName?: string) {
+  importOverlayVisible.set(true);
 
   const formData = new FormData();
   formData.append("file", file);
 
-  fetch(tableUploadURL, {
+  if (tableName) {
+    formData.append("tableName", tableName);
+  }
+
+  fetch(url, {
     method: "POST",
     body: formData,
   })
@@ -109,4 +127,19 @@ export async function uploadFilesWithDialog() {
   input.type = "file";
   input.onchange = onManualSourceUpload;
   input.click();
+}
+
+async function getResponseFromModal(
+  currentTableName
+): Promise<DuplicateActions> {
+  duplicateSourceName.set(currentTableName);
+
+  return new Promise((resolve) => {
+    const unsub = duplicateSourceAction.subscribe((action) => {
+      if (action !== DuplicateActions.None) {
+        unsub();
+        resolve(action);
+      }
+    });
+  });
 }

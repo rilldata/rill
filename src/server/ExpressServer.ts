@@ -45,7 +45,14 @@ export class ExpressServer {
     );
 
     this.app.post("/api/table-upload", (req: any, res) => {
-      this.handleFileUpload((req as any).files.file);
+      if (req.body?.tableName) {
+        this.handleFileUpload(
+          (req as any).files.file,
+          (req as any).body.tableName
+        );
+      } else {
+        this.handleFileUpload((req as any).files.file);
+      }
       res.send("OK");
     });
     this.app.get("/api/export", async (req, res) => {
@@ -100,19 +107,30 @@ export class ExpressServer {
     }
   }
 
-  private async handleFileUpload(file: {
-    name: string;
-    tempFilePath: string;
-    mimetype: string;
-    data: Buffer;
-    size: number;
-    mv: (string) => void;
-  }) {
+  private async handleFileUpload(
+    file: {
+      name: string;
+      tempFilePath: string;
+      mimetype: string;
+      data: Buffer;
+      size: number;
+      mv: (string) => void;
+    },
+    tableName?: string
+  ) {
     const filePath = `${this.config.projectFolder}/tmp/${file.name}`;
     file.mv(filePath);
-    await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
-      filePath,
-    ]);
+
+    if (tableName) {
+      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+        filePath,
+        tableName,
+      ]);
+    } else {
+      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+        filePath,
+      ]);
+    }
   }
 
   private async handleFileExport(req: Request, res: Response) {

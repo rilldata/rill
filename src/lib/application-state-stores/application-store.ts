@@ -4,7 +4,7 @@
  * about things like the active entity and the application status.
  */
 import type { Socket } from "socket.io";
-import type { Writable } from "svelte/store";
+import { writable, Writable } from "svelte/store";
 import { clientFactory } from "$common/clientFactory";
 import { RootConfig } from "$common/config/RootConfig";
 import type { DataModelerSocketService } from "$common/socket/DataModelerSocketService";
@@ -53,3 +53,16 @@ export function createStore(): ApplicationStore {
     socket: (dataModelerService as DataModelerSocketService).getSocket(),
   };
 }
+
+export enum DuplicateActions {
+  None = "NONE",
+  KeepBoth = "KEEP_BOTH",
+  Overwrite = "OVERWRITE",
+  Cancel = "CANCEL",
+}
+
+export const duplicateSourceAction: Writable<DuplicateActions> = writable(
+  DuplicateActions.None
+);
+
+export const duplicateSourceName: Writable<string> = writable(null);

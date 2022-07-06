@@ -256,18 +256,18 @@ export class TableActions extends DataModelerActions {
       `source ${currentName} renamed to ${sanitizedNewName}`
     );
   }
-  
+
   @DataModelerActions.PersistentTableAction()
   public async validateTableName(
     { stateService }: PersistentTableStateActionArg,
     tableName: string
   ): Promise<ActionResponse> {
-    
     const sanitizedTableName = sanitizeTableName(extractTableName(tableName));
-    const existingNames = stateService.getCurrentState().entities
-      .map((table) => table.tableName)
-    
-    const nonDuplicateName = getName(sanitizedTableName, existingNames)
+    const existingNames = stateService
+      .getCurrentState()
+      .entities.map((table) => table.tableName);
+
+    const nonDuplicateName = getName(sanitizedTableName, existingNames);
 
     if (nonDuplicateName === sanitizedTableName) {
       return ActionResponseFactory.getSuccessResponse();
