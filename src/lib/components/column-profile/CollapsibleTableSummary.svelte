@@ -71,6 +71,7 @@
       <CollapsibleTableHeader
         on:select
         on:query
+        on:expand={() => (show = !show)}
         bind:contextMenuOpen
         bind:menuX
         bind:menuY
