@@ -1,6 +1,7 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
 import { ExpressServer } from "$server/ExpressServer";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export class StartCommand extends DataModelerCliCommand {
   public getCommand(): Command {
@@ -18,7 +19,17 @@ export class StartCommand extends DataModelerCliCommand {
     });
   }
 
-  protected sendActions(): Promise<void> {
+  protected async sendActions(): Promise<void> {
+    const activeEntity =
+      this.dataModelerStateService.getApplicationState().activeEntity;
+    if (!activeEntity || activeEntity?.type !== EntityType.Model) {
+      // set dummy asset as active to show onboarding steps
+      await this.dataModelerService.dispatch("setActiveAsset", [
+        EntityType.Model,
+        undefined,
+      ]);
+    }
+
     return new ExpressServer(
       this.config,
       this.dataModelerService,
