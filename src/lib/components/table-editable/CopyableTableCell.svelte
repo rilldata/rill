@@ -10,7 +10,6 @@
   const { shiftClickAction } = createShiftClickAction();
 
   export let value;
-  export let index;
   export let column: ColumnConfig;
   export let isNull = false;
 </script>

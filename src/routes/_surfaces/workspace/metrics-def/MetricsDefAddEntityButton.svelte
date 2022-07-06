@@ -1,5 +1,4 @@
 <script lang="ts">
-  import TableRow from "$lib/components/table-editable/TableRow.svelte";
   import AddIcon from "$lib/components/icons/AddIcon.svelte";
 
   export let clickHandler;
