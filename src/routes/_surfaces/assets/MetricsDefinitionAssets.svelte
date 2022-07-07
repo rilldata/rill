@@ -54,11 +54,11 @@
   out:slide={{ duration: 200 }}
 >
   <CollapsibleSectionTitle
-    tooltipText={"metrics definitions"}
+    tooltipText={"metric sets"}
     bind:active={showMetricsDefs}
   >
     <h4 class="flex flex-row items-center gap-x-2">
-      <ModelIcon size="16px" /> Metrics Definitions
+      <ModelIcon size="16px" /> Metric Sets
     </h4>
   </CollapsibleSectionTitle>
   <ContextButton

@@ -1,37 +1,33 @@
 <script lang="ts">
   import { store } from "$lib/redux-store/store-root";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import { updateLeaderboardMeasure } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import type { Readable } from "svelte/store";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
+  import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
 
   export let metricsDefId;
 
+  let measures: Readable<Array<MeasureDefinitionEntity>>;
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
   }
 
-  function handleMeasureUpdate(measureID) {
-    updateLeaderboardMeasure(
-      store.dispatch,
-      metricsDefId,
-      measureID,
-      $measures.find((measure) => measure.id === measureID)?.expression
-    );
-    selectedValue = measureID;
-  }
+  let metricsExplore: Readable<MetricsExploreEntity>;
+  $: metricsExplore = getMetricsExploreById(metricsDefId);
 
-  let selectedValue;
-  /** select the first measure available if no value has been selected on initialization. */
-  $: if (selectedValue === undefined && $measures?.length) {
-    handleMeasureUpdate($measures[0].id);
+  function handleMeasureUpdate(measureID) {
+    setMeasureIdAndUpdateLeaderboard(store.dispatch, metricsDefId, measureID);
   }
 </script>
 
 {#if $measures}
   <select
     class="pl-1 mb-2"
-    value={selectedValue}
+    value={$metricsExplore?.leaderboardMeasureId}
     on:change={(event) => {
       handleMeasureUpdate(event.target.value);
     }}

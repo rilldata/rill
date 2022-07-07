@@ -5,13 +5,13 @@
   import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
   import { store } from "$lib/redux-store/store-root";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { Debounce } from "$common/utils/Debounce";
   import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
-  import type { ColumnConfig } from "$lib/components/table/ColumnConfig";
+  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
   import type { Readable } from "svelte/store";
   import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
+  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
   export let value;
   export let index;
@@ -20,11 +20,9 @@
 
   let measure: Readable<MeasureDefinitionEntity>;
   $: measure = getMeasureById(value);
-  let metricsDefId: string;
   let expression: string;
   let expressionIsValid: ValidationState;
   $: if ($measure) {
-    metricsDefId = $measure.metricsDefId;
     expression = $measure.expression;
     expressionIsValid = $measure.expressionIsValid;
   }
@@ -36,7 +34,7 @@
       () => {
         store.dispatch(
           generateTimeSeriesApi({
-            metricsDefId,
+            id: $measure.id,
             measures: [$measure],
             filters: {},
             pixels: COLUMN_PROFILE_CONFIG.summaryVizWidth.medium,

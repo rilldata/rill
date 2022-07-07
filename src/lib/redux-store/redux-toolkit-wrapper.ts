@@ -1,5 +1,6 @@
 import * as reduxToolkit from "@reduxjs/toolkit";
 
+// we need this to get redux toolkit working in ESM environment.
 export const {
   createEntityAdapter,
   createSlice,

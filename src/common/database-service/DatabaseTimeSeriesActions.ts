@@ -1,11 +1,17 @@
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
-import { getFilterFromFilters } from "$common/database-service/utils";
+import {
+  getCoalesceStatementsMeasures,
+  getExpressionColumnsFromMeasures,
+  getFilterFromFilters,
+  normaliseMeasures,
+} from "$common/database-service/utils";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import { MICROS } from "$common/database-service/DatabaseColumnActions";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
+import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 export interface TimeSeriesResponse {
   id?: string;
@@ -33,7 +39,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     {
       tableName,
-      expression,
+      measures,
       timestampColumn,
       rollupInterval,
       filters,
@@ -41,7 +47,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       sampleSize,
     }: {
       tableName: string;
-      expression?: string;
+      measures?: Array<BasicMeasureDefinition>;
       timestampColumn: string;
       rollupInterval?: RollupInterval;
       filters?: ActiveValues;
@@ -49,7 +55,8 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       sampleSize?: number;
     }
   ): Promise<TimeSeriesRollup> {
-    expression ??= "count(*)";
+    measures = normaliseMeasures(measures);
+
     rollupInterval ??= await this.estimateIdealRollupInterval(
       metadata,
       tableName,
@@ -78,7 +85,8 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
      * then join this result set against the empirical counts.
      */
     try {
-      await this.databaseClient.execute(`CREATE TEMPORARY TABLE _ts_ AS (
+      await this.databaseClient.execute(
+        `CREATE TEMPORARY TABLE _ts_ AS (
         -- generate a time series column that has the intended range
         WITH template as (
           SELECT 
@@ -96,26 +104,34 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
               interval ${rollupInterval.rollupInterval})
         ),
         -- transform the original data, and optionally sample it.
-        transformed AS (
-          SELECT 
-            date_trunc('${rollupTime}', "${timestampColumn}") as ts 
-          FROM "${tableName}" ${filter}
-        ),
-        -- roll up the transformed data
         series AS (
-          SELECT ${expression} as count, ts from transformed 
+          SELECT 
+            date_trunc('${rollupTime}', "${timestampColumn}") as ts,
+            ${getExpressionColumnsFromMeasures(measures)}
+          FROM "${tableName}" ${filter}
           GROUP BY ts ORDER BY ts
         )
         -- join the transformed data with the generated time series column,
         -- coalescing the first value to get the 0-default when the rolled up data
         -- does not have that value.
-        SELECT COALESCE(series.count, 0) as count, template.ts from template
+        SELECT 
+          ${getCoalesceStatementsMeasures(measures)},
+          template.ts from template
         LEFT OUTER JOIN series ON template.ts = series.ts
         ORDER BY template.ts
-      )`);
+      )`
+      );
     } catch (err) {
       console.error(err);
       await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
+      return {
+        rollup: {
+          results: [],
+          rollupInterval: rollupInterval.rollupInterval,
+          ...(pixels ? { spark: [] } : {}),
+          sampleSize,
+        },
+      };
     }
 
     let spark;
