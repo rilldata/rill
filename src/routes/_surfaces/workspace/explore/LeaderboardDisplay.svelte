@@ -86,7 +86,9 @@
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
   bind:this={leaderboardContainer}
 >
-  <LeaderboardMeasureSelector {metricsDefId} />
+  <div class="grid grid-auto-cols justify-end grid-flow-col items-end p-1 pb-3">
+    <LeaderboardMeasureSelector {metricsDefId} />
+  </div>
   {#if $metricsLeaderboard}
     <VirtualizedGrid
       {columns}

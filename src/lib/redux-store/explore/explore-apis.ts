@@ -25,9 +25,9 @@ import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-ap
  * 3. Big numbers for all selected measures
  */
 const updateExploreWrapper = (dispatch, metricsDefId: string) => {
-  dispatch(updateLeaderboardValuesApi(metricsDefId));
   dispatch(generateTimeSeriesApi({ id: metricsDefId }));
   dispatch(generateBigNumbersApi({ id: metricsDefId }));
+  dispatch(updateLeaderboardValuesApi(metricsDefId));
 };
 
 /**

@@ -33,24 +33,6 @@
   $: referenceValue = $bigNumberEntity?.referenceValues?.[$measureField] ?? 0;
 </script>
 
-<div class="w-full rounded">
-  <BarAndLabel
-    justify="stretch"
-    color="bg-blue-200"
-    value={referenceValue === 0 ? 0 : bigNumber / referenceValue}
-  >
-    <div
-      style:grid-template-columns="auto auto"
-      class="grid items-center gap-x-2 w-full text-left pb-2 pt-2"
-    >
-      <div>
-        {metricFormatters.simpleSummable(~~$bigNumberTween)}
-      </div>
-      <div class="font-normal text-gray-600 italic text-right">
-        {#if $bigNumberTween && referenceValue}
-          {formatBigNumberPercentage($bigNumberTween / referenceValue)}
-        {/if}
-      </div>
-    </div>
-  </BarAndLabel>
+<div class="w-full rounded text-lg">
+  {$bigNumberTween}
 </div>

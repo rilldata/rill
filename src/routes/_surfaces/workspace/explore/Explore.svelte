@@ -20,15 +20,15 @@
   let metricsLeaderboard: Readable<MetricsExploreEntity>;
   $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
   $: if (metricsDefId) {
-    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
+    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
   }
-
-  let dimensions: Readable<Array<DimensionDefinitionEntity>>;
-  $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
   let measures: Readable<Array<MeasureDefinitionEntity>>;
   $: measures = getMeasuresByMetricsId(metricsDefId);
+
+  let dimensions: Readable<Array<DimensionDefinitionEntity>>;
+  $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
   $: if ($dimensions?.length && $measures?.length && !$metricsLeaderboard) {
     initAndUpdateExplore(store.dispatch, metricsDefId, $dimensions, $measures);

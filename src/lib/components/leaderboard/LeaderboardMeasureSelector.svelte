@@ -25,14 +25,14 @@
 </script>
 
 {#if $measures}
+  Dimension Leaders by
   <select
-    class="pl-1 mb-2"
+    class="pl-1 font-bold"
     value={$metricsExplore?.leaderboardMeasureId}
     on:change={(event) => {
       handleMeasureUpdate(event.target.value);
     }}
   >
-    <option value="">Select One</option>
     {#each $measures as measure (measure.id)}
       <option value={measure.id}>{measure.expression}</option>
     {/each}
