@@ -48,14 +48,6 @@
       >
         {displayName}
       </div>
-      <div slot="right">
-        <button
-          on:click={() => {
-            dispatch("expand");
-          }}
-          >{#if expanded}less{:else}<Expand size={16} />{/if}</button
-        >
-      </div>
     </LeaderboardHeader>
     <TooltipContent slot="tooltip-content">
       {#if activeValues.length}
@@ -128,7 +120,7 @@
         </Tooltip>
       </div>
     {:else}
-      <div>no values available</div>
+      <div class="italic text-gray-500">no values available</div>
     {/each}
     {#if values.length > slice}
       <Tooltip location="right">

@@ -14,7 +14,6 @@
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
 
   export let metricsDefId: string;
-  export let whichReferenceValue = "global";
 
   let metricsLeaderboard: Readable<MetricsExploreEntity>;
   $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
@@ -40,6 +39,25 @@
     </h1>
   </div>
   <div class="justify-self-end">
+    <div class="pt-3">
+      {#if anythingSelected}
+        <button
+          transition:fly={{ duration: 200, y: 5 }}
+          on:click={clearAllFilters}
+          class="
+                  grid gap-x-2 items-center font-bold
+                  bg-red-100
+                  text-red-900
+                  p-1
+                  pl-2 pr-2
+                  rounded
+              "
+          style:grid-template-columns="auto max-content"
+        >
+          clear all filters <Close />
+        </button>
+      {/if}
+    </div>
     <!-- NOTE: place share buttons here -->
   </div>
 </header>
