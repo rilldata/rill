@@ -12,10 +12,9 @@
   const viewIcons = Object.keys(icons).filter(
     (i) =>
       i.includes("Code") ||
-      i.includes("List") ||
-      i.includes("Explore") ||
-      i.includes("PlayCircle") ||
-      i.includes("Parquet")
+      i.includes("LineChart") ||
+      i.includes("Parquet") ||
+      i.includes("MetricsConfig")
   );
 
   const others = Object.keys(icons).filter(
