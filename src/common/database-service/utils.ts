@@ -16,6 +16,7 @@ export function getFilterFromFilters(filters: ActiveValues): string {
     .join(" AND ");
 }
 
+/** Sets the sqlName to a fallback measure name, if sqlName is not defined */
 export function normaliseMeasures(measures: Array<BasicMeasureDefinition>) {
   if (!measures) return [{ expression: "count(*)", id: "", sqlName: "count" }];
   measures.forEach((measure, idx) => {
