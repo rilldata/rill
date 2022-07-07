@@ -46,7 +46,7 @@
 </script>
 
 <div class="metrics-def-section w-fit" style={sectionContainerStyles}>
-  <div class="flex flex-row pt-5 pb-3" bind:this={sectionHeaderContainer}>
+  <div class="flex flex-row pt-6 pb-3" bind:this={sectionHeaderContainer}>
     <h4 class={entityTableHeaderClass}>
       {label}
     </h4>
