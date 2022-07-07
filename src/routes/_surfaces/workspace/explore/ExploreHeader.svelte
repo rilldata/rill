@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import BarAndLabel from "$lib/components/BarAndLabel.svelte";
+  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
   import CheckerFull from "$lib/components/icons/CheckerFull.svelte";
   import CheckerHalf from "$lib/components/icons/CheckerHalf.svelte";
   import Close from "$lib/components/icons/Close.svelte";

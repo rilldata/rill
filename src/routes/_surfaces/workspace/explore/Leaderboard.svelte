@@ -22,16 +22,15 @@
    */
   export let referenceValue: number;
   export let values;
-  export let activeValues: string[];
+  type ActiveValues = [string, boolean];
+  export let activeValues: ActiveValues[];
   export let slice = 7;
   export let seeMoreSlice = 50;
   export let seeMore = false;
   const dispatch = createEventDispatcher();
-  $: atLeastOneActive = !!activeValues?.length;
+  $: atLeastOneActive = !!activeValues?.some(([_, isActivated]) => isActivated);
   let righthandElements = [];
-  $: widths = righthandElements.map(
-    (element) => element?.getBoundingClientRect()?.width || 0
-  );
+
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
@@ -68,14 +67,16 @@
   </Tooltip>
   <LeaderboardList>
     {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as { label, value }, i (label)}
-      {@const isActive = activeValues?.includes(label)}
+      {@const isActive = activeValues
+        .filter((value) => value[1] === true)
+        .find((value) => value[0] === label)}
       <div>
         <Tooltip location="right">
           <LeaderboardListItem
             value={referenceValue ? value / referenceValue : 0}
             {isActive}
             on:click={() => {
-              dispatch("select-item", label);
+              dispatch("select-item", { label, isActive });
             }}
             color={isActive
               ? "bg-blue-200"
@@ -96,13 +97,17 @@
               class:text-gray-700={!atLeastOneActive}
               class:text-gray-500={atLeastOneActive && !isActive}
               class:italic={atLeastOneActive && !isActive}
-              class="w-full text-ellipsis overflow-hidden whitespace-nowrap"
+              class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
               slot="title"
             >
               {label}
             </div>
             <!-- right-hand metric value -->
-            <div slot="right" bind:this={righthandElements[i]}>
+            <div
+              class="leaderboard-list-item-right"
+              slot="right"
+              bind:this={righthandElements[i]}
+            >
               {#if !(atLeastOneActive && !isActive)}
                 <div in:fly={{ duration: 200, y: 4 }}>
                   {value}
@@ -122,36 +127,24 @@
           </TooltipContent>
         </Tooltip>
       </div>
+    {:else}
+      <div>no values available</div>
     {/each}
     {#if values.length > slice}
       <Tooltip location="right">
-        <LeaderboardListItem value={0} color="bg-gray-100">
-          <div class="italic text-gray-500" slot="title">All Others</div>
-          <div class="italic text-gray-500" slot="right">
-            {referenceValue -
-              values
-                .slice(0, !seeMore ? slice : seeMoreSlice)
-                .reduce((a, b) => a + b.value, 0)}
+        <LeaderboardListItem
+          value={0}
+          color="bg-gray-100"
+          on:click={() => {
+            seeMore = !seeMore;
+          }}
+        >
+          <div class="italic text-gray-500" slot="title">
+            See {#if seeMore}Less{:else}More{/if}
           </div>
         </LeaderboardListItem>
-        <TooltipContent slot="tooltip-content">see next 12</TooltipContent>
+        <TooltipContent slot="tooltip-content">See More Items</TooltipContent>
       </Tooltip>
-      <!-- <button
-        class="italic pl-2 pr-2 p-1 text-gray-500 w-full text-left hover:bg-gray-50"
-        on:click={() => {
-          seeMore = !seeMore;
-        }}
-      >
-        {#if seeMore}
-          show only top {slice}
-        {:else}
-          show {seeMoreSlice - slice} more
-          {#if hiddenSelectedValues.length}
-            ({hiddenSelectedValues.length}
-            selected value{#if hiddenSelectedValues.length !== 1}s{/if} hidden.)
-          {/if}
-        {/if}
-      </button> -->
     {/if}
   </LeaderboardList>
 </LeaderboardContainer>
