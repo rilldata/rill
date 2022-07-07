@@ -22,7 +22,7 @@ Run `npm run build` to build the application.
 Run `npm run dev` to start the UI and backend dev servers. UI will be available on http://localhost:3000
 
 ## Developer CLI
-Initializing a project, adding datasets as sources, and starting a project are currently supported through our [CLI](https://github.com/rilldata/rill-developer/blob/main/docs/cli.md).
+Initializing a project, adding datasets as sources, and starting a project are currently supported through our [CLI](cli.md).
 
 ## Creating a project
 Initialize in the current directory.
