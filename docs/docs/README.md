@@ -20,11 +20,11 @@ We want to hear from you if you have any questions or ideas to share. You can [f
 
 ## Pick an install option
 - [binary](/install/binary) : download the most recent [assets binary](https://github.com/rilldata/rill-developer/releases).
-- [npm](/install/npm.md) : run  `npm install -g @rilldata/rill`
-- [docker](/install/docker.md) : download our [docker container](https://hub.docker.com/r/rilldata/rill-developer)
+- [npm](/install/npm) : run  `npm install -g @rilldata/rill`
+- [docker](/install/docker) : download our [docker container](https://hub.docker.com/r/rilldata/rill-developer)
 
 ## Quick start a new project
-You can create and augment your own projects in Rill Developer using the [CLI](cli.md). Every project starts by initializing the experience. Once initialized, you can ingest data into the project and start the UI.
+You can create and augment your own projects in Rill Developer using the [CLI](cli). Every project starts by initializing the experience. Once initialized, you can ingest data into the project and start the UI.
 
 ```
 rill init
