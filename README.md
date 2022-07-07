@@ -14,12 +14,12 @@ It's best to show and not tell, so here's a little preview of Rill Developer:
 You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 ## pick an install option:
-- [binary](https://github.com/rilldata/rill-developer/blob/main/docs/install/binary.md) : download the most recent [assets binary](https://github.com/rilldata/rill-developer/releases).
-- [npm](https://github.com/rilldata/rill-developer/blob/main/docs/install/npm.md) : run  `npm install -g @rilldata/rill`
-- [docker](https://github.com/rilldata/rill-developer/blob/main/docs/install/docker.md) : download our [docker container](https://hub.docker.com/r/rilldata/rill-developer)
+- [binary](https://docs.rilldata.com/install/binary) : download the most recent [assets binary](https://github.com/rilldata/rill-developer/releases).
+- [npm](https://docs.rilldata.com/install/npm) : run  `npm install -g @rilldata/rill`
+- [docker](https://docs.rilldata.com/install/docker) : download our [docker container](https://hub.docker.com/r/rilldata/rill-developer)
 
 ## quick start a new project
-You can create and augment your own projects in Rill Developer using the [CLI](https://github.com/rilldata/rill-developer/blob/main/docs/cli.md). Every project starts by initializing the experience. Once initialized, you can ingest data into the project and start the UI.
+You can create and augment your own projects in Rill Developer using the [CLI](https://docs.rilldata.com/cli). Every project starts by initializing the experience. Once initialized, you can ingest data into the project and start the UI.
 
 ```
 rill init
@@ -28,7 +28,7 @@ rill start
 ```
 
 ## more information
-See our [documentation](https://github.com/rilldata/rill-developer/blob/main/docs) for more information.
+See our [documentation](https://docs.rilldata.com) for more information.
 
 ## legal
 By downloading and using our application you are agreeing to the [Rill Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
