@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BarAndLabel from "$lib/components/BarAndLabel.svelte";
+  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
   import { formatInteger } from "$lib/util/formatters";
   import { cubicIn } from "svelte/easing";
   import { tweened } from "svelte/motion";
@@ -31,7 +31,6 @@
   $: bigNumberTween.set(bigNumber);
   let referenceValue: number;
   $: referenceValue = $bigNumberEntity?.referenceValues?.[$measureField] ?? 0;
-  $: console.log(bigNumber, referenceValue);
 </script>
 
 <div class="w-full rounded">
