@@ -32,14 +32,14 @@
     }, 5);
   };
 
-  const MENU_CONTAINER_WIDTH = 23;
+  const MENU_CONTAINER_WIDTH = 18;
   $: menuContainerStyle =
     rowRect === undefined
       ? ""
       : `z-index:50;
 position: fixed;
 top: ${rowRect.top}px;
-left: ${rowRect.left - MENU_CONTAINER_WIDTH}px;
+left: ${rowRect.left - MENU_CONTAINER_WIDTH - 1}px;
 width: ${MENU_CONTAINER_WIDTH}px;
 height: ${rowRect.height}px;
 display: flex;
@@ -91,12 +91,14 @@ align-items: center;
       style={menuContainerStyle}
       on:mouseenter={menuContainerEnter}
       on:mouseleave={menuContainerLeave}
-      class="self-center"
+      class="self-center bg-gray-200"
     >
       <ContextButton
         id={contextButtonId}
         tooltipText=""
         suppressTooltip={true}
+        height={rowRect.height}
+        width={MENU_CONTAINER_WIDTH}
         on:click={async (event) => {
           contextMenuOpen = !contextMenuOpen;
           menuX = event.clientX;
