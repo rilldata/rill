@@ -9,6 +9,10 @@ import { updateBigNumber } from "$lib/redux-store/big-number/big-number-slice";
 import { isAnythingSelected } from "$lib/util/isAnythingSelected";
 import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExploreActions";
 
+/**
+ * Async-thunk to generate big numbers for given measures and filters.
+ * Streams time series responses from backend  and updates it in the state.
+ */
 export const generateBigNumbersApi = createAsyncThunk(
   `${EntityType.MetricsLeaderboard}/generateBigNumbers`,
   async (

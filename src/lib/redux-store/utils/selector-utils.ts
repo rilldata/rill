@@ -3,6 +3,11 @@ import type {
   RillReduxState,
 } from "$lib/redux-store/store-root";
 
+/**
+ * Generates
+ * 1. Single entity selector by id
+ * 2. Selector for multiple entities by list of ids.
+ */
 function generateCommonSelectors<Entity extends RillReduxEntities>(
   sliceKey: keyof RillReduxState
 ) {
@@ -15,6 +20,10 @@ function generateCommonSelectors<Entity extends RillReduxEntities>(
   };
 }
 
+/**
+ * Generates selectors from {@link generateCommonSelectors}
+ * Also generates a selector for all entities.
+ */
 export function generateEntitySelectors<Entity extends RillReduxEntities>(
   sliceKey: keyof RillReduxState
 ) {
@@ -25,6 +34,10 @@ export function generateEntitySelectors<Entity extends RillReduxEntities>(
   };
 }
 
+/**
+ * Generates selectors from {@link generateCommonSelectors}
+ * Also generates a selector for multiple entities by a filter criteria supplied by 'filter' param.
+ */
 export function generateFilteredEntitySelectors<
   FilterArgs extends Array<unknown>,
   Entity extends RillReduxEntities

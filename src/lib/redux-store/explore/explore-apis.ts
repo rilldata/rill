@@ -17,68 +17,108 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
 
-const updateExploreWrapper = (dispatch, id: string) => {
-  dispatch(updateLeaderboardValuesApi(id));
-  dispatch(generateTimeSeriesApi({ id }));
-  dispatch(generateBigNumbersApi({ id }));
+/**
+ * A wrapper to dispatch updates to explore.
+ * Currently, it updates these sections
+ * 1. Leaderboard values based on selected filters and measure
+ * 2. Time series for all selected measures
+ * 3. Big numbers for all selected measures
+ */
+const updateExploreWrapper = (dispatch, metricsDefId: string) => {
+  dispatch(updateLeaderboardValuesApi(metricsDefId));
+  dispatch(generateTimeSeriesApi({ id: metricsDefId }));
+  dispatch(generateBigNumbersApi({ id: metricsDefId }));
 };
 
+/**
+ * Initialises explore with dimensions and measures.
+ * Selected measures is initialised with all measures in the metrics definition.
+ * It then calls {@link updateExploreWrapper} to update explore.
+ */
 export const initAndUpdateExplore = (
   dispatch,
-  id: string,
+  metricsDefId: string,
   dimensions: Array<DimensionDefinitionEntity>,
   measures: Array<MeasureDefinitionEntity>
 ) => {
-  dispatch(initMetricsExplore(id, dimensions, measures));
-  updateExploreWrapper(dispatch, id);
+  dispatch(initMetricsExplore(metricsDefId, dimensions, measures));
+  updateExploreWrapper(dispatch, metricsDefId);
 };
 
+/**
+ * Toggles selection of a measures to be displayed.
+ * It then updates,
+ * 1. Time series for all selected measures
+ * 2. Big numbers for all selected measures
+ */
 export const toggleExploreMeasureAndUpdate = (
   dispatch,
-  id: string,
+  metricsDefId: string,
   measureId: string
 ) => {
-  dispatch(toggleExploreMeasure(id, measureId));
-  dispatch(generateTimeSeriesApi({ id }));
-  dispatch(generateBigNumbersApi({ id }));
+  dispatch(toggleExploreMeasure(metricsDefId, measureId));
+  dispatch(generateTimeSeriesApi({ id: metricsDefId }));
+  dispatch(generateBigNumbersApi({ id: metricsDefId }));
 };
 
+/**
+ * Sets the measure id used in leaderboard for ranking and other calculations.
+ * It then updates Leaderboard values based on selected filters and measure
+ */
 export const setMeasureIdAndUpdateLeaderboard = (
   dispatch,
-  id: string,
+  metricsDefId: string,
   measureId: string
 ) => {
-  dispatch(setMeasureId(id, measureId));
-  dispatch(updateLeaderboardValuesApi(id));
+  dispatch(setMeasureId(metricsDefId, measureId));
+  dispatch(updateLeaderboardValuesApi(metricsDefId));
 };
 
+/**
+ * Toggles a selected value in the leaderboard.
+ * Pass 'include' param boolean to denote whether the value is included or excluded in time series and big number queries.
+ * It then calls {@link updateExploreWrapper} to update explore.
+ */
 export const toggleSelectedLeaderboardValueAndUpdate = (
   dispatch,
-  id: string,
+  metricsDefId: string,
   dimensionName: string,
   dimensionValue: unknown,
   include: boolean
 ) => {
   dispatch(
-    toggleLeaderboardActiveValue(id, dimensionName, dimensionValue, include)
+    toggleLeaderboardActiveValue(
+      metricsDefId,
+      dimensionName,
+      dimensionValue,
+      include
+    )
   );
-  updateExploreWrapper(dispatch, id);
+  updateExploreWrapper(dispatch, metricsDefId);
 };
 
+/**
+ * Clears all selected values in the leaderboard.
+ * It then calls {@link updateExploreWrapper} to update explore.
+ */
 export const clearSelectedLeaderboardValuesAndUpdate = (
   dispatch,
-  id: string
+  metricsDefId: string
 ) => {
-  dispatch(clearSelectedLeaderboardValues(id));
-  updateExploreWrapper(dispatch, id);
+  dispatch(clearSelectedLeaderboardValues(metricsDefId));
+  updateExploreWrapper(dispatch, metricsDefId);
 };
 
+/**
+ * Async-thunk to update leaderboard values.
+ * Streams dimension values from backend per dimension and updates it in the state.
+ */
 export const updateLeaderboardValuesApi = createAsyncThunk(
   `${EntityType.MetricsLeaderboard}/updateLeaderboard`,
-  async (id: string, thunkAPI) => {
+  async (metricsDefId: string, thunkAPI) => {
     const metricsLeaderboard: MetricsExploreEntity = (
       thunkAPI.getState() as RillReduxState
-    ).metricsLeaderboard.entities[id];
+    ).metricsLeaderboard.entities[metricsDefId];
     const filters = prune(metricsLeaderboard.activeValues);
     const requestBody = {
       measureId: metricsLeaderboard.leaderboardMeasureId,

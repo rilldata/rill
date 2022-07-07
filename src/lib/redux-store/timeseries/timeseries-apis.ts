@@ -9,6 +9,10 @@ import type { RillReduxState } from "$lib/redux-store/store-root";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 import { selectMetricsExploreParams } from "$lib/redux-store/explore/explore-selectors";
 
+/**
+ * Async-thunk for generating time series for given measures and filters.
+ * Streams time series responses from backend  and updates it in the state.
+ */
 export const generateTimeSeriesApi = createAsyncThunk(
   `${EntityType.MetricsLeaderboard}/generateTimeSeries`,
   async (
