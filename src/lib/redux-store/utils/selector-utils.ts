@@ -1,6 +1,11 @@
-import type { RillReduxState } from "$lib/redux-store/store-root";
+import type {
+  RillReduxEntities,
+  RillReduxState,
+} from "$lib/redux-store/store-root";
 
-function generateCommonSelectors<Entity>(sliceKey: keyof RillReduxState) {
+function generateCommonSelectors<Entity extends RillReduxEntities>(
+  sliceKey: keyof RillReduxState
+) {
   const singleSelector = (state: RillReduxState, id: string) =>
     <Entity>state[sliceKey].entities[id];
   return {
@@ -10,7 +15,7 @@ function generateCommonSelectors<Entity>(sliceKey: keyof RillReduxState) {
   };
 }
 
-export function generateEntitySelectors<Entity>(
+export function generateEntitySelectors<Entity extends RillReduxEntities>(
   sliceKey: keyof RillReduxState
 ) {
   return {
@@ -22,7 +27,7 @@ export function generateEntitySelectors<Entity>(
 
 export function generateFilteredEntitySelectors<
   FilterArgs extends Array<unknown>,
-  Entity
+  Entity extends RillReduxEntities
 >(
   sliceKey: keyof RillReduxState,
   filter: (entity: unknown, ...args: FilterArgs) => boolean

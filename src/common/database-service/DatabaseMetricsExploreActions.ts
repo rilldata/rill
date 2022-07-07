@@ -1,7 +1,17 @@
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
-import { getFilterFromFilters } from "./utils";
+import {
+  getExpressionColumnsFromMeasures,
+  getFilterFromFilters,
+  normaliseMeasures,
+} from "./utils";
+import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+
+export interface BigNumberResponse {
+  id?: string;
+  bigNumbers: Record<string, number>;
+}
 
 export class DatabaseMetricsExploreActions extends DatabaseActions {
   public async getLeaderboardValues(
@@ -30,16 +40,20 @@ export class DatabaseMetricsExploreActions extends DatabaseActions {
   public async getBigNumber(
     metadata: DatabaseMetadata,
     table: string,
-    expression: string,
+    measures: Array<BasicMeasureDefinition>,
     filters: ActiveValues
-  ) {
+  ): Promise<BigNumberResponse> {
+    measures = normaliseMeasures(measures);
     const whereClause =
       filters && Object.keys(filters).length
         ? `WHERE ${getFilterFromFilters(filters)}`
         : "";
-    return this.databaseClient.execute(`
-      SELECT ${expression} as value from "${table}"
-      ${whereClause};
-    `);
+    const bigNumbers = await this.databaseClient.execute(
+      `
+      SELECT ${getExpressionColumnsFromMeasures(measures)} from "${table}"
+      ${whereClause}
+    `
+    );
+    return { bigNumbers: bigNumbers?.[0] };
   }
 }

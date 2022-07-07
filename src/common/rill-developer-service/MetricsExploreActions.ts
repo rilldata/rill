@@ -66,6 +66,7 @@ export class MetricsExploreActions extends RillDeveloperActions {
     measureId: string,
     filters: ActiveValues
   ) {
+    if (!rillRequestContext.record?.sourceModelId) return;
     const measure = this.dataModelerStateService
       .getMeasureDefinitionService()
       .getById(measureId);
@@ -89,24 +90,33 @@ export class MetricsExploreActions extends RillDeveloperActions {
   public async getBigNumber(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
-    measureId: string,
-    filters: ActiveValues
+    {
+      filters,
+      measures,
+      isolated,
+    }: {
+      filters: ActiveValues;
+      measures: Array<BasicMeasureDefinition>;
+      isolated?: boolean;
+    }
   ) {
-    const measure = this.dataModelerStateService
-      .getMeasureDefinitionService()
-      .getById(measureId);
-    const model = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Persistent)
-      .getById(rillRequestContext.record.sourceModelId);
-    const bigNumberValues = await this.databaseActionQueue.enqueue(
-      {
-        id: rillRequestContext.id,
-        priority: DatabaseActionQueuePriority.ActiveModel,
-      },
-      "getBigNumber",
-      [model.tableName, measure?.expression, filters]
-    );
-    return bigNumberValues[0]?.value;
+    if (!rillRequestContext.record?.sourceModelId) return;
+    if (isolated) {
+      await Promise.all(
+        measures.map((measure) =>
+          this.generateBigNumberForMeasures(rillRequestContext, measure.id, {
+            filters,
+            measures: [measure],
+          })
+        )
+      );
+    } else {
+      await this.generateBigNumberForMeasures(
+        rillRequestContext,
+        metricsDefId,
+        { filters, measures }
+      );
+    }
   }
 
   private async generateTimeSeriesForMeasures(
@@ -173,5 +183,31 @@ export class MetricsExploreActions extends RillDeveloperActions {
         ]
       ),
     });
+  }
+
+  private async generateBigNumberForMeasures(
+    rillRequestContext: MetricsDefinitionContext,
+    id: string,
+    {
+      measures,
+      filters,
+    }: {
+      measures: Array<BasicMeasureDefinition>;
+      filters: ActiveValues;
+    }
+  ) {
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    const bigNumbers = await this.databaseActionQueue.enqueue(
+      {
+        id: rillRequestContext.id,
+        priority: DatabaseActionQueuePriority.ActiveModel,
+      },
+      "getBigNumber",
+      [model.tableName, measures, filters]
+    );
+    bigNumbers.id = id;
+    rillRequestContext.actionsChannel.pushMessage(bigNumbers);
   }
 }

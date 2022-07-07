@@ -27,7 +27,7 @@
 {#if $measures}
   <select
     class="pl-1 mb-2"
-    value={$metricsExplore?.measureId}
+    value={$metricsExplore?.leaderboardMeasureId}
     on:change={(event) => {
       handleMeasureUpdate(event.target.value);
     }}

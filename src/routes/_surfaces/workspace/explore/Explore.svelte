@@ -13,7 +13,7 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import { initMeasureAndUpdateExplore } from "$lib/redux-store/explore/explore-apis";
+  import { initAndUpdateExplore } from "$lib/redux-store/explore/explore-apis";
 
   export let metricsDefId: string;
 
@@ -31,20 +31,10 @@
   $: measures = getMeasuresByMetricsId(metricsDefId);
 
   $: if ($dimensions?.length && $measures?.length && !$metricsLeaderboard) {
-    initMeasureAndUpdateExplore(
-      store.dispatch,
-      metricsDefId,
-      $dimensions,
-      $measures
-    );
+    initAndUpdateExplore(store.dispatch, metricsDefId, $dimensions, $measures);
   }
 
-  /** State for the reference value toggle */
   let whichReferenceValue: string;
-  $: stagedReferenceValue =
-    whichReferenceValue === "filtered"
-      ? $metricsLeaderboard?.bigNumber
-      : $metricsLeaderboard?.referenceValue;
 </script>
 
 <ExploreContainer let:columns>
@@ -59,10 +49,6 @@
     {/if}
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">
-    <LeaderboardDisplay
-      {columns}
-      referenceValue={stagedReferenceValue}
-      {metricsDefId}
-    />
+    <LeaderboardDisplay {columns} {whichReferenceValue} {metricsDefId} />
   </svelte:fragment>
 </ExploreContainer>

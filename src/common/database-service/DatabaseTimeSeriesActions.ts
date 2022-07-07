@@ -2,7 +2,12 @@ import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
-import { getFilterFromFilters } from "$common/database-service/utils";
+import {
+  getCoalesceStatementsMeasures,
+  getExpressionColumnsFromMeasures,
+  getFilterFromFilters,
+  normaliseMeasures,
+} from "$common/database-service/utils";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import { MICROS } from "$common/database-service/DatabaseColumnActions";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
@@ -50,12 +55,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       sampleSize?: number;
     }
   ): Promise<TimeSeriesRollup> {
-    measures ??= [{ expression: "count(*)", id: "", sqlName: "count" }];
-    measures.forEach((measure, idx) => {
-      if (!measure.sqlName) {
-        measure.sqlName = `measure_${idx}`;
-      }
-    });
+    measures = normaliseMeasures(measures);
 
     rollupInterval ??= await this.estimateIdealRollupInterval(
       metadata,
@@ -107,9 +107,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
         series AS (
           SELECT 
             date_trunc('${rollupTime}', "${timestampColumn}") as ts,
-            ${measures
-              .map((measure) => `${measure.expression} as ${measure.sqlName}`)
-              .join(", ")}
+            ${getExpressionColumnsFromMeasures(measures)}
           FROM "${tableName}" ${filter}
           GROUP BY ts ORDER BY ts
         )
@@ -117,12 +115,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
         -- coalescing the first value to get the 0-default when the rolled up data
         -- does not have that value.
         SELECT 
-          ${measures
-            .map(
-              (measure) =>
-                `COALESCE(series.${measure.sqlName}, 0) as ${measure.sqlName}`
-            )
-            .join(", ")},
+          ${getCoalesceStatementsMeasures(measures)},
           template.ts from template
         LEFT OUTER JOIN series ON template.ts = series.ts
         ORDER BY template.ts

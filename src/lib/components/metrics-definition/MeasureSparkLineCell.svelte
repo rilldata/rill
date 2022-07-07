@@ -11,6 +11,7 @@
   import type { Readable } from "svelte/store";
   import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
+  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
   export let value;
   export let index;
@@ -20,8 +21,10 @@
   let measure: Readable<MeasureDefinitionEntity>;
   $: measure = getMeasureById(value);
   let expression: string;
+  let expressionIsValid: ValidationState;
   $: if ($measure) {
     expression = $measure.expression;
+    expressionIsValid = $measure.expressionIsValid;
   }
 
   const debounce = new Debounce();
@@ -41,7 +44,7 @@
       1000
     );
   }
-  $: if (expression) {
+  $: if (expression && expressionIsValid === ValidationState.OK) {
     generateSparkLine();
   }
 

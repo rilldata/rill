@@ -17,9 +17,7 @@ export interface MetricsExploreEntity {
   id: string;
   measureIds: Array<string>;
   // this is used to show leaderboard values
-  measureId: string;
-  bigNumber: number;
-  referenceValue: number;
+  leaderboardMeasureId: string;
   leaderboards: Array<LeaderboardValues>;
   activeValues: ActiveValues;
   selectedCount: number;
@@ -43,12 +41,10 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (state.entities[id]) return;
-        const metricsLeaderboard = {
+        const metricsExplore: MetricsExploreEntity = {
           id,
           measureIds: measures.map((measure) => measure.id),
-          measureId: measures[0]?.id,
-          bigNumber: 0,
-          referenceValue: 0,
+          leaderboardMeasureId: measures[0]?.id,
           leaderboards: dimensions.map((column) => ({
             values: [],
             displayName: column.dimensionColumn,
@@ -57,9 +53,9 @@ export const exploreSlice = createSlice({
           selectedCount: 0,
         };
         dimensions.forEach((column) => {
-          metricsLeaderboard.activeValues[column.dimensionColumn] = [];
+          metricsExplore.activeValues[column.dimensionColumn] = [];
         });
-        metricsExploreAdapter.addOne(state, metricsLeaderboard);
+        metricsExploreAdapter.addOne(state, metricsExplore);
       },
       prepare: (
         id: string,
@@ -98,14 +94,14 @@ export const exploreSlice = createSlice({
       reducer: (
         state,
         {
-          payload: { id, measureId },
-        }: PayloadAction<{ id: string; measureId: string }>
+          payload: { id, leaderboardMeasureId },
+        }: PayloadAction<{ id: string; leaderboardMeasureId: string }>
       ) => {
         if (!state.entities[id]) return;
-        state.entities[id].measureId = measureId;
+        state.entities[id].leaderboardMeasureId = leaderboardMeasureId;
       },
-      prepare: (id: string, measureId: string) => ({
-        payload: { id, measureId },
+      prepare: (id: string, leaderboardMeasureId: string) => ({
+        payload: { id, leaderboardMeasureId },
       }),
     },
 
@@ -196,24 +192,7 @@ export const exploreSlice = createSlice({
       }),
     },
 
-    setBigNumber: {
-      reducer: (
-        state,
-        action: PayloadAction<{ id: string; bigNumber: number }>
-      ) => {
-        if (!state.entities[action.payload.id]) return;
-        state.entities[action.payload.id].bigNumber = action.payload.bigNumber;
-        if (state.entities[action.payload.id].selectedCount > 0) {
-          state.entities[action.payload.id].referenceValue =
-            action.payload.bigNumber;
-        }
-      },
-      prepare: (id: string, bigNumber: number) => ({
-        payload: { id, bigNumber },
-      }),
-    },
-
-    clearMetricsExplore: {
+    clearSelectedLeaderboardValues: {
       reducer: (state, { payload: id }: PayloadAction<string>) => {
         if (!state.entities[id]) return;
         state.entities[id].activeValues = {};
@@ -235,8 +214,7 @@ export const {
   setMeasureId,
   toggleLeaderboardActiveValue,
   setLeaderboardDimensionValues,
-  setBigNumber,
-  clearMetricsExplore,
+  clearSelectedLeaderboardValues,
 } = exploreSlice.actions;
 export const MetricsLeaderboardSliceActions = exploreSlice.actions;
 export type MetricsLeaderboardSliceTypes =

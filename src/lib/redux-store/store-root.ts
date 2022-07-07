@@ -1,24 +1,45 @@
 import { configureStore } from "$lib/redux-store/redux-toolkit-wrapper";
 import { metricsDefinitionReducer } from "./metrics-definition/metrics-definition-slice";
-import { metricsLeaderboardReducer } from "./explore/explore-slice";
+import {
+  MetricsExploreEntity,
+  metricsLeaderboardReducer,
+} from "./explore/explore-slice";
 import { readable } from "svelte/store";
 import { measureDefSliceReducer } from "$lib/redux-store/measure-definition/measure-definition-slice";
 import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
-import { timeSeriesReducer } from "$lib/redux-store/timeseries/timeseries-slice";
+import {
+  TimeSeriesEntity,
+  timeSeriesReducer,
+} from "$lib/redux-store/timeseries/timeseries-slice";
+import {
+  BigNumberEntity,
+  bigNumberReducer,
+} from "$lib/redux-store/big-number/big-number-slice";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export const store = configureStore({
   reducer: {
     metricsDefinition: metricsDefinitionReducer,
-    metricsLeaderboard: metricsLeaderboardReducer,
     measureDefinition: measureDefSliceReducer,
     dimensionDefinition: dimensionDefSliceReducer,
+    metricsLeaderboard: metricsLeaderboardReducer,
     timeSeries: timeSeriesReducer,
+    bigNumber: bigNumberReducer,
   },
 });
 
 const state = store.getState();
 export type RillReduxState = typeof state;
 export type RillReduxStore = typeof store;
+export type RillReduxEntities =
+  | MetricsDefinitionEntity
+  | MeasureDefinitionEntity
+  | DimensionDefinitionEntity
+  | MetricsExploreEntity
+  | TimeSeriesEntity
+  | BigNumberEntity;
 
 export const reduxReadable = readable(store.getState(), (set) => {
   return store.subscribe(() => {

@@ -43,3 +43,8 @@ export class MeasureDefinitionStateService extends EntityStateService<
   public readonly entityType = EntityType.MeasureDefinition;
   public readonly stateType = StateType.Persistent;
 }
+
+// we need a fallback for measure name. this is needed when sqlName is not entered.
+export function getFallbackMeasureName(index: number, sqlName?: string) {
+  return sqlName?.length ? sqlName : `measure_${index}`;
+}

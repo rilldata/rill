@@ -2,6 +2,7 @@ import { createReadableFactoryWithSelector } from "$lib/redux-store/svelte-reada
 import { store } from "$lib/redux-store/store-root";
 import {
   selectMeasureById,
+  selectMeasureFieldNameByIdAndIndex,
   selectMeasuresByIds,
   selectMeasuresByMetricsId,
 } from "$lib/redux-store/measure-definition/measure-definition-selectors";
@@ -21,3 +22,6 @@ export const getMeasuresByIds = createReadableFactoryWithSelector(
   store,
   selectMeasuresByIds
 );
+
+export const getMeasureFieldNameByIdAndIndex =
+  createReadableFactoryWithSelector(store, selectMeasureFieldNameByIdAndIndex);

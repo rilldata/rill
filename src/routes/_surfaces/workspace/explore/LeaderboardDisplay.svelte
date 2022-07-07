@@ -4,23 +4,42 @@
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { store } from "$lib/redux-store/store-root";
   import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
-  import { isAnythingSelected } from "$lib/util/isAnythingSelected";
-  import { toggleValueAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
+  import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import type { Readable } from "svelte/store";
   import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
+  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
+  import { getMeasureFieldNameByIdAndIndex } from "$lib/redux-store/measure-definition/measure-definition-readables";
 
   export let metricsDefId: string;
   export let columns: number;
-  export let referenceValue: number;
+  export let whichReferenceValue: string;
 
   let metricsLeaderboard: Readable<MetricsExploreEntity>;
   $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
 
+  let measureField: Readable<string>;
+  $: if ($metricsLeaderboard?.leaderboardMeasureId)
+    measureField = getMeasureFieldNameByIdAndIndex(
+      $metricsLeaderboard.leaderboardMeasureId,
+      $metricsLeaderboard.measureIds.indexOf(
+        $metricsLeaderboard?.leaderboardMeasureId
+      )
+    );
+
+  let bigNumberEntity: Readable<BigNumberEntity>;
+  $: bigNumberEntity = getBigNumberById(metricsDefId);
+  let referenceValue: number;
+  $: if ($bigNumberEntity && $measureField) {
+    referenceValue =
+      whichReferenceValue === "filtered"
+        ? $bigNumberEntity.bigNumbers?.[$measureField]
+        : $bigNumberEntity.referenceValues?.[$measureField];
+  }
+
   const dispatch = createEventDispatcher();
   let leaderboardExpanded;
-  let anythingSelected: boolean;
-  $: anythingSelected = isAnythingSelected($metricsLeaderboard?.activeValues);
 
   function onSelectItem(event, item) {
     dispatch("select-item", {
@@ -28,7 +47,7 @@
       dimensionName: item.displayName,
     });
 
-    toggleValueAndUpdateLeaderboard(
+    toggleSelectedLeaderboardValueAndUpdate(
       store.dispatch,
       metricsDefId,
       item.displayName,
