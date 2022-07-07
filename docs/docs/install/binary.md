@@ -1,5 +1,5 @@
 # Using a binary
-The fastest path to installing the application is using our binary. Find the link that is relevant for your OS and architecture in our most recent [release assets](https://github.com/rilldata/rill-developer/releases).
+The fastest path to installing the application is using our binary. Find the link that is relevant for your OS and architecture in our most recent [release assets](/notes).
 
 If you see a warning when opening the rill-macos-arm64 binary you need to change the permissions to make it executable and remove it from apple developer identification quarantine.
 ```
