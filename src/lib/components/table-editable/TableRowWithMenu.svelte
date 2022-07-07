@@ -125,14 +125,7 @@ align-items: center;
       alignment="start"
     >
       <Menu on:escape={closeContextMenu} on:item-select={closeContextMenu}>
-        <MenuItem
-          on:select={() => {
-            dispatch("delete");
-            console.log("deleterow");
-          }}
-        >
-          delete row
-        </MenuItem>
+        <MenuItem on:select={() => dispatch("delete")}>delete row</MenuItem>
       </Menu>
     </FloatingElement>
   </div>

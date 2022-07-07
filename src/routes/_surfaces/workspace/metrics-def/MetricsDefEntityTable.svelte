@@ -32,7 +32,6 @@
   );
   let sectionContainerStyles = "";
   $: sectionContainerStyles = `min-height: ${tableHeightPx}px;`;
-  $: console.log("sectionContainerStyles", sectionContainerStyles);
 
   const entityTableHeaderClass =
     "text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase align-middle flex-none";
@@ -40,7 +39,6 @@
   onMount(() => {
     const observer = new ResizeObserver(() => {
       sectionHeaderContainerHeight = sectionHeaderContainer.clientHeight;
-      console.log("sectionHeaderContainerHeight", sectionHeaderContainerHeight);
     });
     observer.observe(sectionHeaderContainer);
     return () => observer.unobserve(sectionHeaderContainer);
