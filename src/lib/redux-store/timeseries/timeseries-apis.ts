@@ -1,48 +1,49 @@
-import type { ActiveValues } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSeriesActions";
 import { updateTimeSeries } from "$lib/redux-store/timeseries/timeseries-slice";
-import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { selectMetricsExploreParams } from "$lib/redux-store/explore/explore-selectors";
 
+/**
+ * Async-thunk for generating time series for given measures and filters.
+ * Streams time series responses from backend  and updates it in the state.
+ */
 export const generateTimeSeriesApi = createAsyncThunk(
   `${EntityType.MetricsLeaderboard}/generateTimeSeries`,
   async (
     {
-      metricsDefId,
+      id,
       measures,
       filters,
       pixels,
       rollupInterval,
     }: {
-      metricsDefId: string;
-      measures: Array<MeasureDefinitionEntity>;
+      id: string;
+      measures?: Array<MeasureDefinitionEntity>;
       filters?: ActiveValues;
       pixels?: number;
       rollupInterval?: RollupInterval;
     },
     thunkAPI
   ) => {
-    if (!filters) {
-      const metricsLeaderboard: MetricsLeaderboardEntity = (
-        thunkAPI.getState() as RillReduxState
-      ).metricsLeaderboard.entities[metricsDefId];
-      filters = prune(metricsLeaderboard.activeValues);
-    }
+    const state = thunkAPI.getState() as RillReduxState;
+    const { prunedFilters, normalisedMeasures } = selectMetricsExploreParams(
+      state,
+      id,
+      { measures, filters }
+    );
+
     const stream = streamingFetchWrapper<TimeSeriesResponse>(
-      `metrics/${metricsDefId}/time-series`,
+      `metrics/${id}/time-series`,
       "POST",
       {
-        expressionEntries: measures.map((measure) => [
-          measure.id,
-          measure.expression,
-        ]),
-        filters,
+        measures: normalisedMeasures,
+        filters: prunedFilters,
         pixels,
         rollupInterval,
       }

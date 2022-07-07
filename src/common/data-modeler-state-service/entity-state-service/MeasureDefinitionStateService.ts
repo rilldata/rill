@@ -10,13 +10,18 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-export interface MeasureDefinitionEntity extends EntityRecord {
-  metricsDefId: string;
-  creationTime: number;
+export interface BasicMeasureDefinition {
+  id: string;
   // mandatory user defined metadata
   expression: string;
   // optional user defined metadata
   sqlName?: string;
+}
+export interface MeasureDefinitionEntity
+  extends EntityRecord,
+    BasicMeasureDefinition {
+  metricsDefId: string;
+  creationTime: number;
   label?: string;
   description?: string;
   expressionIsValid?: ValidationState;
@@ -37,4 +42,9 @@ export class MeasureDefinitionStateService extends EntityStateService<
 > {
   public readonly entityType = EntityType.MeasureDefinition;
   public readonly stateType = StateType.Persistent;
+}
+
+// we need a fallback for measure name. this is needed when sqlName is not entered.
+export function getFallbackMeasureName(index: number, sqlName?: string) {
+  return sqlName?.length ? sqlName : `measure_${index}`;
 }

@@ -3,34 +3,43 @@
   import Leaderboard from "./Leaderboard.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { store } from "$lib/redux-store/store-root";
-  import type { MetricsLeaderboardEntity } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-slice";
-  import { isAnythingSelected } from "$lib/util/isAnythingSelected";
-  import { toggleValueAndUpdateLeaderboard } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-apis";
-  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import MetricsExploreTimeChart from "$lib/components/leaderboard/MetricsExploreTimeChart.svelte";
-  import {
-    getMeasureById,
-    getMeasuresByMetricsId,
-  } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+  import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import type { Readable } from "svelte/store";
-  import { getMetricsLeaderboardById } from "$lib/redux-store/metrics-leaderboard/metrics-leaderboard-readables";
+  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
+  import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
+  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
+  import { getMeasureFieldNameByIdAndIndex } from "$lib/redux-store/measure-definition/measure-definition-readables";
 
   export let metricsDefId: string;
   export let columns: number;
-  export let referenceValue: number;
+  export let whichReferenceValue: string;
 
-  let metricsLeaderboard: Readable<MetricsLeaderboardEntity>;
-  $: metricsLeaderboard = getMetricsLeaderboardById(metricsDefId);
+  let metricsLeaderboard: Readable<MetricsExploreEntity>;
+  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+
+  let measureField: Readable<string>;
+  $: if ($metricsLeaderboard?.leaderboardMeasureId)
+    measureField = getMeasureFieldNameByIdAndIndex(
+      $metricsLeaderboard.leaderboardMeasureId,
+      $metricsLeaderboard.measureIds.indexOf(
+        $metricsLeaderboard?.leaderboardMeasureId
+      )
+    );
+
+  let bigNumberEntity: Readable<BigNumberEntity>;
+  $: bigNumberEntity = getBigNumberById(metricsDefId);
+  let referenceValue: number;
+  $: if ($bigNumberEntity && $measureField) {
+    referenceValue =
+      whichReferenceValue === "filtered"
+        ? $bigNumberEntity.bigNumbers?.[$measureField]
+        : $bigNumberEntity.referenceValues?.[$measureField];
+  }
 
   const dispatch = createEventDispatcher();
   let leaderboardExpanded;
-  let anythingSelected: boolean;
-  $: anythingSelected = isAnythingSelected($metricsLeaderboard?.activeValues);
-
-  let measure: Readable<MeasureDefinitionEntity>;
-  $: if ($metricsLeaderboard?.measureId) {
-    measure = getMeasureById($metricsLeaderboard?.measureId);
-  }
 
   function onSelectItem(event, item) {
     dispatch("select-item", {
@@ -38,13 +47,12 @@
       dimensionName: item.displayName,
     });
 
-    toggleValueAndUpdateLeaderboard(
+    toggleSelectedLeaderboardValueAndUpdate(
       store.dispatch,
       metricsDefId,
       item.displayName,
       event.detail,
-      true,
-      $measure.expression
+      true
     );
   }
 </script>
@@ -54,6 +62,7 @@
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
   class="border-t border-gray-200 overflow-auto"
 >
+  <LeaderboardMeasureSelector {metricsDefId} />
   {#if $metricsLeaderboard}
     <VirtualizedGrid
       {columns}

@@ -11,7 +11,7 @@ export class MetricsExploreController extends RillDeveloperController {
     router.post("/metrics/:id/leaderboards", (req: Request, res: Response) =>
       this.handleGetLeaderboards(req, res)
     );
-    router.post("/metrics/:id/bigNumber", (req: Request, res: Response) =>
+    router.post("/metrics/:id/big-number", (req: Request, res: Response) =>
       this.bigNumber(req, res)
     );
   }
@@ -36,16 +36,11 @@ export class MetricsExploreController extends RillDeveloperController {
   }
 
   private async bigNumber(req: Request, res: Response) {
-    res.setHeader("ContentType", "application/json");
-    const context = new RillRequestContext(new RillActionsChannel());
-    res.send(
-      JSON.stringify({
-        data: await this.rillDeveloperService.dispatch(
-          context,
-          "getBigNumber",
-          [req.params.id, req.body.measureId, req.body.filters]
-        ),
-      })
+    return this.wrapHttpStream(res, (context) =>
+      this.rillDeveloperService.dispatch(context, "getBigNumber", [
+        req.params.id,
+        req.body,
+      ])
     );
   }
 }

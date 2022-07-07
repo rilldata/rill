@@ -37,8 +37,9 @@ export class DuckDBClient {
     this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
   }
 
-  public execute(query: string): Promise<any> {
+  public execute(query: string, log = false): Promise<any> {
     this.onCallback?.();
+    if (log) console.log(query);
     return new Promise((resolve, reject) => {
       try {
         this.db.all(query, (err, res) => {

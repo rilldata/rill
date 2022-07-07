@@ -16,7 +16,7 @@ export interface TimeSeriesEntity {
   spark: Array<TimeSeriesValue>;
 }
 
-const timeSeriesAdapter = createEntityAdapter();
+const timeSeriesAdapter = createEntityAdapter<TimeSeriesEntity>();
 
 const timeSeriesSlice = createSlice({
   name: "timeSeries",
