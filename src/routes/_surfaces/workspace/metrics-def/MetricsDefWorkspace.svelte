@@ -31,6 +31,10 @@
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
+  // FIXME: this pattern of calling the `fetch*API` from components should
+  // be replaced by a call within a thunk fetches the relevant data at the
+  // time the active metricsDefId is set in the redux store. (Currently, the
+  // active metricsDefId is not available in the redux store, but it sh0uld be)
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
     store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
@@ -75,10 +79,14 @@
   class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
   style:height="calc(100vh - var(--header-height))"
 >
-  <div class="flex-none">
-    <MetricsDefModelSelector {metricsDefId} />
-    <MetricsDefTimeColumnSelector {metricsDefId} />
-    <MetricsDefinitionGenerateButton {metricsDefId} />
+  <div class="flex-none flex flex-row">
+    <div>
+      <MetricsDefModelSelector {metricsDefId} />
+      <MetricsDefTimeColumnSelector {metricsDefId} />
+    </div>
+    <div class="self-center pl-10">
+      <MetricsDefinitionGenerateButton {metricsDefId} />
+    </div>
   </div>
 
   <div

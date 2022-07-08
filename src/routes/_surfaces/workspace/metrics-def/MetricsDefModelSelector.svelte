@@ -32,13 +32,13 @@
 </script>
 
 <div class="flex items-center mb-3">
-  <div class="flex items-center gap-x-2 pr-5">
+  <div class="flex items-center gap-x-2" style="width:9em">
     <ModelIcon size="16px" /> model
   </div>
   <div>
     <select
       class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:font-bold hover:border-gray-100"
-      style="background-color: #FFF;"
+      style="background-color: #FFF; width:18em"
       value={sourceModelDisplayValue}
       on:change={(evt) => {
         updateMetricsDefinitionHandler({ sourceModelId: evt.target.value });
