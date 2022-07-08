@@ -32,6 +32,7 @@ import {
   ActionResponse,
   ActionStatus,
 } from "$common/data-modeler-service/response/ActionResponse";
+import { getName } from "$common/utils/incrementName";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
@@ -254,6 +255,25 @@ export class TableActions extends DataModelerActions {
     return ActionResponseFactory.getSuccessResponse(
       `source ${currentName} renamed to ${sanitizedNewName}`
     );
+  }
+
+  @DataModelerActions.PersistentTableAction()
+  public async validateTableName(
+    { stateService }: PersistentTableStateActionArg,
+    tableName: string
+  ): Promise<ActionResponse> {
+    const sanitizedTableName = sanitizeTableName(extractTableName(tableName));
+    const existingNames = stateService
+      .getCurrentState()
+      .entities.map((table) => table.tableName);
+
+    const nonDuplicateName = getName(sanitizedTableName, existingNames);
+
+    if (nonDuplicateName === sanitizedTableName) {
+      return ActionResponseFactory.getSuccessResponse();
+    } else {
+      return ActionResponseFactory.getSuccessResponse(nonDuplicateName);
+    }
   }
 
   @DataModelerActions.PersistentTableAction()
