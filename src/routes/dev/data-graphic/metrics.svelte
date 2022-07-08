@@ -4,7 +4,11 @@
   import { derived } from "svelte/store";
   import { format } from "d3-format";
 
-  import { GraphicContext, Body } from "$lib/components/data-graphic/elements";
+  import {
+    GraphicContext,
+    Body,
+    SimpleDataGraphic,
+  } from "$lib/components/data-graphic/elements";
   import { Line, Area } from "$lib/components/data-graphic/marks";
   import { Axis, Grid, PointLabel } from "$lib/components/data-graphic/guides";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
@@ -85,7 +89,7 @@
     },
   ];
 
-  let mouseover = undefined;
+  let mouseoverValue = undefined;
 
   let mouseoverStyle: PointLabelVariant = "fixed";
   function style(style: PointLabelVariant) {
@@ -132,18 +136,16 @@
     yType="number"
   >
     <div />
-    <GraphicContext top={24} height={24} let:config>
-      <svg width={config.width} height={24}>
-        <Axis side="top" />
-      </svg>
-    </GraphicContext>
+    <SimpleDataGraphic top={24} height={24} let:config>
+      <Axis side="top" />
+    </SimpleDataGraphic>
     <WithBisector
       data={$data1}
       callback={(datum) => datum.period}
-      value={mouseover}
+      value={mouseoverValue?.period}
       let:point
     >
-      {#each metrics as { name, accessor, formatBigNumber, formatAxis }, i}
+      {#each metrics as { name, accessor, formatBigNumber, formatAxis }, i (i)}
         <div>
           <h2>
             {name}
@@ -158,30 +160,25 @@
               : $bigNum1[accessor]}
           </div>
         </div>
-        <GraphicContext
+        <SimpleDataGraphic
           shareYScale={false}
           yType="number"
+          xType="date"
           yMin={0}
-          let:config
-          let:xScale
+          bind:mouseoverValue
         >
-          <svg
-            on:mousemove={(event) => {
-              let bound = event.offsetX;
-              mouseover = xScale.invert(bound);
-            }}
-            on:mouseleave={() => {
-              mouseover = undefined;
-            }}
-            width={config.width}
-            height={config.height}
+          <Body border borderColor="rgba(0,0,0,.1)">
+            <Line data={$data1} xAccessor="period" yAccessor={accessor} />
+            <Area data={$data1} xAccessor="period" yAccessor={accessor} />
+          </Body>
+          <Grid showY={false} />
+          <Axis side="right" formatter={formatAxis} />
+          <WithBisector
+            data={$data1}
+            callback={(datum) => datum.period}
+            value={mouseoverValue?.x}
+            let:point
           >
-            <Body border borderColor="rgba(0,0,0,.1)">
-              <Line data={$data1} xAccessor="period" yAccessor={accessor} />
-              <Area data={$data1} xAccessor="period" yAccessor={accessor} />
-            </Body>
-            <Grid showY={false} />
-            <Axis side="right" formatter={formatAxis} />
             {#if point}
               <PointLabel
                 tweenProps={{ duration: 50 }}
@@ -191,8 +188,8 @@
                 format={formatBigNumber}
               />
             {/if}
-          </svg>
-        </GraphicContext>
+          </WithBisector>
+        </SimpleDataGraphic>
       {/each}
     </WithBisector>
   </GraphicContext>

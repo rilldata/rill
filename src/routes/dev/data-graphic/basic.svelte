@@ -21,7 +21,7 @@
       const v = window.reduce((acc, v) => acc + v.value, 0);
       return {
         period,
-        value: v / window.length,
+        value: v / (window.length || 1),
       };
     });
   }

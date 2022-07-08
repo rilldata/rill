@@ -4,6 +4,9 @@ to the props.
 -->
 <script lang="ts">
   import { getContext } from "svelte";
+  import { get_current_component as getComponent } from "svelte/internal";
+
+  import { forwardEvents } from "../actions/forward-events-action-factory";
   import { mousePositionToDomainActionFactory } from "../actions/mouse-position-to-domain-action-factory";
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
@@ -14,12 +17,19 @@ to the props.
   const { coordinates, mousePositionToDomain } =
     mousePositionToDomainActionFactory();
 
+  const forwardAll = forwardEvents(getComponent());
+
   export let mouseoverValue = undefined;
 
   $: mouseoverValue = $coordinates;
 </script>
 
-<svg use:mousePositionToDomain width={$config.width} height={$config.height}>
+<svg
+  use:forwardAll
+  use:mousePositionToDomain
+  width={$config.width}
+  height={$config.height}
+>
   <slot
     config={$config}
     xScale={$xScale}

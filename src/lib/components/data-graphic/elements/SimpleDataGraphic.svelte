@@ -3,6 +3,8 @@ A simple composable container for SVG-based data graphics.
 -->
 <script lang="ts">
   import { GraphicContext, SimpleSVGContainer } from "../elements";
+  import { get_current_component as getComponent } from "svelte/internal";
+  import { forwardEvents } from "../actions/forward-events-action-factory";
 
   export let top = undefined;
   export let bottom = undefined;
@@ -22,34 +24,46 @@ A simple composable container for SVG-based data graphics.
   export let yMin = undefined;
   export let yMax = undefined;
 
+  export let shareXScale = true;
+  export let shareYScale = true;
+
   export let mouseoverValue = undefined;
+
+  /** this makes a wide variety of normal events, such as on:click, available
+   * to the consumer
+   */
+  const forwardAll = forwardEvents(getComponent());
 </script>
 
-<GraphicContext
-  {width}
-  {height}
-  {top}
-  {bottom}
-  {left}
-  {right}
-  {fontSize}
-  {textGap}
-  {xType}
-  {yType}
-  {xMin}
-  {xMax}
-  {yMin}
-  {yMax}
-  {bodyBuffer}
-  {marginBuffer}
->
-  <SimpleSVGContainer
-    bind:mouseoverValue
-    let:xScale
-    let:yScale
-    let:config
-    let:hovered
+<div use:forwardAll>
+  <GraphicContext
+    {width}
+    {height}
+    {top}
+    {bottom}
+    {left}
+    {right}
+    {fontSize}
+    {textGap}
+    {xType}
+    {yType}
+    {xMin}
+    {xMax}
+    {yMin}
+    {yMax}
+    {bodyBuffer}
+    {marginBuffer}
+    {shareXScale}
+    {shareYScale}
   >
-    <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
-  </SimpleSVGContainer>
-</GraphicContext>
+    <SimpleSVGContainer
+      bind:mouseoverValue
+      let:xScale
+      let:yScale
+      let:config
+      let:hovered
+    >
+      <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
+    </SimpleSVGContainer>
+  </GraphicContext>
+</div>
