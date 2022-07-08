@@ -52,7 +52,7 @@
     "autoprefixer": "^10.4.4",
     "d3-array": "^3.1.1",
     "d3-scale": "^4.0.2",
-    "esbuild": "^0.14.42",
+    "esbuild": "^0.14.48",
     "eslint": "^8.12.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-svelte3": "^3.4.1",
