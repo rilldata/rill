@@ -7,6 +7,8 @@
   export let location = "right";
   // utilize the ID for easier UI testing.
   export let id: string;
+  export let width = 16;
+  export let height = 16;
 </script>
 
 <Tooltip
@@ -18,8 +20,8 @@
   <button
     on:click
     {id}
-    style:width="16px"
-    style:height="16px"
+    style:width={`${width}px`}
+    style:height={`${height}px`}
     style:grid-column="left-control"
     class="
         hover:bg-gray-300
