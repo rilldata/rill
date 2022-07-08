@@ -98,6 +98,8 @@
     >
       <!-- the single virtual element -->
       <Leaderboard
+        displayName={item.displayName}
+        description={item.description}
         seeMore={leaderboardExpanded === item.displayName}
         on:expand={() => {
           if (leaderboardExpanded === item.displayName) {
@@ -108,7 +110,6 @@
         }}
         on:select-item={(event) => onSelectItem(event, item)}
         activeValues={$metricsLeaderboard.activeValues[item.displayName] ?? []}
-        displayName={item.displayName}
         values={item.values}
         referenceValue={referenceValue || 0}
       />

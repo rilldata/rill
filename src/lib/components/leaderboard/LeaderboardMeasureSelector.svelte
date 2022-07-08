@@ -34,7 +34,9 @@
     }}
   >
     {#each $measures as measure (measure.id)}
-      <option value={measure.id}>{measure.expression}</option>
+      <option value={measure.id}
+        >{measure.label.length ? measure.label : measure.expression}</option
+      >
     {/each}
   </select>
 {/if}

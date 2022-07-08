@@ -22,6 +22,7 @@
    */
   export let referenceValue: number;
   export let values;
+  export let description: string;
   type ActiveValues = [string, boolean];
   export let activeValues: ActiveValues[];
   export let slice = 7;
@@ -39,24 +40,33 @@
 </script>
 
 <LeaderboardContainer focused={atLeastOneActive}>
-  <Tooltip location="top" alignment="start" distance={4}>
-    <LeaderboardHeader isActive={atLeastOneActive}>
-      <div
-        slot="title"
-        class:text-gray-500={atLeastOneActive}
-        class:italic={atLeastOneActive}
-      >
-        {displayName}
-      </div>
-    </LeaderboardHeader>
-    <TooltipContent slot="tooltip-content">
-      {#if activeValues.length}
-        filtering {displayName} by {activeValues.length} value{#if activeValues.length !== 1}s{/if}
-      {:else}
-        click on the fields to filter by ____
-      {/if}
-    </TooltipContent>
-  </Tooltip>
+  <LeaderboardHeader isActive={atLeastOneActive}>
+    <div
+      slot="title"
+      class:text-gray-500={atLeastOneActive}
+      class:italic={atLeastOneActive}
+    >
+      <Tooltip location="top" distance={16}>
+        <span>
+          {displayName}
+        </span>
+        <TooltipContent slot="tooltip-content">
+          <p>
+            {#if description && description?.length}
+              {description}
+            {:else}
+              the leaderboard metrics for {displayName}
+            {/if}
+          </p>
+          {#if activeValues.length}
+            <p>
+              filtering by {activeValues.length} value{#if activeValues.length !== 1}s{/if}
+            </p>
+          {/if}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  </LeaderboardHeader>
   <LeaderboardList>
     {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as { label, value }, i (label)}
       {@const isActive = activeValues
