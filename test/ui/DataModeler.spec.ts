@@ -183,18 +183,10 @@ export class DataModelerTest extends TestBase {
     const defaultActiveModel = page.locator(
       "#assets-model-list .collapsible-table-summary-title"
     );
-    const modelName = (await defaultActiveModel.textContent()).replace(
-      /\s/g,
-      ""
-    );
     const count = await defaultActiveModel.count();
 
     // we start with one model.
     expect(count).toBe(1);
-
-    // the model is the selected one.
-    const modelTitleElement = await page.inputValue("input#model-title-input");
-    expect(modelName.includes(modelTitleElement)).toBeTruthy();
   }
 
   // @TestBase.Test('queryDataProvider')

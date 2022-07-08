@@ -31,6 +31,7 @@
   } from "$lib/application-state-stores/layout-store";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
+  import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
 
   let showDropOverlay = false;
   let assetsHovered = false;
@@ -62,6 +63,11 @@
   $: persistentExportedModel = $persistentModelStore?.entities?.find(
     (model) => model.id === derivedExportedModel?.id
   );
+
+  function isEventWithFiles(event: DragEvent) {
+    let types = event.dataTransfer.types;
+    return types && types.indexOf("Files") != -1;
+  }
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
@@ -77,13 +83,15 @@
   <FileDrop bind:showDropOverlay />
 {/if}
 
+<DuplicateSource />
+
 <div
   class="absolute w-screen h-screen bg-gray-100"
   on:drop|preventDefault|stopPropagation
   on:drag|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
-  on:dragover|preventDefault|stopPropagation={() => {
-    showDropOverlay = true;
+  on:dragover|preventDefault|stopPropagation={(e) => {
+    if (isEventWithFiles(e)) showDropOverlay = true;
   }}
   on:dragleave|preventDefault|stopPropagation
 >
