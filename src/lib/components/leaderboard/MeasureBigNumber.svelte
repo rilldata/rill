@@ -4,7 +4,7 @@
   import { cubicIn } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import type { Readable } from "svelte/types/runtime/store";
-  import { formatBigNumberPercentage } from "$lib/util/formatters.js";
+  import { formatBigNumberPercentage } from "$lib/util/formatters";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import { getMeasureFieldNameByIdAndIndex } from "$lib/redux-store/measure-definition/measure-definition-readables";
