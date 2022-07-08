@@ -8,7 +8,7 @@ echo "Initializing the project example project ${PROJECT_BASE}/rill-developer-ex
 npm run cli --silent -- init --project ${PROJECT_BASE}/rill-developer-example
 
 echo "Downloading dataset for example project..."
-curl -s http://pkg.rilldata.com/rill-developer-example/data/example-assets.zip --output ${PROJECT_BASE}/rill-developer-example/example-assets.zip
+curl -s http://pkg.rilldata.com/rill-developer-example/example-assets.zip --output ${PROJECT_BASE}/rill-developer-example/example-assets.zip
 unzip ${PROJECT_BASE}/rill-developer-example/example-assets.zip -d ${PROJECT_BASE}/rill-developer-example/
 
 echo "Importing example datasets into the project..."
@@ -31,7 +31,7 @@ mv -v ${PROJECT_BASE}/rill-developer-example/example-assets/data ${PROJECT_BASE}
 echo "Importing example SQL transforamtions into the project..."
 mv -v ${PROJECT_BASE}/rill-developer-example/example-assets/models/* ${PROJECT_BASE}/rill-developer-example/models
 
-echo "Cleanign up the project..."
+echo "Cleaning up the project..."
 rm ${PROJECT_BASE}/rill-developer-example/models/query_1.sql
 rm -rf ${PROJECT_BASE}/rill-developer-example/example-assets
 rm -rf ${PROJECT_BASE}/rill-developer-example/__MACOSX
