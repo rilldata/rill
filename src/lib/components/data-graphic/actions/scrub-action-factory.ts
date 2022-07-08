@@ -17,7 +17,7 @@
  */
 
 import { writable, get } from "svelte/store";
-import { DEFAULT_COORDINATES } from "./constants";
+import { DEFAULT_COORDINATES } from "../constants";
 
 /** converts an event to a simplified object
  * with only the needed properties
