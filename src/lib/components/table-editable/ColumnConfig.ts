@@ -1,6 +1,12 @@
 import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
+export enum RenderType {
+  INPUT = "input",
+  SPARKLINE = "sparkline",
+  CARDINALITY = "cardinality",
+}
+
 /**
  * config info for table columns
  *
@@ -13,7 +19,7 @@ export interface ColumnConfig {
   label?: string;
   type?: string;
 
-  renderer?: unknown;
+  renderType: RenderType;
   tooltip?: string;
 
   validation?: (row: EntityRecord, value: unknown) => ValidationState;
