@@ -11,6 +11,7 @@
   // read-only, but visible to consumers via bind:start
   export let start = 0;
   export let end = 0;
+  export let columnSize: string | "auto" = "auto";
   // local state
   let height_map = [];
   let rows;
@@ -123,6 +124,7 @@
   bind:offsetHeight={viewport_height}
   on:scroll={handle_scroll}
   style="height: {height};"
+  style:width="100%"
 >
   <svelte-virtual-list-contents
     bind:this={contents}
@@ -132,7 +134,7 @@
       gap: 2rem;
       justify-items:start;
       justify-content: start;
-      grid-template-columns: repeat({columns}, auto);
+      grid-template-columns: repeat({columns}, {columnSize});
       padding-top: {top}px;
       padding-bottom: {bottom}px;"
   >

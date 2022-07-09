@@ -16,7 +16,7 @@ export const layout = tweened(
   { duration: SURFACE_DRAG_DURATION }
 );
 
-export const SIDE_PAD = 80;
+export const SIDE_PAD = 48;
 
 export const assetVisibilityTween = tweened(0, {
   duration: SURFACE_SLIDE_DURATION,
