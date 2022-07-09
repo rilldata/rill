@@ -71,7 +71,8 @@
         flex-col
         bg-white
         outline-none
-        border-none
+        border
+        border-gray-800
         "
   style:outline="none"
   style:min-width="300px"

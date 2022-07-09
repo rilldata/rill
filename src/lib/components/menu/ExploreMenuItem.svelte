@@ -6,6 +6,9 @@
     onMount,
   } from "svelte";
   import Spacer from "$lib/components/icons/Spacer.svelte";
+
+  export let icon = false;
+
   const dispatch = createEventDispatcher();
 
   const onSelect = getContext("rill:menu:onSelect");
@@ -45,6 +48,8 @@
   }
 
   let selected = false;
+
+  let hovered = false;
 </script>
 
 <button
@@ -59,14 +64,18 @@
         focus:bg-gray-200
         focus:outline-none
         active:outline-none
-        gap-x-2
+        gap-x-4
         grid
         justify-items-stretch
     "
-  style:grid-template-columns="max-content auto max-content"
+  style:grid-template-columns="auto max-content"
   class:selected
   on:mouseover={() => {
     $currentItem = itemID;
+    hovered = true;
+  }}
+  on:mouseleave={() => {
+    hovered = false;
   }}
   on:focus={() => {
     $currentItem = itemID;
@@ -79,16 +88,23 @@
     }, 100);
   }}
 >
-  <div class="self-center">
-    <slot name="icon">
-      <Spacer />
-    </slot>
-  </div>
-  <div class="text-left">
-    <slot />
+  <div
+    class="grid gap-x-2"
+    style:grid-template-columns="{icon ? "max-content" : ""} auto"
+  >
+    {#if icon}
+      <div class="self-center">
+        <slot name="icon">
+          <!-- <Spacer /> -->
+        </slot>
+      </div>
+    {/if}
+    <div class="text-left">
+      <slot {hovered} />
+    </div>
   </div>
   <div class="text-right text-gray-400">
-    <slot name="right" />
+    <slot name="right" {hovered} />
   </div>
 </button>
 

@@ -182,11 +182,13 @@
     clickOutsideListener();
     clickOutsideListener = undefined;
   }
+  let target: HTMLElement;
 </script>
 
 <!-- Timerange menu -->
 <Button
-  onClick={async (event) => {
+  bind:element={target}
+  on:click={async (event) => {
     timeSelectorMenuOpen = !timeSelectorMenuOpen;
     menuX = event.clientX;
     menuY = event.clientY;
@@ -206,21 +208,34 @@
   <!-- {#if true} -->
   <div bind:this={timeSelectorMenu}>
     <FloatingElement
-      relationship="mouse"
+      relationship="direct"
       location="bottom"
-      target={{ x: menuX, y: menuY }}
+      alignment="start"
+      {target}
+      distance={8}
     >
       <ExploreMenu>
         {#each timeRanges as timeRange}
           <ExploreMenuItem on:click={() => console.log(timeRange.name)}>
-            <div class="text-base flex gap-x-4">
+            <div>
+              <span class="font-bold">
+                {timeRange.name}
+              </span>
+              <span />
+            </div>
+            <div slot="right" let:hovered>
+              <span class:opacity-0={!hovered}>
+                {prettyFormatTimeRange(timeRange)}
+              </span>
+            </div>
+            <!-- <div class="text-base flex gap-x-4">
               <span class="font-bold">
                 {timeRange.name}
               </span>
               <span>
                 {prettyFormatTimeRange(timeRange)}
               </span>
-            </div>
+            </div> -->
           </ExploreMenuItem>
         {/each}
       </ExploreMenu>
