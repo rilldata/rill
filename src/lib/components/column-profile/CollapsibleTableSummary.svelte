@@ -27,7 +27,7 @@
   export let profile: any;
   export let head: any; // FIXME
   export let sizeInBytes: number = undefined;
-  export let emphasizeTitle = false;
+  export let active = false;
   export let draggable = true;
   export let show = false;
   export let showTitle = true;
@@ -71,6 +71,7 @@
       <CollapsibleTableHeader
         on:select
         on:query
+        on:expand={() => (show = !show)}
         bind:contextMenuOpen
         bind:menuX
         bind:menuY
@@ -80,7 +81,7 @@
         {contextMenu}
         {cardinality}
         {sizeInBytes}
-        {emphasizeTitle}
+        {active}
       />
     </div>
     {#if contextMenuOpen}

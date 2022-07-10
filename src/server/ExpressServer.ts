@@ -9,8 +9,8 @@ import type { DataModelerStateService } from "$common/data-modeler-state-service
 import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { existsSync, mkdirSync } from "fs";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import path from "node:path";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -45,11 +45,21 @@ export class ExpressServer {
     );
 
     this.app.post("/api/table-upload", (req: any, res) => {
-      this.handleFileUpload((req as any).files.file);
+      if (req.body?.tableName) {
+        this.handleFileUpload(
+          (req as any).files.file,
+          (req as any).body.tableName
+        );
+      } else {
+        this.handleFileUpload((req as any).files.file);
+      }
       res.send("OK");
     });
     this.app.get("/api/export", async (req, res) => {
       this.handleFileExport(req, res);
+    });
+    this.app.get("/api/validate-table", async (req, res) => {
+      this.handleTableValidation(req, res);
     });
 
     this.socketServer = new SocketServer(
@@ -72,48 +82,72 @@ export class ExpressServer {
     console.log(`Server started at ${this.config.server.serverUrl}`);
   }
 
-  private async handleFileUpload(file: {
-    name: string;
-    tempFilePath: string;
-    mimetype: string;
-    data: Buffer;
-    size: number;
-    mv: (string) => void;
-  }) {
+  private async handleTableValidation(req: Request, res: Response) {
+    const tableName = decodeURIComponent(req.query.tableName as string);
+
+    const response = await this.dataModelerService.dispatch(
+      "validateTableName",
+      [tableName]
+    );
+
+    if (response.status === ActionStatus.Success) {
+      if (!response.messages.length) {
+        res.json({
+          isDuplicate: false,
+        });
+      } else {
+        res.json({
+          isDuplicate: true,
+          name: response.messages[0].message,
+        });
+      }
+    } else {
+      res.status(500);
+      res.send(`Failed to validate table name ${tableName}`);
+    }
+  }
+
+  private async handleFileUpload(
+    file: {
+      name: string;
+      tempFilePath: string;
+      mimetype: string;
+      data: Buffer;
+      size: number;
+      mv: (string) => void;
+    },
+    tableName?: string
+  ) {
     const filePath = `${this.config.projectFolder}/tmp/${file.name}`;
     file.mv(filePath);
-    await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
-      filePath,
-    ]);
+
+    if (tableName) {
+      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+        filePath,
+        tableName,
+      ]);
+    } else {
+      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+        filePath,
+      ]);
+    }
   }
 
   private async handleFileExport(req: Request, res: Response) {
-    const modelId = req.query.id as string;
-    const exportType =
-      req.query.type === "csv" ? "exportToCsv" : "exportToParquet";
     const fileName = decodeURIComponent(req.query.fileName as string);
-    const exportResp = await this.dataModelerService.dispatch(exportType, [
-      modelId,
-      fileName,
-    ]);
-    if (exportResp.status === ActionStatus.Success) {
+    const fullPath = ExpressServer.getAbsoluteFilePath(
+      `${this.config.database.exportFolder}/${fileName}`
+    );
+    if (existsSync(fullPath)) {
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${fileName}"`
       );
-      res.sendFile(
-        ExpressServer.getAbsoluteFilePath(
-          `${this.config.database.exportFolder}/${fileName}`
-        )
-      );
+      res.sendFile(path.resolve(fullPath));
     } else {
       res.status(500);
-      res.send(
-        `Failed to export.\n${exportResp.messages
-          .map((message) => message.message)
-          .join("\n")}`
-      );
+      res.send(`Failed to export file ${fileName}`);
     }
   }
 

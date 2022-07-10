@@ -62,7 +62,7 @@
         profile: derivedModel?.profile ?? [],
         head: derivedModel?.preview ?? [],
         sizeInBytes: derivedModel?.sizeInBytes ?? 0,
-        emphasizeTitle: query?.id === activeEntityID,
+        active: query?.id === activeEntityID,
       },
     };
   });

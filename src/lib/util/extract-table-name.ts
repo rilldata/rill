@@ -1,7 +1,7 @@
 const FILE_PATH_SPLIT_REGEX = /\//;
 export const INVALID_CHARS = /[^a-zA-Z_\d]/g;
 
-export function getTableNameFromFile(filePath: string, name: string) {
+export function getTableNameFromFile(filePath: string, name?: string) {
   return name ?? sanitizeTableName(extractTableName(filePath));
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@rilldata/rill",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "ts-node-dev --quiet --project tsconfig.node.json src/dev.ts",
@@ -88,6 +88,7 @@
     "@codemirror/state": "^0.20.0",
     "@codemirror/view": "^0.20.0",
     "@types/d3-scale": "^4.0.2",
+    "@types/d3-shape": "^3.1.0",
     "axios": "^0.26.1",
     "commander": "^9.1.0",
     "cors": "^2.8.5",
