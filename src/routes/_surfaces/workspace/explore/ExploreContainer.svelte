@@ -1,43 +1,30 @@
-<script lang="ts">
-  import { onMount } from "svelte";
-  let columns = 3;
-  let leaderboardContainer: HTMLElement;
-  let availableWidth = 0;
-  function onResize() {
-    availableWidth = leaderboardContainer.offsetWidth;
-    columns = Math.floor(availableWidth / (315 + 20));
-  }
-  onMount(() => {
-    onResize();
-  });
-</script>
-
-<svelte:window on:resize={onResize} />
-
-<section
-  bind:this={leaderboardContainer}
-  class="grid items-stretch leaderboard-layout bg-white p-8"
-  style:grid-template-rows="var(--header) 1fr"
->
+<section class="grid items-stretch leaderboard-layout bg-white p-8">
   <div class="explore-header">
     <slot name="header" />
   </div>
+  <hr />
   <div class="explore-metrics">
     <slot name="metrics" />
   </div>
   <div class="explore-leaderboards">
-    <slot name="leaderboards" {columns} />
+    <slot name="leaderboards" />
   </div>
 </section>
 
 <style>
   section {
-    --header: 160px;
+    --header: 120px;
     grid-template-rows: var(--header) 1fr;
-    grid-template-columns: 600px auto;
+    grid-template-columns: 540px auto;
+    grid-row-gap: 1rem;
     grid-template-areas:
       "header header"
+      "hr hr"
       "metrics leaderboards";
+  }
+
+  hr {
+    grid-area: hr;
   }
   .explore-header {
     grid-area: header;

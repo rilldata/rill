@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BarAndLabel from "$lib/components/BarAndLabel.svelte";
+  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
   import FormattedDataType from "$lib/components/data-types/FormattedDataType.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";

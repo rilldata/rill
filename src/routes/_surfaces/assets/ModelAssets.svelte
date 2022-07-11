@@ -63,7 +63,7 @@
         profile: derivedModel?.profile ?? [],
         head: derivedModel?.preview ?? [],
         sizeInBytes: derivedModel?.sizeInBytes ?? 0,
-        emphasizeTitle: query?.id === activeEntityID,
+        active: query?.id === activeEntityID,
       },
     };
   });
@@ -105,7 +105,7 @@
         cardinality={tableSummaryProps.cardinality}
         name={tableSummaryProps.name}
         sizeInBytes={tableSummaryProps.sizeInBytes}
-        emphasizeTitle={tableSummaryProps.emphasizeTitle}
+        active={tableSummaryProps.active}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <ColumnProfileNavEntry

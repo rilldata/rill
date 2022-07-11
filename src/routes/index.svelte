@@ -24,7 +24,6 @@
     ApplicationStore,
     config,
   } from "$lib/application-state-stores/application-store";
-
   import {
     layout,
     assetVisibilityTween,
@@ -38,6 +37,7 @@
   import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
   import { store } from "$lib/redux-store/store-root";
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
+  import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
 
   let showDropOverlay = false;
   let assetsHovered = false;
@@ -96,13 +96,14 @@
   $: hasInspector = activeEntityType
     ? views[activeEntityType].hasInspector
     : false;
+  function isEventWithFiles(event: DragEvent) {
+    let types = event.dataTransfer.types;
+    return types && types.indexOf("Files") != -1;
+  }
 </script>
 
 {#if derivedExportedModel && persistentExportedModel}
-  <ExportingDataset
-    tableName={persistentExportedModel.name}
-    path={`${config.database.exportFolder}/`}
-  />
+  <ExportingDataset tableName={persistentExportedModel.name} />
 {:else if derivedImportedTable && persistentImportedTable}
   <ImportingTable
     importName={persistentImportedTable.path}
@@ -114,13 +115,15 @@
   <FileDrop bind:showDropOverlay />
 {/if}
 
+<DuplicateSource />
+
 <div
   class="absolute w-screen h-screen bg-gray-100"
   on:drop|preventDefault|stopPropagation
   on:drag|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
-  on:dragover|preventDefault|stopPropagation={() => {
-    showDropOverlay = true;
+  on:dragover|preventDefault|stopPropagation={(e) => {
+    if (isEventWithFiles(e)) showDropOverlay = true;
   }}
   on:dragleave|preventDefault|stopPropagation
 >

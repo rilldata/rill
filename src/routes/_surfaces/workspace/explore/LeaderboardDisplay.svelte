@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { store } from "$lib/redux-store/store-root";
@@ -13,7 +13,6 @@
   import { getMeasureFieldNameByIdAndIndex } from "$lib/redux-store/measure-definition/measure-definition-readables";
 
   export let metricsDefId: string;
-  export let columns: number;
   export let whichReferenceValue: string;
 
   let metricsLeaderboard: Readable<MetricsExploreEntity>;
@@ -43,7 +42,7 @@
 
   function onSelectItem(event, item) {
     dispatch("select-item", {
-      fieldName: event.detail,
+      fieldName: event.detail.label,
       dimensionName: item.displayName,
     });
 
@@ -51,18 +50,45 @@
       store.dispatch,
       metricsDefId,
       item.displayName,
-      event.detail,
-      true
+      event.detail.label,
+      !event.detail.isActive,
+      $measureField.expression
     );
   }
+
+  /** Functionality for resizing the virtual leaderboard */
+  let columns = 3;
+  let availableWidth = 0;
+  let leaderboardContainer: HTMLElement;
+  let observer: ResizeObserver;
+
+  function onResize() {
+    availableWidth = leaderboardContainer.offsetWidth;
+    columns = Math.floor(availableWidth / (315 + 20));
+  }
+
+  onMount(() => {
+    onResize();
+    const observer = new ResizeObserver(() => {
+      onResize();
+    });
+    observer.observe(leaderboardContainer);
+  });
+
+  onDestroy(() => {
+    observer?.disconnect();
+  });
 </script>
 
+<svelte:window on:resize={onResize} />
 <!-- container for the metrics leaderboard components and controls -->
 <div
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
-  class="border-t border-gray-200 overflow-auto"
+  bind:this={leaderboardContainer}
 >
-  <LeaderboardMeasureSelector {metricsDefId} />
+  <div class="grid grid-auto-cols justify-end grid-flow-col items-end p-1 pb-3">
+    <LeaderboardMeasureSelector {metricsDefId} />
+  </div>
   {#if $metricsLeaderboard}
     <VirtualizedGrid
       {columns}
@@ -71,24 +97,22 @@
       let:item
     >
       <!-- the single virtual element -->
-      <div style:width="315px">
-        <Leaderboard
-          seeMore={leaderboardExpanded === item.displayName}
-          on:expand={() => {
-            if (leaderboardExpanded === item.displayName) {
-              leaderboardExpanded = undefined;
-            } else {
-              leaderboardExpanded = item.displayName;
-            }
-          }}
-          on:select-item={(event) => onSelectItem(event, item)}
-          activeValues={$metricsLeaderboard.activeValues[item.displayName] ??
-            []}
-          displayName={item.displayName}
-          values={item.values}
-          referenceValue={referenceValue || 0}
-        />
-      </div>
+      <Leaderboard
+        displayName={item.displayName}
+        description={item.description}
+        seeMore={leaderboardExpanded === item.displayName}
+        on:expand={() => {
+          if (leaderboardExpanded === item.displayName) {
+            leaderboardExpanded = undefined;
+          } else {
+            leaderboardExpanded = item.displayName;
+          }
+        }}
+        on:select-item={(event) => onSelectItem(event, item)}
+        activeValues={$metricsLeaderboard.activeValues[item.displayName] ?? []}
+        values={item.values}
+        referenceValue={referenceValue || 0}
+      />
     </VirtualizedGrid>
   {/if}
 </div>
