@@ -16,7 +16,7 @@
   } from "$lib/application-state-stores/table-stores";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import notificationStore from "$lib/components/notifications/";
-
+  import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
@@ -35,7 +35,17 @@
 
   let showTables = true;
 
-  async function handleQueryEvent(tableName: string) {
+  let showRenameTableModal = false;
+  let renameTableID = null;
+  let renameTableName = null;
+
+  const openRenameTableModal = (tableID: string, tableName: string) => {
+    showRenameTableModal = true;
+    renameTableID = tableID;
+    renameTableName = tableName;
+  };
+
+  const queryHandler = async (tableName: string) => {
     // check existing models to avoid a name conflict
     const existingNames = $persistentModelStore?.entities
       .filter((model) => model.name.includes(`query_${tableName}`))
@@ -62,7 +72,7 @@
     notificationStore.send({
       message: `queried ${tableName} in workspace`,
     });
-  }
+  };
 </script>
 
 <div
@@ -97,12 +107,10 @@
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:query={() => {
-              handleQueryEvent(tableName);
-            }}
-            on:delete={() => {
-              dataModelerService.dispatch("dropTable", [tableName]);
-            }}
+            on:rename={() => openRenameTableModal(id, tableName)}
+            on:query={() => queryHandler(tableName)}
+            on:delete={() =>
+              dataModelerService.dispatch("dropTable", [tableName])}
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry
@@ -118,4 +126,10 @@
       {/each}
     {/if}
   </div>
+  <RenameTableModal
+    openModal={showRenameTableModal}
+    closeModal={() => (showRenameTableModal = false)}
+    tableID={renameTableID}
+    currentTableName={renameTableName}
+  />
 {/if}

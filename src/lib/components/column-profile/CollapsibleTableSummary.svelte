@@ -15,7 +15,7 @@
   export let cardinality: number;
   export let showRows = true;
   export let sizeInBytes: number = undefined;
-  export let emphasizeTitle = false;
+  export let active = false;
   export let draggable = true;
   export let show = false;
   export let showTitle = true;
@@ -45,6 +45,7 @@
       <CollapsibleTableHeader
         on:select
         on:query
+        on:expand={() => (show = !show)}
         bind:contextMenuOpen
         bind:menuX
         bind:menuY
@@ -55,7 +56,6 @@
         {contextMenu}
         {cardinality}
         {sizeInBytes}
-        {emphasizeTitle}
       >
         <slot name="header-buttons" />
       </CollapsibleTableHeader>
@@ -86,6 +86,13 @@
                 query {name}
               </MenuItem>
             {/if}
+            <MenuItem
+              on:select={() => {
+                dispatch("rename");
+              }}
+            >
+              rename {name}
+            </MenuItem>
             <MenuItem
               on:select={() => {
                 dispatch("delete");

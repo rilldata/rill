@@ -41,7 +41,6 @@ export const generateMeasuresAndDimensionsApi = createAsyncThunk(
     thunkAPI.dispatch(clearDimensionsForMetricsDefId(id));
     await asyncWait(10);
     for await (const measureOrDimension of stream) {
-      console.log(measureOrDimension);
       if (measureOrDimension.type === EntityType.MeasureDefinition) {
         thunkAPI.dispatch(
           addOneMeasure(measureOrDimension as MeasureDefinitionEntity)
