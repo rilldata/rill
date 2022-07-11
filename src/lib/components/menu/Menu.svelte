@@ -3,11 +3,15 @@
   const globalActiveMenu = writable(undefined);
 </script>
 
-<script>
-  import { createEventDispatcher, setContext, onMount } from "svelte";
+<script lang="ts">
+  import { guidGenerator } from "$lib/util/guid";
+  import { createEventDispatcher, onMount, setContext } from "svelte";
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
-  import { guidGenerator } from "$lib/util/guid";
+
+  export let color: "light" | "dark" = "light";
+  setContext("rill:menu:color", color);
+
   const dispatch = createEventDispatcher();
 
   const menuID = guidGenerator();
@@ -63,16 +67,16 @@
     $currentItem = undefined;
   }}
   class="
-        pt-2 
-        pb-2
+        py-2 
         shadow 
         w-max 
         rounded 
         flex 
         flex-col
-        bg-gray-800
         outline-none
-        border-none
+        {color === 'light'
+    ? 'bg-white border border-gray-800'
+    : 'bg-gray-800 border-none'}
         "
   style:outline="none"
   style:min-width="300px"
