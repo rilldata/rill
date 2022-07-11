@@ -124,6 +124,9 @@
     makeTimeRange(TimeRangeName[name])
   );
 
+  const defaultTimeRange = timeRanges[0];
+  let selectedTimeRange: TimeRange = defaultTimeRange;
+
   const prettyFormatTimeRange = (timeRange: TimeRange): string => {
     // day is the same
     if (
@@ -186,6 +189,7 @@
 <!-- Timerange menu -->
 <Button
   bind:element={target}
+  override="border-none gap-x-4"
   on:click={async () => {
     timeSelectorMenuOpen = !timeSelectorMenuOpen;
     if (!clickOutsideListener) {
@@ -196,7 +200,12 @@
     }
   }}
 >
-  open menu...
+  <span class="font-bold">
+    {selectedTimeRange.name}
+  </span>
+  <span>
+    {prettyFormatTimeRange(selectedTimeRange)}
+  </span>
   <CaretDownIcon size="16px" />
 </Button>
 
@@ -212,7 +221,7 @@
     >
       <Menu>
         {#each timeRanges as timeRange}
-          <MenuItem on:click={() => console.log(timeRange.name)}>
+          <MenuItem on:select={() => (selectedTimeRange = timeRange)}>
             <div class="font-bold">
               {timeRange.name}
             </div>
