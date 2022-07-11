@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import { outline } from "$lib/components/data-graphic/outline";
+  import { outline } from "$lib/components/data-graphic/actions/outline";
   import {
     datePortion,
     formatInteger,

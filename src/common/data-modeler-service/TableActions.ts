@@ -7,8 +7,10 @@ import {
 import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import {
   extractFileExtension,
+  extractTableName,
   getTableNameFromFile,
   INVALID_CHARS,
+  sanitizeTableName,
 } from "$lib/util/extract-table-name";
 import type {
   PersistentTableEntity,
@@ -30,6 +32,7 @@ import {
   ActionResponse,
   ActionStatus,
 } from "$common/data-modeler-service/response/ActionResponse";
+import { getName } from "$common/utils/incrementName";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
@@ -217,6 +220,59 @@ export class TableActions extends DataModelerActions {
       ]);
     } catch (err) {
       return ActionResponseFactory.getErrorResponse(err);
+    }
+  }
+
+  @DataModelerActions.PersistentTableAction()
+  public async updateTableName(
+    { stateService }: PersistentTableStateActionArg,
+    tableId: string,
+    name: string
+  ): Promise<ActionResponse> {
+    const sanitizedNewName = sanitizeTableName(extractTableName(name));
+    const existingTable = stateService.getByField(
+      "tableName",
+      sanitizedNewName
+    );
+
+    if (existingTable) {
+      return ActionResponseFactory.getExisingEntityError(
+        `another source named "${existingTable.tableName}" already exists`
+      );
+    }
+
+    const table = stateService.getById(tableId);
+    const currentName = table.tableName;
+
+    this.dataModelerStateService.dispatch("updateTableName", [
+      tableId,
+      sanitizedNewName,
+    ]);
+    this.databaseService.dispatch("renameTable", [
+      currentName,
+      sanitizedNewName,
+    ]);
+    return ActionResponseFactory.getSuccessResponse(
+      `source ${currentName} renamed to ${sanitizedNewName}`
+    );
+  }
+
+  @DataModelerActions.PersistentTableAction()
+  public async validateTableName(
+    { stateService }: PersistentTableStateActionArg,
+    tableName: string
+  ): Promise<ActionResponse> {
+    const sanitizedTableName = sanitizeTableName(extractTableName(tableName));
+    const existingNames = stateService
+      .getCurrentState()
+      .entities.map((table) => table.tableName);
+
+    const nonDuplicateName = getName(sanitizedTableName, existingNames);
+
+    if (nonDuplicateName === sanitizedTableName) {
+      return ActionResponseFactory.getSuccessResponse();
+    } else {
+      return ActionResponseFactory.getSuccessResponse(nonDuplicateName);
     }
   }
 

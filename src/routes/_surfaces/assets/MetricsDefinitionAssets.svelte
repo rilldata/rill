@@ -79,7 +79,7 @@
       <CollapsibleTableSummary
         entityType={EntityType.MetricsDefinition}
         name={metricDefLabel ?? ""}
-        emphasizeTitle={$appStore?.activeEntity?.id === id}
+        active={$appStore?.activeEntity?.id === id}
         showRows={false}
         on:select={() => dispatchSetMetricsDefActive(id)}
         on:delete={() => dispatchDeleteMetricsDef(id)}

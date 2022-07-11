@@ -11,17 +11,22 @@
   import * as classes from "$lib/util/component-classes";
   import { onClickOutside } from "$lib/util/on-click-outside";
 
+  import ExportError from "$lib/components/modal/ExportError.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-  import { config as appConfig } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    config as appConfig,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
 
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "$lib/util/formatters";
 
+  import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type {
@@ -35,6 +40,7 @@
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
+  import { FileExportType } from "$common/data-modeler-service/ModelActions";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import Button from "$lib/components/Button.svelte";
@@ -61,6 +67,9 @@
   // get source tables?
   let sourceTableReferences;
   let showColumns = true;
+
+  let showExportErrorModal: boolean;
+  let exportErrorMessage: string;
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
@@ -138,6 +147,32 @@
     clickOutsideListener();
     clickOutsideListener = undefined;
   }
+
+  const onExport = async (fileType: FileExportType) => {
+    let extension = ".csv";
+    if (fileType === FileExportType.Parquet) {
+      extension = ".parquet";
+    }
+    const exportFilename = currentModel.name.replace(".sql", extension);
+
+    const exportResp = await dataModelerService.dispatch(fileType, [
+      currentModel.id,
+      exportFilename,
+    ]);
+
+    if (exportResp.status === ActionStatus.Success) {
+      window.open(
+        `${
+          appConfig.server.serverUrl
+        }/api/file/export?fileName=${encodeURIComponent(exportFilename)}`
+      );
+    } else if (exportResp.status === ActionStatus.Failure) {
+      exportErrorMessage = `Failed to export.\n${exportResp.messages
+        .map((message) => message.message)
+        .join("\n")}`;
+      showExportErrorModal = true;
+    }
+  };
 
   onMount(() => {
     const observer = new ResizeObserver(() => {
@@ -311,7 +346,7 @@
                 show={showColumns}
                 name={currentModel.name}
                 cardinality={currentDerivedModel?.cardinality ?? 0}
-                emphasizeTitle={currentModel?.id === $store?.activeEntity?.id}
+                active={currentModel?.id === $store?.activeEntity?.id}
               >
                 <svelte:fragment slot="summary" let:containerWidth>
                   <ColumnProfileNavEntry
@@ -349,35 +384,16 @@
           contextMenuOpen = false;
         }}
       >
-        <MenuItem
-          on:select={() => {
-            const exportFilename = currentModel.name.replace(
-              ".sql",
-              ".parquet"
-            );
-            window.open(
-              `${appConfig.server.serverUrl}/api/file/export?id=${currentModel.id}` +
-                `&type=parquet&fileName=${encodeURIComponent(exportFilename)}`
-            );
-            //dataModelerService.dispatch('exportToParquet', [currentModel.id, exportFilename]);
-          }}
-        >
+        <MenuItem on:select={() => onExport(FileExportType.Parquet)}>
           Export as Parquet
         </MenuItem>
-        <MenuItem
-          on:select={() => {
-            const exportFilename = currentModel.name.replace(".sql", ".csv");
-            window.open(
-              `${appConfig.server.serverUrl}/api/file/export?id=${currentModel.id}` +
-                `&type=csv&fileName=${encodeURIComponent(exportFilename)}`
-            );
-          }}
-        >
+        <MenuItem on:select={() => onExport(FileExportType.CSV)}>
           Export as CSV
         </MenuItem>
       </Menu>
     </FloatingElement>
   </div>
+  <ExportError bind:exportErrorMessage bind:showExportErrorModal />
 {/if}
 
 <style lang="postcss">
