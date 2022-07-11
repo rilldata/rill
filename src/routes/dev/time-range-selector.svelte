@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { tick } from "svelte";
-  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
-  import ExploreMenu from "$lib/components/menu/ExploreMenu.svelte";
-  import ExploreMenuItem from "$lib/components/menu/ExploreMenuItem.svelte";
   import Button from "$lib/components/Button.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
+  import Menu from "$lib/components/menu/Menu.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import { onClickOutside } from "$lib/util/on-click-outside";
+  import { tick } from "svelte";
 
   enum TimeRangeName {
     LastHour = "Last hour",
@@ -175,8 +175,6 @@
 
   let timeSelectorMenu;
   let timeSelectorMenuOpen = false;
-  let menuX;
-  let menuY;
   let clickOutsideListener;
   $: if (!timeSelectorMenuOpen && clickOutsideListener) {
     clickOutsideListener();
@@ -188,10 +186,8 @@
 <!-- Timerange menu -->
 <Button
   bind:element={target}
-  on:click={async (event) => {
+  on:click={async () => {
     timeSelectorMenuOpen = !timeSelectorMenuOpen;
-    menuX = event.clientX;
-    menuY = event.clientY;
     if (!clickOutsideListener) {
       await tick();
       clickOutsideListener = onClickOutside(() => {
@@ -214,9 +210,9 @@
       {target}
       distance={8}
     >
-      <ExploreMenu>
+      <Menu>
         {#each timeRanges as timeRange}
-          <ExploreMenuItem on:click={() => console.log(timeRange.name)}>
+          <MenuItem on:click={() => console.log(timeRange.name)}>
             <div>
               <span class="font-bold">
                 {timeRange.name}
@@ -236,9 +232,9 @@
                 {prettyFormatTimeRange(timeRange)}
               </span>
             </div> -->
-          </ExploreMenuItem>
+          </MenuItem>
         {/each}
-      </ExploreMenu>
+      </Menu>
     </FloatingElement>
   </div>
 {/if}
