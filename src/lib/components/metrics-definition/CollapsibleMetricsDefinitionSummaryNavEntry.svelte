@@ -1,27 +1,27 @@
 <script lang="ts">
   import { tick } from "svelte/internal";
 
-  import Menu from "$lib/components/menu/Menu.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
-  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import { dataModelerService } from "$lib/application-state-stores/application-store";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import NavEntry from "$lib/components/column-profile/NavEntry.svelte";
+  import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
+  import Menu from "$lib/components/menu/Menu.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import notificationStore from "$lib/components/notifications/";
+  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import notificationStore from "$lib/components/notifications/";
-  import { onClickOutside } from "$lib/util/on-click-outside";
-  import { store } from "$lib/redux-store/store-root";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import { getContext } from "svelte";
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-  import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
-  import { toggleMetricsDefSummaryInNav } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { deleteMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { toggleMetricsDefSummaryInNav } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
+  import { store } from "$lib/redux-store/store-root";
+  import { onClickOutside } from "$lib/util/on-click-outside";
+  import { getContext } from "svelte";
 
   export let metricsDefId: string;
 
@@ -143,7 +143,11 @@
         location="right"
         alignment="start"
       >
-        <Menu on:escape={closeContextMenu} on:item-select={closeContextMenu}>
+        <Menu
+          color="dark"
+          on:escape={closeContextMenu}
+          on:item-select={closeContextMenu}
+        >
           <MenuItem on:select={dispatchDeleteMetricsDef}>
             delete {name}
           </MenuItem>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { slide } from "svelte/transition";
 
   import Menu from "$lib/components/menu/Menu.svelte";
@@ -70,6 +70,7 @@
           alignment="start"
         >
           <Menu
+            color="dark"
             on:escape={() => {
               contextMenuOpen = false;
             }}
