@@ -213,25 +213,12 @@
       <Menu>
         {#each timeRanges as timeRange}
           <MenuItem on:click={() => console.log(timeRange.name)}>
-            <div>
-              <span class="font-bold">
-                {timeRange.name}
-              </span>
-              <span />
+            <div class="font-bold">
+              {timeRange.name}
             </div>
-            <div slot="right" let:hovered>
-              <span class:opacity-0={!hovered}>
-                {prettyFormatTimeRange(timeRange)}
-              </span>
+            <div slot="right" let:hovered class:opacity-0={!hovered}>
+              {prettyFormatTimeRange(timeRange)}
             </div>
-            <!-- <div class="text-base flex gap-x-4">
-              <span class="font-bold">
-                {timeRange.name}
-              </span>
-              <span>
-                {prettyFormatTimeRange(timeRange)}
-              </span>
-            </div> -->
           </MenuItem>
         {/each}
       </Menu>
