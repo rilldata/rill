@@ -7,11 +7,15 @@ import {
 export function getFilterFromFilters(filters: ActiveValues): string {
   return Object.keys(filters)
     .map((field) => {
-      return filters[field]
-        .map(([value, filterType]) =>
-          filterType ? `"${field}" = '${value}'` : `"${field}" != '${value}'`
-        )
-        .join(" OR ");
+      return (
+        "(" +
+        filters[field]
+          .map(([value, filterType]) =>
+            filterType ? `"${field}" = '${value}'` : `"${field}" != '${value}'`
+          )
+          .join(" OR ") +
+        ")"
+      );
     })
     .join(" AND ");
 }
