@@ -67,13 +67,8 @@
     clickOutsideListener();
     clickOutsideListener = undefined;
   }
-  let target: HTMLElement;
-</script>
 
-<Button
-  bind:element={target}
-  override="border-none gap-x-4"
-  on:click={async () => {
+  const buttonClickHandler = async () => {
     timeSelectorMenuOpen = !timeSelectorMenuOpen;
     if (!clickOutsideListener) {
       await tick();
@@ -81,7 +76,15 @@
         timeSelectorMenuOpen = false;
       }, timeSelectorMenu);
     }
-  }}
+  };
+
+  let target: HTMLElement;
+</script>
+
+<Button
+  bind:element={target}
+  override="border-none gap-x-4"
+  on:click={buttonClickHandler}
 >
   <span class="font-bold">
     {selectedTimeRange.name}
