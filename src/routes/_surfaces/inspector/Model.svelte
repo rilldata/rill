@@ -162,9 +162,9 @@
 
     if (exportResp.status === ActionStatus.Success) {
       window.open(
-        `${appConfig.server.serverUrl}/api/export?fileName=${encodeURIComponent(
-          exportFilename
-        )}`
+        `${
+          appConfig.server.serverUrl
+        }/api/file/export?fileName=${encodeURIComponent(exportFilename)}`
       );
     } else if (exportResp.status === ActionStatus.Failure) {
       exportErrorMessage = `Failed to export.\n${exportResp.messages

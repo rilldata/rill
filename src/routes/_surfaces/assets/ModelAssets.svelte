@@ -105,7 +105,7 @@
         cardinality={tableSummaryProps.cardinality}
         name={tableSummaryProps.name}
         sizeInBytes={tableSummaryProps.sizeInBytes}
-        emphasizeTitle={tableSummaryProps.emphasizeTitle}
+        active={tableSummaryProps.active}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <ColumnProfileNavEntry

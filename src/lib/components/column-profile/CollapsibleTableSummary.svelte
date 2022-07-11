@@ -56,6 +56,7 @@
         {contextMenu}
         {cardinality}
         {sizeInBytes}
+        {active}
       >
         <slot name="header-buttons" />
       </CollapsibleTableHeader>
