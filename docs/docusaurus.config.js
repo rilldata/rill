@@ -17,14 +17,6 @@ const config = {
   url: "https://docs.rilldata.com",
   baseUrl: "/",
 
-  // gitpages settings
-  // url: "https://rilldata.github.io",
-  // baseUrl: "/",
-  // organizationName: "rilldata",
-  // projectName: "rill-developer",
-  // deploymentBranch: "docs",
-  // trailingSlash: true,
-
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
@@ -72,6 +64,13 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      algolia: {
+        appId: "4U01DM4NS4",
+        apiKey: "c0399915ae21a35c6d34a473d017c15b",
+        indexName: "rilldata",
+        // container: '### REPLACE ME WITH A CONTAINER (e.g. div) ###'
+        debug: false // Set debug to true if you want to inspect the modal        
+      },
       metadata: [
         { 
           property: 'og:image', content: 'https://uploads-ssl.webflow.com/5e4306d09c892720b9be39a6/607dc6fd92da47780c40b359_Opengraph.png'
@@ -104,6 +103,10 @@ const config = {
             label: "GitHub",
             position: "left",
           },
+          {
+            type: "search",
+            position: "right"
+          }
         ],
       },
       footer: {
