@@ -18,7 +18,7 @@
   >
   <ModalActions>
     <ModalAction
-      onClick={() => {
+      on:click={() => {
         $duplicateSourceName = null;
         $duplicateSourceAction = DuplicateActions.Overwrite;
       }}
@@ -26,7 +26,7 @@
       replace
     </ModalAction>
     <ModalAction
-      onClick={() => {
+      on:click={() => {
         $duplicateSourceName = null;
         $duplicateSourceAction = DuplicateActions.KeepBoth;
       }}
@@ -34,7 +34,7 @@
       keep both
     </ModalAction>
     <ModalAction
-      onClick={() => {
+      on:click={() => {
         $duplicateSourceName = null;
         $duplicateSourceAction = DuplicateActions.Cancel;
       }}
