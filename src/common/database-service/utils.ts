@@ -72,6 +72,7 @@ export function getFilterFromTimeRange(
   timeRange: TimeSeriesTimeRange
 ): string {
   const timeRangeFilters = new Array<string>();
+  timeRange = normaliseTimeRange(timeRange);
   if (timeRange.start) {
     timeRangeFilters.push(
       `${timestampColumn} >= TIMESTAMP '${timeRange.start}'`
@@ -81,4 +82,23 @@ export function getFilterFromTimeRange(
     timeRangeFilters.push(`${timestampColumn} <= TIMESTAMP '${timeRange.end}'`);
   }
   return timeRangeFilters.join(" AND ");
+}
+
+function normaliseTimeRange(timeRange: TimeSeriesTimeRange) {
+  const returnTimeRange: TimeSeriesTimeRange = {
+    ...(timeRange.interval ? { interval: timeRange.interval } : {}),
+  };
+  if (timeRange.start) {
+    const startDate = new Date(timeRange.start);
+    if (!Number.isNaN(startDate.getTime())) {
+      returnTimeRange.start = startDate.toISOString();
+    }
+  }
+  if (timeRange.end) {
+    const endDate = new Date(timeRange.end);
+    if (!Number.isNaN(endDate.getTime())) {
+      returnTimeRange.end = endDate.toISOString();
+    }
+  }
+  return returnTimeRange;
 }

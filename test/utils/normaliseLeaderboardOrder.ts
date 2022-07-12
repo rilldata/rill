@@ -12,7 +12,7 @@ export function normaliseLeaderboardOrder(
   leaderboard: Array<LeaderboardValues>
 ): Array<[string, Array<string>]> {
   return leaderboard.map((l) => [
-    l.displayName,
+    l.dimensionName,
     normaliseArrayValues(l.values as Array<{ value: number; label: string }>),
   ]);
 }

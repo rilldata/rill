@@ -1,10 +1,8 @@
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import {
-  getTimeRange,
-  TimeSeriesMeasureRange,
-} from "../utils/time-series-helpers";
+import type { TimeSeriesMeasureRange } from "../utils/time-series-helpers";
+import { getTimeRange } from "../utils/time-series-helpers";
 
 export interface MetricsExploreTestDataType {
   title: string;
@@ -152,5 +150,32 @@ export const MetricsExploreTestData: Array<MetricsExploreTestDataType> = [
       ["country", ["India", "Ireland", "UK", "USA"]],
     ],
     bigNumber: { bid_price: [2.75, 3.25] },
+  },
+  {
+    title: "request with non standard time range",
+    timeRange: {
+      interval: PreviewRollupInterval.month,
+      start: new Date(`2022-02-01 UTC`).toString(),
+      end: new Date(`2022-03-01 UTC`).toString(),
+    },
+    previewRollupInterval: PreviewRollupInterval.month,
+    leaderboards: [
+      ["publisher", ["Google", "Yahoo", "Facebook", "Microsoft"]],
+      [
+        "domain",
+        [
+          "google.com",
+          "news.yahoo.com",
+          "facebook.com",
+          "instagram.com",
+          "msn.com",
+          "news.google.com",
+          "sports.yahoo.com",
+        ],
+      ],
+      DefaultCityLeaderboard,
+      ["country", ["India", "USA", "Ireland", "UK"]],
+    ],
+    bigNumber: { impressions: [15000, 16000], bid_price: [2.75, 3.25] },
   },
 ];

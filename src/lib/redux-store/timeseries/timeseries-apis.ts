@@ -35,7 +35,11 @@ export const generateTimeSeriesApi = createAsyncThunk(
   ) => {
     const state = thunkAPI.getState() as RillReduxState;
     const { metricsExplore, prunedFilters, normalisedMeasures } =
-      selectMetricsExploreParams(state, id, { measures, filters });
+      selectMetricsExploreParams(state, id, {
+        measures,
+        filters,
+        dimensions: state.dimensionDefinition.entities,
+      });
 
     const stream = streamingFetchWrapper<TimeSeriesResponse>(
       `metrics/${id}/time-series`,

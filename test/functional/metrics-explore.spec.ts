@@ -39,6 +39,7 @@ describe("Metrics Explore", () => {
           .split("\n")
           .filter((json) => !!json)
           .map(JSON.parse) as Array<LeaderboardValues>;
+        console.log(normaliseLeaderboardOrder(leaderboards));
         expect(normaliseLeaderboardOrder(leaderboards)).toStrictEqual(
           MetricsExploreTest.leaderboards
         );
@@ -64,6 +65,7 @@ describe("Metrics Explore", () => {
           }
         );
         const bigNumbers = resp.data as BigNumberResponse;
+        console.log(bigNumbers);
         assertBigNumber(bigNumbers, MetricsExploreTest.bigNumber);
       });
     }

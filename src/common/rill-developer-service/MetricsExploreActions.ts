@@ -217,7 +217,8 @@ export class MetricsExploreActions extends RillDeveloperActions {
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
     rillRequestContext.actionsChannel.pushMessage({
-      displayName: dimension.dimensionColumn,
+      dimensionId: dimension.id,
+      dimensionName: dimension.dimensionColumn,
       values: await this.databaseActionQueue.enqueue(
         {
           id: rillRequestContext.id,
