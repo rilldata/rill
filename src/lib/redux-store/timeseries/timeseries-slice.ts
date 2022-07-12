@@ -3,11 +3,10 @@ import {
   createEntityAdapter,
 } from "$lib/redux-store/redux-toolkit-wrapper";
 
-export interface TimeSeriesValue {
+export type TimeSeriesValue = {
   ts: string;
-  count: number;
   bin?: number;
-}
+} & Record<string, number>;
 
 export interface TimeSeriesEntity {
   id: string;

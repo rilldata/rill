@@ -20,7 +20,7 @@ import { MetricsExploreController } from "$server/controllers/MetricsExploreCont
 const STATIC_FILES = `${__dirname}/../../build`;
 
 export class ExpressServer {
-  private readonly app: express.Application;
+  public readonly app: express.Application;
   private readonly server: http.Server;
   private readonly socketServer: SocketServer;
 

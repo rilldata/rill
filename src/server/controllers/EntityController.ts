@@ -95,9 +95,7 @@ export abstract class EntityController extends RillDeveloperController {
     callback: (context: RillRequestContext) => Promise<ActionResponse>
   ) {
     try {
-      const response = await callback(
-        new RillRequestContext(new RillActionsChannel())
-      );
+      const response = await callback(RillRequestContext.getNewContext());
       if (!response || response.status === ActionStatus.Failure) {
         res.status(500);
         res.send(
