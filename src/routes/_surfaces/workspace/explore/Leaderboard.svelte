@@ -38,7 +38,9 @@
   $: dimension = getDimensionById(dimensionId);
   let displayName: string;
   // TODO: select based on label?
-  $: displayName = $dimension?.dimensionColumn;
+  $: displayName = $dimension?.labelSingle?.length
+    ? $dimension?.labelSingle
+    : $dimension?.dimensionColumn;
 
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {

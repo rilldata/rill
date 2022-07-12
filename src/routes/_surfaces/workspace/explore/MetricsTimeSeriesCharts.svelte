@@ -69,7 +69,12 @@
             {@const bigNum = $bigNumbers.bigNumbers[`measure_${index}`]}
             <!-- FIXME: I can't select a time series by measure id. 
     -->
-            <MeasureBigNumber value={bigNum}>
+            <MeasureBigNumber
+              value={bigNum}
+              description={measure.description ||
+                measure.label ||
+                measure.expression}
+            >
               <svelte:fragment slot="name">
                 {measure.label || measure.expression}
               </svelte:fragment>
