@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { createEventDispatcher, onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { store } from "$lib/redux-store/store-root";
-  import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+  import type {
+    LeaderboardValues,
+    MetricsExploreEntity,
+  } from "$lib/redux-store/explore/explore-slice";
   import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import type { Readable } from "svelte/store";
   import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
@@ -37,22 +40,15 @@
         : $bigNumberEntity.referenceValues?.[$measureField];
   }
 
-  const dispatch = createEventDispatcher();
   let leaderboardExpanded;
 
-  function onSelectItem(event, item) {
-    dispatch("select-item", {
-      fieldName: event.detail.label,
-      dimensionName: item.displayName,
-    });
-
+  function onSelectItem(event, item: LeaderboardValues) {
     toggleSelectedLeaderboardValueAndUpdate(
       store.dispatch,
       metricsDefId,
-      item.displayName,
+      item.dimensionId,
       event.detail.label,
-      !event.detail.isActive,
-      $measureField.expression
+      !event.detail.isActive
     );
   }
 
@@ -98,18 +94,17 @@
     >
       <!-- the single virtual element -->
       <Leaderboard
-        displayName={item.displayName}
-        description={item.description}
-        seeMore={leaderboardExpanded === item.displayName}
+        dimensionId={item.dimensionId}
+        seeMore={leaderboardExpanded === item.dimensionId}
         on:expand={() => {
-          if (leaderboardExpanded === item.displayName) {
+          if (leaderboardExpanded === item.dimensionId) {
             leaderboardExpanded = undefined;
           } else {
-            leaderboardExpanded = item.displayName;
+            leaderboardExpanded = item.dimensionId;
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        activeValues={$metricsLeaderboard.activeValues[item.displayName] ?? []}
+        activeValues={$metricsLeaderboard.activeValues[item.dimensionId] ?? []}
         values={item.values}
         referenceValue={referenceValue || 0}
       />
