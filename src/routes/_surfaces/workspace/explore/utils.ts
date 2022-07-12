@@ -1,6 +1,7 @@
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
-import { TimeRange, timeRanges } from "$lib/util/time-ranges";
+import { timeRanges } from "$lib/util/time-ranges";
 
 // prepare the activeFilters to be sent to the server
 export function prune(
@@ -18,19 +19,35 @@ export function prune(
 
 export const defaultTimeRange = timeRanges[0];
 
-export const prettyFormatTimeRange = (timeRange: TimeRange): string => {
+export const prettyFormatTimeRange = (
+  timeRange: TimeSeriesTimeRange
+): string => {
+  if (!timeRange?.start && timeRange?.end) {
+    return `- ${timeRange.end}`;
+  }
+
+  if (timeRange?.start && !timeRange?.end) {
+    return `${timeRange.start} -`;
+  }
+
+  if (!timeRange?.start && !timeRange?.end) {
+    return "";
+  }
+
+  const start = new Date(timeRange.start);
+  const end = new Date(timeRange.end);
   // day is the same
   if (
-    timeRange.start.getDate() === timeRange.end.getDate() &&
-    timeRange.start.getMonth() === timeRange.end.getMonth() &&
-    timeRange.start.getFullYear() === timeRange.end.getFullYear()
+    start.getDate() === end.getDate() &&
+    start.getMonth() === end.getMonth() &&
+    start.getFullYear() === end.getFullYear()
   ) {
-    return `${timeRange.start.toLocaleDateString(undefined, {
+    return `${start.toLocaleDateString(undefined, {
       month: "long",
-    })} ${timeRange.start.getDate()}, ${timeRange.start.getFullYear()} (${timeRange.start.toLocaleString(
+    })} ${start.getDate()}, ${start.getFullYear()} (${start.toLocaleString(
       undefined,
       { hour12: true, hour: "numeric", minute: "numeric" }
-    )} - ${timeRange.end.toLocaleString(undefined, {
+    )} - ${end.toLocaleString(undefined, {
       hour12: true,
       hour: "numeric",
       minute: "numeric",
@@ -38,22 +55,22 @@ export const prettyFormatTimeRange = (timeRange: TimeRange): string => {
   }
   // month is the same
   if (
-    timeRange.start.getMonth() === timeRange.end.getMonth() &&
-    timeRange.start.getFullYear() === timeRange.end.getFullYear()
+    start.getMonth() === end.getMonth() &&
+    start.getFullYear() === end.getFullYear()
   ) {
-    return `${timeRange.start.toLocaleDateString(undefined, {
+    return `${start.toLocaleDateString(undefined, {
       month: "long",
-    })} ${timeRange.start.getDate()}-${timeRange.end.getDate()}, ${timeRange.start.getFullYear()}`;
+    })} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()}`;
   }
   // year is the same
-  if (timeRange.start.getFullYear() === timeRange.end.getFullYear()) {
-    return `${timeRange.start.toLocaleDateString(undefined, {
+  if (start.getFullYear() === end.getFullYear()) {
+    return `${start.toLocaleDateString(undefined, {
       month: "long",
       day: "numeric",
-    })} - ${timeRange.end.toLocaleDateString(undefined, {
+    })} - ${end.toLocaleDateString(undefined, {
       month: "long",
       day: "numeric",
-    })}, ${timeRange.start.getFullYear()}`;
+    })}, ${start.getFullYear()}`;
   }
   // year is different
   const dateFormatOptions: Intl.DateTimeFormatOptions = {
@@ -61,8 +78,8 @@ export const prettyFormatTimeRange = (timeRange: TimeRange): string => {
     month: "long",
     day: "numeric",
   };
-  return `${timeRange.start.toLocaleDateString(
+  return `${start.toLocaleDateString(
     undefined,
     dateFormatOptions
-  )} - ${timeRange.end.toLocaleDateString(undefined, dateFormatOptions)}`;
+  )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
