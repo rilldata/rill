@@ -8,7 +8,7 @@
   import { createEventDispatcher } from "svelte";
   import EditableTableHeader from "$lib/components/table-editable/EditableTableHeader.svelte";
 
-  import AddIcon from "$lib/components/icons/AddIcon.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
