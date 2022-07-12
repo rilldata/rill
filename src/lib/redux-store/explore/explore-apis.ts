@@ -44,17 +44,17 @@ const updateExploreWrapper = (dispatch, metricsDefId: string) => {
 export const syncExplore = (
   dispatch,
   metricsDefId: string,
-  metricsDef: MetricsExploreEntity,
+  metricsExplore: MetricsExploreEntity,
   dimensions: Array<DimensionDefinitionEntity>,
   measures: Array<MeasureDefinitionEntity>
 ) => {
-  if (!metricsDef) {
+  if (!metricsExplore) {
     dispatch(initMetricsExplore(metricsDefId, dimensions, measures));
     return;
   }
 
-  let shouldUpdate = syncDimensions(dispatch, metricsDef, dimensions);
-  shouldUpdate ||= syncMeasures(dispatch, metricsDef, measures);
+  let shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
+  shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
   if (shouldUpdate) {
     updateExploreWrapper(dispatch, metricsDefId);
   }
@@ -66,22 +66,22 @@ export const syncExplore = (
  */
 const syncDimensions = (
   dispatch,
-  metricsDef: MetricsExploreEntity,
+  metricsExplore: MetricsExploreEntity,
   dimensions: Array<DimensionDefinitionEntity>
 ) => {
   const { extraSrc: addDimensions, extraTarget: removeDimensions } =
     getArrayDiff(
       dimensions,
       (dimension) => dimension.id,
-      metricsDef.leaderboards,
+      metricsExplore.leaderboards,
       (leaderboard) => leaderboard.dimensionId
     );
   addDimensions.forEach((addDimension) =>
-    dispatch(addDimensionToExplore(metricsDef.id, addDimension.id))
+    dispatch(addDimensionToExplore(metricsExplore.id, addDimension.id))
   );
   removeDimensions.forEach((removeDimension) =>
     dispatch(
-      removeDimensionFromExplore(metricsDef.id, removeDimension.dimensionId)
+      removeDimensionFromExplore(metricsExplore.id, removeDimension.dimensionId)
     )
   );
 
@@ -94,20 +94,20 @@ const syncDimensions = (
  */
 const syncMeasures = (
   dispatch,
-  metricsDef: MetricsExploreEntity,
+  metricsExplore: MetricsExploreEntity,
   measures: Array<MeasureDefinitionEntity>
 ) => {
   const { extraSrc: addMeasures, extraTarget: removeMeasures } = getArrayDiff(
     measures,
     (measure) => measure.id,
-    metricsDef.measureIds,
+    metricsExplore.measureIds,
     (measureId) => measureId
   );
   addMeasures.forEach((addMeasure) =>
-    dispatch(addMeasureToExplore(metricsDef.id, addMeasure.id))
+    dispatch(addMeasureToExplore(metricsExplore.id, addMeasure.id))
   );
   removeMeasures.forEach((removeMeasure) =>
-    dispatch(removeMeasureFromExplore(metricsDef.id, removeMeasure))
+    dispatch(removeMeasureFromExplore(metricsExplore.id, removeMeasure))
   );
 
   return addMeasures.length > 0 || removeMeasures.length > 0;
