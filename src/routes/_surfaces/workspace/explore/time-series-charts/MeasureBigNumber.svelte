@@ -1,10 +1,15 @@
 <script lang="ts">
+  import { crossfade, fly } from "svelte/transition";
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { WithTween } from "$lib/components/data-graphic/functional-components";
+  import Spinner from "$lib/components/Spinner.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   export let value: number;
   export let formatter: (value: number) => string = undefined;
   export let description: string = undefined;
+
+  const [send, receive] = crossfade({ fallback: fly });
 </script>
 
 <div>
@@ -20,9 +25,27 @@
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
     override this by filling the slot in the consuming component. -->
     <slot name="value">
-      <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-        {formatter ? formatter(output) : output}
-      </WithTween>
+      <div>
+        {#if value}
+          <div
+            class="absolute"
+            in:receive={{ key: "value" }}
+            out:send={{ key: "value" }}
+          >
+            <WithTween {value} tweenProps={{ duration: 500 }} let:output>
+              {formatter ? formatter(output) : output}
+            </WithTween>
+          </div>
+        {:else}
+          <div
+            class="absolute p-2"
+            in:receive={{ key: "spinner" }}
+            out:send={{ key: "spinner" }}
+          >
+            <Spinner status={EntityStatus.Running} />
+          </div>
+        {/if}
+      </div>
     </slot>
   </div>
 </div>

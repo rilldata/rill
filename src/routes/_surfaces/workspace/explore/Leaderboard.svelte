@@ -25,6 +25,9 @@
    */
   export let referenceValue: number;
   export let values;
+
+  export let isSummableMeasure = false;
+
   type ActiveValues = [string, boolean];
   export let activeValues: ActiveValues[];
   export let slice = 7;
@@ -85,7 +88,11 @@
       <div>
         <Tooltip location="right">
           <LeaderboardListItem
-            value={referenceValue ? value / referenceValue : 0}
+            value={isSummableMeasure
+              ? referenceValue
+                ? value / referenceValue
+                : 0
+              : 0}
             {isActive}
             on:click={() => {
               dispatch("select-item", { label, isActive });
@@ -129,9 +136,11 @@
           </LeaderboardListItem>
           <TooltipContent slot="tooltip-content">
             <div style:max-width="480px">
-              <div>
-                {formatBigNumberPercentage(value / referenceValue)} of records
-              </div>
+              {#if false}
+                <div>
+                  {formatBigNumberPercentage(value / referenceValue)} of records
+                </div>
+              {/if}
               <div>
                 filter on <span class="italic">{label}</span>
               </div>

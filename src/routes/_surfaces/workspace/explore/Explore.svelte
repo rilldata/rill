@@ -74,6 +74,8 @@
         $metricsLeaderboard?.timeRange?.end}
       activeMeasureIds={$measures?.map((measure) => measure.id) || []}
       {metricsDefId}
+      interval={$metricsLeaderboard?.selectedTimeRange?.interval ||
+        $metricsLeaderboard?.timeRange?.interval}
     />
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">

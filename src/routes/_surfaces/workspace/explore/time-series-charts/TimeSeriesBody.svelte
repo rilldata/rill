@@ -5,8 +5,10 @@
   import { Axis, Grid, PointLabel } from "$lib/components/data-graphic/guides";
   import { Area, Line } from "$lib/components/data-graphic/marks";
   import { interpolateArray } from "d3-interpolate";
+  import { Body } from "$lib/components/data-graphic/elements";
   export let start;
   export let end;
+  export let interval;
   export let data;
   export let accessor: string;
   export let mouseover = undefined;
@@ -14,6 +16,9 @@
 
   // bind and send up to parent to create global mouseover
   export let mouseoverValue = undefined;
+
+  // workaround for formatting dates etc.
+  //const xFormatter = interval.includes('day') ?
 </script>
 
 {#if key && data?.length}
@@ -24,29 +29,30 @@
       xMin={start}
       xMax={end}
     >
-      {#key key}
-        <WithTween
-          value={data}
-          let:output={tweenedFormattedData}
-          tweenProps={{
-            duration: 0,
-            easing: cubicOut,
-            interpolate: interpolateArray,
-          }}
-        >
-          <Area
-            data={tweenedFormattedData}
-            yAccessor={accessor}
-            xAccessor="ts"
-          />
-          <Line
-            data={tweenedFormattedData}
-            yAccessor={accessor}
-            xAccessor="ts"
-          />
-        </WithTween>
-      {/key}
-
+      <Body>
+        {#key key}
+          <WithTween
+            value={data}
+            let:output={tweenedFormattedData}
+            tweenProps={{
+              duration: 0,
+              easing: cubicOut,
+              interpolate: interpolateArray,
+            }}
+          >
+            <Area
+              data={tweenedFormattedData}
+              yAccessor={accessor}
+              xAccessor="ts"
+            />
+            <Line
+              data={tweenedFormattedData}
+              yAccessor={accessor}
+              xAccessor="ts"
+            />
+          </WithTween>
+        {/key}
+      </Body>
       <Axis side="right" />
       <Grid />
       {#if mouseover}
