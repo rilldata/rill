@@ -13,6 +13,7 @@
   import { guidGenerator } from "$lib/util/guid";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
+  import { tweened } from "svelte/motion";
 
   const markID = guidGenerator();
 

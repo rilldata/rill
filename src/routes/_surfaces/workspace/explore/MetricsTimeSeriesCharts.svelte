@@ -23,9 +23,14 @@
   } from "$lib/components/data-graphic/functional-components";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "$lib/components/data-graphic/guides";
+  import { tweened } from "svelte/motion";
+
+  import { interpolateArray } from "d3-interpolate";
 
   export let metricsDefId;
   export let activeMeasureIds: string[] = [];
+  export let start;
+  export let end;
 
   // get all the measure ids that are available.
 
@@ -42,55 +47,62 @@
     : undefined;
 
   let mouseoverValue = undefined;
+
+  // let tweenedFormattedData = tweened(formattedData, {
+  //   duration: 1000,
+  //   easing: cubicOut,
+  //   interpolate: interpolateArray,
+  // });
+  // $: tweenedFormattedData.set(formattedData);
+
+  $: key = start + end;
 </script>
 
 {#if formattedData}
-  <WithTween
-    value={formattedData}
-    let:output={tweenedFormattedData}
-    tweenProps={{ duration: 500, easing: cubicOut }}
+  <WithBisector
+    data={formattedData}
+    callback={(datum) => datum.ts}
+    value={mouseoverValue?.x}
+    let:point
   >
-    <WithBisector
-      data={tweenedFormattedData}
-      callback={(datum) => datum.ts}
-      value={mouseoverValue?.x}
-      let:point
-    >
-      <TimeSeriesChartContainer>
-        {#if $bigNumbers}
-          <div />
-          <!-- add the axis component -->
-          <SimpleDataGraphic height={42} top={24} bottom={4}>
-            <Axis side="top" />
-          </SimpleDataGraphic>
-          {#each $allMeasures as measure, index (measure.id)}
-            <!-- FIXME: I can't select the big number by the measure id.
+    <TimeSeriesChartContainer start={new Date(start)} end={new Date(end)}>
+      {#if $bigNumbers}
+        <div />
+        <!-- add the axis component -->
+        <SimpleDataGraphic height={42} top={24} bottom={4}>
+          <Axis side="top" />
+        </SimpleDataGraphic>
+        {#each $allMeasures as measure, index (measure.id)}
+          <!-- FIXME: I can't select the big number by the measure id.
     -->
-            {@const bigNum = $bigNumbers.bigNumbers[`measure_${index}`]}
-            <!-- FIXME: I can't select a time series by measure id. 
+          {@const bigNum = $bigNumbers.bigNumbers[`measure_${index}`]}
+          <!-- FIXME: I can't select a time series by measure id. 
     -->
-            <MeasureBigNumber
-              value={bigNum}
-              description={measure.description ||
-                measure.label ||
-                measure.expression}
-            >
-              <svelte:fragment slot="name">
-                {measure.label || measure.expression}
-              </svelte:fragment>
-            </MeasureBigNumber>
+          <MeasureBigNumber
+            value={bigNum}
+            description={measure.description ||
+              measure.label ||
+              measure.expression}
+          >
+            <svelte:fragment slot="name">
+              {measure.label || measure.expression}
+            </svelte:fragment>
+          </MeasureBigNumber>
 
-            {#if formattedData}
-              <TimeSeriesBody
-                bind:mouseoverValue
-                data={tweenedFormattedData.slice(-200, -100)}
-                accessor={`measure_${index}`}
-                mouseover={point}
-              />
-            {/if}
-          {/each}
-        {/if}
-      </TimeSeriesChartContainer>
-    </WithBisector>
-  </WithTween>
+          {#if formattedData}
+            <TimeSeriesBody
+              bind:mouseoverValue
+              data={formattedData}
+              accessor={`measure_${index}`}
+              mouseover={point}
+              {key}
+              start={new Date(start)}
+              end={new Date(end)}
+            />
+          {/if}
+        {/each}
+      {/if}
+    </TimeSeriesChartContainer>
+  </WithBisector>
+  <!-- </WithTween> -->
 {/if}

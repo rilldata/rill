@@ -17,19 +17,14 @@ to the props.
   const { coordinates, mousePositionToDomain } =
     mousePositionToDomainActionFactory();
 
-  const forwardAll = forwardEvents(getComponent());
+  // const forwardAll = forwardEvents(getComponent(), []);
 
   export let mouseoverValue = undefined;
 
   $: mouseoverValue = $coordinates;
 </script>
 
-<svg
-  use:forwardAll
-  use:mousePositionToDomain
-  width={$config.width}
-  height={$config.height}
->
+<svg use:mousePositionToDomain width={$config.width} height={$config.height}>
   <slot
     config={$config}
     xScale={$xScale}

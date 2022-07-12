@@ -13,11 +13,13 @@ const SCALES = {
 /** We operate on the domain through these stores. */
 export function initializeMaxMinStores({
   namespace,
-  domainMin = undefined, domainMax = undefined
+  domainMin = undefined, domainMax = undefined,
+  domainMinTweenProps = { duration: 0 },
+  domainMaxTweenProps = { duration: 0 }
 }) {
   // initialize
-  const minStore = createExtremumResolutionStore(domainMin, { direction: 'min', duration: 0 });
-  const maxStore = createExtremumResolutionStore(domainMax, { direction: 'max', duration: 0 });
+  const minStore = createExtremumResolutionStore(domainMin, { direction: 'min', ...domainMinTweenProps });
+  const maxStore = createExtremumResolutionStore(domainMax, { direction: 'max', ...domainMaxTweenProps });
   if (domainMin !== undefined) minStore.setWithKey('global', domainMin, true);
   if (domainMax !== undefined) maxStore.setWithKey('global', domainMax, true);
   // set the contexts.

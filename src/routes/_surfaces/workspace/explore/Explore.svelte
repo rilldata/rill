@@ -13,7 +13,10 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import { syncExplore } from "$lib/redux-store/explore/explore-apis";
+  import {
+    setExploreSelectedTimeRangeAndUpdate,
+    syncExplore,
+  } from "$lib/redux-store/explore/explore-apis";
 
   export let metricsDefId: string;
 
@@ -39,7 +42,25 @@
   );
 
   let whichReferenceValue: string;
+
+  let switcher = false;
 </script>
+
+<button
+  on:click={() => {
+    switcher = !switcher;
+    setExploreSelectedTimeRangeAndUpdate(store.dispatch, metricsDefId, {
+      start: new Date(
+        switcher ? "2017-05-05" : $metricsLeaderboard.timeRange.start
+      ).toISOString(),
+      end: new Date(
+        switcher ? "2018-05-05" : $metricsLeaderboard.timeRange.end
+      ).toISOString(),
+    });
+  }}
+>
+  {switcher}
+</button>
 
 <ExploreContainer let:columns>
   <svelte:fragment slot="header">
@@ -47,6 +68,10 @@
   </svelte:fragment>
   <svelte:fragment slot="metrics">
     <MetricsTimeSeriesCharts
+      start={$metricsLeaderboard?.selectedTimeRange?.start ||
+        $metricsLeaderboard?.timeRange?.start}
+      end={$metricsLeaderboard?.selectedTimeRange?.end ||
+        $metricsLeaderboard?.timeRange?.end}
       activeMeasureIds={$measures?.map((measure) => measure.id) || []}
       {metricsDefId}
     />
