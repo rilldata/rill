@@ -21,6 +21,10 @@
     $metricsLeaderboard?.timeRange
   );
 
+  $: if (!selectedTimeRange) {
+    selectedTimeRange = availableTimeRanges[0];
+  }
+
   let timeSelectorMenu;
   let timeSelectorMenuOpen = false;
   let clickOutsideListener;

@@ -1,7 +1,6 @@
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
-import { timeRanges } from "$lib/util/time-ranges";
 
 // prepare the activeFilters to be sent to the server
 export function prune(
@@ -16,8 +15,6 @@ export function prune(
   }
   return filters;
 }
-
-export const defaultTimeRange = timeRanges[0];
 
 export const prettyFormatTimeRange = (
   timeRange: TimeSeriesTimeRange
