@@ -4,7 +4,7 @@
 
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
-  import ModelIcon from "$lib/components/icons/Code.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";

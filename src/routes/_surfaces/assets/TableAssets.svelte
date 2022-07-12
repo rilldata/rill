@@ -3,7 +3,7 @@
   import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
 
-  import ParquetIcon from "$lib/components/icons/Parquet.svelte";
+  import Source from "$lib/components/icons/Source.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
@@ -81,7 +81,7 @@
 >
   <CollapsibleSectionTitle tooltipText={"sources"} bind:active={showTables}>
     <h4 class="flex flex-row items-center gap-x-2">
-      <ParquetIcon size="16px" /> Sources
+      <Source size="16px" /> Sources
     </h4>
   </CollapsibleSectionTitle>
 
