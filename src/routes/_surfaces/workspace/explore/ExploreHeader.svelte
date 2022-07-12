@@ -57,6 +57,6 @@
     <!-- NOTE: place share buttons here -->
   </div>
   <div>
-    <TimeRangeSelector />
+    <TimeRangeSelector {metricsDefId} />
   </div>
 </header>

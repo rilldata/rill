@@ -4,12 +4,18 @@
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+  import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
+  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
+  import { store } from "$lib/redux-store/store-root";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { TimeRange, timeRanges } from "$lib/util/time-ranges";
+  import { timeRanges } from "$lib/util/time-ranges";
   import { tick } from "svelte";
-  import { defaultTimeRange, prettyFormatTimeRange } from "./utils";
+  import { getTimeRangeNameForButton, prettyFormatTimeRange } from "./utils";
 
-  let selectedTimeRange: TimeRange = defaultTimeRange;
+  export let metricsDefId: string;
+
+  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  $: selectedTimeRange = $metricsLeaderboard.selectedTimeRange;
 
   let timeSelectorMenu;
   let timeSelectorMenuOpen = false;
@@ -38,7 +44,7 @@
   on:click={buttonClickHandler}
 >
   <span class="font-bold">
-    {selectedTimeRange.name}
+    {getTimeRangeNameForButton(selectedTimeRange)}
   </span>
   <span>
     {prettyFormatTimeRange(selectedTimeRange)}
@@ -57,7 +63,18 @@
     >
       <Menu on:escape={() => (timeSelectorMenuOpen = false)}>
         {#each timeRanges as timeRange}
-          <MenuItem on:select={() => (selectedTimeRange = timeRange)}>
+          <MenuItem
+            on:select={() =>
+              setExploreSelectedTimeRangeAndUpdate(
+                store.dispatch,
+                metricsDefId,
+                {
+                  name: timeRange.name,
+                  start: timeRange.start,
+                  end: timeRange.end,
+                }
+              )}
+          >
             <div class="font-bold">
               {timeRange.name}
             </div>
