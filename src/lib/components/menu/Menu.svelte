@@ -68,13 +68,14 @@
   }}
   class="
         py-2 
-        shadow 
         w-max 
         rounded 
         flex 
         flex-col
         outline-none
-        {dark ? 'bg-gray-800 border-none' : 'bg-white border border-gray-800'}
+        {dark
+    ? 'bg-gray-800 border-none shadow'
+    : 'bg-white border border-gray-300 shadow-md'}
         "
   style:outline="none"
   style:min-width="300px"
