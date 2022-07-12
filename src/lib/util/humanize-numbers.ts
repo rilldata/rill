@@ -3,6 +3,7 @@
 // We can provide a dropdown option in the table?? or regex??
 
 export enum NicelyFormattedTypes {
+  NONE = "none",
   CURRENCY = "currency",
   PERCENTAGE = "percentage",
   COUNT = "count",
@@ -69,7 +70,8 @@ export function humanizeDataType(
   type: NicelyFormattedTypes,
   options?: { [key: string]: any }
 ) {
-  if (type == NicelyFormattedTypes.COUNT) {
+  if (type == NicelyFormattedTypes.NONE) return;
+  else if (type == NicelyFormattedTypes.COUNT) {
     return convertToShorthand(value);
   } else {
     return formatNicely(value, type, options);

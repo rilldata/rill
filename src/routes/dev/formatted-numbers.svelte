@@ -6,7 +6,7 @@
 
   const examples = [
     { value: 10.534234, type: NicelyFormattedTypes.DECIMAL },
-    { value: 3242340.534234, type: NicelyFormattedTypes.DECIMAL },
+    { value: 3242340.534234, type: NicelyFormattedTypes.COUNT },
     { value: 53243, type: NicelyFormattedTypes.COUNT },
     { value: 1253243, type: NicelyFormattedTypes.COUNT },
     { value: 23153243, type: NicelyFormattedTypes.COUNT },

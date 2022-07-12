@@ -7,11 +7,20 @@
   import { formatBigNumberPercentage } from "$lib/util/formatters";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import { getMeasureFieldNameByIdAndIndex } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import {
+    getMeasureById,
+    getMeasureFieldNameByIdAndIndex,
+  } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import {
+    humanizeDataType,
+    NicelyFormattedTypes,
+  } from "$lib/util/humanize-numbers";
 
   export let metricsDefId: string;
   export let measureId: string;
   export let index: number;
+  export let formatPreset: NicelyFormattedTypes;
 
   let bigNumberEntity: Readable<BigNumberEntity>;
   $: bigNumberEntity = getBigNumberById(metricsDefId);
@@ -23,16 +32,22 @@
   };
   let bigNumber;
   $: bigNumber = $bigNumberEntity?.bigNumbers?.[$measureField] ?? 0;
-  const bigNumberTween = tweened(0, {
-    duration: 1000,
-    delay: 200,
-    easing: cubicIn,
-  });
-  $: bigNumberTween.set(bigNumber);
+
+  $: bigNumber =
+    formatPreset !== NicelyFormattedTypes.NONE
+      ? humanizeDataType(bigNumber, formatPreset)
+      : bigNumber;
+
+  // const bigNumberTween = tweened(0, {
+  //   duration: 1000,
+  //   delay: 200,
+  //   easing: cubicIn,
+  // });
+  // $: bigNumberTween.set(bigNumber);
   let referenceValue: number;
   $: referenceValue = $bigNumberEntity?.referenceValues?.[$measureField] ?? 0;
 </script>
 
 <div class="w-full rounded text-lg">
-  {$bigNumberTween}
+  {bigNumber}
 </div>
