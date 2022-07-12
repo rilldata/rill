@@ -6,7 +6,10 @@ import {
 import request from "supertest";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSeriesActions";
+import type {
+  TimeSeriesResponse,
+  TimeSeriesTimeRange,
+} from "$common/database-service/DatabaseTimeSeriesActions";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import {
   getMetricsDefinition,
@@ -16,11 +19,11 @@ import {
 import {
   assertTimeSeries,
   assertTimeSeriesMeasureRange,
-  getRollupInterval,
+  getTimeRange,
   TimeSeriesMeasureRange,
 } from "../utils/time-series-helpers";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
-import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { START_DATE } from "../data/generator/data-constants";
 
 describe("TimeSeries", () => {
   const { inlineServer } = useInlineTestServer(8082);
@@ -50,26 +53,36 @@ describe("TimeSeries", () => {
     }
   );
 
+  it("Should return estimated time", async () => {
+    const resp = await request(inlineServer.app)
+      .get(`/api/metrics/${metricsDef.id}/time-range`)
+      .set("Accept", "application/json");
+    const timeRange = resp.body.data as TimeSeriesTimeRange;
+    expect(timeRange.interval).toBe("1 day");
+    expect(timeRange.start).not.toBeUndefined();
+    expect(timeRange.end).not.toBeUndefined();
+  });
+
   const TimeSeriesTestData: Array<{
     title: string;
     measures?: Array<number>;
     filters?: ActiveValues;
     previewRollupInterval: PreviewRollupInterval;
-    rollupInterval?: RollupInterval;
+    timeRange?: TimeSeriesTimeRange;
     measureRanges?: Array<TimeSeriesMeasureRange>;
   }> = [
     {
-      title: "Basic time series",
+      title: "Should return a basic time series",
       previewRollupInterval: PreviewRollupInterval.day,
     },
     {
-      title: "Time series by month",
-      rollupInterval: getRollupInterval(PreviewRollupInterval.month),
+      title: "Should return a time series by month",
+      timeRange: getTimeRange(PreviewRollupInterval.month),
       previewRollupInterval: PreviewRollupInterval.month,
     },
     {
-      title: "Time series with filters",
-      rollupInterval: getRollupInterval(PreviewRollupInterval.month),
+      title: "Should return a time series with filters",
+      timeRange: getTimeRange(PreviewRollupInterval.month),
       previewRollupInterval: PreviewRollupInterval.month,
       filters: {
         domain: [["sports.yahoo.com", true]],
@@ -81,17 +94,31 @@ describe("TimeSeries", () => {
       ],
     },
     {
-      title: "Time series with filters and time range and single measure",
-      rollupInterval: getRollupInterval(
-        PreviewRollupInterval.month,
-        "2022-02-01"
-      ),
+      title:
+        "Should return a time series with filters and time range and single measure",
+      timeRange: getTimeRange(PreviewRollupInterval.month, "2022-02-01"),
       previewRollupInterval: PreviewRollupInterval.month,
       filters: {
         publisher: [["Yahoo", false]],
       },
       measures: [1],
       measureRanges: [{ bid_price: [2.5, 3] }, { bid_price: [3, 3.5] }],
+    },
+    {
+      title: "Should return a time series with missing start time",
+      timeRange: getTimeRange(
+        PreviewRollupInterval.month,
+        "2021-11-01",
+        "2022-02-28"
+      ),
+      previewRollupInterval: PreviewRollupInterval.month,
+      measures: [1],
+      measureRanges: [
+        { bid_price: [0, 0] },
+        { bid_price: [0, 0] },
+        { bid_price: [2.75, 3.25] },
+        { bid_price: [2.75, 3.25] },
+      ],
     },
   ];
 
@@ -106,8 +133,8 @@ describe("TimeSeries", () => {
         .send({
           measures: requestMeasures,
           filters: TimeSeriesTest.filters ?? {},
-          ...(TimeSeriesTest.rollupInterval
-            ? { rollupInterval: TimeSeriesTest.rollupInterval }
+          ...(TimeSeriesTest.timeRange
+            ? { timeRange: TimeSeriesTest.timeRange }
             : {}),
         })
         .set("Accept", "application/json");

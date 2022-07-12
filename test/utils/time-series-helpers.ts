@@ -1,22 +1,24 @@
-import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSeriesActions";
+import type {
+  TimeSeriesResponse,
+  TimeSeriesTimeRange,
+} from "$common/database-service/DatabaseTimeSeriesActions";
 import type { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import { isTimestampDiffAccurate } from "./time-series-time-diff";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
 import { END_DATE, START_DATE } from "../data/generator/data-constants";
-import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export type TimeSeriesMeasureRange = Record<string, [min: number, max: number]>;
 
-export function getRollupInterval(
+export function getTimeRange(
   interval: string,
   startDate = START_DATE,
   endDate = END_DATE
 ) {
   return {
-    rollupInterval: interval,
-    minValue: new Date(`${startDate} UTC`).getTime(),
-    maxValue: new Date(`${endDate} UTC`).getTime(),
-  } as RollupInterval;
+    interval,
+    start: new Date(`${startDate} UTC`).getTime(),
+    end: new Date(`${endDate} UTC`).getTime(),
+  } as TimeSeriesTimeRange;
 }
 
 export function assertTimeSeries(
@@ -24,7 +26,7 @@ export function assertTimeSeries(
   rollupInterval: PreviewRollupInterval,
   measures: Array<string>
 ) {
-  expect(timeSeries.rollupInterval).toBe(rollupInterval);
+  expect(timeSeries.timeRange.interval).toBe(rollupInterval);
   const mismatchTimestamps = new Array<[string, string]>();
   const mismatchMeasures = new Array<
     [dimension: string, value: number, timestamp: string]

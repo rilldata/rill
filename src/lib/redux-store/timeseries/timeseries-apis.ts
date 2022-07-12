@@ -3,10 +3,12 @@ import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSeriesActions";
+import type {
+  TimeSeriesResponse,
+  TimeSeriesTimeRange,
+} from "$common/database-service/DatabaseTimeSeriesActions";
 import { updateTimeSeries } from "$lib/redux-store/timeseries/timeseries-slice";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 import { selectMetricsExploreParams } from "$lib/redux-store/explore/explore-selectors";
 
 /**
@@ -21,13 +23,13 @@ export const generateTimeSeriesApi = createAsyncThunk(
       measures,
       filters,
       pixels,
-      rollupInterval,
+      timeRange,
     }: {
       id: string;
       measures?: Array<MeasureDefinitionEntity>;
       filters?: ActiveValues;
       pixels?: number;
-      rollupInterval?: RollupInterval;
+      timeRange?: TimeSeriesTimeRange;
     },
     thunkAPI
   ) => {
@@ -45,7 +47,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
         measures: normalisedMeasures,
         filters: prunedFilters,
         pixels,
-        rollupInterval,
+        timeRange,
       }
     );
     for await (const timeSeriesResponse of stream) {
@@ -53,7 +55,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
         updateTimeSeries({
           id: timeSeriesResponse.id,
           values: timeSeriesResponse.results,
-          rollupInterval: timeSeriesResponse.rollupInterval,
+          timeRange: timeSeriesResponse.timeRange,
           spark: timeSeriesResponse.spark,
         })
       );

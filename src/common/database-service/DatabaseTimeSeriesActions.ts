@@ -17,11 +17,16 @@ export interface TimeSeriesResponse {
   id?: string;
   results: Array<TimeSeriesValue>;
   spark?: Array<TimeSeriesValue>;
-  rollupInterval: string;
+  timeRange?: TimeSeriesTimeRange;
   sampleSize?: number;
 }
 export interface TimeSeriesRollup {
   rollup: TimeSeriesResponse;
+}
+export interface TimeSeriesTimeRange {
+  interval?: string;
+  start?: string | number;
+  end?: string | number;
 }
 
 export class DatabaseTimeSeriesActions extends DatabaseActions {
@@ -41,7 +46,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       tableName,
       measures,
       timestampColumn,
-      rollupInterval,
+      timeRange,
       filters,
       pixels,
       sampleSize,
@@ -49,7 +54,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       tableName: string;
       measures?: Array<BasicMeasureDefinition>;
       timestampColumn: string;
-      rollupInterval?: RollupInterval;
+      timeRange?: TimeSeriesTimeRange;
       filters?: ActiveValues;
       pixels?: number;
       sampleSize?: number;
@@ -57,26 +62,17 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
   ): Promise<TimeSeriesRollup> {
     measures = normaliseMeasures(measures);
 
-    rollupInterval ??= await this.estimateIdealRollupInterval(
-      metadata,
+    timeRange = await this.getNormalisedTimeRange(
       tableName,
-      timestampColumn
+      timestampColumn,
+      timeRange
     );
+    const timeGranularity = timeRange.interval.split(" ")[1];
 
     const filter =
       filters && Object.keys(filters).length > 0
         ? " WHERE " + getFilterFromFilters(filters)
         : "";
-
-    const rollupTime = rollupInterval.rollupInterval.split(" ")[1];
-
-    if (
-      typeof rollupInterval.maxValue === "number" ||
-      typeof rollupInterval.maxValue === "string"
-    ) {
-      rollupInterval.maxValue = new Date(rollupInterval.maxValue);
-      rollupInterval.minValue = new Date(rollupInterval.minValue);
-    }
 
     /**
      * Generate the rolled up time series as a temporary table and
@@ -94,19 +90,19 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
           FROM 
             generate_series(
               date_trunc(
-                '${rollupTime}', 
-                TIMESTAMP '${(rollupInterval.minValue as Date).toISOString()}'
+                '${timeGranularity}', 
+                TIMESTAMP '${timeRange.start}'
               ), 
               date_trunc(
-                '${rollupTime}', 
-                TIMESTAMP '${(rollupInterval.maxValue as Date).toISOString()}'
-              ), 
-              interval ${rollupInterval.rollupInterval})
+                '${timeGranularity}', 
+                TIMESTAMP '${timeRange.end}'
+              ),
+              interval ${timeRange.interval})
         ),
         -- transform the original data, and optionally sample it.
         series AS (
           SELECT 
-            date_trunc('${rollupTime}', "${timestampColumn}") as ts,
+            date_trunc('${timeGranularity}', "${timestampColumn}") as ts,
             ${getExpressionColumnsFromMeasures(measures)}
           FROM "${tableName}" ${filter}
           GROUP BY ts ORDER BY ts
@@ -127,7 +123,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       return {
         rollup: {
           results: [],
-          rollupInterval: rollupInterval.rollupInterval,
+          timeRange,
           ...(pixels ? { spark: [] } : {}),
           sampleSize,
         },
@@ -157,7 +153,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
     return {
       rollup: {
         results,
-        rollupInterval: rollupInterval.rollupInterval,
+        timeRange,
         spark,
         sampleSize,
       },
@@ -354,5 +350,40 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       minValue,
       maxValue
     );
+  }
+
+  private async getNormalisedTimeRange(
+    tableName: string,
+    timestampColumn: string,
+    timeRange: TimeSeriesTimeRange
+  ): Promise<TimeSeriesTimeRange> {
+    let rollupInterval = timeRange?.interval;
+    if (!rollupInterval) {
+      const estimatedRollupInterval = await this.estimateIdealRollupInterval(
+        undefined,
+        tableName,
+        timestampColumn
+      );
+      rollupInterval = estimatedRollupInterval.rollupInterval;
+    }
+
+    const [actualTimeRange] = await this.databaseClient.execute(`SELECT
+		    min(${timestampColumn}) as min, max(${timestampColumn}) as max 
+		    FROM ${tableName}`);
+
+    let startTime = new Date(timeRange?.start || actualTimeRange.min);
+    if (Number.isNaN(startTime.getTime())) {
+      startTime = new Date(actualTimeRange.min);
+    }
+    let endTime = new Date(timeRange?.end || actualTimeRange.max);
+    if (Number.isNaN(endTime.getTime())) {
+      endTime = new Date(actualTimeRange.max);
+    }
+
+    return {
+      interval: rollupInterval,
+      start: startTime.toISOString(),
+      end: endTime.toISOString(),
+    };
   }
 }

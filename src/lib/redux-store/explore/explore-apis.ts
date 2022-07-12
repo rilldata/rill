@@ -1,11 +1,12 @@
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
-import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
+import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import {
   clearSelectedLeaderboardValues,
   initMetricsExplore,
   MetricsExploreEntity,
+  setExploreTimeRange,
   setLeaderboardDimensionValues,
   setMeasureId,
   toggleExploreMeasure,
@@ -138,5 +139,20 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
         )
       );
     }
+  }
+);
+
+/**
+ * Fetches time range for the selected timestamp column.
+ * Store the response in MetricsExplore slice by calling {@link setExploreTimeRange}
+ */
+export const fetchTimestampColumnRangeApi = createAsyncThunk(
+  `${EntityType.MetricsLeaderboard}/getTimestampColumnRange`,
+  async (metricsDefId: string, thunkAPI) => {
+    const timeRange = await fetchWrapper(
+      `metrics/${metricsDefId}/time-range`,
+      "GET"
+    );
+    thunkAPI.dispatch(setExploreTimeRange(metricsDefId, timeRange));
   }
 );

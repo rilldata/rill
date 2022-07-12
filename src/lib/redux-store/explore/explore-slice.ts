@@ -5,6 +5,7 @@ import {
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
 export interface LeaderboardValues {
   values: Array<unknown>;
@@ -21,6 +22,8 @@ export interface MetricsExploreEntity {
   leaderboards: Array<LeaderboardValues>;
   activeValues: ActiveValues;
   selectedCount: number;
+  // time range of the selected timestamp column
+  timeRange?: TimeSeriesTimeRange;
 }
 
 const metricsExploreAdapter = createEntityAdapter<MetricsExploreEntity>();
@@ -205,6 +208,21 @@ export const exploreSlice = createSlice({
       },
       prepare: (id) => ({ payload: id }),
     },
+
+    setExploreTimeRange: {
+      reducer: (
+        state,
+        {
+          payload: { id, timeRange },
+        }: PayloadAction<{ id: string; timeRange: TimeSeriesTimeRange }>
+      ) => {
+        if (!state.entities[id]) return;
+        state.entities[id].timeRange = timeRange;
+      },
+      prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
+        payload: { id, timeRange },
+      }),
+    },
   },
 });
 
@@ -215,6 +233,7 @@ export const {
   toggleLeaderboardActiveValue,
   setLeaderboardDimensionValues,
   clearSelectedLeaderboardValues,
+  setExploreTimeRange,
 } = exploreSlice.actions;
 export const MetricsLeaderboardSliceActions = exploreSlice.actions;
 export type MetricsLeaderboardSliceTypes =
