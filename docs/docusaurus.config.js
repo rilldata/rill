@@ -68,7 +68,6 @@ const config = {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
         indexName: "rilldata",
-        // container: '### REPLACE ME WITH A CONTAINER (e.g. div) ###'
         debug: false // Set debug to true if you want to inspect the modal        
       },
       metadata: [
