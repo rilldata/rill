@@ -9,9 +9,10 @@
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
 
-  export let dark = false;
-  setContext("rill:menu:dark", dark);
-
+  export let dark: boolean = undefined;
+  if (dark) {
+    setContext("rill:menu:dark", dark);
+  }
   const dispatch = createEventDispatcher();
 
   const menuID = guidGenerator();
