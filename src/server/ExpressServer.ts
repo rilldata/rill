@@ -58,6 +58,11 @@ export class ExpressServer {
     console.log(`Server started at ${this.config.server.serverUrl}`);
   }
 
+  public async destroy(): Promise<void> {
+    await this.socketServer.destroy();
+    this.server.close();
+  }
+
   private setupMiddlewares() {
     this.app.use(
       cors({

@@ -34,11 +34,8 @@ export const generateTimeSeriesApi = createAsyncThunk(
     thunkAPI
   ) => {
     const state = thunkAPI.getState() as RillReduxState;
-    const { prunedFilters, normalisedMeasures } = selectMetricsExploreParams(
-      state,
-      id,
-      { measures, filters }
-    );
+    const { metricsExplore, prunedFilters, normalisedMeasures } =
+      selectMetricsExploreParams(state, id, { measures, filters });
 
     const stream = streamingFetchWrapper<TimeSeriesResponse>(
       `metrics/${id}/time-series`,
@@ -47,7 +44,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
         measures: normalisedMeasures,
         filters: prunedFilters,
         pixels,
-        timeRange,
+        timeRange: timeRange ?? metricsExplore.selectedTimeRange,
       }
     );
     for await (const timeSeriesResponse of stream) {

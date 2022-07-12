@@ -7,8 +7,12 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
+export interface LeaderboardValue {
+  value: number;
+  label: string;
+}
 export interface LeaderboardValues {
-  values: Array<unknown>;
+  values: Array<LeaderboardValue>;
   displayName: string;
 }
 
@@ -24,6 +28,8 @@ export interface MetricsExploreEntity {
   selectedCount: number;
   // time range of the selected timestamp column
   timeRange?: TimeSeriesTimeRange;
+  // user selected time range
+  selectedTimeRange?: TimeSeriesTimeRange;
 }
 
 const metricsExploreAdapter = createEntityAdapter<MetricsExploreEntity>();
@@ -170,7 +176,7 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{
           id: string;
           dimensionName: string;
-          values: Array<unknown>;
+          values: Array<LeaderboardValue>;
         }>
       ) => {
         if (!state.entities[id]) return;
@@ -190,7 +196,11 @@ export const exploreSlice = createSlice({
           ];
         }
       },
-      prepare: (id: string, dimensionName: string, values: Array<unknown>) => ({
+      prepare: (
+        id: string,
+        dimensionName: string,
+        values: Array<LeaderboardValue>
+      ) => ({
         payload: { id, dimensionName, values },
       }),
     },
@@ -223,6 +233,31 @@ export const exploreSlice = createSlice({
         payload: { id, timeRange },
       }),
     },
+
+    setExploreSelectedTimeRange: {
+      reducer: (
+        state,
+        {
+          payload: { id, selectedTimeRange },
+        }: PayloadAction<{
+          id: string;
+          selectedTimeRange: Partial<TimeSeriesTimeRange>;
+        }>
+      ) => {
+        if (!state.entities[id]) return;
+        // overrides only the ones passed
+        state.entities[id].selectedTimeRange = {
+          ...(state.entities[id].selectedTimeRange ?? {}),
+          ...selectedTimeRange,
+        };
+      },
+      prepare: (
+        id: string,
+        selectedTimeRange: Partial<TimeSeriesTimeRange>
+      ) => ({
+        payload: { id, selectedTimeRange },
+      }),
+    },
   },
 });
 
@@ -234,6 +269,7 @@ export const {
   setLeaderboardDimensionValues,
   clearSelectedLeaderboardValues,
   setExploreTimeRange,
+  setExploreSelectedTimeRange,
 } = exploreSlice.actions;
 export const MetricsLeaderboardSliceActions = exploreSlice.actions;
 export type MetricsLeaderboardSliceTypes =

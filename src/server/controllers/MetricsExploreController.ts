@@ -39,8 +39,7 @@ export class MetricsExploreController extends RillDeveloperController {
     return this.wrapHttpStream(res, (context) =>
       this.rillDeveloperService.dispatch(context, "getLeaderboardValues", [
         req.params.id,
-        req.body.measureId,
-        req.body.filters,
+        req.body,
       ])
     );
   }

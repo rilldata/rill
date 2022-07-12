@@ -6,6 +6,7 @@ import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
 export const {
   manySelector: selectMetricsExplores,
@@ -23,7 +24,10 @@ export const selectMetricsExploreParams = (
   {
     measures,
     filters,
-  }: { measures?: Array<MeasureDefinitionEntity>; filters?: ActiveValues }
+  }: {
+    measures?: Array<MeasureDefinitionEntity>;
+    filters?: ActiveValues;
+  }
 ) => {
   const metricsExplore = selectMetricsExploreById(state, id);
 

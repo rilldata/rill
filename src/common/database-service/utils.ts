@@ -3,6 +3,7 @@ import {
   BasicMeasureDefinition,
   getFallbackMeasureName,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
 export function getFilterFromFilters(filters: ActiveValues): string {
   return Object.keys(filters)
@@ -48,4 +49,36 @@ export function getCoalesceStatementsMeasures(
         `COALESCE(series.${measure.sqlName}, 0) as ${measure.sqlName}`
     )
     .join(", ");
+}
+
+export function getWhereClauseFromFilters(
+  filters: ActiveValues,
+  timestampColumn: string,
+  timeRange: TimeSeriesTimeRange,
+  prefix: string
+) {
+  const whereClauses = [];
+  if (filters && Object.keys(filters).length) {
+    whereClauses.push(getFilterFromFilters(filters));
+  }
+  if (timeRange?.start || timeRange?.end) {
+    whereClauses.push(getFilterFromTimeRange(timestampColumn, timeRange));
+  }
+  return whereClauses.length ? `${prefix} ${whereClauses.join(" AND ")}` : "";
+}
+
+export function getFilterFromTimeRange(
+  timestampColumn: string,
+  timeRange: TimeSeriesTimeRange
+): string {
+  const timeRangeFilters = new Array<string>();
+  if (timeRange.start) {
+    timeRangeFilters.push(
+      `${timestampColumn} >= TIMESTAMP '${timeRange.start}'`
+    );
+  }
+  if (timeRange.end) {
+    timeRangeFilters.push(`${timestampColumn} <= TIMESTAMP '${timeRange.end}'`);
+  }
+  return timeRangeFilters.join(" AND ");
 }

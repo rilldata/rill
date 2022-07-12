@@ -25,8 +25,8 @@ export interface TimeSeriesRollup {
 }
 export interface TimeSeriesTimeRange {
   interval?: string;
-  start?: string | number;
-  end?: string | number;
+  start?: string;
+  end?: string;
 }
 
 export class DatabaseTimeSeriesActions extends DatabaseActions {

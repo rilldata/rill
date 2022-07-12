@@ -5,7 +5,9 @@ import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import {
   clearSelectedLeaderboardValues,
   initMetricsExplore,
+  LeaderboardValues,
   MetricsExploreEntity,
+  setExploreSelectedTimeRange,
   setExploreTimeRange,
   setLeaderboardDimensionValues,
   setMeasureId,
@@ -17,6 +19,7 @@ import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-ap
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
 /**
  * A wrapper to dispatch updates to explore.
@@ -111,30 +114,45 @@ export const clearSelectedLeaderboardValuesAndUpdate = (
 };
 
 /**
+ * Sets user selected time rage.
+ * It then calls {@link updateExploreWrapper} to update explore.
+ */
+export const setExploreSelectedTimeRangeAndUpdate = (
+  dispatch,
+  metricsDefId: string,
+  selectedTimeRange: Partial<TimeSeriesTimeRange>
+) => {
+  dispatch(setExploreSelectedTimeRange(metricsDefId, selectedTimeRange));
+  updateExploreWrapper(dispatch, metricsDefId);
+};
+
+/**
  * Async-thunk to update leaderboard values.
  * Streams dimension values from backend per dimension and updates it in the state.
  */
 export const updateLeaderboardValuesApi = createAsyncThunk(
   `${EntityType.MetricsLeaderboard}/updateLeaderboard`,
   async (metricsDefId: string, thunkAPI) => {
-    const metricsLeaderboard: MetricsExploreEntity = (
+    const metricsExplore: MetricsExploreEntity = (
       thunkAPI.getState() as RillReduxState
     ).metricsLeaderboard.entities[metricsDefId];
-    const filters = prune(metricsLeaderboard.activeValues);
+    const filters = prune(metricsExplore.activeValues);
     const requestBody = {
-      measureId: metricsLeaderboard.leaderboardMeasureId,
+      measureId: metricsExplore.leaderboardMeasureId,
       filters,
+      timeRange: metricsExplore.selectedTimeRange,
     };
 
-    const stream = streamingFetchWrapper<{
-      dimensionName: string;
-      values: Array<unknown>;
-    }>(`metrics/${metricsLeaderboard.id}/leaderboards`, "POST", requestBody);
+    const stream = streamingFetchWrapper<LeaderboardValues>(
+      `metrics/${metricsExplore.id}/leaderboards`,
+      "POST",
+      requestBody
+    );
     for await (const dimensionData of stream) {
       thunkAPI.dispatch(
         setLeaderboardDimensionValues(
-          metricsLeaderboard.id,
-          dimensionData.dimensionName,
+          metricsExplore.id,
+          dimensionData.displayName,
           dimensionData.values
         )
       );
