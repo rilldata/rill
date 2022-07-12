@@ -83,3 +83,11 @@ export const prettyFormatTimeRange = (
     dateFormatOptions
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
+
+export const getTimeRangeNameForButton = (
+  timeRange: TimeSeriesTimeRange
+): string => {
+  if (timeRange && timeRange.name) return timeRange.name;
+  if (timeRange && (timeRange.start || timeRange.end)) return "Custom";
+  return "Select a time range";
+};
