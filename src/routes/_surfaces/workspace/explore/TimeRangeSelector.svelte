@@ -104,7 +104,7 @@
       {target}
       distance={8}
     >
-      <Menu>
+      <Menu on:escape={() => (timeSelectorMenuOpen = false)}>
         {#each timeRanges as timeRange}
           <MenuItem on:select={() => (selectedTimeRange = timeRange)}>
             <div class="font-bold">
