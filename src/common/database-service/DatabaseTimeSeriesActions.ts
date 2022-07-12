@@ -359,6 +359,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
   ): Promise<TimeSeriesTimeRange> {
     let rollupInterval = timeRange?.interval;
     if (!rollupInterval) {
+      /** NOTE: we will need to put together a different interval function for the explore later. this one will note be flexible enough for user needs */
       const estimatedRollupInterval = await this.estimateIdealRollupInterval(
         undefined,
         tableName,
