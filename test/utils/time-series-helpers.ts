@@ -1,22 +1,25 @@
-import type { TimeSeriesResponse } from "$common/database-service/DatabaseTimeSeriesActions";
+import type {
+  TimeSeriesResponse,
+  TimeSeriesTimeRange,
+} from "$common/database-service/DatabaseTimeSeriesActions";
 import type { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import { isTimestampDiffAccurate } from "./time-series-time-diff";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
 import { END_DATE, START_DATE } from "../data/generator/data-constants";
-import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExploreActions";
 
 export type TimeSeriesMeasureRange = Record<string, [min: number, max: number]>;
 
-export function getRollupInterval(
+export function getTimeRange(
   interval: string,
   startDate = START_DATE,
   endDate = END_DATE
 ) {
   return {
-    rollupInterval: interval,
-    minValue: new Date(`${startDate} UTC`).getTime(),
-    maxValue: new Date(`${endDate} UTC`).getTime(),
-  } as RollupInterval;
+    interval,
+    start: new Date(`${startDate} UTC`).toISOString(),
+    end: new Date(`${endDate} UTC`).toISOString(),
+  } as TimeSeriesTimeRange;
 }
 
 export function assertTimeSeries(
@@ -24,7 +27,7 @@ export function assertTimeSeries(
   rollupInterval: PreviewRollupInterval,
   measures: Array<string>
 ) {
-  expect(timeSeries.rollupInterval).toBe(rollupInterval);
+  expect(timeSeries.timeRange.interval).toBe(rollupInterval);
   const mismatchTimestamps = new Array<[string, string]>();
   const mismatchMeasures = new Array<
     [dimension: string, value: number, timestamp: string]
@@ -82,4 +85,26 @@ export function assertTimeSeriesMeasureRange(
     console.log("Mismatch measures value ranges: ", mismatchMeasures);
   }
   expect(mismatchMeasures.length).toBe(0);
+}
+
+export function assertBigNumber(
+  bigNumber: BigNumberResponse,
+  expectedBigNumber: TimeSeriesMeasureRange
+) {
+  const mismatchBigNumbers = new Array<[dimension: string, value: number]>();
+
+  for (const measureName in expectedBigNumber) {
+    const value = bigNumber.bigNumbers[measureName];
+    if (
+      value < expectedBigNumber[measureName][0] &&
+      value > expectedBigNumber[measureName][1]
+    ) {
+      mismatchBigNumbers.push([measureName, value]);
+    }
+  }
+
+  if (mismatchBigNumbers.length) {
+    console.log("Mismatch big numbers: ", mismatchBigNumbers);
+  }
+  expect(mismatchBigNumbers.length).toBe(0);
 }

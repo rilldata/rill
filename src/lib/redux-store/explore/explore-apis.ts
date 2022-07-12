@@ -1,7 +1,7 @@
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
-import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
+import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import {
   addDimensionToExplore,
   addMeasureToExplore,
@@ -9,6 +9,8 @@ import {
   initMetricsExplore,
   LeaderboardValues,
   MetricsExploreEntity,
+  setExploreSelectedTimeRange,
+  setExploreTimeRange,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
   setLeaderboardDimensionValues,
@@ -21,6 +23,7 @@ import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-ap
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
 
 /**
@@ -40,6 +43,7 @@ const updateExploreWrapper = (dispatch, metricsDefId: string) => {
  * Syncs explore with updated measures and dimensions.
  * If a MetricsExplore entity is not present then a new one is created.
  * It then calls {@link updateExploreWrapper} to update explore.
+ * It also dispatches {@link fetchTimestampColumnRangeApi} to update time range.
  */
 export const syncExplore = (
   dispatch,
@@ -55,8 +59,11 @@ export const syncExplore = (
 
   let shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
   shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
+  // To avoid infinite loop only update if something changed.
+  // TODO: handle edge cases like measure expression or dimension column changing.
   if (shouldUpdate) {
     updateExploreWrapper(dispatch, metricsDefId);
+    dispatch(fetchTimestampColumnRangeApi(metricsDefId));
   }
 };
 /**
@@ -178,6 +185,19 @@ export const clearSelectedLeaderboardValuesAndUpdate = (
 };
 
 /**
+ * Sets user selected time rage.
+ * It then calls {@link updateExploreWrapper} to update explore.
+ */
+export const setExploreSelectedTimeRangeAndUpdate = (
+  dispatch,
+  metricsDefId: string,
+  selectedTimeRange: Partial<TimeSeriesTimeRange>
+) => {
+  dispatch(setExploreSelectedTimeRange(metricsDefId, selectedTimeRange));
+  updateExploreWrapper(dispatch, metricsDefId);
+};
+
+/**
  * Async-thunk to update leaderboard values.
  * Streams dimension values from backend per dimension and updates it in the state.
  */
@@ -185,30 +205,47 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
   `${EntityType.MetricsLeaderboard}/updateLeaderboard`,
   async (metricsDefId: string, thunkAPI) => {
     const state = thunkAPI.getState() as RillReduxState;
-    const metricsLeaderboard: MetricsExploreEntity =
-      state.metricsLeaderboard.entities[metricsDefId];
+    const metricsExplore: MetricsExploreEntity = (
+      thunkAPI.getState() as RillReduxState
+    ).metricsLeaderboard.entities[metricsDefId];
     const filters = prune(
-      metricsLeaderboard.activeValues,
+      metricsExplore.activeValues,
       state.dimensionDefinition.entities
     );
     const requestBody = {
-      measureId: metricsLeaderboard.leaderboardMeasureId,
+      measureId: metricsExplore.leaderboardMeasureId,
       filters,
+      timeRange: metricsExplore.selectedTimeRange,
     };
 
     const stream = streamingFetchWrapper<LeaderboardValues>(
-      `metrics/${metricsLeaderboard.id}/leaderboards`,
+      `metrics/${metricsExplore.id}/leaderboards`,
       "POST",
       requestBody
     );
     for await (const dimensionData of stream) {
       thunkAPI.dispatch(
         setLeaderboardDimensionValues(
-          metricsLeaderboard.id,
+          metricsExplore.id,
           dimensionData.dimensionId,
           dimensionData.values
         )
       );
     }
+  }
+);
+
+/**
+ * Fetches time range for the selected timestamp column.
+ * Store the response in MetricsExplore slice by calling {@link setExploreTimeRange}
+ */
+export const fetchTimestampColumnRangeApi = createAsyncThunk(
+  `${EntityType.MetricsLeaderboard}/getTimestampColumnRange`,
+  async (metricsDefId: string, thunkAPI) => {
+    const timeRange = await fetchWrapper(
+      `metrics/${metricsDefId}/time-range`,
+      "GET"
+    );
+    thunkAPI.dispatch(setExploreTimeRange(metricsDefId, timeRange));
   }
 );

@@ -92,7 +92,6 @@ export class RillDeveloperService {
       if (!returnResponse)
         returnResponse = ActionResponseFactory.getSuccessResponse();
     } catch (err) {
-      console.log(err);
       returnResponse = ActionResponseFactory.getErrorResponse(err);
     }
 

@@ -40,5 +40,6 @@ export class InlineTestServer extends TestServer {
 
   public async destroy() {
     await this.rillDeveloper.destroy();
+    await this.expressServer.destroy();
   }
 }

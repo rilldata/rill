@@ -28,11 +28,12 @@ export const generateBigNumbersApi = createAsyncThunk(
     thunkAPI
   ) => {
     const state = thunkAPI.getState() as RillReduxState;
-    const { prunedFilters, normalisedMeasures } = selectMetricsExploreParams(
-      state,
-      id,
-      { measures, filters, dimensions: state.dimensionDefinition.entities }
-    );
+    const { metricsExplore, prunedFilters, normalisedMeasures } =
+      selectMetricsExploreParams(state, id, {
+        measures,
+        filters,
+        dimensions: state.dimensionDefinition.entities,
+      });
     const anythingSelected = isAnythingSelected(prunedFilters);
 
     const stream = streamingFetchWrapper<BigNumberResponse>(
@@ -41,6 +42,7 @@ export const generateBigNumbersApi = createAsyncThunk(
       {
         measures: normalisedMeasures,
         filters: prunedFilters,
+        timeRange: metricsExplore.selectedTimeRange,
       }
     );
     for await (const bigNumberEntity of stream) {

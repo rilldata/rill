@@ -5,10 +5,16 @@ import {
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
+export interface LeaderboardValue {
+  value: number;
+  label: string;
+}
 export interface LeaderboardValues {
-  values: Array<Record<string, unknown>>;
+  values: Array<LeaderboardValue>;
   dimensionId: string;
+  dimensionName?: string;
 }
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
@@ -24,6 +30,10 @@ export interface MetricsExploreEntity {
   leaderboards: Array<LeaderboardValues>;
   activeValues: ActiveValues;
   selectedCount: number;
+  // time range of the selected timestamp column
+  timeRange?: TimeSeriesTimeRange;
+  // user selected time range
+  selectedTimeRange?: TimeSeriesTimeRange;
 }
 
 const metricsExploreAdapter = createEntityAdapter<MetricsExploreEntity>();
@@ -280,8 +290,8 @@ export const exploreSlice = createSlice({
           payload: { id, dimensionId, values },
         }: PayloadAction<{
           id: string;
+          values: Array<LeaderboardValue>;
           dimensionId: string;
-          values: Array<Record<string, unknown>>;
         }>
       ) => {
         if (!state.entities[id]) return;
@@ -304,7 +314,7 @@ export const exploreSlice = createSlice({
       prepare: (
         id: string,
         dimensionId: string,
-        values: Array<Record<string, unknown>>
+        values: Array<LeaderboardValue>
       ) => ({
         payload: { id, dimensionId, values },
       }),
@@ -323,6 +333,46 @@ export const exploreSlice = createSlice({
       },
       prepare: (id) => ({ payload: id }),
     },
+
+    setExploreTimeRange: {
+      reducer: (
+        state,
+        {
+          payload: { id, timeRange },
+        }: PayloadAction<{ id: string; timeRange: TimeSeriesTimeRange }>
+      ) => {
+        if (!state.entities[id]) return;
+        state.entities[id].timeRange = timeRange;
+      },
+      prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
+        payload: { id, timeRange },
+      }),
+    },
+
+    setExploreSelectedTimeRange: {
+      reducer: (
+        state,
+        {
+          payload: { id, selectedTimeRange },
+        }: PayloadAction<{
+          id: string;
+          selectedTimeRange: Partial<TimeSeriesTimeRange>;
+        }>
+      ) => {
+        if (!state.entities[id]) return;
+        // overrides only the ones passed
+        state.entities[id].selectedTimeRange = {
+          ...(state.entities[id].selectedTimeRange ?? {}),
+          ...selectedTimeRange,
+        };
+      },
+      prepare: (
+        id: string,
+        selectedTimeRange: Partial<TimeSeriesTimeRange>
+      ) => ({
+        payload: { id, selectedTimeRange },
+      }),
+    },
   },
 });
 
@@ -337,6 +387,8 @@ export const {
   toggleLeaderboardActiveValue,
   setLeaderboardDimensionValues,
   clearSelectedLeaderboardValues,
+  setExploreTimeRange,
+  setExploreSelectedTimeRange,
 } = exploreSlice.actions;
 export const MetricsLeaderboardSliceActions = exploreSlice.actions;
 export type MetricsLeaderboardSliceTypes =

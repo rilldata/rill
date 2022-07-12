@@ -51,6 +51,7 @@ export class DuckDBClient {
           }
         });
       } catch (err) {
+        if (log) console.error(err);
         reject(err);
       }
     });

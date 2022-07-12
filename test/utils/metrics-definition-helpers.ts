@@ -7,6 +7,7 @@ import type {
   MeasureDefinitionEntity,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { useTestModel, useTestTables } from "./useInlineTestServer";
 
 /**
  * Call this at the top level to create a metrics definition for a given label, modelName and timeDimension.
@@ -120,4 +121,30 @@ export function setupMeasures(
       );
     }
   });
+}
+
+export function useBasicMetricsDefinition(
+  inlineServer: InlineTestServer,
+
+  callback: (
+    metricsDef: MetricsDefinitionEntity,
+    measures: Array<MeasureDefinitionEntity>,
+    dimensions: Array<DimensionDefinitionEntity>
+  ) => void
+) {
+  const AdEventsName = "AdEvents";
+
+  useTestTables(inlineServer);
+  useTestModel(
+    inlineServer,
+    `select
+    bid.*, imp.user_id, imp.city, imp.country
+    from AdBids bid join AdImpressions imp on bid.id = imp.id`,
+    AdEventsName
+  );
+  useMetricsDefinition(inlineServer, AdEventsName, AdEventsName, "timestamp");
+  setupMeasures(inlineServer, AdEventsName, "impressions", [
+    { id: "", expression: "avg(bid_price)", sqlName: "bid_price" },
+  ]);
+  getMetricsDefinition(inlineServer, AdEventsName, callback);
 }
