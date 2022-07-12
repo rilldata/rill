@@ -11,7 +11,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const color = getContext("rill:menu:color");
+  const dark = getContext("rill:menu:dark");
   const onSelect: () => void = getContext("rill:menu:onSelect");
   const menuItems: Writable<any> = getContext("rill:menu:menuItems");
   const currentItem: Writable<any> = getContext("rill:menu:currentItem");
@@ -65,10 +65,7 @@
         grid
         gap-x-4
         justify-items-stretch
-{color === 'light'
-    ? 'text-black focus:bg-gray-200'
-    : 'text-white focus:bg-gray-600'}
-
+        {dark ? 'text-white focus:bg-gray-600' : 'text-black focus:bg-gray-200'}
     "
   style:grid-template-columns="auto max-content"
   class:selected

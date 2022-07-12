@@ -144,7 +144,7 @@
         alignment="start"
       >
         <Menu
-          color="dark"
+          dark
           on:escape={closeContextMenu}
           on:item-select={closeContextMenu}
         >

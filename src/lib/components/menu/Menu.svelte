@@ -9,8 +9,8 @@
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
 
-  export let color: "light" | "dark" = "light";
-  setContext("rill:menu:color", color);
+  export let dark = false;
+  setContext("rill:menu:dark", dark);
 
   const dispatch = createEventDispatcher();
 
@@ -74,9 +74,7 @@
         flex 
         flex-col
         outline-none
-        {color === 'light'
-    ? 'bg-white border border-gray-800'
-    : 'bg-gray-800 border-none'}
+        {dark ? 'bg-gray-800 border-none' : 'bg-white border border-gray-800'}
         "
   style:outline="none"
   style:min-width="300px"

@@ -126,11 +126,7 @@ align-items: center;
       location="left"
       alignment="start"
     >
-      <Menu
-        color="dark"
-        on:escape={closeContextMenu}
-        on:item-select={closeContextMenu}
-      >
+      <Menu dark on:escape={closeContextMenu} on:item-select={closeContextMenu}>
         <MenuItem on:select={() => dispatch("delete")}>delete row</MenuItem>
       </Menu>
     </FloatingElement>

@@ -376,7 +376,7 @@
       alignment="start"
     >
       <Menu
-        color="dark"
+        dark
         on:escape={() => {
           contextMenuOpen = false;
         }}
