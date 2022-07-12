@@ -13,7 +13,7 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import { initAndUpdateExplore } from "$lib/redux-store/explore/explore-apis";
+  import { syncExplore } from "$lib/redux-store/explore/explore-apis";
 
   export let metricsDefId: string;
 
@@ -30,9 +30,13 @@
   let dimensions: Readable<Array<DimensionDefinitionEntity>>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
-  $: if ($dimensions?.length && $measures?.length && !$metricsLeaderboard) {
-    initAndUpdateExplore(store.dispatch, metricsDefId, $dimensions, $measures);
-  }
+  $: syncExplore(
+    store.dispatch,
+    metricsDefId,
+    $metricsLeaderboard,
+    $dimensions,
+    $measures
+  );
 
   let whichReferenceValue: string;
 </script>
@@ -46,11 +50,6 @@
       activeMeasureIds={$measures?.map((measure) => measure.id) || []}
       {metricsDefId}
     />
-    <!-- {#if $metricsLeaderboard}
-      {#each $metricsLeaderboard.measureIds as measureId, index (measureId)}
-        <MetricsTimeSeriesCharts {measureIds} {metricsDefId} {index} />
-      {/each}
-    {/if} -->
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">
     <LeaderboardDisplay {columns} {whichReferenceValue} {metricsDefId} />

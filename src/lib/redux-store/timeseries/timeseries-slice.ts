@@ -2,16 +2,18 @@ import {
   createSlice,
   createEntityAdapter,
 } from "$lib/redux-store/redux-toolkit-wrapper";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
-export interface TimeSeriesValue {
+export type TimeSeriesValue = {
   ts: string;
-  count: number;
   bin?: number;
-}
+} & Record<string, number>;
 
 export interface TimeSeriesEntity {
   id: string;
-  rollupInterval: string;
+  // time range for the time series.
+  // this could be different from the one selected by the User
+  timeRange: TimeSeriesTimeRange;
   values: Array<TimeSeriesValue>;
   spark: Array<TimeSeriesValue>;
 }

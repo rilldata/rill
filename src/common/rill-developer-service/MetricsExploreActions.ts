@@ -11,10 +11,43 @@ import type {
   MeasureDefinitionEntity,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { TimeSeriesRollup } from "$common/database-service/DatabaseTimeSeriesActions";
+import type {
+  TimeSeriesRollup,
+  TimeSeriesTimeRange,
+} from "$common/database-service/DatabaseTimeSeriesActions";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export class MetricsExploreActions extends RillDeveloperActions {
+  @RillDeveloperActions.MetricsDefinitionAction()
+  public async getTimeRange(
+    rillRequestContext: MetricsDefinitionContext,
+    metricsDefId: string
+  ) {
+    if (
+      !rillRequestContext.record?.sourceModelId ||
+      !rillRequestContext.record?.timeDimension
+    )
+      return;
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    const rollupInterval: RollupInterval =
+      await this.databaseActionQueue.enqueue(
+        {
+          id: metricsDefId,
+          priority: DatabaseActionQueuePriority.ActiveModel,
+        },
+        "estimateIdealRollupInterval",
+        [model.tableName, rillRequestContext.record.timeDimension]
+      );
+    return ActionResponseFactory.getSuccessResponse("", {
+      interval: rollupInterval.rollupInterval,
+      start: rollupInterval.minValue,
+      end: rollupInterval.maxValue,
+    } as TimeSeriesTimeRange);
+  }
+
   @RillDeveloperActions.MetricsDefinitionAction()
   public async generateTimeSeries(
     rillRequestContext: MetricsDefinitionContext,
@@ -23,13 +56,13 @@ export class MetricsExploreActions extends RillDeveloperActions {
       measures,
       filters,
       pixels,
-      rollupInterval,
+      timeRange,
       isolated,
     }: {
       measures: Array<BasicMeasureDefinition>;
       filters: ActiveValues;
       pixels: number;
-      rollupInterval: RollupInterval;
+      timeRange?: TimeSeriesTimeRange;
       isolated?: boolean;
     }
   ) {
@@ -46,7 +79,7 @@ export class MetricsExploreActions extends RillDeveloperActions {
             measures: [measure],
             filters,
             pixels,
-            rollupInterval,
+            timeRange,
           })
         )
       );
@@ -54,7 +87,7 @@ export class MetricsExploreActions extends RillDeveloperActions {
       await this.generateTimeSeriesForMeasures(
         rillRequestContext,
         metricsDefId,
-        { measures, filters, pixels, rollupInterval }
+        { measures, filters, pixels, timeRange }
       );
     }
   }
@@ -63,8 +96,15 @@ export class MetricsExploreActions extends RillDeveloperActions {
   public async getLeaderboardValues(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
-    measureId: string,
-    filters: ActiveValues
+    {
+      measureId,
+      filters,
+      timeRange,
+    }: {
+      measureId: string;
+      filters: ActiveValues;
+      timeRange?: TimeSeriesTimeRange;
+    }
   ) {
     if (!rillRequestContext.record?.sourceModelId) return;
     const measure = this.dataModelerStateService
@@ -80,7 +120,8 @@ export class MetricsExploreActions extends RillDeveloperActions {
           rillRequestContext,
           measure,
           dimension,
-          filters
+          filters,
+          timeRange
         )
       )
     );
@@ -91,12 +132,14 @@ export class MetricsExploreActions extends RillDeveloperActions {
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
     {
-      filters,
       measures,
+      filters,
+      timeRange,
       isolated,
     }: {
-      filters: ActiveValues;
       measures: Array<BasicMeasureDefinition>;
+      filters: ActiveValues;
+      timeRange?: TimeSeriesTimeRange;
       isolated?: boolean;
     }
   ) {
@@ -104,17 +147,22 @@ export class MetricsExploreActions extends RillDeveloperActions {
     if (isolated) {
       await Promise.all(
         measures.map((measure) =>
-          this.generateBigNumberForMeasures(rillRequestContext, measure.id, {
+          this.generateBigNumberForMeasures(
+            rillRequestContext,
+            measure.id,
+            [measure],
             filters,
-            measures: [measure],
-          })
+            timeRange
+          )
         )
       );
     } else {
       await this.generateBigNumberForMeasures(
         rillRequestContext,
         metricsDefId,
-        { filters, measures }
+        measures,
+        filters,
+        timeRange
       );
     }
   }
@@ -126,12 +174,12 @@ export class MetricsExploreActions extends RillDeveloperActions {
       measures,
       filters,
       pixels,
-      rollupInterval,
+      timeRange,
     }: {
       measures: Array<BasicMeasureDefinition>;
       filters: ActiveValues;
       pixels: number;
-      rollupInterval: RollupInterval;
+      timeRange?: TimeSeriesTimeRange;
     }
   ) {
     const model = this.dataModelerStateService
@@ -150,7 +198,7 @@ export class MetricsExploreActions extends RillDeveloperActions {
           measures,
           filters,
           pixels,
-          rollupInterval,
+          timeRange,
         },
       ]
     );
@@ -162,12 +210,14 @@ export class MetricsExploreActions extends RillDeveloperActions {
     rillRequestContext: MetricsDefinitionContext,
     measure: MeasureDefinitionEntity,
     dimension: DimensionDefinitionEntity,
-    filters: ActiveValues
+    filters: ActiveValues,
+    timeRange: TimeSeriesTimeRange
   ) {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
     rillRequestContext.actionsChannel.pushMessage({
+      dimensionId: dimension.id,
       dimensionName: dimension.dimensionColumn,
       values: await this.databaseActionQueue.enqueue(
         {
@@ -180,6 +230,8 @@ export class MetricsExploreActions extends RillDeveloperActions {
           dimension.dimensionColumn,
           measure.expression,
           filters,
+          rillRequestContext.record.timeDimension,
+          timeRange,
         ]
       ),
     });
@@ -188,13 +240,9 @@ export class MetricsExploreActions extends RillDeveloperActions {
   private async generateBigNumberForMeasures(
     rillRequestContext: MetricsDefinitionContext,
     id: string,
-    {
-      measures,
-      filters,
-    }: {
-      measures: Array<BasicMeasureDefinition>;
-      filters: ActiveValues;
-    }
+    measures: Array<BasicMeasureDefinition>,
+    filters: ActiveValues,
+    timeRange: TimeSeriesTimeRange
   ) {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
@@ -205,7 +253,13 @@ export class MetricsExploreActions extends RillDeveloperActions {
         priority: DatabaseActionQueuePriority.ActiveModel,
       },
       "getBigNumber",
-      [model.tableName, measures, filters]
+      [
+        model.tableName,
+        measures,
+        filters,
+        rillRequestContext.record.timeDimension,
+        timeRange,
+      ]
     );
     bigNumbers.id = id;
     rillRequestContext.actionsChannel.pushMessage(bigNumbers);

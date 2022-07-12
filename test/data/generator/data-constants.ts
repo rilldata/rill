@@ -1,24 +1,23 @@
 export const BATCH_SIZE = 1000;
 
 export const PUBLISHER_DOMAINS = [
-  ["Yahoo", "sports.yahoo.com"],
-  ["Yahoo", "news.yahoo.com"],
-  ["Microsoft", "msn.com"],
-  ["Google", "news.google.com"],
-  ["Google", "google.com"],
-  ["Facebook", "facebook.com"],
-  ["Facebook", "instagram.com"],
+  ["Yahoo", "sports.yahoo.com"], // 1
+  ["Yahoo", "news.yahoo.com"], // 2
+  ["Microsoft", "msn.com"], // 3
+  ["Google", "news.google.com"], // 1
+  ["Google", "google.com"], // 2
+  ["Facebook", "facebook.com"], // 3
+  ["Facebook", "instagram.com"], // 1
 ];
 export const PUBLISHER_DOMAINS_BY_MONTH = [
   PUBLISHER_DOMAINS.filter((_, index) => index % 3 === 0),
   PUBLISHER_DOMAINS.filter((_, index) => index % 3 === 1),
   PUBLISHER_DOMAINS.filter((_, index) => index % 3 === 2),
 ];
+export const PUBLISHER_NULL_CHANCE = 0.33;
 export const START_DATE = "2022-01-01";
 export const END_DATE = "2022-03-31";
 export const BID_START = 1;
-export const PUBLISHER_NULL_CHANCE = 0.33;
-
 export const BID_END = 2;
 
 export const LOCATIONS = [
