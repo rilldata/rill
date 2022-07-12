@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ModelIcon from "$lib/components/icons/Code.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
