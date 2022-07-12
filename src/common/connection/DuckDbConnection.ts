@@ -28,6 +28,8 @@ export class DuckDbConnection extends DataConnection {
   }
 
   public async init(): Promise<void> {
+    if (this.config.database.databaseName === ":memory:") return;
+
     await this.sync();
 
     await this.dataModelerService.dispatch("loadModels", []);

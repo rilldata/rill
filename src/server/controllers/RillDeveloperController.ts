@@ -32,7 +32,7 @@ export abstract class RillDeveloperController {
       context: RillRequestContext<EntityType, StateType>
     ) => Promise<ActionResponse>
   ) {
-    const context = new RillRequestContext(new RillActionsChannel());
+    const context = RillRequestContext.getNewContext();
     res.writeHead(200, {
       Connection: "keep-alive",
       "Content-Type": "application/json",
