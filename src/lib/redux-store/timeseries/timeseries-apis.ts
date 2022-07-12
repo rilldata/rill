@@ -35,7 +35,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
     const { prunedFilters, normalisedMeasures } = selectMetricsExploreParams(
       state,
       id,
-      { measures, filters }
+      { measures, filters, dimensions: state.dimensionDefinition.entities }
     );
 
     const stream = streamingFetchWrapper<TimeSeriesResponse>(
