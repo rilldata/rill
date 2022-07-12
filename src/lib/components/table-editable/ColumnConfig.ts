@@ -1,6 +1,8 @@
 import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
+import type { SvelteComponent } from "svelte";
+
 export enum RenderType {
   INPUT = "input",
   SPARKLINE = "sparkline",
@@ -19,8 +21,9 @@ export interface ColumnConfig {
   label?: string;
   type?: string;
 
-  renderType: RenderType;
+  renderer: new (...args: any[]) => SvelteComponent;
   tooltip?: string;
+  onchange?: (rowIndex: number, columnName: string, value: string) => void;
 
   validation?: (row: EntityRecord, value: unknown) => ValidationState;
 

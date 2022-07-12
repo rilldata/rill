@@ -1,29 +1,21 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import ErrorIcon from "$lib/components/icons/CrossIcon.svelte";
   import WarningIcon from "$lib/components/icons/WarningIcon.svelte";
   import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
   import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-  export let column: ColumnConfig;
+  export let columnConfig: ColumnConfig;
   export let index = undefined;
   export let row: EntityRecord;
-
-  let value = row[column.name];
-
-  const dispatch = createEventDispatcher();
+  export let value;
 
   let inputElt: HTMLInputElement;
 
   let editing = false;
   const onchangeHandler = (evt) => {
     stopEditing();
-    dispatch("change", {
-      value: evt.target.value,
-      name: column.name,
-      index,
-    });
+    columnConfig.onchange(index, columnConfig.name, evt.target.value);
   };
   const startEditing = () => {
     editing = true;
@@ -35,8 +27,8 @@
   };
   // FIXME: validation is business logic that should be handled in
   // application state management, NOT in the component.
-  $: validation = column.validation
-    ? column.validation(row, row[column.name])
+  $: validation = columnConfig.validation
+    ? columnConfig.validation(row, row[columnConfig.name])
     : ValidationState.OK;
 </script>
 

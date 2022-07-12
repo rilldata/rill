@@ -1,7 +1,7 @@
 <script lang="ts">
   import { store } from "$lib/redux-store/store-root";
-  import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
-  import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
+  import { initMeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
+  import { initDimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
   import {
@@ -43,13 +43,11 @@
   function handleCreateMeasure() {
     store.dispatch(createMeasuresApi({ metricsDefId }));
   }
-  function handleUpdateMeasure(evt) {
+  function handleUpdateMeasure(index, name, value) {
     store.dispatch(
       updateMeasuresApi({
-        id: $measures[evt.detail.index].id,
-        changes: {
-          [evt.detail.name]: evt.detail.value,
-        },
+        id: $measures[index].id,
+        changes: { [name]: value },
       })
     );
   }
@@ -60,12 +58,12 @@
   function handleCreateDimension() {
     store.dispatch(createDimensionsApi({ metricsDefId }));
   }
-  function handleUpdateDimension(evt) {
+  function handleUpdateDimension(index, name, value) {
     store.dispatch(
       updateDimensionsApi({
-        id: $dimensions[evt.detail.index].id,
+        id: $dimensions[index].id,
         changes: {
-          [evt.detail.name]: evt.detail.value,
+          [name]: value,
         },
       })
     );
@@ -73,6 +71,9 @@
   function handleDeleteDimension(evt) {
     store.dispatch(deleteDimensionsApi(evt.detail));
   }
+
+  const MeasuresColumns = initMeasuresColumns(handleUpdateMeasure);
+  const DimensionColumns = initDimensionColumns(handleUpdateDimension);
 </script>
 
 <div
