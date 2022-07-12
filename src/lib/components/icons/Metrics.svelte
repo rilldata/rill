@@ -23,7 +23,7 @@
   />
   <path
     d="M6.87152 9.43022L3.80457 7.89673"
-    stroke="black"
+    stroke={color}
     stroke-width="0.75"
     stroke-miterlimit="1.5"
     stroke-linecap="round"
@@ -31,7 +31,7 @@
   />
   <path
     d="M16.0726 9.94138L20.1619 7.89673"
-    stroke="black"
+    stroke={color}
     stroke-width="0.75"
     stroke-miterlimit="1.5"
     stroke-linecap="round"
