@@ -7,58 +7,9 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { TimeRange, timeRanges } from "$lib/util/time-ranges";
   import { tick } from "svelte";
+  import { defaultTimeRange, prettyFormatTimeRange } from "./utils";
 
-  const defaultTimeRange = timeRanges[0];
   let selectedTimeRange: TimeRange = defaultTimeRange;
-
-  const prettyFormatTimeRange = (timeRange: TimeRange): string => {
-    // day is the same
-    if (
-      timeRange.start.getDate() === timeRange.end.getDate() &&
-      timeRange.start.getMonth() === timeRange.end.getMonth() &&
-      timeRange.start.getFullYear() === timeRange.end.getFullYear()
-    ) {
-      return `${timeRange.start.toLocaleDateString(undefined, {
-        month: "long",
-      })} ${timeRange.start.getDate()}, ${timeRange.start.getFullYear()} (${timeRange.start.toLocaleString(
-        undefined,
-        { hour12: true, hour: "numeric", minute: "numeric" }
-      )} - ${timeRange.end.toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-      })})`;
-    }
-    // month is the same
-    if (
-      timeRange.start.getMonth() === timeRange.end.getMonth() &&
-      timeRange.start.getFullYear() === timeRange.end.getFullYear()
-    ) {
-      return `${timeRange.start.toLocaleDateString(undefined, {
-        month: "long",
-      })} ${timeRange.start.getDate()}-${timeRange.end.getDate()}, ${timeRange.start.getFullYear()}`;
-    }
-    // year is the same
-    if (timeRange.start.getFullYear() === timeRange.end.getFullYear()) {
-      return `${timeRange.start.toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-      })} - ${timeRange.end.toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-      })}, ${timeRange.start.getFullYear()}`;
-    }
-    // year is different
-    const dateFormatOptions: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
-    return `${timeRange.start.toLocaleDateString(
-      undefined,
-      dateFormatOptions
-    )} - ${timeRange.end.toLocaleDateString(undefined, dateFormatOptions)}`;
-  };
 
   let timeSelectorMenu;
   let timeSelectorMenuOpen = false;
