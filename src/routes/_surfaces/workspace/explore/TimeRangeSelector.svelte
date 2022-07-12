@@ -8,14 +8,18 @@
   import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { timeRanges } from "$lib/util/time-ranges";
+  import { makeAvailableTimeRanges } from "$lib/util/time-ranges";
   import { tick } from "svelte";
   import { getTimeRangeNameForButton, prettyFormatTimeRange } from "./utils";
 
   export let metricsDefId: string;
 
   $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+
   $: selectedTimeRange = $metricsLeaderboard.selectedTimeRange;
+  $: availableTimeRanges = makeAvailableTimeRanges(
+    $metricsLeaderboard?.timeRange
+  );
 
   let timeSelectorMenu;
   let timeSelectorMenuOpen = false;
@@ -62,7 +66,7 @@
       distance={8}
     >
       <Menu on:escape={() => (timeSelectorMenuOpen = false)}>
-        {#each timeRanges as timeRange}
+        {#each availableTimeRanges as timeRange}
           <MenuItem
             on:select={() =>
               setExploreSelectedTimeRangeAndUpdate(

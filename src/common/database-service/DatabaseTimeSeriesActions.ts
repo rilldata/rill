@@ -34,8 +34,8 @@ export enum TimeRangeName {
   Last2Weeks = "Last 2 weeks",
   Last30Days = "Last 30 days",
   Last60Days = "Last 60 days",
-  Today = "Today",
-  MonthToDate = "Month to date",
+  // Today = "Today",
+  // MonthToDate = "Month to date",
   // CustomRange = "Custom range",
 }
 export interface TimeSeriesTimeRange {
