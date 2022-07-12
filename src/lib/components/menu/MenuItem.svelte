@@ -79,6 +79,10 @@
   }}
   on:focus={() => {
     $currentItem = itemID;
+    hovered = true;
+  }}
+  on:blur={() => {
+    hovered = false;
   }}
   on:click={() => {
     selected = true;
