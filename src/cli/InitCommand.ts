@@ -9,15 +9,15 @@ export class InitCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
       new Command("init"),
-      "Initialize a new project either in the current folder or supplied folder."
+      "Initialize a new project. Project location defaults to the current folder or you can use the --project option to specify a path."
     )
       .option(
         "--db <duckDbPath>",
-        "Optional path to connect to an existing duckdb database."
+        "Connect to an existing duckDB database."
       )
       .option(
         "--copy",
-        "Optionally copy the duckdb database instead of directly modifying it."
+        "Used with --db. Copy the duckDB database instead of directly modifying it."
       )
       .action((opts, command) => {
         const { project } = command.optsWithGlobals();
@@ -65,7 +65,7 @@ export class InitCommand extends DataModelerCliCommand {
     }
     console.log(
       "\nThis application is extremely alpha and we want to hear from you if you have any questions or ideas to share! " +
-        "You can reach us in our Rill Discord Channel at https://bit.ly/3NSMKdT."
+        "You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT."
     );
   }
 

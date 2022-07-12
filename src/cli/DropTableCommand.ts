@@ -6,9 +6,9 @@ export class DropTableCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
       new Command("drop-source"),
-      "Drop a source."
-    )
-      .argument("<sourceName>", "Name of the source to drop.")
+      "Drops the source from Rill Developer. "
+      )
+      .argument("<sourceName>", "Name of the source to drop. ")
       .action((tableName, opts, command: Command) => {
         const { project } = command.optsWithGlobals();
         return this.run({ projectPath: project }, tableName);
@@ -21,9 +21,9 @@ export class DropTableCommand extends DataModelerCliCommand {
     ]);
     if (response.status === ActionStatus.Failure) {
       response.messages.forEach((message) => console.log(message.message));
-      console.log(`Failed to drop table ${tableName}`);
+      console.log(`Failed to drop source ${tableName}. `);
       return;
     }
-    console.log(`Successfully dropped table ${tableName}`);
+    console.log(`Successfully dropped source ${tableName}. `);
   }
 }

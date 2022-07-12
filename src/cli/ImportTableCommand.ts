@@ -21,25 +21,27 @@ export class ImportTableCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
       new Command("import-source"),
-      "Import a source from the supplied source file."
+        "Imports the source file into Rill Developer."
     )
       .argument(
         "<sourceFile>",
-        "File to import the source from. Supported file types: .parquet, .csv, .tsv."
+        "Path to the source file to be imported. "
+          "Supported file types include .parquet, .csv, .tsv. "
       )
       .option(
         "--name <sourceName>",
-        "Optional name of the source. Defaults to file name without the folder path and extension."
+        "Optional name of the source in Rill Developer. " +
+          "If no name is indicated, the source name defaults to a sanitized version of the file name. "
       )
       .option(
         "--delimiter <delimiter>",
         "Optional delimiter for csv and tsv files. " +
-          "This is auto detected by DuckDB, but can be forced to a different delimiter if the auto-detection is not satisfactory."
+          "If no delimiter is indicaated, the parsing is automatically detected by DuckDB. "
       )
       .option(
         "--force",
-        "Option to force overwrite if the source already exists. " +
-          "Without this, there will be a prompt to overwrite the source if it exists."
+        "Optional force overwrite if the source name already exists in Rill Developer. " +
+          "Without this option enabled, there will be a prompt to overwrite the source if it exists."
       )
       .action((tableSourceFile, opts, command: Command) => {
         const options: ImportTableCommandOptions = command.optsWithGlobals();
@@ -63,19 +65,18 @@ export class ImportTableCommand extends DataModelerCliCommand {
 
     if (existingTable && importOptions.force) {
       console.log(
-        `There is already an imported table name : ${tableName}. ` +
-          "\nnForcing an overwrite." +
-          `\nDropping the existing ${tableName} from ${existingTable.path} and importing ${tableSourceFile}`
+        `There is already a source named ${tableName}. ` +
+          "\nForcing an overwrite." +
+          `\nDropping the existing source s${tableName} from ${existingTable.path} and importing ${tableSourceFile}`
       );
     } else if (existingTable && !importOptions.force) {
       const shouldOverwrite = await cliConfirmation(
-        `There is already an imported table name : ${tableName}. ` +
-          "\nImporting again will drop the existing table and import this one. " +
-          "\nAre you sure you want to do this ? (y/N)"
+        `There is already a source named ${tableName}. ` +
+          "\nDo you want to drop the existing source and import this one? (y/N)"
       );
       if (!shouldOverwrite) return;
       console.log(
-        `Dropping the existing ${tableName} from ${existingTable.path} and importing ${tableSourceFile}`
+        `Dropping the existing source ${tableName} from ${existingTable.path} and importing ${tableSourceFile}`
       );
     }
 
@@ -97,7 +98,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
     if (response.status === ActionStatus.Failure) {
       response.messages.forEach((message) => console.log(message.message));
       console.log(
-        `Failed to import table ${tableName} from file ${tableSourceFile}`
+        `Failed to import source ${tableName} from file ${tableSourceFile}`
       );
       return;
     }
@@ -119,11 +120,11 @@ export class ImportTableCommand extends DataModelerCliCommand {
       (!existingTable && createdTable)
     ) {
       console.log(
-        `Successfully imported ${tableSourceFile} into table ${createdTable.tableName}`
+        `Successfully imported ${tableSourceFile} into source ${createdTable.tableName}`
       );
     } else {
       console.log(
-        `Failed to import table ${tableName} from file ${tableSourceFile}`
+        `Failed to import source ${tableName} from file ${tableSourceFile}`
       );
     }
   }

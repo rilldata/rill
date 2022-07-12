@@ -59,18 +59,25 @@ rill import-source /path/to/data_2.csv
 rill import-source /path/to/data_3.tsv
 ```
 
-### csv delimiter
-If you have a dataset that is delimited by a character other than a comma or tab, you can use the `--delimiter` option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
-
-```
-rill import-source /path/to/data_4.txt --delimiter "|"
-```
-
 ### Source names
 By default the source name will be a sanitized version of the dataset file name. You can specify a name using the `name` command.
   
 ```
 rill import-source /path/to/data_1.parquet --name my_source
+```
+
+### Source overwrite
+By default source name conflicts will prompt a warning message asking if you want to overwrite the existing source data. You can force Rill Developer to overwrite any existing sources without this warning by using the `force` command.
+  
+```
+rill import-source /path/to/data_1.parquet --name my_source
+```
+
+### File Delimiters
+If you have a dataset that is delimited by a character other than a comma or tab, you can use the `--delimiter` option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
+
+```
+rill import-source /path/to/data_4.txt --delimiter "|"
 ```
 
 ## Dropping a source
