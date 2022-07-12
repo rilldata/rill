@@ -42,11 +42,15 @@
     <ExploreHeader bind:whichReferenceValue {metricsDefId} />
   </svelte:fragment>
   <svelte:fragment slot="metrics">
-    {#if $metricsLeaderboard}
+    <MetricsTimeSeriesCharts
+      activeMeasureIds={$measures?.map((measure) => measure.id) || []}
+      {metricsDefId}
+    />
+    <!-- {#if $metricsLeaderboard}
       {#each $metricsLeaderboard.measureIds as measureId, index (measureId)}
-        <MetricsTimeSeriesCharts {metricsDefId} {measureId} {index} />
+        <MetricsTimeSeriesCharts {measureIds} {metricsDefId} {index} />
       {/each}
-    {/if}
+    {/if} -->
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">
     <LeaderboardDisplay {columns} {whichReferenceValue} {metricsDefId} />
