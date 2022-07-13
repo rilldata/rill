@@ -1,7 +1,10 @@
 <script lang="ts">
   import { store } from "$lib/redux-store/store-root";
-  import { MeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
-  import { DimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
+  import { getContext } from "svelte";
+  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
+
+  import { initMeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
+  import { initDimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
   import {
@@ -25,11 +28,14 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
+  import { CATEGORICALS } from "$lib/duckdb-data-types";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
 
   export let metricsDefId;
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
+  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
 
   // FIXME: this pattern of calling the `fetch*API` from components should
   // be replaced by a call within a thunk fetches the relevant data at the
@@ -43,13 +49,11 @@
   function handleCreateMeasure() {
     store.dispatch(createMeasuresApi({ metricsDefId }));
   }
-  function handleUpdateMeasure(evt) {
+  function handleUpdateMeasure(index, name, value) {
     store.dispatch(
       updateMeasuresApi({
-        id: $measures[evt.detail.index].id,
-        changes: {
-          [evt.detail.name]: evt.detail.value,
-        },
+        id: $measures[index].id,
+        changes: { [name]: value },
       })
     );
   }
@@ -60,12 +64,12 @@
   function handleCreateDimension() {
     store.dispatch(createDimensionsApi({ metricsDefId }));
   }
-  function handleUpdateDimension(evt) {
+  function handleUpdateDimension(index, name, value) {
     store.dispatch(
       updateDimensionsApi({
-        id: $dimensions[evt.detail.index].id,
+        id: $dimensions[index].id,
         changes: {
-          [evt.detail.name]: evt.detail.value,
+          [name]: value,
         },
       })
     );
@@ -73,6 +77,30 @@
   function handleDeleteDimension(evt) {
     store.dispatch(deleteDimensionsApi(evt.detail));
   }
+
+  // FIXME: the only data that is needed from the derived model store is the data types of the
+  // columns in this model. I need to make this available in the redux store.
+  const derivedModelStore = getContext(
+    "rill:app:derived-model-store"
+  ) as DerivedModelStore;
+
+  let validDimensions: string[] = [];
+  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
+    const selectedMetricsDefModelProfile = $derivedModelStore?.entities.find(
+      (model) => model.id === $selectedMetricsDef.sourceModelId
+    ).profile;
+    validDimensions = selectedMetricsDefModelProfile
+      .filter((column) => CATEGORICALS.has(column.type))
+      .map((column) => column.name);
+  } else {
+    validDimensions = [];
+  }
+
+  $: MeasuresColumns = initMeasuresColumns(handleUpdateMeasure);
+  $: DimensionColumns = initDimensionColumns(
+    handleUpdateDimension,
+    validDimensions
+  );
 </script>
 
 <div
