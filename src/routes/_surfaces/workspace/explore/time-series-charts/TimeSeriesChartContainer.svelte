@@ -24,8 +24,6 @@ A container GraphicContext for the time series in a metrics dashboard.
       yType="number"
       xMinTweenProps={{ duration: 500 }}
       xMaxTweenProps={{ duration: 500 }}
-      yMinTweenProps={{ duration: 500 }}
-      yMaxTweenProps={{ duration: 500 }}
     >
       <slot />
     </GraphicContext>

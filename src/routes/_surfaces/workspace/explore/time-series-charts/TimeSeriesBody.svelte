@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithTween } from "$lib/components/data-graphic/functional-components";
@@ -6,6 +7,7 @@
   import { Area, Line } from "$lib/components/data-graphic/marks";
   import { interpolateArray } from "d3-interpolate";
   import { Body } from "$lib/components/data-graphic/elements";
+  import { guidGenerator } from "$lib/util/guid";
   export let start;
   export let end;
   export let interval;
@@ -19,38 +21,66 @@
 
   // workaround for formatting dates etc.
   //const xFormatter = interval.includes('day') ?
+
+  $: longTimeSeries = data?.length > 1000;
+  let longTimeSeriesKey;
+  /**
+   * Artificially generate a value for the key block.
+   * For longer time series (let's say > 1000 pts) we
+   * can default to a specialized animation where we mostly
+   * just fly out the mark within the Body tag's clip path,
+   * making it look like it is sinking into the ocean.
+   * It's a nice effect.
+   */
+  $: if (data?.length > 1000) {
+    longTimeSeriesKey = guidGenerator();
+  } else {
+    longTimeSeriesKey = undefined;
+  }
+
+  let hideCurrent = false;
 </script>
 
 {#if key && data?.length}
   <div>
+    {hideCurrent}
     <SimpleDataGraphic
       shareYScale={false}
       bind:mouseoverValue
       xMin={start}
       xMax={end}
+      yMaxTweenProps={{ duration: 500 }}
     >
       <Body>
-        {#key key}
-          <WithTween
-            value={data}
-            let:output={tweenedFormattedData}
-            tweenProps={{
-              duration: 0,
-              easing: cubicOut,
-              interpolate: interpolateArray,
+        {#key key + longTimeSeriesKey}
+          <!-- here, we switch hideCurrent before and after the transition, so
+            in cases of the key updating, we can gracefully transition all kinds of
+            interesting animations.
+          -->
+          <g
+            out:fly={{ duration: 500, y: 175 }}
+            style:opacity={hideCurrent && !longTimeSeries ? 0.125 : 1}
+            style:transition="opacity 250ms"
+            on:outrostart={() => {
+              hideCurrent = true;
+            }}
+            on:outroend={() => {
+              hideCurrent = false;
             }}
           >
-            <Area
-              data={tweenedFormattedData}
-              yAccessor={accessor}
-              xAccessor="ts"
-            />
-            <Line
-              data={tweenedFormattedData}
-              yAccessor={accessor}
-              xAccessor="ts"
-            />
-          </WithTween>
+            <WithTween
+              value={data}
+              let:output={tweenedData}
+              tweenProps={{
+                duration: longTimeSeries ? 0 : 600,
+                easing: cubicOut,
+                interpolate: interpolateArray,
+              }}
+            >
+              <Area data={tweenedData} yAccessor={accessor} xAccessor="ts" />
+              <Line data={tweenedData} yAccessor={accessor} xAccessor="ts" />
+            </WithTween>
+          </g>
         {/key}
       </Body>
       <Axis side="right" />

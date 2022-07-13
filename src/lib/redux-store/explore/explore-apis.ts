@@ -56,15 +56,14 @@ export const syncExplore = (
     dispatch(initMetricsExplore(metricsDefId, dimensions, measures));
     return;
   }
-  dispatch(fetchTimestampColumnRangeApi(metricsDefId));
 
   let shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
   shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
   // To avoid infinite loop only update if something changed.
   // TODO: handle edge cases like measure expression or dimension column changing.
   if (shouldUpdate) {
+    dispatch(fetchTimestampColumnRangeApi(metricsDefId));
     updateExploreWrapper(dispatch, metricsDefId);
-    // dispatch(fetchTimestampColumnRangeApi(metricsDefId));
   }
 };
 /**

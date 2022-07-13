@@ -24,6 +24,11 @@ A simple composable container for SVG-based data graphics.
   export let yMin = undefined;
   export let yMax = undefined;
 
+  export let xMinTweenProps = { duration: 0 };
+  export let xMaxTweenProps = { duration: 0 };
+  export let yMinTweenProps = { duration: 0 };
+  export let yMaxTweenProps = { duration: 0 };
+
   export let shareXScale = true;
   export let shareYScale = true;
 
@@ -55,6 +60,10 @@ A simple composable container for SVG-based data graphics.
     {marginBuffer}
     {shareXScale}
     {shareYScale}
+    {xMinTweenProps}
+    {xMaxTweenProps}
+    {yMinTweenProps}
+    {yMaxTweenProps}
   >
     <SimpleSVGContainer
       bind:mouseoverValue

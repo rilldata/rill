@@ -37,7 +37,7 @@
   $: leaderboardMeasureDefinition = $measures.find(
     (measure) => measure.id === $metricsLeaderboard?.leaderboardMeasureId
   );
-  // get the expression
+  // get the expression so we can determine if the measure is summable
   $: expression = leaderboardMeasureDefinition?.expression;
 
   let bigNumberEntity: Readable<BigNumberEntity>;
@@ -63,8 +63,6 @@
     );
   }
 
-  $: leaderboardMeasureId = $metricsLeaderboard.leaderboardMeasureId;
-  $: console.log(leaderboardMeasureId, $measureField);
   /** Functionality for resizing the virtual leaderboard */
   let columns = 3;
   let availableWidth = 0;
