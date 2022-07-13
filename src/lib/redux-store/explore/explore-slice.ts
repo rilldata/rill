@@ -254,7 +254,7 @@ export const exploreSlice = createSlice({
             // if existing value is an 'include' then remove the value
             metricsExplore.activeValues[dimensionId] =
               metricsExplore.activeValues[dimensionId].filter(
-                (activeValue) => activeValue !== dimensionValue
+                (activeValue) => activeValue[0] !== dimensionValue
               );
             metricsExplore.selectedCount--;
           } else {

@@ -12,6 +12,7 @@
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { TIMESTAMPS } from "$lib/duckdb-data-types";
 
   export let metricsDefId;
 
@@ -34,20 +35,18 @@
 
   let derivedModelColumns: Array<ProfileColumn>;
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    derivedModelColumns = $derivedModelStore?.entities.find(
-      (model) => model.id === $selectedMetricsDef.sourceModelId
-    ).profile;
+    derivedModelColumns = $derivedModelStore?.entities
+      .find((model) => model.id === $selectedMetricsDef.sourceModelId)
+      .profile.filter((column) => TIMESTAMPS.has(column.type));
   } else {
     derivedModelColumns = [];
   }
 
-  function updateMetricsDefinitionHandler(
-    metricsDef: Partial<MetricsDefinitionEntity>
-  ) {
+  function updateMetricsDefinitionHandler(evt: Event) {
     store.dispatch(
       updateMetricsDefsApi({
         id: metricsDefId,
-        changes: metricsDef,
+        changes: { timeDimension: (<HTMLSelectElement>evt.target).value },
       })
     );
   }
@@ -81,9 +80,7 @@
         class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:font-bold hover:border-gray-100"
         style="background-color: #FFF; width:18em;"
         value={timeColumnSelectedValue}
-        on:change={(evt) => {
-          updateMetricsDefinitionHandler({ timeDimension: evt.target.value });
-        }}
+        on:change={updateMetricsDefinitionHandler}
         disabled={dropdownDisabled}
       >
         <option value="__DEFAULT_VALUE__" disabled selected hidden

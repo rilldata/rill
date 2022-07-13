@@ -1,50 +1,50 @@
 <script lang="ts">
-  import { getContext, onMount, tick } from "svelte";
-  import { slide } from "svelte/transition";
-  import { tweened } from "svelte/motion";
-  import { sineOut as easing } from "svelte/easing";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import { getContext, onMount, tick } from "svelte";
+  import { sineOut as easing } from "svelte/easing";
+  import { tweened } from "svelte/motion";
+  import { slide } from "svelte/transition";
 
-  import * as classes from "$lib/util/component-classes";
   import Export from "$lib/components/icons/Export.svelte";
-  import { onClickOutside } from "$lib/util/on-click-outside";
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import * as classes from "$lib/util/component-classes";
+  import { onClickOutside } from "$lib/util/on-click-outside";
 
+  import ExportError from "$lib/components/modal/ExportError.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import ExportError from "$lib/components/modal/ExportError.svelte";
 
   import {
     ApplicationStore,
+    config as appConfig,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
-  import { config as appConfig } from "$lib/application-state-stores/application-store";
 
   import {
-    formatInteger,
     formatBigNumberPercentage,
+    formatInteger,
   } from "$lib/util/formatters";
 
-  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
+  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+  import type {
+    DerivedTableStore,
+    PersistentTableStore,
+  } from "$lib/application-state-stores/table-stores";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
+  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
-  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import { FileExportType } from "$common/data-modeler-service/ModelActions";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import Button from "$lib/components/Button.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
-  import { FileExportType } from "$common/data-modeler-service/ModelActions";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -199,7 +199,7 @@
             suppress={contextMenuOpen}
           >
             <Button
-              onClick={async (event) => {
+              on:click={async (event) => {
                 contextMenuOpen = !contextMenuOpen;
                 menuX = event.clientX;
                 menuY = event.clientY;
@@ -376,6 +376,7 @@
       alignment="start"
     >
       <Menu
+        dark
         on:escape={() => {
           contextMenuOpen = false;
         }}

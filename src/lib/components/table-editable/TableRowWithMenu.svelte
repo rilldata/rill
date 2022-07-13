@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { tick } from "svelte/internal";
   import { createEventDispatcher } from "svelte";
+  import { tick } from "svelte/internal";
 
+  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import Portal from "$lib/components/Portal.svelte";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
-  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
@@ -126,7 +126,7 @@ align-items: center;
       location="left"
       alignment="start"
     >
-      <Menu on:escape={closeContextMenu} on:item-select={closeContextMenu}>
+      <Menu dark on:escape={closeContextMenu} on:item-select={closeContextMenu}>
         <MenuItem on:select={() => dispatch("delete")}>delete row</MenuItem>
       </Menu>
     </FloatingElement>

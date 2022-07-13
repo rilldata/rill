@@ -1,7 +1,8 @@
+import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
-import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { MICROS } from "$common/database-service/DatabaseColumnActions";
+import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import {
   getCoalesceStatementsMeasures,
   getExpressionColumnsFromMeasures,
@@ -9,9 +10,8 @@ import {
   normaliseMeasures,
 } from "$common/database-service/utils";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
-import { MICROS } from "$common/database-service/DatabaseColumnActions";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
-import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 export interface TimeSeriesResponse {
   id?: string;
@@ -23,7 +23,24 @@ export interface TimeSeriesResponse {
 export interface TimeSeriesRollup {
   rollup: TimeSeriesResponse;
 }
+
+export enum TimeRangeName {
+  LastHour = "Last hour",
+  Last6Hours = "Last 6 hours",
+  LastDay = "Last day",
+  Last2Days = "Last 2 days",
+  Last5Days = "Last 5 days",
+  LastWeek = "Last week",
+  Last2Weeks = "Last 2 weeks",
+  Last30Days = "Last 30 days",
+  Last60Days = "Last 60 days",
+  AllTime = "All time",
+  // Today = "Today",
+  // MonthToDate = "Month to date",
+  // CustomRange = "Custom range",
+}
 export interface TimeSeriesTimeRange {
+  name?: TimeRangeName;
   interval?: string;
   start?: string;
   end?: string;

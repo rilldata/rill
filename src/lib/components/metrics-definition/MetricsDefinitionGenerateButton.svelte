@@ -45,7 +45,7 @@
           pt-2 pb-2
           ${buttonDisabled ? "cursor-not-allowed" : "cursor-pointer"}
           ${buttonDisabled ? "text-gray-500" : "text-gray-900"}
-        `}>populate</button
+        `}>quick start</button
   >
   <TooltipContent slot="tooltip-content">
     <div style:width="30em">

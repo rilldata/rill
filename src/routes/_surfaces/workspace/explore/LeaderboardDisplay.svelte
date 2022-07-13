@@ -59,7 +59,7 @@
       metricsDefId,
       item.dimensionId,
       event.detail.label,
-      !event.detail.isActive
+      true
     );
   }
 

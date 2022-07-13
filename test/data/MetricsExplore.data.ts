@@ -19,6 +19,10 @@ export interface MetricsExploreTestDataType {
   bigNumber: TimeSeriesMeasureRange;
 }
 
+const DefaultPublisherLeaderboard: [string, Array<string>] = [
+  "publisher",
+  ["Facebook", "Google", "Yahoo", "Microsoft"],
+];
 const DefaultDomainLeaderboard: [string, Array<string>] = [
   "domain",
   [
@@ -52,7 +56,7 @@ export const MetricsExploreTestData: Array<MetricsExploreTestDataType> = [
     title: "basic request",
     previewRollupInterval: PreviewRollupInterval.day,
     leaderboards: [
-      ["publisher", ["Facebook", "Google", "Yahoo", "Microsoft"]],
+      DefaultPublisherLeaderboard,
       DefaultDomainLeaderboard,
       DefaultCityLeaderboard,
       ["country", ["India", "USA", "Ireland", "UK"]],
@@ -64,7 +68,7 @@ export const MetricsExploreTestData: Array<MetricsExploreTestDataType> = [
     timeRange: getTimeRange(PreviewRollupInterval.month),
     previewRollupInterval: PreviewRollupInterval.month,
     leaderboards: [
-      ["publisher", ["Facebook", "Google", "Yahoo", "Microsoft"]],
+      DefaultPublisherLeaderboard,
       DefaultDomainLeaderboard,
       DefaultCityLeaderboard,
       ["country", ["India", "USA", "Ireland", "UK"]],
@@ -85,7 +89,7 @@ export const MetricsExploreTestData: Array<MetricsExploreTestDataType> = [
     ],
     leaderboards: [
       ["publisher", ["Yahoo"]],
-      ["domain", ["sports.yahoo.com"]],
+      DefaultDomainLeaderboard,
       DefaultCityLeaderboard,
       ["country", ["India", "USA", "Ireland", "UK"]],
     ],
@@ -101,7 +105,7 @@ export const MetricsExploreTestData: Array<MetricsExploreTestDataType> = [
     measures: [1],
     measureRanges: [{ bid_price: [2.5, 3] }, { bid_price: [3, 3.5] }],
     leaderboards: [
-      ["publisher", ["Microsoft", "Facebook", "Google"]],
+      ["publisher", ["Microsoft", "Facebook", "Google", "Yahoo"]],
       [
         "domain",
         [
