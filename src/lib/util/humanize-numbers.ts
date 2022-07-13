@@ -31,11 +31,6 @@ export const nicelyFormattedTypesSelectorOptions = [
   { value: NicelyFormattedTypes.DECIMAL, label: "Decimal - 12,345.67" },
 ];
 
-console.log(
-  "nicelyFormattedTypesSelectorOptions",
-  nicelyFormattedTypesSelectorOptions
-);
-
 const DEFAULT_OPTIONS = {
   locale: "en-US",
   style: "decimal",
