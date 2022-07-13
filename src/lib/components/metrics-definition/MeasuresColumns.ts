@@ -21,7 +21,6 @@ export const initMeasuresColumns = (inputChangeHandler) =>
       tooltip: "a human readable description of this measure",
       onchange: inputChangeHandler,
       renderer: TableCellInput,
-      
     },
 
     // FIXME: will be needed later for API
@@ -33,11 +32,12 @@ export const initMeasuresColumns = (inputChangeHandler) =>
     //   onchange: inputChangeHandler,
     //   validation: (row: MeasureDefinitionEntity) => row.sqlNameIsValid,
     // },
+
+    // FIXME: willbe needed later for sparkline summary
     // {
     //   name: "id",
     //   label: "preview",
     //   tooltip: "a preview of this measure over the selected time dimension",
-    //   // renderType: RenderType.SPARKLINE,
     //   renderer: TableCellSparkline,
     // },
   ] as ColumnConfig[];

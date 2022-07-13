@@ -48,11 +48,11 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
     //   validation: (row: DimensionDefinitionEntity) => row.sqlNameIsValid,
     // },
 
+    // FIXME: willbe needed later for cardinality summary
     // {
     //   name: "id",
     //   label: "unique values",
     //   tooltip: "the number of unique values present in this dimension",
-
-    //   renderType: // FIXME: need cardinality count cell here
+    //   renderer: TabelCellCardinality
     // },
   ] as ColumnConfig[];

@@ -12,7 +12,11 @@
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
-  export let measureId;
+  // FIXME: this is WIP, will need a refactor when work on this is restarted
+  export let columnConfig: ColumnConfig;
+  export let index: number;
+  export let row: EntityRecord;
+  export let value: string;
 
   let measure: Readable<MeasureDefinitionEntity>;
   $: measure = getMeasureById(measureId);

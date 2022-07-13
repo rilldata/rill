@@ -79,7 +79,7 @@
   }
 
   // FIXME: the only data that is needed from the derived model store is the data types of the
-  // columns in this model. This data should be available in the redux store.
+  // columns in this model. I need to make this available in the redux store.
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;

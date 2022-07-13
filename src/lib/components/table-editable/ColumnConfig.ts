@@ -3,11 +3,13 @@ import type { ValidationState } from "$common/data-modeler-state-service/entity-
 
 import type { SvelteComponent } from "svelte";
 
-export enum RenderType {
-  INPUT = "input",
-  SPARKLINE = "sparkline",
-  CARDINALITY = "cardinality",
-}
+export type CellRendererComponent = new (
+  // FIXME: these types are the   ones taken by the components
+  // columnConfig: ColumnConfig,
+  // index: number,
+  // row: EntityRecord
+  ...args: any[]
+) => SvelteComponent;
 
 /**
  * config info for table columns
@@ -21,7 +23,7 @@ export interface ColumnConfig {
   label?: string;
   type?: string;
 
-  renderer: new (...args: any[]) => SvelteComponent;
+  renderer: CellRendererComponent;
   tooltip?: string;
   onchange?: (rowIndex: number, columnName: string, value: string) => void;
 
