@@ -4,7 +4,6 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
   import { store } from "$lib/redux-store/store-root";
-  import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { getContext } from "svelte";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import type { ProfileColumn } from "$lib/types";

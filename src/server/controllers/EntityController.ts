@@ -4,7 +4,6 @@ import type { ActionResponse } from "$common/data-modeler-service/response/Actio
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
-import { RillActionsChannel } from "$common/utils/RillActionsChannel";
 import {
   EntityType,
   StateType,

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { formatInteger } from "$lib/util/formatters";
   import type { Readable } from "svelte/types/runtime/store";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
@@ -19,9 +18,6 @@
   let measureField: Readable<string>;
   $: measureField = getMeasureFieldNameByIdAndIndex(measureId, index);
 
-  const metricFormatters = {
-    simpleSummable: formatInteger,
-  };
   let bigNumber;
   $: bigNumber = $bigNumberEntity?.bigNumbers?.[$measureField] ?? 0;
 

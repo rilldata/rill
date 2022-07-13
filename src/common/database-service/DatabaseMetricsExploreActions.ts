@@ -3,8 +3,6 @@ import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import {
   getExpressionColumnsFromMeasures,
-  getFilterFromFilters,
-  getFilterFromTimeRange,
   getWhereClauseFromFilters,
   normaliseMeasures,
 } from "./utils";
