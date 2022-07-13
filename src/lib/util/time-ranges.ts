@@ -3,10 +3,12 @@ import {
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
 
-const makeTimeRange = (
+const makeSelectableTimeRange = (
   name: TimeRangeName,
-  end: Date = new Date()
+  datasetTimeRange: TimeSeriesTimeRange
 ): TimeSeriesTimeRange => {
+  const start = new Date(datasetTimeRange?.start);
+  const end = new Date(datasetTimeRange?.end);
   switch (name) {
     case TimeRangeName.LastHour:
       return {
@@ -62,49 +64,21 @@ const makeTimeRange = (
         start: new Date(end.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString(),
         end: end.toISOString(),
       };
-    // case TimeRangeName.Today:
-    //   return {
-    //     name,
-    //     start: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
-    //     end: end.toISOString(),
-    //   };
-    // case TimeRangeName.MonthToDate:
-    //   return {
-    //     name,
-    //     start: new Date(
-    //       new Date(new Date().setDate(1)).setHours(0, 0, 0, 0)
-    //     ).toISOString(),
-    //     end: end.toISOString(),
-    //   };
-    // case TimeRangeName.LastMonth:
-    //   return {
-    //     name,
-    //     start: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-    //     end: end,
-    //   };
-    //   // const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1));
-    //   return {
-    //     name,
-    //     start: new Date(lastMonth.setDate(1)),
-    //     end: new Date(lastMonth.setMonth(lastMonth.getMonth() + 1)),
-    //   };
-    // case TimeRangeName.CustomRange:
-    //   return {
-    //     name,
-    //     start: new Date(),
-    //     end: end,
-    //   };
+    case TimeRangeName.AllTime:
+      return {
+        name,
+        start: start.toISOString(),
+        end: end.toISOString(),
+      };
     default:
       throw new Error(`Unknown time range name: ${name}`);
   }
 };
 
-export const makeAvailableTimeRanges = (
+export const makeSelectableTimeRanges = (
   fullTimeRangeInDataset: TimeSeriesTimeRange
 ): TimeSeriesTimeRange[] => {
-  return Object.keys(TimeRangeName).map((name) => {
-    return fullTimeRangeInDataset?.end
-      ? makeTimeRange(TimeRangeName[name], new Date(fullTimeRangeInDataset.end))
-      : makeTimeRange(TimeRangeName[name]);
-  });
+  return Object.keys(TimeRangeName).map((name) =>
+    makeSelectableTimeRange(TimeRangeName[name], fullTimeRangeInDataset)
+  );
 };

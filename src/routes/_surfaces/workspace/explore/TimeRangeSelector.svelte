@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+
   import Button from "$lib/components/Button.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
@@ -8,7 +10,7 @@
   import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { makeAvailableTimeRanges } from "$lib/util/time-ranges";
+  import { makeSelectableTimeRanges } from "$lib/util/time-ranges";
   import { tick } from "svelte";
   import { getTimeRangeNameForButton, prettyFormatTimeRange } from "./utils";
 
@@ -16,13 +18,15 @@
 
   $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
 
+  let selectableTimeRanges: TimeSeriesTimeRange[];
+  $: if ($metricsLeaderboard?.timeRange) {
+    selectableTimeRanges = makeSelectableTimeRanges(
+      $metricsLeaderboard.timeRange
+    );
+  }
   $: selectedTimeRange = $metricsLeaderboard.selectedTimeRange;
-  $: availableTimeRanges = makeAvailableTimeRanges(
-    $metricsLeaderboard?.timeRange
-  );
-
-  $: if (!selectedTimeRange) {
-    selectedTimeRange = availableTimeRanges[0];
+  $: if (!selectedTimeRange && selectableTimeRanges) {
+    selectedTimeRange = selectableTimeRanges[0];
   }
 
   let timeSelectorMenu;
@@ -70,7 +74,7 @@
       distance={8}
     >
       <Menu on:escape={() => (timeSelectorMenuOpen = false)}>
-        {#each availableTimeRanges as timeRange}
+        {#each selectableTimeRanges as timeRange}
           <MenuItem
             on:select={() =>
               setExploreSelectedTimeRangeAndUpdate(
