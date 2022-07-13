@@ -57,7 +57,7 @@
             interesting animations.
           -->
           <g
-            out:fly={{ duration: 500, y: 175 }}
+            out:fly|local={{ duration: 500, y: 175 }}
             style:opacity={hideCurrent && !longTimeSeries ? 0.125 : 1}
             style:transition="opacity 250ms"
             on:outrostart={() => {

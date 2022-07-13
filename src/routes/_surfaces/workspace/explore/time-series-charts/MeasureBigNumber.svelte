@@ -34,8 +34,8 @@
         {#if value}
           <div
             class="absolute"
-            in:receive={{ key: "value" }}
-            out:send={{ key: "value" }}
+            in:receive|local={{ key: "value" }}
+            out:send|local={{ key: "value" }}
           >
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
               {#if formatPreset !== NicelyFormattedTypes.NONE}
@@ -48,8 +48,8 @@
         {:else}
           <div
             class="absolute p-2"
-            in:receive={{ key: "spinner" }}
-            out:send={{ key: "spinner" }}
+            in:receive|local={{ key: "spinner" }}
+            out:send|local={{ key: "spinner" }}
           >
             <Spinner status={EntityStatus.Running} />
           </div>

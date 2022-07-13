@@ -64,8 +64,8 @@ export const syncExplore = (
   // To avoid infinite loop only update if something changed.
   // TODO: handle edge cases like measure expression or dimension column changing.
   if (shouldUpdate) {
-    dispatch(fetchTimestampColumnRangeApi(metricsDefId));
     updateExploreWrapper(dispatch, metricsDefId);
+    dispatch(fetchTimestampColumnRangeApi(metricsDefId));
   }
 };
 /**

@@ -52,36 +52,28 @@
     <div />
     <!-- add the axis component -->
     <SimpleDataGraphic height={40} top={24} bottom={0} let:xScale>
-      <!-- {#if point}
-        <text
-          transition:fade={{ duration: 100 }}
-          x={xScale(point.ts)}
-          y={42 - 12}>{point.ts} abc</text
-        >
-      {/if}
-      <g
-        style:transform="translateY({hovering ? "-12px" : "0px"})"
-        style:transition="transform 100ms"
-      > -->
       <Axis side="top" />
-      <!-- </g> -->
     </SimpleDataGraphic>
     {#each $allMeasures as measure, index (measure.id)}
       <!-- FIXME: I can't select the big number by the measure id.
     -->
-      {@const bigNum = $bigNumbers?.bigNumbers[`measure_${index}`]}
+      {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
+
       <!-- FIXME: I can't select a time series by measure id. 
     -->
-      <MeasureBigNumber
-        value={bigNum}
-        description={measure.description || measure.label || measure.expression}
-        formatPreset={measure.formatPreset}
-      >
-        <svelte:fragment slot="name">
-          {measure.formatPreset}
-          {measure.label || measure.expression}
-        </svelte:fragment>
-      </MeasureBigNumber>
+      {#if bigNum}
+        <MeasureBigNumber
+          value={bigNum}
+          description={measure?.description ||
+            measure?.label ||
+            measure?.expression}
+          formatPreset={measure?.formatPreset}
+        >
+          <svelte:fragment slot="name">
+            {measure?.label || measure?.expression}
+          </svelte:fragment>
+        </MeasureBigNumber>
+      {/if}
       <div class="time-series-body" style:height="125px">
         {#if formattedData}
           <TimeSeriesBody
