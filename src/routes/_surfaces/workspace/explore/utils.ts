@@ -138,14 +138,19 @@ export const prettyFormatTimeRange = (
   ) {
     return `${start.toLocaleDateString(undefined, {
       month: "long",
-    })} ${start.getDate()}, ${start.getFullYear()} (${start.toLocaleString(
-      undefined,
-      { hour12: true, hour: "numeric", minute: "numeric" }
-    )} - ${end.toLocaleString(undefined, {
-      hour12: true,
-      hour: "numeric",
-      minute: "numeric",
-    })})`;
+    })} ${start.getDate()}, ${start.getFullYear()} (${start
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+      })
+      .replace(/\s/g, "")}-${end
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+      })
+      .replace(/\s/g, "")})`;
   }
   // month is the same
   if (
@@ -154,7 +159,19 @@ export const prettyFormatTimeRange = (
   ) {
     return `${start.toLocaleDateString(undefined, {
       month: "long",
-    })} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()}`;
+    })} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()} (${start
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+      })
+      .replace(/\s/g, "")}-${end
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+      })
+      .replace(/\s/g, "")})`;
   }
   // year is the same
   if (start.getFullYear() === end.getFullYear()) {
