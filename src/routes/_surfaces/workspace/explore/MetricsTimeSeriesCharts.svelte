@@ -1,45 +1,105 @@
 <script lang="ts">
-  import MetricsExploreTimeChart from "$lib/components/leaderboard/MetricsExploreTimeChart.svelte";
-  import type { Readable } from "svelte/store";
-  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { getFallbackMeasureName } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import MeasureBigNumber from "$lib/components/leaderboard/MeasureBigNumber.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import { fly } from "svelte/transition";
+  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import MeasureBigNumber from "./time-series-charts/MeasureBigNumber.svelte";
+  import TimeSeriesBody from "./time-series-charts/TimeSeriesBody.svelte";
 
-  export let metricsDefId: string;
-  export let measureId: string;
-  export let index: number;
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
 
-  let measure: Readable<MeasureDefinitionEntity>;
-  $: measure = getMeasureById(measureId);
-  let measureField: string;
-  $: if ($measure) {
-    measureField = getFallbackMeasureName(index, $measure.sqlName);
-  }
+  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
+  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
+  import TimeSeriesChartContainer from "./time-series-charts/TimeSeriesChartContainer.svelte";
+  import { WithBisector } from "$lib/components/data-graphic/functional-components";
+  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { Axis } from "$lib/components/data-graphic/guides";
+
+  import Spinner from "$lib/components/Spinner.svelte";
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+
+  export let metricsDefId;
+  export let start: Date;
+  export let end: Date;
+
+  // get all the measure ids that are available.
+
+  $: allMeasures = getMeasuresByMetricsId(metricsDefId);
+
+  // get the active big numbers
+
+  $: bigNumbers = getBigNumberById(metricsDefId);
+  // plot the data
+
+  $: timeSeries = getTimeSeriesById(metricsDefId);
+  $: formattedData = $timeSeries?.values
+    ? convertTimestampPreview($timeSeries.values)
+    : undefined;
+
+  let mouseoverValue = undefined;
+
+  $: key = `${start}` + `${end}`;
 </script>
 
-{#if $measure}
+<WithBisector
+  data={formattedData}
+  callback={(datum) => datum.ts}
+  value={mouseoverValue?.x}
+  let:point
+>
   <div>
-    <div class="grid grid grid-flow-col">
-      <div class="big-number" style:width="200px">
-        <Tooltip location="top" alignment="start" distance={16}>
-          <h2>{$measure.label?.length ? $measure.label : measureField}</h2>
-          <TooltipContent slot="tooltip-content">
-            {$measure?.description || $measure.label || measureField}
-          </TooltipContent>
-        </Tooltip>
-        <div>
-          <MeasureBigNumber
-            {metricsDefId}
-            {measureId}
-            {index}
-            formatPreset={$measure.formatPreset}
-          />
-        </div>
+    {#if point?.ts}
+      <div
+        class="absolute italic"
+        transition:fly|local={{ duration: 100, y: 4 }}
+      >
+        {point?.ts}
       </div>
-      <MetricsExploreTimeChart {metricsDefId} yAccessor={measureField} />
-    </div>
+      &nbsp;
+    {:else}
+      &nbsp;
+    {/if}
   </div>
-{/if}
+  <TimeSeriesChartContainer start={new Date(start)} end={new Date(end)}>
+    <div />
+    <!-- add the axis component -->
+    <SimpleDataGraphic height={40} top={24} bottom={0} let:xScale>
+      <Axis side="top" />
+    </SimpleDataGraphic>
+    {#each $allMeasures as measure, index (measure.id)}
+      <!-- FIXME: I can't select the big number by the measure id.
+    -->
+      {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
+
+      <!-- FIXME: I can't select a time series by measure id. 
+    -->
+      <MeasureBigNumber
+        value={bigNum}
+        description={measure?.description ||
+          measure?.label ||
+          measure?.expression}
+        formatPreset={measure?.formatPreset}
+      >
+        <svelte:fragment slot="name">
+          {measure?.label || measure?.expression}
+        </svelte:fragment>
+      </MeasureBigNumber>
+      <div class="time-series-body" style:height="125px">
+        {#if formattedData}
+          <TimeSeriesBody
+            bind:mouseoverValue
+            formatPreset={measure?.formatPreset}
+            data={formattedData}
+            accessor={`measure_${index}`}
+            mouseover={point}
+            {key}
+            start={new Date(start)}
+            end={new Date(end)}
+          />
+        {:else}
+          <div>
+            <Spinner status={EntityStatus.Running} />
+          </div>
+        {/if}
+      </div>
+    {/each}
+  </TimeSeriesChartContainer>
+</WithBisector>

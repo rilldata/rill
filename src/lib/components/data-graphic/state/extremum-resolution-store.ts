@@ -44,10 +44,11 @@ export function createExtremumResolutionStore(
 ) {
   const args = { ...LINEAR_SCALE_STORE_DEFAULTS, ...passedArgs };
   const storedValues: Writable<ExtremaStoreValue> = writable({});
-  const valueTween = tweened(initialValue, {
-    duration: args.duration,
-    easing: args.easing,
-  });
+  let tweenProps = {
+    duration:args.duration,
+    easing: args.easing
+  }
+  const valueTween = tweened(initialValue, tweenProps);
   function _update(key: string, value: number | Date, override = false) {
     // FIXME: there's an odd bug where if I don't check for equality first, I tend
     // to get an infinite loop with dates and the downstream scale.
@@ -95,7 +96,7 @@ export function createExtremumResolutionStore(
   // set the final tween with the value.
   domainExtremum.subscribe((value) => {
     if (value !== undefined) {
-      valueTween.set(value);
+      valueTween.set(value, tweenProps);
     } 
   });
 
@@ -107,6 +108,9 @@ export function createExtremumResolutionStore(
     removeKey(key: string) {
       _remove(key);
     },
+    setTweenProps(tweenPropsArgs) {
+      tweenProps = tweenPropsArgs;
+    }
   };
   return returnedStore;
 }

@@ -13,7 +13,10 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import { getMeasureFieldNameByIdAndIndex } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import {
+    getMeasureFieldNameByIdAndIndex,
+    getMeasuresByMetricsId,
+  } from "$lib/redux-store/measure-definition/measure-definition-readables";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
@@ -30,9 +33,17 @@
       )
     );
 
+  $: measures = getMeasuresByMetricsId(metricsDefId);
+  $: leaderboardMeasureDefinition = $measures.find(
+    (measure) => measure.id === $metricsLeaderboard?.leaderboardMeasureId
+  );
+  // get the expression so we can determine if the measure is summable
+  $: expression = leaderboardMeasureDefinition?.expression;
+
   let bigNumberEntity: Readable<BigNumberEntity>;
   $: bigNumberEntity = getBigNumberById(metricsDefId);
   let referenceValue: number;
+
   $: if ($bigNumberEntity && $measureField) {
     referenceValue =
       whichReferenceValue === "filtered"
@@ -94,6 +105,8 @@
     >
       <!-- the single virtual element -->
       <Leaderboard
+        isSummableMeasure={expression?.toLowerCase()?.includes("count(") ||
+          expression?.toLowerCase()?.includes("sum(")}
         dimensionId={item.dimensionId}
         seeMore={leaderboardExpanded === item.dimensionId}
         on:expand={() => {

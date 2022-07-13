@@ -7,7 +7,7 @@ for any of its children.
 -->
 <script lang="ts">
   import { guidGenerator } from "$lib/util/guid";
-  import { hasContext } from "svelte";
+  import { getContext, hasContext } from "svelte";
 
   import { contexts } from "../constants";
   import {
@@ -17,6 +17,7 @@ for any of its children.
     pruneProps,
   } from "../state";
   import type {
+    ExtremumResolutionStore,
     SimpleDataGraphicConfiguration,
     SimpleDataGraphicConfigurationArguments,
   } from "../state/types";
@@ -41,6 +42,11 @@ for any of its children.
   export let xMax: number | Date = undefined;
   export let yMin: number | Date = undefined;
   export let yMax: number | Date = undefined;
+
+  export let xMinTweenProps = { duration: 0 };
+  export let xMaxTweenProps = { duration: 0 };
+  export let yMinTweenProps = { duration: 0 };
+  export let yMaxTweenProps = { duration: 0 };
 
   export let shareXScale = true;
   export let shareYScale = true;
@@ -150,6 +156,8 @@ for any of its children.
       namespace: "y",
       domainMin: yMin,
       domainMax: yMax,
+      domainMinTweenProps: yMinTweenProps,
+      domainMaxTweenProps: yMaxTweenProps,
     });
   }
 
@@ -158,6 +166,8 @@ for any of its children.
       namespace: "x",
       domainMin: xMin,
       domainMax: xMax,
+      domainMinTweenProps: xMinTweenProps,
+      domainMaxTweenProps: xMaxTweenProps,
     });
   }
 
@@ -176,6 +186,26 @@ for any of its children.
     rangeMin: (config: SimpleDataGraphicConfiguration) => config.bodyBottom,
     rangeMax: (config: SimpleDataGraphicConfiguration) => config.bodyTop,
   });
+
+  // update the xMin, xMax, yMin, yMax as needed
+  const xMinStore = getContext(contexts.min("x")) as ExtremumResolutionStore;
+  const xMaxStore = getContext(contexts.max("x")) as ExtremumResolutionStore;
+  const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
+  const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
+
+  $: if (yMaxTweenProps) {
+    console.log("changing");
+    yMaxStore.setTweenProps(yMaxTweenProps);
+  }
+
+  $: if (xMin || $config?.xMin)
+    xMinStore.setWithKey("global", xMin || $config.xMin, true);
+  $: if (xMax || $config?.xMax)
+    xMaxStore.setWithKey("global", xMax || $config.xMax, true);
+  $: if (yMin || $config?.yMin)
+    yMinStore.setWithKey("global", yMin || $config.yMin, true);
+  $: if (yMax || $config?.yMax)
+    yMaxStore.setWithKey("global", yMax || $config.yMax, true);
 </script>
 
 <slot config={$config} xScale={$xScale} yScale={$yScale} />

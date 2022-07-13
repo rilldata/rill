@@ -14,8 +14,9 @@ function generateCommonSelectors<Entity extends RillReduxEntities>(
   const singleSelector = (state: RillReduxState, id: string) =>
     <Entity>state[sliceKey].entities[id];
   return {
-    manySelectorByIds: (state: RillReduxState, ids: Array<string>) =>
-      ids.map((id) => singleSelector(state, id)),
+    manySelectorByIds: (state: RillReduxState, ids: Array<string>) => {
+      return ids.map((id) => singleSelector(state, id));
+    },
     singleSelector,
   };
 }
