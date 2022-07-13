@@ -16,10 +16,8 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   export let metricsDefId;
-  export let activeMeasureIds: string[] = [];
-  export let start;
-  export let end;
-  export let interval;
+  export let start: Date;
+  export let end: Date;
 
   // get all the measure ids that are available.
 
@@ -37,9 +35,7 @@
 
   let mouseoverValue = undefined;
 
-  $: key = start + end;
-
-  $: hovering = !!mouseoverValue?.x;
+  $: key = `${start}` + `${end}`;
 </script>
 
 <WithBisector
@@ -83,7 +79,6 @@
             {key}
             start={new Date(start)}
             end={new Date(end)}
-            {interval}
           />
         {:else}
           <div>
