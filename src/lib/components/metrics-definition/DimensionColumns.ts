@@ -30,14 +30,7 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
       renderer: TableCellInput,
       onchange: inputChangeHandler,
     },
-    {
-      name: "sqlName",
-      label: "identifier",
-      tooltip: "a unique SQL identifier for this dimension",
-      renderer: TableCellInput,
-      onchange: inputChangeHandler,
-      validation: (row: DimensionDefinitionEntity) => row.sqlNameIsValid,
-    },
+
     {
       name: "labelPlural",
       label: "label (plural)",
@@ -45,6 +38,15 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
       renderer: TableCellInput,
       onchange: inputChangeHandler,
     },
+    // FIXME will be needed later for API
+    // {
+    //   name: "sqlName",
+    //   label: "identifier",
+    //   tooltip: "a unique SQL identifier for this dimension",
+    //   renderer: TableCellInput,
+    //   onchange: inputChangeHandler,
+    //   validation: (row: DimensionDefinitionEntity) => row.sqlNameIsValid,
+    // },
 
     // {
     //   name: "id",

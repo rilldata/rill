@@ -17,19 +17,22 @@ export const initMeasuresColumns = (inputChangeHandler) =>
       validation: (row: MeasureDefinitionEntity) => row.expressionIsValid,
     },
     {
-      name: "sqlName",
-      label: "identifier",
-      tooltip: "a unique SQL identifier for this measure",
-      renderer: TableCellInput,
-      onchange: inputChangeHandler,
-      validation: (row: MeasureDefinitionEntity) => row.sqlNameIsValid,
-    },
-    {
       name: "description",
       tooltip: "a human readable description of this measure",
       onchange: inputChangeHandler,
       renderer: TableCellInput,
+      
     },
+
+    // FIXME: will be needed later for API
+    // {
+    //   name: "sqlName",
+    //   label: "identifier",
+    //   tooltip: "a unique SQL identifier for this measure",
+    //   renderer: TableCellInput,
+    //   onchange: inputChangeHandler,
+    //   validation: (row: MeasureDefinitionEntity) => row.sqlNameIsValid,
+    // },
     // {
     //   name: "id",
     //   label: "preview",
