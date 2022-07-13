@@ -16,7 +16,7 @@
   <ModalTitle>export error</ModalTitle>
   <ModalContent>{exportErrorMessage}</ModalContent>
   <ModalActions>
-    <ModalAction onClick={() => (showExportErrorModal = false)}>
+    <ModalAction on:click={() => (showExportErrorModal = false)}>
       close
     </ModalAction>
   </ModalActions>

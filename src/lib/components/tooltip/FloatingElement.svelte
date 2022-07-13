@@ -64,7 +64,9 @@
       );
   } else {
     setLocation(
-      mouseLocationToBoundingRect(target),
+      relationship === "direct"
+        ? target.getBoundingClientRect()
+        : mouseLocationToBoundingRect(target),
       child?.getBoundingClientRect(),
       scrollX,
       scrollY,
