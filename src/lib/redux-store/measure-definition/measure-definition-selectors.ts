@@ -19,5 +19,5 @@ export const selectMeasureFieldNameByIdAndIndex = (
   index: number
 ) => {
   const measure = selectMeasureById(store, id);
-  return getFallbackMeasureName(index, measure.sqlName);
+  return measure ? getFallbackMeasureName(index, measure.sqlName) : "";
 };

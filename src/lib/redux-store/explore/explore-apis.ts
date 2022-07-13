@@ -52,13 +52,15 @@ export const syncExplore = (
   dimensions: Array<DimensionDefinitionEntity>,
   measures: Array<MeasureDefinitionEntity>
 ) => {
+  let shouldUpdate = false;
   if (!metricsExplore) {
     dispatch(initMetricsExplore(metricsDefId, dimensions, measures));
-    return;
+    shouldUpdate = true;
+  } else {
+    shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
+    shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
   }
 
-  let shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
-  shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
   // To avoid infinite loop only update if something changed.
   // TODO: handle edge cases like measure expression or dimension column changing.
   if (shouldUpdate) {

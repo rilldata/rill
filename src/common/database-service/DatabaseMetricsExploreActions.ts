@@ -31,7 +31,7 @@ export class DatabaseMetricsExploreActions extends DatabaseActions {
     delete isolatedFilters[column];
 
     const whereClause = getWhereClauseFromFilters(
-      filters,
+      isolatedFilters,
       timestampColumn,
       timeRange,
       "AND"
