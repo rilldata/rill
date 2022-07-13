@@ -199,7 +199,7 @@
             suppress={contextMenuOpen}
           >
             <Button
-              onClick={async (event) => {
+              on:click={async (event) => {
                 contextMenuOpen = !contextMenuOpen;
                 menuX = event.clientX;
                 menuY = event.clientY;
