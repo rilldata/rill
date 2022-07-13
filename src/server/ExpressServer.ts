@@ -20,7 +20,7 @@ import { MetricsExploreController } from "$server/controllers/MetricsExploreCont
 const STATIC_FILES = `${__dirname}/../../build`;
 
 export class ExpressServer {
-  private readonly app: express.Application;
+  public readonly app: express.Application;
   private readonly server: http.Server;
   private readonly socketServer: SocketServer;
 
@@ -56,6 +56,11 @@ export class ExpressServer {
     await this.socketServer.init();
     this.server.listen(this.config.server.serverPort);
     console.log(`Server started at ${this.config.server.serverUrl}`);
+  }
+
+  public async destroy(): Promise<void> {
+    await this.socketServer.destroy();
+    this.server.close();
   }
 
   private setupMiddlewares() {

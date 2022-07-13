@@ -13,16 +13,18 @@
   import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import Expand from "$lib/components/icons/ExpandCaret.svelte";
   import { formatBigNumberPercentage } from "$lib/util/formatters";
-  export let displayName;
+  import type { Readable } from "svelte/store";
+  import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
+
+  export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
    * gets scaled with. For a summable metric, the total is a reference value,
    * or for a count(*) metric, the reference value is the total number of rows.
    */
   export let referenceValue: number;
   export let values;
-  export let description: string;
   type ActiveValues = [string, boolean];
   export let activeValues: ActiveValues[];
   export let slice = 7;
@@ -31,6 +33,12 @@
   const dispatch = createEventDispatcher();
   $: atLeastOneActive = !!activeValues?.some(([_, isActivated]) => isActivated);
   let righthandElements = [];
+
+  let dimension: Readable<DimensionDefinitionEntity>;
+  $: dimension = getDimensionById(dimensionId);
+  let displayName: string;
+  // TODO: select based on label?
+  $: displayName = $dimension?.dimensionColumn;
 
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
@@ -52,8 +60,8 @@
         </span>
         <TooltipContent slot="tooltip-content">
           <p>
-            {#if description && description?.length}
-              {description}
+            {#if $dimension?.description?.length}
+              {$dimension.description}
             {:else}
               the leaderboard metrics for {displayName}
             {/if}

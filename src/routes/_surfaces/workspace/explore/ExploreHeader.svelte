@@ -1,10 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import CheckerFull from "$lib/components/icons/CheckerFull.svelte";
-  import CheckerHalf from "$lib/components/icons/CheckerHalf.svelte";
   import Close from "$lib/components/icons/Close.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { store } from "$lib/redux-store/store-root";
   import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";

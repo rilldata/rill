@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ModelIcon from "$lib/components/icons/Code.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
 
   import { store } from "$lib/redux-store/store-root";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";

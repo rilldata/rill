@@ -8,10 +8,11 @@
   import { createEventDispatcher } from "svelte";
   import EditableTableHeader from "$lib/components/table-editable/EditableTableHeader.svelte";
 
-  import type {
-    ColumnConfig,
-    // RenderType,
-  } from "$lib/components/table-editable/ColumnConfig";
+  import AddIcon from "$lib/components/icons/Add.svelte";
+  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
+  import type { TableConfig } from "$lib/components/table-editable/TableConfig";
 
   import { columnIsPinned } from "$lib/components/table-editable/pinnableUtils";
 

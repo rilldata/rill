@@ -1,4 +1,4 @@
-import type { RillActionsChannel } from "$common/utils/RillActionsChannel";
+import { RillActionsChannel } from "$common/utils/RillActionsChannel";
 import type {
   EntityType,
   StateType,
@@ -44,5 +44,9 @@ export class RillRequestContext<
     this.record = this.entityStateService.getById(
       id
     ) as EntityRecordMapType[ET][ST];
+  }
+
+  public static getNewContext() {
+    return new RillRequestContext(new RillActionsChannel());
   }
 }

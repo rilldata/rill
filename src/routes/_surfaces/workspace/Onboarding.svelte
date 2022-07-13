@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-  import Code from "$lib/components/icons/Code.svelte";
+  import Source from "$lib/components/icons/Source.svelte";
+  import Model from "$lib/components/icons/Model.svelte";
   // import Database from "$lib/components/icons/Database.svelte";
   // import SurfaceView from "$lib/components/icons/SurfaceView.svelte";
 
@@ -9,13 +9,13 @@
       heading: "Import your data source",
       description:
         "Add to your sources by clicking on the + icon, or by dragging a csv or parquet file to this window.",
-      icon: ParquetIcon,
+      icon: Source,
     },
     {
       heading: "Model your sources into one big table",
       description:
         "Build intuition about your sources and use SQL to model them into an analytics-ready resource.",
-      icon: Code,
+      icon: Model,
     },
     // ACTIVATE WHEN WE RELEASE METRICS EXPLORE
     // {

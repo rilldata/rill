@@ -39,6 +39,7 @@ import { MetricsExploreActions } from "$common/rill-developer-service/MetricsExp
 import { MeasureDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DimensionDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
+import { ExpressServer } from "$server/ExpressServer";
 
 let PACKAGE_JSON = "";
 try {
@@ -183,4 +184,19 @@ export function serverFactory(config: RootConfig) {
   notificationService.setSocketServer(socketServer.getSocketServer());
 
   return { dataModelerStateService, dataModelerService, socketServer };
+}
+
+export function expressServerFactory(
+  config: RootConfig,
+  rillDeveloper: RillDeveloper,
+  rillDeveloperService: RillDeveloperService
+) {
+  return new ExpressServer(
+    config,
+    rillDeveloper.dataModelerService,
+    rillDeveloperService,
+    rillDeveloper.dataModelerStateService,
+    rillDeveloper.notificationService as SocketNotificationService,
+    rillDeveloper.metricsService
+  );
 }

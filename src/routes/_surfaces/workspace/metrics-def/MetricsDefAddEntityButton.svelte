@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AddIcon from "$lib/components/icons/AddIcon.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
 
   export let clickHandler;
   export let label: string;
