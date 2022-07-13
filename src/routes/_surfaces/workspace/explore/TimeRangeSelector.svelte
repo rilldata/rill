@@ -12,6 +12,7 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { tick } from "svelte";
   import {
+    getDefaultSelectedTimeRange,
     getTimeRangeNameForButton,
     makeSelectableTimeRanges,
     prettyFormatTimeRange,
@@ -31,7 +32,7 @@
   $: if ($metricsLeaderboard?.selectedTimeRange) {
     selectedTimeRange = $metricsLeaderboard?.selectedTimeRange;
   } else if (selectableTimeRanges) {
-    selectedTimeRange = selectableTimeRanges[0];
+    selectedTimeRange = getDefaultSelectedTimeRange(selectableTimeRanges);
   }
 
   let timeSelectorMenu;

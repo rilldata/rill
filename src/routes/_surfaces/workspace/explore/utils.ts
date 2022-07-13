@@ -97,6 +97,14 @@ export const makeSelectableTimeRanges = (
   );
 };
 
+export const getDefaultSelectedTimeRange = (
+  selectableTimeRanges: TimeSeriesTimeRange[]
+): TimeSeriesTimeRange => {
+  return selectableTimeRanges.find(
+    (timeRange) => timeRange.name === TimeRangeName.Last30Days
+  );
+};
+
 export const getTimeRangeNameForButton = (
   timeRange: TimeSeriesTimeRange
 ): string => {
