@@ -27,8 +27,10 @@
       $metricsLeaderboard.timeRange
     );
   }
-  $: selectedTimeRange = $metricsLeaderboard.selectedTimeRange;
-  $: if (!selectedTimeRange && selectableTimeRanges) {
+  let selectedTimeRange: TimeSeriesTimeRange;
+  $: if ($metricsLeaderboard?.selectedTimeRange) {
+    selectedTimeRange = $metricsLeaderboard?.selectedTimeRange;
+  } else if (selectableTimeRanges) {
     selectedTimeRange = selectableTimeRanges[0];
   }
 
