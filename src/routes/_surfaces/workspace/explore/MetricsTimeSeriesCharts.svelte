@@ -33,14 +33,20 @@
 
   $: timeSeries = getTimeSeriesById(metricsDefId);
   $: formattedData = $timeSeries?.values
-    ? convertTimestampPreview($timeSeries.values)
+    ? convertTimestampPreview($timeSeries.values, true)
     : undefined;
 
   let mouseoverValue = undefined;
 
+  function initializeToMidnight(dt) {
+    let newDt = new Date(dt);
+    newDt.setHours(0, 0, 0, 0);
+    return newDt;
+  }
+
   $: key = `${start}` + `${end}`;
 
-  $: startValue = new Date(start);
+  $: startValue = initializeToMidnight(new Date(start));
   $: endValue = new Date(end);
 </script>
 
@@ -49,6 +55,10 @@
 </div>
 <div>
   {endValue}
+</div>
+<div>
+  {$timeSeries?.values?.[0]?.ts}
+  {new Date($timeSeries?.values?.[0]?.ts)}
 </div>
 <WithBisector
   data={formattedData}
