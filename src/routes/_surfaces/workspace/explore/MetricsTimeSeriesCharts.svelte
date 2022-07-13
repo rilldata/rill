@@ -54,24 +54,30 @@
   value={mouseoverValue?.x}
   let:point
 >
-  <div>
-    {#if point?.ts}
-      <div
-        class="absolute italic"
-        transition:fly|local={{ duration: 100, y: 4 }}
-      >
-        {point?.ts}
-      </div>
-      &nbsp;
-    {:else}
-      &nbsp;
-    {/if}
-  </div>
   <TimeSeriesChartContainer start={startValue} end={endValue}>
+    <!-- mouseover date elements-->
+
     <div />
-    <!-- add the axis component -->
+    <div style:padding-left="24px">
+      {#if point?.ts}
+        <div
+          class="absolute italic text-gray-600"
+          transition:fly|local={{ duration: 100, y: 4 }}
+        >
+          {new Intl.DateTimeFormat("en-US", {
+            dateStyle: "medium",
+            timeStyle: "medium",
+          }).format(point?.ts)}
+        </div>
+        &nbsp;
+      {:else}
+        &nbsp;
+      {/if}
+    </div>
+    <!-- top axis element -->
+    <div />
     <SimpleDataGraphic
-      height={24}
+      height={20}
       top={24}
       bottom={0}
       xMin={startValue}
@@ -79,6 +85,7 @@
     >
       <Axis side="top" />
     </SimpleDataGraphic>
+    <!-- bignumbers and line charts -->
     {#each $allMeasures as measure, index (measure.id)}
       <!-- FIXME: I can't select the big number by the measure id.
     -->
