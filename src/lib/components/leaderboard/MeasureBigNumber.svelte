@@ -7,11 +7,7 @@
   import { formatBigNumberPercentage } from "$lib/util/formatters";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import {
-    getMeasureById,
-    getMeasureFieldNameByIdAndIndex,
-  } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { getMeasureFieldNameByIdAndIndex } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
