@@ -29,5 +29,5 @@ Duckdb-Dockerfile
 README.md
 docs
 
-# temporary
+# FIXME: temporary
 test/data/HistogramSummary.data.ts
