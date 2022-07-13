@@ -48,7 +48,7 @@ align-items: center;
 `;
 
   let menuContainerHovered = false;
-  const menuContainerEnter = (e) => {
+  const menuContainerEnter = () => {
     menuContainerHovered = true;
   };
 

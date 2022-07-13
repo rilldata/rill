@@ -11,12 +11,15 @@
   import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
+  import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   // FIXME: this is WIP, will need a refactor when work on this is restarted
   export let columnConfig: ColumnConfig;
   export let index: number;
   export let row: EntityRecord;
   export let value: string;
+  export let measureId: string;
 
   let measure: Readable<MeasureDefinitionEntity>;
   $: measure = getMeasureById(measureId);
