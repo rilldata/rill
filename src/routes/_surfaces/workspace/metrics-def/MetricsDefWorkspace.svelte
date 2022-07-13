@@ -30,6 +30,7 @@
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import { CATEGORICALS } from "$lib/duckdb-data-types";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
 
   export let metricsDefId;
 
@@ -84,22 +85,22 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  let validDimensions: string[] = [];
+  let validDimensionSelectorOption: SelectorOption[] = [];
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
     const selectedMetricsDefModelProfile = $derivedModelStore?.entities.find(
       (model) => model.id === $selectedMetricsDef.sourceModelId
     ).profile;
-    validDimensions = selectedMetricsDefModelProfile
+    validDimensionSelectorOption = selectedMetricsDefModelProfile
       .filter((column) => CATEGORICALS.has(column.type))
-      .map((column) => column.name);
+      .map((column) => ({ label: column.name, value: column.name }));
   } else {
-    validDimensions = [];
+    validDimensionSelectorOption = [];
   }
 
   $: MeasuresColumns = initMeasuresColumns(handleUpdateMeasure);
   $: DimensionColumns = initDimensionColumns(
     handleUpdateDimension,
-    validDimensions
+    validDimensionSelectorOption
   );
 </script>
 

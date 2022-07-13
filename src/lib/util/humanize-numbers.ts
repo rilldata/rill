@@ -20,6 +20,22 @@ export enum NicelyFormattedTypes {
   DECIMAL = "comma_separators",
 }
 
+export const nicelyFormattedTypesSelectorOptions = [
+  { value: NicelyFormattedTypes.HUMANIZE, label: "Humanize - 12k" },
+  { value: NicelyFormattedTypes.NONE, label: "No formatting - 12345.6789" },
+  {
+    value: NicelyFormattedTypes.CURRENCY,
+    label: "Currency (USD) - $12,345.67",
+  },
+  { value: NicelyFormattedTypes.PERCENTAGE, label: "Percentage - 12345.6789%" },
+  { value: NicelyFormattedTypes.DECIMAL, label: "Decimal - 12,345.67" },
+];
+
+console.log(
+  "nicelyFormattedTypesSelectorOptions",
+  nicelyFormattedTypesSelectorOptions
+);
+
 const DEFAULT_OPTIONS = {
   locale: "en-US",
   style: "decimal",

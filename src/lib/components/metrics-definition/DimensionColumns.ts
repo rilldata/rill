@@ -1,56 +1,47 @@
-import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
-
-import TableCellInput from "$lib/components/table-editable/TableCellInput.svelte";
-import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
-import TableCellSelector from "../table-editable/TableCellSelector.svelte";
+import {
+  ColumnConfig,
+  CellConfigInput,
+  CellConfigSelector,
+} from "$lib/components/table-editable/ColumnConfig";
 
 export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
-  [
+  <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
       name: "labelSingle",
       label: "label (single)",
-      tooltip: "a human readable name for this dimension",
-      renderer: TableCellInput,
-      onchange: inputChangeHandler,
+      headerTooltip: "a human readable name for this dimension (optional)",
+      cellRenderer: new CellConfigInput(inputChangeHandler),
     },
 
     {
       name: "dimensionColumn",
       label: "dimension column",
-      tooltip:
+      headerTooltip:
         "a categorical column from the data model that this metrics set is based on",
-      renderer: TableCellSelector,
-      onchange: inputChangeHandler,
-      options: dimensionOptions,
-      validation: (row: DimensionDefinitionEntity) => row.dimensionIsValid,
+      cellRenderer: new CellConfigSelector(
+        inputChangeHandler,
+        dimensionOptions,
+        "select a column..."
+      ),
     },
     {
       name: "description",
-      tooltip: "a human readable description of this dimension",
-      renderer: TableCellInput,
-      onchange: inputChangeHandler,
-    },
-    {
-      name: "formatPreset",
-      label: "format preset",
-      tooltip: "a format for this dimension",
-      renderer: TableCellSelector,
-      onchange: inputChangeHandler,
-      options: Object.values(NicelyFormattedTypes),
+      headerTooltip:
+        "a human readable description of this dimension (optional)",
+      cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
       name: "labelPlural",
       label: "label (plural)",
-      tooltip: "an optional pluralized human readable name for this dimension",
-      renderer: TableCellInput,
-      onchange: inputChangeHandler,
+      headerTooltip:
+        "an pluralized human readable name for this dimension (optional)",
+      cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     // FIXME will be needed later for API
     // {
     //   name: "sqlName",
     //   label: "identifier",
-    //   tooltip: "a unique SQL identifier for this dimension",
+    //   headerTooltip: "a unique SQL identifier for this dimension",
     //   renderer: TableCellInput,
     //   onchange: inputChangeHandler,
     //   validation: (row: DimensionDefinitionEntity) => row.sqlNameIsValid,
@@ -60,7 +51,7 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
     // {
     //   name: "id",
     //   label: "unique values",
-    //   tooltip: "the number of unique values present in this dimension",
+    //   headerTooltip: "the number of unique values present in this dimension",
     //   renderer: TabelCellCardinality
     // },
-  ] as ColumnConfig[];
+  ];

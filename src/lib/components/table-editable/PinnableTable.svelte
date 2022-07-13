@@ -14,8 +14,8 @@
 
   const dispatch = createEventDispatcher();
 
-  export let columnNames: ColumnConfig[];
-  export let selectedColumns: ColumnConfig[];
+  export let columnNames: ColumnConfig<any>[];
+  export let selectedColumns: ColumnConfig<any>[];
   export let rows: any[];
 </script>
 
