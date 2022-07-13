@@ -10,9 +10,12 @@
   import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { makeSelectableTimeRanges } from "$lib/util/time-ranges";
   import { tick } from "svelte";
-  import { getTimeRangeNameForButton, prettyFormatTimeRange } from "./utils";
+  import {
+    getTimeRangeNameForButton,
+    makeSelectableTimeRanges,
+    prettyFormatTimeRange,
+  } from "./utils";
 
   export let metricsDefId: string;
 
