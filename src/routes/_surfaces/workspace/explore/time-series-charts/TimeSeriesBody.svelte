@@ -14,7 +14,6 @@
   } from "$lib/util/humanize-numbers";
   export let start;
   export let end;
-  export let interval;
   export let formatPreset: NicelyFormattedTypes;
   export let data;
   export let accessor: string;
@@ -47,9 +46,7 @@
 </script>
 
 {#if key && data?.length}
-  <div>
-    {longTimeSeries ? 0 : 600}
-    {longTimeSeries ? 0 : !hideCurrent ? 600 : 0}
+  <div transition:fly|local={{ duration: 500, y: 10 }}>
     <SimpleDataGraphic
       shareYScale={false}
       bind:mouseoverValue
