@@ -34,6 +34,7 @@ export enum TimeRangeName {
   Last2Weeks = "Last 2 weeks",
   Last30Days = "Last 30 days",
   Last60Days = "Last 60 days",
+  AllTime = "All time",
   // Today = "Today",
   // MonthToDate = "Month to date",
   // CustomRange = "Custom range",
