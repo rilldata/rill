@@ -176,7 +176,7 @@ for any of its children.
    */
   const xScale = initializeScale({
     namespace: "x",
-    scaleType: xType || $config.yType,
+    scaleType: xType || $config.xType,
     rangeMin: (config: SimpleDataGraphicConfiguration) => config.bodyLeft,
     rangeMax: (config: SimpleDataGraphicConfiguration) => config.bodyRight,
   });

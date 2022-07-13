@@ -124,7 +124,6 @@ This component will draw an axis on the specified side.
     const fourDaysDiff = diff / (60 * 60) < 24 * 4;
     const manyDaysDiff = diff / (60 * 60 * 24) < 60;
     const manyMonthsDiff = diff / (60 * 60 * 24) < 365;
-
     return millisecondDiff
       ? timeFormat("%M:%S.%L")
       : secondDiff
