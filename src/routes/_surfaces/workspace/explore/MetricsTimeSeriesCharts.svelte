@@ -30,7 +30,14 @@
             {$measure?.description || $measure.label || measureField}
           </TooltipContent>
         </Tooltip>
-        <div><MeasureBigNumber {metricsDefId} {measureId} {index} /></div>
+        <div>
+          <MeasureBigNumber
+            {metricsDefId}
+            {measureId}
+            {index}
+            formatPreset={$measure.formatPreset}
+          />
+        </div>
       </div>
       <MetricsExploreTimeChart {metricsDefId} yAccessor={measureField} />
     </div>

@@ -8,6 +8,7 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
 
 export interface DimensionDefinitionEntity extends EntityRecord {
   metricsDefId: string;
@@ -19,6 +20,7 @@ export interface DimensionDefinitionEntity extends EntityRecord {
   labelSingle?: string;
   labelPlural?: string;
   description?: string;
+  formatPreset?: NicelyFormattedTypes;
   dimensionIsValid?: ValidationState;
   sqlNameIsValid?: ValidationState;
   summary?: ProfileColumnSummary;

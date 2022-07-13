@@ -1,6 +1,8 @@
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import TableCellInput from "$lib/components/table-editable/TableCellInput.svelte";
 import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
+import TableCellSelector from "../table-editable/TableCellSelector.svelte";
+import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
 
 export const initMeasuresColumns = (inputChangeHandler) =>
   [
@@ -22,7 +24,14 @@ export const initMeasuresColumns = (inputChangeHandler) =>
       onchange: inputChangeHandler,
       renderer: TableCellInput,
     },
-
+    {
+      name: "formatPreset",
+      label: "format preset",
+      tooltip: "a format for this measure",
+      renderer: TableCellSelector,
+      onchange: inputChangeHandler,
+      options: Object.values(NicelyFormattedTypes),
+    },
     // FIXME: will be needed later for API
     // {
     //   name: "sqlName",
