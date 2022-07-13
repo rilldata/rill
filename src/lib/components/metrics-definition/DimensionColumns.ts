@@ -2,6 +2,7 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 
 import TableCellInput from "$lib/components/table-editable/TableCellInput.svelte";
+import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
 import TableCellSelector from "../table-editable/TableCellSelector.svelte";
 
 export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
@@ -30,7 +31,14 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
       renderer: TableCellInput,
       onchange: inputChangeHandler,
     },
-
+    {
+      name: "formatPreset",
+      label: "format preset",
+      tooltip: "a format for this dimension",
+      renderer: TableCellSelector,
+      onchange: inputChangeHandler,
+      options: Object.values(NicelyFormattedTypes),
+    },
     {
       name: "labelPlural",
       label: "label (plural)",
