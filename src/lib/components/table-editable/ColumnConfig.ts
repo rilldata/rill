@@ -26,6 +26,7 @@ export interface ColumnConfig {
   onchange?: (rowIndex: number, columnName: string, value: string) => void;
 
   validation?: (row: EntityRecord, value: unknown) => ValidationState;
+  options?: string[];
 
   copyable?: boolean;
 }

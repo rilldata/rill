@@ -2,8 +2,9 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 
 import TableCellInput from "$lib/components/table-editable/TableCellInput.svelte";
+import TableCellSelector from "../table-editable/TableCellSelector.svelte";
 
-export const initDimensionColumns = (inputChangeHandler) =>
+export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
   [
     {
       name: "labelSingle",
@@ -18,8 +19,9 @@ export const initDimensionColumns = (inputChangeHandler) =>
       label: "dimension column",
       tooltip:
         "a categorical column from the data model that this metrics set is based on",
-      renderer: TableCellInput,
+      renderer: TableCellSelector,
       onchange: inputChangeHandler,
+      options: dimensionOptions,
       validation: (row: DimensionDefinitionEntity) => row.dimensionIsValid,
     },
     {
