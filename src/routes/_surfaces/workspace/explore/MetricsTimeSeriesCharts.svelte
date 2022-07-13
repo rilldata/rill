@@ -61,23 +61,22 @@
 
       <!-- FIXME: I can't select a time series by measure id. 
     -->
-      {#if bigNum}
-        <MeasureBigNumber
-          value={bigNum}
-          description={measure?.description ||
-            measure?.label ||
-            measure?.expression}
-          formatPreset={measure?.formatPreset}
-        >
-          <svelte:fragment slot="name">
-            {measure?.label || measure?.expression}
-          </svelte:fragment>
-        </MeasureBigNumber>
-      {/if}
+      <MeasureBigNumber
+        value={bigNum}
+        description={measure?.description ||
+          measure?.label ||
+          measure?.expression}
+        formatPreset={measure?.formatPreset}
+      >
+        <svelte:fragment slot="name">
+          {measure?.label || measure?.expression}
+        </svelte:fragment>
+      </MeasureBigNumber>
       <div class="time-series-body" style:height="125px">
         {#if formattedData}
           <TimeSeriesBody
             bind:mouseoverValue
+            formatPreset={measure?.formatPreset}
             data={formattedData}
             accessor={`measure_${index}`}
             mouseover={point}

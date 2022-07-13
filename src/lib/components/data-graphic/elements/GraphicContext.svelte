@@ -193,6 +193,11 @@ for any of its children.
   const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
   const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
 
+  $: if (yMaxTweenProps) {
+    console.log("changing");
+    yMaxStore.setTweenProps(yMaxTweenProps);
+  }
+
   $: if (xMin || $config?.xMin)
     xMinStore.setWithKey("global", xMin || $config.xMin, true);
   $: if (xMax || $config?.xMax)

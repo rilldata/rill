@@ -10,7 +10,6 @@
     NicelyFormattedTypes,
   } from "$lib/util/humanize-numbers";
   export let value: number;
-  export let formatter: (value: number) => string = undefined;
   export let description: string = undefined;
   export let formatPreset: NicelyFormattedTypes;
 

@@ -8,9 +8,14 @@
   import { interpolateArray } from "d3-interpolate";
   import { Body } from "$lib/components/data-graphic/elements";
   import { guidGenerator } from "$lib/util/guid";
+  import {
+    humanizeDataType,
+    NicelyFormattedTypes,
+  } from "$lib/util/humanize-numbers";
   export let start;
   export let end;
   export let interval;
+  export let formatPreset: NicelyFormattedTypes;
   export let data;
   export let accessor: string;
   export let mouseover = undefined;
@@ -43,12 +48,14 @@
 
 {#if key && data?.length}
   <div>
+    {longTimeSeries ? 0 : 600}
+    {longTimeSeries ? 0 : !hideCurrent ? 600 : 0}
     <SimpleDataGraphic
       shareYScale={false}
       bind:mouseoverValue
       xMin={start}
       xMax={end}
-      yMaxTweenProps={{ duration: 500 }}
+      yMaxTweenProps={{ duration: longTimeSeries ? 0 : 600 }}
     >
       <Body>
         {#key key + longTimeSeriesKey}
@@ -57,7 +64,7 @@
             interesting animations.
           -->
           <g
-            out:fly|local={{ duration: 500, y: 175 }}
+            out:fly|local={{ duration: 500, y: 475 }}
             style:opacity={hideCurrent && !longTimeSeries ? 0.125 : 1}
             style:transition="opacity 250ms"
             on:outrostart={() => {
@@ -89,6 +96,10 @@
           tweenProps={{ duration: 50 }}
           x={mouseover.ts}
           y={mouseover[accessor]}
+          format={(value) =>
+            formatPreset === NicelyFormattedTypes.NONE
+              ? value
+              : humanizeDataType(value, formatPreset)}
         />
       {/if}
     </SimpleDataGraphic>
