@@ -15,10 +15,12 @@
 
   import Spinner from "$lib/components/Spinner.svelte";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { removeTimezoneOffset } from "$lib/util/formatters";
 
   export let metricsDefId;
   export let start: Date;
   export let end: Date;
+  export let interval;
 
   // get all the measure ids that are available.
 
@@ -37,8 +39,17 @@
   let mouseoverValue = undefined;
 
   $: key = `${start}` + `${end}`;
+
+  $: startValue = new Date(start);
+  $: endValue = new Date(end);
 </script>
 
+<div>
+  {startValue}
+</div>
+<div>
+  {endValue}
+</div>
 <WithBisector
   data={formattedData}
   callback={(datum) => datum.ts}
@@ -58,10 +69,16 @@
       &nbsp;
     {/if}
   </div>
-  <TimeSeriesChartContainer start={new Date(start)} end={new Date(end)}>
+  <TimeSeriesChartContainer start={startValue} end={endValue}>
     <div />
     <!-- add the axis component -->
-    <SimpleDataGraphic height={40} top={24} bottom={0} let:xScale>
+    <SimpleDataGraphic
+      height={24}
+      top={24}
+      bottom={0}
+      xMin={startValue}
+      xMax={endValue}
+    >
       <Axis side="top" />
     </SimpleDataGraphic>
     {#each $allMeasures as measure, index (measure.id)}
@@ -91,8 +108,8 @@
             accessor={`measure_${index}`}
             mouseover={point}
             {key}
-            start={new Date(start)}
-            end={new Date(end)}
+            start={startValue}
+            end={endValue}
           />
         {:else}
           <div>

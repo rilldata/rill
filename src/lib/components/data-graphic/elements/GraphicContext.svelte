@@ -128,13 +128,13 @@ for any of its children.
       plotBottom: (config: SimpleDataGraphicConfiguration) =>
         config.height - config.bottom,
       bodyLeft: (config: SimpleDataGraphicConfiguration) =>
-        config.left + config.bodyBuffer || 0,
+        config.left + (config.bodyBuffer || 0),
       bodyRight: (config: SimpleDataGraphicConfiguration) =>
-        config.width - config.right - config.bodyBuffer || 0,
+        config.width - config.right - (config.bodyBuffer || 0),
       bodyTop: (config: SimpleDataGraphicConfiguration) =>
         config.top + config.bodyBuffer || 0,
       bodyBottom: (config: SimpleDataGraphicConfiguration) =>
-        config.height - config.bottom - config.bodyBuffer || 0,
+        config.height - config.bottom - (config.bodyBuffer || 0),
       graphicWidth: (config: SimpleDataGraphicConfiguration) =>
         config.width -
         config.left -

@@ -19,7 +19,6 @@ A container GraphicContext for the time series in a metrics dashboard.
       xMin={start}
       xMax={end}
       yMin={0}
-      bodyBuffer={8}
       xType="date"
       yType="number"
       xMinTweenProps={{ duration: 200 }}

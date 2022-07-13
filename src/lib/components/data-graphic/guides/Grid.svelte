@@ -31,12 +31,12 @@
     xAxisLength = $config.graphicWidth;
     // do we ensure different spacing in one case vs. another?
     xTickCount = ~~(xAxisLength / 20);
-    xTickCount = Math.max(3, ~~(xTickCount / 100));
+    xTickCount = Math.max(2, ~~(xTickCount / 100));
 
     yAxisLength = $config.graphicHeight;
     // do we ensure different spacing in one case vs. another?
     yTickCount = ~~(yAxisLength / 20);
-    yTickCount = Math.max(3, ~~(yTickCount / 100));
+    yTickCount = Math.max(2, ~~(yTickCount / 100));
   }
   $: xCopy = xScale.type === "date" ? $xScale.copy().nice() : $xScale;
   $: yCopy = yScale.type === "date" ? $yScale.copy().nice() : $yScale;
