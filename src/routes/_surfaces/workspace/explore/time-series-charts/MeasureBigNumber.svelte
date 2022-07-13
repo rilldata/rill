@@ -5,9 +5,14 @@
   import Spinner from "$lib/components/Spinner.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import {
+    humanizeDataType,
+    NicelyFormattedTypes,
+  } from "$lib/util/humanize-numbers";
   export let value: number;
   export let formatter: (value: number) => string = undefined;
   export let description: string = undefined;
+  export let formatPreset: NicelyFormattedTypes;
 
   const [send, receive] = crossfade({ fallback: fly });
 </script>
@@ -33,7 +38,11 @@
             out:send={{ key: "value" }}
           >
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {formatter ? formatter(output) : output}
+              {#if formatPreset !== NicelyFormattedTypes.NONE}
+                {humanizeDataType(output, formatPreset)}
+              {:else}
+                {output}
+              {/if}
             </WithTween>
           </div>
         {:else}

@@ -75,8 +75,10 @@
       <MeasureBigNumber
         value={bigNum}
         description={measure.description || measure.label || measure.expression}
+        formatPreset={measure.formatPreset}
       >
         <svelte:fragment slot="name">
+          {measure.formatPreset}
           {measure.label || measure.expression}
         </svelte:fragment>
       </MeasureBigNumber>
