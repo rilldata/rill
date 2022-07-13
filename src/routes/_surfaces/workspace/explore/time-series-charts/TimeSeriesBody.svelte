@@ -50,8 +50,7 @@
     <SimpleDataGraphic
       shareYScale={false}
       bind:mouseoverValue
-      xMin={start}
-      xMax={end}
+      yMin={0}
       yMaxTweenProps={{ duration: longTimeSeries ? 0 : 600 }}
     >
       <Body>
@@ -86,7 +85,13 @@
           </g>
         {/key}
       </Body>
-      <Axis side="right" />
+      <Axis
+        side="right"
+        format={(value) =>
+          formatPreset === NicelyFormattedTypes.NONE
+            ? `${value}`
+            : humanizeDataType(value, formatPreset)}
+      />
       <Grid />
       {#if mouseover}
         <PointLabel
