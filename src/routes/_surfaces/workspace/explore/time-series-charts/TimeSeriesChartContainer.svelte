@@ -22,8 +22,8 @@ A container GraphicContext for the time series in a metrics dashboard.
       bodyBuffer={8}
       xType="date"
       yType="number"
-      xMinTweenProps={{ duration: 500 }}
-      xMaxTweenProps={{ duration: 500 }}
+      xMinTweenProps={{ duration: 200 }}
+      xMaxTweenProps={{ duration: 200 }}
     >
       <slot />
     </GraphicContext>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import MeasureBigNumber from "./time-series-charts/MeasureBigNumber.svelte";
   import TimeSeriesBody from "./time-series-charts/TimeSeriesBody.svelte";
@@ -44,6 +45,19 @@
   value={mouseoverValue?.x}
   let:point
 >
+  <div>
+    {#if point?.ts}
+      <div
+        class="absolute italic"
+        transition:fly|local={{ duration: 100, y: 4 }}
+      >
+        {point?.ts}
+      </div>
+      &nbsp;
+    {:else}
+      &nbsp;
+    {/if}
+  </div>
   <TimeSeriesChartContainer start={new Date(start)} end={new Date(end)}>
     <div />
     <!-- add the axis component -->
