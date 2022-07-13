@@ -22,7 +22,7 @@
   export let yAccessor = "y";
 
   export let color = "hsla(217,70%, 60%, 1)";
-  export let lineThickness = 1;
+  export let lineThickness = undefined;
   export let alpha = 1;
   export let pathDefined = pathDoesNotDropToZero;
 
@@ -87,10 +87,10 @@
     })
     .reduce((acc, v) => acc + v, 0);
 
-  let lineDensity = 0.05;
+  let computedLineDensity = 0.05;
   let devicePixelRatio = 3;
 
-  $: lineDensity = Math.min(
+  $: computedLineDensity = Math.min(
     1,
     /** to determine the stroke width of the path, let's look at
      * the bigger of two values:
@@ -127,7 +127,7 @@
   <path
     d={lineFcn(yAccessor)(data)}
     stroke={color}
-    stroke-width={lineDensity}
+    stroke-width={lineThickness ? lineThickness : computedLineDensity}
     fill="none"
     opacity={alpha}
   />

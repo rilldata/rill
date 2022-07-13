@@ -62,14 +62,7 @@
       y2={$config.height}
       stroke="gray"
     />
-    <circle
-      fill="hsl(217, 50%, 50%)"
-      cx={output.x}
-      cy={output.y}
-      stroke="hsla(1,90%, 70%, .3)"
-      stroke-width={diameterScale(y)}
-      r={2}
-    />
+    <circle fill="hsl(217, 50%, 50%)" cx={output.x} cy={output.y} r={3} />
 
     {#if variant === "moving"}
       <text
@@ -83,9 +76,7 @@
   {#if variant === "fixed"}
     <circle
       fill="hsl(217, 50%, 50%)"
-      stroke="hsla(1,90%, 70%, .3)"
-      stroke-width={diameterScale(y)}
-      r={2}
+      r={4}
       cx={$config.bodyLeft + 2}
       cy={$config.bodyTop + 2}
     />
