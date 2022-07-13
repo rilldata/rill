@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
-  import Button from "$lib/components/Button.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
@@ -56,9 +55,9 @@
   let target: HTMLElement;
 </script>
 
-<Button
-  bind:element={target}
-  override="border-none gap-x-4"
+<button
+  bind:this={target}
+  class="px-4 py-2 rounded flex flex-row gap-x-4 hover:bg-gray-200 transition-tranform duration-100"
   on:click={buttonClickHandler}
 >
   <span class="font-bold">
@@ -67,8 +66,10 @@
   <span>
     {prettyFormatTimeRange(selectedTimeRange)}
   </span>
-  <CaretDownIcon size="16px" />
-</Button>
+  <span class="transition-transform" class:-rotate-180={timeSelectorMenuOpen}>
+    <CaretDownIcon size="16px" />
+  </span>
+</button>
 
 {#if timeSelectorMenuOpen}
   <div bind:this={timeSelectorMenu}>
