@@ -15,12 +15,10 @@
 
   import Spinner from "$lib/components/Spinner.svelte";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { removeTimezoneOffset } from "$lib/util/formatters";
 
   export let metricsDefId;
   export let start: Date;
   export let end: Date;
-  export let interval;
 
   // get all the measure ids that are available.
 
@@ -50,16 +48,6 @@
   $: endValue = new Date(end);
 </script>
 
-<div>
-  {startValue}
-</div>
-<div>
-  {endValue}
-</div>
-<div>
-  {$timeSeries?.values?.[0]?.ts}
-  {new Date($timeSeries?.values?.[0]?.ts)}
-</div>
 <WithBisector
   data={formattedData}
   callback={(datum) => datum.ts}

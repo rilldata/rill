@@ -38,16 +38,14 @@
     yTickCount = ~~(yAxisLength / 20);
     yTickCount = Math.max(2, ~~(yTickCount / 100));
   }
-  $: xCopy = xScale.type === "date" ? $xScale.copy().nice() : $xScale;
-  $: yCopy = yScale.type === "date" ? $yScale.copy().nice() : $yScale;
 </script>
 
 <g shape-rendering="crispEdges">
   {#if showX}
-    {#each xCopy.ticks(xTickCount) as tick}
+    {#each $xScale.ticks(xTickCount) as tick}
       <line
-        x1={xCopy(tick)}
-        x2={xCopy(tick)}
+        x1={$xScale(tick)}
+        x2={$xScale(tick)}
         y1={$config.bodyTop}
         y2={$config.bodyBottom}
         stroke={xColor}
@@ -58,7 +56,7 @@
     {/each}
   {/if}
   {#if showY}
-    {#each yCopy.ticks(yTickCount) as tick}
+    {#each $yScale.ticks(yTickCount) as tick}
       <line
         y1={$yScale(tick)}
         y2={$yScale(tick)}

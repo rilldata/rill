@@ -68,7 +68,7 @@ export function areaFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     area()
       .x((d) => ~~args.xScale(d[args.xAccessor]))
-      .y0(~~args.yScale(0) + 0.5)
+      .y0(~~args.yScale(0))
       .y1((d) => ~~args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));

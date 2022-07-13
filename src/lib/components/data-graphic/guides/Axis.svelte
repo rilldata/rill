@@ -37,8 +37,7 @@ This component will draw an axis on the specified side.
   $: innerFontSize = $plotConfig.fontSize || fontSize || 12;
 
   /** make any adjustments to the scale to get what we need */
-  $: scale =
-    mainScale.type === "date" ? $mainScale.copy().nice() : $mainScale.copy();
+  $: scale = $mainScale;
 
   // text-anchor
   let textAnchor;
