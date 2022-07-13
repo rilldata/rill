@@ -31,12 +31,21 @@
 
   $: timeSeries = getTimeSeriesById(metricsDefId);
   $: formattedData = $timeSeries?.values
-    ? convertTimestampPreview($timeSeries.values)
+    ? convertTimestampPreview($timeSeries.values, true)
     : undefined;
 
   let mouseoverValue = undefined;
 
+  function initializeToMidnight(dt) {
+    let newDt = new Date(dt);
+    newDt.setHours(0, 0, 0, 0);
+    return newDt;
+  }
+
   $: key = `${start}` + `${end}`;
+
+  $: startValue = initializeToMidnight(new Date(start));
+  $: endValue = new Date(end);
 </script>
 
 <WithBisector
@@ -45,25 +54,38 @@
   value={mouseoverValue?.x}
   let:point
 >
-  <div>
-    {#if point?.ts}
-      <div
-        class="absolute italic"
-        transition:fly|local={{ duration: 100, y: 4 }}
-      >
-        {point?.ts}
-      </div>
-      &nbsp;
-    {:else}
-      &nbsp;
-    {/if}
-  </div>
-  <TimeSeriesChartContainer start={new Date(start)} end={new Date(end)}>
+  <TimeSeriesChartContainer start={startValue} end={endValue}>
+    <!-- mouseover date elements-->
+
     <div />
-    <!-- add the axis component -->
-    <SimpleDataGraphic height={40} top={24} bottom={0} let:xScale>
+    <div style:padding-left="24px">
+      {#if point?.ts}
+        <div
+          class="absolute italic text-gray-600"
+          transition:fly|local={{ duration: 100, y: 4 }}
+        >
+          {new Intl.DateTimeFormat("en-US", {
+            dateStyle: "medium",
+            timeStyle: "medium",
+          }).format(point?.ts)}
+        </div>
+        &nbsp;
+      {:else}
+        &nbsp;
+      {/if}
+    </div>
+    <!-- top axis element -->
+    <div />
+    <SimpleDataGraphic
+      height={20}
+      top={24}
+      bottom={0}
+      xMin={startValue}
+      xMax={endValue}
+    >
       <Axis side="top" />
     </SimpleDataGraphic>
+    <!-- bignumbers and line charts -->
     {#each $allMeasures as measure, index (measure.id)}
       <!-- FIXME: I can't select the big number by the measure id.
     -->
@@ -91,8 +113,8 @@
             accessor={`measure_${index}`}
             mouseover={point}
             {key}
-            start={new Date(start)}
-            end={new Date(end)}
+            start={startValue}
+            end={endValue}
           />
         {:else}
           <div>

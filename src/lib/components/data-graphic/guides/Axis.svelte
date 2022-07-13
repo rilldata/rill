@@ -9,11 +9,16 @@ This component will draw an axis on the specified side.
   import type { AxisSide } from "./types.d";
 
   export let side: AxisSide = "left";
-  export let formatter: (arg0: number | Date) => string = undefined;
+  export let format: (arg0: number | Date) => string = undefined;
+
+  export let showTicks = false;
   export let tickLength = 4;
   export let tickBuffer = 4;
+
   export let fontSize: number = undefined;
   export let placement = "middle";
+
+  export let labelColor = "rgb(100,100,100)";
 
   let xOrY;
   const isVertical = side === "left" || side === "right";
@@ -32,10 +37,7 @@ This component will draw an axis on the specified side.
   $: innerFontSize = $plotConfig.fontSize || fontSize || 12;
 
   /** make any adjustments to the scale to get what we need */
-  $: scale =
-    $plotConfig[`${xOrY}Type`] === "date"
-      ? $mainScale.copy().nice()
-      : $mainScale.copy();
+  $: scale = $mainScale;
 
   // text-anchor
   let textAnchor;
@@ -121,7 +123,6 @@ This component will draw an axis on the specified side.
     const fourDaysDiff = diff / (60 * 60) < 24 * 4;
     const manyDaysDiff = diff / (60 * 60 * 24) < 60;
     const manyMonthsDiff = diff / (60 * 60 * 24) < 365;
-
     return millisecondDiff
       ? timeFormat("%M:%S.%L")
       : secondDiff
@@ -138,7 +139,7 @@ This component will draw an axis on the specified side.
   $: if ($plotConfig[`${isVertical ? "y" : "x"}Type`] === "date") {
     formatterFunction = createTimeFormat($mainScale.domain());
   } else {
-    formatterFunction = formatter || ((v) => v);
+    formatterFunction = format || ((v) => v);
   }
   let axisLength;
   let tickCount = 0;
@@ -150,11 +151,11 @@ This component will draw an axis on the specified side.
     // use graphicWidth or graphicHeight
     // do we ensure different spacing in one case vs. another?
     tickCount = ~~(axisLength / 20);
-    tickCount = Math.max(2, ~~(axisLength / 100));
+    tickCount = Math.max(2, ~~(tickCount / 100));
   }
 </script>
 
-<g width={$plotConfig.graphicWidth} height={$plotConfig.graphicHeight}>
+<g>
   {#each scale.ticks(tickCount) as tick}
     {@const tickPlacement = placeTick(side, tick)}
     <text
@@ -163,18 +164,21 @@ This component will draw an axis on the specified side.
       dy={dy(side)}
       text-anchor={textAnchor}
       font-size={innerFontSize}
+      fill={labelColor}
     >
       {formatterFunction(tick)}
     </text>
-    <!-- tick mark -->
-    <line
-      class="stroke-gray-400"
-      x1={tickPlacement.x1}
-      x2={tickPlacement.x2}
-      y1={tickPlacement.y1}
-      y2={tickPlacement.y2}
-      font-size={innerFontSize}
-      stroke="black"
-    />
+    {#if showTicks}
+      <!-- tick mark -->
+      <line
+        class="stroke-gray-400"
+        x1={tickPlacement.x1}
+        x2={tickPlacement.x2}
+        y1={tickPlacement.y1}
+        y2={tickPlacement.y2}
+        font-size={innerFontSize}
+        stroke="black"
+      />
+    {/if}
   {/each}
 </g>
