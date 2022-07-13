@@ -17,6 +17,10 @@
   import type { Readable } from "svelte/store";
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
+  import {
+    humanizeGroupValues,
+    NicelyFormattedTypes,
+  } from "$lib/util/humanize-numbers";
 
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -50,6 +54,10 @@
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
   // });
   let expanded = false;
+
+  $: values = $dimension?.formatPreset
+    ? humanizeGroupValues(values, $dimension.formatPreset)
+    : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE);
 </script>
 
 <LeaderboardContainer focused={atLeastOneActive}>
@@ -81,7 +89,7 @@
     </div>
   </LeaderboardHeader>
   <LeaderboardList>
-    {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as { label, value }, i (label)}
+    {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as { label, value, formattedValue }, i (label)}
       {@const isActive = activeValues
         .filter((value) => value[1] === true)
         .find((value) => value[0] === label)}
@@ -129,7 +137,7 @@
             >
               {#if !(atLeastOneActive && !isActive)}
                 <div in:fly={{ duration: 200, y: 4 }}>
-                  {value}
+                  {formattedValue}
                 </div>
               {/if}
             </div>
