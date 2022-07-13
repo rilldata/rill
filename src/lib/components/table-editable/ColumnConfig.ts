@@ -19,6 +19,7 @@ export type CellRendererComponent = new (
  * tooltip: tooltip when hovering over column header
  */
 export interface ColumnConfig {
+  //FIXME: specify types based on CellRendererComponent
   name: string;
   label?: string;
   type?: string;

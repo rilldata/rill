@@ -3,7 +3,6 @@ import { Response, Router } from "express";
 import type { RootConfig } from "$common/config/RootConfig";
 import type { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
-import { RillActionsChannel } from "$common/utils/RillActionsChannel";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type {

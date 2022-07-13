@@ -8,8 +8,6 @@ import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata
 import { sanitizeColumn } from "$common/utils/queryUtils";
 import { TIMESTAMPS } from "$lib/duckdb-data-types";
 
-import { PreviewRollupInterval } from "$lib/duckdb-data-types";
-
 const TOP_K_COUNT = 50;
 
 /** FIXME: these should be moved somewhere else. */

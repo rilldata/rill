@@ -1,12 +1,10 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { CategoricalSummary } from "$lib/types";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { getDimensionDefinition } from "$common/stateInstancesFactory";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
@@ -17,8 +15,6 @@ import { ActionResponseFactory } from "$common/data-modeler-service/response/Act
  * from nyc311_reduced
  * group by date_trunc('HOUR', created_date) order by inter;
  */
-
-const HIGH_CARDINALITY_THRESHOLD = 100;
 
 export class DimensionsActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -93,57 +89,5 @@ export class DimensionsActions extends RillDeveloperActions {
       dimensionIsValid:
         columnFindIndex >= 0 ? ValidationState.OK : ValidationState.ERROR,
     });
-  }
-
-  @RillDeveloperActions.MetricsDefinitionAction()
-  public async collectDimensionsInfo(
-    rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string
-  ) {
-    const model = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Persistent)
-      .getById(rillRequestContext.record.sourceModelId);
-    // await Promise.all(
-    //   rillRequestContext.record.dimensions.map((dimension) =>
-    //     this.collectDimensionSummary(
-    //       rillRequestContext,
-    //       metricsDefId,
-    //       dimension.id,
-    //       dimension.dimensionColumn,
-    //       model.tableName
-    //     )
-    //   )
-    // );
-  }
-
-  private async collectDimensionSummary(
-    rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string,
-    dimensionId: string,
-    dimensionColumn: string,
-    tableName: string
-  ) {
-    const summary: CategoricalSummary = await this.databaseActionQueue.enqueue(
-      { id: metricsDefId, priority: DatabaseActionQueuePriority.ActiveModel },
-      "getTopKAndCardinality",
-      [tableName, dimensionColumn]
-    );
-    const modifications: Partial<DimensionDefinitionEntity> = {
-      summary,
-      dimensionIsValid:
-        summary.cardinality >= HIGH_CARDINALITY_THRESHOLD
-          ? ValidationState.WARNING
-          : ValidationState.OK,
-    };
-    // this.dataModelerStateService.dispatch("updateDimension", [
-    //   metricsDefId,
-    //   dimensionId,
-    //   modifications,
-    // ]);
-    // rillRequestContext.actionsChannel.pushMessage("updateDimension", [
-    //   metricsDefId,
-    //   dimensionId,
-    //   modifications,
-    // ]);
   }
 }

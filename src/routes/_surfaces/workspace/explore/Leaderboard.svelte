@@ -53,7 +53,6 @@
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
   // });
-  let expanded = false;
 
   $: values = $dimension?.formatPreset
     ? humanizeGroupValues(values, $dimension.formatPreset)

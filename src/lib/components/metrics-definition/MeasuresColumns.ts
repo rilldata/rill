@@ -10,6 +10,7 @@ export const initMeasuresColumns = (inputChangeHandler) =>
       name: "label",
       tooltip: "a human readable name for this measure",
       renderer: TableCellInput,
+      onchange: inputChangeHandler,
     },
     {
       name: "expression",

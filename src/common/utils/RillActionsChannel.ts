@@ -4,7 +4,6 @@
  * The other end will pop them and send it over an HTTP streaming connection.
  */
 import { waitUntil } from "$common/utils/waitUtils";
-import type { ReduxActionDefinitions } from "$lib/redux-store/ActionTypes";
 
 export class RillActionsChannel {
   private messages = new Array<Record<string, unknown>>();
