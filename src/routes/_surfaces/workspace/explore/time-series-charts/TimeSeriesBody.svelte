@@ -43,7 +43,6 @@
 
 {#if key && data?.length}
   <div>
-    {hideCurrent}
     <SimpleDataGraphic
       shareYScale={false}
       bind:mouseoverValue
@@ -72,7 +71,7 @@
               value={data}
               let:output={tweenedData}
               tweenProps={{
-                duration: longTimeSeries ? 0 : 600,
+                duration: longTimeSeries ? 0 : !hideCurrent ? 600 : 0,
                 easing: cubicOut,
                 interpolate: interpolateArray,
               }}

@@ -13,10 +13,7 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import {
-    setExploreSelectedTimeRangeAndUpdate,
-    syncExplore,
-  } from "$lib/redux-store/explore/explore-apis";
+  import { syncExplore } from "$lib/redux-store/explore/explore-apis";
 
   export let metricsDefId: string;
 
@@ -42,35 +39,7 @@
   );
 
   let whichReferenceValue: string;
-
-  let switcher = 0;
 </script>
-
-<button
-  on:click={() => {
-    switcher = (switcher + 1) % 3;
-    let _start;
-    let _end;
-    if (switcher === 0) {
-      _start = $metricsLeaderboard.timeRange.start;
-      _end = $metricsLeaderboard.timeRange.end;
-    }
-    if (switcher === 1) {
-      _start = "2019-05-05";
-      _end = "2019-10-05";
-    }
-    if (switcher === 2) {
-      _start = "2019-05-05";
-      _end = "2020-05-05";
-    }
-    setExploreSelectedTimeRangeAndUpdate(store.dispatch, metricsDefId, {
-      start: new Date(_start).toISOString(),
-      end: new Date(_end).toISOString(),
-    });
-  }}
->
-  {switcher}
-</button>
 
 <ExploreContainer let:columns>
   <svelte:fragment slot="header">

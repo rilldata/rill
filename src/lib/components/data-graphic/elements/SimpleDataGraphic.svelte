@@ -3,8 +3,6 @@ A simple composable container for SVG-based data graphics.
 -->
 <script lang="ts">
   import { GraphicContext, SimpleSVGContainer } from "../elements";
-  import { get_current_component as getComponent } from "svelte/internal";
-  import { forwardEvents } from "../actions/forward-events-action-factory";
 
   export let top = undefined;
   export let bottom = undefined;

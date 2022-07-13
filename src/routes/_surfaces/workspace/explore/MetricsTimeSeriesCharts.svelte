@@ -1,24 +1,17 @@
 <script lang="ts">
-  import { fade } from "svelte/transition";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { getFallbackMeasureName } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  // import MeasureBigNumber from "$lib/components/leaderboard/MeasureBigNumber.svelte";
   import MeasureBigNumber from "./time-series-charts/MeasureBigNumber.svelte";
   import TimeSeriesBody from "./time-series-charts/TimeSeriesBody.svelte";
 
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
 
-  import {
-    getBigNumbersByIds,
-    getBigNumberById,
-  } from "$lib/redux-store/big-number/big-number-readables";
+  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
   import TimeSeriesChartContainer from "./time-series-charts/TimeSeriesChartContainer.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "$lib/components/data-graphic/guides";
 
-  import { interpolateArray } from "d3-interpolate";
   import Spinner from "$lib/components/Spinner.svelte";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
