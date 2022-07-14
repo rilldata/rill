@@ -195,62 +195,64 @@
       <Button primary>Create metrics <Metrics size="16px" /></Button>
     {/if}
   </div>
-  <div class="grow text-right px-4 pb-4 pt-2">
-    <!-- top row: rows -->
-    <div
-      class="flex flex-row items-center justify-between"
-      class:text-gray-300={currentDerivedModel?.error}
-    >
-      <div class="italic text-gray-500">
-        {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
-          <Tooltip location="left" alignment="center" distance={8}>
-            <div>
-              {#if validRollup(rollup)}
-                {#if isNaN(rollup)}
-                  ~
-                {:else if rollup === 0}
-                  <!-- show no additional text. -->
-                  resultset is empty
-                {:else if rollup !== 1}
-                  {formatBigNumberPercentage(
-                    rollup < 0.0005 ? rollup : $bigRollupNumber || 0
-                  )}
-                  of source rows
-                {:else}no change in row {#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight}count{:else}ct.{/if}
+  <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
+    {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
+      <!-- top row: rows -->
+      <div
+        class="flex flex-row items-center justify-between"
+        class:text-gray-300={currentDerivedModel?.error}
+      >
+        <div class="italic text-gray-500">
+          {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
+            <Tooltip location="left" alignment="center" distance={8}>
+              <div>
+                {#if validRollup(rollup)}
+                  {#if isNaN(rollup)}
+                    ~
+                  {:else if rollup === 0}
+                    <!-- show no additional text. -->
+                    resultset is empty
+                  {:else if rollup !== 1}
+                    {formatBigNumberPercentage(
+                      rollup < 0.0005 ? rollup : $bigRollupNumber || 0
+                    )}
+                    of source rows
+                  {:else}no change in row {#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight}count{:else}ct.{/if}
+                  {/if}
+                {:else if rollup === Infinity}
+                  &nbsp; {formatInteger(outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+                  selected
                 {/if}
-              {:else if rollup === Infinity}
-                &nbsp; {formatInteger(outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
-                selected
-              {/if}
-            </div>
-            <TooltipContent slot="tooltip-content">
-              <div class="py-1 font-bold">the rollup percentage</div>
-              <div style:width="240px" class="pb-1">
-                the ratio of resultset rows to source rows, as a percentage
               </div>
-            </TooltipContent>
-          </Tooltip>
-        {/if}
+              <TooltipContent slot="tooltip-content">
+                <div class="py-1 font-bold">the rollup percentage</div>
+                <div style:width="240px" class="pb-1">
+                  the ratio of resultset rows to source rows, as a percentage
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          {/if}
+        </div>
+        <div class="text-gray-800 font-bold">
+          {#if inputRowCardinalityValue > 0}
+            {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+          {:else if inputRowCardinalityValue === 0}
+            no rows selected
+          {:else}
+            &nbsp;
+          {/if}
+        </div>
       </div>
-      <div class="text-gray-800 font-bold">
-        {#if inputRowCardinalityValue > 0}
-          {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
-        {:else if inputRowCardinalityValue === 0}
-          no rows selected
-        {:else}
-          &nbsp;
-        {/if}
+      <!-- bottom row: columns -->
+      <div>
+        <div class="italic text-gray-500">
+          <!-- TODO: add num columns dropped -->
+        </div>
+        <div class="text-gray-800 font-bold">
+          {currentDerivedModel?.profile?.length} columns
+        </div>
       </div>
-    </div>
-    <!-- bottom row: columns -->
-    <div>
-      <div class="italic text-gray-500">
-        <!-- TODO: add num columns dropped -->
-      </div>
-      <div class="text-gray-800 font-bold">
-        {currentDerivedModel?.profile?.length} columns
-      </div>
-    </div>
+    {/if}
   </div>
 {/if}
 
