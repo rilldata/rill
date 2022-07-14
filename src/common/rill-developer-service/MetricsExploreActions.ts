@@ -17,7 +17,6 @@ import type {
 } from "$common/database-service/DatabaseTimeSeriesActions";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
-import { asyncWait } from "$common/utils/waitUtils";
 
 export class MetricsExploreActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()

@@ -19,7 +19,6 @@
   import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
-  import { store } from "$lib/redux-store/store-root";
 
   export let metricsDefId;
   export let start: Date;
