@@ -1,15 +1,16 @@
 <script lang="ts">
-  import Portal from "$lib/components/Portal.svelte";
-  import { drag } from "$lib/drag";
   import {
-    assetVisibilityTween,
     assetsVisible,
+    assetVisibilityTween,
     layout,
   } from "$lib/application-state-stores/layout-store";
+  import RillLogo from "$lib/components/icons/RillLogo.svelte";
+  import Portal from "$lib/components/Portal.svelte";
+  import { drag } from "$lib/drag";
 
-  import TableAssets from "./TableAssets.svelte";
-  import ModelAssets from "./ModelAssets.svelte";
   import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
+  import ModelAssets from "./ModelAssets.svelte";
+  import TableAssets from "./TableAssets.svelte";
 </script>
 
 <div
@@ -48,11 +49,7 @@
         <h1
           class="grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center"
         >
-          <div
-            class="grid  text-white w-5 h-5 items-center justify-center rounded bg-gray-500"
-            style:width="16px"
-            style:height="16px"
-          />
+          <RillLogo size="16px" iconOnly />
           <div class="font-bold">Rill Developer</div>
         </h1>
       </header>
