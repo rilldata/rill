@@ -21,14 +21,20 @@ export enum NicelyFormattedTypes {
 }
 
 export const nicelyFormattedTypesSelectorOptions = [
-  { value: NicelyFormattedTypes.HUMANIZE, label: "Humanize - 12k" },
-  { value: NicelyFormattedTypes.NONE, label: "No formatting - 12345.6789" },
+  { value: NicelyFormattedTypes.HUMANIZE, label: "Humanize (e.g. 12.3k)" },
+  {
+    value: NicelyFormattedTypes.NONE,
+    label: "No formatting (e.g. 12345.6789)",
+  },
   {
     value: NicelyFormattedTypes.CURRENCY,
-    label: "Currency (USD) - $12,345.67",
+    label: "Currency (USD) (e.g. $12.3k)",
   },
-  { value: NicelyFormattedTypes.PERCENTAGE, label: "Percentage - 12345.6789%" },
-  { value: NicelyFormattedTypes.DECIMAL, label: "Decimal - 12,345.67" },
+  {
+    value: NicelyFormattedTypes.PERCENTAGE,
+    label: "Percentage (e.g. 12345.6789%)",
+  },
+  { value: NicelyFormattedTypes.DECIMAL, label: "Decimal (e.g. 12,345.67)" },
 ];
 
 const DEFAULT_OPTIONS = {
