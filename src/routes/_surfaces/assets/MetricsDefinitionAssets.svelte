@@ -19,7 +19,6 @@
     ApplicationStore,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
-  import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
