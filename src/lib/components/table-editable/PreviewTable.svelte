@@ -13,7 +13,7 @@
 
   const dispatch = createEventDispatcher();
 
-  export let columnNames: ColumnConfig[];
+  export let columnNames: ColumnConfig<any>[];
   export let tableConfig: TableConfig;
   export let rows: any[];
 
@@ -47,7 +47,6 @@
         on:pin={handlePin}
         on:change={(evt) => dispatch("change", evt.detail)}
         on:delete={(evt) => dispatch("delete", evt.detail)}
-        tableConfig={{ ...tableConfig, enableAdd: false }}
         {activeIndex}
         columnNames={selectedColumns}
         {selectedColumns}

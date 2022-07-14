@@ -20,6 +20,23 @@ export enum NicelyFormattedTypes {
   DECIMAL = "comma_separators",
 }
 
+export const nicelyFormattedTypesSelectorOptions = [
+  { value: NicelyFormattedTypes.HUMANIZE, label: "Humanize (e.g. 12.3k)" },
+  {
+    value: NicelyFormattedTypes.NONE,
+    label: "No formatting (e.g. 12345.6789)",
+  },
+  {
+    value: NicelyFormattedTypes.CURRENCY,
+    label: "Currency (USD) (e.g. $12.3k)",
+  },
+  {
+    value: NicelyFormattedTypes.PERCENTAGE,
+    label: "Percentage (e.g. 12345.6789%)",
+  },
+  { value: NicelyFormattedTypes.DECIMAL, label: "Decimal (e.g. 12,345.67)" },
+];
+
 const DEFAULT_OPTIONS = {
   locale: "en-US",
   style: "decimal",
@@ -55,6 +72,8 @@ function formatNicely(
 }
 
 function convertToShorthand(value: number): string | number {
+  if (value < 1000) return formatNicely(value, NicelyFormattedTypes.DECIMAL);
+
   // Nine Zeroes for Billions
   return Math.abs(value) >= 1.0e9
     ? (Math.abs(value) / 1.0e9).toFixed(1) + "B"
@@ -84,9 +103,9 @@ export function humanizeDataType(
 ) {
   if (type == NicelyFormattedTypes.NONE) return value;
   else if (type == NicelyFormattedTypes.HUMANIZE) {
-    if (value < 1000)
-      return formatNicely(value, NicelyFormattedTypes.DECIMAL, options);
-    else return convertToShorthand(value);
+    return convertToShorthand(value);
+  } else if (type == NicelyFormattedTypes.CURRENCY) {
+    return "$" + convertToShorthand(value);
   } else {
     return formatNicely(value, type, options);
   }
@@ -143,6 +162,9 @@ function humanizeGroupValuesUtil(
   else if (type == NicelyFormattedTypes.HUMANIZE) {
     const scale = determineScaleForValues(values);
     return applyScaleOnValues(values, scale);
+  } else if (type == NicelyFormattedTypes.CURRENCY) {
+    const scale = determineScaleForValues(values);
+    return applyScaleOnValues(values, scale).map((v) => "$" + v);
   } else {
     const formatter = getNumberFormatter(type, options);
     return values.map((v) => formatter.format(v));
@@ -156,7 +178,7 @@ export function humanizeGroupValues(
 ) {
   let numValues = values.map((v) => v.value);
   const areAllNumbers = numValues.every((e) => typeof e === "number");
-  if (!areAllNumbers) return;
+  if (!areAllNumbers) return values;
 
   numValues = (numValues as number[]).sort((a, b) => b - a);
   const formattedValues = humanizeGroupValuesUtil(

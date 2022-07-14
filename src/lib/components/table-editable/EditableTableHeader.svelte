@@ -1,16 +1,12 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import TableHeader from "./TableHeader.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import Pin from "$lib/components/icons/Pin.svelte";
 
   import type { ColumnConfig } from "./ColumnConfig";
 
-  export let pinned = false;
-  export let columnConfig: ColumnConfig;
+  export let columnConfig: ColumnConfig<any>;
 
-  const dispatch = createEventDispatcher();
   const name = columnConfig.label ?? columnConfig.name;
 </script>
 
@@ -33,10 +29,14 @@
         </span>
       </div>
       <TooltipContent slot="tooltip-content">
-        {columnConfig.tooltip}
+        {columnConfig.headerTooltip}
       </TooltipContent>
     </Tooltip>
-    <Tooltip location="top" alignment="middle" distance={16}>
+    <!--
+      FIXME: in conversation with Marissa, we decided to remove pins for now,
+      but we'll want to revisit our strategy for freezing columns if the table grows.
+     -->
+    <!-- <Tooltip location="top" alignment="middle" distance={16}>
       <button
         class:text-gray-900={pinned}
         class:text-gray-400={!pinned}
@@ -52,6 +52,6 @@
           ? "unpin this column from the right side of the table"
           : "pin this column to the right side of the table"}
       </TooltipContent>
-    </Tooltip>
+    </Tooltip> -->
   </div>
 </TableHeader>

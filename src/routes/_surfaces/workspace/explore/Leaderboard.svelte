@@ -21,9 +21,6 @@
     humanizeGroupValues,
     NicelyFormattedTypes,
   } from "$lib/util/humanize-numbers";
-  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import Spinner from "$lib/components/Spinner.svelte";
-  import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
 
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -32,8 +29,8 @@
    */
   export let referenceValue: number;
   export let values;
-  export let status: EntityStatus;
 
+  export let formatPreset: NicelyFormattedTypes;
   export let isSummableMeasure = false;
 
   type ActiveValues = [string, boolean];
@@ -58,8 +55,8 @@
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
   // });
 
-  $: values = $dimension?.formatPreset
-    ? humanizeGroupValues(values, $dimension.formatPreset)
+  $: values = formatPreset
+    ? humanizeGroupValues(values, formatPreset)
     : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE);
 </script>
 
@@ -91,31 +88,30 @@
       </Tooltip>
     </div>
   </LeaderboardHeader>
-  {#if status === EntityStatus.Idle}
-    <LeaderboardList>
-      {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as { label, value, formattedValue }, i (label)}
-        {@const isActive = activeValues
-          .filter((value) => value[1] === true)
-          .find((value) => value[0] === label)}
-        <div>
-          <Tooltip location="right">
-            <LeaderboardListItem
-              value={isSummableMeasure
-                ? referenceValue
-                  ? value / referenceValue
-                  : 0
-                : 0}
-              {isActive}
-              on:click={() => {
-                dispatch("select-item", { label, isActive });
-              }}
-              color={isActive
-                ? "bg-blue-200"
-                : activeValues.length
-                ? "bg-gray-200"
-                : "bg-gray-200"}
-            >
-              <!--
+  <LeaderboardList>
+    {#each values.slice(0, !seeMore ? slice : seeMoreSlice) as { label, value, formattedValue }, i (label)}
+      {@const isActive = activeValues
+        .filter((value) => value[1] === true)
+        .find((value) => value[0] === label)}
+      <div>
+        <Tooltip location="right">
+          <LeaderboardListItem
+            value={isSummableMeasure
+              ? referenceValue
+                ? value / referenceValue
+                : 0
+              : 0}
+            {isActive}
+            on:click={() => {
+              dispatch("select-item", { label, isActive });
+            }}
+            color={isActive
+              ? "bg-blue-200"
+              : activeValues.length
+              ? "bg-gray-200"
+              : "bg-gray-200"}
+          >
+            <!--
               title element
               -------------
               We will fix the maximum width of the title element
@@ -124,67 +120,60 @@
               BarAndNumber component to do things that are harder to maintain.
               The current approach does a decent enough job of maintaining the flow and scan-friendliness.
              -->
-              <div
-                class:text-gray-700={!atLeastOneActive}
-                class:text-gray-500={atLeastOneActive && !isActive}
-                class:italic={atLeastOneActive && !isActive}
-                class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
-                slot="title"
-              >
-                {label}
-              </div>
-              <!-- right-hand metric value -->
-              <div
-                class="leaderboard-list-item-right"
-                slot="right"
-                bind:this={righthandElements[i]}
-              >
-                {#if !(atLeastOneActive && !isActive)}
-                  <div in:fly={{ duration: 200, y: 4 }}>
-                    {formattedValue}
-                  </div>
-                {/if}
-              </div>
-            </LeaderboardListItem>
-            <TooltipContent slot="tooltip-content">
-              <div style:max-width="480px">
-                {#if false}
-                  <div>
-                    {formatBigNumberPercentage(value / referenceValue)} of records
-                  </div>
-                {/if}
-                <div>
-                  filter on <span class="italic">{label}</span>
+            <div
+              class:text-gray-700={!atLeastOneActive}
+              class:text-gray-500={atLeastOneActive && !isActive}
+              class:italic={atLeastOneActive && !isActive}
+              class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
+              slot="title"
+            >
+              {label}
+            </div>
+            <!-- right-hand metric value -->
+            <div
+              class="leaderboard-list-item-right"
+              slot="right"
+              bind:this={righthandElements[i]}
+            >
+              {#if !(atLeastOneActive && !isActive)}
+                <div in:fly={{ duration: 200, y: 4 }}>
+                  {formattedValue}
                 </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      {:else}
-        <div class="italic text-gray-500">no values available</div>
-      {/each}
-      {#if values.length > slice}
-        <Tooltip location="right">
-          <LeaderboardListItem
-            value={0}
-            color="bg-gray-100"
-            on:click={() => {
-              seeMore = !seeMore;
-            }}
-          >
-            <div class="italic text-gray-500" slot="title">
-              See {#if seeMore}Less{:else}More{/if}
+              {/if}
             </div>
           </LeaderboardListItem>
-          <TooltipContent slot="tooltip-content">See More Items</TooltipContent>
+          <TooltipContent slot="tooltip-content">
+            <div style:max-width="480px">
+              {#if false}
+                <div>
+                  {formatBigNumberPercentage(value / referenceValue)} of records
+                </div>
+              {/if}
+              <div>
+                filter on <span class="italic">{label}</span>
+              </div>
+            </div>
+          </TooltipContent>
         </Tooltip>
-      {/if}
-    </LeaderboardList>
-  {:else if status === EntityStatus.Error}
-    <div class="p-2"><CrossIcon /></div>
-  {:else}
-    <div class="p-2">
-      <Spinner status={EntityStatus.Running} />
-    </div>
-  {/if}
+      </div>
+    {:else}
+      <div class="italic text-gray-500">no values available</div>
+    {/each}
+    {#if values.length > slice}
+      <Tooltip location="right">
+        <LeaderboardListItem
+          value={0}
+          color="bg-gray-100"
+          on:click={() => {
+            seeMore = !seeMore;
+          }}
+        >
+          <div class="italic text-gray-500" slot="title">
+            See {#if seeMore}Less{:else}More{/if}
+          </div>
+        </LeaderboardListItem>
+        <TooltipContent slot="tooltip-content">See More Items</TooltipContent>
+      </Tooltip>
+    {/if}
+  </LeaderboardList>
 </LeaderboardContainer>
