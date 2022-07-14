@@ -19,6 +19,7 @@
   export let draggable = true;
   export let show = false;
   export let showTitle = true;
+  export let notExpandable = false;
 
   const dispatch = createEventDispatcher();
 
@@ -57,6 +58,7 @@
         {cardinality}
         {sizeInBytes}
         {active}
+        {notExpandable}
       >
         <slot name="header-buttons" />
       </CollapsibleTableHeader>

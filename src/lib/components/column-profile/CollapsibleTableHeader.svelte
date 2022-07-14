@@ -32,6 +32,7 @@
   export let show = false;
   export let contextMenuOpen = false;
   export let contextMenu: any;
+  export let notExpandable = false;
 
   const dispatch = createEventDispatcher();
   const { commandClickAction } = createCommandClickAction();
@@ -111,9 +112,11 @@
       : 'bg-transparent'}
     "
   >
-    <ExpanderButton rotated={show} on:click={() => dispatch("expand")}>
-      <CaretDownIcon size="14px" />
-    </ExpanderButton>
+    {#if !notExpandable}
+      <ExpanderButton rotated={show} on:click={() => dispatch("expand")}>
+        <CaretDownIcon size="14px" />
+      </ExpanderButton>
+    {/if}
     <button
       use:commandClickAction
       on:command-click={commandClickHandler}
