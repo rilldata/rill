@@ -90,7 +90,7 @@
         <span class="self-center" slot="header-buttons">
           <ContextButton
             {id}
-            tooltipText="expand"
+            tooltipText="explore metrics"
             location="left"
             on:click={() => {
               dataModelerService.dispatch("setActiveAsset", [
