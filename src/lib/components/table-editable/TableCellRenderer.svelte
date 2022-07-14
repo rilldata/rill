@@ -1,13 +1,15 @@
 <script lang="ts">
-  import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
-  export let columnConfig: ColumnConfig;
+  import type {
+    ColumnConfig,
+    CellConfig,
+  } from "$lib/components/table-editable/ColumnConfig";
+  export let columnConfig: ColumnConfig<CellConfig>;
   export let index: number;
   export let row: any;
 </script>
 
 <svelte:component
-  this={columnConfig.renderer}
-  value={row[columnConfig.name]}
+  this={columnConfig.cellRenderer.component}
   {index}
   {row}
   {columnConfig}
