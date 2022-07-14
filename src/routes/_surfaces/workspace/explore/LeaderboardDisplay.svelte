@@ -39,6 +39,7 @@
   );
   // get the expression so we can determine if the measure is summable
   $: expression = leaderboardMeasureDefinition?.expression;
+  $: formatPreset = leaderboardMeasureDefinition?.formatPreset;
 
   let bigNumberEntity: Readable<BigNumberEntity>;
   $: bigNumberEntity = getBigNumberById(metricsDefId);
@@ -105,6 +106,7 @@
     >
       <!-- the single virtual element -->
       <Leaderboard
+        {formatPreset}
         isSummableMeasure={expression?.toLowerCase()?.includes("count(") ||
           expression?.toLowerCase()?.includes("sum(")}
         dimensionId={item.dimensionId}
