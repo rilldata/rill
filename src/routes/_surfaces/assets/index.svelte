@@ -7,10 +7,16 @@
   import RillLogo from "$lib/components/icons/RillLogo.svelte";
   import Portal from "$lib/components/Portal.svelte";
   import { drag } from "$lib/drag";
+  import { onMount } from "svelte";
 
   import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
   import ModelAssets from "./ModelAssets.svelte";
   import TableAssets from "./TableAssets.svelte";
+
+  let mounted = false;
+  onMount(() => {
+    mounted = true;
+  });
 </script>
 
 <div
@@ -49,8 +55,10 @@
         <h1
           class="grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center"
         >
-          <RillLogo size="16px" iconOnly />
-          <div class="font-bold">Rill Developer</div>
+          {#if mounted}
+            <RillLogo size="16px" iconOnly />
+            <div class="font-bold">Rill Developer</div>
+          {/if}
         </h1>
       </header>
       <TableAssets />
