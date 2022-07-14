@@ -173,6 +173,7 @@
         suppress={contextMenuOpen}
       >
         <Button
+          type="text"
           on:click={async (event) => {
             contextMenuOpen = !contextMenuOpen;
             menuX = event.clientX;
@@ -192,7 +193,7 @@
           export this model as a dataset
         </TooltipContent>
       </Tooltip>
-      <Button primary>Create metrics <Metrics size="16px" /></Button>
+      <Button type="primary">Create metrics<Metrics size="16px" /></Button>
     {/if}
   </div>
   <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">

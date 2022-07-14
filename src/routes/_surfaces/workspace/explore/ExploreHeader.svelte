@@ -56,7 +56,7 @@
   "
   >
     <Button
-      primary={false}
+      type="secondary"
       on:click={() => {
         dataModelerService.dispatch("setActiveAsset", [
           EntityType.MetricsDefinition,
