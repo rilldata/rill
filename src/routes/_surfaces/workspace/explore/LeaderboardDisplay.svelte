@@ -119,6 +119,7 @@
         on:select-item={(event) => onSelectItem(event, item)}
         activeValues={$metricsLeaderboard.activeValues[item.dimensionId] ?? []}
         values={item.values}
+        status={item.status}
         referenceValue={referenceValue || 0}
       />
     </VirtualizedGrid>

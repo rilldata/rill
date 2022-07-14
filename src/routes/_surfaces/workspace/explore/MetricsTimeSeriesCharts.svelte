@@ -15,6 +15,11 @@
 
   import Spinner from "$lib/components/Spinner.svelte";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { Readable } from "svelte/store";
+  import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
+  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
+  import { store } from "$lib/redux-store/store-root";
 
   export let metricsDefId;
   export let start: Date;
@@ -26,9 +31,11 @@
 
   // get the active big numbers
 
+  let bigNumbers: Readable<BigNumberEntity>;
   $: bigNumbers = getBigNumberById(metricsDefId);
   // plot the data
 
+  let timeSeries: Readable<TimeSeriesEntity>;
   $: timeSeries = getTimeSeriesById(metricsDefId);
   $: formattedData = $timeSeries?.values
     ? convertTimestampPreview($timeSeries.values, true)
@@ -99,13 +106,16 @@
           measure?.label ||
           measure?.expression}
         formatPreset={measure?.formatPreset}
+        status={$bigNumbers?.status}
       >
         <svelte:fragment slot="name">
           {measure?.label || measure?.expression}
         </svelte:fragment>
       </MeasureBigNumber>
       <div class="time-series-body" style:height="125px">
-        {#if formattedData}
+        {#if $timeSeries?.status === EntityStatus.Error}
+          <div class="p-5"><CrossIcon /></div>
+        {:else if formattedData}
           <TimeSeriesBody
             bind:mouseoverValue
             formatPreset={measure?.formatPreset}

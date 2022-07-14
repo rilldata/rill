@@ -12,6 +12,7 @@ import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeS
 export interface BigNumberResponse {
   id?: string;
   bigNumbers: Record<string, number>;
+  error?: string;
 }
 
 export class DatabaseMetricsExploreActions extends DatabaseActions {
@@ -63,12 +64,19 @@ export class DatabaseMetricsExploreActions extends DatabaseActions {
       "WHERE"
     );
 
-    const bigNumbers = await this.databaseClient.execute(
+    try {
+      const bigNumbers = await this.databaseClient.execute(
+        `
+        SELECT ${getExpressionColumnsFromMeasures(measures)} from "${table}"
+        ${whereClause}
       `
-      SELECT ${getExpressionColumnsFromMeasures(measures)} from "${table}"
-      ${whereClause}
-    `
-    );
-    return { bigNumbers: bigNumbers?.[0] };
+      );
+      return { bigNumbers: bigNumbers?.[0] };
+    } catch (err) {
+      return {
+        bigNumbers: {},
+        error: err.message,
+      };
+    }
   }
 }

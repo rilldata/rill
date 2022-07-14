@@ -1,13 +1,19 @@
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  EntityStatus,
+  EntityType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import type {
   TimeSeriesResponse,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
-import { updateTimeSeries } from "$lib/redux-store/timeseries/timeseries-slice";
+import {
+  setTimeSeriesStatus,
+  updateTimeSeries,
+} from "$lib/redux-store/timeseries/timeseries-slice";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { selectMetricsExploreParams } from "$lib/redux-store/explore/explore-selectors";
 
@@ -41,6 +47,8 @@ export const generateTimeSeriesApi = createAsyncThunk(
         dimensions: state.dimensionDefinition.entities,
       });
 
+    thunkAPI.dispatch(setTimeSeriesStatus(id, EntityStatus.Running));
+
     const stream = streamingFetchWrapper<TimeSeriesResponse>(
       `metrics/${id}/time-series`,
       "POST",
@@ -58,6 +66,9 @@ export const generateTimeSeriesApi = createAsyncThunk(
           values: timeSeriesResponse.results,
           timeRange: timeSeriesResponse.timeRange,
           spark: timeSeriesResponse.spark,
+          status: timeSeriesResponse.error
+            ? EntityStatus.Error
+            : EntityStatus.Idle,
         })
       );
     }

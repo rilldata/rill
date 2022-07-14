@@ -3,6 +3,11 @@ import {
   createEntityAdapter,
 } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  setStatusPrepare,
+  setStatusReducer,
+} from "$lib/redux-store/utils/loading-utils";
 
 export type TimeSeriesValue = {
   ts: string;
@@ -16,6 +21,7 @@ export interface TimeSeriesEntity {
   timeRange: TimeSeriesTimeRange;
   values: Array<TimeSeriesValue>;
   spark: Array<TimeSeriesValue>;
+  status: EntityStatus;
 }
 
 const timeSeriesAdapter = createEntityAdapter<TimeSeriesEntity>();
@@ -30,9 +36,15 @@ const timeSeriesSlice = createSlice({
         payload: timeSeriesEntity,
       }),
     },
+
+    setTimeSeriesStatus: {
+      reducer: setStatusReducer,
+      prepare: setStatusPrepare,
+    },
   },
 });
 
-export const { updateTimeSeries } = timeSeriesSlice.actions;
+export const { updateTimeSeries, setTimeSeriesStatus } =
+  timeSeriesSlice.actions;
 
 export const timeSeriesReducer = timeSeriesSlice.reducer;

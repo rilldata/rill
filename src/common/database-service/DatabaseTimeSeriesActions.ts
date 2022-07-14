@@ -19,6 +19,7 @@ export interface TimeSeriesResponse {
   spark?: Array<TimeSeriesValue>;
   timeRange?: TimeSeriesTimeRange;
   sampleSize?: number;
+  error?: string;
 }
 export interface TimeSeriesRollup {
   rollup: TimeSeriesResponse;
@@ -143,6 +144,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
           timeRange,
           ...(pixels ? { spark: [] } : {}),
           sampleSize,
+          error: err.message,
         },
       };
     }

@@ -17,6 +17,7 @@ import type {
 } from "$common/database-service/DatabaseTimeSeriesActions";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { asyncWait } from "$common/utils/waitUtils";
 
 export class MetricsExploreActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -68,7 +69,8 @@ export class MetricsExploreActions extends RillDeveloperActions {
   ) {
     if (
       !rillRequestContext.record?.sourceModelId ||
-      !rillRequestContext.record?.timeDimension
+      !rillRequestContext.record?.timeDimension ||
+      !measures.length
     )
       return;
 
@@ -143,7 +145,7 @@ export class MetricsExploreActions extends RillDeveloperActions {
       isolated?: boolean;
     }
   ) {
-    if (!rillRequestContext.record?.sourceModelId) return;
+    if (!rillRequestContext.record?.sourceModelId || !measures.length) return;
     if (isolated) {
       await Promise.all(
         measures.map((measure) =>
