@@ -10,7 +10,7 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 import { useTestModel, useTestTables } from "./useInlineTestServer";
 
 /**
- * Call this at the top level to create a metrics definition for a given label, modelName and timeDimension.
+ * Call this at the top level to create metrics for a given label, modelName and timeDimension.
  * Make sure to call {@link useTestModel} for the model before this. Also make sure timeDimension passed exists in the model.
  *
  * 1. This creates a MetricsDefinition with given label.

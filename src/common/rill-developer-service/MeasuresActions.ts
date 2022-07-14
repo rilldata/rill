@@ -83,7 +83,7 @@ export class MeasuresActions extends RillDeveloperActions {
   ) {
     if (!metricsDefId || !rillRequestContext.record)
       return ActionResponseFactory.getEntityError(
-        `No metric set found for id=${metricsDefId}`
+        `No metrics found for id=${metricsDefId}`
       );
 
     const parsedExpression = parseExpression(expression);

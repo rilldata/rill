@@ -45,13 +45,12 @@
           pt-2 pb-2
           ${buttonDisabled ? "cursor-not-allowed" : "cursor-pointer"}
           ${buttonDisabled ? "text-gray-500" : "text-gray-900"}
-        `}>quick start</button
+        `}>quick metrics</button
   >
   <TooltipContent slot="tooltip-content">
     <div style:width="30em">
       {#if buttonDisabled}
-        select a model and a timestamp column before populating this metrics
-        cube
+        select a model and a timestamp column before populating these metrics
       {:else}
         add initial measure <em>events per time period</em>, and add all
         categorical columns as slicing dimensions.
