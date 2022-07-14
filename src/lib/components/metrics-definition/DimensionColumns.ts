@@ -30,13 +30,14 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
         "a human readable description of this dimension (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
-    {
-      name: "labelPlural",
-      label: "label (plural)",
-      headerTooltip:
-        "an pluralized human readable name for this dimension (optional)",
-      cellRenderer: new CellConfigInput(inputChangeHandler),
-    },
+    // FIXME: we'll want to  add this back later
+    // {
+    //   name: "labelPlural",
+    //   label: "label (plural)",
+    //   headerTooltip:
+    //     "an pluralized human readable name for this dimension (optional)",
+    //   cellRenderer: new CellConfigInput(inputChangeHandler),
+    // },
     // FIXME will be needed later for API
     // {
     //   name: "sqlName",
