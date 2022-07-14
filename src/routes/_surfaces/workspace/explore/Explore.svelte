@@ -14,6 +14,7 @@
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { syncExplore } from "$lib/redux-store/explore/explore-apis";
+  import { onMount } from "svelte";
 
   export let metricsDefId: string;
 
@@ -37,6 +38,18 @@
     $dimensions,
     $measures
   );
+  onMount(() => {
+    // force sync explore onMount to make sure any changes to dimensions and measure are fixed.
+    // TODO: Fix the redux store so that this can be a reactive statement instead.
+    syncExplore(
+      store.dispatch,
+      metricsDefId,
+      $metricsLeaderboard,
+      $dimensions,
+      $measures,
+      true
+    );
+  });
 
   let whichReferenceValue: string;
 </script>

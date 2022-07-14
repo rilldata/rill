@@ -50,20 +50,22 @@ export const syncExplore = (
   metricsDefId: string,
   metricsExplore: MetricsExploreEntity,
   dimensions: Array<DimensionDefinitionEntity>,
-  measures: Array<MeasureDefinitionEntity>
+  measures: Array<MeasureDefinitionEntity>,
+  force = false
 ) => {
   let shouldUpdate = false;
   if (!metricsExplore) {
     dispatch(initMetricsExplore(metricsDefId, dimensions, measures));
     shouldUpdate = true;
   } else {
-    shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
-    shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
+    if (dimensions)
+      shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
+    if (measures)
+      shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
   }
 
   // To avoid infinite loop only update if something changed.
-  // TODO: handle edge cases like measure expression or dimension column changing.
-  if (shouldUpdate) {
+  if (shouldUpdate || force) {
     dispatch(fetchTimestampColumnRangeApi(metricsDefId));
     updateExploreWrapper(dispatch, metricsDefId);
   }
