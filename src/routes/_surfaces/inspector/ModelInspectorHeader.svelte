@@ -157,6 +157,16 @@
       showExportErrorModal = true;
     }
   };
+
+  const detectTimestampColumn = (model: DerivedModelEntity) => {
+    const profile = model.profile;
+    const timestampColumn = profile.find((column) => {
+      return column.type === "TIMESTAMP";
+    });
+    return !!timestampColumn;
+  };
+
+  $: hasTimestampColumn = detectTimestampColumn(currentDerivedModel);
 </script>
 
 {#if currentModel && currentModel.query.trim().length && tables}
@@ -193,7 +203,18 @@
           export this model as a dataset
         </TooltipContent>
       </Tooltip>
-      <Button type="primary">Create metrics<Metrics size="16px" /></Button>
+      <Tooltip location="left" alignment="middle" distance={16}>
+        <Button type="primary" disabled={!hasTimestampColumn}
+          >Create metric<Metrics size="16px" /></Button
+        >
+        <TooltipContent slot="tooltip-content">
+          {#if hasTimestampColumn}
+            Create a metric based on your model
+          {:else}
+            Add a timestamp column to your model in order to create a metric
+          {/if}
+        </TooltipContent>
+      </Tooltip>
     {/if}
   </div>
   <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
