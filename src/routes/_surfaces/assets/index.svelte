@@ -5,6 +5,7 @@
     layout,
   } from "$lib/application-state-stores/layout-store";
   import RillLogo from "$lib/components/icons/RillLogo.svelte";
+  import Spacer from "$lib/components/icons/Spacer.svelte";
   import Portal from "$lib/components/Portal.svelte";
   import { drag } from "$lib/drag";
   import { onMount } from "svelte";
@@ -57,8 +58,11 @@
         >
           {#if mounted}
             <RillLogo size="16px" iconOnly />
-            <div class="font-bold">Rill Developer</div>
+          {:else}
+            <Spacer size="16px" />
           {/if}
+
+          <div class="font-bold">Rill Developer</div>
         </h1>
       </header>
       <TableAssets />
