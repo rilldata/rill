@@ -1,6 +1,6 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import ModelIcon from "$lib/components/icons/Model.svelte";
+  import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
@@ -19,7 +19,7 @@
     ApplicationStore,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
-  import ExpandCaret from "$lib/components/icons/ExpandCaret.svelte";
+  import ExploreIcon from "$lib/components/icons/Explore.svelte";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -58,7 +58,7 @@
     bind:active={showMetricsDefs}
   >
     <h4 class="flex flex-row items-center gap-x-2">
-      <ModelIcon size="16px" /> Metric Sets
+      <MetricsIcon size="16px" /> Metric Sets
     </h4>
   </CollapsibleSectionTitle>
   <ContextButton
@@ -97,7 +97,7 @@
                 EntityType.MetricsLeaderboard,
                 id,
               ]);
-            }}><ExpandCaret /></ContextButton
+            }}><ExploreIcon /></ContextButton
           >
         </span>
       </CollapsibleTableSummary>
