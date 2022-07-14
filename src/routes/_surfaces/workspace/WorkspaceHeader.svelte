@@ -46,6 +46,7 @@
           suppress={editingTitle}
         >
           <input
+          autocomplete="off"
             id="model-title-input"
             bind:this={titleInputElement}
             on:input={(evt) => {
