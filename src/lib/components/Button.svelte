@@ -6,9 +6,9 @@
 
   const dispatch = createEventDispatcher();
 
-  const handleClick = () => {
+  const handleClick = (event: MouseEvent) => {
     if (!disabled) {
-      dispatch("click");
+      dispatch("click", event);
     }
   };
 </script>

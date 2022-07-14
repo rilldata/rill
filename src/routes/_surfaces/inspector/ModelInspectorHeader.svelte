@@ -176,8 +176,8 @@
           type="text"
           on:click={async (event) => {
             contextMenuOpen = !contextMenuOpen;
-            menuX = event.clientX;
-            menuY = event.clientY;
+            menuX = event.detail.x;
+            menuY = event.detail.y;
             if (!clickOutsideListener) {
               await tick();
               clickOutsideListener = onClickOutside(() => {
