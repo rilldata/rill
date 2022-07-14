@@ -29,7 +29,7 @@
    */
   export let referenceValue: number;
   export let values;
-
+  export let formatPreset: NicelyFormattedTypes;
   export let isSummableMeasure = false;
 
   type ActiveValues = [string, boolean];
@@ -54,8 +54,8 @@
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
   // });
 
-  $: values = $dimension?.formatPreset
-    ? humanizeGroupValues(values, $dimension.formatPreset)
+  $: values = formatPreset
+    ? humanizeGroupValues(values, formatPreset)
     : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE);
 </script>
 

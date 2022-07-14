@@ -1,10 +1,16 @@
-import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
+import type {
+  ColumnConfig,
+  CellConfig,
+} from "$lib/components/table-editable/ColumnConfig";
 
-export function columnIsPinned(name, selectedColumns: Array<ColumnConfig>) {
+export function columnIsPinned(
+  name,
+  selectedColumns: Array<ColumnConfig<CellConfig>>
+) {
   return selectedColumns.map((column) => column.name).includes(name);
 }
 
-export function togglePin(columnConfig: ColumnConfig, selectedColumns) {
+export function togglePin(columnConfig: ColumnConfig<any>, selectedColumns) {
   // if column is already pinned, remove.
   if (columnIsPinned(columnConfig.name, selectedColumns)) {
     return [

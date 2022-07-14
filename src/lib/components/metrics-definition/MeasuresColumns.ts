@@ -1,53 +1,58 @@
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import TableCellInput from "$lib/components/table-editable/TableCellInput.svelte";
-import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
-import TableCellSelector from "../table-editable/TableCellSelector.svelte";
-import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+
+import {
+  ColumnConfig,
+  CellConfigInput,
+  CellConfigSelector,
+} from "$lib/components/table-editable/ColumnConfig";
+import { nicelyFormattedTypesSelectorOptions } from "$lib/util/humanize-numbers";
 
 export const initMeasuresColumns = (inputChangeHandler) =>
-  [
+  <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
       name: "label",
-      tooltip: "a human readable name for this measure",
-      renderer: TableCellInput,
-      onchange: inputChangeHandler,
+      headerTooltip: "a human readable name for this measure (optional)",
+      cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
       name: "expression",
-      tooltip: "a valid SQL aggregation expression for this measure",
-      renderer: TableCellInput,
-      onchange: inputChangeHandler,
-      validation: (row: MeasureDefinitionEntity) => row.expressionIsValid,
+      headerTooltip: "a valid SQL aggregation expression for this measure",
+      cellRenderer: new CellConfigInput(
+        inputChangeHandler,
+        (row: MeasureDefinitionEntity) => row.expressionIsValid
+      ),
     },
     {
       name: "description",
-      tooltip: "a human readable description of this measure",
-      onchange: inputChangeHandler,
-      renderer: TableCellInput,
+      headerTooltip: "a human readable description of this measure (optional)",
+
+      cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
       name: "formatPreset",
-      label: "format preset",
-      tooltip: "a format for this measure",
-      renderer: TableCellSelector,
-      onchange: inputChangeHandler,
-      options: Object.values(NicelyFormattedTypes),
+      label: "number formatting",
+      headerTooltip:
+        "the number formatting used for this measure in the Metrics Explorer",
+      cellRenderer: new CellConfigSelector(
+        inputChangeHandler,
+        nicelyFormattedTypesSelectorOptions
+      ),
     },
     // FIXME: will be needed later for API
     // {
     //   name: "sqlName",
     //   label: "identifier",
-    //   tooltip: "a unique SQL identifier for this measure",
-    //   renderer: TableCellInput,
+    //   headerTooltip: "a unique SQL identifier for this measure",
+    //   cellRenderer: TableCellInput,
     //   onchange: inputChangeHandler,
     //   validation: (row: MeasureDefinitionEntity) => row.sqlNameIsValid,
     // },
 
-    // FIXME: willbe needed later for sparkline summary
+    // FIXME: will be needed later for sparkline summary
     // {
     //   name: "id",
     //   label: "preview",
     //   tooltip: "a preview of this measure over the selected time dimension",
-    //   renderer: TableCellSparkline,
+    //   cellRenderer: TableCellSparkline,
     // },
-  ] as ColumnConfig[];
+  ];
