@@ -26,6 +26,8 @@
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import { createMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { store } from "$lib/redux-store/store-root";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -50,7 +52,7 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  const store = getContext("rill:app:store") as ApplicationStore;
+  const appStore = getContext("rill:app:store") as ApplicationStore;
 
   let rollup;
   let tables;
@@ -65,7 +67,7 @@
   let outputRowCardinality = tweened(0, { duration: 250, easing });
 
   /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = $store?.activeEntity?.id;
+  $: activeEntityID = $appStore?.activeEntity?.id;
 
   let currentModel: PersistentModelEntity;
   $: currentModel =
@@ -167,6 +169,16 @@
   };
 
   $: hasTimestampColumn = detectTimestampColumn(currentDerivedModel);
+
+  const handleCreateMetric = () => {
+    store.dispatch(createMetricsDefsApi(undefined));
+
+    // TODO: get the id created and set it as the active entity.
+    // dataModelerService.dispatch("setActiveAsset", [
+    //   EntityType.MetricsDefinition,
+    //   metricsDef.id,
+    // ]);
+  };
 </script>
 
 {#if currentModel && currentModel.query.trim().length && tables}
@@ -204,7 +216,10 @@
         </TooltipContent>
       </Tooltip>
       <Tooltip location="left" alignment="middle" distance={16}>
-        <Button type="primary" disabled={!hasTimestampColumn}
+        <Button
+          type="primary"
+          disabled={!hasTimestampColumn}
+          on:click={handleCreateMetric}
           >Create metric<Metrics size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
