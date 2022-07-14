@@ -24,6 +24,7 @@
     updateMeasuresApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
+  import MetricsDefinitionExploreMetricsButton from "$lib/components/metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
 
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
@@ -115,6 +116,10 @@
     </div>
     <div class="self-center pl-10">
       <MetricsDefinitionGenerateButton {metricsDefId} />
+    </div>
+
+    <div class="self-center pl-10">
+      <MetricsDefinitionExploreMetricsButton {metricsDefId} />
     </div>
   </div>
 

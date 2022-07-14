@@ -48,6 +48,7 @@
 >
   <div class="flex flex-row">
     <input
+      autocomplete="off"
       bind:this={inputElt}
       id="model-title-input"
       class="table-input w-full text-ellipsis bg-inherit font-normal"
