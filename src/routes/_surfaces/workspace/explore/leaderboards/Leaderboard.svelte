@@ -73,6 +73,9 @@
       const existingValue = values.find((value) => value.label === label);
       // return the existing value, or if it does not exist, just return the label.
       return existingValue ? { ...existingValue } : { label };
+    })
+    .sort((a, b) => {
+      return b.value - a.value;
     });
 </script>
 
