@@ -10,6 +10,7 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import type { Readable } from "svelte/store";
+  import { onMount } from "svelte";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
@@ -37,6 +38,18 @@
     $dimensions,
     $measures
   );
+  onMount(() => {
+    // force sync explore onMount to make sure any changes to dimensions and measure are fixed.
+    // TODO: Fix the redux store so that this can be a reactive statement instead.
+    syncExplore(
+      store.dispatch,
+      metricsDefId,
+      $metricsLeaderboard,
+      $dimensions,
+      $measures,
+      true
+    );
+  });
 
   let whichReferenceValue: string;
 </script>
