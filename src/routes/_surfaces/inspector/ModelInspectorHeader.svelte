@@ -102,20 +102,15 @@
   $: hasTimestampColumn = detectTimestampColumn(currentDerivedModel);
 
   const handleCreateMetric = () => {
+    // A side effect of the createMetricsDefsApi is we switch active assets to
+    // the newly created metrics definition. So, this'll bring us to the
+    // MetricsDefinition page. (The logic for this is contained in the
+    // not-pictured async thunk.)
     store.dispatch(
       createMetricsDefsApi({
         sourceModelId: currentModel.id,
       })
     );
-
-    // TODO: get the id created and set it as the active entity.
-    // dataModelerService.dispatch("setActiveAsset", [
-    //   EntityType.MetricsDefinition,
-    //   metricsDef.id,
-    // ]);
-
-    // TODO: set the sourceModelID as the current model
-    // (even better if I could set it when I call the createMetricDef API)
   };
 
   let rollup;
