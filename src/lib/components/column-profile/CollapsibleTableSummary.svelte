@@ -89,14 +89,14 @@
               >
                 query {name}
               </MenuItem>
+              <MenuItem
+                on:select={() => {
+                  dispatch("rename");
+                }}
+              >
+                rename {name}
+              </MenuItem>
             {/if}
-            <MenuItem
-              on:select={() => {
-                dispatch("rename");
-              }}
-            >
-              rename {name}
-            </MenuItem>
             <MenuItem
               on:select={() => {
                 dispatch("delete");
