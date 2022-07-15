@@ -76,7 +76,7 @@ export class DimensionsActions extends RillDeveloperActions {
   ) {
     if (!metricsDefId || !rillRequestContext.record)
       return ActionResponseFactory.getEntityError(
-        `No metric set found for id=${metricsDefId}`
+        `No metrics found for id=${metricsDefId}`
       );
 
     const derivedModel = this.dataModelerStateService
