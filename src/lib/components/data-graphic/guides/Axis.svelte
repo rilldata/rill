@@ -24,7 +24,6 @@ This component will draw an axis on the specified side.
   export let superlabel = false;
   let superlabelDate = "";
   const superlabelBuffer = side === "top" ? -12 : 12;
-  let complimentaryFormatter = undefined;
   let tickTextPosition;
 
   let xOrY;
@@ -132,20 +131,15 @@ This component will draw an axis on the specified side.
     const manyMonthsDiff = diff / (60 * 60 * 24) < 365;
 
     if (millisecondDiff) {
-      complimentaryFormatter = timeFormat("%H %d %b %Y");
-      return timeFormat("%M:%S.%L");
+      return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
     } else if (secondDiff) {
-      complimentaryFormatter = timeFormat("%H %d %b %Y");
-      return timeFormat("%M:%S");
+      return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
     } else if (dayDiff) {
-      complimentaryFormatter = timeFormat("%d %b %Y");
-      return timeFormat("%H:%M");
+      return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
     } else if (fourDaysDiff || manyDaysDiff || manyMonthsDiff) {
-      complimentaryFormatter = timeFormat("%Y");
-      return timeFormat("%b %d");
+      return [timeFormat("%b %d"), timeFormat("%Y")];
     } else {
-      complimentaryFormatter = undefined;
-      return timeFormat("%Y");
+      return [timeFormat("%Y"), undefined];
     }
   }
 
@@ -159,9 +153,12 @@ This component will draw an axis on the specified side.
   }
 
   let formatterFunction;
+  let superLabelFormatter;
 
   $: if ($plotConfig[`${isVertical ? "y" : "x"}Type`] === "date") {
-    formatterFunction = createTimeFormat($mainScale.domain());
+    [formatterFunction, superLabelFormatter] = createTimeFormat(
+      $mainScale.domain()
+    );
   } else {
     superlabel = false;
     formatterFunction = format || ((v) => v);
@@ -206,7 +203,7 @@ This component will draw an axis on the specified side.
         stroke="black"
       />
     {/if}
-    {#if complimentaryFormatter && shouldPlaceSuperLabel(complimentaryFormatter(tick), i)}
+    {#if superLabelFormatter && shouldPlaceSuperLabel(superLabelFormatter(tick), i)}
       <!-- fix dx placement when tickTextPosition is null  -->
       <text
         font-weight="bold"
@@ -219,7 +216,7 @@ This component will draw an axis on the specified side.
         font-size={innerFontSize}
         fill={labelColor}
       >
-        {complimentaryFormatter(tick)}
+        {superLabelFormatter(tick)}
       </text>
     {/if}
   {/each}
