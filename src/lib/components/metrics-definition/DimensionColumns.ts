@@ -8,7 +8,8 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
       name: "labelSingle",
-      label: "label (single)",
+      // FIXME: should this be "label (single)" when we add the plural back in?
+      label: "label",
       headerTooltip: "a human readable name for this dimension (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
