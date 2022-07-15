@@ -155,7 +155,7 @@
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry
-                indentLevel={1}
+                indentLevel={0}
                 {containerWidth}
                 cardinality={currentDerivedModel?.cardinality ?? 0}
                 profile={currentDerivedModel?.profile ?? []}
