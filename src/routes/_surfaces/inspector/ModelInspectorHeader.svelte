@@ -221,23 +221,23 @@
             }
           }}
         >
-          Export
+          Export Results
           <Export size="16px" />
         </Button>
         <TooltipContent slot="tooltip-content">
           Export this model as a dataset
         </TooltipContent>
       </Tooltip>
-      <Tooltip location="left" alignment="middle" distance={16}>
+      <Tooltip location="bottom" alignment="right" distance={16}>
         <Button
           type="primary"
           disabled={!hasTimestampColumn}
           on:click={handleCreateMetric}
-          >Create metric<Metrics size="16px" /></Button
+          >Create Metrics<Metrics size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
           {#if hasTimestampColumn}
-            Create a metric based on your model
+            Create metrics based on your model
           {:else}
             Add a timestamp column to your model in order to create a metric
           {/if}

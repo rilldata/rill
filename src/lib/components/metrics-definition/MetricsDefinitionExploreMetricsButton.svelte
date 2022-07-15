@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import ExploreIcon from "$lib/components/icons/Explore.svelte";
+  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import Button from "../Button.svelte";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
   $: measures = getMeasuresByMetricsId(metricsDefId);
@@ -35,29 +36,16 @@
 </script>
 
 <Tooltip location="right" alignment="middle" distance={5}>
-  <button
+  <!-- TODO: we need to standardize these buttons. -->
+  <Button
+    type="primary"
     disabled={buttonDisabled}
     on:click={() => {
       dataModelerService.dispatch("setActiveAsset", [
         EntityType.MetricsLeaderboard,
         metricsDefId,
       ]);
-    }}
-    class={`bg-white
-          border-gray-400
-          hover:border-gray-900
-          transition-tranform
-          duration-100
-          items-center
-          justify-center
-          border
-          rounded
-          flex flex-row gap-x-2
-          pl-4 pr-4
-          pt-2 pb-2
-          ${buttonDisabled ? "cursor-not-allowed" : "cursor-pointer"}
-          ${buttonDisabled ? "text-gray-500" : "text-gray-900"}
-        `}>explore metrics <ExploreIcon /></button
+    }}>Go to Dashboard <ExploreIcon size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     <div>

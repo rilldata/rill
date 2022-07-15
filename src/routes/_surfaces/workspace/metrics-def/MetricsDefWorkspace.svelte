@@ -1,37 +1,32 @@
 <script lang="ts">
+  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import { store } from "$lib/redux-store/store-root";
   import { getContext } from "svelte";
-  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
 
-  import { initMeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
   import { initDimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
-  import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
-  import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
-  import {
-    deleteDimensionsApi,
-    fetchManyDimensionsApi,
-  } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+  import { initMeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
+  import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
   import {
     createDimensionsApi,
+    deleteDimensionsApi,
+    fetchManyDimensionsApi,
     updateDimensionsApi,
   } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
   import {
+    createMeasuresApi,
     deleteMeasuresApi,
     fetchManyMeasuresApi,
-  } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import {
-    createMeasuresApi,
     updateMeasuresApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
-  import MetricsDefinitionExploreMetricsButton from "$lib/components/metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
+  import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
+  import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
 
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
-  import { CATEGORICALS } from "$lib/duckdb-data-types";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
+  import { CATEGORICALS } from "$lib/duckdb-data-types";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
+  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
 
   export let metricsDefId;
 
@@ -116,10 +111,6 @@
     </div>
     <div class="self-center pl-10">
       <MetricsDefinitionGenerateButton {metricsDefId} />
-    </div>
-
-    <div class="self-center pl-10">
-      <MetricsDefinitionExploreMetricsButton {metricsDefId} />
     </div>
   </div>
 

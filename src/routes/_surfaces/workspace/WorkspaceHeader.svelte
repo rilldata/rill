@@ -1,12 +1,13 @@
 <script lang="ts">
+  import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import ModelIcon from "$lib/components/icons/Model.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
   export let titleInput;
+  export let showStatus = true;
 
   let titleInputElement;
   let editingTitle = false;
@@ -69,5 +70,7 @@
       </h1>
     {/if}
   </div>
-  <WorkspaceHeaderStatusSpinner />
+  {#if showStatus}
+    <WorkspaceHeaderStatusSpinner />
+  {/if}
 </header>
