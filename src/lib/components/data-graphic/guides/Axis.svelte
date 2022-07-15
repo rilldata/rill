@@ -214,7 +214,7 @@ This component will draw an axis on the specified side.
         y={y(side, tick) + superlabelBuffer}
         dx={tickTextPosition
           ? (-1 * tickTextPosition.getBBox().width) / 2
-          : -20}
+          : -18}
         text-anchor="start"
         font-size={innerFontSize}
         fill={labelColor}
