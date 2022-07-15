@@ -38,7 +38,7 @@
 
 <td class="py-2 px-4 border border-gray-200 hover:bg-gray-200">
   <select
-    class="table-select bg-transparent"
+    class="table-select bg-transparent w-full"
     style={placeholderStyles}
     {value}
     on:change={onchangeHandler}
