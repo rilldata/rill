@@ -92,6 +92,7 @@
   };
 
   const detectTimestampColumn = (model: DerivedModelEntity) => {
+    if (!model) return false;
     const profile = model.profile;
     const timestampColumn = profile.find((column) => {
       return column.type === "TIMESTAMP";

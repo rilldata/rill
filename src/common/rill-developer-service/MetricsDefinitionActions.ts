@@ -20,13 +20,16 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
   public async createMetricsDefinition(
     rillRequestContext: MetricsDefinitionContext,
-    initialFields: Partial<MetricsDefinitionEntity>
+    initialFields?: Partial<MetricsDefinitionEntity>
   ) {
-    delete initialFields.id;
     const metricsDefinition = getMetricsDefinition(
       rillRequestContext.entityStateService.getCurrentState().counter
     );
-    shallowCopy(initialFields, metricsDefinition);
+    if (initialFields) {
+      delete initialFields.id;
+      shallowCopy(initialFields, metricsDefinition);
+    }
+
     this.dataModelerStateService.dispatch(
       "incrementMetricsDefinitionCounter",
       []

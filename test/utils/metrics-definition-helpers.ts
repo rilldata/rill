@@ -29,7 +29,7 @@ export function useMetricsDefinition(
       await server.rillDeveloperService.dispatch(
         RillRequestContext.getNewContext(),
         "createMetricsDefinition",
-        []
+        [{}]
       )
     ).data as MetricsDefinitionEntity;
     await server.rillDeveloperService.dispatch(
