@@ -11,7 +11,12 @@
 </script>
 
 <TableHeader>
+  <!--
+    FIXME: need a principled way of setting table and column width / min-width.
+    This style attr delanda est 
+  -->
   <div
+    style="min-width: 300px;"
     class="
            flex
            items-center

@@ -83,6 +83,7 @@
         showRows={false}
         on:select={() => dispatchSetMetricsDefActive(id)}
         on:delete={() => dispatchDeleteMetricsDef(id)}
+        notExpandable={true}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
@@ -90,7 +91,7 @@
         <span class="self-center" slot="header-buttons">
           <ContextButton
             {id}
-            tooltipText="expand"
+            tooltipText="explore metrics"
             location="left"
             on:click={() => {
               dataModelerService.dispatch("setActiveAsset", [

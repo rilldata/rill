@@ -126,6 +126,10 @@ export const exploreSlice = createSlice({
           metricsExplore.selectedMeasureIds.filter(
             (existingMeasureId) => existingMeasureId !== measureId
           );
+        if (metricsExplore.leaderboardMeasureId === measureId) {
+          metricsExplore.leaderboardMeasureId =
+            metricsExplore.measureIds[0] ?? "";
+        }
       },
       prepare: (id: string, measureId: string) => ({
         payload: { id, measureId },

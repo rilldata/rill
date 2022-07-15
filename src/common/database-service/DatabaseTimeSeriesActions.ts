@@ -85,6 +85,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       timestampColumn,
       timeRange
     );
+
     const timeGranularity = timeRange.interval.split(" ")[1];
 
     const filter =
@@ -388,7 +389,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
     }
 
     const [actualTimeRange] = await this.databaseClient.execute(`SELECT
-		    min(${timestampColumn}) as min, max(${timestampColumn}) as max 
+		    min("${timestampColumn}") as min, max("${timestampColumn}") as max 
 		    FROM ${tableName}`);
 
     let startTime = new Date(timeRange?.start || actualTimeRange.min);
