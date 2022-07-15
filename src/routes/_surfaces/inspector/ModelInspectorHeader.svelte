@@ -27,6 +27,7 @@
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import { TIMESTAMPS } from "$lib/duckdb-data-types";
   import { createMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
   import {
@@ -95,7 +96,7 @@
     if (!model) return false;
     const profile = model.profile;
     const timestampColumn = profile.find((column) => {
-      return column.type === "TIMESTAMP";
+      return TIMESTAMPS.has(column.type);
     });
     return !!timestampColumn;
   };
