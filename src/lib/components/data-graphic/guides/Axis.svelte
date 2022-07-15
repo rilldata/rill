@@ -20,6 +20,13 @@ This component will draw an axis on the specified side.
 
   export let labelColor = "rgb(100,100,100)";
 
+  // superlabel properties
+  export let superlabel = false;
+  let superlabelDate = "";
+  const superlabelBuffer = side === "top" ? -12 : 12;
+  let complimentaryFormatter = undefined;
+  let tickTextPosition;
+
   let xOrY;
   const isVertical = side === "left" || side === "right";
   if (isVertical) {
@@ -123,15 +130,32 @@ This component will draw an axis on the specified side.
     const fourDaysDiff = diff / (60 * 60) < 24 * 4;
     const manyDaysDiff = diff / (60 * 60 * 24) < 60;
     const manyMonthsDiff = diff / (60 * 60 * 24) < 365;
-    return millisecondDiff
-      ? timeFormat("%M:%S.%L")
-      : secondDiff
-      ? timeFormat("%M:%S")
-      : dayDiff
-      ? timeFormat("%H:%M")
-      : fourDaysDiff || manyDaysDiff || manyMonthsDiff
-      ? timeFormat("%b %d")
-      : timeFormat("%Y");
+
+    if (millisecondDiff) {
+      complimentaryFormatter = timeFormat("%H %d %b %Y");
+      return timeFormat("%M:%S.%L");
+    } else if (secondDiff) {
+      complimentaryFormatter = timeFormat("%H %d %b %Y");
+      return timeFormat("%M:%S");
+    } else if (dayDiff) {
+      complimentaryFormatter = timeFormat("%d %b %Y");
+      return timeFormat("%H:%M");
+    } else if (fourDaysDiff || manyDaysDiff || manyMonthsDiff) {
+      complimentaryFormatter = timeFormat("%Y");
+      return timeFormat("%b %d");
+    } else {
+      complimentaryFormatter = undefined;
+      return timeFormat("%Y");
+    }
+  }
+
+  function shouldPlaceSuperLabel(currentDate, i) {
+    if ((side === "top" || side === "bottom") && superlabel) {
+      if (i === 0 || currentDate !== superlabelDate) {
+        superlabelDate = currentDate;
+        return true;
+      } else return false;
+    }
   }
 
   let formatterFunction;
@@ -139,6 +163,7 @@ This component will draw an axis on the specified side.
   $: if ($plotConfig[`${isVertical ? "y" : "x"}Type`] === "date") {
     formatterFunction = createTimeFormat($mainScale.domain());
   } else {
+    superlabel = false;
     formatterFunction = format || ((v) => v);
   }
   let axisLength;
@@ -156,9 +181,10 @@ This component will draw an axis on the specified side.
 </script>
 
 <g>
-  {#each scale.ticks(tickCount) as tick}
+  {#each scale.ticks(tickCount) as tick, i}
     {@const tickPlacement = placeTick(side, tick)}
     <text
+      bind:this={tickTextPosition}
       x={x(side, tick)}
       y={y(side, tick)}
       dy={dy(side)}
@@ -179,6 +205,22 @@ This component will draw an axis on the specified side.
         font-size={innerFontSize}
         stroke="black"
       />
+    {/if}
+    {#if complimentaryFormatter && shouldPlaceSuperLabel(complimentaryFormatter(tick), i)}
+      <!-- fix dx placement when tickTextPosition is null  -->
+      <text
+        font-weight="bold"
+        x={x(side, tick)}
+        y={y(side, tick) + superlabelBuffer}
+        dx={tickTextPosition
+          ? (-1 * tickTextPosition.getBBox().width) / 2
+          : -20}
+        text-anchor="start"
+        font-size={innerFontSize}
+        fill={labelColor}
+      >
+        {complimentaryFormatter(tick)}
+      </text>
     {/if}
   {/each}
 </g>
