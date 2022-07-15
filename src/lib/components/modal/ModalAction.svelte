@@ -4,6 +4,6 @@
   export let primary = false;
 </script>
 
-<Button on:click {primary}>
+<Button on:click type={primary ? "primary" : "secondary"}>
   <slot />
 </Button>

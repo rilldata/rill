@@ -19,16 +19,29 @@ import {
   clearDimensionsForMetricsDefId,
 } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
 import { asyncWait } from "$common/utils/waitUtils";
+import { dataModelerService } from "$lib/application-state-stores/application-store";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export const {
   fetchManyApi: fetchManyMetricsDefsApi,
   createApi: createMetricsDefsApi,
   updateApi: updateMetricsDefsApi,
   deleteApi: deleteMetricsDefsApi,
-} = generateApis<EntityType.MetricsDefinition>(
+} = generateApis<
+  EntityType.MetricsDefinition,
+  Partial<MetricsDefinitionEntity>
+>(
   [EntityType.MetricsDefinition, "metricsDefinition", "metrics"],
   [addManyMetricsDefs, addOneMetricsDef, updateMetricsDef, removeMetricsDef],
-  []
+  [],
+  {
+    createHook: async (createdMetricsDef: MetricsDefinitionEntity) => {
+      await dataModelerService.dispatch("setActiveAsset", [
+        EntityType.MetricsDefinition,
+        createdMetricsDef.id,
+      ]);
+    },
+  }
 );
 
 export const generateMeasuresAndDimensionsApi = createAsyncThunk(
