@@ -5,9 +5,9 @@ node_js:
 cache:
   directories:
     - "$HOME/.npm"
+    - "$HOME/.cache"
     - "$TRAVIS_BUILD_DIR/data"
     - "node_modules"
-
 
 env:
   global:
@@ -15,45 +15,55 @@ env:
 
 jobs:
   include:
-    - stage: test
+
+    # Run tests always
+    - stage: Test
       name: "Verify build"
+
       before_install: &python-setup
         - echo "Installing python 3.7.0 needed during npm install"
         - pyenv install 3.7.0
         - pyenv global 3.7.0
 
-      install: &slow-npm-ci
+      # in order to achieve npm ci (clean install) delete the travis cache.
+      install: &npm-install
         - echo "NPM Install can take up to 15 mins"
-        - travis_wait 30 npm ci
+        - npm i
 
       script:
+        - echo "Running npm install"
         - npm install
 
-        # check that prettier has been applied
+        - echo "Check that prettier has been applied"
         - npx prettier --check "**/*"
 
-        # install browser for UI tests
+        - echo "Install browser for UI tests"
         - npx playwright install
 
-        # build the entire application
+        - echo "Build the entire application"
         - npm run build
 
-        # verify lint of the repo
+        - echo "Verify lint of the repo"
         - npm run lint
 
-        # run all tests
+        - echo "Run all tests"
         - npm run test
 
-    - stage: test
+    - stage: Test
       name: "Verify docker build"
+
       install: docker --version
       script:
+        - echo "Building docker image"
         - docker build -t ${DOCKER_IMAGE} .
 
-    - stage: publish
+    # Publish docker image on the merge to main branch
+    - stage: Publish
       name: "Build & Publish docker"
-      if: tag IS NOT present AND branch = main
+      if: tag IS NOT present AND branch = main AND type NOT IN (pull_request)
+
       install: docker --version
+
       script:
         - SHORT_SHA=$(git rev-parse --short HEAD)
         - echo ${DOCKERHUB_CRED} | docker login --username ${DOCKERHUB_USER} --password-stdin
@@ -67,18 +77,40 @@ jobs:
         - docker-compose build
         - docker-compose push
 
-    - stage: publish
-      name: "Build & Publish mac os binary"
+    # Publish binaries and npm on the release
+    - stage: Release
+      name: "Build & Publish npm module"
+      if: tag IS present
+
+      install: *npm-install
+
+      deploy:
+        provider: npm
+        email: ops@rilldata.com
+        api_key: ${NPMJS_TOKEN}
+        skip_cleanup: true
+        on:
+          tags: true
+
+    - stage: Release
+      name: "Build & Publish Mac os binary"
       if: tag IS present
       os: osx
-      install: *slow-npm-ci
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
+
+      install: *npm-install
+
       script: &build-vercel-pkg
-        # build the entire application
+        - echo "Build the entire application"
         - npm run build
-        - echo "Cleaning dev depandancies"
+
+        - echo "Cleaning dev dependencies"
         - npm prune --production
+
         - echo "Building vercel/pkg binary"
         - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
+
       deploy: &deploy-vercel-pkg
         provider: releases
         api_key: ${GITHUB_TOKEN}
@@ -91,28 +123,29 @@ jobs:
         skip_cleanup: true
         on:
           tags: true
+
+    - stage: Release
+      name: "Build & Publish Linux binary"
+      if: tag IS present
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
-    - stage: publish
-      name: "Build & Publish linux binary"
-      if: tag IS present
       before_install: *python-setup
-      install: *slow-npm-ci
+      install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
+
+    - stage: Release
+      name: "Build & Publish Windows binary"
+      if: tag IS present
+      os: windows
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
-    - stage: publish
-      name: "Build & Publish windows binary"
-      if: tag IS present
-      os: windows
       before_install:
         - echo "Installing python 3"
         - choco install python3
-      install: *slow-npm-ci
+
+      install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
-      env:
-        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true

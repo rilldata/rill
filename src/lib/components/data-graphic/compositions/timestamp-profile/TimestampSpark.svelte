@@ -13,7 +13,7 @@
   import { scaleLinear } from "d3-scale";
   import { extent } from "d3-array";
   import { writable } from "svelte/store";
-  import { createExtremumResolutionStore } from "$lib/components/data-graphic/extremum-resolution-store";
+  import { createExtremumResolutionStore } from "$lib/components/data-graphic/state/extremum-resolution-store";
   import { lineFactory, areaFactory } from "$lib/components/data-graphic/utils";
   import { tweened } from "svelte/motion";
 
