@@ -2,6 +2,7 @@
   import { FileExportType } from "$common/data-modeler-service/ModelActions";
   import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import {
@@ -53,76 +54,6 @@
   ) as DerivedModelStore;
 
   const appStore = getContext("rill:app:store") as ApplicationStore;
-
-  let rollup;
-  let tables;
-  // get source tables?
-  let sourceTableReferences;
-
-  let showExportErrorModal: boolean;
-  let exportErrorMessage: string;
-
-  // interface tweens for the  big numbers
-  let bigRollupNumber = tweened(0, { duration: 700, easing });
-  let outputRowCardinality = tweened(0, { duration: 250, easing });
-
-  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = $appStore?.activeEntity?.id;
-
-  let currentModel: PersistentModelEntity;
-  $: currentModel =
-    activeEntityID && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
-  let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel =
-    activeEntityID && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
-  // get source table references.
-  $: if (currentDerivedModel?.sources) {
-    sourceTableReferences = currentDerivedModel?.sources;
-  }
-
-  // map and filter these source tables.
-  $: if (sourceTableReferences?.length) {
-    tables = sourceTableReferences
-      .map((sourceTableReference) => {
-        const table = $persistentTableStore.entities.find(
-          (t) => sourceTableReference.name === t.tableName
-        );
-        if (!table) return undefined;
-        return $derivedTableStore.entities.find(
-          (derivedTable) => derivedTable.id === table.id
-        );
-      })
-      .filter((t) => !!t);
-  } else {
-    tables = [];
-  }
-
-  $: outputRowCardinalityValue = currentDerivedModel?.cardinality;
-  $: if (
-    outputRowCardinalityValue !== 0 &&
-    outputRowCardinalityValue !== undefined
-  ) {
-    outputRowCardinality.set(outputRowCardinalityValue);
-  }
-  $: inputRowCardinalityValue = tables?.length
-    ? tables.reduce((acc, v) => acc + v.cardinality, 0)
-    : 0;
-  $: if (
-    inputRowCardinalityValue !== undefined &&
-    outputRowCardinalityValue !== undefined
-  ) {
-    rollup = outputRowCardinalityValue / inputRowCardinalityValue;
-  }
-
-  function validRollup(number) {
-    return rollup !== Infinity && rollup !== -Infinity && !isNaN(number);
-  }
-
-  $: if (rollup !== undefined && !isNaN(rollup)) bigRollupNumber.set(rollup);
 
   let contextMenu;
   let contextMenuOpen = false;
@@ -178,7 +109,88 @@
     //   EntityType.MetricsDefinition,
     //   metricsDef.id,
     // ]);
+
+    // TODO: set the sourceModelID as the current model
+    // (even better if I could set it when I call the createMetricDef API)
   };
+
+  let rollup;
+  let tables;
+  // get source tables?
+  let sourceTableReferences;
+
+  let showExportErrorModal: boolean;
+  let exportErrorMessage: string;
+
+  // interface tweens for the  big numbers
+  let bigRollupNumber = tweened(0, { duration: 700, easing });
+  let outputRowCardinality = tweened(0, { duration: 250, easing });
+
+  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
+  $: activeEntityID = $appStore?.activeEntity?.id;
+
+  let currentModel: PersistentModelEntity;
+  $: currentModel =
+    activeEntityID && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
+      : undefined;
+  let currentDerivedModel: DerivedModelEntity;
+  $: currentDerivedModel =
+    activeEntityID && $derivedModelStore?.entities
+      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
+      : undefined;
+  // get source table references.
+  $: if (currentDerivedModel?.sources) {
+    sourceTableReferences = currentDerivedModel?.sources;
+  }
+
+  // map and filter these source tables.
+  $: if (sourceTableReferences?.length) {
+    tables = sourceTableReferences
+      .map((sourceTableReference) => {
+        const table = $persistentTableStore.entities.find(
+          (t) => sourceTableReference.name === t.tableName
+        );
+        if (!table) return undefined;
+        return $derivedTableStore.entities.find(
+          (derivedTable) => derivedTable.id === table.id
+        );
+      })
+      .filter((t) => !!t);
+  } else {
+    tables = [];
+  }
+
+  // compute rollup factor
+  $: outputRowCardinalityValue = currentDerivedModel?.cardinality;
+  $: if (
+    outputRowCardinalityValue !== 0 &&
+    outputRowCardinalityValue !== undefined
+  ) {
+    outputRowCardinality.set(outputRowCardinalityValue);
+  }
+  $: inputRowCardinalityValue = tables?.length
+    ? tables.reduce((acc, v) => acc + v.cardinality, 0)
+    : 0;
+  $: if (
+    inputRowCardinalityValue !== undefined &&
+    outputRowCardinalityValue !== undefined
+  ) {
+    rollup = outputRowCardinalityValue / inputRowCardinalityValue;
+  }
+
+  function validRollup(number) {
+    return rollup !== Infinity && rollup !== -Infinity && !isNaN(number);
+  }
+
+  $: if (rollup !== undefined && !isNaN(rollup)) bigRollupNumber.set(rollup);
+
+  // compute column delta
+  $: inputColumnNum = tables?.length
+    ? tables.reduce((acc, v: DerivedTableEntity) => acc + v.profile.length, 0)
+    : 0;
+  $: outputColumnNum = currentDerivedModel?.profile?.length;
+  $: columnDelta = outputColumnNum - inputColumnNum;
 </script>
 
 {#if currentModel && currentModel.query.trim().length && tables}
@@ -234,7 +246,7 @@
   </div>
   <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
     {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
-      <!-- top row: rows -->
+      <!-- top row: row analysis -->
       <div
         class="flex flex-row items-center justify-between"
         class:text-gray-300={currentDerivedModel?.error}
@@ -280,10 +292,18 @@
           {/if}
         </div>
       </div>
-      <!-- bottom row: columns -->
-      <div>
+      <!-- bottom row: column analysis -->
+      <div class="flex flex-row justify-between">
         <div class="italic text-gray-500">
-          <!-- TODO: add num columns dropped -->
+          {#if columnDelta > 0}
+            {formatInteger(columnDelta)} column{#if columnDelta !== 1}s{/if} added
+          {:else if columnDelta < 0}
+            {formatInteger(-columnDelta)} column{#if -columnDelta !== 1}s{/if} dropped
+          {:else if columnDelta === 0}
+            no change in column count
+          {:else}
+            &nbsp;
+          {/if}
         </div>
         <div class="text-gray-800 font-bold">
           {currentDerivedModel?.profile?.length} columns
