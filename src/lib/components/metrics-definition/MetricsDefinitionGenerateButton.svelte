@@ -4,6 +4,7 @@
   import { generateMeasuresAndDimensionsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import MetricsDefinitionGenerateButtonModal from "./MetricsDefinitionGenerateButtomModal.svelte";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
 
@@ -11,6 +12,7 @@
 
   function handleGenerateClick() {
     store.dispatch(generateMeasuresAndDimensionsApi(metricsDefId));
+    closeModal();
   }
 
   let tooltipText = "";
@@ -25,12 +27,29 @@
     tooltipText = undefined;
     buttonDisabled = false;
   }
+
+  let modalIsOpen = false;
+
+  const openModal = () => {
+    console.log("opening");
+    modalIsOpen = true;
+  };
+
+  const closeModal = () => {
+    console.log("opening");
+    modalIsOpen = false;
+  };
 </script>
 
+<MetricsDefinitionGenerateButtonModal
+  open={modalIsOpen}
+  {closeModal}
+  generateCallback={handleGenerateClick}
+/>
 <Tooltip location="right" alignment="middle" distance={5}>
   <button
     disabled={buttonDisabled}
-    on:click={handleGenerateClick}
+    on:click={openModal}
     class={`bg-white
           border-gray-400
           hover:border-gray-900
