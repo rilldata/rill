@@ -1,22 +1,22 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
-  import Leaderboard from "./Leaderboard.svelte";
+  import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
-  import { store } from "$lib/redux-store/store-root";
+  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
+  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
+  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
   import type {
     LeaderboardValues,
     MetricsExploreEntity,
   } from "$lib/redux-store/explore/explore-slice";
-  import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import type { Readable } from "svelte/store";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
-  import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
-  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
-  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import {
     getMeasureFieldNameByIdAndIndex,
     getMeasuresByMetricsId,
   } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { store } from "$lib/redux-store/store-root";
+  import { onDestroy, onMount } from "svelte";
+  import type { Readable } from "svelte/store";
+  import Leaderboard from "./Leaderboard.svelte";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
