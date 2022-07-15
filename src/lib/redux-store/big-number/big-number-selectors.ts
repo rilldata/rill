@@ -4,4 +4,4 @@ import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-sli
 export const {
   singleSelector: selectBigNumberById,
   manySelectorByIds: selectBigNumbersByIds,
-} = generateEntitySelectors<BigNumberEntity>("bigNumber");
+} = generateEntitySelectors<BigNumberEntity, "bigNumber">("bigNumber");

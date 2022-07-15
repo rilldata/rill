@@ -2,15 +2,17 @@ import type {
   RillReduxEntities,
   RillReduxState,
 } from "$lib/redux-store/store-root";
+import type { RillReduxEntityKeys } from "$lib/redux-store/store-root";
 
 /**
  * Generates
  * 1. Single entity selector by id
  * 2. Selector for multiple entities by list of ids.
  */
-function generateCommonSelectors<Entity extends RillReduxEntities>(
-  sliceKey: keyof RillReduxState
-) {
+function generateCommonSelectors<
+  Entity extends RillReduxEntities,
+  SliceKey extends RillReduxEntityKeys
+>(sliceKey: SliceKey) {
   const singleSelector = (state: RillReduxState, id: string) =>
     <Entity>state[sliceKey].entities[id];
   return {
@@ -25,13 +27,14 @@ function generateCommonSelectors<Entity extends RillReduxEntities>(
  * Generates selectors from {@link generateCommonSelectors}
  * Also generates a selector for all entities.
  */
-export function generateEntitySelectors<Entity extends RillReduxEntities>(
-  sliceKey: keyof RillReduxState
-) {
+export function generateEntitySelectors<
+  Entity extends RillReduxEntities,
+  SliceKey extends RillReduxEntityKeys
+>(sliceKey: SliceKey) {
   return {
     manySelector: (state: RillReduxState) =>
       state[sliceKey].ids.map((id) => <Entity>state[sliceKey].entities[id]),
-    ...generateCommonSelectors<Entity>(sliceKey),
+    ...generateCommonSelectors<Entity, SliceKey>(sliceKey),
   };
 }
 
@@ -41,9 +44,10 @@ export function generateEntitySelectors<Entity extends RillReduxEntities>(
  */
 export function generateFilteredEntitySelectors<
   FilterArgs extends Array<unknown>,
-  Entity extends RillReduxEntities
+  Entity extends RillReduxEntities,
+  SliceKey extends RillReduxEntityKeys
 >(
-  sliceKey: keyof RillReduxState,
+  sliceKey: SliceKey,
   filter: (entity: unknown, ...args: FilterArgs) => boolean
 ) {
   return {
@@ -51,6 +55,6 @@ export function generateFilteredEntitySelectors<
       state[sliceKey].ids
         .filter((id) => filter(state[sliceKey].entities[id], ...args))
         .map((id) => <Entity>state[sliceKey].entities[id]),
-    ...generateCommonSelectors<Entity>(sliceKey),
+    ...generateCommonSelectors<Entity, SliceKey>(sliceKey),
   };
 }

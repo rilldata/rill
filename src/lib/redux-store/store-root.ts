@@ -18,9 +18,11 @@ import {
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { applicationReducer } from "$lib/redux-store/application/application-slice";
 
 export const store = configureStore({
   reducer: {
+    application: applicationReducer,
     metricsDefinition: metricsDefinitionReducer,
     measureDefinition: measureDefSliceReducer,
     dimensionDefinition: dimensionDefSliceReducer,
@@ -40,6 +42,13 @@ export type RillReduxEntities =
   | MetricsExploreEntity
   | TimeSeriesEntity
   | BigNumberEntity;
+export type RillReduxEntityKeys =
+  | "metricsDefinition"
+  | "measureDefinition"
+  | "dimensionDefinition"
+  | "metricsLeaderboard"
+  | "timeSeries"
+  | "bigNumber";
 
 export const reduxReadable = readable(store.getState(), (set) => {
   return store.subscribe(() => {

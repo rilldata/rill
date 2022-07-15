@@ -21,6 +21,37 @@ import {
 import { asyncWait } from "$common/utils/waitUtils";
 import { dataModelerService } from "$lib/application-state-stores/application-store";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { store } from "$lib/redux-store/store-root";
+import { selectApplicationActiveEntity } from "$lib/redux-store/application/application-selectors";
+
+const handleMetricsDefCreate = async (
+  createdMetricsDef: MetricsDefinitionEntity
+) => {
+  await dataModelerService.dispatch("setActiveAsset", [
+    EntityType.MetricsDefinition,
+    createdMetricsDef.id,
+  ]);
+};
+const handleMetricsDefDelete = async (id: string) => {
+  const activeEntity = selectApplicationActiveEntity(store.getState());
+  if (!activeEntity) return;
+
+  if (
+    activeEntity.id === id &&
+    activeEntity.type === EntityType.MetricsDefinition
+  ) {
+    const nextId = store.getState().metricsDefinition.ids[0];
+    if (!nextId) {
+      // TODO: refactor to use redux store once we move model and tables there.
+      await dataModelerService.dispatch("setModelAsActiveAsset", []);
+    } else {
+      await dataModelerService.dispatch("setActiveAsset", [
+        EntityType.MetricsDefinition,
+        nextId as string,
+      ]);
+    }
+  }
+};
 
 export const {
   fetchManyApi: fetchManyMetricsDefsApi,
@@ -34,14 +65,7 @@ export const {
   [EntityType.MetricsDefinition, "metricsDefinition", "metrics"],
   [addManyMetricsDefs, addOneMetricsDef, updateMetricsDef, removeMetricsDef],
   [],
-  {
-    createHook: async (createdMetricsDef: MetricsDefinitionEntity) => {
-      await dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsDefinition,
-        createdMetricsDef.id,
-      ]);
-    },
-  }
+  [handleMetricsDefCreate, handleMetricsDefDelete]
 );
 
 export const generateMeasuresAndDimensionsApi = createAsyncThunk(
