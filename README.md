@@ -28,10 +28,9 @@ rill start
 ```
 
 ## Try an example project
-If you want to see several examples with data transformations you can install out example project.
+If you want to see several examples with data transformations you can install our example project.
 ```
-cd /path/to/rill-developer
-bash scripts/example-project.sh
+rill init-example-project
 ```
 This project imports 7 datasets and performs simple transfomrations to create 5 analytics ready resources. For more information on the datasets, please see the readme.md files in the `data` rill-developer-example directory after running the script.
 
