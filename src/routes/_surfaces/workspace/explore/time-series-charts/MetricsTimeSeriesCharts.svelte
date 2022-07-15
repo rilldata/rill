@@ -77,13 +77,13 @@
     <!-- top axis element -->
     <div />
     <SimpleDataGraphic
-      height={20}
-      top={24}
+      height={32}
+      top={34}
       bottom={0}
       xMin={startValue}
       xMax={endValue}
     >
-      <Axis side="top" />
+      <Axis superlabel side="top" />
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
     {#each $allMeasures as measure, index (measure.id)}
