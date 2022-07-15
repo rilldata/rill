@@ -194,7 +194,6 @@ for any of its children.
   const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
 
   $: if (yMaxTweenProps) {
-    console.log("changing");
     yMaxStore.setTweenProps(yMaxTweenProps);
   }
 

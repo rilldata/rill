@@ -71,6 +71,7 @@
   let observer: ResizeObserver;
 
   function onResize() {
+    if (!leaderboardContainer) return;
     availableWidth = leaderboardContainer.offsetWidth;
     columns = Math.floor(availableWidth / (315 + 20));
   }

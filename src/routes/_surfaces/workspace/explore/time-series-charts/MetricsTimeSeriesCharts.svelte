@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { fly } from "svelte/transition";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
@@ -22,7 +22,7 @@
 
   // get all the measure ids that are available.
 
-  $: allMeasures = getMeasuresByMetricsId(metricsDefId);
+  $: allMeasures = getValidMeasuresByMetricsId(metricsDefId);
 
   // get the active big numbers
 
@@ -87,12 +87,10 @@
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
     {#each $allMeasures as measure, index (measure.id)}
-      <!-- FIXME: I can't select the big number by the measure id.
-    -->
+      <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
 
-      <!-- FIXME: I can't select a time series by measure id. 
-    -->
+      <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
         value={bigNum}
         description={measure?.description ||

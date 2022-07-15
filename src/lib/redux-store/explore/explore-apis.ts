@@ -25,6 +25,7 @@ import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
+import { selectValidMeasures } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 
 /**
  * A wrapper to dispatch updates to explore.
@@ -53,6 +54,8 @@ export const syncExplore = (
   measures: Array<MeasureDefinitionEntity>,
   force = false
 ) => {
+  if (measures) measures = selectValidMeasures(measures);
+
   let shouldUpdate = false;
   if (!metricsExplore) {
     dispatch(initMetricsExplore(metricsDefId, dimensions, measures));
