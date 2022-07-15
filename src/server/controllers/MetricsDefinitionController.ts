@@ -34,11 +34,14 @@ export class MetricsDefinitionController extends EntityController {
     );
   }
 
-  protected createAction(context: RillRequestContext): Promise<ActionResponse> {
+  protected createAction(
+    context: RillRequestContext,
+    req: Request
+  ): Promise<ActionResponse> {
     return this.rillDeveloperService.dispatch(
       context,
       "createMetricsDefinition",
-      []
+      [req.body]
     );
   }
 

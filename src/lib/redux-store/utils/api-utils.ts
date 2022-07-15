@@ -32,7 +32,11 @@ export function generateApis<
     >,
     ActionCreatorWithPreparedPayload<[id: string], string>
   ],
-  validations: Array<ValidationConfig<Entity>>
+  validations: Array<ValidationConfig<Entity>>,
+  apiHooks?: {
+    createHook?: (createdEntity: Entity) => void | Promise<void>;
+    deleteHook?: (id: string) => void | Promise<void>;
+  }
 ) {
   return {
     fetchManyApi: createAsyncThunk(
@@ -48,9 +52,9 @@ export function generateApis<
     createApi: createAsyncThunk(
       `${entityType}/createApi`,
       async (args: CreateParams, thunkAPI) => {
-        thunkAPI.dispatch(
-          addOneAction(await fetchWrapper(endpoint, "PUT", args))
-        );
+        const createdEntity = await fetchWrapper(endpoint, "PUT", args);
+        thunkAPI.dispatch(addOneAction(createdEntity));
+        if (apiHooks?.createHook) apiHooks.createHook(createdEntity);
       }
     ),
     updateApi: createAsyncThunk(
@@ -83,6 +87,7 @@ export function generateApis<
       async (id: string, thunkAPI) => {
         await fetchWrapper(`${endpoint}/${id}`, "DELETE");
         thunkAPI.dispatch(removeAction(id));
+        if (apiHooks?.deleteHook) apiHooks.deleteHook(id);
       }
     ),
   };
