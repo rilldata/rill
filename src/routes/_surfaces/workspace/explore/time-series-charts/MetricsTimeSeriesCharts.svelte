@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { fly } from "svelte/transition";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import MeasureBigNumber from "./time-series-charts/MeasureBigNumber.svelte";
-  import TimeSeriesBody from "./time-series-charts/TimeSeriesBody.svelte";
+  import { fly } from "svelte/transition";
+  import MeasureBigNumber from "./MeasureBigNumber.svelte";
+  import TimeSeriesBody from "./TimeSeriesBody.svelte";
 
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
 
+  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithBisector } from "$lib/components/data-graphic/functional-components";
+  import { Axis } from "$lib/components/data-graphic/guides";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
-  import TimeSeriesChartContainer from "./time-series-charts/TimeSeriesChartContainer.svelte";
-  import { WithBisector } from "$lib/components/data-graphic/functional-components";
-  import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import { Axis } from "$lib/components/data-graphic/guides";
+  import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
-  import Spinner from "$lib/components/Spinner.svelte";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import Spinner from "$lib/components/Spinner.svelte";
 
   export let metricsDefId;
   export let start: Date;
