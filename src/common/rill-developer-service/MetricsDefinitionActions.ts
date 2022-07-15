@@ -9,6 +9,7 @@ import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service
 import type { ProfileColumn } from "$lib/types";
 import { CATEGORICALS } from "$lib/duckdb-data-types";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { shallowCopy } from "$common/utils/shallowCopy";
 
 export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -18,11 +19,14 @@ export type MetricsDefinitionContext = RillRequestContext<
 export class MetricsDefinitionActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
   public async createMetricsDefinition(
-    rillRequestContext: MetricsDefinitionContext
+    rillRequestContext: MetricsDefinitionContext,
+    initialFields: Partial<MetricsDefinitionEntity>
   ) {
+    delete initialFields.id;
     const metricsDefinition = getMetricsDefinition(
       rillRequestContext.entityStateService.getCurrentState().counter
     );
+    shallowCopy(initialFields, metricsDefinition);
     this.dataModelerStateService.dispatch(
       "incrementMetricsDefinitionCounter",
       []

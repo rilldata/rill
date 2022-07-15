@@ -102,7 +102,11 @@
   $: hasTimestampColumn = detectTimestampColumn(currentDerivedModel);
 
   const handleCreateMetric = () => {
-    store.dispatch(createMetricsDefsApi(undefined));
+    store.dispatch(
+      createMetricsDefsApi({
+        sourceModelId: currentModel.id,
+      })
+    );
 
     // TODO: get the id created and set it as the active entity.
     // dataModelerService.dispatch("setActiveAsset", [
