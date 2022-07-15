@@ -220,11 +220,11 @@
             }
           }}
         >
-          export
+          Export
           <Export size="16px" />
         </Button>
         <TooltipContent slot="tooltip-content">
-          export this model as a dataset
+          Export this model as a dataset
         </TooltipContent>
       </Tooltip>
       <Tooltip location="left" alignment="middle" distance={16}>
