@@ -68,7 +68,8 @@ export class MetricsExploreActions extends RillDeveloperActions {
   ) {
     if (
       !rillRequestContext.record?.sourceModelId ||
-      !rillRequestContext.record?.timeDimension
+      !rillRequestContext.record?.timeDimension ||
+      !measures.length
     )
       return;
 
@@ -143,7 +144,7 @@ export class MetricsExploreActions extends RillDeveloperActions {
       isolated?: boolean;
     }
   ) {
-    if (!rillRequestContext.record?.sourceModelId) return;
+    if (!rillRequestContext.record?.sourceModelId || !measures.length) return;
     if (isolated) {
       await Promise.all(
         measures.map((measure) =>

@@ -1,4 +1,7 @@
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  EntityStatus,
+  EntityType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
@@ -17,6 +20,8 @@ import {
   setLeaderboardMeasureId,
   toggleExploreMeasure,
   toggleLeaderboardActiveValue,
+  setLeaderboardValuesStatus,
+  setLeaderboardValuesErrorStatus,
 } from "$lib/redux-store/explore/explore-slice";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
@@ -222,6 +227,10 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
       timeRange: metricsExplore.selectedTimeRange,
     };
 
+    thunkAPI.dispatch(
+      setLeaderboardValuesStatus(metricsDefId, EntityStatus.Running)
+    );
+
     const stream = streamingFetchWrapper<LeaderboardValues>(
       `metrics/${metricsExplore.id}/leaderboards`,
       "POST",
@@ -236,6 +245,8 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
         )
       );
     }
+
+    thunkAPI.dispatch(setLeaderboardValuesErrorStatus(metricsDefId));
   }
 );
 

@@ -6,6 +6,8 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { setStatusPrepare } from "$lib/redux-store/utils/loading-utils";
 
 export interface LeaderboardValue {
   value: number;
@@ -15,6 +17,7 @@ export interface LeaderboardValues {
   values: Array<LeaderboardValue>;
   dimensionId: string;
   dimensionName?: string;
+  status: EntityStatus;
 }
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
@@ -62,6 +65,7 @@ export const exploreSlice = createSlice({
           leaderboards: dimensions.map((column) => ({
             values: [],
             dimensionId: column.id,
+            status: EntityStatus.Idle,
           })),
           activeValues: {},
           selectedCount: 0,
@@ -196,7 +200,7 @@ export const exploreSlice = createSlice({
           return;
         metricsExplore.leaderboards = [
           ...metricsExplore.leaderboards,
-          { dimensionId, values: [] },
+          { dimensionId, values: [], status: EntityStatus.Idle },
         ];
         metricsExplore.activeValues[dimensionId] = [];
       },
@@ -305,12 +309,14 @@ export const exploreSlice = createSlice({
         if (existing) {
           existing.dimensionId = dimensionId;
           existing.values = values;
+          existing.status = EntityStatus.Idle;
         } else {
           state.entities[id].leaderboards = [
             ...state.entities[id].leaderboards,
             {
               dimensionId,
               values,
+              status: EntityStatus.Idle,
             },
           ];
         }
@@ -324,6 +330,42 @@ export const exploreSlice = createSlice({
       }),
     },
 
+    setLeaderboardValuesStatus: {
+      reducer: (
+        state,
+        {
+          payload: { id, status },
+        }: PayloadAction<{ id: string; status: EntityStatus }>
+      ) => {
+        if (!state.entities[id]) return;
+        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
+          (leaderboard) => ({
+            dimensionId: leaderboard.dimensionId,
+            values: leaderboard.values,
+            status,
+          })
+        );
+      },
+      prepare: setStatusPrepare,
+    },
+
+    setLeaderboardValuesErrorStatus: {
+      reducer: (state, { payload: id }: PayloadAction<string>) => {
+        if (!state.entities[id]) return;
+        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
+          (leaderboard) => {
+            if (leaderboard.status === EntityStatus.Idle) return leaderboard;
+            return {
+              dimensionId: leaderboard.dimensionId,
+              values: [],
+              status: EntityStatus.Error,
+            };
+          }
+        );
+      },
+      prepare: (id: string) => ({ payload: id }),
+    },
+
     clearSelectedLeaderboardValues: {
       reducer: (state, { payload: id }: PayloadAction<string>) => {
         if (!state.entities[id]) return;
@@ -332,10 +374,11 @@ export const exploreSlice = createSlice({
           (leaderboard) => ({
             dimensionId: leaderboard.dimensionId,
             values: [],
+            status: EntityStatus.Idle,
           })
         );
       },
-      prepare: (id) => ({ payload: id }),
+      prepare: (id: string) => ({ payload: id }),
     },
 
     setExploreTimeRange: {
@@ -390,6 +433,8 @@ export const {
   removeDimensionFromExplore,
   toggleLeaderboardActiveValue,
   setLeaderboardDimensionValues,
+  setLeaderboardValuesStatus,
+  setLeaderboardValuesErrorStatus,
   clearSelectedLeaderboardValues,
   setExploreTimeRange,
   setExploreSelectedTimeRange,

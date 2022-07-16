@@ -29,6 +29,7 @@
    */
   export let referenceValue: number;
   export let values;
+
   export let formatPreset: NicelyFormattedTypes;
   export let isSummableMeasure = false;
 

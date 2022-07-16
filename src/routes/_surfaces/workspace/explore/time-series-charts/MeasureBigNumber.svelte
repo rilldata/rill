@@ -9,7 +9,9 @@
     humanizeDataType,
     NicelyFormattedTypes,
   } from "$lib/util/humanize-numbers";
+  import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   export let value: number;
+  export let status: EntityStatus;
   export let description: string = undefined;
   export let formatPreset: NicelyFormattedTypes;
 
@@ -30,7 +32,7 @@
     override this by filling the slot in the consuming component. -->
     <slot name="value">
       <div>
-        {#if value}
+        {#if value && status === EntityStatus.Idle}
           <div
             class="absolute"
             in:receive|local={{ key: "value" }}
@@ -44,6 +46,8 @@
               {/if}
             </WithTween>
           </div>
+        {:else if status === EntityStatus.Error}
+          <CrossIcon />
         {:else}
           <div
             class="absolute p-2"
