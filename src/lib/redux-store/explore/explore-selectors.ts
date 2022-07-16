@@ -11,7 +11,9 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 export const {
   manySelector: selectMetricsExplores,
   singleSelector: selectMetricsExploreById,
-} = generateEntitySelectors<MetricsExploreEntity>("metricsLeaderboard");
+} = generateEntitySelectors<MetricsExploreEntity, "metricsLeaderboard">(
+  "metricsLeaderboard"
+);
 
 /**
  * Common code to fetch metrics explore and some params from state

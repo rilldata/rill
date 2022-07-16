@@ -7,7 +7,11 @@ export const {
   singleSelector: selectMeasureById,
   manySelector: selectMeasuresByMetricsId,
   manySelectorByIds: selectMeasuresByIds,
-} = generateFilteredEntitySelectors<[string], MeasureDefinitionEntity>(
+} = generateFilteredEntitySelectors<
+  [string],
+  MeasureDefinitionEntity,
+  "measureDefinition"
+>(
   "measureDefinition",
   (entity: MeasureDefinitionEntity, metricsDefId: string) =>
     entity.metricsDefId === metricsDefId

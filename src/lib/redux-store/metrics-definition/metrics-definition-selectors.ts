@@ -4,4 +4,6 @@ import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service
 export const {
   manySelector: selectAllMetricsDefinitions,
   singleSelector: selectMetricsDefinitionById,
-} = generateEntitySelectors<MetricsDefinitionEntity>("metricsDefinition");
+} = generateEntitySelectors<MetricsDefinitionEntity, "metricsDefinition">(
+  "metricsDefinition"
+);

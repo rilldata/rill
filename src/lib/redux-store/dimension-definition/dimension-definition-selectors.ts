@@ -4,7 +4,11 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 export const {
   singleSelector: selectDimensionById,
   manySelector: selectDimensionsByMetricsId,
-} = generateFilteredEntitySelectors<[string], DimensionDefinitionEntity>(
+} = generateFilteredEntitySelectors<
+  [string],
+  DimensionDefinitionEntity,
+  "dimensionDefinition"
+>(
   "dimensionDefinition",
   (entity: DimensionDefinitionEntity, metricsDefId: string) =>
     entity.metricsDefId === metricsDefId
