@@ -5,6 +5,7 @@ import {
   selectMeasureFieldNameByIdAndIndex,
   selectMeasuresByIds,
   selectMeasuresByMetricsId,
+  selectValidMeasuresByMetricsId,
 } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
@@ -16,6 +17,10 @@ export const getMeasureById = createReadableFactoryWithSelector<
 export const getMeasuresByMetricsId = createReadableFactoryWithSelector(
   store,
   selectMeasuresByMetricsId
+);
+export const getValidMeasuresByMetricsId = createReadableFactoryWithSelector(
+  store,
+  selectValidMeasuresByMetricsId
 );
 
 export const getMeasuresByIds = createReadableFactoryWithSelector(

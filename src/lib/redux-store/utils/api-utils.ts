@@ -39,14 +39,24 @@ export function generateApis<
   ] = []
 ) {
   return {
+    // TODO: add caching here to prevent too many fetchManyApi calls
     fetchManyApi: createAsyncThunk(
       `${entityType}/fetchManyApi`,
       async (args: FetchManyParams, thunkAPI) => {
-        thunkAPI.dispatch(
-          addManyAction(
-            await fetchWrapper(`${endpoint}${getQueryArgs(args)}`, "GET")
-          )
+        let entities = await fetchWrapper(
+          `${endpoint}${getQueryArgs(args)}`,
+          "GET"
         );
+        entities = await Promise.all(
+          entities.map(async (entity) => {
+            const changes = await validateEntity(entity, entity, validations);
+            return {
+              ...entity,
+              ...changes,
+            };
+          })
+        );
+        thunkAPI.dispatch(addManyAction(entities));
       }
     ),
     createApi: createAsyncThunk(

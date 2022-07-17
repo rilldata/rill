@@ -1,11 +1,18 @@
 import { generateEntitySelectors } from "$lib/redux-store/utils/selector-utils";
-import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+import type {
+  ActiveValues,
+  MetricsExploreEntity,
+} from "$lib/redux-store/explore/explore-slice";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
+import type {
+  BasicMeasureDefinition,
+  MeasureDefinitionEntity,
+} from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
-import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
-import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import {
+  selectMeasureById,
+  selectValidMeasures,
+} from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
 export const {
@@ -45,6 +52,7 @@ export const selectMetricsExploreParams = (
       selectMeasureById(state, measureId)
     );
   }
+  measures = selectValidMeasures(measures);
 
   return {
     metricsExplore,
