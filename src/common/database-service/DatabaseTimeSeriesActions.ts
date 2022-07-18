@@ -162,7 +162,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
         metadata,
         "_ts_",
         "ts",
-        "count",
+        measures[0].sqlName,
         pixels
       );
     }
@@ -207,7 +207,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
     `);
     if (timeSeriesLength.c < pixels * 4) {
       return this.databaseClient.execute(`
-          SELECT "${timestampColumn}" as ts, "${valueColumn}" as count FROM "${table}"
+          SELECT "${timestampColumn}" as ts, "${valueColumn}" as ${valueColumn} FROM "${table}"
       `);
     }
 
@@ -253,22 +253,22 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
         let points = [
           {
             ts: new Date(di.min_t),
-            count: di.argmin_tv,
+            [valueColumn]: di.argmin_tv,
             bin: di.bin,
           },
           {
             ts: new Date(di.argmin_vt),
-            count: di.min_v,
+            [valueColumn]: di.min_v,
             bin: di.bin,
           },
           {
             ts: new Date(di.argmax_vt),
-            count: di.max_v,
+            [valueColumn]: di.max_v,
             bin: di.bin,
           },
           {
             ts: new Date(di.max_t),
-            count: di.argmax_tv,
+            [valueColumn]: di.argmax_tv,
             bin: di.bin,
           },
         ];

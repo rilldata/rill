@@ -85,13 +85,13 @@
           </g>
         {/key}
       </Body>
-      <Axis
-        side="right"
-        format={(value) =>
-          formatPreset === NicelyFormattedTypes.NONE
-            ? `${value}`
-            : humanizeDataType(value, formatPreset)}
-      />
+      <!--      <Axis-->
+      <!--        side="right"-->
+      <!--        format={(value) =>-->
+      <!--          formatPreset === NicelyFormattedTypes.NONE-->
+      <!--            ? `${value}`-->
+      <!--            : humanizeDataType(value, formatPreset)}-->
+      <!--      />-->
       <Grid />
       {#if mouseover}
         <PointLabel

@@ -4,8 +4,10 @@ import {
   ColumnConfig,
   CellConfigInput,
   CellConfigSelector,
+  CellSparkline,
 } from "$lib/components/table-editable/ColumnConfig";
 import { nicelyFormattedTypesSelectorOptions } from "$lib/util/humanize-numbers";
+import TableCellSparkline from "$lib/components/metrics-definition/TableCellSparkline.svelte";
 
 export const initMeasuresColumns = (inputChangeHandler) =>
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
@@ -48,11 +50,10 @@ export const initMeasuresColumns = (inputChangeHandler) =>
     //   validation: (row: MeasureDefinitionEntity) => row.sqlNameIsValid,
     // },
 
-    // FIXME: will be needed later for sparkline summary
-    // {
-    //   name: "id",
-    //   label: "preview",
-    //   tooltip: "a preview of this measure over the selected time dimension",
-    //   cellRenderer: TableCellSparkline,
-    // },
+    {
+      name: "metricsDefId",
+      label: "preview",
+      tooltip: "a preview of this measure over the selected time dimension",
+      cellRenderer: new CellSparkline(),
+    },
   ];
