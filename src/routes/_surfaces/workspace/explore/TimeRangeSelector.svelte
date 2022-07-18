@@ -32,6 +32,11 @@
     selectedTimeRange = $metricsLeaderboard?.selectedTimeRange;
   } else if (selectableTimeRanges) {
     selectedTimeRange = getDefaultSelectedTimeRange(selectableTimeRanges);
+    setExploreSelectedTimeRangeAndUpdate(store.dispatch, metricsDefId, {
+      name: selectedTimeRange.name,
+      start: selectedTimeRange.start,
+      end: selectedTimeRange.end,
+    });
   }
 
   let timeSelectorMenu;
