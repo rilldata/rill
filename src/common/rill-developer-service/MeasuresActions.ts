@@ -1,6 +1,6 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
-import { parseExpression } from "$common/utils/parseQuery";
+import { parseExpression } from "$common/utils/parseExpression";
 import {
   EntityType,
   StateType,
@@ -103,6 +103,7 @@ export class MeasuresActions extends RillDeveloperActions {
       expressionIsValid: expressionIsValid
         ? ValidationState.OK
         : ValidationState.ERROR,
+      expressionValidationError: parsedExpression.error,
     });
   }
 }

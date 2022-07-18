@@ -10,6 +10,7 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+import type { ParseExpressionError } from "$common/utils/parseExpression";
 
 export interface BasicMeasureDefinition {
   id: string;
@@ -27,6 +28,7 @@ export interface MeasureDefinitionEntity
   description?: string;
   formatPreset?: NicelyFormattedTypes;
   expressionIsValid?: ValidationState;
+  expressionValidationError?: ParseExpressionError;
   sqlNameIsValid?: ValidationState;
 }
 
