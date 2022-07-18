@@ -8,7 +8,7 @@ import { execSync } from "node:child_process";
 export class ExampleProjectCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
-      new Command("init-example-project"),
+      new Command("init-example"),
       "Initialize example project."
     ).action((opts, command: Command) => {
       let { project } = command.optsWithGlobals();
@@ -23,63 +23,27 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
   }
 
   public async createExampleProject(project: string): Promise<void> {
-    console.log(`Initializing the project example project ${project} ...`);
+    console.log(`Initializing the example project ${project} ...`);
     await new InitCommand().createProjectAndRun({}, project);
 
     console.log("Downloading dataset for example project...");
     execSync(
-      `curl -s http://pkg.rilldata.com/rill-developer-example/example-assets.zip ` +
-        `--output ${project}/example-assets.zip`,
+      `curl -s http://pkg.rilldata.com/rill-developer-example/example-assets-0.6.zip ` +
+        `--output ${project}/example-assets-0.6.zip`,
       { stdio: "inherit" }
     );
-    execSync(`unzip ${project}/example-assets.zip ` + `-d ${project}/`, {
+    execSync(`unzip ${project}/example-assets-0.6.zip ` + `-d ${project}/`, {
       stdio: "inherit",
     });
 
     console.log("Importing example datasets into the project...");
-    console.log("Adtech...");
-    await new ImportTableCommand().run(
-      {
-        projectPath: project,
-        profileWithUpdate: true,
-      },
-      `${project}/example-assets/data/adtech-ad-click/adtech-item-data.csv`,
-      {}
-    );
-    await new ImportTableCommand().run(
-      {
-        projectPath: project,
-        profileWithUpdate: true,
-      },
-      `${project}/example-assets/data/adtech-ad-click/adtech-train.csv`,
-      {}
-    );
-    await new ImportTableCommand().run(
-      {
-        projectPath: project,
-        profileWithUpdate: true,
-      },
-      `${project}/example-assets/data/adtech-ad-click/adtech-view-log.csv`,
-      {}
-    );
-
-    console.log("Crypto...");
-    await new ImportTableCommand().run(
-      {
-        projectPath: project,
-        profileWithUpdate: true,
-      },
-      `${project}/example-assets/data/crypto-bitcoin/crypto-bitstamp-usd.csv`,
-      {}
-    );
-
     console.log("Ecommerce...");
     await new ImportTableCommand().run(
       {
         projectPath: project,
         profileWithUpdate: true,
       },
-      `${project}/example-assets/data/ecomm-click-stream/e-shop-clothing.csv`,
+      `${project}/example-assets-0.6/data/ecomm-click-stream/e-shop-clothing.csv`,
       {}
     );
 
@@ -89,7 +53,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
         projectPath: project,
         profileWithUpdate: true,
       },
-      `${project}/example-assets/data/global-landslide-catalog/global-landslide-catalog.csv`,
+      `${project}/example-assets-0.6/data/global-landslide-catalog/global-landslide-catalog.csv`,
       {}
     );
 
@@ -99,12 +63,12 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
         projectPath: project,
         profileWithUpdate: true,
       },
-      `${project}/example-assets/data/iot-env-sensor/iot-telemetry-data.csv`,
+      `${project}/example-assets-0.6/data/iot-env-sensor/iot-telemetry-data.csv`,
       {}
     );
 
     console.log("Importing example SQL transformations into the project...");
-    execSync(`mv -v ${project}/example-assets/models/* ${project}/models`, {
+    execSync(`mv -v ${project}/example-assets-0.6/models/* ${project}/models`, {
       stdio: "inherit",
     });
 
@@ -113,19 +77,16 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
       stdio: "inherit",
     });
 
-    execSync(`mv -v ${project}/example-assets/data ${project}`, {
+    execSync(`mv -v ${project}/example-assets-0.6/data ${project}`, {
       stdio: "inherit",
     });
-    execSync(`rm -rf ${project}/example-assets`, {
+    execSync(`rm -rf ${project}/example-assets-0.6`, {
       stdio: "inherit",
     });
-    execSync(`rm -rf ${project}/example-assets.zip`, {
+    execSync(`rm -rf ${project}/example-assets-0.6.zip`, {
       stdio: "inherit",
     });
     execSync(`rm -rf ${project}/__MACOSX`, {
-      stdio: "inherit",
-    });
-    execSync(`rm ${project}/models/query_1.sql`, {
       stdio: "inherit",
     });
 
