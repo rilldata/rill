@@ -27,6 +27,19 @@ import { MetricsService } from "$common/metrics-service/MetricsService";
 import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { existsSync, readFileSync } from "fs";
 import { LocalConfigFile } from "$common/config/ConfigFolders";
+import { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
+import { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { RillDeveloper } from "$server/RillDeveloper";
+import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
+import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
+import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
+import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
+import { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
+import { MetricsExploreActions } from "$common/rill-developer-service/MetricsExploreActions";
+import { MeasureDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { DimensionDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
+import { ExpressServer } from "$server/ExpressServer";
 
 let PACKAGE_JSON = "";
 try {
@@ -37,23 +50,19 @@ try {
 
 export function databaseServiceFactory(config: RootConfig) {
   const duckDbClient = DuckDBClient.getInstance(config.database);
-  const databaseDataLoaderActions = new DatabaseDataLoaderActions(
-    config.database,
-    duckDbClient
+  return new DatabaseService(
+    duckDbClient,
+    [
+      DatabaseDataLoaderActions,
+      DatabaseTableActions,
+      DatabaseColumnActions,
+      DatabaseMetricsExploreActions,
+      DatabaseTimeSeriesActions,
+    ].map(
+      (DatabaseActionsClass) =>
+        new DatabaseActionsClass(config.database, duckDbClient)
+    )
   );
-  const databaseTableActions = new DatabaseTableActions(
-    config.database,
-    duckDbClient
-  );
-  const databaseColumnActions = new DatabaseColumnActions(
-    config.database,
-    duckDbClient
-  );
-  return new DatabaseService(duckDbClient, [
-    databaseDataLoaderActions,
-    databaseTableActions,
-    databaseColumnActions,
-  ]);
 }
 
 export function dataModelerStateServiceFactory(config: RootConfig) {
@@ -64,6 +73,7 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
       ProfileColumnStateActions,
       CommonStateActions,
       ApplicationStateActions,
+      MetricsDefinitionStateActions,
     ].map((StateActionsClass) => new StateActionsClass()),
     [
       PersistentTableEntityService,
@@ -71,6 +81,9 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
       PersistentModelEntityService,
       DerivedModelEntityService,
       ApplicationStateService,
+      MetricsDefinitionStateService,
+      MeasureDefinitionStateService,
+      DimensionDefinitionStateService,
     ].map((EntityStateService) => new EntityStateService()),
     config
   );
@@ -110,32 +123,19 @@ export function dataModelerServiceFactory(config: RootConfig) {
 
   const notificationService = new SocketNotificationService();
 
-  const tableActions = new TableActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
-  const modelActions = new ModelActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
-  const profileColumnActions = new ProfileColumnActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
-  const applicationActions = new ApplicationActions(
-    config,
-    dataModelerStateService,
-    databaseService
-  );
   const dataModelerService = new DataModelerService(
     dataModelerStateService,
     databaseService,
     notificationService,
     metricsService,
-    [tableActions, modelActions, profileColumnActions, applicationActions]
+    [TableActions, ModelActions, ProfileColumnActions, ApplicationActions].map(
+      (DataModelerActionsClass) =>
+        new DataModelerActionsClass(
+          config,
+          dataModelerStateService,
+          databaseService
+        )
+    )
   );
 
   return {
@@ -144,6 +144,27 @@ export function dataModelerServiceFactory(config: RootConfig) {
     notificationService,
     metricsService,
   };
+}
+
+export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
+  return new RillDeveloperService(
+    rillDeveloper.dataModelerStateService,
+    rillDeveloper.dataModelerService,
+    rillDeveloper.dataModelerService.getDatabaseService(),
+    [
+      MetricsDefinitionActions,
+      DimensionsActions,
+      MeasuresActions,
+      MetricsExploreActions,
+    ].map(
+      (RillDeveloperActionsClass) =>
+        new RillDeveloperActionsClass(
+          rillDeveloper.config,
+          rillDeveloper.dataModelerStateService,
+          rillDeveloper.dataModelerService.getDatabaseService()
+        )
+    )
+  );
 }
 
 export function serverFactory(config: RootConfig) {
@@ -163,4 +184,19 @@ export function serverFactory(config: RootConfig) {
   notificationService.setSocketServer(socketServer.getSocketServer());
 
   return { dataModelerStateService, dataModelerService, socketServer };
+}
+
+export function expressServerFactory(
+  config: RootConfig,
+  rillDeveloper: RillDeveloper,
+  rillDeveloperService: RillDeveloperService
+) {
+  return new ExpressServer(
+    config,
+    rillDeveloper.dataModelerService,
+    rillDeveloperService,
+    rillDeveloper.dataModelerStateService,
+    rillDeveloper.notificationService as SocketNotificationService,
+    rillDeveloper.metricsService
+  );
 }

@@ -62,12 +62,12 @@
   let xExtents = extent(data, (d) => d[xAccessor]);
   $: xExtents = extent(data, (d) => d[xAccessor]);
 
-  const xMin = createExtremumResolutionStore(xExtents[0], {
+  $: xMin = createExtremumResolutionStore(xExtents[0], {
     duration: 300,
     easing,
     direction: "min",
   });
-  const xMax = createExtremumResolutionStore(xExtents[1], {
+  $: xMax = createExtremumResolutionStore(xExtents[1], {
     duration: 300,
     easing,
   });
@@ -83,7 +83,7 @@
   // Generate our Y Scale.
   let yExtents = extent(data, (d) => d[yAccessor]);
   $: yExtents = extent(data, (d) => d[yAccessor]);
-  const yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
+  $: yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
 
   /** Listen ~ the world needs a little bit of joy. If the user wants to tween in the height
    * of the graph so it looks like it grows, then let them have it.

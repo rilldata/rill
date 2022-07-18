@@ -9,6 +9,9 @@ import { DerivedModelEntityService } from "$common/data-modeler-state-service/en
 import { ApplicationStateService } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { MetricsSocketService } from "$common/socket/MetricsSocketService";
+import { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { MeasureDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { DimensionDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
 export function dataModelerStateServiceClientFactory() {
   return new DataModelerStateService(
@@ -19,6 +22,9 @@ export function dataModelerStateServiceClientFactory() {
       PersistentModelEntityService,
       DerivedModelEntityService,
       ApplicationStateService,
+      MetricsDefinitionStateService,
+      MeasureDefinitionStateService,
+      DimensionDefinitionStateService,
     ].map((EntityStateService) => new EntityStateService())
   );
 }

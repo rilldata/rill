@@ -55,6 +55,24 @@ export abstract class ActionsBase {
   public static ApplicationAction() {
     return this.Action(EntityType.Application, StateType.Derived);
   }
+  public static MetricsDefinitionAction() {
+    return this.Action(
+      EntityType.MetricsDefinition,
+      StateType.Persistent
+    ) as any;
+  }
+  public static MeasureDefinitionAction() {
+    return this.Action(
+      EntityType.MeasureDefinition,
+      StateType.Persistent
+    ) as any;
+  }
+  public static DimensionDefinitionAction() {
+    return this.Action(
+      EntityType.DimensionDefinition,
+      StateType.Persistent
+    ) as any;
+  }
 
   /**
    * Marks a method as a generic action on a state type.

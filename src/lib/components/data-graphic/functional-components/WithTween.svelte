@@ -11,7 +11,7 @@ of the value.
     duration: 25,
   };
   const tween = tweened(value, tweenProps);
-  $: tween.set(value);
+  $: tween.set(value, tweenProps);
 </script>
 
 <slot output={$tween} />

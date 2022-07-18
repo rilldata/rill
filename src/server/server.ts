@@ -1,20 +1,23 @@
 import "../moduleAlias";
 import { RootConfig } from "$common/config/RootConfig";
 import { RillDeveloper } from "./RillDeveloper";
-import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { ExpressServer } from "./ExpressServer";
 import { ServerConfig } from "$common/config/ServerConfig";
+import {
+  expressServerFactory,
+  rillDeveloperServiceFactory,
+} from "$server/serverFactory";
 
 const config = new RootConfig({
+  // use `RILL_PROJECT` to override project folder while running in dev mode.
+  // this can be helpful when testing fresh projects without needing to delete existing one.
+  projectFolder: process.env.RILL_PROJECT ?? ".",
   server: new ServerConfig({ serveStaticFile: true }),
 });
 const rillDeveloper = RillDeveloper.getRillDeveloper(config);
-const expressServer = new ExpressServer(
+const expressServer = expressServerFactory(
   config,
-  rillDeveloper.dataModelerService,
-  rillDeveloper.dataModelerStateService,
-  rillDeveloper.notificationService as SocketNotificationService,
-  rillDeveloper.metricsService
+  rillDeveloper,
+  rillDeveloperServiceFactory(rillDeveloper)
 );
 (async () => {
   await rillDeveloper.init();

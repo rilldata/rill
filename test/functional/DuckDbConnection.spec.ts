@@ -37,10 +37,10 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     // initially import 2 tables in source
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
     await execPromise(
-      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_DUCKDB_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.csv ${CLI_TEST_DUCKDB_FOLDER_ARG}`
     );
     await execPromise(
-      `${CLI_COMMAND} import-source test/data/AdImpressions.parquet --name Impressions ${CLI_TEST_DUCKDB_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdImpressions.tsv --name Impressions ${CLI_TEST_DUCKDB_FOLDER_ARG}`
     );
   }
 

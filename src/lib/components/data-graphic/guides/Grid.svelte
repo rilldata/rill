@@ -31,23 +31,21 @@
     xAxisLength = $config.graphicWidth;
     // do we ensure different spacing in one case vs. another?
     xTickCount = ~~(xAxisLength / 20);
-    xTickCount = Math.max(3, ~~(xTickCount / 100));
+    xTickCount = Math.max(2, ~~(xTickCount / 100));
 
     yAxisLength = $config.graphicHeight;
     // do we ensure different spacing in one case vs. another?
     yTickCount = ~~(yAxisLength / 20);
-    yTickCount = Math.max(3, ~~(yTickCount / 100));
+    yTickCount = Math.max(2, ~~(yTickCount / 100));
   }
-  $: xCopy = xScale.type === "date" ? $xScale.copy().nice() : $xScale;
-  $: yCopy = yScale.type === "date" ? $yScale.copy().nice() : $yScale;
 </script>
 
 <g shape-rendering="crispEdges">
   {#if showX}
-    {#each xCopy.ticks(xTickCount) as tick}
+    {#each $xScale.ticks(xTickCount) as tick}
       <line
-        x1={xCopy(tick)}
-        x2={xCopy(tick)}
+        x1={$xScale(tick)}
+        x2={$xScale(tick)}
         y1={$config.bodyTop}
         y2={$config.bodyBottom}
         stroke={xColor}
@@ -58,7 +56,7 @@
     {/each}
   {/if}
   {#if showY}
-    {#each yCopy.ticks(yTickCount) as tick}
+    {#each $yScale.ticks(yTickCount) as tick}
       <line
         y1={$yScale(tick)}
         y2={$yScale(tick)}

@@ -14,6 +14,8 @@ Useful for finding the nearest value to the current mouseover
   /** The value that will be used for the bisection */
   export let value: any;
   const bisect = bisector(callback).center;
+
+  $: point = value !== undefined ? data[bisect(data, value)] : undefined;
 </script>
 
-<slot point={value !== undefined ? data[bisect(data, value)] : undefined} />
+<slot {point} />

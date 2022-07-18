@@ -39,10 +39,10 @@ export class CLISpec extends FunctionalTestBase {
   public async shouldAddTables(): Promise<void> {
     await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
     await execPromise(
-      `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`
     );
     await execPromise(
-      `${CLI_COMMAND} import-source test/data/AdImpressions.parquet --name Impressions ${CLI_TEST_FOLDER_ARG}`
+      `${CLI_COMMAND} import-source test/data/AdImpressions.tsv --name Impressions ${CLI_TEST_FOLDER_ARG}`
     );
 
     const persistentState: PersistentTableState = JSON.parse(
