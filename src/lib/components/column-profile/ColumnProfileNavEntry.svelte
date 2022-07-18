@@ -66,7 +66,7 @@
         {indentLevel}
         example={head[0][column.name] || ""}
         {containerWidth}
-        hideNullPercentage={containerWidth <=
+        hideNullPercentage={containerWidth <
           COLUMN_PROFILE_CONFIG.hideNullPercentage}
         hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
         compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
