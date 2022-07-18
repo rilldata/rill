@@ -24,6 +24,14 @@
       evt.target.value
     );
   };
+  const onkeyupHandler = (evt) => {
+    if (!columnConfig.cellRenderer.onKeystroke) return;
+    columnConfig.cellRenderer.onKeystroke(
+      index,
+      columnConfig.name,
+      evt.target.value
+    );
+  };
   const startEditing = () => {
     editing = true;
     inputElt.focus();
@@ -56,6 +64,7 @@
       on:focus={startEditing}
       on:blur={stopEditing}
       on:change={onchangeHandler}
+      on:keyup={onkeyupHandler}
       value={value ?? ""}
     />
 
