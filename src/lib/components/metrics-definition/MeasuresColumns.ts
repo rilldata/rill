@@ -19,7 +19,8 @@ export const initMeasuresColumns = (inputChangeHandler) =>
       headerTooltip: "a valid SQL aggregation expression for this measure",
       cellRenderer: new CellConfigInput(
         inputChangeHandler,
-        (row: MeasureDefinitionEntity) => row.expressionIsValid
+        (row: MeasureDefinitionEntity) => row.expressionIsValid,
+        inputChangeHandler
       ),
     },
     {

@@ -33,7 +33,11 @@ export class CellConfigInput implements CellConfig {
   component = TableCellInput;
   constructor(
     public onchange: TableEventHandler,
-    public validation?: (row: EntityRecord, value: unknown) => ValidationState
+    public validation?: (row: EntityRecord, value: unknown) => ValidationState,
+    /**
+     * This is called per every keystroke.
+     */
+    public onKeystroke?: TableEventHandler
   ) {}
 }
 
