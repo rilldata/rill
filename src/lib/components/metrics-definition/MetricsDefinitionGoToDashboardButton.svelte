@@ -35,7 +35,7 @@
   }
 </script>
 
-<Tooltip location="right" alignment="middle" distance={5}>
+<Tooltip location="bottom" alignment="middle" distance={5}>
   <!-- TODO: we need to standardize these buttons. -->
   <Button
     type="primary"

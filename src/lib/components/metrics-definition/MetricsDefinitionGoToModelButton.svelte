@@ -22,7 +22,7 @@
   }
 </script>
 
-<Tooltip location="right" alignment="middle" distance={5}>
+<Tooltip location="left" alignment="middle" distance={5}>
   <Button
     type="text"
     disabled={buttonDisabled}
@@ -36,7 +36,7 @@
   <TooltipContent slot="tooltip-content">
     <div>
       {#if buttonStatus === "MISSING_MODEL"}
-        these metrics don't reference a model yet
+        set a model
       {:else}
         go to the corresponding model
       {/if}
