@@ -31,12 +31,10 @@
   let modalIsOpen = false;
 
   const openModal = () => {
-    console.log("opening");
     modalIsOpen = true;
   };
 
   const closeModal = () => {
-    console.log("opening");
     modalIsOpen = false;
   };
 </script>
