@@ -14,6 +14,11 @@
     getMeasuresByMetricsId,
   } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
+  import {
+    getScaleForLeaderboard,
+    NicelyFormattedTypes,
+    ShortHandSymbols,
+  } from "$lib/util/humanize-numbers";
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import Leaderboard from "./Leaderboard.svelte";
@@ -39,7 +44,8 @@
   );
   // get the expression so we can determine if the measure is summable
   $: expression = leaderboardMeasureDefinition?.expression;
-  $: formatPreset = leaderboardMeasureDefinition?.formatPreset;
+  $: formatPreset =
+    leaderboardMeasureDefinition?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
 
   let bigNumberEntity: Readable<BigNumberEntity>;
   $: bigNumberEntity = getBigNumberById(metricsDefId);
@@ -50,6 +56,18 @@
       whichReferenceValue === "filtered"
         ? $bigNumberEntity.bigNumbers?.[$measureField]
         : $bigNumberEntity.referenceValues?.[$measureField];
+  }
+
+  let leaderboardFormatScale: ShortHandSymbols = "none";
+  $: if (
+    formatPreset === NicelyFormattedTypes.HUMANIZE ||
+    formatPreset === NicelyFormattedTypes.CURRENCY
+  ) {
+    leaderboardFormatScale = getScaleForLeaderboard(
+      $metricsLeaderboard.leaderboards
+    );
+
+    console.log(leaderboardFormatScale);
   }
 
   let leaderboardExpanded;
@@ -108,6 +126,7 @@
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}
+        {leaderboardFormatScale}
         isSummableMeasure={expression?.toLowerCase()?.includes("count(") ||
           expression?.toLowerCase()?.includes("sum(")}
         dimensionId={item.dimensionId}
