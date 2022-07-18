@@ -1,12 +1,19 @@
 <script lang="ts">
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import ErrorIcon from "$lib/components/icons/CrossIcon.svelte";
-  import WarningIcon from "$lib/components/icons/WarningIcon.svelte";
+  import AlertCircle from "$lib/components/icons/AlertCircle.svelte";
+  import AlertTriangle from "$lib/components/icons/AlertTriangle.svelte";
+
   import type {
     ColumnConfig,
     CellConfigInput,
   } from "$lib/components/table-editable/ColumnConfig";
   import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  // FIXME: this import below will be needed for typing
+  // `(<MeasureDefinitionEntity>row)` once we have more detailed
+  // validation messages
+  // import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
   export let columnConfig: ColumnConfig<CellConfigInput>;
   export let index = undefined;
@@ -45,6 +52,46 @@
   $: validation = columnConfig.cellRenderer.validation
     ? columnConfig.cellRenderer.validation(row, row[columnConfig.name])
     : ValidationState.OK;
+
+  const enum ValidationIcon {
+    ERROR,
+    WARNING,
+    NONE,
+  }
+
+  let validationErrorMsg: string = undefined;
+  let icon = ValidationIcon.NONE;
+  $: if (validation !== ValidationState.OK) {
+    // FIXME: for now, if a row has an invalid state, we know it is a MeasureDefinitionEntity, but this is not very robust
+    // FIXME: currently, the `expressionValidationError.message` is only ever "Unexpected end of input"
+    // We'll use a placeholder until we can get more detailed feedback
+    // validationErrorMsg = (<MeasureDefinitionEntity>row)
+    //   .expressionValidationError.message;
+    "asdfad".trim;
+    if (value.trim() === "") {
+      validationErrorMsg = "This aggregation expression is empty";
+    } else {
+      validationErrorMsg = "This aggregation expression is invalid";
+    }
+
+    if (
+      validation === ValidationState.ERROR &&
+      editing === false &&
+      value.trim() !== ""
+    ) {
+      // only show an error icon if not currently editing
+      // and if there is actually a value in the input
+      icon = ValidationIcon.ERROR;
+    } else if (
+      (validation === ValidationState.ERROR && editing === true) ||
+      (validation === ValidationState.ERROR && value.trim() === "") ||
+      validation === ValidationState.WARNING
+    ) {
+      icon = ValidationIcon.WARNING;
+    } else {
+      icon = ValidationIcon.NONE;
+    }
+  }
 </script>
 
 <td
@@ -68,10 +115,24 @@
       value={value ?? ""}
     />
 
-    {#if validation === ValidationState.ERROR}
-      <ErrorIcon />
-    {:else if validation === ValidationState.WARNING}
-      <WarningIcon />
+    {#if icon !== ValidationIcon.NONE}
+      <Tooltip location="top" alignment="middle" distance={16}>
+        <div class="self-center" style="height:0px">
+          <div style="position:relative; top:-10px;">
+            {#if icon === ValidationIcon.ERROR}
+              <!-- NOTE: #ef4444 === fill-red-500 -->
+              <AlertCircle size={"20px"} color={"#ef4444"} />
+            {:else if icon === ValidationIcon.WARNING}
+              <!-- NOTE: #ca8a04 === fill-yellow-500 -->
+              <AlertTriangle size={"20px"} color={"#ca8a04"} />
+            {/if}
+          </div>
+        </div>
+
+        <TooltipContent slot="tooltip-content">
+          {validationErrorMsg}
+        </TooltipContent>
+      </Tooltip>
     {/if}
   </div>
 </td>
