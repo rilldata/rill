@@ -1,6 +1,7 @@
 <script lang="ts">
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import MetricsDefinitionExploreMetricsButton from "$lib/components/metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
+  import MetricsDefinitionGoToModelButton from "$lib/components/metrics-definition/MetricsDefinitionGoToModelButton.svelte";
   import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
@@ -32,5 +33,8 @@
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <MetricsDefinitionExploreMetricsButton {metricsDefId} />
+  <div class="grid grid-flow-col gap-x-2">
+    <MetricsDefinitionGoToModelButton {metricsDefId} />
+    <MetricsDefinitionExploreMetricsButton {metricsDefId} />
+  </div>
 </div>
