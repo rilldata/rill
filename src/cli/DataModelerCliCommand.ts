@@ -108,7 +108,7 @@ export abstract class DataModelerCliCommand {
       command
         .description(description)
         // override default help text to add capital D for display
-        .helpOption("-h, --help", "Displays details for each Rill Developer CLI command.")
+        .helpOption("-h, --help", "Displays help for each command.")
         // common across all commands
         .option(
           "--project <projectPath>",

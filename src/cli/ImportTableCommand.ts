@@ -21,26 +21,26 @@ export class ImportTableCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
       new Command("import-source"),
-        "Imports the source file into Rill Developer."
+        "Imports a source file into Rill Developer."
     )
       .argument(
         "<sourceFile>",
-        "Path to the source file to be imported. "
+        "Specify the path to the source file to be imported. " +
           "Supported file types include .parquet, .csv, .tsv. "
       )
       .option(
         "--name <sourceName>",
-        "Optional name of the source in Rill Developer. " +
+        "Optional rename the source created in Rill Developer. " +
           "If no name is indicated, the source name defaults to a sanitized version of the file name. "
       )
       .option(
         "--delimiter <delimiter>",
         "Optional delimiter for csv and tsv files. " +
-          "If no delimiter is indicaated, the parsing is automatically detected by DuckDB. "
+          "If no delimiter is indicaated, file parsing is automatically detected by DuckDB. "
       )
       .option(
         "--force",
-        "Optional force overwrite if the source name already exists in Rill Developer. " +
+        "Optionally force overwrite if the source name already exists in Rill Developer. " +
           "Without this option enabled, there will be a prompt to overwrite the source if it exists."
       )
       .action((tableSourceFile, opts, command: Command) => {
@@ -67,7 +67,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
       console.log(
         `There is already a source named ${tableName}. ` +
           "\nForcing an overwrite." +
-          `\nDropping the existing source s${tableName} from ${existingTable.path} and importing ${tableSourceFile}`
+          `\nDropping the existing source ${tableName} from ${existingTable.path} and importing ${tableSourceFile}`
       );
     } else if (existingTable && !importOptions.force) {
       const shouldOverwrite = await cliConfirmation(
