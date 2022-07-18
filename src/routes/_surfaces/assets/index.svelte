@@ -26,7 +26,7 @@
   border-transparent 
   fixed 
   overflow-auto 
-  hover:border-gray-200 
+  border-gray-200 
   transition-colors
   h-screen
   bg-white
@@ -74,13 +74,13 @@
       class="p-3 italic text-gray-800 bg-gray-50 flex items-center text-center justify-center"
       style:height="var(--header-height)"
     >
-      <div class="text-left">Bugs, complaints, feedback? &nbsp;</div>
+      <!-- <div class="text-left">Bugs, complaints, feedback? &nbsp;</div> -->
       <a
         target="_blank"
-        class="inline not-italic font-bold text-blue-600 text-right"
+        class="inline not-italic  text-right"
         href="http://bit.ly/3jg4IsF"
       >
-        Ask us on Discord 💬
+        Give Feedback on Discord 💬
       </a>
     </div>
   </div>
