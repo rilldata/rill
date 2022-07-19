@@ -1,40 +1,48 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import Workspace from "./_surfaces/workspace/index.svelte";
-  import InspectorSidebar from "./_surfaces/inspector/index.svelte";
   import AssetsSidebar from "./_surfaces/assets/index.svelte";
+  import InspectorSidebar from "./_surfaces/inspector/index.svelte";
+  import Workspace from "./_surfaces/workspace/index.svelte";
 
   import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
   import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
 
-  import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
   import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "$lib/components/overlay/FileDrop.svelte";
+  import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
 
   import type {
-    PersistentModelStore,
     DerivedModelStore,
+    PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
   import type {
-    PersistentTableStore,
     DerivedTableStore,
+    PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
 
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
-    layout,
-    assetVisibilityTween,
+    ApplicationStore,
+    config,
+  } from "$lib/application-state-stores/application-store";
+  import {
     assetsVisible,
+    assetVisibilityTween,
+    importOverlayVisible,
     inspectorVisibilityTween,
     inspectorVisible,
+    layout,
     SIDE_PAD,
-    importOverlayVisible,
   } from "$lib/application-state-stores/layout-store";
-  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
+  import HideSidebar from "$lib/components/icons/HideSidebar.svelte";
   import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
+  import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
+  import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
+  import { store } from "$lib/redux-store/store-root";
 
   let showDropOverlay = false;
-  let assetsHovered = false;
+
+  const app = getContext("rill:app:store") as ApplicationStore;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -64,6 +72,30 @@
     (model) => model.id === derivedExportedModel?.id
   );
 
+  HttpStreamClient.create(`${config.server.serverUrl}/api`, store.dispatch);
+
+  /** Workaround for hiding inspector for now. Post July 19 2022 we will remove this
+   * in favor of ironing out more modular routing and suface management.
+   */
+  const views = {
+    Source: {
+      hasInspector: true,
+    },
+    Model: {
+      hasInspector: true,
+    },
+    MetricsDefinition: {
+      hasInspector: false,
+    },
+    MetricsLeaderboard: {
+      hasInspector: false,
+    },
+  };
+
+  $: activeEntityType = $app?.activeEntity?.type;
+  $: hasInspector = activeEntityType
+    ? views[activeEntityType].hasInspector
+    : false;
   function isEventWithFiles(event: DragEvent) {
     let types = event.dataTransfer.types;
     return types && types.indexOf("Files") != -1;
@@ -98,19 +130,20 @@
   <!-- left assets pane expansion button -->
   <!-- make this the first element to select with tab by placing it first.-->
   <SurfaceControlButton
-    show={assetsHovered || !$assetsVisible}
+    show={true}
     left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) +
       12 * $assetVisibilityTween}px"
     on:click={() => {
       assetsVisible.set(!$assetsVisible);
     }}
   >
-    <SurfaceViewIcon
-      size="16px"
-      mode={$assetsVisible ? "right" : "hamburger"}
-    />
+    {#if $assetsVisible}
+      <HideSidebar size="20px" />
+    {:else}
+      <SurfaceViewIcon size="16px" mode={"hamburger"} />
+    {/if}
     <svelte:fragment slot="tooltip-content">
-      {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and sources
+      {#if $assetVisibilityTween === 0} close {:else} show {/if} sidebar
     </svelte:fragment>
   </SurfaceControlButton>
 
@@ -119,18 +152,6 @@
   <div
     class="box-border	 assets fixed"
     aria-hidden={!$assetsVisible}
-    on:mouseover={() => {
-      assetsHovered = true;
-    }}
-    on:mouseleave={() => {
-      assetsHovered = false;
-    }}
-    on:focus={() => {
-      assetsHovered = true;
-    }}
-    on:blur={() => {
-      assetsHovered = false;
-    }}
     style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
   >
     <AssetsSidebar />
@@ -143,17 +164,25 @@
     style:padding-right="{$inspectorVisibilityTween * SIDE_PAD}px"
     style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
     style:top="0px"
-    style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
+    style:right="{hasInspector
+      ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
+      : 0}px"
   >
     <Workspace />
   </div>
 
   <!-- inspector sidebar -->
-  <div
-    class="fixed"
-    aria-hidden={!$inspectorVisible}
-    style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
-  >
-    <InspectorSidebar />
-  </div>
+  <!-- Workaround: hide the inspector on MetricsDefinition or 
+        on MetricsLeaderboard for now.
+      Once we refactor how layout routing works, we will have a better solution to this.
+  -->
+  {#if hasInspector}
+    <div
+      class="fixed"
+      aria-hidden={!$inspectorVisible}
+      style:right="{$layout.inspectorWidth * (1 - $inspectorVisibilityTween)}px"
+    >
+      <InspectorSidebar />
+    </div>
+  {/if}
 </div>

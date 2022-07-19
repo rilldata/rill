@@ -36,7 +36,7 @@ rill start
 or try our example:
 
 ```
-rill inti-example
+rill init-example
 
 ```
 

@@ -31,7 +31,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
     };
   }
 
-  // @TestBase.Test("fileImportTestData")
+  @TestBase.Test("fileImportTestData")
   public async shouldImportTableFromFile(
     inputFile: string,
     cardinality: number,

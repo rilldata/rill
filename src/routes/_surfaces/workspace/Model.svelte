@@ -138,6 +138,7 @@
           </div>
         {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
           <PreviewTable
+            tableConfig={{ enablePreview: true }}
             rows={currentDerivedModel.preview}
             columnNames={currentDerivedModel.profile}
           />

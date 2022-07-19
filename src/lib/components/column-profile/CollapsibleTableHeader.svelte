@@ -1,29 +1,31 @@
 <script lang="ts">
-  import { tick } from "svelte/internal";
-  import { tweened } from "svelte/motion";
-  import { cubicInOut as easing } from "svelte/easing";
-  import { format } from "d3-format";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import ExpanderButton from "$lib/components/column-profile/ExpanderButton.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
+  import notificationStore from "$lib/components/notifications/";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import { onClickOutside } from "$lib/util/on-click-outside";
-  import { guidGenerator } from "$lib/util/guid";
-  import notificationStore from "$lib/components/notifications/";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { createEventDispatcher } from "svelte";
   import { createCommandClickAction } from "$lib/util/command-click-action";
+  import { guidGenerator } from "$lib/util/guid";
+  import { onClickOutside } from "$lib/util/on-click-outside";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
+  import { format } from "d3-format";
+  import { createEventDispatcher } from "svelte";
+  import { cubicInOut as easing } from "svelte/easing";
+  import { tick } from "svelte/internal";
+  import { tweened } from "svelte/motion";
+  import Spacer from "../icons/Spacer.svelte";
 
   export let entityType: EntityType;
   export let name: string;
   export let cardinality: number;
+  export let showRows = true;
   export let sizeInBytes: number = undefined;
   export let active = false;
   export let menuX: number = undefined;
@@ -31,6 +33,7 @@
   export let show = false;
   export let contextMenuOpen = false;
   export let contextMenu: any;
+  export let notExpandable = false;
 
   const dispatch = createEventDispatcher();
   const { commandClickAction } = createCommandClickAction();
@@ -110,9 +113,13 @@
       : 'bg-transparent'}
     "
   >
-    <ExpanderButton rotated={show} on:click={() => dispatch("expand")}>
-      <CaretDownIcon size="14px" />
-    </ExpanderButton>
+    {#if !notExpandable}
+      <ExpanderButton rotated={show} on:click={() => dispatch("expand")}>
+        <CaretDownIcon size="14px" />
+      </ExpanderButton>
+    {:else}
+      <Spacer size="16px" />
+    {/if}
     <button
       use:commandClickAction
       on:command-click={commandClickHandler}
@@ -137,10 +144,10 @@
           class:italic={selectingColumns}
         >
           {#if name.split(".").length > 1}
-            {name.split(".").slice(0, -1).join(".")}
-            <span class="text-gray-500 italic pl-1">
-              .{name.split(".").slice(-1).join(".")}
-            </span>
+            {name.split(".").slice(0, -1).join(".")}<span
+              class="text-gray-500 italic pl-1"
+              >.{name.split(".").slice(-1).join(".")}</span
+            >
           {:else}
             {name}
           {/if}
@@ -163,14 +170,16 @@
             class="grid grid-flow-col gap-x-2 text-gray-500 text-clip overflow-hidden whitespace-nowrap "
           >
             {#if showEntityDetails}
-              <span>
+              {#if showRows}
                 <span>
-                  {cardinality !== undefined && !isNaN(cardinality)
-                    ? formatInteger(interimCardinality)
-                    : "no"}
+                  <span>
+                    {cardinality !== undefined && !isNaN(cardinality)
+                      ? formatInteger(interimCardinality)
+                      : "no"}
+                  </span>
+                  row{#if cardinality !== 1}s{/if}
                 </span>
-                row{#if cardinality !== 1}s{/if}
-              </span>
+              {/if}
               <span class="self-center">
                 <ContextButton
                   id={contextButtonId}
@@ -181,6 +190,7 @@
                   <MoreIcon />
                 </ContextButton>
               </span>
+              <slot />
             {/if}
           </span>
         {/if}
@@ -195,13 +205,13 @@
       <svelte:fragment slot="description" />
     </TooltipTitle>
     <TooltipShortcutContainer>
-      {#if entityType == EntityType.Table}
+      {#if entityType === EntityType.Table}
         <div>
           <StackingWord key="command">query</StackingWord> in workspace
         </div>
         <Shortcut>command + click</Shortcut>
       {/if}
-      {#if entityType == EntityType.Model}
+      {#if entityType === EntityType.Model}
         <div>open in workspace</div>
         <Shortcut>click</Shortcut>
       {/if}

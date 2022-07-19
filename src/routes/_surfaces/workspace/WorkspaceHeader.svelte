@@ -1,12 +1,13 @@
 <script lang="ts">
-  import ModelIcon from "$lib/components/icons/Code.svelte";
+  import EditIcon from "$lib/components/icons/EditIcon.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
   export let titleInput;
+  export let showStatus = true;
 
   let titleInputElement;
   let editingTitle = false;
@@ -36,13 +37,17 @@
         style:font-size="16px"
         class="grid grid-flow-col justify-start items-center gap-x-1"
       >
-        <ModelIcon />
+        <slot name="icon">
+          <ModelIcon />
+        </slot>
+
         <Tooltip
           distance={8}
           bind:active={tooltipActive}
           suppress={editingTitle}
         >
           <input
+            autocomplete="off"
             id="model-title-input"
             bind:this={titleInputElement}
             on:input={(evt) => {
@@ -65,5 +70,7 @@
       </h1>
     {/if}
   </div>
-  <WorkspaceHeaderStatusSpinner />
+  {#if showStatus}
+    <WorkspaceHeaderStatusSpinner />
+  {/if}
 </header>

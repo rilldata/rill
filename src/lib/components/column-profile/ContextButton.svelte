@@ -4,12 +4,15 @@
   export let rotated = false;
   export let suppressTooltip = false;
   export let tooltipText: string;
+  export let location = "right";
   // utilize the ID for easier UI testing.
   export let id: string;
+  export let width = 16;
+  export let height = 16;
 </script>
 
 <Tooltip
-  location="right"
+  {location}
   alignment="middle"
   distance={16}
   suppress={suppressTooltip || tooltipText === undefined}
@@ -17,8 +20,8 @@
   <button
     on:click
     {id}
-    style:width="16px"
-    style:height="16px"
+    style:width={`${width}px`}
+    style:height={`${height}px`}
     style:grid-column="left-control"
     class="
         hover:bg-gray-300

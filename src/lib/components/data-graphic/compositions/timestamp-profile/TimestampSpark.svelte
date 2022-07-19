@@ -13,7 +13,7 @@
   import { scaleLinear } from "d3-scale";
   import { extent } from "d3-array";
   import { writable } from "svelte/store";
-  import { createExtremumResolutionStore } from "$lib/components/data-graphic/extremum-resolution-store";
+  import { createExtremumResolutionStore } from "$lib/components/data-graphic/state/extremum-resolution-store";
   import { lineFactory, areaFactory } from "$lib/components/data-graphic/utils";
   import { tweened } from "svelte/motion";
 
@@ -62,12 +62,12 @@
   let xExtents = extent(data, (d) => d[xAccessor]);
   $: xExtents = extent(data, (d) => d[xAccessor]);
 
-  const xMin = createExtremumResolutionStore(xExtents[0], {
+  $: xMin = createExtremumResolutionStore(xExtents[0], {
     duration: 300,
     easing,
     direction: "min",
   });
-  const xMax = createExtremumResolutionStore(xExtents[1], {
+  $: xMax = createExtremumResolutionStore(xExtents[1], {
     duration: 300,
     easing,
   });
@@ -83,7 +83,7 @@
   // Generate our Y Scale.
   let yExtents = extent(data, (d) => d[yAccessor]);
   $: yExtents = extent(data, (d) => d[yAccessor]);
-  const yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
+  $: yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
 
   /** Listen ~ the world needs a little bit of joy. If the user wants to tween in the height
    * of the graph so it looks like it grows, then let them have it.

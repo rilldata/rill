@@ -18,6 +18,7 @@
     createPersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
   import { initMetrics } from "$lib/metrics/initMetrics";
+  import { syncApplicationState } from "$lib/redux-store/application/application-apis";
 
   let store;
   let queryHighlight = createQueryHighlightStore();
@@ -30,6 +31,7 @@
     setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
     setContext(`rill:app:derived-model-store`, createDerivedModelStore());
     notification.listenToSocket(store.socket);
+    syncApplicationState(store);
   }
 
   onMount(() => {

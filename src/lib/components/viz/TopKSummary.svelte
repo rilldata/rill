@@ -5,7 +5,7 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import { format } from "d3-format";
-  import BarAndLabel from "$lib/components/BarAndLabel.svelte";
+  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
   import notificationStore from "$lib/components/notifications/";
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 

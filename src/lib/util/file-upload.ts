@@ -97,7 +97,7 @@ export function handleFileUploads(filesArray: File[]) {
   if (filesArray) {
     invalidFiles = uploadTableFiles(
       filesArray,
-      `${config.server.serverUrl}/api`
+      `${config.server.serverUrl}/api/file`
     );
   }
   if (invalidFiles.length) {

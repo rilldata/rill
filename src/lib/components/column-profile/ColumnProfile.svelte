@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ColumnEntry from "./ColumnEntry.svelte";
   import { DataTypeIcon } from "$lib/components/data-types";
+  import ColumnEntry from "./ColumnEntry.svelte";
 
   import notificationStore from "$lib/components/notifications/";
   import ColumnProfileDetails from "./ColumnProfileDetails.svelte";
