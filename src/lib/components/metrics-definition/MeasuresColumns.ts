@@ -7,7 +7,10 @@ import {
 } from "$lib/components/table-editable/ColumnConfig";
 import { nicelyFormattedTypesSelectorOptions } from "$lib/util/humanize-numbers";
 
-export const initMeasuresColumns = (inputChangeHandler) =>
+export const initMeasuresColumns = (
+  inputChangeHandler,
+  expressionValidationHandler
+) =>
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
       name: "label",
@@ -19,8 +22,11 @@ export const initMeasuresColumns = (inputChangeHandler) =>
       headerTooltip: "a valid SQL aggregation expression for this measure",
       cellRenderer: new CellConfigInput(
         inputChangeHandler,
-        (row: MeasureDefinitionEntity) => row.expressionIsValid,
-        inputChangeHandler
+        (row: MeasureDefinitionEntity) => ({
+          state: row.expressionIsValid,
+          message: row.expressionValidationError,
+        }),
+        expressionValidationHandler
       ),
     },
     {

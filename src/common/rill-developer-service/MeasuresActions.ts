@@ -1,6 +1,6 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
-import { parseExpression } from "$common/utils/parseExpression";
+import { parseExpression } from "$common/expression-parser/parseExpression";
 import {
   EntityType,
   StateType,
@@ -90,14 +90,22 @@ export class MeasuresActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Derived)
       .getById(rillRequestContext.record.sourceModelId);
+    const missingColumns = parsedExpression.columns.filter(
+      (columnName) =>
+        columnName !== "*" &&
+        model.profile.findIndex((column) => column.name === columnName) === -1
+    );
 
     const expressionIsValid =
-      parsedExpression.isValid &&
-      parsedExpression.columns.every(
-        (columnName) =>
-          columnName === "*" ||
-          model.profile.findIndex((column) => column.name === columnName) >= 0
-      );
+      parsedExpression.isValid && missingColumns.length === 0;
+
+    if (missingColumns.length > 0) {
+      parsedExpression.error ??= {};
+      parsedExpression.error.missingColumns = missingColumns;
+      parsedExpression.error.missingFrom = this.dataModelerStateService
+        .getEntityStateService(EntityType.Model, StateType.Persistent)
+        .getById(rillRequestContext.record.sourceModelId).tableName;
+    }
 
     return ActionResponseFactory.getSuccessResponse("", {
       expressionIsValid: expressionIsValid

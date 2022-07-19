@@ -1,11 +1,15 @@
 import { Expr, ExprBinary, ExprCall, parse } from "pgsql-ast-parser";
 
 export interface ParseExpressionError {
-  message: string;
-  location: { start: number; end: number };
+  message?: string;
+  location?: { start: number; end: number };
+  unexpectedToken?: string;
   disallowedSyntax?: string;
+  missingColumns?: Array<string>;
+  missingFrom?: string;
 }
 export interface ParsedExpression {
+  expression: string;
   isValid: boolean;
   columns: Array<string>;
   error?: ParseExpressionError;
@@ -18,6 +22,7 @@ export function parseExpression(expression: string): ParsedExpression {
       locationTracking: true,
     }) as unknown as Expr;
     const parsedExpression: ParsedExpression = {
+      expression,
       isValid: true,
       columns: [],
     };
@@ -25,6 +30,7 @@ export function parseExpression(expression: string): ParsedExpression {
     return parsedExpression;
   } catch (err) {
     return {
+      expression,
       isValid: false,
       columns: [],
       error: {
@@ -33,6 +39,7 @@ export function parseExpression(expression: string): ParsedExpression {
           start: expression.length - 1,
           end: expression.length - 1,
         },
+        unexpectedToken: err.token?.text,
       },
     };
   }
