@@ -111,11 +111,11 @@ export abstract class DataModelerCliCommand {
       command
         .description(description)
         // override default help text to add capital D for display
-        .helpOption("-h, --help", "Display help for command.")
+        .helpOption("-h, --help", "Displays help for each command.")
         // common across all commands
         .option(
           "--project <projectPath>",
-          "Optional path of project. Defaults to current directory."
+          "Optionally indicate the path to your project. This path defaults to the current directory."
         )
     );
   }

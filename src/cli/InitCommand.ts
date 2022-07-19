@@ -9,15 +9,12 @@ export class InitCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
       new Command("init"),
-      "Initialize a new project either in the current folder or supplied folder."
+      "Initialize a new project. The project location defaults to the current folder or you can use the --project option to specify a path. "
     )
-      .option(
-        "--db <duckDbPath>",
-        "Optional path to connect to an existing duckdb database."
-      )
+      .option("--db <duckDbPath>", "Connect to an existing duckDB database. ")
       .option(
         "--copy",
-        "Optionally copy the duckdb database instead of directly modifying it."
+        "Used with --db. Copy the duckDB database instead of directly modifying it. "
       )
       .action((opts, command) => {
         const { project } = command.optsWithGlobals();
@@ -36,7 +33,7 @@ export class InitCommand extends DataModelerCliCommand {
       !this.alreadyInitialised &&
       !InitCommand.verifyDuckDbPath(opts.db, opts.copy, projectPath)
     ) {
-      console.log(`Failed to initialize project under ${projectPath}`);
+      console.log(`Failed to initialize a project under ${projectPath} `);
       return;
     }
 
@@ -56,16 +53,16 @@ export class InitCommand extends DataModelerCliCommand {
         undefined,
       ]);
       console.log(
-        "\nYou have successfully initialized a new project with Rill Developer."
+        "\nYou have successfully initialized a new project with Rill Developer. "
       );
     } else {
       console.log(
-        "\nA project in this directory has already been initialized."
+        "\nA project has already been initialized in this directory. "
       );
     }
     console.log(
       "\nThis application is extremely alpha and we want to hear from you if you have any questions or ideas to share! " +
-        "You can reach us in our Rill Discord Channel at https://bit.ly/3NSMKdT."
+        "You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT. "
     );
   }
 
@@ -77,7 +74,7 @@ export class InitCommand extends DataModelerCliCommand {
       mkdirSync(path, { recursive: true });
     } else if (path !== process.cwd()) {
       console.log(
-        `Directory ${path} already exist. Attempting to init the project.`
+        `Directory ${path} already exist. Attempting to initialize the project. `
       );
     }
   }
@@ -90,23 +87,25 @@ export class InitCommand extends DataModelerCliCommand {
     if (!duckDbPath) return true;
 
     if (!existsSync(duckDbPath)) {
-      console.log(`Duckdb database path provided ${duckDbPath} doesnt exist.`);
+      console.log(
+        `The duckDB database path provided ${duckDbPath} doesnt exist. `
+      );
       return false;
     }
 
     console.log(
       `Importing tables from Duckdb database : ${duckDbPath} .\n` +
-        `Make sure to close any write connections to this database before running this.`
+        `Please close any write connections to this database before connecting. `
     );
 
     if (copy) {
       copyFileSync(duckDbPath, `${projectPath}/stage.db`);
       console.log(
-        "Copied over the database file. Any changes in one wont be reflected in the other database."
+        "Copied over the database files. Any changes in Rill Developer won't be reflected in the other database file."
       );
     } else {
       console.log(
-        `Note: Any source imports and drops will directly import/drop from this connected database.`
+        `Note: Any source imports and drops will directly affect this connected database.`
       );
     }
 

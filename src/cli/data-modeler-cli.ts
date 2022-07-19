@@ -14,12 +14,12 @@ program
   .name("rill-developer")
   .description("Rill Developer CLI.")
   // Override help to add a capital D for display.
-  .helpOption("-h, --help", "Display help for command.")
-  .addHelpCommand("help [command]", "Display help for command.")
+  .helpOption("-h, --help", "Displays help for all commands. ")
+  .addHelpCommand("help [command]", "Displays help for a specific command. ")
   // common across all commands
   .option(
-    "--project <projectPath>",
-    "Optional path of project. Defaults to current directory."
+    "--project <projectPath> ",
+    "Optionally indicate the path to your project. This path defaults to the current directory. "
   );
 
 [
