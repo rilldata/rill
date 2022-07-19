@@ -1,4 +1,7 @@
 import { Expr, ExprBinary, ExprCall, parse } from "pgsql-ast-parser";
+import type { InvalidAggregate } from "$common/expression-parser/validateAggregate";
+import { validateAggregate } from "$common/expression-parser/validateAggregate";
+import type { ProfileColumn } from "$lib/types";
 
 export interface ParseExpressionError {
   message?: string;
@@ -7,6 +10,7 @@ export interface ParseExpressionError {
   disallowedSyntax?: string;
   missingColumns?: Array<string>;
   missingFrom?: string;
+  invalidAggregates?: Array<InvalidAggregate>;
 }
 export interface ParsedExpression {
   expression: string;
@@ -15,7 +19,10 @@ export interface ParsedExpression {
   error?: ParseExpressionError;
 }
 
-export function parseExpression(expression: string): ParsedExpression {
+export function parseExpression(
+  expression: string,
+  profileColumns: Array<ProfileColumn>
+): ParsedExpression {
   try {
     const expr = parse(expression, {
       entry: "expr",
@@ -26,7 +33,7 @@ export function parseExpression(expression: string): ParsedExpression {
       isValid: true,
       columns: [],
     };
-    buildParsedExpression(expr, parsedExpression);
+    buildParsedExpression(expr, parsedExpression, profileColumns);
     return parsedExpression;
   } catch (err) {
     return {
@@ -45,22 +52,32 @@ export function parseExpression(expression: string): ParsedExpression {
   }
 }
 
-function buildParsedExpression(expr: Expr, parsedExpression: ParsedExpression) {
+function buildParsedExpression(
+  expr: Expr,
+  parsedExpression: ParsedExpression,
+  profileColumns: Array<ProfileColumn>
+) {
   switch (expr.type) {
     case "call":
-      buildParsedExpressionFromCall(expr, parsedExpression);
+      buildParsedExpressionFromCall(expr, parsedExpression, profileColumns);
       break;
 
     case "binary":
-      buildParsedExpressionFromBinary(expr, parsedExpression);
+      buildParsedExpressionFromBinary(expr, parsedExpression, profileColumns);
       break;
 
     case "cast":
-      buildParsedExpressionInner(expr.operand, parsedExpression);
+      buildParsedExpressionInner(
+        expr.operand,
+        parsedExpression,
+        profileColumns
+      );
       break;
 
     case "integer":
     case "numeric":
+    case "boolean":
+    case "string":
       break;
 
     default:
@@ -75,29 +92,45 @@ function buildParsedExpression(expr: Expr, parsedExpression: ParsedExpression) {
 
 function buildParsedExpressionInner(
   expr: Expr,
-  parsedExpression: ParsedExpression
+  parsedExpression: ParsedExpression,
+  profileColumns: Array<ProfileColumn>
 ) {
   if (expr.type === "ref") {
     parsedExpression.columns.push(expr.name);
+    return expr.name;
     // TODO: arg.table
   } else {
-    buildParsedExpression(expr, parsedExpression);
+    buildParsedExpression(expr, parsedExpression, profileColumns);
+    return "";
   }
 }
 
 function buildParsedExpressionFromCall(
   expr: ExprCall,
-  parsedExpression: ParsedExpression
+  parsedExpression: ParsedExpression,
+  profileColumns: Array<ProfileColumn>
 ) {
+  const args = new Array<string>();
   for (const arg of expr.args) {
-    buildParsedExpressionInner(arg, parsedExpression);
+    args.push(
+      buildParsedExpressionInner(arg, parsedExpression, profileColumns)
+    );
+  }
+
+  const aggregateError = validateAggregate(expr, args, profileColumns);
+  if (aggregateError) {
+    parsedExpression.isValid = false;
+    parsedExpression.error ??= {};
+    parsedExpression.error.invalidAggregates ??= [];
+    parsedExpression.error.invalidAggregates.push(aggregateError);
   }
 }
 
 function buildParsedExpressionFromBinary(
   expr: ExprBinary,
-  parsedExpression: ParsedExpression
+  parsedExpression: ParsedExpression,
+  profileColumns: Array<ProfileColumn>
 ) {
-  buildParsedExpression(expr.left, parsedExpression);
-  buildParsedExpression(expr.right, parsedExpression);
+  buildParsedExpression(expr.left, parsedExpression, profileColumns);
+  buildParsedExpression(expr.right, parsedExpression, profileColumns);
 }

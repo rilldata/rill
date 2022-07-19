@@ -17,6 +17,7 @@
     deleteMeasuresApi,
     fetchManyMeasuresApi,
     updateMeasuresApi,
+    validateMeasureExpression,
     validateMeasureExpressionApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
@@ -59,12 +60,11 @@
     store.dispatch(deleteMeasuresApi(evt.detail));
   }
   function handleMeasureExpressionValidation(index, name, value) {
-    store.dispatch(
-      validateMeasureExpressionApi({
-        metricsDefId,
-        measureId: $measures[index].id,
-        expression: value,
-      })
+    validateMeasureExpression(
+      store.dispatch,
+      metricsDefId,
+      $measures[index].id,
+      value
     );
   }
 
