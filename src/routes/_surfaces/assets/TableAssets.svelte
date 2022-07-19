@@ -3,7 +3,7 @@
   import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
 
-  import ParquetIcon from "$lib/components/icons/Parquet.svelte";
+  import Source from "$lib/components/icons/Source.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
@@ -19,6 +19,7 @@
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -33,6 +34,7 @@
   ) as PersistentModelStore;
 
   let showTables = true;
+
   let showRenameTableModal = false;
   let renameTableID = null;
   let renameTableName = null;
@@ -79,7 +81,7 @@
 >
   <CollapsibleSectionTitle tooltipText={"sources"} bind:active={showTables}>
     <h4 class="flex flex-row items-center gap-x-2">
-      <ParquetIcon size="16px" /> Sources
+      <Source size="16px" /> Sources
     </h4>
   </CollapsibleSectionTitle>
 
@@ -102,17 +104,24 @@
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             entityType={EntityType.Table}
-            indentLevel={1}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
-            profile={derivedTable?.profile ?? []}
-            head={derivedTable?.preview ?? []}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             on:rename={() => openRenameTableModal(id, tableName)}
             on:query={() => queryHandler(tableName)}
             on:delete={() =>
               dataModelerService.dispatch("dropTable", [tableName])}
-          />
+          >
+            <svelte:fragment slot="summary" let:containerWidth>
+              <ColumnProfileNavEntry
+                indentLevel={1}
+                {containerWidth}
+                cardinality={derivedTable?.cardinality ?? 0}
+                profile={derivedTable?.profile ?? []}
+                head={derivedTable?.preview ?? []}
+              />
+            </svelte:fragment>
+          </CollapsibleTableSummary>
         </div>
       {/each}
     {/if}

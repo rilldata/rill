@@ -4,7 +4,7 @@
 
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
-  import ModelIcon from "$lib/components/icons/Code.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
@@ -17,6 +17,7 @@
   } from "$lib/application-state-stores/model-stores";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -101,9 +102,21 @@
         on:delete={() => {
           dataModelerService.dispatch("deleteModel", [id]);
         }}
-        indentLevel={1}
-        {...tableSummaryProps}
-      />
+        cardinality={tableSummaryProps.cardinality}
+        name={tableSummaryProps.name}
+        sizeInBytes={tableSummaryProps.sizeInBytes}
+        active={tableSummaryProps.active}
+      >
+        <svelte:fragment slot="summary" let:containerWidth>
+          <ColumnProfileNavEntry
+            indentLevel={1}
+            {containerWidth}
+            cardinality={tableSummaryProps.cardinality}
+            profile={tableSummaryProps.profile}
+            head={tableSummaryProps.head}
+          />
+        </svelte:fragment>
+      </CollapsibleTableSummary>
     {/each}
   </div>
 {/if}

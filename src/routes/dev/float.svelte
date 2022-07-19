@@ -3,7 +3,7 @@
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import Divider from "$lib/components/menu/Divider.svelte";
 
-  import CircleEmpty from "$lib/components/icons/CircleEmpty.svelte";
+  import CircleEmpty from "$lib/components/icons/EmptyCircle.svelte";
   import CheckCircle from "$lib/components/icons/CheckCircle.svelte";
 
   let commands = [];

@@ -10,6 +10,7 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import type { PersistentModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 
 export class ApplicationActions extends DataModelerActions {
   @DataModelerActions.ApplicationAction()
@@ -34,6 +35,16 @@ export class ApplicationActions extends DataModelerActions {
     this.dataModelerStateService.dispatch("setActiveAsset", [
       entityType,
       entityId,
+    ]);
+  }
+
+  @DataModelerActions.PersistentModelAction()
+  public async setModelAsActiveAsset({
+    stateService,
+  }: PersistentModelStateActionArg) {
+    this.dataModelerStateService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      stateService.getCurrentState().entities[0]?.id,
     ]);
   }
 

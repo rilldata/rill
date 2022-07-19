@@ -1,55 +1,73 @@
-import type {TestDataColumns} from "./DataLoader.data";
-import type {DataProviderData} from "@adityahegde/typescript-test-utils";
+import type { TestDataColumns } from "./DataLoader.data";
+import type { DataProviderData } from "@adityahegde/typescript-test-utils";
 
 type Args = [string, TestDataColumns];
 
-export const SingleTableQueryColumnsTestData: TestDataColumns = [{
+export const SingleTableQueryColumnsTestData: TestDataColumns = [
+  {
     name: "impressions",
     type: "BIGINT",
     isNull: false,
-}, {
+  },
+  {
     name: "publisher",
     type: "VARCHAR",
     isNull: true,
-}, {
+  },
+  {
     name: "domain",
     type: "VARCHAR",
     isNull: false,
-}];
-export const SingleTableQuery = "select count(*) as impressions, publisher, domain from AdBids group by publisher, domain";
-const SingleTableQueryTestData: Args = [SingleTableQuery, SingleTableQueryColumnsTestData];
+  },
+];
+export const SingleTableQuery =
+  "select count(*) as impressions, publisher, domain from AdBids group by publisher, domain";
+const SingleTableQueryTestData: Args = [
+  SingleTableQuery,
+  SingleTableQueryColumnsTestData,
+];
 
-export const TwoTableJoinQueryColumnsTestData: TestDataColumns = [{
+export const TwoTableJoinQueryColumnsTestData: TestDataColumns = [
+  {
     name: "impressions",
     type: "BIGINT",
     isNull: false,
-}, {
+  },
+  {
     name: "bid_price",
     type: "DOUBLE",
     isNull: false,
-}, {
+  },
+  {
     name: "publisher",
     type: "VARCHAR",
     isNull: true,
-}, {
+  },
+  {
     name: "domain",
     type: "VARCHAR",
     isNull: false,
-}, {
+  },
+  {
     name: "city",
     type: "VARCHAR",
     isNull: true,
-}, {
+  },
+  {
     name: "country",
     type: "VARCHAR",
     isNull: false,
-}];
+  },
+];
 export const TwoTableJoinQuery = `
 select count(*) as impressions, avg(bid.bid_price) as bid_price, bid.publisher, bid.domain, imp.city, imp.country
 from AdBids bid join AdImpressions imp on bid.id = imp.id
 group by bid.publisher, bid.domain, imp.city, imp.country
 `;
-const TwoTableJoinQueryTestData: Args = [TwoTableJoinQuery, TwoTableJoinQueryColumnsTestData];
+const TwoTableJoinQueryTestData: Args = [
+  TwoTableJoinQuery,
+  TwoTableJoinQueryColumnsTestData,
+];
 
 export const NestedQuery = `
 select
@@ -62,35 +80,43 @@ from
     on bid.id = imp.id
 group by bid.publisher, bid.domain, imp.city, imp.country
 `;
-export const NestedQueryColumnsTestData: TestDataColumns = [{
+export const NestedQueryColumnsTestData: TestDataColumns = [
+  {
     name: "count_star()",
     type: "BIGINT",
     isNull: false,
-}, {
+  },
+  {
     name: "bid_price",
     type: "DOUBLE",
     isNull: false,
-}, {
+  },
+  {
     name: "publisher",
     type: "VARCHAR",
     isNull: true,
-}, {
+  },
+  {
     name: "domain",
     type: "VARCHAR",
     isNull: false,
-}, {
+  },
+  {
     name: "city",
     type: "VARCHAR",
     isNull: true,
-}, {
+  },
+  {
     name: "country",
     type: "VARCHAR",
     isNull: false,
-}, {
+  },
+  {
     name: "indian",
     type: "VARCHAR",
     isNull: false,
-}];
+  },
+];
 const NestedQueryTestData: Args = [NestedQuery, NestedQueryColumnsTestData];
 
 export const CTE = `
@@ -111,14 +137,18 @@ with
 
 export type ModelQueryTestDataProvider = DataProviderData<Args>;
 export const ModelQueryTestData: ModelQueryTestDataProvider = {
-    subData: [{
-        title: "Single table group",
-        args: SingleTableQueryTestData,
-    }, {
-        title: "Two table join",
-        args: TwoTableJoinQueryTestData,
-    }, {
-        title: "Nested queries",
-        args: NestedQueryTestData
-    }],
+  subData: [
+    {
+      title: "Single table group",
+      args: SingleTableQueryTestData,
+    },
+    {
+      title: "Two table join",
+      args: TwoTableJoinQueryTestData,
+    },
+    {
+      title: "Nested queries",
+      args: NestedQueryTestData,
+    },
+  ],
 };

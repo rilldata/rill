@@ -7,7 +7,10 @@ import { EntityError } from "$common/errors/EntityError";
 import { ExistingEntityError } from "$common/errors/ExistingEntityError";
 
 export class ActionResponseFactory {
-  public static getSuccessResponse(message?: string): ActionResponse {
+  public static getSuccessResponse(
+    message?: string,
+    data?: unknown
+  ): ActionResponse {
     return {
       messages: message
         ? [
@@ -18,6 +21,7 @@ export class ActionResponseFactory {
           ]
         : [],
       status: ActionStatus.Success,
+      ...(data !== undefined ? { data } : {}),
     };
   }
 

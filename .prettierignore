@@ -10,7 +10,6 @@ scripts/
 state/
 static/
 temp/
-test/data/
 
 *.sql
 *.csv
@@ -29,3 +28,6 @@ Dockerfile
 Duckdb-Dockerfile
 README.md
 docs
+
+# FIXME: temporary
+test/data/HistogramSummary.data.ts

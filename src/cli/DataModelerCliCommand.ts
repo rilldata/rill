@@ -43,7 +43,10 @@ export abstract class DataModelerCliCommand {
         databaseName: DATABASE_NAME,
         skipDatabase: cliRunArgs.shouldSkipDatabase,
       }),
-      server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
+      server: new ServerConfig({
+        serverPort: Number(process.env.RILL_SERVER_PORT ?? 8080),
+        serveStaticFile: true,
+      }),
       project: new ProjectConfig({ duckDbPath: cliRunArgs.duckDbPath }),
       projectFolder: this.projectPath,
       profileWithUpdate: cliRunArgs.profileWithUpdate,
