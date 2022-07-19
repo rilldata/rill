@@ -70,18 +70,16 @@
       <MetricsDefinitionAssets />
     </div>
     <!-- assets pane footer. -->
-    <div
-      class="p-3 italic text-gray-800 bg-gray-50 flex items-center text-center justify-center"
+    <a
+      href="http://bit.ly/3jg4IsF"
+      target="_blank"
+      class="p-3 italic bg-gray-50 flex items-center text-center justify-center"
       style:height="var(--header-height)"
     >
-      <!-- <div class="text-left">Bugs, complaints, feedback? &nbsp;</div> -->
-      <a
-        target="_blank"
-        class="inline not-italic  text-right"
-        href="http://bit.ly/3jg4IsF"
-      >
-        Give Feedback on Discord 💬
-      </a>
-    </div>
+      <div class="text-left">Bugs, complaints, feedback? &nbsp;</div>
+      <div class="inline not-italic text-right text-blue-500 font-bold">
+        Ask us on Discord 💬
+      </div>
+    </a>
   </div>
 </div>
