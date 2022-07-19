@@ -41,7 +41,6 @@
   import { store } from "$lib/redux-store/store-root";
 
   let showDropOverlay = false;
-  let assetsHovered = false;
 
   const app = getContext("rill:app:store") as ApplicationStore;
 
@@ -153,18 +152,6 @@
   <div
     class="box-border	 assets fixed"
     aria-hidden={!$assetsVisible}
-    on:mouseover={() => {
-      assetsHovered = true;
-    }}
-    on:mouseleave={() => {
-      assetsHovered = false;
-    }}
-    on:focus={() => {
-      assetsHovered = true;
-    }}
-    on:blur={() => {
-      assetsHovered = false;
-    }}
     style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
   >
     <AssetsSidebar />
