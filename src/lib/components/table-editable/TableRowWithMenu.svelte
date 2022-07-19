@@ -3,27 +3,25 @@
   import { tick } from "svelte/internal";
 
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import Portal from "$lib/components/Portal.svelte";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import TableHeader from "./TableHeader.svelte";
 
   import { guidGenerator } from "$lib/util/guid";
   import { onClickOutside } from "$lib/util/on-click-outside";
 
+  export let index: number;
   const dispatch = createEventDispatcher();
 
   let rowHovered = false;
-
-  let rowRect: DOMRect | undefined;
 
   let menuX: number;
   let menuY: number;
 
   const rowMouseEnter = (e) => {
-    rowRect = (<HTMLTableRowElement>e.target).getBoundingClientRect();
     rowHovered = true;
   };
   const rowMouseLeave = async () => {
@@ -31,22 +29,6 @@
       rowHovered = false;
     }, 5);
   };
-
-  const MENU_CONTAINER_WIDTH = 18;
-  $: menuContainerStyle =
-    rowRect === undefined
-      ? ""
-      : `z-index:50;
-position: fixed;
-top: ${rowRect.top}px;
-left: ${rowRect.left - MENU_CONTAINER_WIDTH - 1}px;
-width: ${MENU_CONTAINER_WIDTH}px;
-height: ${rowRect.height}px;
-display: flex;
-justify-content: center;
-align-items: center;
-`;
-
   let menuContainerHovered = false;
   const menuContainerEnter = () => {
     menuContainerHovered = true;
@@ -82,41 +64,40 @@ align-items: center;
   on:mouseenter={rowMouseEnter}
   on:mouseleave={rowMouseLeave}
 >
+  <TableHeader position="left">
+    <span style={rowActive ? "visibility:hidden" : ""}>{index + 1}</span>
+    {#if rowActive}
+      <div
+        style="position:absolute; top:50%; left:50%; width: 0px; height: 0px;"
+        on:mouseenter={menuContainerEnter}
+        on:mouseleave={menuContainerLeave}
+        class="bg-gray-200"
+      >
+        <div style="position:absolute; top:-8px; left:-8px">
+          <ContextButton
+            id={contextButtonId}
+            tooltipText=""
+            suppressTooltip={true}
+            on:click={async (event) => {
+              contextMenuOpen = !contextMenuOpen;
+              menuX = event.clientX;
+              menuY = event.clientY;
+              if (!clickOutsideListener) {
+                await tick();
+                clickOutsideListener = onClickOutside(() => {
+                  contextMenuOpen = false;
+                }, contextMenu);
+              }
+            }}
+          >
+            <MoreIcon />
+          </ContextButton>
+        </div>
+      </div>
+    {/if}
+  </TableHeader>
   <slot />
 </tr>
-
-{#if rowActive}
-  <Portal>
-    <div
-      style={menuContainerStyle}
-      on:mouseenter={menuContainerEnter}
-      on:mouseleave={menuContainerLeave}
-      class="self-center bg-gray-200"
-    >
-      <ContextButton
-        id={contextButtonId}
-        tooltipText=""
-        suppressTooltip={true}
-        height={rowRect.height}
-        width={MENU_CONTAINER_WIDTH}
-        on:click={async (event) => {
-          contextMenuOpen = !contextMenuOpen;
-          menuX = event.clientX;
-          menuY = event.clientY;
-
-          if (!clickOutsideListener) {
-            await tick();
-            clickOutsideListener = onClickOutside(() => {
-              contextMenuOpen = false;
-            }, contextMenu);
-          }
-        }}
-      >
-        <MoreIcon />
-      </ContextButton>
-    </div>
-  </Portal>
-{/if}
 
 {#if contextMenuOpen}
   <div bind:this={contextMenu}>
