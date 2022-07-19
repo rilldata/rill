@@ -21,21 +21,19 @@
   export let metricsDefId: string;
   export let whichReferenceValue: string;
 
-  let metricsLeaderboard: Readable<MetricsExploreEntity>;
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  let metricsExplore: Readable<MetricsExploreEntity>;
+  $: metricsExplore = getMetricsExploreById(metricsDefId);
 
   let measureField: Readable<string>;
-  $: if ($metricsLeaderboard?.leaderboardMeasureId)
+  $: if ($metricsExplore?.leaderboardMeasureId)
     measureField = getMeasureFieldNameByIdAndIndex(
-      $metricsLeaderboard.leaderboardMeasureId,
-      $metricsLeaderboard.measureIds.indexOf(
-        $metricsLeaderboard?.leaderboardMeasureId
-      )
+      $metricsExplore.leaderboardMeasureId,
+      $metricsExplore.measureIds.indexOf($metricsExplore?.leaderboardMeasureId)
     );
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: leaderboardMeasureDefinition = $measures.find(
-    (measure) => measure.id === $metricsLeaderboard?.leaderboardMeasureId
+    (measure) => measure.id === $metricsExplore?.leaderboardMeasureId
   );
   // get the expression so we can determine if the measure is summable
   $: expression = leaderboardMeasureDefinition?.expression;
@@ -98,11 +96,11 @@
   <div class="grid grid-auto-cols justify-end grid-flow-col items-end p-1 pb-3">
     <LeaderboardMeasureSelector {metricsDefId} />
   </div>
-  {#if $metricsLeaderboard}
+  {#if $metricsExplore}
     <VirtualizedGrid
       {columns}
       height="100%"
-      items={$metricsLeaderboard.leaderboards ?? []}
+      items={$metricsExplore.leaderboards ?? []}
       let:item
     >
       <!-- the single virtual element -->
@@ -120,7 +118,7 @@
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        activeValues={$metricsLeaderboard.activeValues[item.dimensionId] ?? []}
+        activeValues={$metricsExplore.activeValues[item.dimensionId] ?? []}
         values={item.values}
         referenceValue={referenceValue || 0}
       />

@@ -19,17 +19,15 @@
 
   export let metricsDefId: string;
 
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  $: metricsExplore = getMetricsExploreById(metricsDefId);
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-  $: if ($metricsLeaderboard?.timeRange) {
-    selectableTimeRanges = makeSelectableTimeRanges(
-      $metricsLeaderboard.timeRange
-    );
+  $: if ($metricsExplore?.timeRange) {
+    selectableTimeRanges = makeSelectableTimeRanges($metricsExplore.timeRange);
   }
   let selectedTimeRange: TimeSeriesTimeRange;
-  $: if ($metricsLeaderboard?.selectedTimeRange) {
-    selectedTimeRange = $metricsLeaderboard?.selectedTimeRange;
+  $: if ($metricsExplore?.selectedTimeRange) {
+    selectedTimeRange = $metricsExplore?.selectedTimeRange;
   } else if (selectableTimeRanges) {
     selectedTimeRange = getDefaultSelectedTimeRange(selectableTimeRanges);
     setExploreSelectedTimeRangeAndUpdate(store.dispatch, metricsDefId, {

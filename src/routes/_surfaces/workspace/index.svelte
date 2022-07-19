@@ -1,16 +1,15 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import ModelView from "./Model.svelte";
-  import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
-
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import MetricsDefWorkspaceHeader from "./metrics-def/MetricsDefWorkspaceHeader.svelte";
-  import MetricsDefWorkspace from "./metrics-def/MetricsDefWorkspace.svelte";
+  import { getContext } from "svelte";
   import Explore from "./explore/Explore.svelte";
+  import MetricsDefWorkspace from "./metrics-def/MetricsDefWorkspace.svelte";
+  import MetricsDefWorkspaceHeader from "./metrics-def/MetricsDefWorkspaceHeader.svelte";
+  import ModelView from "./Model.svelte";
+  import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
   import Onboarding from "./Onboarding.svelte";
+
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -20,7 +19,7 @@
   $: useMetricsDefWorkspace =
     $rillAppStore?.activeEntity?.type === EntityType.MetricsDefinition;
   $: useExplore =
-    $rillAppStore?.activeEntity?.type === EntityType.MetricsLeaderboard;
+    $rillAppStore?.activeEntity?.type === EntityType.MetricsExplore;
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
 
   $: isModelActive =

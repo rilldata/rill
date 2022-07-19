@@ -1,24 +1,24 @@
-import { configureStore } from "$lib/redux-store/redux-toolkit-wrapper";
-import { metricsDefinitionReducer } from "./metrics-definition/metrics-definition-slice";
-import {
-  MetricsExploreEntity,
-  metricsLeaderboardReducer,
-} from "./explore/explore-slice";
-import { readable } from "svelte/store";
-import { measureDefSliceReducer } from "$lib/redux-store/measure-definition/measure-definition-slice";
-import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
-import {
-  TimeSeriesEntity,
-  timeSeriesReducer,
-} from "$lib/redux-store/timeseries/timeseries-slice";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { applicationReducer } from "$lib/redux-store/application/application-slice";
 import {
   BigNumberEntity,
   bigNumberReducer,
 } from "$lib/redux-store/big-number/big-number-slice";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { applicationReducer } from "$lib/redux-store/application/application-slice";
+import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
+import { measureDefSliceReducer } from "$lib/redux-store/measure-definition/measure-definition-slice";
+import { configureStore } from "$lib/redux-store/redux-toolkit-wrapper";
+import {
+  TimeSeriesEntity,
+  timeSeriesReducer,
+} from "$lib/redux-store/timeseries/timeseries-slice";
+import { readable } from "svelte/store";
+import {
+  MetricsExploreEntity,
+  metricsExploreReducer,
+} from "./explore/explore-slice";
+import { metricsDefinitionReducer } from "./metrics-definition/metrics-definition-slice";
 
 export const store = configureStore({
   reducer: {
@@ -26,7 +26,7 @@ export const store = configureStore({
     metricsDefinition: metricsDefinitionReducer,
     measureDefinition: measureDefSliceReducer,
     dimensionDefinition: dimensionDefSliceReducer,
-    metricsLeaderboard: metricsLeaderboardReducer,
+    metricsExplore: metricsExploreReducer,
     timeSeries: timeSeriesReducer,
     bigNumber: bigNumberReducer,
   },
@@ -46,7 +46,7 @@ export type RillReduxEntityKeys =
   | "metricsDefinition"
   | "measureDefinition"
   | "dimensionDefinition"
-  | "metricsLeaderboard"
+  | "metricsExplore"
   | "timeSeries"
   | "bigNumber";
 

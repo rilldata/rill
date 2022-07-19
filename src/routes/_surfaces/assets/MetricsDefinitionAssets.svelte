@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
-  import MetricsIcon from "$lib/components/icons/Metrics.svelte";
-  import AddIcon from "$lib/components/icons/Add.svelte";
-  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-  import { store } from "$lib/redux-store/store-root";
-  import { getContext, onMount } from "svelte";
+  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
+  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
+  import ExploreIcon from "$lib/components/icons/Explore.svelte";
+  import MetricsIcon from "$lib/components/icons/Metrics.svelte";
+  import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
     createMetricsDefsApi,
     deleteMetricsDefsApi,
     fetchManyMetricsDefsApi,
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "$lib/application-state-stores/application-store";
-  import ExploreIcon from "$lib/components/icons/Explore.svelte";
+  import { store } from "$lib/redux-store/store-root";
+  import { getContext, onMount } from "svelte";
+  import { slide } from "svelte/transition";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -95,7 +95,7 @@
             location="left"
             on:click={() => {
               dataModelerService.dispatch("setActiveAsset", [
-                EntityType.MetricsLeaderboard,
+                EntityType.MetricsExplore,
                 id,
               ]);
             }}><ExploreIcon /></ContextButton

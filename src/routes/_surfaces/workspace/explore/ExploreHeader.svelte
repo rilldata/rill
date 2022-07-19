@@ -19,10 +19,10 @@
 
   export let metricsDefId: string;
 
-  let metricsLeaderboard: Readable<MetricsExploreEntity>;
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  let metricsExplore: Readable<MetricsExploreEntity>;
+  $: metricsExplore = getMetricsExploreById(metricsDefId);
 
-  $: anythingSelected = isAnythingSelected($metricsLeaderboard?.activeValues);
+  $: anythingSelected = isAnythingSelected($metricsExplore?.activeValues);
   function clearAllFilters() {
     clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
   }

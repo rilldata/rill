@@ -9,8 +9,8 @@
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
-  import type { Readable } from "svelte/store";
   import { onMount } from "svelte";
+  import type { Readable } from "svelte/store";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
@@ -18,8 +18,8 @@
 
   export let metricsDefId: string;
 
-  let metricsLeaderboard: Readable<MetricsExploreEntity>;
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  let metricsExplore: Readable<MetricsExploreEntity>;
+  $: metricsExplore = getMetricsExploreById(metricsDefId);
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
     store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
@@ -34,7 +34,7 @@
   $: syncExplore(
     store.dispatch,
     metricsDefId,
-    $metricsLeaderboard,
+    $metricsExplore,
     $dimensions,
     $measures
   );
@@ -44,7 +44,7 @@
     syncExplore(
       store.dispatch,
       metricsDefId,
-      $metricsLeaderboard,
+      $metricsExplore,
       $dimensions,
       $measures,
       true
@@ -60,14 +60,14 @@
   </svelte:fragment>
   <svelte:fragment slot="metrics">
     <MetricsTimeSeriesCharts
-      start={$metricsLeaderboard?.selectedTimeRange?.start ||
-        $metricsLeaderboard?.timeRange?.start}
-      end={$metricsLeaderboard?.selectedTimeRange?.end ||
-        $metricsLeaderboard?.timeRange?.end}
+      start={$metricsExplore?.selectedTimeRange?.start ||
+        $metricsExplore?.timeRange?.start}
+      end={$metricsExplore?.selectedTimeRange?.end ||
+        $metricsExplore?.timeRange?.end}
       activeMeasureIds={$measures?.map((measure) => measure.id) || []}
       {metricsDefId}
-      interval={$metricsLeaderboard?.selectedTimeRange?.interval ||
-        $metricsLeaderboard?.timeRange?.interval}
+      interval={$metricsExplore?.selectedTimeRange?.interval ||
+        $metricsExplore?.timeRange?.interval}
     />
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">

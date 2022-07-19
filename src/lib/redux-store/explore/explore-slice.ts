@@ -1,13 +1,13 @@
-import {
-  createSlice,
-  createEntityAdapter,
-} from "$lib/redux-store/redux-toolkit-wrapper";
-import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  createEntityAdapter,
+  createSlice,
+} from "$lib/redux-store/redux-toolkit-wrapper";
 import { setStatusPrepare } from "$lib/redux-store/utils/loading-utils";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 export interface LeaderboardValue {
   value: number;
@@ -42,7 +42,7 @@ export interface MetricsExploreEntity {
 const metricsExploreAdapter = createEntityAdapter<MetricsExploreEntity>();
 
 export const exploreSlice = createSlice({
-  name: "metricsLeaderboard",
+  name: "metricsExplore",
   initialState: metricsExploreAdapter.getInitialState(),
   reducers: {
     initMetricsExplore: {
@@ -439,8 +439,7 @@ export const {
   setExploreTimeRange,
   setExploreSelectedTimeRange,
 } = exploreSlice.actions;
-export const MetricsLeaderboardSliceActions = exploreSlice.actions;
-export type MetricsLeaderboardSliceTypes =
-  typeof MetricsLeaderboardSliceActions;
+export const MetricsExploreSliceActions = exploreSlice.actions;
+export type MetricsExploreSliceTypes = typeof MetricsExploreSliceActions;
 
-export const metricsLeaderboardReducer = exploreSlice.reducer;
+export const metricsExploreReducer = exploreSlice.reducer;
