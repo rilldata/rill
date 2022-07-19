@@ -1,14 +1,23 @@
 <script lang="ts">
-  import Portal from "$lib/components/Portal.svelte";
-  import { drag } from "$lib/drag";
   import {
-    assetVisibilityTween,
     assetsVisible,
+    assetVisibilityTween,
     layout,
   } from "$lib/application-state-stores/layout-store";
+  import RillLogo from "$lib/components/icons/RillLogo.svelte";
+  import Spacer from "$lib/components/icons/Spacer.svelte";
+  import Portal from "$lib/components/Portal.svelte";
+  import { drag } from "$lib/drag";
+  import { onMount } from "svelte";
 
-  import TableAssets from "./TableAssets.svelte";
+  import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
   import ModelAssets from "./ModelAssets.svelte";
+  import TableAssets from "./TableAssets.svelte";
+
+  let mounted = false;
+  onMount(() => {
+    mounted = true;
+  });
 </script>
 
 <div
@@ -17,7 +26,7 @@
   border-transparent 
   fixed 
   overflow-auto 
-  hover:border-gray-200 
+  border-gray-200 
   transition-colors
   h-screen
   bg-white
@@ -47,30 +56,30 @@
         <h1
           class="grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center"
         >
-          <div
-            class="grid  text-white w-5 h-5 items-center justify-center rounded bg-gray-500"
-            style:width="16px"
-            style:height="16px"
-          />
+          {#if mounted}
+            <RillLogo size="16px" iconOnly />
+          {:else}
+            <Spacer size="16px" />
+          {/if}
+
           <div class="font-bold">Rill Developer</div>
         </h1>
       </header>
       <TableAssets />
       <ModelAssets />
+      <MetricsDefinitionAssets />
     </div>
     <!-- assets pane footer. -->
-    <div
-      class="p-3 italic text-gray-800 bg-gray-50 flex items-center text-center justify-center"
+    <a
+      href="http://bit.ly/3jg4IsF"
+      target="_blank"
+      class="p-3 italic bg-gray-50 flex items-center text-center justify-center"
       style:height="var(--header-height)"
     >
       <div class="text-left">Bugs, complaints, feedback? &nbsp;</div>
-      <a
-        target="_blank"
-        class="inline not-italic font-bold text-blue-600 text-right"
-        href="http://bit.ly/3jg4IsF"
-      >
+      <div class="inline not-italic text-right text-blue-500 font-bold">
         Ask us on Discord 💬
-      </a>
-    </div>
+      </div>
+    </a>
   </div>
 </div>

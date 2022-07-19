@@ -7,6 +7,9 @@
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import MetricsDefWorkspaceHeader from "./metrics-def/MetricsDefWorkspaceHeader.svelte";
+  import MetricsDefWorkspace from "./metrics-def/MetricsDefWorkspace.svelte";
+  import Explore from "./explore/Explore.svelte";
   import Onboarding from "./Onboarding.svelte";
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -14,6 +17,12 @@
   ) as PersistentModelStore;
 
   $: useModelWorkspace = $rillAppStore?.activeEntity?.type === EntityType.Model;
+  $: useMetricsDefWorkspace =
+    $rillAppStore?.activeEntity?.type === EntityType.MetricsDefinition;
+  $: useExplore =
+    $rillAppStore?.activeEntity?.type === EntityType.MetricsLeaderboard;
+  $: activeEntityID = $rillAppStore?.activeEntity?.id;
+
   $: isModelActive =
     $rillAppStore?.activeEntity && $persistentModelStore?.entities
       ? $persistentModelStore.entities.find(
@@ -29,8 +38,9 @@
     <ModelWorkspaceHeader />
     <ModelView />
   {/if}
-{:else}
-  <!-- FIXME: this placeholder is here to show where you would plug in another kind of workspace component -->
-  <ModelWorkspaceHeader />
-  <ModelView />
+{:else if useMetricsDefWorkspace}
+  <MetricsDefWorkspaceHeader metricsDefId={activeEntityID} />
+  <MetricsDefWorkspace metricsDefId={activeEntityID} />
+{:else if useExplore}
+  <Explore metricsDefId={activeEntityID} />
 {/if}

@@ -1,35 +1,34 @@
 <script lang="ts">
-  import ParquetIcon from "$lib/components/icons/Parquet.svelte";
-  import Code from "$lib/components/icons/Code.svelte";
-  // import Database from "$lib/components/icons/Database.svelte";
-  // import SurfaceView from "$lib/components/icons/SurfaceView.svelte";
+  import Explore from "$lib/components/icons/Explore.svelte";
+  import Metrics from "$lib/components/icons/Metrics.svelte";
+  import Model from "$lib/components/icons/Model.svelte";
+  import Source from "$lib/components/icons/Source.svelte";
 
   const steps = [
     {
       heading: "Import your data source",
       description:
         "Add to your sources by clicking on the + icon, or by dragging a csv or parquet file to this window.",
-      icon: ParquetIcon,
+      icon: Source,
     },
     {
       heading: "Model your sources into one big table",
       description:
         "Build intuition about your sources and use SQL to model them into an analytics-ready resource.",
-      icon: Code,
+      icon: Model,
     },
-    // ACTIVATE WHEN WE RELEASE METRICS EXPLORE
-    // {
-    //   heading: "define your metrics and dimensions",
-    //   description:
-    //     "Define interesting aggregate metrics and break out dimensions for your modeled data.",
-    //   icon: SurfaceView,
-    // },
-    // {
-    //   heading: "explore your metrics dashboard",
-    //   description:
-    //     "Interactively explore line charts and leaderboards to uncover insights.",
-    //   icon: Database,
-    // },
+    {
+      heading: "Define your metrics and dimensions",
+      description:
+        "Define aggregate metrics and break out dimensions for your modeled data.",
+      icon: Metrics,
+    },
+    {
+      heading: "Explore your metrics dashboard",
+      description:
+        "Interactively explore line charts and leaderboards to uncover insights.",
+      icon: Explore,
+    },
   ];
 </script>
 

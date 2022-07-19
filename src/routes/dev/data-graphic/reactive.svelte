@@ -31,6 +31,7 @@
   <div class="grid grid-cols-2 w-max pb-8">
     Width
     <input
+      autocomplete="off"
       type="range"
       bind:value={$width}
       min={100}
@@ -39,6 +40,7 @@
     />
     Height
     <input
+      autocomplete="off"
       type="range"
       bind:value={$height}
       min={130}
@@ -47,6 +49,7 @@
     />
     Margin
     <input
+      autocomplete="off"
       type="range"
       bind:value={$margin}
       min={0}
@@ -55,6 +58,7 @@
     />
     bodyBuffer
     <input
+      autocomplete="off"
       type="range"
       bind:value={$bodyBuffer}
       min={0}

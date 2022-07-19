@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import Input from "$lib/components/Input.svelte";
   import {
     Modal,
     ModalAction,
@@ -6,8 +8,6 @@
     ModalContent,
     ModalTitle,
   } from "$lib/components/modal";
-  import Input from "$lib/components/Input.svelte";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
   import notifications from "$lib/components/notifications/";
 
   export let openModal = false;
@@ -61,10 +61,10 @@
     </form>
   </ModalContent>
   <ModalActions>
-    <ModalAction onClick={() => resetVariablesAndCloseModal()}>
+    <ModalAction on:click={() => resetVariablesAndCloseModal()}>
       cancel
     </ModalAction>
-    <ModalAction primary onClick={() => submitHandler(tableID, newTableName)}>
+    <ModalAction primary on:click={() => submitHandler(tableID, newTableName)}>
       submit
     </ModalAction>
   </ModalActions>

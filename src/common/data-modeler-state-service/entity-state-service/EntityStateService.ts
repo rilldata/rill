@@ -8,6 +8,10 @@ export enum EntityType {
   Table = "Table",
   Model = "Model",
   Application = "Application",
+  MetricsDefinition = "MetricsDefinition",
+  MeasureDefinition = "MeasureDefinition",
+  DimensionDefinition = "DimensionDefinition",
+  MetricsLeaderboard = "MetricsLeaderboard",
 }
 
 export enum StateType {
@@ -25,6 +29,7 @@ export interface EntityRecord {
 export enum EntityStatus {
   Idle,
   Running,
+  Error,
 
   Importing,
   Validating,

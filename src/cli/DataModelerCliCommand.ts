@@ -43,7 +43,10 @@ export abstract class DataModelerCliCommand {
         databaseName: DATABASE_NAME,
         skipDatabase: cliRunArgs.shouldSkipDatabase,
       }),
-      server: new ServerConfig({ serverPort: 8080, serveStaticFile: true }),
+      server: new ServerConfig({
+        serverPort: Number(process.env.RILL_SERVER_PORT ?? 8080),
+        serveStaticFile: true,
+      }),
       project: new ProjectConfig({ duckDbPath: cliRunArgs.duckDbPath }),
       projectFolder: this.projectPath,
       profileWithUpdate: cliRunArgs.profileWithUpdate,
@@ -108,11 +111,11 @@ export abstract class DataModelerCliCommand {
       command
         .description(description)
         // override default help text to add capital D for display
-        .helpOption("-h, --help", "Display help for command.")
+        .helpOption("-h, --help", "Displays help for each command.")
         // common across all commands
         .option(
           "--project <projectPath>",
-          "Optional path of project. Defaults to current directory."
+          "Optionally indicate the path to your project. This path defaults to the current directory."
         )
     );
   }

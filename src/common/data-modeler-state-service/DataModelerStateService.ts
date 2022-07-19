@@ -29,6 +29,7 @@ import type { CommonStateActions } from "$common/data-modeler-state-service/Comm
 import type { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
 import type { ApplicationState } from "./entity-state-service/ApplicationEntityService";
 import { BatchedStateUpdate } from "$common/data-modeler-state-service/BatchedStateUpdate";
+import type { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
 
 enablePatches();
 
@@ -38,7 +39,8 @@ type DataModelerStateActionsClasses = PickActionFunctions<
     ModelStateActions &
     ProfileColumnStateActions &
     CommonStateActions &
-    ApplicationStateActions
+    ApplicationStateActions &
+    MetricsDefinitionStateActions
 >;
 export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<
   EntityStateActionArg<any>,
@@ -95,7 +97,8 @@ export class DataModelerStateService {
       });
     });
     entityStateServices.forEach((entityStateService) => {
-      this.entityStateServicesMap[entityStateService.entityType] ??= {};
+      (this.entityStateServicesMap[entityStateService.entityType] as any) ??=
+        {};
       (this.entityStateServicesMap[entityStateService.entityType] as any)[
         entityStateService.stateType
       ] = entityStateService;
@@ -206,6 +209,24 @@ export class DataModelerStateService {
       EntityType.Application,
       StateType.Derived
     ).getCurrentState();
+  }
+  public getMetricsDefinitionService() {
+    return this.getEntityStateService(
+      EntityType.MetricsDefinition,
+      StateType.Persistent
+    );
+  }
+  public getMeasureDefinitionService() {
+    return this.getEntityStateService(
+      EntityType.MeasureDefinition,
+      StateType.Persistent
+    );
+  }
+  public getDimensionDefinitionService() {
+    return this.getEntityStateService(
+      EntityType.DimensionDefinition,
+      StateType.Persistent
+    );
   }
 
   public getEntityById<
