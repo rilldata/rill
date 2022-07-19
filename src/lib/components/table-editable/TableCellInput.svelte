@@ -67,7 +67,6 @@
     // We'll use a placeholder until we can get more detailed feedback
     // validationErrorMsg = (<MeasureDefinitionEntity>row)
     //   .expressionValidationError.message;
-    "asdfad".trim;
     if (value.trim() === "") {
       validationErrorMsg = "This aggregation expression is empty";
     } else {
