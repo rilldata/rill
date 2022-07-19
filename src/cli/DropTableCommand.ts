@@ -7,7 +7,7 @@ export class DropTableCommand extends DataModelerCliCommand {
     return this.applyCommonSettings(
       new Command("drop-source"),
       "Drops the source from Rill Developer. "
-      )
+    )
       .argument("<sourceName>", "Name of the source to drop. ")
       .action((tableName, opts, command: Command) => {
         const { project } = command.optsWithGlobals();

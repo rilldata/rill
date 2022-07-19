@@ -11,10 +11,7 @@ export class InitCommand extends DataModelerCliCommand {
       new Command("init"),
       "Initialize a new project. The project location defaults to the current folder or you can use the --project option to specify a path. "
     )
-      .option(
-        "--db <duckDbPath>",
-        "Connect to an existing duckDB database. "
-      )
+      .option("--db <duckDbPath>", "Connect to an existing duckDB database. ")
       .option(
         "--copy",
         "Used with --db. Copy the duckDB database instead of directly modifying it. "
@@ -90,7 +87,9 @@ export class InitCommand extends DataModelerCliCommand {
     if (!duckDbPath) return true;
 
     if (!existsSync(duckDbPath)) {
-      console.log(`The duckDB database path provided ${duckDbPath} doesnt exist. `);
+      console.log(
+        `The duckDB database path provided ${duckDbPath} doesnt exist. `
+      );
       return false;
     }
 

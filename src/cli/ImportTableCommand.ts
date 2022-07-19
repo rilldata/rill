@@ -21,7 +21,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
       new Command("import-source"),
-        "Imports a source file into Rill Developer."
+      "Imports a source file into Rill Developer."
     )
       .argument(
         "<sourceFile>",
