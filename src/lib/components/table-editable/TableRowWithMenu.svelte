@@ -21,7 +21,7 @@
   let menuX: number;
   let menuY: number;
 
-  const rowMouseEnter = (e) => {
+  const rowMouseEnter = () => {
     rowHovered = true;
   };
   const rowMouseLeave = async () => {
