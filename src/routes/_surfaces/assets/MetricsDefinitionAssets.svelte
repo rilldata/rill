@@ -95,7 +95,7 @@
             location="left"
             on:click={() => {
               dataModelerService.dispatch("setActiveAsset", [
-                EntityType.MetricsExplore,
+                EntityType.MetricsExplorer,
                 id,
               ]);
             }}><ExploreIcon /></ContextButton

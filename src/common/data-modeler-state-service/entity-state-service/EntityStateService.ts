@@ -11,7 +11,7 @@ export enum EntityType {
   MetricsDefinition = "MetricsDefinition",
   MeasureDefinition = "MeasureDefinition",
   DimensionDefinition = "DimensionDefinition",
-  MetricsExplore = "MetricsExplore",
+  MetricsExplorer = "MetricsExplorer",
 }
 
 export enum StateType {

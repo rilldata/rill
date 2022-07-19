@@ -42,7 +42,7 @@
     disabled={buttonDisabled}
     on:click={() => {
       dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsExplore,
+        EntityType.MetricsExplorer,
         metricsDefId,
       ]);
     }}>Go to Dashboard <ExploreIcon size="16px" /></Button

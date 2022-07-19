@@ -7,7 +7,7 @@ import type {
   TimeSeriesResponse,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
-import { selectMetricsExploreParams } from "$lib/redux-store/explore/explore-selectors";
+import { selectMetricsExplorerParams } from "$lib/redux-store/explore/explore-selectors";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
@@ -22,7 +22,7 @@ import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
  * Streams time series responses from backend  and updates it in the state.
  */
 export const generateTimeSeriesApi = createAsyncThunk(
-  `${EntityType.MetricsExplore}/generateTimeSeries`,
+  `${EntityType.MetricsExplorer}/generateTimeSeries`,
   async (
     {
       id,
@@ -40,8 +40,8 @@ export const generateTimeSeriesApi = createAsyncThunk(
     thunkAPI
   ) => {
     const state = thunkAPI.getState() as RillReduxState;
-    const { metricsExplore, prunedFilters, normalisedMeasures } =
-      selectMetricsExploreParams(state, id, {
+    const { metricsExplorer, prunedFilters, normalisedMeasures } =
+      selectMetricsExplorerParams(state, id, {
         measures,
         filters,
         dimensions: state.dimensionDefinition.entities,
@@ -56,7 +56,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
         measures: normalisedMeasures,
         filters: prunedFilters,
         pixels,
-        timeRange: timeRange ?? metricsExplore.selectedTimeRange,
+        timeRange: timeRange ?? metricsExplorer.selectedTimeRange,
       }
     );
     for await (const timeSeriesResponse of stream) {

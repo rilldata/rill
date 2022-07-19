@@ -68,7 +68,7 @@ export type EntityStateServicesMapType = {
     [StateType.Persistent]?: DimensionDefinitionStateService;
     [StateType.Derived]?: never;
   };
-  [EntityType.MetricsExplore]?: never;
+  [EntityType.MetricsExplorer]?: never;
 };
 
 export type EntityRecordMapType = {
@@ -96,7 +96,7 @@ export type EntityRecordMapType = {
     [StateType.Persistent]: DimensionDefinitionEntity;
     [StateType.Derived]: never;
   };
-  [EntityType.MetricsExplore]: never;
+  [EntityType.MetricsExplorer]: never;
 };
 export type EntityStateActionArgMapType = {
   [EntityType.Table]: {
@@ -123,5 +123,5 @@ export type EntityStateActionArgMapType = {
     [StateType.Persistent]: DimensionDefinitionStateActionArg;
     [StateType.Derived]: never;
   };
-  [EntityType.MetricsExplore]: never;
+  [EntityType.MetricsExplorer]: never;
 };

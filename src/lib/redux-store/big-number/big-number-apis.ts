@@ -3,12 +3,12 @@ import {
   EntityType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExploreActions";
+import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
 import {
   setBigNumberStatus,
   updateBigNumber,
 } from "$lib/redux-store/big-number/big-number-slice";
-import { selectMetricsExploreParams } from "$lib/redux-store/explore/explore-selectors";
+import { selectMetricsExplorerParams } from "$lib/redux-store/explore/explore-selectors";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
@@ -20,7 +20,7 @@ import { isAnythingSelected } from "$lib/util/isAnythingSelected";
  * Streams time series responses from backend  and updates it in the state.
  */
 export const generateBigNumbersApi = createAsyncThunk(
-  `${EntityType.MetricsExplore}/generateBigNumbers`,
+  `${EntityType.MetricsExplorer}/generateBigNumbers`,
   async (
     {
       id,
@@ -34,8 +34,8 @@ export const generateBigNumbersApi = createAsyncThunk(
     thunkAPI
   ) => {
     const state = thunkAPI.getState() as RillReduxState;
-    const { metricsExplore, prunedFilters, normalisedMeasures } =
-      selectMetricsExploreParams(state, id, {
+    const { metricsExplorer, prunedFilters, normalisedMeasures } =
+      selectMetricsExplorerParams(state, id, {
         measures,
         filters,
         dimensions: state.dimensionDefinition.entities,
@@ -50,7 +50,7 @@ export const generateBigNumbersApi = createAsyncThunk(
       {
         measures: normalisedMeasures,
         filters: prunedFilters,
-        timeRange: metricsExplore.selectedTimeRange,
+        timeRange: metricsExplorer.selectedTimeRange,
       }
     );
     for await (const bigNumberEntity of stream) {

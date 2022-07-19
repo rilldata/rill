@@ -19,7 +19,7 @@
   $: useMetricsDefWorkspace =
     $rillAppStore?.activeEntity?.type === EntityType.MetricsDefinition;
   $: useExplore =
-    $rillAppStore?.activeEntity?.type === EntityType.MetricsExplore;
+    $rillAppStore?.activeEntity?.type === EntityType.MetricsExplorer;
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
 
   $: isModelActive =

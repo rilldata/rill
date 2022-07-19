@@ -15,8 +15,8 @@ import {
 } from "$lib/redux-store/timeseries/timeseries-slice";
 import { readable } from "svelte/store";
 import {
-  MetricsExploreEntity,
-  metricsExploreReducer,
+  MetricsExplorerEntity,
+  metricsExplorerReducer,
 } from "./explore/explore-slice";
 import { metricsDefinitionReducer } from "./metrics-definition/metrics-definition-slice";
 
@@ -26,7 +26,7 @@ export const store = configureStore({
     metricsDefinition: metricsDefinitionReducer,
     measureDefinition: measureDefSliceReducer,
     dimensionDefinition: dimensionDefSliceReducer,
-    metricsExplore: metricsExploreReducer,
+    metricsExplorer: metricsExplorerReducer,
     timeSeries: timeSeriesReducer,
     bigNumber: bigNumberReducer,
   },
@@ -39,14 +39,14 @@ export type RillReduxEntities =
   | MetricsDefinitionEntity
   | MeasureDefinitionEntity
   | DimensionDefinitionEntity
-  | MetricsExploreEntity
+  | MetricsExplorerEntity
   | TimeSeriesEntity
   | BigNumberEntity;
 export type RillReduxEntityKeys =
   | "metricsDefinition"
   | "measureDefinition"
   | "dimensionDefinition"
-  | "metricsExplore"
+  | "metricsExplorer"
   | "timeSeries"
   | "bigNumber";
 

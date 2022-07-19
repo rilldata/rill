@@ -11,9 +11,9 @@ import {
   addDimensionToExplore,
   addMeasureToExplore,
   clearSelectedLeaderboardValues,
-  initMetricsExplore,
+  initMetricsExplorer,
   LeaderboardValues,
-  MetricsExploreEntity,
+  MetricsExplorerEntity,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
   setExploreSelectedTimeRange,
@@ -47,14 +47,14 @@ const updateExploreWrapper = (dispatch, metricsDefId: string) => {
 
 /**
  * Syncs explore with updated measures and dimensions.
- * If a MetricsExplore entity is not present then a new one is created.
+ * If a MetricsExplorer entity is not present then a new one is created.
  * It then calls {@link updateExploreWrapper} to update explore.
  * It also dispatches {@link fetchTimestampColumnRangeApi} to update time range.
  */
 export const syncExplore = (
   dispatch,
   metricsDefId: string,
-  metricsExplore: MetricsExploreEntity,
+  metricsExplorer: MetricsExplorerEntity,
   dimensions: Array<DimensionDefinitionEntity>,
   measures: Array<MeasureDefinitionEntity>,
   force = false
@@ -62,14 +62,14 @@ export const syncExplore = (
   if (measures) measures = selectValidMeasures(measures);
 
   let shouldUpdate = false;
-  if (!metricsExplore) {
-    dispatch(initMetricsExplore(metricsDefId, dimensions, measures));
+  if (!metricsExplorer) {
+    dispatch(initMetricsExplorer(metricsDefId, dimensions, measures));
     shouldUpdate = true;
   } else {
     if (dimensions)
-      shouldUpdate = syncDimensions(dispatch, metricsExplore, dimensions);
+      shouldUpdate = syncDimensions(dispatch, metricsExplorer, dimensions);
     if (measures)
-      shouldUpdate ||= syncMeasures(dispatch, metricsExplore, measures);
+      shouldUpdate ||= syncMeasures(dispatch, metricsExplorer, measures);
   }
 
   // To avoid infinite loop only update if something changed.
@@ -79,54 +79,57 @@ export const syncExplore = (
   }
 };
 /**
- * Syncs dimensions from MetricsDefinition with MetricsExplore dimensions.
+ * Syncs dimensions from MetricsDefinition with MetricsExplorer dimensions.
  * Calls {@link addDimensionToExplore} for missing dimension.
  * Calls {@link removeDimensionFromExplore} for excess dimension.
  */
 const syncDimensions = (
   dispatch,
-  metricsExplore: MetricsExploreEntity,
+  metricsExplorer: MetricsExplorerEntity,
   dimensions: Array<DimensionDefinitionEntity>
 ) => {
   const { extraSrc: addDimensions, extraTarget: removeDimensions } =
     getArrayDiff(
       dimensions,
       (dimension) => dimension.id,
-      metricsExplore.leaderboards,
+      metricsExplorer.leaderboards,
       (leaderboard) => leaderboard.dimensionId
     );
   addDimensions.forEach((addDimension) =>
-    dispatch(addDimensionToExplore(metricsExplore.id, addDimension.id))
+    dispatch(addDimensionToExplore(metricsExplorer.id, addDimension.id))
   );
   removeDimensions.forEach((removeDimension) =>
     dispatch(
-      removeDimensionFromExplore(metricsExplore.id, removeDimension.dimensionId)
+      removeDimensionFromExplore(
+        metricsExplorer.id,
+        removeDimension.dimensionId
+      )
     )
   );
 
   return addDimensions.length > 0 || removeDimensions.length > 0;
 };
 /**
- * Syncs measures from MetricsDefinition with MetricsExplore measures.
+ * Syncs measures from MetricsDefinition with MetricsExplorer measures.
  * Calls {@link addMeasureToExplore} for missing measure.
  * Calls {@link removeMeasureFromExplore} for excess measure.
  */
 const syncMeasures = (
   dispatch,
-  metricsExplore: MetricsExploreEntity,
+  metricsExplorer: MetricsExplorerEntity,
   measures: Array<MeasureDefinitionEntity>
 ) => {
   const { extraSrc: addMeasures, extraTarget: removeMeasures } = getArrayDiff(
     measures,
     (measure) => measure.id,
-    metricsExplore.measureIds,
+    metricsExplorer.measureIds,
     (measureId) => measureId
   );
   addMeasures.forEach((addMeasure) =>
-    dispatch(addMeasureToExplore(metricsExplore.id, addMeasure.id))
+    dispatch(addMeasureToExplore(metricsExplorer.id, addMeasure.id))
   );
   removeMeasures.forEach((removeMeasure) =>
-    dispatch(removeMeasureFromExplore(metricsExplore.id, removeMeasure))
+    dispatch(removeMeasureFromExplore(metricsExplorer.id, removeMeasure))
   );
 
   return addMeasures.length > 0 || removeMeasures.length > 0;
@@ -214,20 +217,20 @@ export const setExploreSelectedTimeRangeAndUpdate = (
  * Streams dimension values from backend per dimension and updates it in the state.
  */
 export const updateLeaderboardValuesApi = createAsyncThunk(
-  `${EntityType.MetricsExplore}/updateLeaderboard`,
+  `${EntityType.MetricsExplorer}/updateLeaderboard`,
   async (metricsDefId: string, thunkAPI) => {
     const state = thunkAPI.getState() as RillReduxState;
-    const metricsExplore: MetricsExploreEntity = (
+    const metricsExplorer: MetricsExplorerEntity = (
       thunkAPI.getState() as RillReduxState
-    ).metricsExplore.entities[metricsDefId];
+    ).metricsExplorer.entities[metricsDefId];
     const filters = prune(
-      metricsExplore.activeValues,
+      metricsExplorer.activeValues,
       state.dimensionDefinition.entities
     );
     const requestBody = {
-      measureId: metricsExplore.leaderboardMeasureId,
+      measureId: metricsExplorer.leaderboardMeasureId,
       filters,
-      timeRange: metricsExplore.selectedTimeRange,
+      timeRange: metricsExplorer.selectedTimeRange,
     };
 
     thunkAPI.dispatch(
@@ -235,14 +238,14 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
     );
 
     const stream = streamingFetchWrapper<LeaderboardValues>(
-      `metrics/${metricsExplore.id}/leaderboards`,
+      `metrics/${metricsExplorer.id}/leaderboards`,
       "POST",
       requestBody
     );
     for await (const dimensionData of stream) {
       thunkAPI.dispatch(
         setLeaderboardDimensionValues(
-          metricsExplore.id,
+          metricsExplorer.id,
           dimensionData.dimensionId,
           dimensionData.values
         )
@@ -255,10 +258,10 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
 
 /**
  * Fetches time range for the selected timestamp column.
- * Store the response in MetricsExplore slice by calling {@link setExploreTimeRange}
+ * Store the response in MetricsExplorer slice by calling {@link setExploreTimeRange}
  */
 export const fetchTimestampColumnRangeApi = createAsyncThunk(
-  `${EntityType.MetricsExplore}/getTimestampColumnRange`,
+  `${EntityType.MetricsExplorer}/getTimestampColumnRange`,
   async (metricsDefId: string, thunkAPI) => {
     const timeRange = await fetchWrapper(
       `metrics/${metricsDefId}/time-range`,

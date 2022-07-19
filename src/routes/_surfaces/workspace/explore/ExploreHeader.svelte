@@ -8,8 +8,8 @@
   import Close from "$lib/components/icons/Close.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { clearSelectedLeaderboardValuesAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
-  import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
@@ -19,10 +19,10 @@
 
   export let metricsDefId: string;
 
-  let metricsExplore: Readable<MetricsExploreEntity>;
-  $: metricsExplore = getMetricsExploreById(metricsDefId);
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  $: anythingSelected = isAnythingSelected($metricsExplore?.activeValues);
+  $: anythingSelected = isAnythingSelected($metricsExplorer?.activeValues);
   function clearAllFilters() {
     clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
   }

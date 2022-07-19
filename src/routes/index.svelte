@@ -83,7 +83,7 @@
     MetricsDefinition: {
       hasInspector: false,
     },
-    MetricsExplore: {
+    MetricsExplorer: {
       hasInspector: false,
     },
   };
@@ -180,7 +180,7 @@
 
   <!-- inspector sidebar -->
   <!-- Workaround: hide the inspector on MetricsDefinition or 
-        on MetricsExplore for now.
+        on MetricsExplorer for now.
       Once we refactor how layout routing works, we will have a better solution to this.
   -->
   {#if hasInspector}

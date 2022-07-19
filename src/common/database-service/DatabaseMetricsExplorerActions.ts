@@ -1,13 +1,13 @@
+import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import {
   getExpressionColumnsFromMeasures,
   getWhereClauseFromFilters,
   normaliseMeasures,
 } from "./utils";
-import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 
 export interface BigNumberResponse {
   id?: string;
@@ -15,7 +15,7 @@ export interface BigNumberResponse {
   error?: string;
 }
 
-export class DatabaseMetricsExploreActions extends DatabaseActions {
+export class DatabaseMetricsExplorerActions extends DatabaseActions {
   public async getLeaderboardValues(
     metadata: DatabaseMetadata,
     table: string,

@@ -22,7 +22,7 @@ export interface LeaderboardValues {
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 
-export interface MetricsExploreEntity {
+export interface MetricsExplorerEntity {
   id: string;
   // full list of measure IDs available to explore
   measureIds: Array<string>;
@@ -39,13 +39,13 @@ export interface MetricsExploreEntity {
   selectedTimeRange?: TimeSeriesTimeRange;
 }
 
-const metricsExploreAdapter = createEntityAdapter<MetricsExploreEntity>();
+const metricsExplorerAdapter = createEntityAdapter<MetricsExplorerEntity>();
 
 export const exploreSlice = createSlice({
-  name: "metricsExplore",
-  initialState: metricsExploreAdapter.getInitialState(),
+  name: "metricsExplorer",
+  initialState: metricsExplorerAdapter.getInitialState(),
   reducers: {
-    initMetricsExplore: {
+    initMetricsExplorer: {
       reducer: (
         state,
         {
@@ -57,7 +57,7 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (state.entities[id]) return;
-        const metricsExplore: MetricsExploreEntity = {
+        const metricsExplorer: MetricsExplorerEntity = {
           id,
           measureIds: measures.map((measure) => measure.id),
           selectedMeasureIds: measures.map((measure) => measure.id),
@@ -71,9 +71,9 @@ export const exploreSlice = createSlice({
           selectedCount: 0,
         };
         dimensions.forEach((column) => {
-          metricsExplore.activeValues[column.dimensionColumn] = [];
+          metricsExplorer.activeValues[column.dimensionColumn] = [];
         });
-        metricsExploreAdapter.addOne(state, metricsExplore);
+        metricsExplorerAdapter.addOne(state, metricsExplorer);
       },
       prepare: (
         id: string,
@@ -92,16 +92,16 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; measureId: string }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
-        if (metricsExplore.measureIds.indexOf(measureId) !== -1) return;
-        metricsExplore.measureIds = [...metricsExplore.measureIds, measureId];
+        const metricsExplorer = state.entities[id];
+        if (metricsExplorer.measureIds.indexOf(measureId) !== -1) return;
+        metricsExplorer.measureIds = [...metricsExplorer.measureIds, measureId];
         // this makes it so that new measure gets selected by default.
-        metricsExplore.selectedMeasureIds = [
-          ...metricsExplore.selectedMeasureIds,
+        metricsExplorer.selectedMeasureIds = [
+          ...metricsExplorer.selectedMeasureIds,
           measureId,
         ];
-        if (!metricsExplore.leaderboardMeasureId) {
-          metricsExplore.leaderboardMeasureId = measureId;
+        if (!metricsExplorer.leaderboardMeasureId) {
+          metricsExplorer.leaderboardMeasureId = measureId;
         }
       },
       prepare: (id: string, measureId: string) => ({
@@ -117,18 +117,18 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; measureId: string }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
-        if (metricsExplore.measureIds.indexOf(measureId) === -1) return;
-        metricsExplore.measureIds = metricsExplore.measureIds.filter(
+        const metricsExplorer = state.entities[id];
+        if (metricsExplorer.measureIds.indexOf(measureId) === -1) return;
+        metricsExplorer.measureIds = metricsExplorer.measureIds.filter(
           (existingMeasureId) => existingMeasureId !== measureId
         );
-        metricsExplore.selectedMeasureIds =
-          metricsExplore.selectedMeasureIds.filter(
+        metricsExplorer.selectedMeasureIds =
+          metricsExplorer.selectedMeasureIds.filter(
             (existingMeasureId) => existingMeasureId !== measureId
           );
-        if (metricsExplore.leaderboardMeasureId === measureId) {
-          metricsExplore.leaderboardMeasureId =
-            metricsExplore.measureIds[0] ?? "";
+        if (metricsExplorer.leaderboardMeasureId === measureId) {
+          metricsExplorer.leaderboardMeasureId =
+            metricsExplorer.measureIds[0] ?? "";
         }
       },
       prepare: (id: string, measureId: string) => ({
@@ -144,18 +144,18 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; selectedMeasureId: string }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
+        const metricsExplorer = state.entities[id];
         const existingIndex =
-          metricsExplore.selectedMeasureIds.indexOf(selectedMeasureId);
+          metricsExplorer.selectedMeasureIds.indexOf(selectedMeasureId);
 
         if (existingIndex >= 0) {
-          metricsExplore.selectedMeasureIds =
-            metricsExplore.selectedMeasureIds.filter(
+          metricsExplorer.selectedMeasureIds =
+            metricsExplorer.selectedMeasureIds.filter(
               (selectedMeasureId) => selectedMeasureId === selectedMeasureId
             );
         } else {
-          metricsExplore.selectedMeasureIds = [
-            ...metricsExplore.selectedMeasureIds,
+          metricsExplorer.selectedMeasureIds = [
+            ...metricsExplorer.selectedMeasureIds,
             selectedMeasureId,
           ];
         }
@@ -191,18 +191,18 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
+        const metricsExplorer = state.entities[id];
         if (
-          metricsExplore.leaderboards.findIndex(
+          metricsExplorer.leaderboards.findIndex(
             (leaderboard) => leaderboard.dimensionId === dimensionId
           ) !== -1
         )
           return;
-        metricsExplore.leaderboards = [
-          ...metricsExplore.leaderboards,
+        metricsExplorer.leaderboards = [
+          ...metricsExplorer.leaderboards,
           { dimensionId, values: [], status: EntityStatus.Idle },
         ];
-        metricsExplore.activeValues[dimensionId] = [];
+        metricsExplorer.activeValues[dimensionId] = [];
       },
       prepare: (id: string, dimensionId: string) => ({
         payload: { id, dimensionId },
@@ -220,17 +220,17 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
+        const metricsExplorer = state.entities[id];
         if (
-          metricsExplore.leaderboards.findIndex(
+          metricsExplorer.leaderboards.findIndex(
             (leaderboard) => leaderboard.dimensionId === dimensionId
           ) === -1
         )
           return;
-        metricsExplore.leaderboards = metricsExplore.leaderboards.filter(
+        metricsExplorer.leaderboards = metricsExplorer.leaderboards.filter(
           (leaderboard) => leaderboard.dimensionId !== dimensionId
         );
-        delete metricsExplore.activeValues[dimensionId];
+        delete metricsExplorer.activeValues[dimensionId];
       },
       prepare: (id: string, dimensionId: string) => ({
         payload: { id, dimensionId },
@@ -250,35 +250,35 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
-        const existingIndex = metricsExplore.activeValues[
+        const metricsExplorer = state.entities[id];
+        const existingIndex = metricsExplorer.activeValues[
           dimensionId
         ]?.findIndex(([value]) => value === dimensionValue);
         const existing =
-          metricsExplore.activeValues[dimensionId]?.[existingIndex];
+          metricsExplorer.activeValues[dimensionId]?.[existingIndex];
 
         if (existing) {
           if (existing[1] === include) {
             // if existing value is an 'include' then remove the value
-            metricsExplore.activeValues[dimensionId] =
-              metricsExplore.activeValues[dimensionId].filter(
+            metricsExplorer.activeValues[dimensionId] =
+              metricsExplorer.activeValues[dimensionId].filter(
                 (activeValue) => activeValue[0] !== dimensionValue
               );
-            metricsExplore.selectedCount--;
+            metricsExplorer.selectedCount--;
           } else {
             // else toggle the 'include' of the value
-            metricsExplore.activeValues[dimensionId][existingIndex] = [
+            metricsExplorer.activeValues[dimensionId][existingIndex] = [
               existing[0],
               include,
             ];
           }
         } else {
           // add the value if not present
-          metricsExplore.activeValues[dimensionId] = [
-            ...(metricsExplore.activeValues[dimensionId] ?? []),
+          metricsExplorer.activeValues[dimensionId] = [
+            ...(metricsExplorer.activeValues[dimensionId] ?? []),
             [dimensionValue, include],
           ];
-          metricsExplore.selectedCount++;
+          metricsExplorer.selectedCount++;
         }
       },
       prepare: (
@@ -424,7 +424,7 @@ export const exploreSlice = createSlice({
 });
 
 export const {
-  initMetricsExplore,
+  initMetricsExplorer,
   addMeasureToExplore,
   removeMeasureFromExplore,
   toggleExploreMeasure,
@@ -439,7 +439,7 @@ export const {
   setExploreTimeRange,
   setExploreSelectedTimeRange,
 } = exploreSlice.actions;
-export const MetricsExploreSliceActions = exploreSlice.actions;
-export type MetricsExploreSliceTypes = typeof MetricsExploreSliceActions;
+export const MetricsExplorerSliceActions = exploreSlice.actions;
+export type MetricsExplorerSliceTypes = typeof MetricsExplorerSliceActions;
 
-export const metricsExploreReducer = exploreSlice.reducer;
+export const metricsExplorerReducer = exploreSlice.reducer;

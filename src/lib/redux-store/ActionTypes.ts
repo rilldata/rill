@@ -1,5 +1,5 @@
-import type { MetricsExploreSliceTypes } from "$lib/redux-store/explore/explore-slice";
-import { MetricsExploreSliceActions } from "$lib/redux-store/explore/explore-slice";
+import type { MetricsExplorerSliceTypes } from "$lib/redux-store/explore/explore-slice";
+import { MetricsExplorerSliceActions } from "$lib/redux-store/explore/explore-slice";
 import type { MetricsDefSliceActionTypes } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
 import { MetricsDefSliceActions } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
 import type { ActionCreatorWithPreparedPayload } from "@reduxjs/toolkit";
@@ -17,10 +17,10 @@ type ReduxSliceActionDefinitions<ReduxSliceActionTypes> = {
 };
 
 export type ReduxActionDefinitions = ReduxSliceActionDefinitions<
-  MetricsDefSliceActionTypes & MetricsExploreSliceTypes
+  MetricsDefSliceActionTypes & MetricsExplorerSliceTypes
 >;
 
 export const ReduxActions = {
   ...MetricsDefSliceActions,
-  ...MetricsExploreSliceActions,
+  ...MetricsExplorerSliceActions,
 };
