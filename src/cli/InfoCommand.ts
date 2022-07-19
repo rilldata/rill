@@ -10,7 +10,7 @@ export class InfoCommand extends DataModelerCliCommand {
   public getCommand(): Command {
     return this.applyCommonSettings(
       new Command("info"),
-      "Display information about project."
+      "Prints details about your project. "
     ).action((opts, command: Command) => {
       const { project } = command.optsWithGlobals();
       return this.run({ projectPath: project });
@@ -29,7 +29,7 @@ export class InfoCommand extends DataModelerCliCommand {
     dataModelerStateService: DataModelerStateService
   ) {
     console.log("*** Project Info ***");
-    console.log(`Project Path: ${projectPath}`);
+    console.log(`\nProject path: ${projectPath}`);
 
     this.displayTablesInfo(dataModelerStateService);
     this.displayModelsInfo(dataModelerStateService);
@@ -43,7 +43,7 @@ export class InfoCommand extends DataModelerCliCommand {
       .getCurrentState();
     if (!tableState?.entities.length) return;
 
-    console.log("Imported Tables:");
+    console.log("\nImported sources:");
     tableState.entities.forEach((table) =>
       console.log(`${table.tableName} (${table.path})`)
     );
@@ -57,7 +57,7 @@ export class InfoCommand extends DataModelerCliCommand {
       .getCurrentState();
     if (!modelState?.entities.length) return;
 
-    console.log("Models:");
+    console.log("\nModels:");
     modelState.entities.forEach(
       (model) => model.query && console.log(`${model.name}: ${model.query}`)
     );
