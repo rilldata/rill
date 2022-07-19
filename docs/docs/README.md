@@ -32,5 +32,13 @@ rill import-source /path/to/data_1.parquet
 rill start
 ```
 
+## Try an example project
+If you want to see several examples with data transformations you can install out example project.
+```
+cd /path/to/rill-developer
+bash scripts/example-project.sh
+```
+This project imports 7 datasets and performs simple transfomrations to create 5 analytics ready resources. For more information on the datasets, please see the readme.md files in the `data` rill-developer-example directory after running the script.
+
 ## Legal
 By downloading and using our application you are agreeing to the [Rill Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
