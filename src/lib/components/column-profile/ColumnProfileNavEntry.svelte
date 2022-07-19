@@ -1,13 +1,13 @@
 <script lang="ts">
-  import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
   import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
-  import { NATIVE_SELECT } from "$lib/util/component-classes";
-  import { defaultSort } from "$lib/components/column-profile/sort-utils";
+  import ColumnProfile from "$lib/components/column-profile/ColumnProfile.svelte";
   import {
+    defaultSort,
     sortByName,
     sortByNullity,
   } from "$lib/components/column-profile/sort-utils";
-  import Spacer from "$lib/components/icons/Spacer.svelte";
+  import { NATIVE_SELECT } from "$lib/util/component-classes";
+  import Spacer from "../icons/Spacer.svelte";
 
   export let containerWidth = 0;
 
@@ -55,6 +55,7 @@
   >
     <option value="summaries">show summary&nbsp;</option>
     <option value="example">show example</option>
+    <option value="hide">hide reference</option>
   </select>
 </div>
 

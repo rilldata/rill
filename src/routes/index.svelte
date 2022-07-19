@@ -21,6 +21,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
+  import HideSidebar from "$lib/components/icons/HideSidebar.svelte";
   import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
   import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
   import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
@@ -36,7 +37,6 @@
   import Workspace from "./_surfaces/workspace/index.svelte";
 
   let showDropOverlay = false;
-  let assetsHovered = false;
 
   const app = getContext("rill:app:store") as ApplicationStore;
 
@@ -126,19 +126,20 @@
   <!-- left assets pane expansion button -->
   <!-- make this the first element to select with tab by placing it first.-->
   <SurfaceControlButton
-    show={assetsHovered || !$assetsVisible}
+    show={true}
     left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) +
       12 * $assetVisibilityTween}px"
     on:click={() => {
       assetsVisible.set(!$assetsVisible);
     }}
   >
-    <SurfaceViewIcon
-      size="16px"
-      mode={$assetsVisible ? "right" : "hamburger"}
-    />
+    {#if $assetsVisible}
+      <HideSidebar size="20px" />
+    {:else}
+      <SurfaceViewIcon size="16px" mode={"hamburger"} />
+    {/if}
     <svelte:fragment slot="tooltip-content">
-      {#if $assetVisibilityTween === 0} hide {:else} show {/if} models and sources
+      {#if $assetVisibilityTween === 0} close {:else} show {/if} sidebar
     </svelte:fragment>
   </SurfaceControlButton>
 
@@ -147,18 +148,6 @@
   <div
     class="box-border	 assets fixed"
     aria-hidden={!$assetsVisible}
-    on:mouseover={() => {
-      assetsHovered = true;
-    }}
-    on:mouseleave={() => {
-      assetsHovered = false;
-    }}
-    on:focus={() => {
-      assetsHovered = true;
-    }}
-    on:blur={() => {
-      assetsHovered = false;
-    }}
     style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
   >
     <AssetsSidebar />

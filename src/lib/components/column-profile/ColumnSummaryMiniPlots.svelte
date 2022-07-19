@@ -1,15 +1,10 @@
 <script lang="ts">
-  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
+  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
   import FormattedDataType from "$lib/components/data-types/FormattedDataType.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
 
-  import {
-    formatCompactInteger,
-    formatInteger,
-    singleDigitPercentage,
-  } from "$lib/util/formatters";
   import {
     BOOLEANS,
     CATEGORICALS,
@@ -17,10 +12,15 @@
     NUMERICS,
     TIMESTAMPS,
   } from "$lib/duckdb-data-types";
+  import {
+    formatCompactInteger,
+    formatInteger,
+    singleDigitPercentage,
+  } from "$lib/util/formatters";
 
   import Histogram from "$lib/components/viz/histogram/SmallHistogram.svelte";
-  import { TimestampSpark } from "../data-graphic/compositions/timestamp-profile";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
+  import { TimestampSpark } from "../data-graphic/compositions/timestamp-profile";
 
   export let type;
   export let summary;

@@ -208,7 +208,7 @@
         suppress={contextMenuOpen}
       >
         <Button
-          type="text"
+          type="secondary"
           on:click={async (event) => {
             contextMenuOpen = !contextMenuOpen;
             menuX = event.detail.x;

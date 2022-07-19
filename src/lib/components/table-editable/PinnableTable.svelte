@@ -8,24 +8,22 @@
 
   import type { ColumnConfig } from "$lib/components/table-editable/ColumnConfig";
 
-  import { columnIsPinned } from "$lib/components/table-editable/pinnableUtils";
-
   import TableCellRenderer from "./TableCellRenderer.svelte";
+  import TableHeader from "./TableHeader.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let columnNames: ColumnConfig<any>[];
-  export let selectedColumns: ColumnConfig<any>[];
   export let rows: any[];
 </script>
 
 <Table>
   <!-- headers -->
   <TableRow>
+    <TableHeader position="top-left">#</TableHeader>
     {#each columnNames as columnConfig (columnConfig.name + columnConfig.label)}
       <EditableTableHeader
         {columnConfig}
-        pinned={columnIsPinned(columnConfig.name, selectedColumns)}
         on:pin={() => {
           dispatch("pin", { columnConfig });
         }}
@@ -34,7 +32,7 @@
   </TableRow>
   <!-- values -->
   {#each rows as row, index}
-    <TableRowWithMenu on:delete={() => dispatch("delete", row.id)}>
+    <TableRowWithMenu {index} on:delete={() => dispatch("delete", row.id)}>
       {#each columnNames as column (index + column.name + column.label)}
         <TableCellRenderer columnConfig={column} {row} {index} />
       {/each}

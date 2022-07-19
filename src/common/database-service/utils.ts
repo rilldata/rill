@@ -1,9 +1,9 @@
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import {
   BasicMeasureDefinition,
   getFallbackMeasureName,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 
 export function getFilterFromFilters(filters: ActiveValues): string {
   return Object.keys(filters)
@@ -75,11 +75,13 @@ export function getFilterFromTimeRange(
   timeRange = normaliseTimeRange(timeRange);
   if (timeRange.start) {
     timeRangeFilters.push(
-      `${timestampColumn} >= TIMESTAMP '${timeRange.start}'`
+      `"${timestampColumn}" >= TIMESTAMP '${timeRange.start}'`
     );
   }
   if (timeRange.end) {
-    timeRangeFilters.push(`${timestampColumn} <= TIMESTAMP '${timeRange.end}'`);
+    timeRangeFilters.push(
+      `"${timestampColumn}" <= TIMESTAMP '${timeRange.end}'`
+    );
   }
   return timeRangeFilters.join(" AND ");
 }
