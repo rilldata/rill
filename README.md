@@ -1,5 +1,5 @@
 # Rill Developer **_(tech preview)_**
-Rill Developer is a tool that makes it effortless to transform your datasets with SQL, design humanized metrics, and explore line charts and leaderboards for insights. Rill Developer follows a few guiding principles:
+Rill Developer is a tool that makes it effortless to transform your datasets with SQL and design & explore metric aggregates over time. Rill Developer follows a few guiding principles:
 
 - _feels good to use_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
 - _works with your local datasets_ – imports and exports Parquet and CSV
