@@ -35,8 +35,8 @@ function getDisallowedSyntaxError(
   parseExpressionError: ParseExpressionError
 ): string {
   return (
-    `Disallowed syntax : ${parseExpressionError.disallowedSyntax}. ` +
-    "Measure aggregation expression may only contain aggregation functions and arithmetic operations."
+    `Disallowed syntax: "${parseExpressionError.disallowedSyntax}". ` +
+    "Measure aggregation expression may only contain aggregation functions and arithmetic operations"
   );
 }
 
@@ -45,17 +45,17 @@ function getMissingColumnsError(
 ): string {
   return (
     (parseExpressionError.missingColumns.length > 1
-      ? `Columns ${parseExpressionError.missingColumns
+      ? `Columns "${parseExpressionError.missingColumns
           .slice(0, parseExpressionError.missingColumns.length - 1)
-          .join(", ")} ` +
-        `and ${
+          .join('", "')}" ` +
+        `and "${
           parseExpressionError.missingColumns[
             parseExpressionError.missingColumns.length - 1
           ]
-        }` +
+        }"` +
         ` are `
-      : `Column ${parseExpressionError.missingColumns[0]} is `) +
-    `missing from model ${parseExpressionError.missingFrom}.`
+      : `Column "${parseExpressionError.missingColumns[0]}" is `) +
+    `missing from model ${parseExpressionError.missingFrom}`
   );
 }
 
@@ -79,7 +79,7 @@ function getInvalidAggregatedError(
 ): Array<string> {
   return parseExpressionError.invalidAggregates.map((invalidAggregate) => {
     if (invalidAggregate.aggregateNotAllowed) {
-      return `Invalid aggregate function : ${invalidAggregate.name}`;
+      return `"${invalidAggregate.name}" is not a valid aggregate function`;
     }
     return (
       "Invalid aggregate arguments. " +
