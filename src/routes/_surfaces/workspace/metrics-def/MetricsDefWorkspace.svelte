@@ -18,7 +18,6 @@
     fetchManyMeasuresApi,
     updateMeasuresApi,
     validateMeasureExpression,
-    validateMeasureExpressionApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";

@@ -10,7 +10,6 @@ import {
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
-import type { ParseExpressionError } from "$common/expression-parser/parseExpression";
 
 export interface BasicMeasureDefinition {
   id: string;
