@@ -1,6 +1,6 @@
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
-import { parseExpression } from "$common/utils/parseExpression";
+import { parseExpression } from "$common/expression-parser/parseExpression";
 import {
   EntityType,
   StateType,
@@ -9,6 +9,7 @@ import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service
 import { getMeasureDefinition } from "$common/stateInstancesFactory";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 
 export class MeasuresActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -86,18 +87,47 @@ export class MeasuresActions extends RillDeveloperActions {
         `No metrics found for id=${metricsDefId}`
       );
 
-    const parsedExpression = parseExpression(expression);
-    const model = this.dataModelerStateService
+    const persistentModel = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    const derivedModel = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Derived)
       .getById(rillRequestContext.record.sourceModelId);
+    const parsedExpression = parseExpression(expression, derivedModel.profile);
+    const missingColumns = parsedExpression.columns.filter(
+      (columnName) =>
+        columnName !== "*" &&
+        derivedModel.profile.findIndex(
+          (column) => column.name === columnName
+        ) === -1
+    );
 
-    const expressionIsValid =
-      parsedExpression.isValid &&
-      parsedExpression.columns.every(
-        (columnName) =>
-          columnName === "*" ||
-          model.profile.findIndex((column) => column.name === columnName) >= 0
+    let expressionIsValid =
+      parsedExpression.isValid && missingColumns.length === 0;
+
+    if (missingColumns.length > 0) {
+      parsedExpression.error ??= {};
+      parsedExpression.error.missingColumns = missingColumns;
+      parsedExpression.error.missingFrom = persistentModel.tableName;
+      expressionIsValid = false;
+    }
+
+    if (!parsedExpression.error) {
+      const errorMessage = await this.databaseActionQueue.enqueue(
+        {
+          id: metricsDefId,
+          priority: DatabaseActionQueuePriority.ActiveModel,
+        },
+        "validateMeasureExpression",
+        [persistentModel.tableName, expression]
       );
+      if (errorMessage) {
+        parsedExpression.error = {
+          message: errorMessage,
+        };
+        expressionIsValid = false;
+      }
+    }
 
     return ActionResponseFactory.getSuccessResponse("", {
       expressionIsValid: expressionIsValid
