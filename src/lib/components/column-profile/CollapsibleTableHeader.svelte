@@ -95,9 +95,16 @@
       }, contextMenu);
     }
   };
+
+  /** When the context or expander button is hovered, we should suppress the overall tooltip */
+  let contextButtonIsHovered = false;
+  let expanderIsHovered = false;
 </script>
 
-<Tooltip location="right">
+<Tooltip
+  location="right"
+  suppress={contextButtonIsHovered || expanderIsHovered || contextMenuOpen}
+>
   <div
     on:mouseenter={() => {
       hovered = true;
@@ -114,7 +121,11 @@
     "
   >
     {#if !notExpandable}
-      <ExpanderButton rotated={show} on:click={() => dispatch("expand")}>
+      <ExpanderButton
+        bind:isHovered={expanderIsHovered}
+        rotated={show}
+        on:click={() => dispatch("expand")}
+      >
         <CaretDownIcon size="14px" />
       </ExpanderButton>
     {:else}
@@ -183,9 +194,10 @@
               <span class="self-center">
                 <ContextButton
                   id={contextButtonId}
-                  tooltipText=""
-                  suppressTooltip={true}
+                  tooltipText="more actions"
+                  suppressTooltip={contextMenuOpen}
                   on:click={clickContextButtonHandler}
+                  bind:isHovered={contextButtonIsHovered}
                 >
                   <MoreIcon />
                 </ContextButton>

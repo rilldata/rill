@@ -9,6 +9,7 @@
   export let id: string;
   export let width = 16;
   export let height = 16;
+  export let isHovered;
 </script>
 
 <Tooltip
@@ -20,6 +21,18 @@
   <button
     on:click
     {id}
+    on:focus={() => {
+      isHovered = true;
+    }}
+    on:blur={() => {
+      isHovered = false;
+    }}
+    on:mouseover={() => {
+      isHovered = true;
+    }}
+    on:mouseleave={() => {
+      isHovered = false;
+    }}
     style:width={`${width}px`}
     style:height={`${height}px`}
     style:grid-column="left-control"

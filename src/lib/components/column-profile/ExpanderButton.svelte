@@ -1,9 +1,10 @@
 <script>
+  import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
   export let rotated = false;
   export let suppressTooltip = false;
+  export let isHovered = false;
 </script>
 
 <Tooltip
@@ -15,6 +16,18 @@
 >
   <button
     on:click
+    on:mouseover={() => {
+      isHovered = true;
+    }}
+    on:focus={() => {
+      isHovered = true;
+    }}
+    on:mouseleave={() => {
+      isHovered = false;
+    }}
+    on:blur={() => {
+      isHovered = false;
+    }}
     style:width="16px"
     style:height="16px"
     style:grid-column="left-control"
