@@ -2,9 +2,15 @@
   import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import { createHoverStateActionFactory } from "../actions/hover-state-action-factory";
   export let rotated = false;
   export let suppressTooltip = false;
   export let isHovered = false;
+
+  const { hovered, captureHoverState } = createHoverStateActionFactory();
+  hovered.subscribe((trueOrFalse) => {
+    isHovered = trueOrFalse;
+  });
 </script>
 
 <Tooltip
@@ -16,18 +22,7 @@
 >
   <button
     on:click
-    on:mouseover={() => {
-      isHovered = true;
-    }}
-    on:focus={() => {
-      isHovered = true;
-    }}
-    on:mouseleave={() => {
-      isHovered = false;
-    }}
-    on:blur={() => {
-      isHovered = false;
-    }}
+    use:captureHoverState
     style:width="16px"
     style:height="16px"
     style:grid-column="left-control"
