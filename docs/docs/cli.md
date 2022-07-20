@@ -16,6 +16,11 @@ rill import-source /path/to/data_1.parquet
 rill start
 ```
 
+or try our example:
+```
+rill initialize-example-project
+```
+
 :::
 
 ## Help Menu
