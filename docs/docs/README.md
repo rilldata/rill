@@ -2,6 +2,7 @@
 title: Get Started
 slug: /
 ---
+import Vimeo from '@u-wave/react-vimeo'
 
 # Rill Developer **_(tech preview)_**
 Rill Developer is a tool that makes it effortless to transform your datasets with SQL and create powerful, opinionated dashboards. Rill Developer follows a few guiding principles:
@@ -15,7 +16,8 @@ Rill Developer is a tool that makes it effortless to transform your datasets wit
 
 It's best to show and not tell, so here's a little preview of Rill Developer:
 
-https://user-images.githubusercontent.com/5587788/179844206-7e5a072c-4c42-40ea-bedd-b0faf6b22387.mp4
+[](https://user-images.githubusercontent.com/5587788/179844206-7e5a072c-4c42-40ea-bedd-b0faf6b22387.mp4)
+<Vimeo video="730682268" responsive autoplay loop />
 
 ### We want to hear from you if you have any questions or ideas to share
 
