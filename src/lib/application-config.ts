@@ -8,7 +8,7 @@ export const COLUMN_PROFILE_CONFIG = {
   /** The null percentage should be _just_ big enough to show x 100.0%
    * For MD IO 0.4, this is 74px.
    */
-  nullPercentageWidth: 68,
+  nullPercentageWidth: 72,
   mediumCutoff: 300,
   compactBreakpoint: 350,
   hideRight: 325,
