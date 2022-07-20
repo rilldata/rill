@@ -3,12 +3,12 @@ import type { DatabaseTableActions } from "$common/database-service/DatabaseTabl
 import type { DatabaseColumnActions } from "$common/database-service/DatabaseColumnActions";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import type { DatabaseActions } from "$common/database-service/DatabaseActions";
-import {
+import type {
   ActionServiceBase,
   ExtractActionTypeDefinitions,
-  getActionMethods,
   PickActionFunctions,
 } from "$common/ServiceBase";
+import { getActionMethods } from "$common/ServiceBase";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
 import type { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";

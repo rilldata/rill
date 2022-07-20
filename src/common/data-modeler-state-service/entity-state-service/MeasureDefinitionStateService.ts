@@ -2,9 +2,9 @@ import type { ValidationState } from "$common/data-modeler-state-service/entity-
 import type {
   EntityRecord,
   EntityState,
+  EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
-  EntityStateActionArg,
   EntityStateService,
   EntityType,
   StateType,

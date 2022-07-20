@@ -3,9 +3,11 @@ import type {
   ApplicationState,
   ApplicationStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import {
+import type {
   EntityRecord,
   EntityStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";

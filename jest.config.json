@@ -13,7 +13,12 @@
     "^\\$server(.*)$": "<rootDir>/src/server$1",
     "^d3-(.*)$": "d3-$1/dist/d3-$1"
   },
-  "extensionsToTreatAsEsm": [".svelte"],
+  "globals": {
+    "ts-jest": {
+      "useESM": true
+    }
+  },
+  "extensionsToTreatAsEsm": [".svelte", ".ts"],
   "moduleFileExtensions": ["ts", "js", "svelte"],
   "setupFilesAfterEnv": [
     "@testing-library/jest-dom/extend-expect",

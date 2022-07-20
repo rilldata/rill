@@ -1,5 +1,5 @@
-import type { Application } from "express";
-import { Response, Router } from "express";
+import type { Application, Response } from "express";
+import { Router } from "express";
 import type { RootConfig } from "$common/config/RootConfig";
 import type { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";

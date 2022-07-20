@@ -1,4 +1,5 @@
-import { Expr, ExprBinary, ExprCall, parse } from "pgsql-ast-parser";
+import type { Expr, ExprBinary, ExprCall } from "pgsql-ast-parser";
+import { parse } from "pgsql-ast-parser";
 import type { InvalidAggregate } from "$common/expression-parser/validateAggregate";
 import { validateAggregate } from "$common/expression-parser/validateAggregate";
 import type { ProfileColumn } from "$lib/types";

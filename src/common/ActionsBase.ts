@@ -1,9 +1,9 @@
 import {
-  EntityStateActionArg,
   EntityStatus,
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityStateActionArgMapType } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 
 export abstract class ActionsBase {

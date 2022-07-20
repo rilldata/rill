@@ -1,4 +1,4 @@
-import { StateActions } from ".//StateActions";
+import { StateActions } from "./StateActions";
 import type { PersistentTableStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 export class TableStateActions extends StateActions {

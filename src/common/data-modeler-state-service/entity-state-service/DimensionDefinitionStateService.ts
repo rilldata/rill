@@ -1,9 +1,11 @@
 import type { ProfileColumnSummary } from "$lib/types";
 import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import {
+import type {
   EntityRecord,
   EntityState,
   EntityStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
   EntityStateService,
   EntityType,
   StateType,

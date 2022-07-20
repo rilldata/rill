@@ -40,6 +40,7 @@ import { MeasureDefinitionStateService } from "$common/data-modeler-state-servic
 import { DimensionDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
 import { ExpressServer } from "$server/ExpressServer";
+import { __dirname } from "$common/utils/commonJsPaths";
 
 let PACKAGE_JSON = "";
 try {

@@ -103,7 +103,7 @@ jobs:
 
       script: &build-vercel-pkg
         - echo "Build the entire application"
-        - npm run build
+        - npm run build && npm run build:tsc
 
         - echo "Cleaning dev dependencies"
         - npm prune --production

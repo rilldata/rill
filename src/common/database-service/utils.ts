@@ -1,7 +1,5 @@
-import {
-  BasicMeasureDefinition,
-  getFallbackMeasureName,
-} from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { getFallbackMeasureName } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 

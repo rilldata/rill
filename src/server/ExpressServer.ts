@@ -16,6 +16,7 @@ import { MetricsDefinitionController } from "$server/controllers/MetricsDefiniti
 import { MetricsDimensionController } from "$server/controllers/MetricsDimensionController";
 import { MetricsMeasureController } from "$server/controllers/MetricsMeasureController";
 import { MetricsExploreController } from "$server/controllers/MetricsExploreController";
+import { __dirname } from "$common/utils/commonJsPaths";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 

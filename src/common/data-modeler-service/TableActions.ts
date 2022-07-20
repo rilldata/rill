@@ -1,9 +1,6 @@
-import { DataModelerActions } from ".//DataModelerActions";
-import {
-  FILE_EXTENSION_TO_TABLE_TYPE,
-  ProfileColumn,
-  TableSourceType,
-} from "$lib/types";
+import { DataModelerActions } from "./DataModelerActions";
+import type { ProfileColumn } from "$lib/types";
+import { FILE_EXTENSION_TO_TABLE_TYPE, TableSourceType } from "$lib/types";
 import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import {
   extractFileExtension,
@@ -28,10 +25,8 @@ import type {
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { existsSync } from "fs";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import {
-  ActionResponse,
-  ActionStatus,
-} from "$common/data-modeler-service/response/ActionResponse";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { getName } from "$common/utils/incrementName";
 
 export interface ImportTableOptions {
