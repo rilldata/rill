@@ -6,14 +6,11 @@
   import type {
     ColumnConfig,
     CellConfigInput,
+    InputValidation,
   } from "$lib/components/table-editable/ColumnConfig";
   import type { EntityRecord } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  // FIXME: this import below will be needed for typing
-  // `(<MeasureDefinitionEntity>row)` once we have more detailed
-  // validation messages
-  // import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
   export let columnConfig: ColumnConfig<CellConfigInput>;
   export let index = undefined;
@@ -47,11 +44,10 @@
     editing = false;
     inputElt.blur();
   };
-  // FIXME: validation is business logic that should be handled in
-  // application state management, NOT in the component.
-  $: validation = columnConfig.cellRenderer.validation
-    ? columnConfig.cellRenderer.validation(row, row[columnConfig.name])
-    : ValidationState.OK;
+  let validation: InputValidation;
+  $: validation = columnConfig?.cellRenderer?.getInputValidation
+    ? columnConfig.cellRenderer.getInputValidation(row, row[columnConfig.name])
+    : { state: ValidationState.OK, message: "" };
 
   const enum ValidationIcon {
     ERROR,
@@ -61,20 +57,15 @@
 
   let validationErrorMsg: string = undefined;
   let icon = ValidationIcon.NONE;
-  $: if (validation !== ValidationState.OK) {
-    // FIXME: for now, if a row has an invalid state, we know it is a MeasureDefinitionEntity, but this is not very robust
-    // FIXME: currently, the `expressionValidationError.message` is only ever "Unexpected end of input"
-    // We'll use a placeholder until we can get more detailed feedback
-    // validationErrorMsg = (<MeasureDefinitionEntity>row)
-    //   .expressionValidationError.message;
+  $: if (validation.state !== ValidationState.OK) {
     if (value.trim() === "") {
       validationErrorMsg = "This aggregation expression is empty";
     } else {
-      validationErrorMsg = "This aggregation expression is invalid";
+      validationErrorMsg = validation.message;
     }
 
     if (
-      validation === ValidationState.ERROR &&
+      validation.state === ValidationState.ERROR &&
       editing === false &&
       value.trim() !== ""
     ) {
@@ -82,14 +73,16 @@
       // and if there is actually a value in the input
       icon = ValidationIcon.ERROR;
     } else if (
-      (validation === ValidationState.ERROR && editing === true) ||
-      (validation === ValidationState.ERROR && value.trim() === "") ||
-      validation === ValidationState.WARNING
+      (validation.state === ValidationState.ERROR && editing === true) ||
+      (validation.state === ValidationState.ERROR && value.trim() === "") ||
+      validation.state === ValidationState.WARNING
     ) {
       icon = ValidationIcon.WARNING;
     } else {
       icon = ValidationIcon.NONE;
     }
+  } else {
+    icon = ValidationIcon.NONE;
   }
 </script>
 
