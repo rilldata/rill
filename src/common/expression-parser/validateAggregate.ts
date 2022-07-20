@@ -15,7 +15,6 @@ export const AllowedAggregates: {
   min_by: [NUMERICS, ANY_TYPES],
 
   // number
-  count: [NUMERICS],
   avg: [NUMERICS],
   favg: [NUMERICS],
   fsum: [NUMERICS],
@@ -31,7 +30,6 @@ export const AllowedAggregates: {
   stddev_samp: [NUMERICS],
   var_pop: [NUMERICS],
   var_samp: [NUMERICS],
-  approx_count_distinct: [NUMERICS],
 
   // TODO: these need more detailed validation.
   // number, float
@@ -55,6 +53,8 @@ export const AllowedAggregates: {
   regr_syy: [NUMERICS, NUMERICS],
 
   // any
+  count: [ANY_TYPES],
+  approx_count_distinct: [ANY_TYPES],
   entropy: [ANY_TYPES],
 };
 

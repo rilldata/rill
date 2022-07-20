@@ -8,6 +8,7 @@ describe("parseExpression", () => {
     (
       [
         ["count(*)", ["*"]],
+        ["count(distinct a)", ["a"]],
         ["avg(a::INT)", ["a"]],
         ["avg(a) - sum(b)", ["a", "b"]],
         ["avg(a) + 100 / 2.5", ["a"]],
@@ -66,7 +67,7 @@ describe("parseExpression", () => {
   describe("Aggregate check with columns", () => {
     (
       [
-        ["sm(impressions)", "Invalid aggregate function : sm"],
+        ["sm(impressions)", '"sm" is not a valid aggregate function'],
         [
           "sum(publisher)",
           "Invalid aggregate arguments. Expected: sum(NUMERICS) Actual: sum(VARCHAR)",
