@@ -5,6 +5,7 @@ import type { SvelteComponent } from "svelte";
 
 import TableCellInput from "$lib/components/table-editable/TableCellInput.svelte";
 import TableCellSelector from "../table-editable/TableCellSelector.svelte";
+import TableCellSparkline from "$lib/components/metrics-definition/TableCellSparkline.svelte";
 
 export type CellRendererComponent = new (
   // FIXME: these types are the   ones taken by the components
@@ -27,6 +28,10 @@ export type TableEventHandler = (
 
 export interface CellConfig {
   component: CellRendererComponent;
+}
+
+export class CellSparkline implements CellConfig {
+  component = TableCellSparkline;
 }
 
 export interface InputValidation {

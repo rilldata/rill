@@ -30,12 +30,14 @@ export const generateTimeSeriesApi = createAsyncThunk(
       filters,
       pixels,
       timeRange,
+      isolated,
     }: {
       id: string;
       measures?: Array<MeasureDefinitionEntity>;
       filters?: ActiveValues;
       pixels?: number;
       timeRange?: TimeSeriesTimeRange;
+      isolated?: boolean;
     },
     thunkAPI
   ) => {
@@ -57,6 +59,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
         filters: prunedFilters,
         pixels,
         timeRange: timeRange ?? metricsExplore.selectedTimeRange,
+        isolated,
       }
     );
     for await (const timeSeriesResponse of stream) {
