@@ -6,7 +6,7 @@ description: You can use `npm` to globally install Rill Developer on your local 
 
 ## Prerequisites
 
-Nodejs version 16+ installed locally: https://nodejs.org/en/download/. Check your version of Node:
+Nodejs version 16 installed locally: https://nodejs.org/en/download/. Check your version of Node:
 
 ```
 node -v
