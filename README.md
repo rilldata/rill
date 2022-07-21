@@ -10,9 +10,7 @@ Rill Developer is a tool that makes it effortless to transform your datasets wit
 
 It's best to show and not tell, so here's a little preview of Rill Developer:
 
-
-https://user-images.githubusercontent.com/5587788/179843488-2a626ddf-fed1-435d-8329-ce4c309ba647.mp4
-
+![Kapture 2022-07-21 at 15 34 45](https://user-images.githubusercontent.com/5587788/180313544-a7a03fcc-ea85-4b51-8ec3-ad5ed5043571.gif)
 
 ### We want to hear from you if you have any questions or ideas to share
 
