@@ -17,6 +17,7 @@ import type {
 } from "$common/database-service/DatabaseTimeSeriesActions";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { ExploreSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 
 export class MetricsExploreActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -32,6 +33,12 @@ export class MetricsExploreActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExploreSourceModelDoesntExist
+      );
+    }
+
     const rollupInterval: RollupInterval =
       await this.databaseActionQueue.enqueue(
         {
@@ -72,6 +79,15 @@ export class MetricsExploreActions extends RillDeveloperActions {
       !measures.length
     )
       return;
+
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExploreSourceModelDoesntExist
+      );
+    }
 
     if (isolated) {
       await Promise.all(
@@ -145,6 +161,15 @@ export class MetricsExploreActions extends RillDeveloperActions {
     }
   ) {
     if (!rillRequestContext.record?.sourceModelId || !measures.length) return;
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExploreSourceModelDoesntExist
+      );
+    }
+
     if (isolated) {
       await Promise.all(
         measures.map((measure) =>

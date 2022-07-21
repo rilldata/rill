@@ -92,9 +92,10 @@
 
   let validDimensionSelectorOption: SelectorOption[] = [];
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    const selectedMetricsDefModelProfile = $derivedModelStore?.entities.find(
-      (model) => model.id === $selectedMetricsDef.sourceModelId
-    ).profile;
+    const selectedMetricsDefModelProfile =
+      $derivedModelStore?.entities.find(
+        (model) => model.id === $selectedMetricsDef.sourceModelId
+      )?.profile ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
       .filter((column) => CATEGORICALS.has(column.type))
       .map((column) => ({ label: column.name, value: column.name }));

@@ -34,9 +34,10 @@
 
   let derivedModelColumns: Array<ProfileColumn>;
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    derivedModelColumns = $derivedModelStore?.entities
-      .find((model) => model.id === $selectedMetricsDef.sourceModelId)
-      .profile.filter((column) => TIMESTAMPS.has(column.type));
+    derivedModelColumns =
+      $derivedModelStore?.entities
+        .find((model) => model.id === $selectedMetricsDef.sourceModelId)
+        ?.profile.filter((column) => TIMESTAMPS.has(column.type)) ?? [];
   } else {
     derivedModelColumns = [];
   }

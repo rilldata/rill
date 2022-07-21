@@ -10,14 +10,24 @@ import { fetchWrapper } from "$lib/util/fetchWrapper";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
 import type { ValidationConfig } from "$lib/redux-store/utils/validation-utils";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { handleErrorResponse } from "$lib/redux-store/utils/handleErrorResponse";
 
 const DimensionColumnValidation: ValidationConfig<DimensionDefinitionEntity> = {
   field: "dimensionColumn",
-  validate: (entity, changes) => {
-    return fetchWrapper("dimensions/validate-dimension-column", "POST", {
-      metricsDefId: changes.metricsDefId ?? entity.metricsDefId,
-      dimensionColumn: changes.dimensionColumn,
-    });
+  validate: async (entity, changes) => {
+    try {
+      return await fetchWrapper(
+        "dimensions/validate-dimension-column",
+        "POST",
+        {
+          metricsDefId: changes.metricsDefId ?? entity.metricsDefId,
+          dimensionColumn: changes.dimensionColumn,
+        }
+      );
+    } catch (err) {
+      handleErrorResponse(err.response);
+      return Promise.resolve({});
+    }
   },
   validationPassed: (changes) =>
     changes.dimensionIsValid === ValidationState.OK,
