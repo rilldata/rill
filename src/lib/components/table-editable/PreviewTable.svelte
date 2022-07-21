@@ -30,8 +30,8 @@
   <PinnableTable
     on:pin={handlePin}
     on:change={(evt) => dispatch("change", evt.detail)}
-    on:add={() => dispatch("add")}
     on:delete={(evt) => dispatch("delete", evt.detail)}
+    on:tableResize
     {tableConfig}
     {activeIndex}
     {columnNames}
