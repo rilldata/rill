@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Table from "$lib/components/table-editable/Table.svelte";
   import TableRow from "$lib/components/table-editable/TableRow.svelte";
   import TableRowWithMenu from "$lib/components/table-editable/TableRowWithMenu.svelte";
 
