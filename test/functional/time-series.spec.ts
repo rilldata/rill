@@ -1,17 +1,17 @@
-import { useInlineTestServer } from "../utils/useInlineTestServer";
-import request from "supertest";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type {
   TimeSeriesResponse,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
+import request from "supertest";
+import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
 import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
 import {
   assertTimeSeries,
   assertTimeSeriesMeasureRange,
 } from "../utils/time-series-helpers";
-import { MetricsExploreTestData } from "../data/MetricsExplore.data";
+import { useInlineTestServer } from "../utils/useInlineTestServer";
 
 describe("TimeSeries", () => {
   const { inlineServer } = useInlineTestServer(8082);
@@ -33,19 +33,19 @@ describe("TimeSeries", () => {
     expect(timeRange.end).not.toBeUndefined();
   });
 
-  for (const MetricsExploreTest of MetricsExploreTestData) {
-    it(`Should return time series for ${MetricsExploreTest.title}`, async () => {
+  for (const MetricsExplorerTest of MetricsExplorerTestData) {
+    it(`Should return time series for ${MetricsExplorerTest.title}`, async () => {
       // select measures based on index passed or default to all measures
-      const requestMeasures = MetricsExploreTest.measures
-        ? MetricsExploreTest.measures.map((index) => measures[index])
+      const requestMeasures = MetricsExplorerTest.measures
+        ? MetricsExplorerTest.measures.map((index) => measures[index])
         : measures;
       const resp = await request(inlineServer.app)
         .post(`/api/metrics/${metricsDef.id}/time-series`)
         .send({
           measures: requestMeasures,
-          filters: MetricsExploreTest.filters ?? {},
-          ...(MetricsExploreTest.timeRange
-            ? { timeRange: MetricsExploreTest.timeRange }
+          filters: MetricsExplorerTest.filters ?? {},
+          ...(MetricsExplorerTest.timeRange
+            ? { timeRange: MetricsExplorerTest.timeRange }
             : {}),
         })
         .set("Accept", "application/json");
@@ -54,13 +54,13 @@ describe("TimeSeries", () => {
 
       assertTimeSeries(
         timeSeries,
-        MetricsExploreTest.previewRollupInterval,
+        MetricsExplorerTest.previewRollupInterval,
         requestMeasures.map((measure) => measure.sqlName)
       );
-      if (MetricsExploreTest.measureRanges) {
+      if (MetricsExplorerTest.measureRanges) {
         assertTimeSeriesMeasureRange(
           timeSeries,
-          MetricsExploreTest.measureRanges
+          MetricsExplorerTest.measureRanges
         );
       }
     });

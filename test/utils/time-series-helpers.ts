@@ -1,12 +1,12 @@
+import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
 import type {
   TimeSeriesResponse,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { PreviewRollupInterval } from "$lib/duckdb-data-types";
-import { isTimestampDiffAccurate } from "./time-series-time-diff";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
 import { END_DATE, START_DATE } from "../data/generator/data-constants";
-import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExploreActions";
+import { isTimestampDiffAccurate } from "./time-series-time-diff";
 
 export type TimeSeriesMeasureRange = Record<string, [min: number, max: number]>;
 

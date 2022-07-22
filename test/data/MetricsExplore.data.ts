@@ -1,10 +1,10 @@
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
-import { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import { PreviewRollupInterval } from "$lib/duckdb-data-types";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { TimeSeriesMeasureRange } from "../utils/time-series-helpers";
 import { getTimeRange } from "../utils/time-series-helpers";
 
-export interface MetricsExploreTestDataType {
+export interface MetricsExplorerTestDataType {
   title: string;
 
   // request arguments
@@ -51,7 +51,7 @@ const DefaultCityLeaderboard: [string, Array<string>] = [
   ],
 ];
 
-export const MetricsExploreTestData: Array<MetricsExploreTestDataType> = [
+export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
   {
     title: "basic request",
     previewRollupInterval: PreviewRollupInterval.day,

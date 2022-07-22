@@ -4,10 +4,10 @@
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type {
     LeaderboardValues,
-    MetricsExploreEntity,
+    MetricsExplorerEntity,
   } from "$lib/redux-store/explore/explore-slice";
   import {
     getMeasureFieldNameByIdAndIndex,
@@ -21,21 +21,21 @@
   export let metricsDefId: string;
   export let whichReferenceValue: string;
 
-  let metricsLeaderboard: Readable<MetricsExploreEntity>;
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let measureField: Readable<string>;
-  $: if ($metricsLeaderboard?.leaderboardMeasureId)
+  $: if ($metricsExplorer?.leaderboardMeasureId)
     measureField = getMeasureFieldNameByIdAndIndex(
-      $metricsLeaderboard.leaderboardMeasureId,
-      $metricsLeaderboard.measureIds.indexOf(
-        $metricsLeaderboard?.leaderboardMeasureId
+      $metricsExplorer.leaderboardMeasureId,
+      $metricsExplorer.measureIds.indexOf(
+        $metricsExplorer?.leaderboardMeasureId
       )
     );
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: leaderboardMeasureDefinition = $measures.find(
-    (measure) => measure.id === $metricsLeaderboard?.leaderboardMeasureId
+    (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
   );
   // get the expression so we can determine if the measure is summable
   $: expression = leaderboardMeasureDefinition?.expression;
@@ -98,11 +98,11 @@
   <div class="grid grid-auto-cols justify-end grid-flow-col items-end p-1 pb-3">
     <LeaderboardMeasureSelector {metricsDefId} />
   </div>
-  {#if $metricsLeaderboard}
+  {#if $metricsExplorer}
     <VirtualizedGrid
       {columns}
       height="100%"
-      items={$metricsLeaderboard.leaderboards ?? []}
+      items={$metricsExplorer.leaderboards ?? []}
       let:item
     >
       <!-- the single virtual element -->
@@ -120,7 +120,7 @@
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        activeValues={$metricsLeaderboard.activeValues[item.dimensionId] ?? []}
+        activeValues={$metricsExplorer.activeValues[item.dimensionId] ?? []}
         values={item.values}
         referenceValue={referenceValue || 0}
       />
