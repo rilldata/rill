@@ -4,13 +4,13 @@
   import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { syncExplore } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
-  import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
-  import type { Readable } from "svelte/store";
   import { onMount } from "svelte";
+  import type { Readable } from "svelte/store";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
@@ -18,8 +18,8 @@
 
   export let metricsDefId: string;
 
-  let metricsLeaderboard: Readable<MetricsExploreEntity>;
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
   $: if (metricsDefId) {
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
     store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
@@ -34,7 +34,7 @@
   $: syncExplore(
     store.dispatch,
     metricsDefId,
-    $metricsLeaderboard,
+    $metricsExplorer,
     $dimensions,
     $measures
   );
@@ -44,7 +44,7 @@
     syncExplore(
       store.dispatch,
       metricsDefId,
-      $metricsLeaderboard,
+      $metricsExplorer,
       $dimensions,
       $measures,
       true
@@ -60,14 +60,14 @@
   </svelte:fragment>
   <svelte:fragment slot="metrics">
     <MetricsTimeSeriesCharts
-      start={$metricsLeaderboard?.selectedTimeRange?.start ||
-        $metricsLeaderboard?.timeRange?.start}
-      end={$metricsLeaderboard?.selectedTimeRange?.end ||
-        $metricsLeaderboard?.timeRange?.end}
+      start={$metricsExplorer?.selectedTimeRange?.start ||
+        $metricsExplorer?.timeRange?.start}
+      end={$metricsExplorer?.selectedTimeRange?.end ||
+        $metricsExplorer?.timeRange?.end}
       activeMeasureIds={$measures?.map((measure) => measure.id) || []}
       {metricsDefId}
-      interval={$metricsLeaderboard?.selectedTimeRange?.interval ||
-        $metricsLeaderboard?.timeRange?.interval}
+      interval={$metricsExplorer?.selectedTimeRange?.interval ||
+        $metricsExplorer?.timeRange?.interval}
     />
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">

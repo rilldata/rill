@@ -1,24 +1,24 @@
-import type { DatabaseDataLoaderActions } from "$common/database-service/DatabaseDataLoaderActions";
-import type { DatabaseTableActions } from "$common/database-service/DatabaseTableActions";
-import type { DatabaseColumnActions } from "$common/database-service/DatabaseColumnActions";
-import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import type { DatabaseActions } from "$common/database-service/DatabaseActions";
+import type { DatabaseColumnActions } from "$common/database-service/DatabaseColumnActions";
+import type { DatabaseDataLoaderActions } from "$common/database-service/DatabaseDataLoaderActions";
+import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import type { DatabaseMetricsExplorerActions } from "$common/database-service/DatabaseMetricsExplorerActions";
+import type { DatabaseTableActions } from "$common/database-service/DatabaseTableActions";
+import type { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import {
   ActionServiceBase,
   ExtractActionTypeDefinitions,
   getActionMethods,
   PickActionFunctions,
 } from "$common/ServiceBase";
-import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
-import type { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
-import type { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
 
 type DatabaseActionsClasses = PickActionFunctions<
   DatabaseMetadata,
   DatabaseDataLoaderActions &
     DatabaseTableActions &
     DatabaseColumnActions &
-    DatabaseMetricsExploreActions &
+    DatabaseMetricsExplorerActions &
     DatabaseTimeSeriesActions
 >;
 export type DatabaseActionsDefinition = ExtractActionTypeDefinitions<

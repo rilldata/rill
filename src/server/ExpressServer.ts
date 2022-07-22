@@ -1,21 +1,21 @@
-import express from "express";
-import http from "http";
-import cors from "cors";
-import bodyParser from "body-parser";
-import fileUpload from "express-fileupload";
 import type { RootConfig } from "$common/config/RootConfig";
-import { SocketServer } from "$server/SocketServer";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
-import { existsSync, mkdirSync } from "fs";
-import { FileActionsController } from "$server/controllers/FileActionsController";
 import type { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
+import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
+import { FileActionsController } from "$server/controllers/FileActionsController";
 import { MetricsDefinitionController } from "$server/controllers/MetricsDefinitionController";
 import { MetricsDimensionController } from "$server/controllers/MetricsDimensionController";
+import { MetricsExplorerController } from "$server/controllers/MetricsExplorerController";
 import { MetricsMeasureController } from "$server/controllers/MetricsMeasureController";
-import { MetricsExploreController } from "$server/controllers/MetricsExploreController";
+import { SocketServer } from "$server/SocketServer";
+import bodyParser from "body-parser";
+import cors from "cors";
+import express from "express";
+import fileUpload from "express-fileupload";
+import { existsSync, mkdirSync } from "fs";
+import http from "http";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -93,7 +93,7 @@ export class ExpressServer {
       MetricsDefinitionController,
       MetricsDimensionController,
       MetricsMeasureController,
-      MetricsExploreController,
+      MetricsExplorerController,
     ].forEach((MetricsControllerClass) =>
       new MetricsControllerClass(
         this.config,
