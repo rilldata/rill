@@ -11,7 +11,11 @@ import { promisify } from "util";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import { CLI_COMMAND } from "../utils/getCliCommand";
 
-const execPromise = promisify(exec);
+const execPromiseConv = promisify(exec);
+const execPromise = async (cmd) => {
+  const output = await execPromiseConv(cmd);
+  console.log(output.stdout, output.stderr);
+};
 
 const CLI_TEST_FOLDER = "temp/test-duckdb-import";
 const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;

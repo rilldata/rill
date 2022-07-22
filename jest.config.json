@@ -4,6 +4,7 @@
     "^.+\\.[tj]s?$": "ts-jest"
   },
   "moduleNameMapper": {
+    "\\$common\\/utils\\/commonJsPath": "<rootDir>/test/utils/mockedCommonJsPath",
     "^\\$lib(.*)$": "<rootDir>/src/lib$1",
     "^\\$app(.*)$": [
       "<rootDir>/.svelte-kit/dev/runtime/app$1",
