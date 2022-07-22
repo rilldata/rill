@@ -1,6 +1,7 @@
 <script lang="ts">
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import { createHoverStateActionFactory } from "../actions/hover-state-action-factory";
   export let rotated = false;
   export let suppressTooltip = false;
   export let tooltipText: string;
@@ -9,6 +10,12 @@
   export let id: string;
   export let width = 16;
   export let height = 16;
+  export let isHovered = false;
+
+  const { hovered, captureHoverState } = createHoverStateActionFactory();
+  hovered.subscribe((trueOrFalse) => {
+    isHovered = trueOrFalse;
+  });
 </script>
 
 <Tooltip
@@ -20,6 +27,7 @@
   <button
     on:click
     {id}
+    use:captureHoverState
     style:width={`${width}px`}
     style:height={`${height}px`}
     style:grid-column="left-control"

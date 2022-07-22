@@ -39,6 +39,24 @@ export const CATEGORICALS = new Set([
   "TEXT",
   "STRING",
 ]);
+export const ANY_TYPES = new Set([
+  ...NUMERICS,
+  ...BOOLEANS,
+  ...TIMESTAMPS,
+  ...INTERVALS,
+  ...CATEGORICALS,
+]);
+
+export const TypesMap = new Map([
+  [INTEGERS, "INTEGERS"],
+  [FLOATS, "FLOATS"],
+  [NUMERICS, "NUMERICS"],
+  [BOOLEANS, "BOOLEANS"],
+  [TIMESTAMPS, "TIMESTAMPS"],
+  [INTERVALS, "INTERVALS"],
+  [CATEGORICALS, "CATEGORICALS"],
+  [ANY_TYPES, "ANY"],
+]);
 
 export interface Interval {
   months: number;

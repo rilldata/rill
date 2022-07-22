@@ -29,11 +29,18 @@ export interface CellConfig {
   component: CellRendererComponent;
 }
 
+export interface InputValidation {
+  state: ValidationState;
+  message: string;
+}
 export class CellConfigInput implements CellConfig {
   component = TableCellInput;
   constructor(
     public onchange: TableEventHandler,
-    public validation?: (row: EntityRecord, value: unknown) => ValidationState,
+    public getInputValidation?: (
+      row: EntityRecord,
+      value: unknown
+    ) => InputValidation,
     /**
      * This is called per every keystroke.
      */

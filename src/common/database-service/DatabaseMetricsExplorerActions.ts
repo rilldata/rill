@@ -79,4 +79,17 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       };
     }
   }
+
+  public async validateMeasureExpression(
+    metadata: DatabaseMetadata,
+    table: string,
+    expression: string
+  ): Promise<string> {
+    try {
+      await this.databaseClient.execute(`select ${expression} from ${table}`);
+    } catch (err) {
+      return err.message;
+    }
+    return "";
+  }
 }
