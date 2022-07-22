@@ -68,7 +68,6 @@
     );
   }
 
-  // $: console.log("scale", $metricsLeaderboard.leaderboardFormatScale);
   let leaderboardExpanded;
 
   function onSelectItem(event, item: LeaderboardValues) {

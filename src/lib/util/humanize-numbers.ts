@@ -226,6 +226,8 @@ export function getScaleForLeaderboard(leaderboard: LeaderboardValues[]) {
   if (!leaderboard) return "none";
 
   let numValues = leaderboard
+    // use the first five dimensions as the sample
+    .slice(0, 5)
     .map((dimension) => dimension.values)
     .flat()
     .map((values) => values.value);
@@ -234,6 +236,5 @@ export function getScaleForLeaderboard(leaderboard: LeaderboardValues[]) {
   if (!areAllNumbers) return "none";
   numValues = (numValues as number[]).sort((a, b) => b - a);
 
-  console.log(numValues);
   return determineScaleForValues(numValues);
 }
