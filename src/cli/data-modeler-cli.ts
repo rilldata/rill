@@ -11,7 +11,7 @@ import { ExampleProjectCommand } from "$cli/ExampleProjectCommand";
 const program = new Command();
 
 program
-  .name("rill-developer")
+  .name("rill")
   .description("Rill Developer CLI.")
   // Override help to add a capital D for display.
   .helpOption("-h, --help", "Displays help for all commands. ")
