@@ -56,6 +56,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     let derivedState: DerivedTableState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/derived_table_state.json`).toString()
     );
+    console.log(persistentState.entities);
     expect(persistentState.entities[0].name).toBe("AdBids");
     this.assertColumns(derivedState.entities[0].profile, AdBidsColumnsTestData);
     expect(persistentState.entities[1].name).toBe("Impressions");
@@ -131,6 +132,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     const derivedState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/derived_table_state.json`).toString()
     );
+    console.log(persistentState.entities);
     expect(persistentState.entities[0].name).toBe("AdBids");
     this.assertColumns(derivedState.entities[0].profile, [
       ...AdBidsColumnsTestData.slice(0, 3),
@@ -158,6 +160,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     let persistentState: PersistentTableState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
     );
+    console.log(persistentState.entities);
     expect(persistentState.entities[0].name).toBe("AdBids");
     expect(persistentState.entities[1].name).toBe("Impressions");
 
@@ -175,6 +178,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     persistentState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
     );
+    console.log(persistentState.entities);
     expect(persistentState.entities[0].name).toBe("AdBids");
     expect(persistentState.entities[1].name).toBe("Impressions");
 
