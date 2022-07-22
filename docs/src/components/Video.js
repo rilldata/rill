@@ -1,7 +1,7 @@
 import React from 'react';
 
 export default function Video({vimeoId}) {
-  const url = 'https://player.vimeo.com/video/' + vimeoId + '?h=67f4fbf58a&autoplay=1&loop=1&title=0&byline=0&portrait=0';
+  const url = 'https://player.vimeo.com/video/' + vimeoId + '?autoplay=1&loop=1&title=0&byline=0&portrait=0';
   return (
     <div style={{
       padding: '56.23% 0 0 0', 
