@@ -18,19 +18,18 @@ On Ubuntu, you'll also need to make sure you have `g++` installed in order to co
 sudo apt install g++
 ```
   
-## Install or update with npm
+## Install
 You can use `npm` to globally install Rill Developer on your local computer. 
 ```
 npm install -g @rilldata/rill
 ```
-Once installed, [use the CLI to quick start a new project](../cli.md).
-
+Once installed, use the [CLI](../cli.md) to quick start a new project.
 
 Note: this install command involves compiling DuckDB which can be time consuming to complete (it may take approximately five minutes or more, depending on your machine). Please be patient!
 
 ## 404 errors
 If you have just installed the application and are trying to see the User Interface at http://localhost:8080/ but see a 404 error, it is possible that npm install is taking longer than 5 minutes to build the application and you need to wait for the build to complete. Please wait an additional 5 minutes and try again.
 
-
+## Updates
 Rill Developer will be evolving quickly. If you want an updated version, you can pull in the latest changes and rebuild the application by running the same command, `npm install -g @rilldata/rill`. Once you have reinstalled the application you can restart your project to see the new experience.
 
