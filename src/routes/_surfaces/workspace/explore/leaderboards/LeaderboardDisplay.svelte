@@ -58,15 +58,15 @@
         : $bigNumberEntity.referenceValues?.[$measureField];
   }
 
-  // let leaderboardFormatScale: ShortHandSymbols = "none";
-  // $: if (
-  //   formatPreset === NicelyFormattedTypes.HUMANIZE ||
-  //   formatPreset === NicelyFormattedTypes.CURRENCY
-  // ) {
-  //   leaderboardFormatScale = getScaleForLeaderboard(
-  //     $metricsLeaderboard.leaderboards
-  //   );
-  // }
+  let leaderboardFormatScale: ShortHandSymbols = "none";
+  $: if (
+    formatPreset === NicelyFormattedTypes.HUMANIZE ||
+    formatPreset === NicelyFormattedTypes.CURRENCY
+  ) {
+    leaderboardFormatScale = getScaleForLeaderboard(
+      $metricsExplorer.leaderboards
+    );
+  }
 
   // $: console.log("scale", $metricsLeaderboard.leaderboardFormatScale);
   let leaderboardExpanded;
@@ -125,7 +125,7 @@
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}
-        leaderboardFormatScale={$metricsLeaderboard.leaderboardFormatScale}
+        {leaderboardFormatScale}
         isSummableMeasure={expression?.toLowerCase()?.includes("count(") ||
           expression?.toLowerCase()?.includes("sum(")}
         dimensionId={item.dimensionId}

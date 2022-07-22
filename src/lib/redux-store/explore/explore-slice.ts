@@ -62,7 +62,6 @@ export const exploreSlice = createSlice({
           measureIds: measures.map((measure) => measure.id),
           selectedMeasureIds: measures.map((measure) => measure.id),
           leaderboardMeasureId: measures[0]?.id,
-          leaderboardFormatScale: "none",
           leaderboards: dimensions.map((column) => ({
             values: [],
             dimensionId: column.id,
@@ -434,7 +433,6 @@ export const {
   removeDimensionFromExplore,
   toggleLeaderboardActiveValue,
   setLeaderboardDimensionValues,
-  setLeaderboardFormatScale,
   setLeaderboardValuesStatus,
   setLeaderboardValuesErrorStatus,
   clearSelectedLeaderboardValues,
