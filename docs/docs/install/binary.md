@@ -1,5 +1,21 @@
 # Using a Rill binary
-The fastest path to installing the Rill application is using our binary. Find the link that is [relevant for your OS and architecture in our most recent release assets](https://github.com/rilldata/rill-developer/releases).
+Our binary is the fastest path to installing Rill Developer. Download the latest package that is relevant for your OS and architecture:
+
+- [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-arm64/rill)
+- [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-x64/rill)
+
+- [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/linux-x64/rill)
+
+- [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/win-x64/rill.exe)
+
+## CLI commands
+To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands.
+```
+cd downloads
+rill init
+rill import-source /path/to/data_1.parquet
+rill start
+```
 
 ## Safely open Rill on your Mac
 If you see a warning when opening the rill-macos-arm64 binary you need to change the permissions to make it executable and remove it from Apple Developer identification quarantine.
@@ -16,11 +32,3 @@ If you see a warning "SmartScreen protected an unrecognized app from starting", 
 * Click the checkbox next to Unblock so that a checkmark appears.
 * Click Apply.
 
-## CLI commands
-To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands by replacing the name of the file you installed with `rill`.
-```
-cd downloads
-rill-macos-arm64 init
-rill-macos-arm64 import-source /path/to/data_1.parquet
-rill-macos-arm64 start
-```
