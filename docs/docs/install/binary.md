@@ -3,9 +3,7 @@ Our binary is the fastest path to installing Rill Developer. Download the latest
 
 - [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-arm64/rill)
 - [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-x64/rill)
-
 - [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/linux-x64/rill)
-
 - [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/win-x64/rill.exe)
 
 ## CLI commands
