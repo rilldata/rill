@@ -41,7 +41,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       SELECT ${expression} as value, "${column}" as label from "${table}"
       WHERE "${column}" IS NOT NULL ${whereClause}
       GROUP BY "${column}"
-      ORDER BY value desc
+      ORDER BY value desc NULLS LAST
       LIMIT 15
     `
     );

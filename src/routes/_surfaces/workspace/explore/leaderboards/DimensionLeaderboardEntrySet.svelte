@@ -39,7 +39,7 @@ see more button
         {label}
       </svelte:fragment>
       <svelte:fragment slot="right">
-        {formattedValue || ""}
+        {formattedValue || value || "∅"}
       </svelte:fragment>
       <svelte:fragment slot="tooltip">
         {#if !active}
