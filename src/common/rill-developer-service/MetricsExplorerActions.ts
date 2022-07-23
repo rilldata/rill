@@ -13,7 +13,7 @@ import type {
   TimeSeriesRollup,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
-import { ExploreSourceModelDoesntExist } from "$common/errors/ErrorMessages";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
@@ -35,7 +35,7 @@ export class MetricsExplorerActions extends RillDeveloperActions {
       .getById(rillRequestContext.record.sourceModelId);
     if (!model) {
       return ActionResponseFactory.getEntityError(
-        ExploreSourceModelDoesntExist
+        ExplorerSourceModelDoesntExist
       );
     }
 
@@ -85,7 +85,7 @@ export class MetricsExplorerActions extends RillDeveloperActions {
       .getById(rillRequestContext.record.sourceModelId);
     if (!model) {
       return ActionResponseFactory.getEntityError(
-        ExploreSourceModelDoesntExist
+        ExplorerSourceModelDoesntExist
       );
     }
 
@@ -166,7 +166,7 @@ export class MetricsExplorerActions extends RillDeveloperActions {
       .getById(rillRequestContext.record.sourceModelId);
     if (!model) {
       return ActionResponseFactory.getEntityError(
-        ExploreSourceModelDoesntExist
+        ExplorerSourceModelDoesntExist
       );
     }
 

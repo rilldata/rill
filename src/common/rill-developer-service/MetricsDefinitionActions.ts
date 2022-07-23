@@ -10,7 +10,7 @@ import type { ProfileColumn } from "$lib/types";
 import { BOOLEANS, CATEGORICALS } from "$lib/duckdb-data-types";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { shallowCopy } from "$common/utils/shallowCopy";
-import { ExploreSourceModelDoesntExist } from "$common/errors/ErrorMessages";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 
 export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -114,7 +114,7 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       .getById(rillRequestContext.record.sourceModelId);
     if (!model) {
       return ActionResponseFactory.getEntityError(
-        ExploreSourceModelDoesntExist
+        ExplorerSourceModelDoesntExist
       );
     }
 

@@ -8,7 +8,7 @@ import {
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { getDimensionDefinition } from "$common/stateInstancesFactory";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import { ExploreSourceModelDoesntExist } from "$common/errors/ErrorMessages";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 
 /**
  * select
@@ -85,7 +85,7 @@ export class DimensionsActions extends RillDeveloperActions {
       .getById(rillRequestContext.record.sourceModelId);
     if (!derivedModel) {
       return ActionResponseFactory.getEntityError(
-        ExploreSourceModelDoesntExist
+        ExplorerSourceModelDoesntExist
       );
     }
 
