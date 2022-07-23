@@ -16,11 +16,13 @@ rill start
 ```
 
 ## Safely open Rill on your Mac
-If you see a warning when opening the rill-macos-arm64 binary you need to change the permissions to make it executable and remove it from Apple Developer identification quarantine.
+If you see a warning when opening the rill macos-arm64 binary you need to change the permissions to make it executable and remove it from Apple Developer identification quarantine.
 ```
-chmod a+x rill-macos-arm64
-xattr -d com.apple.quarantine ./rill-macos-arm64
+cd downloads
+chmod a+x rill
+xattr -d com.apple.quarantine ./rill
 ```
+
 ## Safely open Rill on Windows 10
 If you see a warning "SmartScreen protected an unrecognized app from starting", [you can fix by by following these instructions here](https://www.windowscentral.com/how-fix-app-has-been-blocked-your-protection-windows-10#open).  In summary:
 
