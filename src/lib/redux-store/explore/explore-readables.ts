@@ -1,16 +1,16 @@
-import { createReadableFactoryWithSelector } from "$lib/redux-store/svelte-readables-wrapper";
-import { store } from "$lib/redux-store/store-root";
 import {
-  selectMetricsExploreById,
-  selectMetricsExplores,
+  selectMetricsExplorerById,
+  selectMetricsExplorers,
 } from "$lib/redux-store/explore/explore-selectors";
+import { store } from "$lib/redux-store/store-root";
+import { createReadableFactoryWithSelector } from "$lib/redux-store/svelte-readables-wrapper";
 
-export const getMetricsExplores = createReadableFactoryWithSelector(
+export const getMetricsExplorers = createReadableFactoryWithSelector(
   store,
-  selectMetricsExplores
+  selectMetricsExplorers
 );
 
-export const getMetricsExploreById = createReadableFactoryWithSelector(
+export const getMetricsExplorerById = createReadableFactoryWithSelector(
   store,
-  selectMetricsExploreById
+  selectMetricsExplorerById
 );

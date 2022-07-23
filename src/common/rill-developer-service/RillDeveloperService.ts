@@ -1,29 +1,31 @@
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import type { DatabaseService } from "$common/database-service/DatabaseService";
-import type { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
-import type { PickActionFunctions } from "$common/ServiceBase";
-import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
-import type { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
-import type { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
-import type { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
-import type { ExtractActionTypeDefinitions } from "$common/ServiceBase";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import { getActionMethods } from "$common/ServiceBase";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
+import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import type {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { MetricsExploreActions } from "$common/rill-developer-service/MetricsExploreActions";
+import type { DatabaseService } from "$common/database-service/DatabaseService";
+import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
+import type { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
+import type { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
+import type { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
+import type { MetricsExplorerActions } from "$common/rill-developer-service/MetricsExplorerActions";
+import type { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
+import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
+import type {
+  ExtractActionTypeDefinitions,
+  PickActionFunctions,
+} from "$common/ServiceBase";
+import { getActionMethods } from "$common/ServiceBase";
 
 type RillDeveloperActionsClasses = PickActionFunctions<
   RillRequestContext<EntityType, StateType>,
   MetricsDefinitionActions &
     DimensionsActions &
     MeasuresActions &
-    MetricsExploreActions
+    MetricsExplorerActions
 >;
 export type RillDeveloperActionsDefinition = ExtractActionTypeDefinitions<
   RillRequestContext<EntityType, StateType>,
