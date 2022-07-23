@@ -7,6 +7,7 @@
 
   import Close from "$lib/components/icons/Close.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { clearSelectedLeaderboardValuesAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
@@ -15,6 +16,7 @@
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
+  import SelectedDimensions from "./selected-dimensions/SelectedDimensions.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
 
   export let metricsDefId: string;
@@ -27,6 +29,21 @@
     clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
   }
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
+  $: dimensions = getDimensionsByMetricsId(metricsDefId);
+  $: console.log($dimensions);
+
+  $: selectedValues = Object.entries($metricsLeaderboard.activeValues)
+    .map(([k, v]) => {
+      const dimensionMetadata = $dimensions?.find(
+        (dimension) => dimension.id === k
+      );
+      return {
+        name:
+          dimensionMetadata.labelSingle || dimensionMetadata.dimensionColumn,
+        values: v,
+      };
+    })
+    .filter((v) => v.values.length);
 </script>
 
 <header
@@ -87,6 +104,7 @@
           >
             clear all filters <Close />
           </button>
+          <SelectedDimensions {selectedValues} />
         {/if}
       </div>
       <!-- NOTE: place share buttons here -->

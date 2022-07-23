@@ -10,8 +10,7 @@
 <div
   style:height
   style:width
-  style:outline="1px solid black"
-  class="filter-set {style} flex-{direction} flex-wrap justify-items-start items-start h-full"
+  class="filter-set {style} flex-{direction} flex-wrap justify-items-start items-start h-full gap-2"
 >
   <slot />
 </div>

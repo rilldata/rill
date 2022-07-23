@@ -1,5 +1,6 @@
 <script lang="ts">
   import Cancel from "$lib/components/icons/Cancel.svelte";
+
   import { cubicOut } from "svelte/easing";
   import { slide } from "svelte/transition";
 
@@ -31,7 +32,6 @@
       duration,
       easing,
       css: (t) => `
-        outline: 1px solid orange;
         overflow: hidden;
         white-space: nowrap;
         opacity: ${Math.min(t * 20, 1) * opacity};
@@ -45,7 +45,7 @@
       `,
     };
   }
-  let duration = 300;
+  let duration = 200;
   let action;
   let params = { duration: duration };
   if (collapseDirection === "vertical") {
@@ -65,7 +65,7 @@
 </script>
 
 <div
-  class="filter grid grid-flow-col items-center w-max gap-x-1 bg-gray-200 p-1 pr-2 pt-1 pb-1 rounded"
+  class=" grid grid-flow-col items-center w-max gap-x-1 bg-blue-100 p-1 pr-2 pt-1 pb-1 rounded"
   style:grid-template-columns="max-content auto"
   style:max-width="200px"
   in:action|local={params}
@@ -74,10 +74,14 @@
   <button
     style:width="16px"
     style:height="16px"
-    class="hover:bg-gray-300 w-4 grid place-items-center rounded-sm"
-    on:click><Cancel size="16px" /></button
+    class="hover:text-gray-900 w-4 grid place-items-center rounded-sm text-blue-600"
+    on:click
   >
-  <div class=" {overflowClass} overflow-hidden whitespace-nowrap">
+    <Cancel size="16px" />
+  </button>
+  <div
+    class=" {overflowClass} overflow-hidden whitespace-nowrap text-slate-800"
+  >
     <slot />
   </div>
 </div>

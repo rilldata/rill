@@ -1,5 +1,6 @@
 <script lang="ts">
   import { flip } from "svelte/animate";
+  import { crossfade, fly } from "svelte/transition";
   import Filter from "./Filter.svelte";
   import FilterSet from "./FilterSet.svelte";
 
@@ -46,6 +47,8 @@
   ];
 
   let duration = 200;
+
+  const { send, receive } = crossfade({ fallback: fly });
 </script>
 
 <svelte:window on:keypress={handle} />
@@ -69,13 +72,13 @@
 <div>
   <FilterSet width="900px" style="flex">
     {#each things as { name, values } (name)}
-      <div animate:flip={{ duration }}>
+      <div>
         <FilterSet style="inline-flex" width="max-content" direction="row">
-          <div>
+          <div class="place-self-stretch grid place-items-center">
             {name}
           </div>
           {#each values.filter((si) => !filters.includes(si)) as si (si)}
-            <div>
+            <div out:fly={{ duration, y: -12 }} animate:flip={{ duration }}>
               <Filter
                 on:click={() => {
                   filters = [...filters, si];
