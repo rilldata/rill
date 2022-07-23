@@ -18,7 +18,7 @@ rill start
 
 or try our example:
 ```
-rill initialize-example-project
+rill init-example
 ```
 
 :::

@@ -22,8 +22,15 @@ It's best to show and not tell, so here's a little preview of Rill Developer:
 You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 ## Pick an install option:
+Our binary is the fastest way to install Rill Developer:
+- [binary](https://docs.rilldata.com/install/binary) : download the most recent assets binary.
+  - [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-arm64/rill)
+  - [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-x64/rill)
+  - [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/linux-x64/rill)
+  - [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/win-x64/rill.exe)
+- `cd` to your download directory and get started with the Rill [CLI](./cli.md).
 
-- [binary](https://docs.rilldata.com/install/binary) : download the most recent [assets binary](https://github.com/rilldata/rill-developer/releases).
+You can also install Rill Developer using npm or docker:
 - [npm](https://docs.rilldata.com/install/npm) : run `npm install -g @rilldata/rill`
 - [docker](https://docs.rilldata.com/install/docker) : download our [docker container](https://hub.docker.com/r/rilldata/rill-developer)
 
@@ -44,14 +51,6 @@ or try our example:
 rill init-example
 
 ```
-
-## Try an example project
-If you want to see several examples with data transformations you can install out example project.
-```
-cd /path/to/rill-developer
-bash scripts/example-project.sh
-```
-This project imports 7 datasets and performs simple transfomrations to create 5 analytics ready resources. For more information on the datasets, please see the readme.md files in the `data` rill-developer-example directory after running the script.
 
 ## Legal
 By downloading and using our application you are agreeing to the [Rill Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
