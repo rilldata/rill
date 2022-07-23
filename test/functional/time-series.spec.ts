@@ -5,7 +5,7 @@ import type {
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
 import request from "supertest";
-import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
+import { MetricsExplorerTestData } from "../data/MetricsExplore.data";
 import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
 import {
   assertTimeSeries,
