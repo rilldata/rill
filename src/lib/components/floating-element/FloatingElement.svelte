@@ -1,10 +1,10 @@
 <script lang="ts">
+  import {
+    mouseLocationToBoundingRect,
+    placeElement,
+  } from "$lib/util/place-element";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import {
-    placeElement,
-    mouseLocationToBoundingRect,
-  } from "$lib/util/place-element";
   import Portal from "../Portal.svelte";
 
   export let target;

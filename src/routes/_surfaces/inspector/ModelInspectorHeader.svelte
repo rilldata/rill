@@ -19,12 +19,12 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
   import Button from "$lib/components/Button.svelte";
+  import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
   import Export from "$lib/components/icons/Export.svelte";
   import Metrics from "$lib/components/icons/Metrics.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import ExportError from "$lib/components/modal/ExportError.svelte";
-  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { TIMESTAMPS } from "$lib/duckdb-data-types";

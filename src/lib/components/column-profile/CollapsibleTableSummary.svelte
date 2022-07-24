@@ -2,9 +2,9 @@
   import { createEventDispatcher, onMount } from "svelte";
   import { slide } from "svelte/transition";
 
+  import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
-  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
   import CollapsibleTableHeader from "./CollapsibleTableHeader.svelte";
 

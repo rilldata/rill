@@ -5,11 +5,19 @@
 
 <script lang="ts">
   import { guidGenerator } from "$lib/util/guid";
-  import { createEventDispatcher, onMount, setContext } from "svelte";
+  import {
+    createEventDispatcher,
+    getContext,
+    onMount,
+    setContext,
+  } from "svelte";
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
+  import { clickOutside } from "../actions/click-outside";
 
   export let dark: boolean = undefined;
+  export let elementsToIgnoreOnClickOutside = [];
+
   if (dark) {
     setContext("rill:menu:dark", dark);
   }
@@ -48,6 +56,9 @@
   setContext("rill:menu:menuItems", menuItems);
   setContext("rill:menu:currentItem", currentItem);
 
+  const menuTrigger =
+    getContext("rill:menu:menuTrigger") || writable(undefined);
+
   // once open, we should select the first menu item.
   onMount(() => {
     $currentItem = 0;
@@ -63,10 +74,16 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div
-  transition:fade|local={{ duration: 35 }}
+  transition:fade|local={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
   }}
+  use:clickOutside={[
+    [$menuTrigger],
+    () => {
+      dispatch("lose-focus");
+    },
+  ]}
   class="
         py-2 
         w-max 

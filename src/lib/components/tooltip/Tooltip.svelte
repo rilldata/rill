@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FloatingElement from "./FloatingElement.svelte";
+  import FloatingElement from "../floating-element/FloatingElement.svelte";
   import Portal from "../Portal.svelte";
   export let location = "bottom";
   export let alignment = "middle";

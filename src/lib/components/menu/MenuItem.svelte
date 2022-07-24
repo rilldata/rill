@@ -49,13 +49,15 @@
   }
 
   let selected = false;
-  let hovered = false;
+  export let focused = false;
 </script>
 
 <button
   bind:this={element}
   role="menuitem"
-  style="--tw-ring-color: transparent"
+  style="--tw-ring-color: transparent; --flicker-color:{dark
+    ? 'rgb(75, 85, 99)'
+    : 'rgb(225, 225, 225)'}"
   class="
         text-left 
         py-1
@@ -71,25 +73,26 @@
   class:selected
   on:mouseover={() => {
     $currentItem = itemID;
-    hovered = true;
+    focused = true;
   }}
   on:mouseleave={() => {
     $currentItem = undefined;
-    hovered = false;
+    focused = false;
   }}
   on:focus={() => {
     $currentItem = itemID;
-    hovered = true;
+    focused = true;
   }}
   on:blur={() => {
-    hovered = false;
+    focused = false;
   }}
   on:click={() => {
     selected = true;
-    dispatch("select");
     setTimeout(() => {
+      dispatch("select");
       onSelect();
-    }, 100);
+      selected = false;
+    }, 150);
   }}
 >
   {#if icon}
@@ -98,26 +101,26 @@
     </div>
   {/if}
   <div class="text-left">
-    <slot {hovered} />
+    <slot {focused} />
   </div>
   <div class="text-right text-gray-400">
-    <slot name="right" {hovered} />
+    <slot name="right" {focused} />
   </div>
 </button>
 
 <style>
   .selected {
-    animation: flicker 75ms;
+    animation: flicker 150ms;
     animation-iteration-count: 1;
   }
 
   @keyframes flicker {
     0%,
     100% {
-      background-color: rgb(75, 85, 99);
+      background-color: rgba(255, 255, 255, 0);
     }
     50% {
-      background-color: rgba(255, 255, 255, 0);
+      background-color: var(--flicker-color);
     }
   }
 </style>
