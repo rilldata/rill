@@ -18,6 +18,10 @@
   export let dark: boolean = undefined;
   export let elementsToIgnoreOnClickOutside = [];
 
+  export let role = "menu";
+  /** used for selector-style menus */
+  export let multiselectable = false;
+
   if (dark) {
     setContext("rill:menu:dark", dark);
   }
@@ -69,6 +73,14 @@
   $: if ($globalActiveMenu !== menuID) {
     dispatch("escape");
   }
+
+  /** Accessibility properties */
+  let ariaProperties = {};
+  $: if (role === "menu") {
+    ariaProperties = { role };
+  } else if (role === "listbox") {
+    ariaProperties = { role, ["aria-multiselectable"]: multiselectable };
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -98,7 +110,7 @@
   style:outline="none"
   style:min-width="300px"
   tabindex="0"
-  role="menu"
+  {...ariaProperties}
 >
   <slot />
 </div>

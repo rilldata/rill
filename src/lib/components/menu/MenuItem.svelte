@@ -8,6 +8,9 @@
   import type { Writable } from "svelte/store";
 
   export let icon = false;
+  export let role = "menuitem";
+  export let selected = false;
+  export let animateSelect = true;
 
   const dispatch = createEventDispatcher();
 
@@ -34,12 +37,27 @@
 
   $: active = itemID === $currentItem;
 
+  function onFocus(itemID) {
+    return () => {
+      currentItem.set(itemID);
+      focused = true;
+    };
+  }
+
+  function onLeave(itemID) {
+    return () => {
+      $currentItem = undefined;
+      focused = false;
+    };
+  }
+
   // if the element is the active one,
   // let's move the focus on it.
   // An element can be the focus if
   // (1) the mouse moves over it,
   // (2) the user tabs to it,
   // (3) the user uses the keyboard arrows
+
   $: if (active && element) {
     element.focus();
   } else {
@@ -48,13 +66,26 @@
     }
   }
 
-  let selected = false;
+  let justClicked = false;
   export let focused = false;
+
+  /** accessibility requirements */
+  let ariaProperties;
+  $: if (role === "menuitem") {
+    ariaProperties = {
+      role,
+    };
+  } else if (role === "option") {
+    ariaProperties = {
+      role,
+      ["aria-selected"]: selected,
+    };
+  }
 </script>
 
 <button
   bind:this={element}
-  role="menuitem"
+  {...ariaProperties}
   style="--tw-ring-color: transparent; --flicker-color:{dark
     ? 'rgb(75, 85, 99)'
     : 'rgb(225, 225, 225)'}"
@@ -69,30 +100,32 @@
         justify-items-stretch
         {dark ? 'text-white focus:bg-gray-600' : 'text-black focus:bg-gray-200'}
     "
-  style:grid-template-columns="auto max-content"
-  class:selected
-  on:mouseover={() => {
-    $currentItem = itemID;
-    focused = true;
-  }}
-  on:mouseleave={() => {
-    $currentItem = undefined;
-    focused = false;
-  }}
-  on:focus={() => {
-    $currentItem = itemID;
-    focused = true;
-  }}
+  style:grid-template-columns="{icon ? "max-content" : ""} auto max-content"
+  class:recently-clicked={justClicked}
+  on:mouseover={onFocus(itemID)}
+  on:mouseleave={onLeave(itemID)}
+  on:focus={onFocus(itemID)}
   on:blur={() => {
     focused = false;
   }}
   on:click={() => {
-    selected = true;
-    setTimeout(() => {
-      dispatch("select");
-      onSelect();
-      selected = false;
-    }, 150);
+    // set justClicked to true if this item isn't already selected.
+    // this happens when these menu items are multi-selectable
+    if (!selected) {
+      // only animate if animateSelect is true, which it is by default.
+      if (animateSelect) justClicked = true;
+      // fire an event to change anything before any selection animation occurs.
+      dispatch("before-select");
+    }
+    // pre-select
+    setTimeout(
+      () => {
+        dispatch("select");
+        onSelect();
+        justClicked = false;
+      },
+      animateSelect ? 150 : 0
+    );
   }}
 >
   {#if icon}
@@ -109,7 +142,7 @@
 </button>
 
 <style>
-  .selected {
+  .recently-clicked {
     animation: flicker 150ms;
     animation-iteration-count: 1;
   }
