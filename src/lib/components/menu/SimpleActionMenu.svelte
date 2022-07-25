@@ -10,7 +10,7 @@ and the menu closes.
   import MenuItem from "./MenuItem.svelte";
   import WithFloatingMenu from "./WithFloatingMenu.svelte";
 
-  export let actions;
+  export let options = [];
   export let dark: boolean = undefined;
   export let location: "left" | "right" | "top" | "bottom" = "bottom";
   export let alignment: "start" | "middle" | "end" = "start";
@@ -24,9 +24,9 @@ and the menu closes.
 
   const dispatch = createEventDispatcher();
 
-  function createOnClickHandler(label, right, value, index, closeEventHandler) {
+  function createOnClickHandler(callback, closeEventHandler) {
     return () => {
-      dispatch("select", { label, right, value, index });
+      callback();
       closeEventHandler();
     };
   }
@@ -50,11 +50,9 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each actions as { label, right, value }, i}
-      <MenuItem
-        on:select={createOnClickHandler(label, right, value, i, handleClose)}
-      >
-        {label}
+    {#each options as { main, right, callback }, i}
+      <MenuItem on:select={createOnClickHandler(callback, handleClose)}>
+        {main}
         <svelte:fragment slot="right">
           {right || ""}
         </svelte:fragment>

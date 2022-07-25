@@ -14,16 +14,29 @@
   let singleSelections = [singleSelectorOptions[0]];
 
   let multipleSelections = [];
+  let style = "obvious";
 </script>
 
 <section>
-  <h2>Select Menus</h2>
+  <h2>Select Menus ({style})</h2>
+
+  <button
+    on:click={() => {
+      style = "obvious";
+    }}>obvious</button
+  >
+  <button
+    on:click={() => {
+      style = "bare";
+    }}>bare</button
+  >
+
   <div class="flex flex-row gap-x-8 content-start items-start">
     <div class="grid grid-flow-row gap-y-4">
       <SimpleSelectorMenu
+        {style}
         options={singleSelectorOptions}
         bind:selections={singleSelections}
-        let:handleClose
         let:toggleMenu
         let:active
       >
@@ -46,6 +59,7 @@
     <div class="grid grid-flow-row gap-y-4">
       <SimpleSelectorMenu
         multiple
+        {style}
         options={singleSelectorOptions}
         bind:selections={multipleSelections}
         let:toggleMenu

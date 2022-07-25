@@ -1,17 +1,22 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
+  import notification from "$lib/components/notifications";
 
   import type {
     Alignment,
     Location,
   } from "$lib/components/floating-element/types";
-  import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
+  import MoreHorizontal from "$lib/components/icons/MoreHorizontal.svelte";
   import SimpleActionMenu from "$lib/components/menu/SimpleActionMenu.svelte";
-  import notification from "$lib/components/notifications";
+
+  function cb(message) {
+    return () => notification.send({ message: `selected ${message}` });
+  }
+
   const actionMenuChoices = [
-    { label: "first option", right: "first", value: 5 },
-    { label: "second option", right: "second", value: 20 },
-    { label: "third option", right: "third", value: 30 },
+    { main: "first option", right: "first", callback: cb("first") },
+    { main: "second option", right: "second", callback: cb("second") },
+    { main: "third option", right: "third", callback: cb("third") },
   ];
 
   let location: Location = "right";
@@ -36,20 +41,14 @@
 <div class="w-full h-screen grid place-center place-content-center">
   <SimpleActionMenu
     dark
-    on:select={(event) => {
-      notification.send({ message: `selected ${event.detail.label}` });
-    }}
     {location}
     {alignment}
-    actions={actionMenuChoices}
+    options={actionMenuChoices}
     let:active
     let:toggleMenu
   >
     <Button on:click={toggleMenu} type="primary"
-      >Click to Expand {active}
-      <span class={active ? "-rotate-180" : ""}>
-        <CaretDownIcon size="16px" />
-      </span>
+      >See Available Actions <MoreHorizontal size="16px" />
     </Button>
   </SimpleActionMenu>
 </div>

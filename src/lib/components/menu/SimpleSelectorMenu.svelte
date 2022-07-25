@@ -5,10 +5,12 @@ and the menu closes.
 -->
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
+  import Check from "../icons/Check.svelte";
   import CheckBox from "../icons/CheckBox.svelte";
   import CheckCircle from "../icons/CheckCircle.svelte";
   import EmptyBox from "../icons/EmptyBox.svelte";
   import EmptyCircle from "../icons/EmptyCircle.svelte";
+  import Spacer from "../icons/Spacer.svelte";
 
   import Menu from "./Menu.svelte";
   import MenuItem from "./MenuItem.svelte";
@@ -16,6 +18,7 @@ and the menu closes.
 
   export let options;
   export let selections = [];
+  export let style = "obvious";
   export let multiple = false;
 
   export let dark: boolean = undefined;
@@ -97,15 +100,14 @@ and the menu closes.
           in the case of a single-select menu. -->
           {#if !multiple}
             {#if (temporarilySelectedKey !== undefined && temporarilySelectedKey === key) || (temporarilySelectedKey === undefined && selected)}
-              <CheckCircle />
-            {:else}
-              <EmptyCircle />
+              {#if style === "obvious"}<CheckCircle />{:else}<Check />{/if}
+            {:else if style === "obvious"}
+              <EmptyCircle />{:else}<Spacer />
             {/if}
+            <!-- multi -->
           {:else if selected}
-            <CheckBox />
-          {:else}
-            <EmptyBox />
-          {/if}
+            {#if style === "obvious"}<CheckBox />{:else}<Check />{/if}
+          {:else if style === "obvious"}<EmptyBox />{:else}<Spacer />{/if}
         </svelte:fragment>
 
         {main}
