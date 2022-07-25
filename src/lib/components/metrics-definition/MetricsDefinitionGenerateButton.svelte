@@ -63,10 +63,10 @@
   let tooltipText = "";
   let buttonDisabled = true;
   $: if ($selectedMetricsDef?.sourceModelId === undefined) {
-    tooltipText = "select a model before populating these metrics";
+    tooltipText = "Select a model before populating these metrics";
     buttonDisabled = true;
   } else if (timestampColumns.length === 0) {
-    tooltipText = "cannot create metrics for a model with no timestamps";
+    tooltipText = "Cannot create metrics for a model with no timestamps";
     buttonDisabled = true;
   } else {
     tooltipText = undefined;
