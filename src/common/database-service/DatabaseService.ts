@@ -69,7 +69,7 @@ export class DatabaseService
   public async dispatch<Action extends keyof DatabaseActionsDefinition>(
     action: Action,
     args: DatabaseActionsDefinition[Action]
-  ): Promise<any> {
+  ): Promise<unknown> {
     if (!this.actionsMap[action]?.[action]) {
       console.log(`${action} not found`);
       return;

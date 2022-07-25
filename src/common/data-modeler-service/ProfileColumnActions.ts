@@ -13,6 +13,8 @@ import {
 import type { ProfileColumn } from "$lib/types";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 const ColumnProfilePriorityMap = {
   [EntityType.Table]: DatabaseActionQueuePriority.TableProfile,
@@ -44,7 +46,8 @@ export class ProfileColumnActions extends DataModelerActions {
           this.collectColumnInfo(
             entityType,
             entityId,
-            (persistentEntity as any).tableName,
+            (persistentEntity as PersistentModelEntity | PersistentTableEntity)
+              .tableName,
             column
           )
         )

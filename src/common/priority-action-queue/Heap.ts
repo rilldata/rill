@@ -1,4 +1,4 @@
-export class Heap<Item = any> {
+export class Heap<Item> {
   private readonly array: Array<Item>;
   private valueToIdxMap: Map<Item, number> = new Map();
   private readonly compareFunction: (a: Item, b: Item) => number;

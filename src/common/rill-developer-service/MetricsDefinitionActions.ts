@@ -147,7 +147,9 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
         "addNewDimension",
         [metricsDefinition.id, column.name]
       );
-      rillRequestContext.actionsChannel.pushMessage(resp.data as any);
+      rillRequestContext.actionsChannel.pushMessage(
+        resp.data as Record<string, unknown>
+      );
     }
   }
 
@@ -160,6 +162,8 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       "addNewMeasure",
       [metricsDefId, "count(*)"]
     );
-    rillRequestContext.actionsChannel.pushMessage(measureResp.data as any);
+    rillRequestContext.actionsChannel.pushMessage(
+      measureResp.data as Record<string, unknown>
+    );
   }
 }

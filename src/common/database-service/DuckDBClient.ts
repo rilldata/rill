@@ -3,9 +3,9 @@ import type { DatabaseConfig } from "$common/config/DatabaseConfig";
 
 interface DuckDB {
   // TODO: define concrete styles
-  all: (...args: Array<any>) => any;
-  exec: (...args: Array<any>) => any;
-  prepare: (...args: Array<any>) => any;
+  all: (...args: Array<unknown>) => unknown;
+  exec: (...args: Array<unknown>) => unknown;
+  prepare: (...args: Array<unknown>) => unknown;
 }
 
 /**
@@ -37,7 +37,10 @@ export class DuckDBClient {
     this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
   }
 
-  public execute(query: string, log = false): Promise<any> {
+  public execute<Row = Record<string, unknown>>(
+    query: string,
+    log = false
+  ): Promise<Array<Row>> {
     this.onCallback?.();
     if (log) console.log(query);
     return new Promise((resolve, reject) => {
@@ -57,7 +60,7 @@ export class DuckDBClient {
     });
   }
 
-  public prepare(query: string): Promise<any> {
+  public prepare(query: string): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.prepare(query, (err, stmt) => {
         if (err !== null) reject(err);

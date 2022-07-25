@@ -13,8 +13,8 @@ export interface DataProfileEntity extends DerivedEntityRecord {
    * It is not generated until the user exports the query.
    */
   sizeInBytes?: number;
-  nullCounts?: any;
-  preview?: any;
+  nullCounts?: number;
+  preview?: Array<unknown>;
 
   profiled?: boolean;
 }
