@@ -5,8 +5,12 @@
   import { store } from "$lib/redux-store/store-root";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefinitionGenerateButtonModal from "./MetricsDefinitionGenerateButtomModal.svelte";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
+  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  $: selectedDimensions = getDimensionsByMetricsId(metricsDefId);
+  $: selectedMeasures = getMeasuresByMetricsId(metricsDefId);
 
   export let metricsDefId: string;
 
@@ -30,6 +34,14 @@
 
   let modalIsOpen = false;
 
+  const openModelIfNeeded = () => {
+    if ($selectedDimensions.length > 0 || $selectedMeasures.length > 0) {
+      openModal();
+    } else {
+      handleGenerateClick();
+    }
+  };
+
   const openModal = () => {
     modalIsOpen = true;
   };
@@ -47,7 +59,7 @@
 <Tooltip location="right" alignment="middle" distance={5}>
   <button
     disabled={buttonDisabled}
-    on:click={openModal}
+    on:click={openModelIfNeeded}
     class={`bg-white
           border-gray-400
           hover:border-gray-900
