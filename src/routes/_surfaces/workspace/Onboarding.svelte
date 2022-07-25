@@ -84,8 +84,8 @@
           <h5 class="font-bold">{step.heading}</h5>
           <p class="italic">{step.description}</p>
           {#if step.heading.includes("Explore") && sourcesWithTimestampColumns?.length}
-            <p>
-              {#each sourcesWithTimestampColumns as persistentSource (persistentSource.id)}
+            {#each sourcesWithTimestampColumns as persistentSource (persistentSource.id)}
+              <p class="p-1">
                 <Button
                   type="secondary"
                   on:click={() =>
@@ -96,8 +96,8 @@
                 >
                   Quick start for {persistentSource.tableName}
                 </Button>
-              {/each}
-            </p>
+              </p>
+            {/each}
           {/if}
         </div>
       </div>

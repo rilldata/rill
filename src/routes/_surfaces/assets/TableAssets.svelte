@@ -15,7 +15,6 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-  import notificationStore from "$lib/components/notifications/";
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -25,7 +24,7 @@
     quickStartSource,
   } from "$lib/redux-store/source/source-apis";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
-  import { derivedSourceHasTimestampColumn } from "$lib/redux-store/source/source-selectors.js";
+  import { derivedSourceHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"

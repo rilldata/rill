@@ -17,7 +17,7 @@ export const selectSourcesWithTimestampColumns = (
     .filter(derivedSourceHasTimestampColumn)
     .map((derivedSource) =>
       persistentSources.find(
-        (persistentSource) => (persistentSource.id = derivedSource.id)
+        (persistentSource) => persistentSource.id === derivedSource.id
       )
     );
 };
