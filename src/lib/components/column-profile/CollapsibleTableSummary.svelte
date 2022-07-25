@@ -81,22 +81,7 @@
               contextMenuOpen = false;
             }}
           >
-            {#if entityType === EntityType.Table}
-              <MenuItem
-                on:select={() => {
-                  dispatch("query");
-                }}
-              >
-                query {name}
-              </MenuItem>
-              <MenuItem
-                on:select={() => {
-                  dispatch("rename");
-                }}
-              >
-                rename {name}
-              </MenuItem>
-            {/if}
+            <slot name="menu-items" />
             <MenuItem
               on:select={() => {
                 dispatch("delete");

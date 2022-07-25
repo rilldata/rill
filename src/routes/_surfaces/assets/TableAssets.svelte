@@ -20,6 +20,12 @@
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import {
+    querySource,
+    quickStartSource,
+  } from "$lib/redux-store/source/source-apis";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { derivedSourceHasTimestampColumn } from "$lib/redux-store/source/source-selectors.js";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -46,32 +52,16 @@
   };
 
   const queryHandler = async (tableName: string) => {
-    // check existing models to avoid a name conflict
-    const existingNames = $persistentModelStore?.entities
-      .filter((model) => model.name.includes(`query_${tableName}`))
-      .map((model) => model.tableName)
-      .sort();
-    const nextName =
-      existingNames.length === 0
-        ? `query_${tableName}`
-        : `query_${tableName}_${existingNames.length + 1}`;
+    await querySource($persistentModelStore.entities, tableName);
+  };
 
-    const response = await dataModelerService.dispatch("addModel", [
-      {
-        name: nextName,
-        query: `select * from ${tableName}`,
-      },
-    ]);
-
-    // change the active asset to the new model
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Model,
-      response.id,
-    ]);
-
-    notificationStore.send({
-      message: `queried ${tableName} in workspace`,
-    });
+  const quickStartMetrics = async (id: string, tableName: string) => {
+    await quickStartSource(
+      $persistentModelStore.entities,
+      $derivedTableStore.entities,
+      id,
+      tableName
+    );
   };
 </script>
 
@@ -107,8 +97,6 @@
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:rename={() => openRenameTableModal(id, tableName)}
-            on:query={() => queryHandler(tableName)}
             on:delete={() =>
               dataModelerService.dispatch("dropTable", [tableName])}
           >
@@ -120,6 +108,19 @@
                 profile={derivedTable?.profile ?? []}
                 head={derivedTable?.preview ?? []}
               />
+            </svelte:fragment>
+            <svelte:fragment slot="menu-items">
+              <MenuItem on:select={() => queryHandler(tableName)}>
+                query {tableName}
+              </MenuItem>
+              {#if derivedSourceHasTimestampColumn(derivedTable)}
+                <MenuItem on:select={() => quickStartMetrics(id, tableName)}
+                  >quick-start metrics</MenuItem
+                >
+              {/if}
+              <MenuItem on:select={() => openRenameTableModal(id, tableName)}>
+                rename {tableName}
+              </MenuItem>
             </svelte:fragment>
           </CollapsibleTableSummary>
         </div>
