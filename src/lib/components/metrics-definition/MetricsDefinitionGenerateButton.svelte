@@ -51,15 +51,6 @@
     timestampColumns = [];
   }
 
-  function updateMetricsDefinitionTimestamp(evt: Event) {
-    store.dispatch(
-      updateMetricsDefsApi({
-        id: metricsDefId,
-        changes: { timeDimension: (<HTMLSelectElement>evt.target).value },
-      })
-    );
-  }
-
   let tooltipText = "";
   let buttonDisabled = true;
   $: if ($selectedMetricsDef?.sourceModelId === undefined) {
