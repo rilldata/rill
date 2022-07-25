@@ -12,6 +12,7 @@ import type {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 
 export class DataModelerSocketServiceMock extends DataModelerService {
   public socketServerMock: SocketServerMock;
@@ -39,7 +40,7 @@ export class DataModelerSocketServiceMock extends DataModelerService {
   public async dispatch<Action extends keyof DataModelerActionsDefinition>(
     action: Action,
     args: DataModelerActionsDefinition[Action]
-  ): Promise<any> {
+  ): Promise<ActionResponse> {
     return this.socketServerMock.dispatch(action, args);
   }
 }

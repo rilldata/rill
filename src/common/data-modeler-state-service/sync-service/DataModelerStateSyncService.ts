@@ -1,5 +1,8 @@
 import type { RootConfig } from "$common/config/RootConfig";
-import type { EntityStateService } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+  EntityRecord,
+  EntityStateService,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
   EntityType,
   StateType,
@@ -18,12 +21,12 @@ import { PersistentModelUpdateHandler } from "$common/data-modeler-state-service
  */
 export class DataModelerStateSyncService {
   private readonly entityStateSyncServices: Array<
-    EntityStateSyncService<any, any>
+    EntityStateSyncService<EntityRecord, EntityStateService<EntityRecord>>
   >;
 
   public constructor(
     config: RootConfig,
-    entityStateServices: Array<EntityStateService<any>>,
+    entityStateServices: Array<EntityStateService<EntityRecord>>,
     dataModelerService: DataModelerService,
     dataModelerStateService: DataModelerStateService
   ) {
@@ -71,7 +74,7 @@ export class DataModelerStateSyncService {
     dataModelerService: DataModelerService,
     entityType: EntityType,
     stateType: StateType
-  ): EntityRepository<any> {
+  ): EntityRepository<EntityRecord> {
     if (entityType === EntityType.Model && stateType === StateType.Persistent) {
       return new PersistentModelRepository(
         config.state,

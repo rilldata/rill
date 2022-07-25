@@ -426,13 +426,15 @@ export class ModelActions extends DataModelerActions {
   ) {
     const model = stateService.getById(modelId);
     await this.setModelStatus(modelId, EntityStatus.Exporting);
-    const exportPath = await this.databaseService.dispatch(exportType, [
+    const exportPath = (await this.databaseService.dispatch(exportType, [
       sanitizeQuery(model.query, false),
       exportFile,
-    ]);
+    ])) as string;
     await this.dataModelerStateService.dispatch("updateModelDestinationSize", [
       modelId,
-      await this.databaseService.dispatch("getDestinationSize", [exportPath]),
+      (await this.databaseService.dispatch("getDestinationSize", [
+        exportPath,
+      ])) as number,
     ]);
   }
 

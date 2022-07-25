@@ -4,7 +4,7 @@ export async function isPortOpen(port: number): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const testServer = createServer();
     testServer
-      .once("error", (err: any) => {
+      .once("error", (err: Error & { code: string }) => {
         if (err.code != "EADDRINUSE") reject(err);
         else resolve(true);
       })

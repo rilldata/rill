@@ -50,7 +50,7 @@ export class ApplicationActions extends DataModelerActions {
 
   @DataModelerActions.PersistentAction()
   public async deleteEntity(
-    { stateService }: EntityStateActionArg<any>,
+    { stateService }: EntityStateActionArg<EntityRecord>,
     entityType: EntityType,
     entityId: string
   ) {
