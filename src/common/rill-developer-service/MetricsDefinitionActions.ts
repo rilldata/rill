@@ -7,7 +7,7 @@ import {
 import { getMetricsDefinition } from "$common/stateInstancesFactory";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { ProfileColumn } from "$lib/types";
-import { BOOLEANS, CATEGORICALS } from "$lib/duckdb-data-types";
+import { CATEGORICALS } from "$lib/duckdb-data-types";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { shallowCopy } from "$common/utils/shallowCopy";
 
@@ -141,7 +141,7 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
     metricsDefinition: MetricsDefinitionEntity,
     column: ProfileColumn
   ) {
-    if (CATEGORICALS.has(column.type) || BOOLEANS.has(column.type)) {
+    if (CATEGORICALS.has(column.type)) {
       const resp = await this.rillDeveloperService.dispatch(
         rillRequestContext,
         "addNewDimension",
