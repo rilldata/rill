@@ -35,7 +35,7 @@
       type="range"
       bind:value={$width}
       min={100}
-      max={400}
+      max={1500}
       class="w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
     />
     Height

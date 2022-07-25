@@ -165,6 +165,7 @@ This component will draw an axis on the specified side.
   }
   let axisLength;
   let tickCount = 0;
+  let ticks = [];
   // FIXME: we should be generalizing anything like this!
   // we also have a similar codeblock in Grid.svelte
   $: if ($plotConfig) {
@@ -173,12 +174,18 @@ This component will draw an axis on the specified side.
     // use graphicWidth or graphicHeight
     // do we ensure different spacing in one case vs. another?
     tickCount = ~~(axisLength / 20);
-    tickCount = Math.max(2, ~~(tickCount / 100));
+    const maxTickCountThreshold = 2 + ~~($plotConfig.width / 250);
+    tickCount = Math.max(maxTickCountThreshold, ~~(tickCount / 100));
+
+    ticks = scale.ticks(tickCount);
+    if (ticks.length === 1 && $plotConfig.width >= 250) {
+      ticks = ticks.concat(scale.domain());
+    }
   }
 </script>
 
 <g>
-  {#each scale.ticks(tickCount) as tick, i}
+  {#each ticks as tick, i}
     {@const tickPlacement = placeTick(side, tick)}
     <text
       bind:this={tickTextPosition}
