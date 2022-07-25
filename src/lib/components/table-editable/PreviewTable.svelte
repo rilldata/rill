@@ -14,12 +14,10 @@
   const dispatch = createEventDispatcher();
 
   export let columnNames: ColumnConfig<any>[];
-  export let tableConfig: TableConfig;
+
   export let rows: any[];
 
   let selectedColumns = [];
-
-  let activeIndex;
 
   function handlePin({ detail: { columnConfig } }) {
     selectedColumns = togglePin(columnConfig, selectedColumns);
@@ -32,10 +30,7 @@
     on:change={(evt) => dispatch("change", evt.detail)}
     on:add={() => dispatch("add")}
     on:delete={(evt) => dispatch("delete", evt.detail)}
-    {tableConfig}
-    {activeIndex}
     {columnNames}
-    {selectedColumns}
     {rows}
   />
 
@@ -47,9 +42,7 @@
         on:pin={handlePin}
         on:change={(evt) => dispatch("change", evt.detail)}
         on:delete={(evt) => dispatch("delete", evt.detail)}
-        {activeIndex}
         columnNames={selectedColumns}
-        {selectedColumns}
         {rows}
       />
     </div>
