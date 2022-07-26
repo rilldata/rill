@@ -257,6 +257,10 @@ export class ModelActions extends DataModelerActions {
        * state parts from the derived source.
        */
       if (derivedTable.profiled) {
+        this.dataModelerStateService.dispatch("updateModelCardinality", [
+          modelId,
+          derivedTable.cardinality,
+        ]);
         this.dataModelerStateService.dispatch("updateModelProfileColumns", [
           modelId,
           derivedTable.profile,
