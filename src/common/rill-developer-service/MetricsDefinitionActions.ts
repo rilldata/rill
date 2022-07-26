@@ -10,6 +10,7 @@ import type { ProfileColumn } from "$lib/types";
 import { CATEGORICALS } from "$lib/duckdb-data-types";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { shallowCopy } from "$common/utils/shallowCopy";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 
 export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -111,6 +112,11 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Derived)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
 
     await Promise.all(
       model.profile.map((column) =>

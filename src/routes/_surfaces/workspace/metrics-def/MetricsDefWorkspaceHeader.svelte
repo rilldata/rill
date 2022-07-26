@@ -5,6 +5,7 @@
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
 
   export let metricsDefId;
 
@@ -20,6 +21,10 @@
       })
     );
   };
+
+  $: metricsSourceSelectionError = $selectedMetricsDef
+    ? MetricsSourceSelectionError($selectedMetricsDef)
+    : "";
 </script>
 
 <div
@@ -32,5 +37,7 @@
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <MetricsDefinitionExploreMetricsButton {metricsDefId} />
+  {#if !metricsSourceSelectionError}
+    <MetricsDefinitionExploreMetricsButton {metricsDefId} />
+  {/if}
 </div>
