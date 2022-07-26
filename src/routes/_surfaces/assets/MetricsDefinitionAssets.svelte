@@ -21,7 +21,7 @@
   import { store } from "$lib/redux-store/store-root";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
+  import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import { waitUntil } from "$common/utils/waitUtils";
 
