@@ -3,7 +3,7 @@ import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service
 import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
 import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
 import axios from "axios";
-import { MetricsExplorerTestData } from "../data/MetricsExplore.data";
+import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
 import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
 import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
 import { assertBigNumber } from "../utils/time-series-helpers";
