@@ -165,7 +165,7 @@
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace",
   });
 
   function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
