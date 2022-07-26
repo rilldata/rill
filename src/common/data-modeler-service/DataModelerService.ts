@@ -13,7 +13,10 @@ import type {
   DatabaseService,
 } from "$common/database-service/DatabaseService";
 import type { NotificationService } from "$common/notifications/NotificationService";
-import type { EntityStateActionArg } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+  EntityRecord,
+  EntityStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { ActionQueueOrchestrator } from "$common/priority-action-queue/ActionQueueOrchestrator";
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
@@ -24,9 +27,13 @@ import type {
   MetricsActionDefinition,
   MetricsService,
 } from "$common/metrics-service/MetricsService";
+import type {
+  EntityType,
+  StateType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 type DataModelerActionsClasses = PickActionFunctions<
-  EntityStateActionArg<any>,
+  EntityStateActionArg<EntityRecord>,
   TableActions & ProfileColumnActions & ModelActions & ApplicationActions
 >;
 /**
@@ -34,7 +41,7 @@ type DataModelerActionsClasses = PickActionFunctions<
  * Action => [...args]
  */
 export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<
-  EntityStateActionArg<any>,
+  EntityStateActionArg<EntityRecord>,
   DataModelerActionsClasses
 >;
 
@@ -120,8 +127,8 @@ export class DataModelerService {
     this.runningCount++;
 
     const stateService = this.dataModelerStateService.getEntityStateService(
-      stateTypes[0] ?? (args[0] as any),
-      stateTypes[1] ?? (args[1] as any)
+      stateTypes[0] ?? (args[0] as EntityType),
+      stateTypes[1] ?? (args[1] as StateType)
     );
     let returnResponse: ActionResponse;
     try {

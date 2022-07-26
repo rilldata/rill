@@ -19,7 +19,7 @@ export enum ApplicationStatus {
   Idle,
   Running,
 }
-export interface ApplicationEntity extends DerivedEntityRecord {}
+export type ApplicationEntity = DerivedEntityRecord;
 export interface ApplicationState extends EntityState<ApplicationEntity> {
   activeEntity?: ActiveEntity;
   status: ApplicationStatus;

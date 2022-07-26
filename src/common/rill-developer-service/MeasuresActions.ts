@@ -38,7 +38,7 @@ export class MeasuresActions extends RillDeveloperActions {
         [metricsDefId, expression]
       );
       newMeasure.expressionIsValid = (
-        expressionValidationResp?.data as any
+        expressionValidationResp?.data as Partial<MeasureDefinitionEntity>
       ).expressionIsValid;
     }
 

@@ -18,6 +18,7 @@
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
+    ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
   import type { Readable } from "svelte/store";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
@@ -31,6 +32,7 @@
   export let values;
 
   export let formatPreset: NicelyFormattedTypes;
+  export let leaderboardFormatScale: ShortHandSymbols;
   export let isSummableMeasure = false;
 
   type ActiveValues = [string, boolean];
@@ -54,8 +56,12 @@
   // });
 
   $: values = formatPreset
-    ? humanizeGroupValues(values, formatPreset)
-    : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE);
+    ? humanizeGroupValues(values, formatPreset, {
+        scale: leaderboardFormatScale,
+      })
+    : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE, {
+        scale: leaderboardFormatScale,
+      });
 
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.

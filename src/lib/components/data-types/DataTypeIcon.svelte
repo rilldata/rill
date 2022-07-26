@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    CATEGORICALS,
+    STRING_LIKES,
     TIMESTAMPS,
     INTEGERS,
     INTERVALS,
@@ -10,7 +10,7 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
-  import CategoricalType from "../icons/CategoricalType.svelte";
+  import StringlikeType from "../icons/StringlikeType.svelte";
   import TimestampType from "../icons/TimestampType.svelte";
   import BooleanType from "../icons/BooleanType.svelte";
   import IntegerType from "../icons/IntegerType.svelte";
@@ -24,8 +24,8 @@
       return IntegerType;
     } else if (FLOATS.has(fieldType)) {
       return FloatType;
-    } else if (CATEGORICALS.has(fieldType)) {
-      return CategoricalType;
+    } else if (STRING_LIKES.has(fieldType)) {
+      return StringlikeType;
     } else if (TIMESTAMPS.has(fieldType) || INTERVALS.has(type)) {
       return TimestampType;
     } else if (BOOLEANS.has(fieldType)) {

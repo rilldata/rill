@@ -20,7 +20,7 @@ export class CSVFileWriter extends DataWriter {
     );
   }
 
-  public async write(rows: Array<Record<string, any>>): Promise<void> {
+  public async write(rows: Array<Record<string, unknown>>): Promise<void> {
     const generator = DATA_GENERATOR_TYPE_MAP[this.type];
     for (const row of rows) {
       await this.writeToFile(

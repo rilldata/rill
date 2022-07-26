@@ -111,7 +111,7 @@ export class ModelStateActions extends StateActions {
   public updateModelPreview(
     { stateService, draftState }: DerivedModelStateActionArg,
     modelId: string,
-    preview: Array<any>
+    preview: Array<unknown>
   ): void {
     stateService.updateEntityField(draftState, modelId, "preview", preview);
   }

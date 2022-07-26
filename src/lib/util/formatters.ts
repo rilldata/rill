@@ -4,7 +4,6 @@ import {
   FLOATS,
   CATEGORICALS,
   TIMESTAMPS,
-  BOOLEANS,
   PreviewRollupInterval,
 } from "$lib/duckdb-data-types";
 import type { Interval } from "$lib/duckdb-data-types";
@@ -121,8 +120,6 @@ export function formatDataType(value: any, type: string) {
     return standardTimestampFormat(value, type);
   } else if (INTERVALS.has(type)) {
     return intervalToTimestring(value);
-  } else if (BOOLEANS.has(type)) {
-    return value;
   }
 }
 
