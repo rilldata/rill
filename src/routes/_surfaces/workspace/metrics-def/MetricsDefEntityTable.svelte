@@ -13,41 +13,20 @@
   export let tooltipText;
   export let addButtonId;
   export let label;
-
-  const tableContainerDivClass =
-    "rounded border border-gray-200 overflow-auto flex-1 max-w-[100%]";
+  export let resizeCallback;
 
   let sectionHeaderContainer;
   let sectionHeaderContainerHeight;
-
-  // FIXME: table rows currently 37.2px tall, table header is 43,
-  // but need a better way to calculate this from actual elements
-  const TABLE_HEADER_HEIGHT = 43;
-  const TABLE_ROW_HEIGHT = 37.2;
-  const MIN_ROWS_SHOWN = 2;
-  $: tableHeightPx = Math.round(
-    Math.min(MIN_ROWS_SHOWN, rows.length) * TABLE_ROW_HEIGHT +
-      TABLE_HEADER_HEIGHT +
-      sectionHeaderContainerHeight
-  );
-  let sectionContainerStyles = "";
-  $: sectionContainerStyles = `min-height: ${tableHeightPx}px;`;
-
-  const entityTableHeaderClass =
-    "text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase align-middle flex-none";
-
   onMount(() => {
-    const observer = new ResizeObserver(() => {
-      sectionHeaderContainerHeight = sectionHeaderContainer.clientHeight;
-    });
-    observer.observe(sectionHeaderContainer);
-    return () => observer.unobserve(sectionHeaderContainer);
+    sectionHeaderContainerHeight = sectionHeaderContainer.clientHeight;
   });
 </script>
 
-<div class="metrics-def-section w-fit" style={sectionContainerStyles}>
+<div class="metrics-def-section w-fit">
   <div class="flex flex-row pt-6 pb-3" bind:this={sectionHeaderContainer}>
-    <h4 class={entityTableHeaderClass}>
+    <h4
+      class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase align-middle flex-none"
+    >
       {label}
     </h4>
     <div class="align-middle pl-5">
@@ -56,12 +35,14 @@
       </ContextButton>
     </div>
   </div>
-  <div class={tableContainerDivClass}>
+  <div class="rounded border border-gray-200 overflow-auto flex-1 max-w-[100%]">
     <PreviewTable
       {rows}
       {columnNames}
       on:change={updateEntityHandler}
       on:delete={deleteEntityHandler}
+      on:tableResize={(evt) =>
+        resizeCallback(evt.detail + sectionHeaderContainerHeight)}
     />
   </div>
 </div>
@@ -72,5 +53,6 @@
     display: flex;
     flex-direction: column;
     max-width: 100%;
+    height: 100%;
   }
 </style>
