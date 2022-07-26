@@ -44,7 +44,7 @@
     };
   }
 
-  function onLeave(itemID) {
+  function onLeave() {
     return () => {
       $currentItem = undefined;
       focused = false;

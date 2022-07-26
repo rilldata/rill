@@ -4,7 +4,7 @@ and the menu closes.
 
 -->
 <script lang="ts">
-  import { createEventDispatcher, setContext } from "svelte";
+  import { setContext } from "svelte";
 
   import Menu from "./Menu.svelte";
   import MenuItem from "./MenuItem.svelte";
@@ -21,8 +21,6 @@ and the menu closes.
   if (dark) {
     setContext("rill:menu:dark", dark);
   }
-
-  const dispatch = createEventDispatcher();
 
   function createOnClickHandler(callback, closeEventHandler) {
     return () => {
