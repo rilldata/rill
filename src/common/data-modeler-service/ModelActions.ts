@@ -234,11 +234,53 @@ export class ModelActions extends DataModelerActions {
       modelId
     );
 
-    if (
+    const canCopyExistingProfile =
       derivedModel?.sanitizedQuery ===
-      `select * from ${derivedModel.sources?.[0].name}`
-    ) {
+      `select * from ${derivedModel.sources?.[0].name}`;
+
+    if (canCopyExistingProfile) {
       /** copy over the source profile columns here if profiling is done */
+      // get the associated derived table
+      //const persistentTable
+      const tableName = derivedModel.sources?.[0].name;
+      const table = this.dataModelerStateService
+        .getEntityStateService(EntityType.Table, StateType.Persistent)
+        .getByField("tableName", sanitizeTableName(tableName));
+
+      const derivedTable = this.dataModelerStateService.getEntityById(
+        EntityType.Table,
+        StateType.Derived,
+        table.id
+      );
+
+      /** if the source table has been profiled, we will copy over the relevant
+       * state parts from the derived source.
+       */
+      if (derivedTable.profiled) {
+        this.dataModelerStateService.dispatch("updateModelProfileColumns", [
+          modelId,
+          derivedTable.profile,
+        ]);
+        /** enqueue a preview table since we don't have one yet. */
+        this.dataModelerStateService.dispatch("updateModelPreview", [
+          modelId,
+          await this.databaseActionQueue.enqueue(
+            {
+              id: modelId,
+              priority: DatabaseActionQueuePriority.ActiveModel,
+            },
+            "getFirstNOfTable",
+            [persistentModel.tableName, MODEL_PREVIEW_COUNT]
+          ),
+        ]),
+          this.dataModelerStateService.dispatch("markAsProfiled", [
+            EntityType.Model,
+            modelId,
+            true,
+          ]);
+
+        return;
+      }
     }
 
     this.dataModelerStateService.dispatch("updateModelProfileColumns", [
