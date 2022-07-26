@@ -1,4 +1,3 @@
-import { LocalConfigFile } from "$common/config/ConfigFolders";
 import type { RootConfig } from "$common/config/RootConfig";
 import { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
 import { DataModelerService } from "$common/data-modeler-service/DataModelerService";
@@ -39,7 +38,7 @@ import { SocketNotificationService } from "$common/socket/SocketNotificationServ
 import { ExpressServer } from "$server/ExpressServer";
 import type { RillDeveloper } from "$server/RillDeveloper";
 import { SocketServer } from "$server/SocketServer";
-import { existsSync, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { initLocalConfig } from "$common/utils/initLocalConfig";
 
 let PACKAGE_JSON = "";
