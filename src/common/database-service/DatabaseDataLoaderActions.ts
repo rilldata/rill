@@ -2,6 +2,7 @@ import { DatabaseActions } from "./DatabaseActions";
 import { existsSync, mkdirSync } from "fs";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 
 /**
  * Abstraction around loading data into duck db.
@@ -9,10 +10,10 @@ import { ActionResponseFactory } from "$common/data-modeler-service/response/Act
  */
 export class DatabaseDataLoaderActions extends DatabaseActions {
   private async createTableWithQuery(
-    metadata: DatabaseMetadata,
+    _: DatabaseMetadata,
     tableName: string,
     query: string
-  ): Promise<any> {
+  ): Promise<ActionResponse> {
     // check if table exists.
     const tables = await this.databaseClient.execute("SHOW TABLES");
     const tableIsPresent = tables.some((table) => table.name === tableName);
@@ -49,7 +50,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     parquetFile: string,
     tableName: string
-  ): Promise<any> {
+  ): Promise<ActionResponse> {
     return this.createTableWithQuery(
       metadata,
       tableName,
@@ -62,7 +63,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     csvFile: string,
     tableName: string,
     delimiter: string
-  ): Promise<void> {
+  ): Promise<ActionResponse> {
     return this.createTableWithQuery(
       metadata,
       tableName,
@@ -89,7 +90,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     query: string,
     exportFile: string
-  ): Promise<any> {
+  ): Promise<string> {
     return this.exportToFile(query, exportFile, "FORMAT PARQUET");
   }
 
@@ -97,7 +98,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     query: string,
     exportFile: string
-  ): Promise<any> {
+  ): Promise<string> {
     return this.exportToFile(query, exportFile, "FORMAT CSV, HEADER");
   }
 
@@ -105,7 +106,7 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     query: string,
     exportFile: string,
     exportString: string
-  ): Promise<any> {
+  ): Promise<string> {
     if (!existsSync(this.databaseConfig.exportFolder)) {
       mkdirSync(this.databaseConfig.exportFolder);
     }

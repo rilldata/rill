@@ -25,7 +25,7 @@ export class ParquetFileWriter extends DataWriter {
     this.parquetWriter.setRowGroupSize(2 * CPU_COUNT * BATCH_SIZE);
   }
 
-  public async write(rows: Array<Record<string, any>>): Promise<void> {
+  public async write(rows: Array<Record<string, unknown>>): Promise<void> {
     for (const row of rows) {
       await this.parquetWriter.appendRow(row);
     }

@@ -1,13 +1,13 @@
-import { useInlineTestServer } from "../utils/useInlineTestServer";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
-import { MetricsExploreTestData } from "../data/MetricsExplore.data";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
 import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
 import axios from "axios";
+import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
+import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
 import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
-import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExploreActions";
 import { assertBigNumber } from "../utils/time-series-helpers";
+import { useInlineTestServer } from "../utils/useInlineTestServer";
 
 describe("Metrics Explore", () => {
   const { config, inlineServer } = useInlineTestServer(8083);
@@ -19,19 +19,19 @@ describe("Metrics Explore", () => {
   });
 
   describe("Metrics leaderboard", () => {
-    for (const MetricsExploreTest of MetricsExploreTestData) {
-      it(`Should return leaderboard for ${MetricsExploreTest.title}`, async () => {
+    for (const MetricsExplorerTest of MetricsExplorerTestData) {
+      it(`Should return leaderboard for ${MetricsExplorerTest.title}`, async () => {
         // select measures based on index passed or default to all measures
-        const requestMeasures = MetricsExploreTest.measures
-          ? MetricsExploreTest.measures.map((index) => measures[index])
+        const requestMeasures = MetricsExplorerTest.measures
+          ? MetricsExplorerTest.measures.map((index) => measures[index])
           : measures;
         const resp = await axios.post(
           `${config.server.serverUrl}/api/metrics/${metricsDef.id}/leaderboards`,
           {
             measureId: requestMeasures[0].id,
-            filters: MetricsExploreTest.filters ?? {},
-            ...(MetricsExploreTest.timeRange
-              ? { timeRange: MetricsExploreTest.timeRange }
+            filters: MetricsExplorerTest.filters ?? {},
+            ...(MetricsExplorerTest.timeRange
+              ? { timeRange: MetricsExplorerTest.timeRange }
               : {}),
           }
         );
@@ -40,31 +40,31 @@ describe("Metrics Explore", () => {
           .filter((json) => !!json)
           .map(JSON.parse) as Array<LeaderboardValues>;
         expect(normaliseLeaderboardOrder(leaderboards)).toStrictEqual(
-          MetricsExploreTest.leaderboards
+          MetricsExplorerTest.leaderboards
         );
       });
     }
   });
 
   describe("Metrics explore big number", () => {
-    for (const MetricsExploreTest of MetricsExploreTestData) {
-      it(`Should return big number for ${MetricsExploreTest.title}`, async () => {
+    for (const MetricsExplorerTest of MetricsExplorerTestData) {
+      it(`Should return big number for ${MetricsExplorerTest.title}`, async () => {
         // select measures based on index passed or default to all measures
-        const requestMeasures = MetricsExploreTest.measures
-          ? MetricsExploreTest.measures.map((index) => measures[index])
+        const requestMeasures = MetricsExplorerTest.measures
+          ? MetricsExplorerTest.measures.map((index) => measures[index])
           : measures;
         const resp = await axios.post(
           `${config.server.serverUrl}/api/metrics/${metricsDef.id}/big-number`,
           {
             measures: requestMeasures,
-            filters: MetricsExploreTest.filters ?? {},
-            ...(MetricsExploreTest.timeRange
-              ? { timeRange: MetricsExploreTest.timeRange }
+            filters: MetricsExplorerTest.filters ?? {},
+            ...(MetricsExplorerTest.timeRange
+              ? { timeRange: MetricsExplorerTest.timeRange }
               : {}),
           }
         );
         const bigNumbers = resp.data as BigNumberResponse;
-        assertBigNumber(bigNumbers, MetricsExploreTest.bigNumber);
+        assertBigNumber(bigNumbers, MetricsExplorerTest.bigNumber);
       });
     }
   });

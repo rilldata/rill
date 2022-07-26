@@ -1,8 +1,8 @@
-import { writable, get } from "svelte/store";
-import type { Writable } from "svelte/store";
 import { shallowCopy } from "$common/utils/shallowCopy";
-import { applyPatches, produce } from "immer";
 import type { Patch } from "immer";
+import { applyPatches, produce } from "immer";
+import type { Writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 export enum EntityType {
   Table = "Table",
@@ -11,14 +11,13 @@ export enum EntityType {
   MetricsDefinition = "MetricsDefinition",
   MeasureDefinition = "MeasureDefinition",
   DimensionDefinition = "DimensionDefinition",
-  MetricsLeaderboard = "MetricsLeaderboard",
+  MetricsExplorer = "MetricsExplorer",
 }
 
 export enum StateType {
   Persistent = "Persistent",
   Derived = "Derived",
 }
-export const AllStateTypes = [StateType.Persistent, StateType.Derived];
 
 export interface EntityRecord {
   id: string;
@@ -98,7 +97,7 @@ export abstract class EntityStateService<
       produce(
         this.getCurrentState(),
         (draft) => {
-          draftModCallback(draft as any);
+          draftModCallback(draft as State);
         },
         pathCallback
       )

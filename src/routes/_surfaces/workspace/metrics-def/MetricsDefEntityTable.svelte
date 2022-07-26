@@ -37,7 +37,6 @@
   </div>
   <div class="rounded border border-gray-200 overflow-auto flex-1 max-w-[100%]">
     <PreviewTable
-      tableConfig={{ enableAdd: false }}
       {rows}
       {columnNames}
       on:change={updateEntityHandler}

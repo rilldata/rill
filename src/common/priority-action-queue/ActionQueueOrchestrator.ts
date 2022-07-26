@@ -9,7 +9,7 @@ import type { ActionMetadata } from "$common/priority-action-queue/PriorityActio
 import { QueryCancelledError } from "$common/errors/QueryCancelledError";
 
 export class ActionQueueOrchestrator<
-  ActionsDefinition extends Record<string, Array<any>>
+  ActionsDefinition extends Record<string, Array<unknown>>
 > {
   private actionService: ActionServiceBase<ActionsDefinition>;
   private priorityActionQueue = new PriorityActionQueue();
@@ -48,7 +48,7 @@ export class ActionQueueOrchestrator<
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       this.priorityActionQueue.enqueue(actionMetadata, [
-        action as any,
+        action as string,
         args,
         {
           promiseResolve: resolve,

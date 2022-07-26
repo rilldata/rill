@@ -47,6 +47,18 @@ export interface TimeSeriesTimeRange {
   end?: string;
 }
 
+interface TimeseriesReductionQueryResponse {
+  bin: number;
+  min_t: number;
+  argmin_tv: number;
+  min_v: number;
+  argmin_vt: number;
+  max_v: number;
+  argmax_vt: number;
+  max_t: number;
+  argmax_tv: number;
+}
+
 export class DatabaseTimeSeriesActions extends DatabaseActions {
   /**
    * A single-pass heuristic for generating a `expression` or count(*) over an entire timestamp column,
@@ -167,7 +179,9 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       );
     }
 
-    const results = await this.databaseClient.execute(`SELECT * from _ts_`);
+    const results = await this.databaseClient.execute<TimeSeriesValue>(
+      `SELECT * from _ts_`
+    );
     await this.databaseClient.execute(`DROP TABLE _ts_`);
 
     return {
@@ -211,7 +225,8 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       `);
     }
 
-    const reduction = await this.databaseClient.execute(`
+    const reduction = await this.databaseClient
+      .execute<TimeseriesReductionQueryResponse>(`
       -- extract unix time
       WITH Q as (
         SELECT extract('epoch' from "${timestampColumn}") as t, "${valueColumn}" as v FROM "${table}"
@@ -305,7 +320,12 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       };
     }
 
-    const [timeRange] = await this.databaseClient.execute(`SELECT 
+    const [timeRange] = await this.databaseClient.execute<{
+      r: number;
+      max_value: number;
+      min_value: number;
+      count: number;
+    }>(`SELECT 
         max("${columnName}") - min("${columnName}") as r,
         max("${columnName}") as max_value,
         min("${columnName}") as min_value,
@@ -388,7 +408,10 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       rollupInterval = estimatedRollupInterval.rollupInterval;
     }
 
-    const [actualTimeRange] = await this.databaseClient.execute(`SELECT
+    const [actualTimeRange] = await this.databaseClient.execute<{
+      min: number;
+      max: number;
+    }>(`SELECT
 		    min("${timestampColumn}") as min, max("${timestampColumn}") as max 
 		    FROM ${tableName}`);
 

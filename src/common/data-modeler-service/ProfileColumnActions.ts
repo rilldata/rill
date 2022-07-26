@@ -4,15 +4,12 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataProfileStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
-import {
-  BOOLEANS,
-  CATEGORICALS,
-  NUMERICS,
-  TIMESTAMPS,
-} from "$lib/duckdb-data-types";
+import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
 import type { ProfileColumn } from "$lib/types";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
+import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 const ColumnProfilePriorityMap = {
   [EntityType.Table]: DatabaseActionQueuePriority.TableProfile,
@@ -44,7 +41,8 @@ export class ProfileColumnActions extends DataModelerActions {
           this.collectColumnInfo(
             entityType,
             entityId,
-            (persistentEntity as any).tableName,
+            (persistentEntity as PersistentModelEntity | PersistentTableEntity)
+              .tableName,
             column
           )
         )
@@ -61,7 +59,7 @@ export class ProfileColumnActions extends DataModelerActions {
     column: ProfileColumn
   ): Promise<void> {
     const promises = [];
-    if (CATEGORICALS.has(column.type) || BOOLEANS.has(column.type)) {
+    if (CATEGORICALS.has(column.type)) {
       promises.push(
         this.collectTopKAndCardinality(entityType, entityId, tableName, column)
       );

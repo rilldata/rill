@@ -21,7 +21,7 @@ export class MetricsSocketService extends MetricsService {
   public async dispatch<Action extends keyof MetricsActionDefinition>(
     action: Action,
     args: MetricsActionDefinition[Action]
-  ): Promise<any> {
+  ): Promise<void> {
     this.socket?.emit("metrics", action, args);
   }
 }

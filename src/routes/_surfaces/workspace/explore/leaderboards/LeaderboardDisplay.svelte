@@ -4,16 +4,21 @@
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type {
     LeaderboardValues,
-    MetricsExploreEntity,
+    MetricsExplorerEntity,
   } from "$lib/redux-store/explore/explore-slice";
   import {
     getMeasureFieldNameByIdAndIndex,
     getMeasuresByMetricsId,
   } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
+  import {
+    getScaleForLeaderboard,
+    NicelyFormattedTypes,
+    ShortHandSymbols,
+  } from "$lib/util/humanize-numbers";
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import Leaderboard from "./Leaderboard.svelte";
@@ -21,25 +26,26 @@
   export let metricsDefId: string;
   export let whichReferenceValue: string;
 
-  let metricsLeaderboard: Readable<MetricsExploreEntity>;
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let measureField: Readable<string>;
-  $: if ($metricsLeaderboard?.leaderboardMeasureId)
+  $: if ($metricsExplorer?.leaderboardMeasureId)
     measureField = getMeasureFieldNameByIdAndIndex(
-      $metricsLeaderboard.leaderboardMeasureId,
-      $metricsLeaderboard.measureIds.indexOf(
-        $metricsLeaderboard?.leaderboardMeasureId
+      $metricsExplorer.leaderboardMeasureId,
+      $metricsExplorer.measureIds.indexOf(
+        $metricsExplorer?.leaderboardMeasureId
       )
     );
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: leaderboardMeasureDefinition = $measures.find(
-    (measure) => measure.id === $metricsLeaderboard?.leaderboardMeasureId
+    (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
   );
   // get the expression so we can determine if the measure is summable
   $: expression = leaderboardMeasureDefinition?.expression;
-  $: formatPreset = leaderboardMeasureDefinition?.formatPreset;
+  $: formatPreset =
+    leaderboardMeasureDefinition?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
 
   let bigNumberEntity: Readable<BigNumberEntity>;
   $: bigNumberEntity = getBigNumberById(metricsDefId);
@@ -50,6 +56,16 @@
       whichReferenceValue === "filtered"
         ? $bigNumberEntity.bigNumbers?.[$measureField]
         : $bigNumberEntity.referenceValues?.[$measureField];
+  }
+
+  let leaderboardFormatScale: ShortHandSymbols = "none";
+  $: if (
+    formatPreset === NicelyFormattedTypes.HUMANIZE ||
+    formatPreset === NicelyFormattedTypes.CURRENCY
+  ) {
+    leaderboardFormatScale = getScaleForLeaderboard(
+      $metricsExplorer.leaderboards
+    );
   }
 
   let leaderboardExpanded;
@@ -98,16 +114,17 @@
   <div class="grid grid-auto-cols justify-end grid-flow-col items-end p-1 pb-3">
     <LeaderboardMeasureSelector {metricsDefId} />
   </div>
-  {#if $metricsLeaderboard}
+  {#if $metricsExplorer}
     <VirtualizedGrid
       {columns}
       height="100%"
-      items={$metricsLeaderboard.leaderboards ?? []}
+      items={$metricsExplorer.leaderboards ?? []}
       let:item
     >
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}
+        {leaderboardFormatScale}
         isSummableMeasure={expression?.toLowerCase()?.includes("count(") ||
           expression?.toLowerCase()?.includes("sum(")}
         dimensionId={item.dimensionId}
@@ -120,7 +137,7 @@
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        activeValues={$metricsLeaderboard.activeValues[item.dimensionId] ?? []}
+        activeValues={$metricsExplorer.activeValues[item.dimensionId] ?? []}
         values={item.values}
         referenceValue={referenceValue || 0}
       />
