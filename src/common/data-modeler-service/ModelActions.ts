@@ -1,32 +1,32 @@
-import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
 import { MODEL_PREVIEW_COUNT } from "$common/constants";
-import { sanitizeQuery } from "$lib/util/sanitize-query";
-import type { NewModelParams } from "$common/data-modeler-state-service/ModelStateActions";
-import type {
-  PersistentModelEntity,
-  PersistentModelEntityService,
-  PersistentModelStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import type { DerivedModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import {
   EntityStatus,
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { DerivedModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type {
+  PersistentModelEntity,
+  PersistentModelEntityService,
+  PersistentModelStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { NewModelParams } from "$common/data-modeler-state-service/ModelStateActions";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import {
   cleanModelName,
   getNewDerivedModel,
   getNewModel,
 } from "$common/stateInstancesFactory";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
-import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 import {
   extractTableName,
   sanitizeTableName,
 } from "$lib/util/extract-table-name";
+import { sanitizeQuery } from "$lib/util/sanitize-query";
 
 export enum FileExportType {
   Parquet = "exportToParquet",
@@ -225,6 +225,21 @@ export class ModelActions extends DataModelerActions {
       model.id,
       persistentModel.query,
     ]);
+
+    // check the sanitizeQuery. If it matches a simple select *, copy over the
+    // source profile
+    const derivedModel = this.dataModelerStateService.getEntityById(
+      EntityType.Model,
+      StateType.Derived,
+      modelId
+    );
+
+    if (
+      derivedModel?.sanitizedQuery ===
+      `select * from ${derivedModel.sources?.[0].name}`
+    ) {
+      /** copy over the source profile columns here if profiling is done */
+    }
 
     this.dataModelerStateService.dispatch("updateModelProfileColumns", [
       modelId,
