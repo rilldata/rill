@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
 
   import Menu from "$lib/components/menu/Menu.svelte";
@@ -19,8 +19,6 @@
   export let show = false;
   export let showTitle = true;
   export let notExpandable = false;
-
-  const dispatch = createEventDispatcher();
 
   let containerWidth = 0;
   let contextMenu;
