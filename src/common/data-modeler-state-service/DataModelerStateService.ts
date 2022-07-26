@@ -13,6 +13,7 @@ import { getActionMethods } from "$common/ServiceBase";
 import type { PickActionFunctions } from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
 import {
+  EntityRecord,
   EntityStateService,
   EntityType,
   StateType,
@@ -34,7 +35,7 @@ import type { MetricsDefinitionStateActions } from "$common/data-modeler-state-s
 enablePatches();
 
 type DataModelerStateActionsClasses = PickActionFunctions<
-  EntityStateActionArg<any>,
+  EntityStateActionArg<EntityRecord>,
   TableStateActions &
     ModelStateActions &
     ProfileColumnStateActions &
@@ -43,7 +44,7 @@ type DataModelerStateActionsClasses = PickActionFunctions<
     MetricsDefinitionStateActions
 >;
 export type DataModelerStateActionsDefinition = ExtractActionTypeDefinitions<
-  EntityStateActionArg<any>,
+  EntityStateActionArg<EntityRecord>,
   DataModelerStateActionsClasses
 >;
 
@@ -54,7 +55,7 @@ export type PatchesSubscriber = (
 ) => void;
 
 export type EntityTypeAndStates = Array<
-  [EntityType, StateType, EntityState<any>]
+  [EntityType, StateType, EntityState<EntityRecord>]
 >;
 
 // Actions that need throttling.
@@ -88,7 +89,9 @@ export class DataModelerStateService {
 
   public constructor(
     private readonly stateActions: Array<StateActions>,
-    public readonly entityStateServices: Array<EntityStateService<any>>,
+    public readonly entityStateServices: Array<
+      EntityStateService<EntityRecord>
+    >,
     protected readonly config?: RootConfig
   ) {
     stateActions.forEach((actions) => {
@@ -171,8 +174,8 @@ export class DataModelerStateService {
     }
 
     const stateService =
-      this.entityStateServicesMap[stateTypes[0] ?? (args[0] as any)]?.[
-        stateTypes[1] ?? (args[1] as any)
+      this.entityStateServicesMap[stateTypes[0] ?? (args[0] as EntityType)]?.[
+        stateTypes[1] ?? (args[1] as StateType)
       ];
     this.updateStateAndEmitPatches(
       stateService,
@@ -239,7 +242,7 @@ export class DataModelerStateService {
   ): EntityRecordMapType[EntityTypeArg][StateTypeArg] {
     return this.entityStateServicesMap[entityType][stateType].getById(
       entityId
-    ) as any;
+    ) as EntityRecordMapType[EntityTypeArg][StateTypeArg];
   }
 
   public updateStateAndEmitPatches(

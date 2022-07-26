@@ -19,6 +19,7 @@
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
+  import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
 
   export let metricsDefId;
   export let start: Date;
@@ -102,7 +103,7 @@
         description={measure?.description ||
           measure?.label ||
           measure?.expression}
-        formatPreset={measure?.formatPreset}
+        formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
         status={$bigNumbers?.status}
       >
         <svelte:fragment slot="name">

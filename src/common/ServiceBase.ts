@@ -7,8 +7,8 @@ export type PickActionFunctions<FirstArg, Handler> = Pick<
   {
     [Action in keyof Handler]: Handler[Action] extends (
       firstArg: FirstArg,
-      ...args: any[]
-    ) => any
+      ...args: unknown[]
+    ) => unknown
       ? Action
       : never;
   }[keyof Handler]
@@ -21,12 +21,12 @@ export type ExtractActionTypeDefinitions<FirstArg, Handler> = {
   [Action in keyof Handler]: Handler[Action] extends (
     firstArg: FirstArg,
     ...args: infer Args
-  ) => any
+  ) => unknown
     ? Args
     : never;
 };
 
-export function getActionMethods(instance: any): Array<string> {
+export function getActionMethods(instance: unknown): Array<string> {
   return Object.getOwnPropertyNames(instance.constructor.prototype).filter(
     (prototypeMember) => {
       const descriptor = Object.getOwnPropertyDescriptor(
@@ -42,7 +42,7 @@ export function getActionMethods(instance: any): Array<string> {
 }
 
 export interface ActionServiceBase<
-  ActionsDefinition extends Record<string, Array<any>>
+  ActionsDefinition extends Record<string, Array<unknown>>
 > {
   /**
    * Will be called by ActionQueueOrchestrator once the action has been scheduled
@@ -52,5 +52,5 @@ export interface ActionServiceBase<
   dispatch<Action extends keyof ActionsDefinition>(
     action: Action,
     args: ActionsDefinition[Action]
-  ): Promise<any>;
+  ): Promise<unknown>;
 }
