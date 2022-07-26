@@ -1,6 +1,9 @@
 import { DatabaseActions } from "./DatabaseActions";
 import type {
   CategoricalSummary,
+  NumericHistogramBin,
+  NumericOutliers,
+  NumericStatistics,
   NumericSummary,
   TimeRangeSummary,
 } from "$lib/types";
@@ -65,7 +68,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     columnName: string
   ): Promise<number> {
     const sanitizedColumName = sanitizeColumn(columnName);
-    const [nullity] = await this.databaseClient.execute(
+    const [nullity] = await this.databaseClient.execute<{ count: number }>(
       `SELECT COUNT(*) as count FROM '${tableName}' WHERE ${sanitizedColumName} IS NULL;`
     );
     return nullity.count;
@@ -77,7 +80,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     columnName: string
   ): Promise<NumericSummary> {
     const sanitizedColumnName = sanitizeColumn(columnName);
-    const [results] = await this.databaseClient.execute(`
+    const [results] = await this.databaseClient.execute<NumericStatistics>(`
             SELECT
                 min(${sanitizedColumnName}) as min,
                 reservoir_quantile(${sanitizedColumnName}, 0.25) as q25,
@@ -122,7 +125,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     columnName: string,
     sampleSize = 500000
   ): Promise<{ estimatedSmallestTimeGrain: EstimatedSmallestTimeGrain }> {
-    const [total] = await this.databaseClient.execute(`
+    const [total] = await this.databaseClient.execute<{ c: number }>(`
         SELECT count(*) as c from "${tableName}"
       `);
     const totalRows = total.c;
@@ -132,7 +135,9 @@ export class DatabaseColumnActions extends DatabaseActions {
         ? ""
         : `USING SAMPLE ${(100 * sampleSize) / totalRows}%`;
 
-    const [timeGrainResult] = await this.databaseClient.execute(`
+    const [timeGrainResult] = await this.databaseClient.execute<{
+      estimatedSmallestTimeGrain: EstimatedSmallestTimeGrain;
+    }>(`
       WITH cleaned_column AS (
           SELECT "${columnName}" as cd
           from ${tableName}
@@ -180,7 +185,11 @@ export class DatabaseColumnActions extends DatabaseActions {
   ): Promise<NumericSummary> {
     const sanitizedColumnName = sanitizeColumn(columnName);
 
-    const [columnProperties] = await this.databaseClient.execute(
+    const [columnProperties] = await this.databaseClient.execute<{
+      IQR: number;
+      count: number;
+      range: number;
+    }>(
       `SELECT
         reservoir_quantile(${sanitizedColumnName},0.75)-reservoir_quantile(${sanitizedColumnName},0.25) as IQR,
         approx_count_distinct(${sanitizedColumnName}) as count,
@@ -196,7 +205,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     );
     const bucketSize = Math.min(40, FDEstimatorBucketSize);
 
-    const result = await this.databaseClient.execute(`
+    const result = await this.databaseClient.execute<NumericHistogramBin>(`
           WITH data_table AS (
             SELECT ${
               TIMESTAMPS.has(columnType)
@@ -247,7 +256,7 @@ export class DatabaseColumnActions extends DatabaseActions {
 	      `);
 
     const outlierPseudoBucketSize = 500;
-    const outlierResults = await this.databaseClient.execute(`
+    const outlierResults = await this.databaseClient.execute<NumericOutliers>(`
           WITH data_table AS (
             SELECT ${
               TIMESTAMPS.has(columnType)
@@ -313,7 +322,7 @@ export class DatabaseColumnActions extends DatabaseActions {
     columnName: string
   ): Promise<TimeRangeSummary> {
     const sanitizedColumnName = sanitizeColumn(columnName);
-    const [ranges] = await this.databaseClient.execute(`
+    const [ranges] = await this.databaseClient.execute<TimeRangeSummary>(`
 	        SELECT
 		    min(${sanitizedColumnName}) as min, max(${sanitizedColumnName}) as max, 
 		    max(${sanitizedColumnName}) - min(${sanitizedColumnName}) as interval
@@ -323,11 +332,11 @@ export class DatabaseColumnActions extends DatabaseActions {
   }
 
   private async getTopKOfColumn(
-    metadata: DatabaseMetadata,
+    _: DatabaseMetadata,
     tableName: string,
     columnName: string,
     func = "count(*)"
-  ): Promise<any> {
+  ): Promise<Array<{ value: unknown; count: number }>> {
     const sanitizedColumnName = sanitizeColumn(columnName);
     return this.databaseClient.execute(`
             SELECT ${sanitizedColumnName} as value, ${func} AS count from '${tableName}'
@@ -338,12 +347,12 @@ export class DatabaseColumnActions extends DatabaseActions {
   }
 
   private async getCardinalityOfColumn(
-    metadata: DatabaseMetadata,
+    _: DatabaseMetadata,
     tableName: string,
     columnName: string
   ): Promise<number> {
     const sanitizedColumnName = sanitizeColumn(columnName);
-    const [results] = await this.databaseClient.execute(
+    const [results] = await this.databaseClient.execute<{ count: number }>(
       `SELECT approx_count_distinct(${sanitizedColumnName}) as count from '${tableName}';`
     );
     return results.count;

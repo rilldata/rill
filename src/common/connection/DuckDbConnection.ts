@@ -40,7 +40,7 @@ export class DuckDbConnection extends DataConnection {
   }
 
   public async sync(): Promise<void> {
-    const tables = await this.duckDbClient.execute(
+    const tables = await this.duckDbClient.execute<{ table_name: string }>(
       "SELECT table_name FROM information_schema.tables " +
         "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW';"
     );

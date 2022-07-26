@@ -11,7 +11,7 @@ import type { DataProfileStateActionArg } from "$common/data-modeler-state-servi
 export class CommonStateActions extends StateActions {
   @StateActions.GenericAction()
   public addEntity(
-    { stateService, draftState }: EntityStateActionArg<any>,
+    { stateService, draftState }: EntityStateActionArg<EntityRecord>,
     entityType: EntityType,
     stateType: StateType,
     entity: EntityRecord,
@@ -22,7 +22,7 @@ export class CommonStateActions extends StateActions {
 
   @StateActions.GenericAction()
   public updateEntity(
-    { stateService, draftState }: EntityStateActionArg<any>,
+    { stateService, draftState }: EntityStateActionArg<EntityRecord>,
     entityType: EntityType,
     stateType: StateType,
     entity: EntityRecord
@@ -32,7 +32,7 @@ export class CommonStateActions extends StateActions {
 
   @StateActions.GenericAction()
   public deleteEntity(
-    { stateService, draftState }: EntityStateActionArg<any>,
+    { stateService, draftState }: EntityStateActionArg<EntityRecord>,
     entityType: EntityType,
     stateType: StateType,
     entityId: string
@@ -42,7 +42,7 @@ export class CommonStateActions extends StateActions {
 
   @StateActions.GenericAction()
   public moveEntityDown(
-    { stateService, draftState }: EntityStateActionArg<any>,
+    { stateService, draftState }: EntityStateActionArg<EntityRecord>,
     entityType: EntityType,
     stateType: StateType,
     entityId: string
@@ -52,7 +52,7 @@ export class CommonStateActions extends StateActions {
 
   @StateActions.GenericAction()
   public moveEntityUp(
-    { stateService, draftState }: EntityStateActionArg<any>,
+    { stateService, draftState }: EntityStateActionArg<EntityRecord>,
     entityType: EntityType,
     stateType: StateType,
     entityId: string

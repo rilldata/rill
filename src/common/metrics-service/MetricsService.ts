@@ -49,7 +49,7 @@ export class MetricsService
   public async dispatch<Action extends keyof MetricsActionDefinition>(
     action: Action,
     args: MetricsActionDefinition[Action]
-  ): Promise<any> {
+  ): Promise<void> {
     if (!this.config.local.sendTelemetryData) return;
     if (!this.actionsMap[action]?.[action]) {
       console.log(`${action} not found`);

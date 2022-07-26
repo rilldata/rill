@@ -58,7 +58,6 @@
   </div>
   <div class={tableContainerDivClass}>
     <PreviewTable
-      tableConfig={{ enableAdd: false }}
       {rows}
       {columnNames}
       on:change={updateEntityHandler}

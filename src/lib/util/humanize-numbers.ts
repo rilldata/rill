@@ -2,8 +2,10 @@
 // Current dash persion has `prefix` key in JSON to add currecny etc.
 // We can provide a dropdown option in the table?? or regex??
 
+import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
+
 const shortHandSymbols = ["B", "M", "k", "none"] as const;
-type ShortHandSymbols = typeof shortHandSymbols[number];
+export type ShortHandSymbols = typeof shortHandSymbols[number];
 
 const shortHandMap = {
   B: 1.0e9,
@@ -170,13 +172,24 @@ function humanizeGroupValuesUtil(
   if (!values.length) return values;
   if (type == NicelyFormattedTypes.NONE) return values;
   else if (type == NicelyFormattedTypes.HUMANIZE) {
-    const scale = determineScaleForValues(values);
+    let scale;
+    if (options?.scale) {
+      scale = options.scale;
+    } else scale = determineScaleForValues(values);
     return applyScaleOnValues(values, scale);
   } else if (type == NicelyFormattedTypes.CURRENCY) {
-    const scale = determineScaleForValues(values);
+    let scale;
+    if (options?.scale) {
+      scale = options.scale;
+    } else scale = determineScaleForValues(values);
     return applyScaleOnValues(values, scale).map((v) => "$" + v);
   } else {
-    const formatter = getNumberFormatter(type, options);
+    let formatterOptions = {};
+    if (options?.scale) {
+      formatterOptions = Object.assign({}, options);
+      delete formatterOptions["scale"];
+    }
+    const formatter = getNumberFormatter(type, formatterOptions);
     return values.map((v) => {
       if (v === null) return "∅";
       else return formatter.format(v);
@@ -207,4 +220,21 @@ export function humanizeGroupValues(
   });
 
   return humanizedValues;
+}
+
+export function getScaleForLeaderboard(leaderboard: LeaderboardValues[]) {
+  if (!leaderboard) return "none";
+
+  let numValues = leaderboard
+    // use the first five dimensions as the sample
+    .slice(0, 5)
+    .map((dimension) => dimension.values)
+    .flat()
+    .map((values) => values.value);
+
+  const areAllNumbers = numValues.every((e) => typeof e === "number");
+  if (!areAllNumbers) return "none";
+  numValues = (numValues as number[]).sort((a, b) => b - a);
+
+  return determineScaleForValues(numValues);
 }

@@ -95,13 +95,16 @@ export abstract class DataModelerCliCommand {
     await dataModelerService.init();
   }
 
-  public async run(cliRunArgs: CliRunArgs, ...args: Array<any>): Promise<void> {
+  public async run(
+    cliRunArgs: CliRunArgs,
+    ...args: Array<unknown>
+  ): Promise<void> {
     await this.init(cliRunArgs);
     await this.sendActions(...args);
     await this.teardown();
   }
 
-  protected abstract sendActions(...args: Array<any>): Promise<void>;
+  protected abstract sendActions(...args: Array<unknown>): Promise<void>;
 
   protected applyCommonSettings(
     command: Command,

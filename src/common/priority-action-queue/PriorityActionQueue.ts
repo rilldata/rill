@@ -6,12 +6,12 @@ export interface ActionMetadata {
 }
 
 export interface ActionPromiseCallbacks {
-  promiseResolve: (arg: any) => void;
+  promiseResolve: (arg: unknown) => void;
   promiseReject: (error: Error) => void;
 }
 export type QueuedAction = [
   action: string,
-  args: Array<any>,
+  args: Array<unknown>,
   callbacks: ActionPromiseCallbacks
 ];
 export const QueuedActionNameIdx = 0;

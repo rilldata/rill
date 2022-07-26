@@ -7,7 +7,7 @@ export interface ParquetDataType {
 }
 
 export abstract class DataGeneratorType {
-  public abstract generateRow(id: number): Record<string, any>;
+  public abstract generateRow(id: number): Record<string, unknown>;
 
   public abstract getParquetSchema(): ParquetSchemaType;
 

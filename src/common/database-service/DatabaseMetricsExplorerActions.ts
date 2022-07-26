@@ -65,7 +65,9 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     );
 
     try {
-      const bigNumbers = await this.databaseClient.execute(
+      const bigNumbers = await this.databaseClient.execute<
+        Record<string, number>
+      >(
         `
         SELECT ${getExpressionColumnsFromMeasures(measures)} from "${table}"
         ${whereClause}

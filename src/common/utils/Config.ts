@@ -1,12 +1,12 @@
 export type NonFunctionPropertyNames<T> = {
-  [K in keyof T]: T[K] extends (...args: any[]) => any ? never : K;
+  [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? never : K;
 }[keyof T];
 export type NonFunctionProperties<T> = Pick<T, NonFunctionPropertyNames<T>>;
 
 export type ConfigFieldType = {
   field: string;
   key?: string;
-  defaultValue?: any;
+  defaultValue?: unknown;
   subConfigClass?: typeof Config;
 };
 
@@ -42,8 +42,8 @@ export class Config<C> {
    * @param defaultValue Defaults to undefined. Can be overridden with this param.
    * @param key Defaults to using property key. Can be overridden with this param.
    */
-  public static ConfigField(defaultValue?: any, key?: string) {
-    return (target: Config<any>, propertyKey: string) => {
+  public static ConfigField(defaultValue?: unknown, key?: string) {
+    return (target: Config<unknown>, propertyKey: string) => {
       const constructor = this.createConfigTypes(target);
       constructor.configTypes.push({
         field: propertyKey,
@@ -63,10 +63,10 @@ export class Config<C> {
    */
   public static SubConfig(
     subConfigClass: typeof Config,
-    defaultValue?: any,
+    defaultValue?: unknown,
     key?: string
   ) {
-    return (target: Config<any>, propertyKey: string) => {
+    return (target: Config<unknown>, propertyKey: string) => {
       const constructor = this.createConfigTypes(target);
       constructor.configTypes.push({
         field: propertyKey,
@@ -77,8 +77,8 @@ export class Config<C> {
     };
   }
 
-  private static createConfigTypes(target: any) {
-    const constructor: typeof Config = target.constructor;
+  private static createConfigTypes(target: Config<unknown>) {
+    const constructor = target.constructor as typeof Config;
 
     if (!Object.prototype.hasOwnProperty.call(constructor, "configTypes")) {
       constructor.configTypes = [...constructor.configTypes];
