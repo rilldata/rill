@@ -1,4 +1,24 @@
+import type {
+  DerivedModelEntity,
+  DerivedModelState,
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { asyncWait } from "$common/utils/waitUtils";
+import { dataModelerService } from "$lib/application-state-stores/application-store";
+import { selectApplicationActiveEntity } from "$lib/redux-store/application/application-selectors";
+import {
+  addOneDimension,
+  clearDimensionsForMetricsDefId,
+} from "$lib/redux-store/dimension-definition/dimension-definition-slice";
+import {
+  addOneMeasure,
+  clearMeasuresForMetricsDefId,
+} from "$lib/redux-store/measure-definition/measure-definition-slice";
+import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definition-selectors";
 import {
   addManyMetricsDefs,
   addOneMetricsDef,
@@ -7,31 +27,11 @@ import {
   setTimeDimensionValidationStatus,
   updateMetricsDef,
 } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
-import { generateApis } from "$lib/redux-store/utils/api-utils";
-import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
-import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import {
-  addOneMeasure,
-  clearMeasuresForMetricsDefId,
-} from "$lib/redux-store/measure-definition/measure-definition-slice";
-import {
-  addOneDimension,
-  clearDimensionsForMetricsDefId,
-} from "$lib/redux-store/dimension-definition/dimension-definition-slice";
-import { asyncWait } from "$common/utils/waitUtils";
-import { dataModelerService } from "$lib/application-state-stores/application-store";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { RillReduxState, store } from "$lib/redux-store/store-root";
-import { selectApplicationActiveEntity } from "$lib/redux-store/application/application-selectors";
-import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definition-selectors";
 import { selectDerivedModelById } from "$lib/redux-store/model/model-selector";
-import type {
-  DerivedModelEntity,
-  DerivedModelState,
-} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
+import { RillReduxState, store } from "$lib/redux-store/store-root";
+import { generateApis } from "$lib/redux-store/utils/api-utils";
+import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 
 const handleMetricsDefCreate = async (
   createdMetricsDef: MetricsDefinitionEntity
@@ -166,7 +166,5 @@ export const validateSelectedSources = createAsyncThunk(
     thunkAPI.dispatch(
       setTimeDimensionValidationStatus(id, timeDimensionValidationStatus)
     );
-
-    console.log(sourceModelValidationStatus, timeDimensionValidationStatus);
   }
 );

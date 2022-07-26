@@ -5,11 +5,10 @@ import { SourceModelValidationStatus } from "$common/data-modeler-state-service/
 // TODO: move all errors here.
 
 export const ExplorerSourceModelDoesntExist =
-  "Selected source model for the active metrics no longer exists.";
-export const ExplorerSourceModelIsInvalid =
-  "Source model query has errors. Please fix those before using it for metrics.";
+  "Previously selected source model does not exist.";
+export const ExplorerSourceModelIsInvalid = "Model query has errors.";
 export const ExplorerTimeDimensionDoesntExist =
-  "Selected time dimension for the active metrics no longer exists.";
+  "Missing a valid timestamp column.";
 
 export const MetricsSourceSelectionError = (
   metricsDefinition: MetricsDefinitionEntity
