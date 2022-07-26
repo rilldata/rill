@@ -26,10 +26,12 @@ import {
   if (existsSync(LocalConfigFile)) {
     configJson = JSON.parse(readFileSync(LocalConfigFile).toString());
   } else {
-    configJson = {};
+    // generate install id only for the 1st time
+    configJson = {
+      installId: guidGenerator(),
+    };
   }
   const configObject = new LocalConfig(configJson);
-  configObject.installId = guidGenerator();
 
   writeFileSync(LocalConfigFile, JSON.stringify(configObject));
 })();
