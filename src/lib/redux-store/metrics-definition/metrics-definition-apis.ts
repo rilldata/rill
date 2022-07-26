@@ -141,7 +141,12 @@ export const validateSelectedSources = createAsyncThunk(
 
     let timeDimensionValidationStatus: SourceModelValidationStatus;
     if (metricsDefinition.timeDimension) {
-      if (derivedModel) {
+      if (
+        derivedModel &&
+        derivedModel.profile?.find(
+          (column) => column.name === metricsDefinition.timeDimension
+        )
+      ) {
         // if a model is found, mark as INVALID if it has error
         timeDimensionValidationStatus =
           !derivedModel.error &&
