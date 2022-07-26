@@ -234,18 +234,18 @@ export class ModelActions extends DataModelerActions {
       modelId
     );
 
+    const sourceTableName = derivedModel.sources?.[0]?.name;
     const canCopyExistingProfile =
-      derivedModel?.sanitizedQuery ===
-      `select * from ${derivedModel.sources?.[0].name}`;
+      sourceTableName &&
+      derivedModel?.sanitizedQuery === `select * from ${sourceTableName}`;
 
     if (canCopyExistingProfile) {
       /** copy over the source profile columns here if profiling is done */
       // get the associated derived table
       //const persistentTable
-      const tableName = derivedModel.sources?.[0].name;
       const table = this.dataModelerStateService
         .getEntityStateService(EntityType.Table, StateType.Persistent)
-        .getByField("tableName", sanitizeTableName(tableName));
+        .getByField("tableName", sanitizeTableName(sourceTableName));
 
       const derivedTable = this.dataModelerStateService.getEntityById(
         EntityType.Table,
