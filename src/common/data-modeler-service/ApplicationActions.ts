@@ -26,7 +26,6 @@ export class ApplicationActions extends DataModelerActions {
     );
     const newActiveAsset = newActiveService?.getById(entityId);
     if (newActiveService && !newActiveAsset) {
-      console.log(entityType, entityId);
       return ActionResponseFactory.getErrorResponse(
         new Error(`${entityType} with id ${entityId} doesnt exist.`)
       );

@@ -3,6 +3,8 @@ import {
   addManyMetricsDefs,
   addOneMetricsDef,
   removeMetricsDef,
+  setSourceModelValidationStatus,
+  setTimeDimensionValidationStatus,
   updateMetricsDef,
 } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
@@ -21,8 +23,15 @@ import {
 import { asyncWait } from "$common/utils/waitUtils";
 import { dataModelerService } from "$lib/application-state-stores/application-store";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { store } from "$lib/redux-store/store-root";
+import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { selectApplicationActiveEntity } from "$lib/redux-store/application/application-selectors";
+import { selectMetricsDefinitionById } from "$lib/redux-store/metrics-definition/metrics-definition-selectors";
+import { selectDerivedModelById } from "$lib/redux-store/model/model-selector";
+import type {
+  DerivedModelEntity,
+  DerivedModelState,
+} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
 const handleMetricsDefCreate = async (
   createdMetricsDef: MetricsDefinitionEntity
@@ -88,5 +97,71 @@ export const generateMeasuresAndDimensionsApi = createAsyncThunk(
         );
       }
     }
+  }
+);
+
+export const validateSelectedSources = createAsyncThunk(
+  `${EntityType.MetricsDefinition}/validateSelectedSources`,
+  async (
+    {
+      id,
+      derivedModelState,
+    }: { id: string; derivedModelState: DerivedModelState },
+    thunkAPI
+  ) => {
+    const metricsDefinition = selectMetricsDefinitionById(
+      thunkAPI.getState() as RillReduxState,
+      id
+    );
+
+    let sourceModelValidationStatus: SourceModelValidationStatus;
+    let derivedModel: DerivedModelEntity;
+    if (metricsDefinition.sourceModelId) {
+      // if some source model is selected, pull the derived model from the derived model state.
+      derivedModel = selectDerivedModelById(
+        derivedModelState,
+        metricsDefinition.sourceModelId
+      );
+      if (derivedModel) {
+        // if a model is found, mark as INVALID if it has error
+        sourceModelValidationStatus = derivedModel.error
+          ? SourceModelValidationStatus.INVALID
+          : SourceModelValidationStatus.OK;
+      } else {
+        // no model was found, most probably selected model was deleted
+        sourceModelValidationStatus = SourceModelValidationStatus.MISSING;
+      }
+    } else {
+      // empty selection will not throw error for now.
+      sourceModelValidationStatus = SourceModelValidationStatus.OK;
+    }
+    thunkAPI.dispatch(
+      setSourceModelValidationStatus(id, sourceModelValidationStatus)
+    );
+
+    let timeDimensionValidationStatus: SourceModelValidationStatus;
+    if (metricsDefinition.timeDimension) {
+      if (derivedModel) {
+        // if a model is found, mark as INVALID if it has error
+        timeDimensionValidationStatus =
+          !derivedModel.error &&
+          derivedModel.profile?.find(
+            (column) => column.name === metricsDefinition.timeDimension
+          )
+            ? SourceModelValidationStatus.OK
+            : SourceModelValidationStatus.INVALID;
+      } else {
+        // no model was found, most probably selected model was deleted
+        timeDimensionValidationStatus = SourceModelValidationStatus.MISSING;
+      }
+    } else {
+      // empty selection will not throw error for now.
+      timeDimensionValidationStatus = SourceModelValidationStatus.OK;
+    }
+    thunkAPI.dispatch(
+      setTimeDimensionValidationStatus(id, timeDimensionValidationStatus)
+    );
+
+    console.log(sourceModelValidationStatus, timeDimensionValidationStatus);
   }
 );

@@ -9,12 +9,14 @@
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
-  import { onMount } from "svelte";
+  import { getContext, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
   import MetricsTimeSeriesCharts from "./time-series-charts/MetricsTimeSeriesCharts.svelte";
+  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
+  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
 
   export let metricsDefId: string;
 
@@ -30,6 +32,19 @@
 
   let dimensions: Readable<Array<DimensionDefinitionEntity>>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
+
+  const derivedModelStore = getContext(
+    "rill:app:derived-model-store"
+  ) as DerivedModelStore;
+
+  $: if (metricsDefId && $derivedModelStore) {
+    store.dispatch(
+      validateSelectedSources({
+        id: metricsDefId,
+        derivedModelState: $derivedModelStore,
+      })
+    );
+  }
 
   $: syncExplore(
     store.dispatch,

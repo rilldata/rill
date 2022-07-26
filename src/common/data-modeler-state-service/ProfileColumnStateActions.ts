@@ -23,6 +23,8 @@ export class ProfileColumnStateActions extends StateActions {
     entityId: string
   ): void {
     const entityToUpdate = stateService.getById(entityId, draftState);
+    // This handles when a model is deleted while profile is in progress.
+    // Clearing the queue doesn't get rid of queued javascript code hence this is needed.
     if (!entityToUpdate) return;
     entityToUpdate.profile?.forEach((profile) => {
       profile.summary = null;
@@ -41,6 +43,8 @@ export class ProfileColumnStateActions extends StateActions {
     summary: ProfileColumnSummary
   ): void {
     const entityToUpdate = stateService.getById(entityId, draftState);
+    // This handles when a model is deleted while profile is in progress.
+    // Clearing the queue doesn't get rid of queued javascript code hence this is needed.
     if (!entityToUpdate) return;
     const profileToUpdate = entityToUpdate.profile.find(
       (column) => column.name === columnName
@@ -60,6 +64,8 @@ export class ProfileColumnStateActions extends StateActions {
     nullCount: number
   ): void {
     const entityToUpdate = stateService.getById(entityId, draftState);
+    // This handles when a model is deleted while profile is in progress.
+    // Clearing the queue doesn't get rid of queued javascript code hence this is needed.
     if (!entityToUpdate) return;
     const profileToUpdate = entityToUpdate.profile.find(
       (column) => column.name === columnName

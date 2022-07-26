@@ -28,6 +28,8 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
+  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
 
   export let metricsDefId;
 
@@ -111,6 +113,18 @@
     handleUpdateDimension,
     validDimensionSelectorOption
   );
+
+  $: if ($selectedMetricsDef && $derivedModelStore) {
+    store.dispatch(
+      validateSelectedSources({
+        id: metricsDefId,
+        derivedModelState: $derivedModelStore,
+      })
+    );
+  }
+  $: metricsSourceSelectionError = $selectedMetricsDef
+    ? MetricsSourceSelectionError($selectedMetricsDef)
+    : "";
 </script>
 
 <div
@@ -123,7 +137,13 @@
       <MetricsDefTimeColumnSelector {metricsDefId} />
     </div>
     <div class="self-center pl-10">
-      <MetricsDefinitionGenerateButton {metricsDefId} />
+      {#if metricsSourceSelectionError}
+        <div class="error font-bold text-gray-700">
+          {metricsSourceSelectionError}
+        </div>
+      {:else}
+        <MetricsDefinitionGenerateButton {metricsDefId} />
+      {/if}
     </div>
   </div>
 
