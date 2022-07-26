@@ -22,14 +22,15 @@
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
 
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
+  import { Callout } from "$lib/components/callout";
   import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
   import { CATEGORICALS } from "$lib/duckdb-data-types";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
-  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
-  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
 
   export let metricsDefId;
 
@@ -138,9 +139,9 @@
     </div>
     <div class="self-center pl-10">
       {#if metricsSourceSelectionError}
-        <div class="error font-bold text-gray-700">
+        <Callout level="error">
           {metricsSourceSelectionError}
-        </div>
+        </Callout>
       {:else}
         <MetricsDefinitionGenerateButton {metricsDefId} />
       {/if}
