@@ -3,16 +3,6 @@
   import Metrics from "$lib/components/icons/Metrics.svelte";
   import Model from "$lib/components/icons/Model.svelte";
   import Source from "$lib/components/icons/Source.svelte";
-  import { getContext } from "svelte";
-  import {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
-  import { selectSourcesWithTimestampColumns } from "$lib/redux-store/source/source-selectors";
-  import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import Button from "$lib/components/Button.svelte";
-  import { quickStartSource } from "$lib/redux-store/source/source-apis";
-  import { PersistentModelStore } from "$lib/application-state-stores/model-stores";
 
   const steps = [
     {
@@ -40,31 +30,6 @@
       icon: Explore,
     },
   ];
-
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-  let sourcesWithTimestampColumns: Array<PersistentTableEntity>;
-  $: sourcesWithTimestampColumns = selectSourcesWithTimestampColumns(
-    $persistentTableStore.entities,
-    $derivedTableStore.entities
-  );
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-
-  const quickStartMetrics = async (id: string, tableName: string) => {
-    await quickStartSource(
-      $persistentModelStore.entities,
-      $derivedTableStore.entities,
-      id,
-      tableName
-    );
-  };
 </script>
 
 <div class="mt-10 p-2 place-content-center">
@@ -83,22 +48,6 @@
         <div class="ml-5">
           <h5 class="font-bold">{step.heading}</h5>
           <p class="italic">{step.description}</p>
-          {#if step.heading.includes("Explore") && sourcesWithTimestampColumns?.length}
-            {#each sourcesWithTimestampColumns as persistentSource (persistentSource.id)}
-              <p class="p-1">
-                <Button
-                  type="secondary"
-                  on:click={() =>
-                    quickStartMetrics(
-                      persistentSource.id,
-                      persistentSource.tableName
-                    )}
-                >
-                  Quick start for {persistentSource.tableName}
-                </Button>
-              </p>
-            {/each}
-          {/if}
         </div>
       </div>
     {/each}
