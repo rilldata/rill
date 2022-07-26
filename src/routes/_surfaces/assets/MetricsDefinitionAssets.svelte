@@ -8,8 +8,10 @@
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
+  import Cancel from "$lib/components/icons/Cancel.svelte";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
     createMetricsDefsApi,
@@ -101,6 +103,14 @@
             }}><ExploreIcon /></ContextButton
           >
         </span>
+        <svelte:fragment slot="menu-items">
+          <MenuItem icon on:select={() => dispatchDeleteMetricsDef(id)}>
+            <svelte:fragment slot="icon">
+              <Cancel />
+            </svelte:fragment>
+            delete metrics</MenuItem
+          >
+        </svelte:fragment>
       </CollapsibleTableSummary>
     {/each}
   </div>

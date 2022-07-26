@@ -3,7 +3,6 @@
   import { slide } from "svelte/transition";
 
   import Menu from "$lib/components/menu/Menu.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
   import CollapsibleTableHeader from "./CollapsibleTableHeader.svelte";
@@ -82,13 +81,6 @@
             }}
           >
             <slot name="menu-items" />
-            <MenuItem
-              on:select={() => {
-                dispatch("delete");
-              }}
-            >
-              delete {name}
-            </MenuItem>
           </Menu>
         </FloatingElement>
       </div>

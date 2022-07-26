@@ -115,7 +115,8 @@
     style:height="24px"
     style:grid-template-columns="[left-control] max-content [body] auto
     [contextual-information] max-content"
-    class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {active
+    class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {active ||
+    contextMenuOpen
       ? 'bg-gray-100'
       : 'bg-transparent'}
     "
