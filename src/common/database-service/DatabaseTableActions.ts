@@ -7,7 +7,7 @@ export class DatabaseTableActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     tableName: string,
     query: string
-  ): Promise<any> {
+  ): Promise<void> {
     await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
             CREATE OR REPLACE TEMPORARY VIEW ${tableName} AS (${query});`);
   }
@@ -16,7 +16,7 @@ export class DatabaseTableActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     tableName: string,
     n = 1
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     // FIXME: sort out the type here
     try {
       return await this.databaseClient.execute(
@@ -31,7 +31,7 @@ export class DatabaseTableActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     tableName: string
   ): Promise<number> {
-    const [cardinality] = await this.databaseClient.execute(
+    const [cardinality] = await this.databaseClient.execute<{ count: number }>(
       `select count(*) as count FROM '${tableName}';`
     );
     return cardinality.count;
@@ -40,7 +40,7 @@ export class DatabaseTableActions extends DatabaseActions {
   public async getProfileColumns(
     metadata: DatabaseMetadata,
     tableName: string
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     const guid = guidGenerator().replace(/-/g, "_");
     await this.databaseClient.execute(`-- parquetToDBTypes
 	        CREATE TEMP TABLE tbl_${guid} AS (
@@ -73,7 +73,7 @@ export class DatabaseTableActions extends DatabaseActions {
   public async dropTable(
     metadata: DatabaseMetadata,
     tableName: string
-  ): Promise<any> {
+  ): Promise<void> {
     await this.databaseClient.execute(`DROP TABLE ${tableName}`);
   }
 }

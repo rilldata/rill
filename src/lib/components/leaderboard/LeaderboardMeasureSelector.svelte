@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
-  import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
@@ -16,8 +16,8 @@
     store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
   }
 
-  let metricsExplore: Readable<MetricsExploreEntity>;
-  $: metricsExplore = getMetricsExploreById(metricsDefId);
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   function handleMeasureUpdate(measureID) {
     setMeasureIdAndUpdateLeaderboard(store.dispatch, metricsDefId, measureID);
@@ -28,7 +28,7 @@
   Dimension Leaders by
   <select
     class="pl-1 font-bold"
-    value={$metricsExplore?.leaderboardMeasureId}
+    value={$metricsExplorer?.leaderboardMeasureId}
     on:change={(event) => {
       handleMeasureUpdate(event.target.value);
     }}

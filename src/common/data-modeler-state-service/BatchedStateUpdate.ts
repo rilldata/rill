@@ -17,7 +17,7 @@ export class BatchedStateUpdate {
     string,
     Array<(draft: EntityState<EntityRecord>) => void>
   >();
-  private serviceMap = new Map<string, EntityStateService<any>>();
+  private serviceMap = new Map<string, EntityStateService<EntityRecord>>();
   private debounce = new Debounce();
   private promisesByType = new Map<string, Array<() => void>>();
 
@@ -30,7 +30,7 @@ export class BatchedStateUpdate {
   ) {}
 
   public updateState(
-    service: EntityStateService<any>,
+    service: EntityStateService<EntityRecord>,
     callback: (draft: EntityState<EntityRecord>) => void
   ) {
     const key = BatchedStateUpdate.getKey(
@@ -55,7 +55,7 @@ export class BatchedStateUpdate {
     );
   }
 
-  public callThrough(service: EntityStateService<any>) {
+  public callThrough(service: EntityStateService<EntityRecord>) {
     this.batchUpdateState(
       BatchedStateUpdate.getKey(service.entityType, service.stateType)
     );

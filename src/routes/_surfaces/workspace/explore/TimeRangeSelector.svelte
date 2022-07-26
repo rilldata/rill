@@ -6,7 +6,7 @@
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { tick } from "svelte";
@@ -19,17 +19,15 @@
 
   export let metricsDefId: string;
 
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-  $: if ($metricsLeaderboard?.timeRange) {
-    selectableTimeRanges = makeSelectableTimeRanges(
-      $metricsLeaderboard.timeRange
-    );
+  $: if ($metricsExplorer?.timeRange) {
+    selectableTimeRanges = makeSelectableTimeRanges($metricsExplorer.timeRange);
   }
   let selectedTimeRange: TimeSeriesTimeRange;
-  $: if ($metricsLeaderboard?.selectedTimeRange) {
-    selectedTimeRange = $metricsLeaderboard?.selectedTimeRange;
+  $: if ($metricsExplorer?.selectedTimeRange) {
+    selectedTimeRange = $metricsExplorer?.selectedTimeRange;
   } else if (selectableTimeRanges) {
     selectedTimeRange = getDefaultSelectedTimeRange(selectableTimeRanges);
     setExploreSelectedTimeRangeAndUpdate(store.dispatch, metricsDefId, {

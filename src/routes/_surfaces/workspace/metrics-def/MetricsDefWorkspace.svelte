@@ -28,6 +28,7 @@
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
+  import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
 
   export let metricsDefId;
 
@@ -130,26 +131,32 @@
     style="display: flex; flex-direction:column; overflow:hidden;"
     class="flex-1"
   >
-    <MetricsDefEntityTable
-      label={"Measures"}
-      addEntityHandler={handleCreateMeasure}
-      updateEntityHandler={handleUpdateMeasure}
-      deleteEntityHandler={handleDeleteMeasure}
-      rows={$measures ?? []}
-      columnNames={MeasuresColumns}
-      tooltipText={"add a new measure"}
-      addButtonId={"add-measure-button"}
-    />
+    <LayoutManager let:topResizeCallback let:bottomResizeCallback>
+      <MetricsDefEntityTable
+        slot="top-item"
+        resizeCallback={topResizeCallback}
+        label={"Measures"}
+        addEntityHandler={handleCreateMeasure}
+        updateEntityHandler={handleUpdateMeasure}
+        deleteEntityHandler={handleDeleteMeasure}
+        rows={$measures ?? []}
+        columnNames={MeasuresColumns}
+        tooltipText={"add a new measure"}
+        addButtonId={"add-measure-button"}
+      />
 
-    <MetricsDefEntityTable
-      label={"Dimensions"}
-      addEntityHandler={handleCreateDimension}
-      updateEntityHandler={handleUpdateDimension}
-      deleteEntityHandler={handleDeleteDimension}
-      rows={$dimensions ?? []}
-      columnNames={DimensionColumns}
-      tooltipText={"add a new dimension"}
-      addButtonId={"add-dimension-button"}
-    />
+      <MetricsDefEntityTable
+        slot="bottom-item"
+        resizeCallback={bottomResizeCallback}
+        label={"Dimensions"}
+        addEntityHandler={handleCreateDimension}
+        updateEntityHandler={handleUpdateDimension}
+        deleteEntityHandler={handleDeleteDimension}
+        rows={$dimensions ?? []}
+        columnNames={DimensionColumns}
+        tooltipText={"add a new dimension"}
+        addButtonId={"add-dimension-button"}
+      />
+    </LayoutManager>
   </div>
 </div>

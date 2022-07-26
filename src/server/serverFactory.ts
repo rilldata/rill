@@ -1,45 +1,45 @@
-import { DuckDBClient } from "$common/database-service/DuckDBClient";
-import { DatabaseDataLoaderActions } from "$common/database-service/DatabaseDataLoaderActions";
-import { DatabaseTableActions } from "$common/database-service/DatabaseTableActions";
-import { DatabaseColumnActions } from "$common/database-service/DatabaseColumnActions";
-import { TableStateActions } from "$common/data-modeler-state-service/TableStateActions";
-import { ModelStateActions } from "$common/data-modeler-state-service/ModelStateActions";
-import { TableActions } from "$common/data-modeler-service/TableActions";
-import { ModelActions } from "$common/data-modeler-service/ModelActions";
-import { ProfileColumnStateActions } from "$common/data-modeler-state-service/ProfileColumnStateActions";
-import { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import { ProfileColumnActions } from "$common/data-modeler-service/ProfileColumnActions";
-import { SocketServer } from "$server/SocketServer";
-import { DatabaseService } from "$common/database-service/DatabaseService";
 import type { RootConfig } from "$common/config/RootConfig";
-import { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { PersistentTableEntityService } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import { DerivedTableEntityService } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { PersistentModelEntityService } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import { DerivedModelEntityService } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
+import { DataModelerService } from "$common/data-modeler-service/DataModelerService";
+import { ModelActions } from "$common/data-modeler-service/ModelActions";
+import { ProfileColumnActions } from "$common/data-modeler-service/ProfileColumnActions";
+import { TableActions } from "$common/data-modeler-service/TableActions";
+import { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
 import { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
 import { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import { ApplicationStateService } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import { ApplicationActions } from "$common/data-modeler-service/ApplicationActions";
-import { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
-import { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
-import { MetricsService } from "$common/metrics-service/MetricsService";
-import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
-import { existsSync, readFileSync } from "fs";
-import { LocalConfigFile } from "$common/config/ConfigFolders";
-import { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
-import { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import type { RillDeveloper } from "$server/RillDeveloper";
-import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
-import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
-import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
-import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
-import { DatabaseMetricsExploreActions } from "$common/database-service/DatabaseMetricsExploreActions";
-import { MetricsExploreActions } from "$common/rill-developer-service/MetricsExploreActions";
-import { MeasureDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { DerivedModelEntityService } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import { DerivedTableEntityService } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import { DimensionDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { MeasureDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { MetricsDefinitionStateService } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { PersistentModelEntityService } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { PersistentTableEntityService } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
+import { ModelStateActions } from "$common/data-modeler-state-service/ModelStateActions";
+import { ProfileColumnStateActions } from "$common/data-modeler-state-service/ProfileColumnStateActions";
+import { TableStateActions } from "$common/data-modeler-state-service/TableStateActions";
+import { DatabaseColumnActions } from "$common/database-service/DatabaseColumnActions";
+import { DatabaseDataLoaderActions } from "$common/database-service/DatabaseDataLoaderActions";
+import { DatabaseMetricsExplorerActions } from "$common/database-service/DatabaseMetricsExplorerActions";
+import { DatabaseService } from "$common/database-service/DatabaseService";
+import { DatabaseTableActions } from "$common/database-service/DatabaseTableActions";
 import { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
+import { DuckDBClient } from "$common/database-service/DuckDBClient";
+import { MetricsService } from "$common/metrics-service/MetricsService";
+import { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
+import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
+import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
+import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
+import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
+import { MetricsExplorerActions } from "$common/rill-developer-service/MetricsExplorerActions";
+import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
+import { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import { ExpressServer } from "$server/ExpressServer";
+import type { RillDeveloper } from "$server/RillDeveloper";
+import { SocketServer } from "$server/SocketServer";
+import { readFileSync } from "fs";
+import { initLocalConfig } from "$common/utils/initLocalConfig";
 
 let PACKAGE_JSON = "";
 try {
@@ -56,7 +56,7 @@ export function databaseServiceFactory(config: RootConfig) {
       DatabaseDataLoaderActions,
       DatabaseTableActions,
       DatabaseColumnActions,
-      DatabaseMetricsExploreActions,
+      DatabaseMetricsExplorerActions,
       DatabaseTimeSeriesActions,
     ].map(
       (DatabaseActionsClass) =>
@@ -104,9 +104,7 @@ export function metricsServiceFactory(
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {
-  if (existsSync(LocalConfigFile)) {
-    config.local = JSON.parse(readFileSync(LocalConfigFile).toString());
-  }
+  config.local = initLocalConfig();
   try {
     config.local.version = JSON.parse(
       readFileSync(PACKAGE_JSON).toString()
@@ -155,7 +153,7 @@ export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
       MetricsDefinitionActions,
       DimensionsActions,
       MeasuresActions,
-      MetricsExploreActions,
+      MetricsExplorerActions,
     ].map(
       (RillDeveloperActionsClass) =>
         new RillDeveloperActionsClass(

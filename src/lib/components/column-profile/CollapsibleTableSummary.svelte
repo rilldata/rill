@@ -12,7 +12,7 @@
 
   export let entityType: EntityType;
   export let name: string;
-  export let cardinality: number;
+  export let cardinality: number = undefined;
   export let showRows = true;
   export let sizeInBytes: number = undefined;
   export let active = false;
