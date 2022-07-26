@@ -8,7 +8,7 @@ export const ExplorerSourceModelDoesntExist =
   "Previously selected source model does not exist.";
 export const ExplorerSourceModelIsInvalid = "Model query has errors.";
 export const ExplorerTimeDimensionDoesntExist =
-  "Missing a valid timestamp column.";
+  "Previously selected timestamp column does not exist.";
 
 export const MetricsSourceSelectionError = (
   metricsDefinition: MetricsDefinitionEntity
