@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher, getContext } from "svelte";
+  import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+  import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  import { Debounce } from "$common/utils/Debounce";
+  import type {
+    DerivedTableStore,
+    PersistentTableStore,
+  } from "$lib/application-state-stores/table-stores";
   import {
-    keymap,
-    highlightSpecialChars,
-    drawSelection,
-    highlightActiveLine,
-    highlightActiveLineGutter,
-    lineNumbers,
-    rectangularSelection,
-    dropCursor,
-    EditorView,
-    Decoration,
-    DecorationSet,
-  } from "@codemirror/view";
+    acceptCompletion,
+    autocompletion,
+    closeBrackets,
+    closeBracketsKeymap,
+    completionKeymap,
+  } from "@codemirror/autocomplete";
   import {
-    EditorState,
-    StateEffect,
-    StateField,
-    Prec,
-    Compartment,
-  } from "@codemirror/state";
+    defaultKeymap,
+    history,
+    historyKeymap,
+    indentWithTab,
+    insertNewline,
+  } from "@codemirror/commands";
   import {
     keywordCompletionSource,
     schemaCompletionSource,
@@ -27,34 +27,34 @@
     SQLDialect,
   } from "@codemirror/lang-sql";
   import {
+    bracketMatching,
     defaultHighlightStyle,
     indentOnInput,
     syntaxHighlighting,
-    bracketMatching,
   } from "@codemirror/language";
-  import {
-    defaultKeymap,
-    insertNewline,
-    indentWithTab,
-    history,
-    historyKeymap,
-  } from "@codemirror/commands";
-  import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-  import {
-    acceptCompletion,
-    autocompletion,
-    completionKeymap,
-    closeBrackets,
-    closeBracketsKeymap,
-  } from "@codemirror/autocomplete";
   import { lintKeymap } from "@codemirror/lint";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
-  import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import { Debounce } from "$common/utils/Debounce";
+  import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
+  import {
+    Compartment,
+    EditorState,
+    Prec,
+    StateEffect,
+    StateField,
+  } from "@codemirror/state";
+  import {
+    Decoration,
+    DecorationSet,
+    drawSelection,
+    dropCursor,
+    EditorView,
+    highlightActiveLine,
+    highlightActiveLineGutter,
+    highlightSpecialChars,
+    keymap,
+    lineNumbers,
+    rectangularSelection,
+  } from "@codemirror/view";
+  import { createEventDispatcher, getContext, onMount } from "svelte";
 
   const dispatch = createEventDispatcher();
   export let content: string;
@@ -165,7 +165,7 @@
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by having order limit sample unnest with window qualify values filter",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace",
   });
 
   function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
@@ -248,7 +248,7 @@
               },
             ])
           ),
-          sql(),
+          sql({ dialect: DuckDBSQL }),
           keymap.of([indentWithTab]),
           rillTheme,
           EditorView.updateListener.of((v) => {
