@@ -109,7 +109,7 @@
 
     {#if icon !== ValidationIcon.NONE}
       <Tooltip location="top" alignment="middle" distance={16}>
-        <div class="self-center" style="height:0px">
+        <div class="self-center z-10" style="height:0px">
           <div style="position:relative; top:-10px;">
             {#if icon === ValidationIcon.ERROR}
               <!-- NOTE: #ef4444 === fill-red-500 -->

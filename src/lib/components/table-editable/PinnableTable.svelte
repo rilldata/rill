@@ -34,7 +34,7 @@
 >
   <!-- headers -->
   <TableRow>
-    <TableHeader position="top-left">#</TableHeader>
+    <TableHeader position="top-left" zIndexClass="z-30">#</TableHeader>
     {#each columnNames as columnConfig (columnConfig.name + columnConfig.label)}
       <EditableTableHeader
         {columnConfig}
