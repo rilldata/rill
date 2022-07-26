@@ -18,7 +18,6 @@ export enum StateType {
   Persistent = "Persistent",
   Derived = "Derived",
 }
-export const AllStateTypes = [StateType.Persistent, StateType.Derived];
 
 export interface EntityRecord {
   id: string;
@@ -98,7 +97,7 @@ export abstract class EntityStateService<
       produce(
         this.getCurrentState(),
         (draft) => {
-          draftModCallback(draft as any);
+          draftModCallback(draft as State);
         },
         pathCallback
       )

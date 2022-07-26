@@ -4,10 +4,20 @@ import { ActionStatus } from "$common/data-modeler-service/response/ActionRespon
 import path from "path";
 import { existsSync } from "fs";
 
+interface FileUploadEntry {
+  name: string;
+  tempFilePath: string;
+  mimetype: string;
+  data: Buffer;
+  size: number;
+  mv: (string) => void;
+}
+type FileUploadRequest = Request & { files: { file: FileUploadEntry } };
+
 export class FileActionsController extends RillDeveloperController {
   protected setupRouter(router: Router) {
-    router.post("/table-upload", (req: Request, res: Response) => {
-      this.handleFileUpload((req as any).files.file, req.body.tableName);
+    router.post("/table-upload", (req: FileUploadRequest, res: Response) => {
+      this.handleFileUpload(req.files.file, req.body.tableName);
       res.send("OK");
     });
     router.get("/export", async (req: Request, res: Response) =>
@@ -18,17 +28,7 @@ export class FileActionsController extends RillDeveloperController {
     );
   }
 
-  private async handleFileUpload(
-    file: {
-      name: string;
-      tempFilePath: string;
-      mimetype: string;
-      data: Buffer;
-      size: number;
-      mv: (string) => void;
-    },
-    tableName?: string
-  ) {
+  private async handleFileUpload(file: FileUploadEntry, tableName?: string) {
     const filePath = `${this.config.projectFolder}/tmp/${file.name}`;
     file.mv(filePath);
 

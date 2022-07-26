@@ -26,7 +26,7 @@ export class DataGeneratorFarm {
       await writer.init();
     }
 
-    const handleResponse = async (rows: Array<Record<string, any>>) => {
+    const handleResponse = async (rows: Array<Record<string, unknown>>) => {
       await Promise.all(writers.map((writer) => writer.write(rows)));
     };
 

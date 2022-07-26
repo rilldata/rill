@@ -1,4 +1,5 @@
 import {
+  EntityRecord,
   EntityStateActionArg,
   EntityStatus,
   EntityType,
@@ -26,7 +27,7 @@ export abstract class ActionsBase {
       _descriptor: TypedPropertyDescriptor<
         (
           stateArg: EntityStateActionArgMapType[EntityTypeArg][StateTypeArg],
-          ...args: any[]
+          ...args: unknown[]
         ) => any
       >
     ) => {
@@ -88,9 +89,9 @@ export abstract class ActionsBase {
       // make sure the decorator and the state action arg match using this
       _descriptor: TypedPropertyDescriptor<
         (
-          stateArg: EntityStateActionArg<any>,
+          stateArg: EntityStateActionArg<EntityRecord>,
           entityType: EntityType,
-          ...args: any[]
+          ...args: unknown[]
         ) => any
       >
     ) => {
@@ -121,10 +122,10 @@ export abstract class ActionsBase {
       // make sure the decorator and the state action arg match using this
       _descriptor: TypedPropertyDescriptor<
         (
-          stateArg: EntityStateActionArg<any>,
+          stateArg: EntityStateActionArg<EntityRecord>,
           entityType: EntityType,
           stateType: StateType,
-          ...args: any[]
+          ...args: unknown[]
         ) => any
       >
     ) => {
@@ -159,17 +160,17 @@ export abstract class ActionsBase {
       // make sure the decorator and the state action arg match using this
       descriptor: TypedPropertyDescriptor<
         (
-          stateArg: EntityStateActionArg<any>,
+          stateArg: EntityStateActionArg<EntityRecord>,
           entityId: string,
-          ...args: any[]
+          ...args: unknown[]
         ) => any
       >
     ) => {
       const previousMethod = descriptor.value;
       descriptor.value = async function (
-        stateArg: EntityStateActionArg<any>,
+        stateArg: EntityStateActionArg<EntityRecord>,
         entityId: string,
-        ...args: any[]
+        ...args: unknown[]
       ): Promise<any> {
         try {
           const resp = await previousMethod.call(
