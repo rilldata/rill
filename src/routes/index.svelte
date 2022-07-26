@@ -11,6 +11,7 @@
     inspectorVisibilityTween,
     inspectorVisible,
     layout,
+    quickStartDashboardOverlay,
     SIDE_PAD,
   } from "$lib/application-state-stores/layout-store";
   import type {
@@ -35,6 +36,7 @@
   import AssetsSidebar from "./_surfaces/assets/index.svelte";
   import InspectorSidebar from "./_surfaces/inspector/index.svelte";
   import Workspace from "./_surfaces/workspace/index.svelte";
+  import QuickStartDashboard from "$lib/components/overlay/QuickStartDashboard.svelte";
 
   let showDropOverlay = false;
 
@@ -107,6 +109,11 @@
   />
 {:else if $importOverlayVisible}
   <PreparingImport />
+{:else if $quickStartDashboardOverlay?.show}
+  <QuickStartDashboard
+    sourceName={$quickStartDashboardOverlay.sourceName}
+    timeDimension={$quickStartDashboardOverlay.timeDimension}
+  />
 {:else if showDropOverlay}
   <FileDrop bind:showDropOverlay />
 {/if}

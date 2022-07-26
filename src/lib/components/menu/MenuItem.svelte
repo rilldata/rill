@@ -8,6 +8,7 @@
   import type { Writable } from "svelte/store";
 
   export let icon = false;
+  export let disabled = false;
 
   const dispatch = createEventDispatcher();
 
@@ -20,14 +21,14 @@
   onMount(() => {
     // add to the menu's ids. This will enable us to use keybindings.
     itemID = $menuItems.length;
-    $menuItems = [...$menuItems, itemID];
+    $menuItems = [...$menuItems, { id: itemID, disabled }];
     if ($currentItem === undefined) {
       $currentItem = itemID;
     }
   });
 
   onDestroy(() => {
-    $menuItems = [...$menuItems.filter((id) => id !== itemID)];
+    $menuItems = [...$menuItems.filter(({ id }) => id !== itemID)];
   });
 
   let element;
@@ -40,7 +41,7 @@
   // (1) the mouse moves over it,
   // (2) the user tabs to it,
   // (3) the user uses the keyboard arrows
-  $: if (active && element) {
+  $: if (active && element && !disabled) {
     element.focus();
   } else {
     if (element) {
@@ -50,6 +51,24 @@
 
   let selected = false;
   let hovered = false;
+
+  function onFocus() {
+    if (!disabled) {
+      $currentItem = itemID;
+      hovered = true;
+    }
+  }
+
+  function onBlur() {
+    if (!disabled) {
+      $currentItem = undefined;
+      hovered = false;
+    }
+  }
+
+  $: textColor = dark
+    ? `${disabled ? "text-gray-400" : "text-white focus:bg-gray-600"}`
+    : `${disabled ? "text-gray-600" : "text-gray-900 focus:bg-gray-200"}`;
 </script>
 
 <button
@@ -63,42 +82,49 @@
         focus:outline-none
         active:outline-none
         grid
-        gap-x-4
+        content-start
+        items-start
+        gap-x-3
         justify-items-stretch
-        {dark ? 'text-white focus:bg-gray-600' : 'text-black focus:bg-gray-200'}
+        {textColor}
     "
-  style:grid-template-columns="auto max-content"
+  style:grid-template-columns="{icon ? "max-content" : ""} auto max-content"
   class:selected
-  on:mouseover={() => {
-    $currentItem = itemID;
-    hovered = true;
-  }}
-  on:mouseleave={() => {
-    $currentItem = undefined;
-    hovered = false;
-  }}
-  on:focus={() => {
-    $currentItem = itemID;
-    hovered = true;
-  }}
+  aria-disabled={disabled}
+  on:mouseover={onFocus}
+  on:mouseleave={onBlur}
+  on:focus={onFocus}
   on:blur={() => {
-    hovered = false;
+    if (!disabled) {
+      hovered = false;
+    }
   }}
-  on:click={() => {
-    selected = true;
-    dispatch("select");
-    setTimeout(() => {
-      onSelect();
-    }, 100);
+  on:click|stopPropagation={() => {
+    if (!disabled) {
+      selected = true;
+      dispatch("select");
+      setTimeout(() => {
+        onSelect();
+      }, 100);
+    }
   }}
 >
   {#if icon}
-    <div class="self-center">
+    <div
+      style:height="18px"
+      class="grid place-content-center"
+      style:opacity=".8"
+    >
       <slot name="icon" />
     </div>
   {/if}
   <div class="text-left">
-    <slot {hovered} />
+    <div>
+      <slot {hovered} />
+    </div>
+    <div class="text-gray-400 italic" style:font-size="11px">
+      <slot name="description" />
+    </div>
   </div>
   <div class="text-right text-gray-400">
     <slot name="right" {hovered} />
