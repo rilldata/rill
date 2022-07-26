@@ -34,7 +34,6 @@
   $: {
     if (topPxRequested + bottomPxRequested < containerHeight) {
       // if they fit within the available space, no style needs to be applied
-      console.log("height ok");
       topStyle = "";
       bottomStyle = "";
     } else if (
@@ -42,7 +41,6 @@
       bottomPxRequested > containerHeight / 2
     ) {
       // if both are taller than 50% of the container, limit both to 50%
-      console.log("both big");
       topStyle = "height:50%;";
       bottomStyle = "height:50%;";
     } else {
@@ -73,64 +71,3 @@
     <slot name="bottom-item" {bottomResizeCallback} />
   </div>
 </div>
-
-<!-- 
-<LayoutManager let:topResizeCallback let:bottomResizeCallback >
-  <table slot="top-item" resizeCallback={topResizeCallback}/>
-  <table slot="bottom-item" resizeCallback={bottomResizeCallback} />
-</LayoutManager> -->
-
-<!-- 
-  <script lang="ts">
-  import { onMount } from "svelte";
-
-  const containers = {
-    outer: undefined,
-    topHeader: undefined,
-    topTable: undefined,
-    bottomHeader: undefined,
-    bottomTable: undefined,
-  };
-  const heights = { outer: 0, top: 0, bottom: 0 };
-
-  onMount(() => {
-    const observerAndContainers = Object.entries(containers).map(
-      ([k, container]) => {
-        const observer = new ResizeObserver(() => {
-          heights[k] = container.clientHeight;
-        });
-        observer.observe(container);
-        return [observer, container] as const;
-      }
-    );
-    return () => {
-      observerAndContainers.forEach(([observer, container]) => {
-        observer.unobserve(container);
-      });
-    };
-  });
-
-  // $: {
-  //   if ()
-  // }
-</script>
-
-<div bind:this={containers.outer}>
-  <div bind:this={containers.topHeader}>
-    <slot name="top-header" />
-  </div>
-
-  <div bind:this={containers.topTable}>
-    <slot name="top-table" />
-  </div>
-
-  <div bind:this={containers.bottomTable}>
-    <slot name="bottom-table" />
-  </div>
-
-  <div bind:this={containers.bottomHeader}>
-    <slot name="bottom-header" />
-  </div>
-</div>
-
- -->
