@@ -22,8 +22,10 @@
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-  $: if ($metricsExplorer?.timeRange) {
-    selectableTimeRanges = makeSelectableTimeRanges($metricsExplorer.timeRange);
+  $: if ($metricsExplorer?.allTimeRange) {
+    selectableTimeRanges = makeSelectableTimeRanges(
+      $metricsExplorer.allTimeRange
+    );
   }
   let selectedTimeRange: TimeSeriesTimeRange;
   $: if ($metricsExplorer?.selectedTimeRange) {

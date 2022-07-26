@@ -16,8 +16,8 @@ import {
   MetricsExplorerEntity,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
+  setExploreAllTimeRange,
   setExploreSelectedTimeRange,
-  setExploreTimeRange,
   setLeaderboardDimensionValues,
   setLeaderboardMeasureId,
   setLeaderboardValuesErrorStatus,
@@ -200,7 +200,7 @@ export const clearSelectedLeaderboardValuesAndUpdate = (
 };
 
 /**
- * Sets user selected time rage.
+ * Sets user selected time range.
  * It then calls {@link updateExploreWrapper} to update explore.
  */
 export const setExploreSelectedTimeRangeAndUpdate = (
@@ -258,15 +258,15 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
 
 /**
  * Fetches time range for the selected timestamp column.
- * Store the response in MetricsExplorer slice by calling {@link setExploreTimeRange}
+ * Store the response in MetricsExplorer slice by calling {@link setExploreAllTimeRange}
  */
 export const fetchTimestampColumnRangeApi = createAsyncThunk(
   `${EntityType.MetricsExplorer}/getTimestampColumnRange`,
   async (metricsDefId: string, thunkAPI) => {
     const timeRange = await fetchWrapper(
-      `metrics/${metricsDefId}/time-range`,
+      `metrics/${metricsDefId}/all-time-range`,
       "GET"
     );
-    thunkAPI.dispatch(setExploreTimeRange(metricsDefId, timeRange));
+    thunkAPI.dispatch(setExploreAllTimeRange(metricsDefId, timeRange));
   }
 );

@@ -34,7 +34,7 @@ export interface MetricsExplorerEntity {
   activeValues: ActiveValues;
   selectedCount: number;
   // time range of the selected timestamp column
-  timeRange?: TimeSeriesTimeRange;
+  allTimeRange?: TimeSeriesTimeRange;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
 }
@@ -381,7 +381,7 @@ export const exploreSlice = createSlice({
       prepare: (id: string) => ({ payload: id }),
     },
 
-    setExploreTimeRange: {
+    setExploreAllTimeRange: {
       reducer: (
         state,
         {
@@ -389,7 +389,7 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; timeRange: TimeSeriesTimeRange }>
       ) => {
         if (!state.entities[id]) return;
-        state.entities[id].timeRange = timeRange;
+        state.entities[id].allTimeRange = timeRange;
       },
       prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
         payload: { id, timeRange },
@@ -436,7 +436,7 @@ export const {
   setLeaderboardValuesStatus,
   setLeaderboardValuesErrorStatus,
   clearSelectedLeaderboardValues,
-  setExploreTimeRange,
+  setExploreAllTimeRange,
   setExploreSelectedTimeRange,
 } = exploreSlice.actions;
 export const MetricsExplorerSliceActions = exploreSlice.actions;
