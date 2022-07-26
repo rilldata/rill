@@ -55,7 +55,7 @@ and the menu closes.
         // replace selected with a single value.
         selections = [{ main, right, key, index }];
       }
-      dispatch("select", { main, right, key, index });
+      dispatch("select", selections);
       if (!multiple) closeEventHandler();
 
       temporarilySelectedKey = undefined;
