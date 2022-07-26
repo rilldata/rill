@@ -42,7 +42,7 @@ jobs:
         - npm run build
 
         - echo "Verify lint of the repo"
-        - npm run lint
+        - npm run lint -- --quiet
 
         - echo "Run all tests"
         - npm run test
