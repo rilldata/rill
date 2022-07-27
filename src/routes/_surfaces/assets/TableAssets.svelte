@@ -25,8 +25,8 @@
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import {
-    querySource,
-    quickStartSource,
+    createModelForSource,
+    autoCreateMetricsDefinitionForSource,
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
@@ -56,11 +56,11 @@
   };
 
   const queryHandler = async (tableName: string) => {
-    await querySource($persistentModelStore.entities, tableName);
+    await createModelForSource($persistentModelStore.entities, tableName);
   };
 
   const quickStartMetrics = async (id: string, tableName: string) => {
-    await quickStartSource(
+    await autoCreateMetricsDefinitionForSource(
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       id,

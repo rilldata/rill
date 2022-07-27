@@ -10,7 +10,7 @@
   } from "$lib/application-state-stores/model-stores";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { autoCreateMetricsDefinition } from "$lib/redux-store/source/source-apis";
+  import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
 
   export let activeEntityID: string;
 
@@ -35,7 +35,7 @@
     // the newly created metrics definition. So, this'll bring us to the
     // MetricsDefinition page. (The logic for this is contained in the
     // not-pictured async thunk.)
-    autoCreateMetricsDefinition(
+    autoCreateMetricsDefinitionForModel(
       $persistentModelStore.entities.find(
         (model) => model.id === activeEntityID
       ).tableName,

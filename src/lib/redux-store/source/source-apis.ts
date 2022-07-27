@@ -19,16 +19,16 @@ import {
 // This file has simple code that will eventually be moved into async thunks
 
 /**
- * Query a source and focus the new Model creates.
+ * Create a model for the given source by selecting all columns.
  */
-export const querySource = async (
+export const createModelForSource = async (
   models: Array<PersistentModelEntity>,
   sourceName: string
 ) => {
   // change the active asset to the new model
   await dataModelerService.dispatch("setActiveAsset", [
     EntityType.Model,
-    await querySourceAndGetId(models, sourceName),
+    await createModelFromSourceAndGetId(models, sourceName),
   ]);
 
   notificationStore.send({
@@ -40,7 +40,7 @@ export const querySource = async (
  * Quick starts a metrics dashboard for a given source.
  * The source should have a timestamp column for this to work.
  */
-export const quickStartSource = async (
+export const autoCreateMetricsDefinitionForSource = async (
   models: Array<PersistentModelEntity>,
   derivedSources: Array<DerivedTableEntity>,
   id: string,
@@ -52,9 +52,9 @@ export const quickStartSource = async (
       .profile?.filter((column) => TIMESTAMPS.has(column.type));
     if (!timestampColumns?.length) return;
     showQuickStartDashboardOverlay(sourceName, timestampColumns[0].name);
-    const modelId = await querySourceAndGetId(models, sourceName);
+    const modelId = await createModelFromSourceAndGetId(models, sourceName);
 
-    await autoCreateMetricsDefinition(
+    await autoCreateMetricsDefinitionForModel(
       sourceName,
       modelId,
       timestampColumns[0].name
@@ -70,7 +70,7 @@ export const quickStartSource = async (
  * Auto generates measures and dimensions.
  * Focuses the dashboard created.
  */
-export const autoCreateMetricsDefinition = async (
+export const autoCreateMetricsDefinitionForModel = async (
   sourceName: string,
   sourceModelId: string,
   timeDimension: string
@@ -99,7 +99,10 @@ export const autoCreateMetricsDefinition = async (
   ]);
 };
 
-const querySourceAndGetId = async (
+/**
+ * Create a model with all columns from the source
+ */
+const createModelFromSourceAndGetId = async (
   models: Array<PersistentModelEntity>,
   sourceName: string
 ): Promise<string> => {
