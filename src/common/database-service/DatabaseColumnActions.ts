@@ -197,13 +197,20 @@ export class DatabaseColumnActions extends DatabaseActions {
       FROM ${tableName}`
     );
 
-    // Use Freedman–Diaconis rule for calculating number of bins
-    const bucketWidth =
-      (2 * columnProperties.IQR) / Math.cbrt(columnProperties.count);
-    const FDEstimatorBucketSize = Math.ceil(
-      columnProperties.range / bucketWidth
-    );
-    const bucketSize = Math.min(40, FDEstimatorBucketSize);
+    let bucketSize;
+
+    if (columnProperties.count < 40) {
+      // Use cardinality if unique count less than 40
+      bucketSize = columnProperties.count;
+    } else {
+      // Use Freedman–Diaconis rule for calculating number of bins
+      const bucketWidth =
+        (2 * columnProperties.IQR) / Math.cbrt(columnProperties.count);
+      const FDEstimatorBucketSize = Math.ceil(
+        columnProperties.range / bucketWidth
+      );
+      bucketSize = Math.min(40, FDEstimatorBucketSize);
+    }
 
     const result = await this.databaseClient.execute<NumericHistogramBin>(`
           WITH data_table AS (
