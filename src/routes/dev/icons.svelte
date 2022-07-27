@@ -6,7 +6,8 @@
       i.includes("Check") ||
       i.includes("Cancel") ||
       i.includes("Empty") ||
-      i.includes("Alert")
+      i.includes("Alert") ||
+      i.includes("Info")
   );
 
   const viewIcons = Object.keys(icons).filter(
