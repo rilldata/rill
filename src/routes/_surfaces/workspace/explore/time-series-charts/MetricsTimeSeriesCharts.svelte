@@ -116,7 +116,8 @@
         {:else if formattedData}
           <TimeSeriesBody
             bind:mouseoverValue
-            formatPreset={measure?.formatPreset}
+            formatPreset={measure?.formatPreset ||
+              NicelyFormattedTypes.HUMANIZE}
             data={formattedData}
             accessor={`measure_${index}`}
             mouseover={point}
