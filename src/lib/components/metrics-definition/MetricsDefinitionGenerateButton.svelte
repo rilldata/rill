@@ -12,7 +12,6 @@
   import MetricsDefinitionGenerateButtonModal from "./MetricsDefinitionGenerateButtomModal.svelte";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import type { ProfileColumn } from "$lib/types";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";

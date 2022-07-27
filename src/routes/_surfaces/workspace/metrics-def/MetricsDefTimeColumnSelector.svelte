@@ -11,7 +11,6 @@
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 
   export let metricsDefId;
