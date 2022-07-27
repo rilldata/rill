@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Table from "$lib/components/table-editable/Table.svelte";
+  import { onMount } from "svelte";
   import TableRow from "$lib/components/table-editable/TableRow.svelte";
   import TableRowWithMenu from "$lib/components/table-editable/TableRowWithMenu.svelte";
 
@@ -15,9 +15,23 @@
 
   export let columnNames: ColumnConfig<any>[];
   export let rows: any[];
+
+  let tableElement;
+
+  onMount(() => {
+    const observer = new ResizeObserver(() => {
+      dispatch("tableResize", tableElement.clientHeight);
+    });
+    observer.observe(tableElement);
+    return () => observer.unobserve(tableElement);
+  });
 </script>
 
-<Table>
+<table
+  on:mouseleave
+  class="relative border-collapse bg-white"
+  bind:this={tableElement}
+>
   <!-- headers -->
   <TableRow>
     <TableHeader position="top-left">#</TableHeader>
@@ -38,4 +52,4 @@
       {/each}
     </TableRowWithMenu>
   {/each}
-</Table>
+</table>

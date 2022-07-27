@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
 
   import Menu from "$lib/components/menu/Menu.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
 
   import CollapsibleTableHeader from "./CollapsibleTableHeader.svelte";
@@ -12,7 +11,7 @@
 
   export let entityType: EntityType;
   export let name: string;
-  export let cardinality: number;
+  export let cardinality: number = undefined;
   export let showRows = true;
   export let sizeInBytes: number = undefined;
   export let active = false;
@@ -20,8 +19,6 @@
   export let show = false;
   export let showTitle = true;
   export let notExpandable = false;
-
-  const dispatch = createEventDispatcher();
 
   let containerWidth = 0;
   let contextMenu;
@@ -81,29 +78,7 @@
               contextMenuOpen = false;
             }}
           >
-            {#if entityType === EntityType.Table}
-              <MenuItem
-                on:select={() => {
-                  dispatch("query");
-                }}
-              >
-                query {name}
-              </MenuItem>
-              <MenuItem
-                on:select={() => {
-                  dispatch("rename");
-                }}
-              >
-                rename {name}
-              </MenuItem>
-            {/if}
-            <MenuItem
-              on:select={() => {
-                dispatch("delete");
-              }}
-            >
-              delete {name}
-            </MenuItem>
+            <slot name="menu-items" />
           </Menu>
         </FloatingElement>
       </div>

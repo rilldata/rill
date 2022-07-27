@@ -57,6 +57,7 @@ export function generateApis<
           })
         );
         thunkAPI.dispatch(addManyAction(entities));
+        return entities;
       }
     ),
     createApi: createAsyncThunk(
@@ -65,6 +66,7 @@ export function generateApis<
         const createdEntity = await fetchWrapper(endpoint, "PUT", args);
         thunkAPI.dispatch(addOneAction(createdEntity));
         if (createHook) createHook(createdEntity);
+        return createdEntity;
       }
     ),
     updateApi: createAsyncThunk(

@@ -205,7 +205,7 @@ export class DataModelerStateService {
     entityType: EntityTypeArg,
     stateType: StateTypeArg
   ): EntityStateServicesMapType[EntityTypeArg][StateTypeArg] {
-    return this.entityStateServicesMap[entityType][stateType];
+    return this.entityStateServicesMap[entityType]?.[stateType];
   }
   public getApplicationState(): ApplicationState {
     return this.getEntityStateService(

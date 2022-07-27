@@ -4,20 +4,22 @@
 
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
-  import ModelIcon from "$lib/components/icons/Model.svelte";
-  import AddIcon from "$lib/components/icons/Add.svelte";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
 
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import Cancel from "$lib/components/icons/Cancel.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -99,9 +101,6 @@
         on:select={() => {
           dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
         }}
-        on:delete={() => {
-          dataModelerService.dispatch("deleteModel", [id]);
-        }}
         cardinality={tableSummaryProps.cardinality}
         name={tableSummaryProps.name}
         sizeInBytes={tableSummaryProps.sizeInBytes}
@@ -115,6 +114,19 @@
             profile={tableSummaryProps.profile}
             head={tableSummaryProps.head}
           />
+        </svelte:fragment>
+        <svelte:fragment slot="menu-items">
+          <MenuItem
+            icon
+            on:select={() => {
+              dataModelerService.dispatch("deleteModel", [id]);
+            }}
+          >
+            <svelte:fragment slot="icon">
+              <Cancel />
+            </svelte:fragment>
+            delete model</MenuItem
+          >
         </svelte:fragment>
       </CollapsibleTableSummary>
     {/each}

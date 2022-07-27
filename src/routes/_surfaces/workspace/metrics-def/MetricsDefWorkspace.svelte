@@ -22,12 +22,16 @@
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
 
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
+  import { Callout } from "$lib/components/callout";
   import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
   import { CATEGORICALS } from "$lib/duckdb-data-types";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
+  import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
 
   export let metricsDefId;
 
@@ -92,9 +96,10 @@
 
   let validDimensionSelectorOption: SelectorOption[] = [];
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    const selectedMetricsDefModelProfile = $derivedModelStore?.entities.find(
-      (model) => model.id === $selectedMetricsDef.sourceModelId
-    ).profile;
+    const selectedMetricsDefModelProfile =
+      $derivedModelStore?.entities.find(
+        (model) => model.id === $selectedMetricsDef.sourceModelId
+      )?.profile ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
       .filter((column) => CATEGORICALS.has(column.type))
       .map((column) => ({ label: column.name, value: column.name }));
@@ -110,6 +115,18 @@
     handleUpdateDimension,
     validDimensionSelectorOption
   );
+
+  $: if ($selectedMetricsDef && $derivedModelStore) {
+    store.dispatch(
+      validateSelectedSources({
+        id: metricsDefId,
+        derivedModelState: $derivedModelStore,
+      })
+    );
+  }
+  $: metricsSourceSelectionError = $selectedMetricsDef
+    ? MetricsSourceSelectionError($selectedMetricsDef)
+    : "";
 </script>
 
 <div
@@ -122,7 +139,13 @@
       <MetricsDefTimeColumnSelector {metricsDefId} />
     </div>
     <div class="self-center pl-10">
-      <MetricsDefinitionGenerateButton {metricsDefId} />
+      {#if metricsSourceSelectionError}
+        <Callout level="error">
+          {metricsSourceSelectionError}
+        </Callout>
+      {:else}
+        <MetricsDefinitionGenerateButton {metricsDefId} />
+      {/if}
     </div>
   </div>
 
@@ -130,26 +153,32 @@
     style="display: flex; flex-direction:column; overflow:hidden;"
     class="flex-1"
   >
-    <MetricsDefEntityTable
-      label={"Measures"}
-      addEntityHandler={handleCreateMeasure}
-      updateEntityHandler={handleUpdateMeasure}
-      deleteEntityHandler={handleDeleteMeasure}
-      rows={$measures ?? []}
-      columnNames={MeasuresColumns}
-      tooltipText={"add a new measure"}
-      addButtonId={"add-measure-button"}
-    />
+    <LayoutManager let:topResizeCallback let:bottomResizeCallback>
+      <MetricsDefEntityTable
+        slot="top-item"
+        resizeCallback={topResizeCallback}
+        label={"Measures"}
+        addEntityHandler={handleCreateMeasure}
+        updateEntityHandler={handleUpdateMeasure}
+        deleteEntityHandler={handleDeleteMeasure}
+        rows={$measures ?? []}
+        columnNames={MeasuresColumns}
+        tooltipText={"add a new measure"}
+        addButtonId={"add-measure-button"}
+      />
 
-    <MetricsDefEntityTable
-      label={"Dimensions"}
-      addEntityHandler={handleCreateDimension}
-      updateEntityHandler={handleUpdateDimension}
-      deleteEntityHandler={handleDeleteDimension}
-      rows={$dimensions ?? []}
-      columnNames={DimensionColumns}
-      tooltipText={"add a new dimension"}
-      addButtonId={"add-dimension-button"}
-    />
+      <MetricsDefEntityTable
+        slot="bottom-item"
+        resizeCallback={bottomResizeCallback}
+        label={"Dimensions"}
+        addEntityHandler={handleCreateDimension}
+        updateEntityHandler={handleUpdateDimension}
+        deleteEntityHandler={handleDeleteDimension}
+        rows={$dimensions ?? []}
+        columnNames={DimensionColumns}
+        tooltipText={"add a new dimension"}
+        addButtonId={"add-dimension-button"}
+      />
+    </LayoutManager>
   </div>
 </div>

@@ -64,7 +64,9 @@
             on:change={onChangeCallback}
           />
           <TooltipContent slot="tooltip-content">
-            <div class="flex items-center"><EditIcon size=".75em" />Edit</div>
+            <div class="flex items-center gap-x-2">
+              <EditIcon size=".75em" />Edit
+            </div>
           </TooltipContent>
         </Tooltip>
       </h1>

@@ -13,6 +13,7 @@ import type {
   TimeSeriesRollup,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
@@ -32,6 +33,12 @@ export class MetricsExplorerActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     const rollupInterval: RollupInterval =
       await this.databaseActionQueue.enqueue(
         {
@@ -72,6 +79,15 @@ export class MetricsExplorerActions extends RillDeveloperActions {
       !measures.length
     )
       return;
+
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
 
     if (isolated) {
       await Promise.all(
@@ -145,6 +161,15 @@ export class MetricsExplorerActions extends RillDeveloperActions {
     }
   ) {
     if (!rillRequestContext.record?.sourceModelId || !measures.length) return;
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     if (isolated) {
       await Promise.all(
         measures.map((measure) =>

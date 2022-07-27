@@ -8,21 +8,30 @@
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
+  import Cancel from "$lib/components/icons/Cancel.svelte";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
     createMetricsDefsApi,
     deleteMetricsDefsApi,
     fetchManyMetricsDefsApi,
+    validateSelectedSources,
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
+  import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
+  import { waitUntil } from "$common/utils/waitUtils";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
+  const derivedModelStore = getContext(
+    "rill:app:derived-model-store"
+  ) as DerivedModelStore;
 
   let showMetricsDefs = true;
   const dispatchAddEmptyMetricsDef = () => {
@@ -44,7 +53,20 @@
   };
 
   onMount(() => {
-    store.dispatch(fetchManyMetricsDefsApi());
+    // TODO: once we have everything in redux store we can easily move this to its own async thunk
+    store.dispatch(fetchManyMetricsDefsApi()).then(async () => {
+      await waitUntil(() => {
+        return !!$derivedModelStore;
+      }, -1);
+      $metricsDefinitions.forEach((metricsDefinition) =>
+        store.dispatch(
+          validateSelectedSources({
+            id: metricsDefinition.id,
+            derivedModelState: $derivedModelStore,
+          })
+        )
+      );
+    });
   });
 </script>
 
@@ -75,7 +97,7 @@
     transition:slide={{ duration: 200 }}
     id="assets-model-list"
   >
-    {#each $metricsDefinitions as { id, metricDefLabel } (id)}
+    {#each $metricsDefinitions as { id, metricDefLabel, sourceModelValidationStatus, timeDimensionValidationStatus } (id)}
       <CollapsibleTableSummary
         entityType={EntityType.MetricsDefinition}
         name={metricDefLabel ?? ""}
@@ -89,18 +111,29 @@
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
         </svelte:fragment>
         <span class="self-center" slot="header-buttons">
-          <ContextButton
-            {id}
-            tooltipText="explore metrics"
-            location="left"
-            on:click={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.MetricsExplorer,
-                id,
-              ]);
-            }}><ExploreIcon /></ContextButton
-          >
+          {#if sourceModelValidationStatus === SourceModelValidationStatus.OK && timeDimensionValidationStatus === SourceModelValidationStatus.OK}
+            <!-- Do not show the "explore metrics" button if metrics is invalid -->
+            <ContextButton
+              {id}
+              tooltipText="explore metrics"
+              location="left"
+              on:click={() => {
+                dataModelerService.dispatch("setActiveAsset", [
+                  EntityType.MetricsExplorer,
+                  id,
+                ]);
+              }}><ExploreIcon /></ContextButton
+            >
+          {/if}
         </span>
+        <svelte:fragment slot="menu-items">
+          <MenuItem icon on:select={() => dispatchDeleteMetricsDef(id)}>
+            <svelte:fragment slot="icon">
+              <Cancel />
+            </svelte:fragment>
+            delete metrics</MenuItem
+          >
+        </svelte:fragment>
       </CollapsibleTableSummary>
     {/each}
   </div>

@@ -31,7 +31,7 @@ export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
 export const BOOLEANS = new Set(["BOOLEAN", "BOOL", "LOGICAL"]);
 export const TIMESTAMPS = new Set(["TIMESTAMP", "TIME", "DATETIME", "DATE"]);
 export const INTERVALS = new Set(["INTERVAL"]);
-export const CATEGORICALS = new Set([
+export const STRING_LIKES = new Set([
   "BYTE_ARRAY",
   "VARCHAR",
   "CHAR",
@@ -39,6 +39,8 @@ export const CATEGORICALS = new Set([
   "TEXT",
   "STRING",
 ]);
+
+export const CATEGORICALS = new Set([...BOOLEANS, ...STRING_LIKES]);
 export const ANY_TYPES = new Set([
   ...NUMERICS,
   ...BOOLEANS,

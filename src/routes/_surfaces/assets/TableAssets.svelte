@@ -1,25 +1,35 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
 
-  import Source from "$lib/components/icons/Source.svelte";
-  import AddIcon from "$lib/components/icons/Add.svelte";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
+  import Source from "$lib/components/icons/Source.svelte";
 
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-  import notificationStore from "$lib/components/notifications/";
-  import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
-  import { uploadFilesWithDialog } from "$lib/util/file-upload";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import Cancel from "$lib/components/icons/Cancel.svelte";
+  import EditIcon from "$lib/components/icons/EditIcon.svelte";
+  import Explore from "$lib/components/icons/Explore.svelte";
+  import Model from "$lib/components/icons/Model.svelte";
+  import Divider from "$lib/components/menu/Divider.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
+  import {
+    querySource,
+    quickStartSource,
+  } from "$lib/redux-store/source/source-apis";
+  import { derivedSourceHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
+  import { uploadFilesWithDialog } from "$lib/util/file-upload";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -46,32 +56,16 @@
   };
 
   const queryHandler = async (tableName: string) => {
-    // check existing models to avoid a name conflict
-    const existingNames = $persistentModelStore?.entities
-      .filter((model) => model.name.includes(`query_${tableName}`))
-      .map((model) => model.tableName)
-      .sort();
-    const nextName =
-      existingNames.length === 0
-        ? `query_${tableName}`
-        : `query_${tableName}_${existingNames.length + 1}`;
+    await querySource($persistentModelStore.entities, tableName);
+  };
 
-    const response = await dataModelerService.dispatch("addModel", [
-      {
-        name: nextName,
-        query: `select * from ${tableName}`,
-      },
-    ]);
-
-    // change the active asset to the new model
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Model,
-      response.id,
-    ]);
-
-    notificationStore.send({
-      message: `queried ${tableName} in workspace`,
-    });
+  const quickStartMetrics = async (id: string, tableName: string) => {
+    await quickStartSource(
+      $persistentModelStore.entities,
+      $derivedTableStore.entities,
+      id,
+      tableName
+    );
   };
 </script>
 
@@ -107,8 +101,6 @@
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:rename={() => openRenameTableModal(id, tableName)}
-            on:query={() => queryHandler(tableName)}
             on:delete={() =>
               dataModelerService.dispatch("dropTable", [tableName])}
           >
@@ -120,6 +112,50 @@
                 profile={derivedTable?.profile ?? []}
                 head={derivedTable?.preview ?? []}
               />
+            </svelte:fragment>
+            <svelte:fragment slot="menu-items">
+              <MenuItem icon on:select={() => queryHandler(tableName)}>
+                <svelte:fragment slot="icon">
+                  <Model />
+                </svelte:fragment>
+                create model from source
+              </MenuItem>
+
+              <MenuItem
+                disabled={!derivedSourceHasTimestampColumn(derivedTable)}
+                icon
+                on:select={() => quickStartMetrics(id, tableName)}
+              >
+                <svelte:fragment slot="icon"><Explore /></svelte:fragment>
+                create dashboard from source
+                <svelte:fragment slot="description">
+                  {#if !derivedSourceHasTimestampColumn(derivedTable)}
+                    requires a timestamp column
+                  {/if}
+                </svelte:fragment>
+              </MenuItem>
+
+              <Divider />
+              <MenuItem
+                icon
+                on:select={() => openRenameTableModal(id, tableName)}
+              >
+                <svelte:fragment slot="icon">
+                  <EditIcon />
+                </svelte:fragment>
+                rename...
+              </MenuItem>
+              <!-- FIXME: this should pop up an "are you sure?" modal -->
+              <MenuItem
+                icon
+                on:select={() =>
+                  dataModelerService.dispatch("dropTable", [tableName])}
+              >
+                <svelte:fragment slot="icon">
+                  <Cancel />
+                </svelte:fragment>
+                delete</MenuItem
+              >
             </svelte:fragment>
           </CollapsibleTableSummary>
         </div>
