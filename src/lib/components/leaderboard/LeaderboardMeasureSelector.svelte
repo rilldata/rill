@@ -98,12 +98,12 @@
         {#key activeLeaderboardMeasure?.main}
           <div
             class="absolute "
-            in:send={{
+            in:send|local={{
               key: activeLeaderboardMeasure.key,
               y: 8 * dir,
               duration: 200,
             }}
-            out:receive={{
+            out:receive|local={{
               key: activeLeaderboardMeasure.key,
               y: 8 * dir,
               duration: 200,
