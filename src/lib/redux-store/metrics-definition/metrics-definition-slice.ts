@@ -4,6 +4,7 @@ import {
   createSlice,
 } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import type { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 const metricsDefAdapter = createEntityAdapter<MetricsDefinitionEntity>({
   sortComparer: (a, b) => a.creationTime - b.creationTime,
@@ -46,6 +47,36 @@ export const metricsDefSlice = createSlice({
       },
       prepare: (id: string) => ({ payload: id }),
     },
+
+    setSourceModelValidationStatus: {
+      reducer: (
+        state,
+        {
+          payload: { id, status },
+        }: PayloadAction<{ id: string; status: SourceModelValidationStatus }>
+      ) => {
+        if (!state.entities[id]) return;
+        state.entities[id].sourceModelValidationStatus = status;
+      },
+      prepare: (id: string, status: SourceModelValidationStatus) => ({
+        payload: { id, status },
+      }),
+    },
+
+    setTimeDimensionValidationStatus: {
+      reducer: (
+        state,
+        {
+          payload: { id, status },
+        }: PayloadAction<{ id: string; status: SourceModelValidationStatus }>
+      ) => {
+        if (!state.entities[id]) return;
+        state.entities[id].timeDimensionValidationStatus = status;
+      },
+      prepare: (id: string, status: SourceModelValidationStatus) => ({
+        payload: { id, status },
+      }),
+    },
   },
 });
 
@@ -55,6 +86,8 @@ export const {
   updateMetricsDef,
   removeMetricsDef,
   toggleMetricsDefSummaryInNav,
+  setSourceModelValidationStatus,
+  setTimeDimensionValidationStatus,
 } = metricsDefSlice.actions;
 export const MetricsDefSliceActions = metricsDefSlice.actions;
 export type MetricsDefSliceActionTypes = typeof MetricsDefSliceActions;

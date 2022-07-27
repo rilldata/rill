@@ -10,6 +10,7 @@ import { getMeasureDefinition } from "$common/stateInstancesFactory";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 
 export class MeasuresActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
@@ -93,6 +94,12 @@ export class MeasuresActions extends RillDeveloperActions {
     const derivedModel = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Derived)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!persistentModel || !derivedModel) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     const parsedExpression = parseExpression(expression, derivedModel.profile);
     const missingColumns = parsedExpression.columns.filter(
       (columnName) =>

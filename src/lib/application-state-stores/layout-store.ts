@@ -47,3 +47,26 @@ modelPreviewVisible.subscribe((tf) => {
 });
 
 export const importOverlayVisible = writable(false);
+
+export const quickStartDashboardOverlay = writable({
+  show: false,
+  sourceName: "",
+  timeDimension: "",
+});
+export function showQuickStartDashboardOverlay(
+  sourceName: string,
+  timeDimension: string
+) {
+  quickStartDashboardOverlay.set({
+    show: true,
+    sourceName,
+    timeDimension,
+  });
+}
+export function resetQuickStartDashboardOverlay() {
+  quickStartDashboardOverlay.set({
+    show: false,
+    sourceName: "",
+    timeDimension: "",
+  });
+}

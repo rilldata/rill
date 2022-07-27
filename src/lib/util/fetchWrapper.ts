@@ -10,6 +10,11 @@ export async function fetchWrapper(
     ...(body ? { body: JSON.stringify(body) } : {}),
     headers: { "Content-Type": "application/json" },
   });
+  if (!resp.ok) {
+    const err = new Error();
+    (err as any).response = await resp.json();
+    return Promise.reject(err);
+  }
   return (await resp.json())?.data;
 }
 

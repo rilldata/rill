@@ -30,6 +30,37 @@
   const menuID = guidGenerator();
 
   let key;
+
+  function getPreviousAvailableItem(availableItems, currentItemId) {
+    // get next largest thing for currentItemId;
+    let nextIndex = currentItemId;
+    const reversedItems = [...availableItems];
+    if (currentItemId === undefined)
+      return reversedItems.filter((item) => !item.disabled)?.[0]?.id;
+
+    reversedItems.reverse();
+    for (let item of reversedItems) {
+      if (item.id < currentItemId && !item.disabled) {
+        nextIndex = item.id;
+        break;
+      }
+    }
+    return nextIndex;
+  }
+
+  function getNextAvailableItem(availableItems, currentItemId) {
+    if (currentItemId === undefined)
+      return availableItems.filter((item) => !item.disabled)?.[0]?.id;
+    let nextIndex = currentItemId;
+    for (let item of availableItems) {
+      if (item.id > currentItemId && !item.disabled) {
+        nextIndex = item.id;
+        break;
+      }
+    }
+    return nextIndex;
+  }
+
   function handleKeydown(event) {
     key = event.key;
 
@@ -38,14 +69,10 @@
     }
 
     if (key === "ArrowDown") {
-      $currentItem =
-        $currentItem !== undefined
-          ? Math.min($currentItem + 1, $menuItems.length - 1)
-          : 0;
+      $currentItem = getNextAvailableItem($menuItems, $currentItem);
     }
     if (key === "ArrowUp") {
-      $currentItem =
-        $currentItem !== undefined ? Math.max($currentItem - 1, 0) : 0;
+      $currentItem = getPreviousAvailableItem($menuItems, $currentItem);
     }
   }
 
@@ -63,11 +90,15 @@
   const menuTrigger =
     getContext("rill:menu:menuTrigger") || writable(undefined);
 
+  let mounted = false;
   // once open, we should select the first menu item.
   onMount(() => {
-    $currentItem = 0;
     $globalActiveMenu = menuID;
   });
+
+  $: if (!mounted) {
+    $currentItem = $menuItems.find((item) => !item.disabled)?.id;
+  }
 
   // This will effectively close any additional menus that might be open.
   $: if ($globalActiveMenu !== menuID) {
