@@ -54,34 +54,49 @@ export const quickStartSource = async (
     showQuickStartDashboardOverlay(sourceName, timestampColumns[0].name);
     const modelId = await querySourceAndGetId(models, sourceName);
 
-    const metricsLabel = `metrics_${sourceName}`;
-    const existingMetrics = selectMetricsDefinitionMatchingName(
-      store.getState(),
-      metricsLabel
+    await autoCreateMetricsDefinition(
+      sourceName,
+      modelId,
+      timestampColumns[0].name
     );
-
-    const { payload: createdMetricsDef } = await store.dispatch(
-      createMetricsDefsApi({
-        sourceModelId: modelId,
-        timeDimension: timestampColumns[0].name,
-        metricDefLabel:
-          existingMetrics.length === 0
-            ? metricsLabel
-            : `${metricsLabel}_${existingMetrics.length}`,
-      })
-    );
-
-    await store.dispatch(
-      generateMeasuresAndDimensionsApi(createdMetricsDef.id)
-    );
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsExplorer,
-      createdMetricsDef.id,
-    ]);
   } catch (e) {
     console.error(e);
   }
   resetQuickStartDashboardOverlay();
+};
+
+/**
+ * Creates a metrics definition for a given model, time dimension and a label.
+ * Auto generates measures and dimensions.
+ * Focuses the dashboard created.
+ */
+export const autoCreateMetricsDefinition = async (
+  sourceName: string,
+  sourceModelId: string,
+  timeDimension: string
+) => {
+  const metricsLabel = `metrics_${sourceName}`;
+  const existingMetrics = selectMetricsDefinitionMatchingName(
+    store.getState(),
+    metricsLabel
+  );
+
+  const { payload: createdMetricsDef } = await store.dispatch(
+    createMetricsDefsApi({
+      sourceModelId,
+      timeDimension,
+      metricDefLabel:
+        existingMetrics.length === 0
+          ? metricsLabel
+          : `${metricsLabel}_${existingMetrics.length}`,
+    })
+  );
+
+  await store.dispatch(generateMeasuresAndDimensionsApi(createdMetricsDef.id));
+  await dataModelerService.dispatch("setActiveAsset", [
+    EntityType.MetricsExplorer,
+    createdMetricsDef.id,
+  ]);
 };
 
 const querySourceAndGetId = async (

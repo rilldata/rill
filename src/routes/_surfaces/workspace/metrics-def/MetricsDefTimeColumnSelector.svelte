@@ -12,6 +12,7 @@
   import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { TIMESTAMPS } from "$lib/duckdb-data-types";
+  import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 
   export let metricsDefId;
 
@@ -34,10 +35,11 @@
 
   let derivedModelColumns: Array<ProfileColumn>;
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    derivedModelColumns =
-      $derivedModelStore?.entities
-        .find((model) => model.id === $selectedMetricsDef.sourceModelId)
-        ?.profile.filter((column) => TIMESTAMPS.has(column.type)) ?? [];
+    derivedModelColumns = selectTimestampColumnFromProfileEntity(
+      $derivedModelStore?.entities.find(
+        (model) => model.id === $selectedMetricsDef.sourceModelId
+      )
+    );
   } else {
     derivedModelColumns = [];
   }

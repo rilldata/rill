@@ -15,6 +15,7 @@
   import { TIMESTAMPS } from "$lib/duckdb-data-types";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import type { ProfileColumn } from "$lib/types";
+  import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
   $: selectedDimensions = getDimensionsByMetricsId(metricsDefId);
@@ -44,9 +45,11 @@
   let timestampColumns: Array<ProfileColumn>;
 
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    timestampColumns = $derivedModelStore?.entities
-      .find((model) => model.id === $selectedMetricsDef.sourceModelId)
-      .profile.filter((column) => TIMESTAMPS.has(column.type));
+    timestampColumns = selectTimestampColumnFromProfileEntity(
+      $derivedModelStore?.entities.find(
+        (model) => model.id === $selectedMetricsDef.sourceModelId
+      )
+    );
   } else {
     timestampColumns = [];
   }
