@@ -7,6 +7,7 @@ This component will draw an axis on the specified side.
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import type { AxisSide } from "./types.d";
+  import { getTicks } from "../utils";
 
   export let side: AxisSide = "left";
   export let format: (arg0: number | Date) => string = undefined;
@@ -155,7 +156,7 @@ This component will draw an axis on the specified side.
   let formatterFunction;
   let superLabelFormatter;
 
-  $: if ($plotConfig[`${isVertical ? "y" : "x"}Type`] === "date") {
+  $: if ($plotConfig[`${xOrY}Type`] === "date") {
     [formatterFunction, superLabelFormatter] = createTimeFormat(
       $mainScale.domain()
     );
@@ -164,23 +165,17 @@ This component will draw an axis on the specified side.
     formatterFunction = format || ((v) => v);
   }
   let axisLength;
-  let tickCount = 0;
   let ticks = [];
-  // FIXME: we should be generalizing anything like this!
-  // we also have a similar codeblock in Grid.svelte
   $: if ($plotConfig) {
     if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
     else axisLength = $plotConfig.graphicHeight;
-    // use graphicWidth or graphicHeight
-    // do we ensure different spacing in one case vs. another?
-    tickCount = ~~(axisLength / 20);
-    const maxTickCountThreshold = 2 + ~~($plotConfig.width / 250);
-    tickCount = Math.max(maxTickCountThreshold, ~~(tickCount / 100));
 
-    ticks = scale.ticks(tickCount);
-    if (ticks.length === 1 && $plotConfig.width >= 250) {
-      ticks = ticks.concat(scale.domain());
-    }
+    ticks = getTicks(
+      xOrY,
+      scale,
+      axisLength,
+      $plotConfig[`${xOrY}Type`] === "date"
+    );
   }
 </script>
 

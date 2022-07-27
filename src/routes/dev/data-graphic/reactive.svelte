@@ -43,8 +43,8 @@
       autocomplete="off"
       type="range"
       bind:value={$height}
-      min={130}
-      max={400}
+      min={100}
+      max={600}
       class="w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
     />
     Margin
