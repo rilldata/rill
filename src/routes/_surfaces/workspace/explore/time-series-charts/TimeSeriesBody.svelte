@@ -17,6 +17,8 @@
   export let formatPreset: NicelyFormattedTypes;
   export let data;
   export let accessor: string;
+
+  // the recycled mouseover event, in case anyone else has one set
   export let mouseover = undefined;
   export let key: string;
 
