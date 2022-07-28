@@ -86,14 +86,6 @@
     >
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
-    <!-- <MeasureBigNumber
-      value={12323212}
-      status={EntityStatus.Idle}
-      description="None"
-      formatPreset={NicelyFormattedTypes.HUMANIZE}
-    >
-      <svelte:fragment slot="name">"Some Label"</svelte:fragment>
-    </MeasureBigNumber> -->
     <TimeSeriesBody
       bind:mouseoverValue
       formatPreset={NicelyFormattedTypes.HUMANIZE}
