@@ -1,5 +1,6 @@
 import { line, area, curveLinear, curveStep } from "d3-shape";
 import type { ScaleLinear, ScaleTime } from "d3-scale";
+import type { GraphicScale } from "./state/types";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -72,4 +73,26 @@ export function areaFactory(args: LineGeneratorArguments) {
       .y1((d) => ~~args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
+}
+
+/**
+ * Return a list of ticks to be represented on the
+ * axis or grid depending on axis-side, it's length and
+ * the data type of field
+ */
+export function getTicks(
+  xOrY: string,
+  scale: GraphicScale,
+  axisLength: number,
+  isDate: boolean
+) {
+  const tickCount = ~~(axisLength / (xOrY === "x" ? 150 : 50));
+  let ticks = scale.ticks(tickCount);
+
+  if (ticks.length <= 1) {
+    if (isDate) ticks = [...scale.domain(), ...ticks] as Date[];
+    else ticks = scale.nice().domain();
+  }
+
+  return ticks;
 }
