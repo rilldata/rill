@@ -33,14 +33,6 @@ import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 
-const handleMetricsDefCreate = async (
-  createdMetricsDef: MetricsDefinitionEntity
-) => {
-  await dataModelerService.dispatch("setActiveAsset", [
-    EntityType.MetricsDefinition,
-    createdMetricsDef.id,
-  ]);
-};
 const handleMetricsDefDelete = async (id: string) => {
   const activeEntity = selectApplicationActiveEntity(store.getState());
   if (!activeEntity) return;
@@ -74,7 +66,20 @@ export const {
   [EntityType.MetricsDefinition, "metricsDefinition", "metrics"],
   [addManyMetricsDefs, addOneMetricsDef, updateMetricsDef, removeMetricsDef],
   [],
-  [handleMetricsDefCreate, handleMetricsDefDelete]
+  [undefined, handleMetricsDefDelete]
+);
+export const createMetricsDefsAndFocusApi = createAsyncThunk(
+  `${EntityType.MetricsDefinition}/fetchManyMetricsDefsAndFocusApi`,
+  async (args: Partial<MetricsDefinitionEntity>, thunkAPI) => {
+    const { payload: createdMetricsDef } = await thunkAPI.dispatch(
+      createMetricsDefsApi(args)
+    );
+    await dataModelerService.dispatch("setActiveAsset", [
+      EntityType.MetricsDefinition,
+      createdMetricsDef.id,
+    ]);
+    return createdMetricsDef;
+  }
 );
 
 export const generateMeasuresAndDimensionsApi = createAsyncThunk(
