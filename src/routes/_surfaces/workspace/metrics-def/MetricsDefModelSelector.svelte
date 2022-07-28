@@ -5,7 +5,7 @@
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { getContext } from "svelte";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-  import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
 
   export let metricsDefId: string;
@@ -23,7 +23,7 @@
     metricsDef: Partial<MetricsDefinitionEntity>
   ) {
     store.dispatch(
-      updateMetricsDefsApi({
+      updateMetricsDefsWrapperApi({
         id: metricsDefId,
         changes: metricsDef,
       })

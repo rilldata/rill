@@ -5,7 +5,7 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import {
     generateMeasuresAndDimensionsApi,
-    updateMetricsDefsApi,
+    updateMetricsDefsWrapperApi,
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
@@ -28,7 +28,7 @@
       // select the first available timestamp column if one has not been
       // selected and there are some available
       store.dispatch(
-        updateMetricsDefsApi({
+        updateMetricsDefsWrapperApi({
           id: metricsDefId,
           changes: { timeDimension: timestampColumns[0].name },
         })

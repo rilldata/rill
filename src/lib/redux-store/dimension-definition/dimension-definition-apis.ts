@@ -11,10 +11,8 @@ import { generateApis } from "$lib/redux-store/utils/api-utils";
 import type { ValidationConfig } from "$lib/redux-store/utils/validation-utils";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { handleErrorResponse } from "$lib/redux-store/utils/handleErrorResponse";
-import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
-import { setExplorerIsStale } from "$lib/redux-store/explore/explore-slice";
-import type { RillReduxState } from "$lib/redux-store/store-root";
 import { selectDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
+import { invalidateExplorerThunk } from "$lib/redux-store/utils/invalidateExplorerThunk";
 
 const DimensionColumnValidation: ValidationConfig<DimensionDefinitionEntity> = {
   field: "dimensionColumn",
@@ -51,24 +49,9 @@ export const {
   [addManyDimensions, addOneDimension, updateDimension, removeDimension],
   [DimensionColumnValidation]
 );
-export const updateDimensionsWrapperApi = createAsyncThunk(
-  `${EntityType.DimensionDefinition}/updateDimensionsWrapperApi`,
-  async (
-    {
-      id,
-      changes,
-    }: { id: string; changes: Partial<DimensionDefinitionEntity> },
-    thunkAPI
-  ) => {
-    await thunkAPI.dispatch(updateDimensionsApi({ id, changes }));
-    if ("dimensionColumn" in changes) {
-      await thunkAPI.dispatch(
-        setExplorerIsStale(
-          selectDimensionById(thunkAPI.getState() as RillReduxState, id)
-            .metricsDefId,
-          true
-        )
-      );
-    }
-  }
+export const updateDimensionsWrapperApi = invalidateExplorerThunk(
+  EntityType.DimensionDefinition,
+  updateDimensionsApi,
+  ["dimensionColumn"],
+  (state, id) => [selectDimensionById(state, id).metricsDefId]
 );

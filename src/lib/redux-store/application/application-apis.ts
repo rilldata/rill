@@ -15,7 +15,9 @@ export const syncApplicationState = (appStore: ApplicationStore) => {
     const appState: ApplicationState = get(appStore);
     if (
       appState.activeEntity?.id !==
-      store.getState().application.activeEntity?.id
+        store.getState().application.activeEntity?.id ||
+      appState.activeEntity?.type !==
+        store.getState().application.activeEntity?.type
     ) {
       store.dispatch(setApplicationActiveState(appState.activeEntity));
       activeEntityChangeApi(appState.activeEntity);
@@ -24,9 +26,9 @@ export const syncApplicationState = (appStore: ApplicationStore) => {
 };
 
 export const activeEntityChangeApi = (activeEntity: ActiveEntity) => {
-  if (EntityType.MeasureDefinition) {
+  if (activeEntity.type === EntityType.MeasureDefinition) {
     store.dispatch(bootstrapMetricsDefinition(activeEntity.id));
-  } else if (EntityType.MetricsExplorer) {
+  } else if (activeEntity.type === EntityType.MetricsExplorer) {
     store.dispatch(bootstrapMetricsExplorer(activeEntity.id));
   }
 };

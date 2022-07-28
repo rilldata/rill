@@ -24,6 +24,7 @@
   } from "$lib/application-state-stores/model-stores";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Portal from "$lib/components/Portal.svelte";
+  import { updateModelQueryApi } from "$lib/redux-store/model/model-apis.js";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
@@ -72,16 +73,8 @@
                 currentModel.id,
               ]);
             }}
-            on:write={(evt) => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Model,
-                currentModel.id,
-              ]);
-              dataModelerService.dispatch("updateModelQuery", [
-                currentModel.id,
-                evt.detail.content,
-              ]);
-            }}
+            on:write={(evt) =>
+              updateModelQueryApi(currentModel.id, evt.detail.content)}
           />
         {/key}
       </div>

@@ -72,11 +72,7 @@ export function generateApis<
     updateApi: createAsyncThunk(
       `${entityType}/updateApi`,
       async (
-        {
-          id,
-          changes,
-          callback,
-        }: { id: string; changes: Partial<Entity>; callback?: () => void },
+        { id, changes }: { id: string; changes: Partial<Entity> },
         thunkAPI
       ) => {
         const validationChanges = await validateEntity(
@@ -91,7 +87,6 @@ export function generateApis<
             await fetchWrapper(`${endpoint}/${id}`, "POST", changes)
           )
         );
-        if (callback) callback();
       }
     ),
     deleteApi: createAsyncThunk(
