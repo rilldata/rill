@@ -90,7 +90,7 @@ export function getTicks(
   let ticks = scale.ticks(tickCount);
 
   if (ticks.length <= 1) {
-    if (isDate) ticks = scale.domain();
+    if (isDate) ticks = [...scale.domain(), ...ticks] as Date[];
     else ticks = scale.nice().domain();
   }
 
