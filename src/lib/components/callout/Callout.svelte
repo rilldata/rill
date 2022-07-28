@@ -17,7 +17,7 @@
   class="grid {sharedClasses} {classes[level]}"
   style:grid-template-columns="max-content auto"
 >
-  <div>
+  <div style:font-size=".875rem">
     <slot name="icon">
       {#if level === "info"}
         <InfoCircle />
