@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { fly } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import { Body } from "$lib/components/data-graphic/elements";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithTween } from "$lib/components/data-graphic/functional-components";
   import { Axis, Grid, PointLabel } from "$lib/components/data-graphic/guides";
   import { Area, Line } from "$lib/components/data-graphic/marks";
-  import { interpolateArray } from "d3-interpolate";
-  import { Body } from "$lib/components/data-graphic/elements";
   import { guidGenerator } from "$lib/util/guid";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
   } from "$lib/util/humanize-numbers";
+  import { interpolateArray } from "d3-interpolate";
+  import { cubicOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
   export let start;
   export let end;
   export let formatPreset: NicelyFormattedTypes;
@@ -43,6 +43,9 @@
   }
 
   let hideCurrent = false;
+
+  $: allZeros = data.every((di) => di[accessor] === 0);
+  $: dataInDomain = data.some((di) => di.ts >= start && di.ts <= end);
 </script>
 
 {#if key && data?.length}
@@ -51,7 +54,8 @@
       shareYScale={false}
       bind:mouseoverValue
       yMin={0}
-      yMaxTweenProps={{ duration: longTimeSeries ? 0 : 600 }}
+      yMaxTweenProps={{ duration: longTimeSeries ? 0 : allZeros ? 100 : 300 }}
+      let:xScale
     >
       <Body>
         {#key key + longTimeSeriesKey}
@@ -74,7 +78,13 @@
               value={data}
               let:output={tweenedData}
               tweenProps={{
-                duration: longTimeSeries ? 0 : !hideCurrent ? 600 : 0,
+                duration: longTimeSeries
+                  ? 0
+                  : !hideCurrent
+                  ? allZeros
+                    ? 0
+                    : 300
+                  : 0,
                 easing: cubicOut,
                 interpolate: interpolateArray,
               }}
@@ -93,15 +103,18 @@
             : humanizeDataType(value, formatPreset)}
       />
       <Grid />
-      {#if mouseover}
+      {#if allZeros || (mouseover && !allZeros) || !dataInDomain}
         <PointLabel
+          showMovingPoint={!allZeros && dataInDomain}
           tweenProps={{ duration: 50 }}
-          x={mouseover.ts}
-          y={mouseover[accessor]}
-          format={(value) =>
-            formatPreset === NicelyFormattedTypes.NONE
-              ? value
-              : humanizeDataType(value, formatPreset)}
+          x={dataInDomain ? mouseover?.ts : undefined}
+          y={dataInDomain ? mouseover?.[accessor] : undefined}
+          format={allZeros || !dataInDomain
+            ? () => "no data for this time range"
+            : (value) =>
+                formatPreset === NicelyFormattedTypes.NONE
+                  ? value
+                  : humanizeDataType(value, formatPreset)}
         />
       {/if}
     </SimpleDataGraphic>

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { getContext } from "svelte";
   import { outline } from "../actions/outline";
-  import { WithTween, WithSimpleLinearScale } from "../functional-components";
-  import type { PointLabelVariant } from "./types";
   import { contexts } from "../constants";
+  import { WithSimpleLinearScale, WithTween } from "../functional-components";
+  import type { PointLabelVariant } from "./types";
 
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
@@ -16,6 +16,8 @@
   export let lineColor = "rgba(0,0,0,.3)";
   export let lineDasharray: string = undefined;
   export let lineThickness: number | "scale" = 1;
+
+  export let showMovingPoint = true;
 
   export let tweenProps = { duration: 0 };
 
@@ -41,8 +43,14 @@
   range={[0, 12]}
   let:scale={diameterScale}
 >
-  <WithTween {tweenProps} value={{ x: $xScale(x), y: $yScale(y) }} let:output>
-    {#if line}
+  <WithTween
+    tweenProps={x !== undefined && y !== undefined
+      ? tweenProps
+      : { duration: 0 }}
+    value={{ x: $xScale(x), y: $yScale(y) }}
+    let:output
+  >
+    {#if line && output?.x}
       <line
         x1={output.x}
         x2={output.x}
@@ -62,9 +70,10 @@
       y2={$config.height}
       stroke="gray"
     />
-    <circle fill="hsl(217, 50%, 50%)" cx={output.x} cy={output.y} r={3} />
-
-    {#if variant === "moving"}
+    {#if showMovingPoint}
+      <circle fill="hsl(217, 50%, 50%)" cx={output.x} cy={output.y} r={3} />
+    {/if}
+    {#if variant === "moving" && showMovingPoint}
       <text
         use:outline={{ color: "rgba(255,255,255,.7)" }}
         dy=".35em"
