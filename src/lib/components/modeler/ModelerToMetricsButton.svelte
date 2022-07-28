@@ -49,7 +49,7 @@
   <Button
     type="primary"
     disabled={!timestampColumns?.length}
-    on:click={handleCreateMetric}>Go To Dashboard<Metrics size="16px" /></Button
+    on:click={handleCreateMetric}>Create Dashboard<Metrics size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     {#if timestampColumns?.length}
