@@ -17,9 +17,15 @@
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-  $: selectableTimeRanges = $metricsExplorer?.selectedTimeRange;
+  $: selectableTimeRanges = $metricsExplorer?.selectableTimeRanges;
   let selectedTimeRange: TimeSeriesTimeRange;
-  $: selectedTimeRange = $metricsExplorer?.selectedTimeRange;
+  $: if ($metricsExplorer?.selectedTimeRange)
+    selectedTimeRange = selectableTimeRanges.find(
+      (selectableTimeRange) =>
+        selectableTimeRange.start ===
+          $metricsExplorer?.selectedTimeRange?.start &&
+        selectableTimeRange.end === $metricsExplorer?.selectedTimeRange?.end
+    );
 
   let timeSelectorMenu;
   let timeSelectorMenuOpen = false;

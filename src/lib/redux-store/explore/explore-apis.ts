@@ -38,6 +38,7 @@ import {
   prune,
 } from "../../../routes/_surfaces/workspace/explore/utils";
 import { selectMetricsExplorerById } from "$lib/redux-store/explore/explore-selectors";
+import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
 
 /**
  * A wrapper to dispatch updates to explore.
@@ -215,6 +216,7 @@ export const setExploreSelectedTimeRangeAndUpdate = (
   metricsDefId: string,
   selectedTimeRange: Partial<TimeSeriesTimeRange>
 ) => {
+  dispatch(setReferenceValues(metricsDefId, undefined));
   dispatch(setExploreSelectedTimeRange(metricsDefId, selectedTimeRange));
   updateExploreWrapper(dispatch, metricsDefId);
 };
