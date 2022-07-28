@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Alert from "../icons/Alert.svelte";
   import AlertCircle from "../icons/AlertCircle.svelte";
   import AlertTriangle from "../icons/AlertTriangle.svelte";
+  import InfoCircle from "../icons/InfoCircle.svelte";
 
   export let level: "info" | "warning" | "error" = "info";
 
@@ -20,7 +20,7 @@
   <div>
     <slot name="icon">
       {#if level === "info"}
-        <Alert />
+        <InfoCircle />
       {:else if level === "warning"}
         <AlertTriangle />
       {:else if level === "error"}
