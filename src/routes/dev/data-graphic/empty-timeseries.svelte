@@ -53,7 +53,9 @@
       measure_0: 60,
       ts: "2020-08-05T00:29:59.000Z",
     },
-  ];
+  ].map((di) => {
+    return { ...di, ts: new Date(di.ts) };
+  });
 
   let data = goodData;
   let option = "good";
