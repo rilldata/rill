@@ -20,14 +20,6 @@
   $: timeColumnSelectedValue =
     $selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
 
-  // FIXME: this pattern of calling the `fetch*API` from components should
-  // be replaced by a call within a thunk fetches the relevant data at the
-  // time the active metricsDefId is set in the redux store. (Currently, the
-  // active metricsDefId is not available in the redux store, but it sh0uld be)
-  $: if (metricsDefId) {
-    store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
-    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
-  }
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;

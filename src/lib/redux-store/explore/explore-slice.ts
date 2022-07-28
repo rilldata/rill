@@ -37,6 +37,10 @@ export interface MetricsExplorerEntity {
   timeRange?: TimeSeriesTimeRange;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
+  // this marks whether anything related to this explore is stale
+  // this is set to true when any measure or dimension changes.
+  // this also is set to true when related model and its dependant source updates (TODO)
+  isStale: boolean;
 }
 
 const metricsExplorerAdapter = createEntityAdapter<MetricsExplorerEntity>();
@@ -69,6 +73,7 @@ export const exploreSlice = createSlice({
           })),
           activeValues: {},
           selectedCount: 0,
+          isStale: false,
         };
         dimensions.forEach((column) => {
           metricsExplorer.activeValues[column.dimensionColumn] = [];
@@ -420,6 +425,24 @@ export const exploreSlice = createSlice({
         payload: { id, selectedTimeRange },
       }),
     },
+
+    setExplorerIsStale: {
+      reducer: (
+        state,
+        {
+          payload: { id, isStale },
+        }: PayloadAction<{
+          id: string;
+          isStale: boolean;
+        }>
+      ) => {
+        if (!state.entities[id]) return;
+        state.entities[id].isStale = isStale;
+      },
+      prepare: (id: string, isStale: boolean) => ({
+        payload: { id, isStale },
+      }),
+    },
   },
 });
 
@@ -438,6 +461,7 @@ export const {
   clearSelectedLeaderboardValues,
   setExploreTimeRange,
   setExploreSelectedTimeRange,
+  setExplorerIsStale,
 } = exploreSlice.actions;
 export const MetricsExplorerSliceActions = exploreSlice.actions;
 export type MetricsExplorerSliceTypes = typeof MetricsExplorerSliceActions;

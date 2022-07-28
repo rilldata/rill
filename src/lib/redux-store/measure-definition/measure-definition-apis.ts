@@ -15,6 +15,9 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { getMessageFromParseError } from "$common/expression-parser/getMessageFromParseError";
 import { Debounce } from "$common/utils/Debounce";
 import { handleErrorResponse } from "$lib/redux-store/utils/handleErrorResponse";
+import { setExplorerIsStale } from "$lib/redux-store/explore/explore-slice";
+import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+import type { RillReduxState } from "$lib/redux-store/store-root";
 
 const MeasureExpressionValidation: ValidationConfig<MeasureDefinitionEntity> = {
   field: "expression",
@@ -55,6 +58,24 @@ export const {
   [EntityType.MeasureDefinition, "measureDefinition", "measures"],
   [addManyMeasures, addOneMeasure, updateMeasure, removeMeasure],
   [MeasureExpressionValidation]
+);
+export const updateMeasuresWrapperApi = createAsyncThunk(
+  `${EntityType.MeasureDefinition}/updateMeasuresWrapper`,
+  async (
+    { id, changes }: { id: string; changes: Partial<MeasureDefinitionEntity> },
+    thunkAPI
+  ) => {
+    await thunkAPI.dispatch(updateMeasuresApi({ id, changes }));
+    if ("expression" in changes || "sqlName" in changes) {
+      await thunkAPI.dispatch(
+        setExplorerIsStale(
+          selectMeasureById(thunkAPI.getState() as RillReduxState, id)
+            .metricsDefId,
+          true
+        )
+      );
+    }
+  }
 );
 
 const validationDebounce = new Debounce();

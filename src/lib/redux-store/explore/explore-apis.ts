@@ -16,6 +16,7 @@ import {
   MetricsExplorerEntity,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
+  setExplorerIsStale,
   setExploreSelectedTimeRange,
   setExploreTimeRange,
   setLeaderboardDimensionValues,
@@ -56,8 +57,7 @@ export const syncExplore = (
   metricsDefId: string,
   metricsExplorer: MetricsExplorerEntity,
   dimensions: Array<DimensionDefinitionEntity>,
-  measures: Array<MeasureDefinitionEntity>,
-  force = false
+  measures: Array<MeasureDefinitionEntity>
 ) => {
   if (measures) measures = selectValidMeasures(measures);
 
@@ -73,7 +73,8 @@ export const syncExplore = (
   }
 
   // To avoid infinite loop only update if something changed.
-  if (shouldUpdate || force) {
+  if (shouldUpdate || metricsExplorer.isStale) {
+    dispatch(setExplorerIsStale(metricsDefId, false));
     dispatch(fetchTimestampColumnRangeApi(metricsDefId));
     updateExploreWrapper(dispatch, metricsDefId);
   }

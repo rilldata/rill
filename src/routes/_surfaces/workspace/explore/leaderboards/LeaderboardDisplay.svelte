@@ -60,8 +60,9 @@
 
   let leaderboardFormatScale: ShortHandSymbols = "none";
   $: if (
-    formatPreset === NicelyFormattedTypes.HUMANIZE ||
-    formatPreset === NicelyFormattedTypes.CURRENCY
+    $metricsExplorer &&
+    (formatPreset === NicelyFormattedTypes.HUMANIZE ||
+      formatPreset === NicelyFormattedTypes.CURRENCY)
   ) {
     leaderboardFormatScale = getScaleForLeaderboard(
       $metricsExplorer.leaderboards
