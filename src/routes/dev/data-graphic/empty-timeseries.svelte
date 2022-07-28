@@ -6,10 +6,9 @@
   import { Axis } from "$lib/components/data-graphic/guides";
 
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
-  //   import MeasureBigNumber from "../_surfaces/workspace/explore/time-series-charts/MeasureBigNumber.svelte";
 
-  import TimeSeriesBody from "../_surfaces/workspace/explore/time-series-charts/TimeSeriesBody.svelte";
-  import TimeSeriesChartContainer from "../_surfaces/workspace/explore/time-series-charts/TimeSeriesChartContainer.svelte";
+  import TimeSeriesBody from "../../_surfaces/workspace/explore/time-series-charts/TimeSeriesBody.svelte";
+  import TimeSeriesChartContainer from "../../_surfaces/workspace/explore/time-series-charts/TimeSeriesChartContainer.svelte";
 
   const startValue = new Date("2020-08-04T18:30:00.000Z");
   const endValue = new Date("2020-08-05T00:29:59.000Z");
