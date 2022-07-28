@@ -14,7 +14,7 @@ export const bootstrapMetricsExplorer = createAsyncThunk(
     await thunkAPI.dispatch(bootstrapMetricsDefinition(metricsDefId));
 
     const state = thunkAPI.getState() as RillReduxState;
-    syncExplore(
+    await syncExplore(
       thunkAPI.dispatch,
       metricsDefId,
       selectMetricsExplorerById(state, metricsDefId),

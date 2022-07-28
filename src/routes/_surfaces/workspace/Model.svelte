@@ -24,7 +24,7 @@
   } from "$lib/application-state-stores/model-stores";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Portal from "$lib/components/Portal.svelte";
-  import { updateModelQueryApi } from "$lib/redux-store/model/model-apis.js";
+  import { updateModelQueryApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
