@@ -49,10 +49,10 @@ export class EstimateIdealRollupInterval extends FunctionalTestBase {
       generateSeries("_test", args.start, args.end, args.interval)
     );
     /** roll up our _test.ts column */
-    const result = await this.databaseService.dispatch(
+    const result = (await this.databaseService.dispatch(
       "estimateIdealRollupInterval",
       ["_test", "ts"]
-    );
+    )) as { rollupInterval: string };
     /** drop the temporarily-made view */
     await this.dbClient.execute(`DROP VIEW _test`);
     expect(args.expectedRollupInterval).toBe(result.rollupInterval);
