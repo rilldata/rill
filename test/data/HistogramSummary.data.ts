@@ -1,5 +1,12 @@
 import type { NumericHistogramBin } from "$lib/types";
 
+let fdTestValues = []
+const numeredArray = [...Array(50).keys()]
+numeredArray.forEach(n => {
+    fdTestValues = fdTestValues.concat(Array(30 - Math.abs(25-n)).fill(n))
+})
+const fdTestInput = "SELECT 1 as column \n" +  fdTestValues.map(n => `UNION ALL SELECT ${n}`).join("\n")
+
 interface NumericHistogramTestCase {
     name: string,
     input: string,
@@ -40,6 +47,19 @@ UNION ALL SELECT 7
             { bucket: 2, low: 4, high: 5.5, count: 5 },
             { bucket: 3, low: 5.5, high: 7, count: 3 }
           ]
+    },
+    {
+    name: 'FD-test',
+    input: fdTestInput,
+        output: [
+            { bucket: 0, low: 0, high: 8.166666666666666, count: 82 },
+            { bucket: 1, low: 8.166666666666666, high: 16.333333333333332, count: 140 },
+            { bucket: 2, low: 16.333333333333332, high: 24.5, count: 204 },
+            { bucket: 3, low: 24.5, high: 32.666666666666664, count: 212 },
+            { bucket: 4, low: 32.666666666666664, high: 40.833333333333336, count: 148 },
+            { bucket: 5, low: 40.833333333333336, high: 49, count: 90 }
+
+            ]
     }
 ];
 
