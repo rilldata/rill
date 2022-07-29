@@ -40,11 +40,22 @@ export enum TimeRangeName {
   // MonthToDate = "Month to date",
   // CustomRange = "Custom range",
 }
+
+// The string values must adhere to DuckDB INTERVAL syntax, since, in some places, we interpolate an SQL queries with these values.
+export enum TimeGrain {
+  FiveMinutes = "5 minute",
+  FifteenMinutes = "15 minute",
+  OneHour = "1 hour",
+  OneDay = "1 day",
+  OneWeek = "7 day",
+  OneMonth = "1 month",
+  OneYear = "1 year",
+}
 export interface TimeSeriesTimeRange {
   name?: TimeRangeName;
-  interval?: string;
   start?: string;
   end?: string;
+  interval?: string; // TODO: switch this to TimeGrain
 }
 
 interface TimeseriesReductionQueryResponse {

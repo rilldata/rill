@@ -1,0 +1,128 @@
+<script lang="ts">
+  import type {
+    TimeRangeName,
+    TimeSeriesTimeRange,
+  } from "$common/database-service/DatabaseTimeSeriesActions";
+
+  import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
+  import Menu from "$lib/components/menu/Menu.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import { onClickOutside } from "$lib/util/on-click-outside";
+  import { tick } from "svelte";
+  import {
+    getTimeOptions,
+    makeTimeRanges,
+    prettyFormatTimeRange,
+  } from "./timeRangeUtils";
+
+  export let metricsDefId: string;
+  export let selectedTimeRangeName: TimeRangeName;
+  export let onSelectTimeRangeName: (timeRangeName: TimeRangeName) => void;
+
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  const getSelectableTimeRanges = (
+    allTimeRangeInDataset: TimeSeriesTimeRange
+  ) => {
+    if (!allTimeRangeInDataset) return;
+    // TODO: replace this with a call to the `/meta` endpoint, once available.
+    const timeOptions = getTimeOptions(allTimeRangeInDataset);
+    const selectableTimeRanges = makeTimeRanges(
+      timeOptions,
+      allTimeRangeInDataset
+    );
+
+    const defaultTimeOption = timeOptions.find(
+      (timeOption) => timeOption.default
+    );
+    let defaultTimeRangeName;
+    if (defaultTimeOption) {
+      defaultTimeRangeName = defaultTimeOption.timeRangeName;
+    } else {
+      defaultTimeRangeName = selectableTimeRanges[0].name;
+    }
+    return {
+      selectableTimeRanges: selectableTimeRanges,
+      defaultTimeRangeName: defaultTimeRangeName,
+    };
+  };
+  $: data = getSelectableTimeRanges($metricsExplorer?.allTimeRange); // TODO: revist the "data" object
+
+  $: if (!selectedTimeRangeName && data?.defaultTimeRangeName) {
+    onSelectTimeRangeName(data.defaultTimeRangeName);
+  }
+
+  // TODO: replace selectable time ranges with the selected time range (which may use a non-default time grain)
+  // if (selectedTimeRangeName) {
+  //   const indexToReplace = selectableTimeRanges.findIndex(
+  //     (timeRange) => timeRange.name === selectedTimeRangeName
+  //   );
+  //   selectableTimeRanges[indexToReplace] = $metricsExplorer.selectedTimeRange;
+  // }
+
+  /// Start boilerplate for DIY Dropdown menu ///
+  let timeRangeNameMenu;
+  let timeRangeNameMenuOpen = false;
+  let clickOutsideListener;
+  $: if (!timeRangeNameMenuOpen && clickOutsideListener) {
+    clickOutsideListener();
+    clickOutsideListener = undefined;
+  }
+
+  const buttonClickHandler = async () => {
+    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
+    if (!clickOutsideListener) {
+      await tick();
+      clickOutsideListener = onClickOutside(() => {
+        timeRangeNameMenuOpen = false;
+      }, timeRangeNameMenu);
+    }
+  };
+
+  let target: HTMLElement;
+  /// End boilerplate for DIY Dropdown menu ///
+</script>
+
+<button
+  bind:this={target}
+  class="px-4 py-2 rounded flex flex-row gap-x-4 hover:bg-gray-200 transition-tranform duration-100"
+  on:click={buttonClickHandler}
+>
+  <span class="font-bold">
+    <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
+    {selectedTimeRangeName ?? "Select a time range"}
+  </span>
+  <span>
+    {prettyFormatTimeRange($metricsExplorer.selectedTimeRange)}
+  </span>
+  <span class="transition-transform" class:-rotate-180={timeRangeNameMenuOpen}>
+    <CaretDownIcon size="16px" />
+  </span>
+</button>
+
+{#if timeRangeNameMenuOpen}
+  <div bind:this={timeRangeNameMenu}>
+    <FloatingElement
+      relationship="direct"
+      location="bottom"
+      alignment="start"
+      {target}
+      distance={8}
+    >
+      <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
+        {#each data.selectableTimeRanges as timeRange}
+          <MenuItem on:select={() => onSelectTimeRangeName(timeRange.name)}>
+            <div class="font-bold">
+              {timeRange.name}
+            </div>
+            <div slot="right" let:hovered class:opacity-0={!hovered}>
+              {prettyFormatTimeRange(timeRange)}
+            </div>
+          </MenuItem>
+        {/each}
+      </Menu>
+    </FloatingElement>
+  </div>
+{/if}
