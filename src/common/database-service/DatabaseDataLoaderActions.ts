@@ -5,7 +5,7 @@ import { ActionResponseFactory } from "$common/data-modeler-service/response/Act
 import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 
 /**
- * Abstraction around loading data into duck db.
+ * Abstraction around loading data into duck database.
  * WASM version will change how the file is read.
  */
 export class DatabaseDataLoaderActions extends DatabaseActions {

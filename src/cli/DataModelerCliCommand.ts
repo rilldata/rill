@@ -11,7 +11,7 @@ import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { RillDeveloper } from "$server/RillDeveloper";
 import { ProjectConfig } from "$common/config/ProjectConfig";
 
-const DATABASE_NAME = "stage.db";
+const DATABASE_NAME = "stage.database";
 
 export interface CliRunArgs {
   projectPath: string;

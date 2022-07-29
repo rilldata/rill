@@ -11,7 +11,7 @@ import { DataConnection } from "./DataConnection";
 import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 /**
- * Connects to an existing duck db.
+ * Connects to an existing duck database.
  * Adds all existing table into the table states.
  * Periodically syncs
  */

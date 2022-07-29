@@ -102,7 +102,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
       `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
         `--db ${CLI_TEST_DUCKDB_FILE}`
     );
-    // update tables in a different function to auto close connection to db
+    // update tables in a different function to auto close connection to database
     await execVerbose(
       `ts-node-dev --project tsconfig.node.json -- ` +
         `test/utils/modify-db.ts ${CLI_TEST_DUCKDB_FILE}`

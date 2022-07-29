@@ -13,6 +13,9 @@ endif
 LIBS := lib/libduckdb.$(LIB_EXT)
 LDFLAGS := LIB=libduckdb.$(LIB_EXT) CGO_LDFLAGS="-L$(LIB_PATH)" $(LIBRARY_PATH) CGO_CFLAGS="-I$(LIB_PATH)"
 
+DB_PATH := stage.db
+DB_PORT := 3100
+
 $(LIBS):
 	mkdir -p lib
 	curl -Lo lib/libduckdb.zip https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/libduckdb-$(ARCH_OS).zip
@@ -24,7 +27,11 @@ install: $(LIBS)
 
 .PHONY: run
 run: $(LIBS)
-	$(LDFLAGS) go run -ldflags="-r $(LIB_PATH)" runtime/main.go stage.db
+	$(LDFLAGS) go run -ldflags="-r $(LIB_PATH)" runtime/main.go $(DB_PATH) $(DB_PORT)
+
+.PHONY: build
+build: $(LIBS)
+	$(LDFLAGS) go build -ldflags="-r $(LIB_PATH)" runtime/main.go $(DB_PATH) $(DB_PORT)
 
 .PHONY: test
 test: $(LIBS)

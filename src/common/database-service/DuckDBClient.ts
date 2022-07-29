@@ -11,7 +11,7 @@ interface DuckDB {
 /**
  * Runs a duckdb instance. Database name can be configured {@link DatabaseConfig}
  *
- * There is only one db right now.
+ * There is only one database right now.
  * But in the future we can easily add an interface to this and have different implementations.
  */
 export class DuckDBClient {
@@ -21,10 +21,10 @@ export class DuckDBClient {
   protected offCallback: () => void;
 
   // this is a singleton class because
-  // duckdb doesn't work well with multiple connections to same db from same process
+  // duckdb doesn't work well with multiple connections to same database from same process
   // if we ever need to have different connections modify this to have a map of database to instance
-  private static instance: DuckDBClient;
-  private constructor(private readonly databaseConfig: DatabaseConfig) {}
+  protected static instance: DuckDBClient;
+  protected constructor(private readonly databaseConfig: DatabaseConfig) {}
   public static getInstance(databaseConfig: DatabaseConfig) {
     if (!this.instance) this.instance = new DuckDBClient(databaseConfig);
     return this.instance;

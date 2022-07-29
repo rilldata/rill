@@ -325,13 +325,15 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       max_value: number;
       min_value: number;
       count: number;
-    }>(`SELECT 
+    }>(
+      `SELECT 
         max("${columnName}") - min("${columnName}") as r,
         max("${columnName}") as max_value,
         min("${columnName}") as min_value,
         count(*) as count
         from 
-      ${tableName}`);
+      ${tableName}`
+    );
 
     const { r, max_value: maxValue, min_value: minValue } = timeRange;
 

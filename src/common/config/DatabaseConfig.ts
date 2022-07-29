@@ -3,7 +3,7 @@ import { Config } from "$common/utils/Config";
 const DUCK_MEMORY_DB = ":memory:";
 
 export class DatabaseConfig extends Config<DatabaseConfig> {
-  @Config.ConfigField("stage.db")
+  @Config.ConfigField("stage.database")
   public databaseName: string;
 
   @Config.ConfigField("export")

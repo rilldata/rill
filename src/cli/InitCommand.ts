@@ -11,10 +11,10 @@ export class InitCommand extends DataModelerCliCommand {
       new Command("init"),
       "Initialize a new project. The project location defaults to the current folder or you can use the --project option to specify a path. "
     )
-      .option("--db <duckDbPath>", "Connect to an existing duckDB database. ")
+      .option("--database <duckDbPath>", "Connect to an existing duckDB database. ")
       .option(
         "--copy",
-        "Used with --db. Copy the duckDB database instead of directly modifying it. "
+        "Used with --database. Copy the duckDB database instead of directly modifying it. "
       )
       .action((opts, command) => {
         const { project } = command.optsWithGlobals();

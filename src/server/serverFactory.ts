@@ -25,7 +25,6 @@ import { DatabaseMetricsExplorerActions } from "$common/database-service/Databas
 import { DatabaseService } from "$common/database-service/DatabaseService";
 import { DatabaseTableActions } from "$common/database-service/DatabaseTableActions";
 import { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
-import { DuckDBClient } from "$common/database-service/DuckDBClient";
 import { MetricsService } from "$common/metrics-service/MetricsService";
 import { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
 import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
@@ -40,6 +39,8 @@ import type { RillDeveloper } from "$server/RillDeveloper";
 import { SocketServer } from "$server/SocketServer";
 import { readFileSync } from "fs";
 import { initLocalConfig } from "$common/utils/initLocalConfig";
+// import { DuckDBRemoteClient } from "$common/database-service/DuckDBRemoteClient";
+import { DuckDBClient } from "$common/database-service/DuckDBClient";
 
 let PACKAGE_JSON = "";
 try {
