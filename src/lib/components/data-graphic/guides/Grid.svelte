@@ -4,6 +4,8 @@
 <script lang="ts">
   import { getContext } from "svelte";
   import { contexts } from "../constants";
+  import { getTicks } from "../utils";
+
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
@@ -22,27 +24,29 @@
   export let yDashArray = "1,1";
   export let yThickness = 1;
 
-  let xAxisLength;
-  let yAxisLength;
-  let xTickCount = 0;
-  let yTickCount = 0;
+  let xTicks = [];
+  let yTicks = [];
 
   $: if ($config) {
-    xAxisLength = $config.graphicWidth;
-    // do we ensure different spacing in one case vs. another?
-    xTickCount = ~~(xAxisLength / 20);
-    xTickCount = Math.max(2, ~~(xTickCount / 100));
+    xTicks = getTicks(
+      "x",
+      $xScale,
+      $config.graphicWidth,
+      $config[`xType`] === "date"
+    );
 
-    yAxisLength = $config.graphicHeight;
-    // do we ensure different spacing in one case vs. another?
-    yTickCount = ~~(yAxisLength / 20);
-    yTickCount = Math.max(2, ~~(yTickCount / 100));
+    yTicks = getTicks(
+      "y",
+      $yScale,
+      $config.graphicHeight,
+      $config[`yType`] === "date"
+    );
   }
 </script>
 
 <g shape-rendering="crispEdges">
   {#if showX}
-    {#each $xScale.ticks(xTickCount) as tick}
+    {#each xTicks as tick}
       <line
         x1={$xScale(tick)}
         x2={$xScale(tick)}
@@ -56,7 +60,7 @@
     {/each}
   {/if}
   {#if showY}
-    {#each $yScale.ticks(yTickCount) as tick}
+    {#each yTicks as tick}
       <line
         y1={$yScale(tick)}
         y2={$yScale(tick)}

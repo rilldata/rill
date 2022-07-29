@@ -5,7 +5,9 @@ export interface ExtremumResolutionStore extends Readable<number | Date> {
   setWithKey: (arg0: string, arg1: (number | Date), arg2: boolean) => void;
   removeKey: (arg0: string) => void
 }
-export interface ScaleStore extends Readable<ScaleLinear<number, number> | ScaleTime<Date, number>> {
+
+export type GraphicScale = ScaleLinear<number, number> | ScaleTime<Date, number>
+export interface ScaleStore extends Readable<GraphicScale> {
   type: string
 };
 
