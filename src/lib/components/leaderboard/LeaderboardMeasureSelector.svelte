@@ -3,7 +3,6 @@
   import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import type { Readable } from "svelte/store";
@@ -12,9 +11,6 @@
 
   let measures: Readable<Array<MeasureDefinitionEntity>>;
   $: measures = getMeasuresByMetricsId(metricsDefId);
-  $: if (metricsDefId) {
-    store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
-  }
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
