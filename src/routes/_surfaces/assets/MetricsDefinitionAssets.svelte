@@ -14,7 +14,7 @@
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
-    createMetricsDefsApi,
+    createMetricsDefsAndFocusApi,
     deleteMetricsDefsApi,
     fetchManyMetricsDefsApi,
     validateSelectedSources,
@@ -38,7 +38,7 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    store.dispatch(createMetricsDefsApi());
+    store.dispatch(createMetricsDefsAndFocusApi());
   };
 
   const dispatchSetMetricsDefActive = (id: string) => {

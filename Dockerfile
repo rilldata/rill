@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1.1-experimental
-FROM rilldata/duckdb:0.3.2
+FROM rilldata/duckdb:0.4.0
 
 WORKDIR /app
 

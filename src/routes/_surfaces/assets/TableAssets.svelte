@@ -25,10 +25,10 @@
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import {
-    querySource,
-    quickStartSource,
+    createModelForSource,
+    autoCreateMetricsDefinitionForSource,
   } from "$lib/redux-store/source/source-apis";
-  import { derivedSourceHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
+  import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
 
   const persistentTableStore = getContext(
@@ -56,11 +56,11 @@
   };
 
   const queryHandler = async (tableName: string) => {
-    await querySource($persistentModelStore.entities, tableName);
+    await createModelForSource($persistentModelStore.entities, tableName);
   };
 
   const quickStartMetrics = async (id: string, tableName: string) => {
-    await quickStartSource(
+    await autoCreateMetricsDefinitionForSource(
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       id,
@@ -122,14 +122,14 @@
               </MenuItem>
 
               <MenuItem
-                disabled={!derivedSourceHasTimestampColumn(derivedTable)}
+                disabled={!derivedProfileEntityHasTimestampColumn(derivedTable)}
                 icon
                 on:select={() => quickStartMetrics(id, tableName)}
               >
                 <svelte:fragment slot="icon"><Explore /></svelte:fragment>
                 create dashboard from source
                 <svelte:fragment slot="description">
-                  {#if !derivedSourceHasTimestampColumn(derivedTable)}
+                  {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
                     requires a timestamp column
                   {/if}
                 </svelte:fragment>
