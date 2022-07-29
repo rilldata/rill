@@ -243,8 +243,8 @@ export const prettyFormatTimeRange = (
     return "";
   }
 
-  const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
-  // const TIMEZONE = "UTC";
+  // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
+  const TIMEZONE = "UTC";
 
   const start = new Date(timeRange.start);
   const end = new Date(timeRange.end);
