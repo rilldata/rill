@@ -1,25 +1,23 @@
 <script lang="ts">
-  import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { fly } from "svelte/transition";
-  import MeasureBigNumber from "./MeasureBigNumber.svelte";
-  import TimeSeriesBody from "./TimeSeriesBody.svelte";
-
-  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
-
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
-  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
-  import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-
-  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { Readable } from "svelte/store";
-  import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
-  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
+  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
+  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
+  import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
+  import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+  import type { Readable } from "svelte/store";
+  import { fly } from "svelte/transition";
+  import MeasureBigNumber from "./MeasureBigNumber.svelte";
+  import TimeSeriesBody from "./TimeSeriesBody.svelte";
+  import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricsDefId;
   export let start: Date;
@@ -43,16 +41,10 @@
 
   let mouseoverValue = undefined;
 
-  function initializeToMidnight(dt) {
-    let newDt = new Date(dt);
-    newDt.setHours(0, 0, 0, 0);
-    return newDt;
-  }
-
   $: key = `${start}` + `${end}`;
 
-  $: startValue = initializeToMidnight(new Date(start));
-  $: endValue = new Date(end);
+  $: startValue = removeTimezoneOffset(new Date(start));
+  $: endValue = removeTimezoneOffset(new Date(end));
 </script>
 
 <WithBisector
