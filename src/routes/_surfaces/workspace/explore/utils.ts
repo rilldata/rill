@@ -24,12 +24,13 @@ const makeSelectableTimeRange = (
   const start = new Date(datasetTimeRange?.start);
   const end = new Date(datasetTimeRange?.end);
   switch (name) {
-    case TimeRangeName.LastHour:
-      return {
-        name,
-        start: new Date(end.getTime() - 60 * 60 * 1000).toISOString(),
-        end: end.toISOString(),
-      };
+    // FIXME: let's integrate "last hour" once we have time grains available
+    // case TimeRangeName.LastHour:
+    //   return {
+    //     name,
+    //     start: new Date(end.getTime() - 60 * 60 * 1000).toISOString(),
+    //     end: end.toISOString(),
+    //   };
     case TimeRangeName.Last6Hours:
       return {
         name,
