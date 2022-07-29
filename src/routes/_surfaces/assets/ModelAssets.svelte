@@ -132,9 +132,9 @@
             on:select={() => {
               autoCreateMetricsDefinitionForModel(
                 $persistentModelStore.entities.find(
-                  (model) => model.id === activeEntityID
+                  (model) => model.id === derivedModel.id
                 ).tableName,
-                activeEntityID,
+                derivedModel.id,
                 selectTimestampColumnFromProfileEntity(derivedModel)[0].name
               );
             }}
