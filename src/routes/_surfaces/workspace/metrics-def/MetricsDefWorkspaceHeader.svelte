@@ -1,7 +1,7 @@
 <script lang="ts">
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import MetricsDefinitionExploreMetricsButton from "$lib/components/metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
-  import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
@@ -15,7 +15,7 @@
 
   const onChangeCallback = async (e) => {
     store.dispatch(
-      updateMetricsDefsApi({
+      updateMetricsDefsWrapperApi({
         id: metricsDefId,
         changes: { metricDefLabel: e.target.value },
       })
