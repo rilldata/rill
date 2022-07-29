@@ -25,8 +25,8 @@
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import {
-    createModelForSource,
     autoCreateMetricsDefinitionForSource,
+    createModelForSource,
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
