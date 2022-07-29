@@ -16,56 +16,90 @@ export interface TimeOption {
 }
 
 // TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
-// TODO: split this into getTimeRanges (which will come from the meta API) and getTimeGrain (which will be client-side API)
-export const getTimeOptions = (
+export const getSelectableTimeRangeNames = (
   allTimeRange: TimeSeriesTimeRange
-): TimeOption[] => {
+): TimeRangeName[] => {
   if (!allTimeRange) return [];
 
-  const allTimeRangeDuration =
-    new Date(allTimeRange.end).getTime() -
-    new Date(allTimeRange.start).getTime();
+  const allTimeRangeDuration = getTimeRangeDuration(
+    TimeRangeName.AllTime,
+    allTimeRange
+  );
 
-  let timeOptions: TimeOption[] = [];
+  const selectableTimeRangeNames: TimeRangeName[] = [];
   for (const timeRangeName in TimeRangeName) {
-    // only show a time range if it is within the time range of the data
     const timeRangeDuration = getTimeRangeDuration(
       TimeRangeName[timeRangeName],
-      allTimeRangeDuration
+      allTimeRange
     );
+    // only show a time range if it is within the time range of the data
     const showTimeRange = allTimeRangeDuration >= timeRangeDuration;
-
     if (showTimeRange) {
-      const timeGrains: TimeGrainOption[] = [];
-      for (const timeGrain in TimeGrain) {
-        // only show a time grain if it results in a reasonable number of points on the line chart
-        const MINIMUM_POINTS_ON_LINE_CHART = 2;
-        const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
-        const timeGrainDuration = getTimeGrainDuration(TimeGrain[timeGrain]);
-        const pointsOnLineChart = timeRangeDuration / timeGrainDuration;
-        const showTimeGrain =
-          pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
-          pointsOnLineChart <= MAXIMUM_POINTS_ON_LINE_CHART;
-        if (showTimeGrain) {
-          timeGrains.push({ grain: TimeGrain[timeGrain] });
-        }
-      }
-      if (timeGrains.length === 0) {
-        throw new Error(
-          `No time grains generated for time range ${timeRangeName}`
-        );
-      }
-      let timeOption = {
-        timeRangeName: TimeRangeName[timeRangeName],
-        timeGrains,
-      };
-      timeOption = setDefaultTimeGrain(timeOption);
-      timeOptions.push(timeOption);
+      selectableTimeRangeNames.push(TimeRangeName[timeRangeName]);
     }
   }
 
-  timeOptions = setDefaultTimeRange(timeOptions);
-  return timeOptions;
+  return selectableTimeRangeNames;
+};
+
+// TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
+export const getDefaultTimeRangeName = (): TimeRangeName => {
+  // Use AllTime for now. When we go to production real-time datasets, we'll want to change this.
+  return TimeRangeName.AllTime;
+};
+
+// This is for pre-set relative time ranges – where the start/end dates are not yet deterimined.
+// For custom time ranges, we'll need another function with "breakpoint" logic that analyzes the user-determined start/end dates.
+export const getSelectableTimeGrains = (
+  timeRangeName: TimeRangeName,
+  allTimeRange: TimeSeriesTimeRange
+): TimeGrain[] => {
+  const timeRangeDuration = getTimeRangeDuration(timeRangeName, allTimeRange);
+
+  const timeGrains: TimeGrain[] = [];
+  for (const timeGrain in TimeGrain) {
+    // only show a time grain if it results in a reasonable number of points on the line chart
+    const MINIMUM_POINTS_ON_LINE_CHART = 2;
+    const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
+    const timeGrainDuration = getTimeGrainDuration(TimeGrain[timeGrain]);
+    const pointsOnLineChart = timeRangeDuration / timeGrainDuration;
+    const showTimeGrain =
+      pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
+      pointsOnLineChart <= MAXIMUM_POINTS_ON_LINE_CHART;
+    if (showTimeGrain) {
+      timeGrains.push(TimeGrain[timeGrain]);
+    }
+  }
+  if (timeGrains.length === 0) {
+    throw new Error(`No time grains generated for time range ${timeRangeName}`);
+  }
+  return timeGrains;
+};
+
+export const getDefaultTimeGrain = (
+  timeRangeName: TimeRangeName
+): TimeGrain => {
+  switch (timeRangeName) {
+    case TimeRangeName.LastHour:
+      return TimeGrain.FifteenMinutes;
+    case TimeRangeName.Last6Hours:
+      return TimeGrain.FifteenMinutes;
+    case TimeRangeName.LastDay:
+      return TimeGrain.OneHour;
+    case TimeRangeName.LastWeek:
+      return TimeGrain.OneHour;
+    case TimeRangeName.Last2Weeks:
+      return TimeGrain.OneDay;
+    case TimeRangeName.Last30Days:
+      return TimeGrain.OneDay;
+    case TimeRangeName.Last60Days:
+      return TimeGrain.OneDay;
+    case TimeRangeName.AllTime:
+      // TODO: this needs breakpoint logic using start/end time.
+      return TimeGrain.OneDay;
+    default:
+      throw new Error(`No default time grain for time range ${timeRangeName}`);
+  }
 };
 
 export const makeTimeRange = (
@@ -321,7 +355,7 @@ export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
 
 const getTimeRangeDuration = (
   timeRangeName: TimeRangeName,
-  allTimeRangeDuration: number
+  allTimeRange: TimeSeriesTimeRange
 ): number => {
   switch (timeRangeName) {
     case TimeRangeName.LastHour:
@@ -343,7 +377,10 @@ const getTimeRangeDuration = (
     case TimeRangeName.Last60Days:
       return 60 * 24 * 60 * 60 * 1000;
     case TimeRangeName.AllTime:
-      return allTimeRangeDuration;
+      return (
+        new Date(allTimeRange.end).getTime() -
+        new Date(allTimeRange.start).getTime()
+      );
     default:
       throw new Error(`Unknown time range name: ${timeRangeName}`);
   }
@@ -368,76 +405,6 @@ const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
   }
-};
-
-const setDefaultTimeRange = (timeOptions: TimeOption[]): TimeOption[] => {
-  // Use AllTime for now. When we go to production real-time datasets, we'll want to change this.
-  const allTimeIdx = timeOptions.findIndex(
-    (timeOption) => timeOption.timeRangeName === TimeRangeName.AllTime
-  );
-  if (!allTimeIdx) {
-    throw new Error("AllTime time range not found");
-  }
-  timeOptions[allTimeIdx].default = true;
-  return timeOptions;
-};
-
-const setDefaultTimeGrain = (timeOption: TimeOption): TimeOption => {
-  switch (timeOption.timeRangeName) {
-    case TimeRangeName.LastHour:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.FifteenMinutes
-      ).default = true;
-      break;
-    case TimeRangeName.Last6Hours:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.FifteenMinutes
-      ).default = true;
-      break;
-    case TimeRangeName.LastDay:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneHour
-      ).default = true;
-      break;
-    case TimeRangeName.Last2Days:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneHour
-      ).default = true;
-      break;
-    case TimeRangeName.Last5Days:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneHour
-      ).default = true;
-      break;
-    case TimeRangeName.LastWeek:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneHour
-      ).default = true;
-      break;
-    case TimeRangeName.Last2Weeks:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneDay
-      ).default = true;
-      break;
-    case TimeRangeName.Last30Days:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneDay
-      ).default = true;
-      break;
-    case TimeRangeName.Last60Days:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneDay
-      ).default = true;
-      break;
-    case TimeRangeName.AllTime:
-      timeOption.timeGrains.find(
-        (timeGrainOption) => timeGrainOption.grain === TimeGrain.OneDay
-      ).default = true;
-      break;
-    default:
-      throw new Error(`Unknown time range name: ${timeOption.timeRangeName}`);
-  }
-  return timeOption;
 };
 
 const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
