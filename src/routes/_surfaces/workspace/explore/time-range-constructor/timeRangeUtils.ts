@@ -103,7 +103,7 @@ export const makeTimeRange = (
 ): TimeSeriesTimeRange => {
   switch (timeRangeName) {
     case TimeRangeName.LastHour: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -113,7 +113,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last6Hours: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -123,7 +123,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.LastDay: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -133,7 +133,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last2Days: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 2 * 24 * 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -143,7 +143,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last5Days: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 5 * 24 * 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -153,7 +153,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.LastWeek: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -163,7 +163,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last2Weeks: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(
         endDate.getTime() - 2 * 7 * 24 * 60 * 60 * 1000
       );
@@ -175,7 +175,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last30Days: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -185,7 +185,7 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last60Days: {
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(endDate.getTime() - 60 * 24 * 60 * 60 * 1000);
       return {
         name: timeRangeName,
@@ -195,8 +195,8 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.AllTime: {
-      const startDate = roundDateUp(new Date(allTimeRange?.start), timeGrain);
-      const endDate = roundDateDown(new Date(allTimeRange?.end), timeGrain);
+      const startDate = roundDateDown(new Date(allTimeRange?.start), timeGrain);
+      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
