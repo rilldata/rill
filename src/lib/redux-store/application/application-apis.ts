@@ -20,12 +20,16 @@ export const syncApplicationState = (appStore: ApplicationStore) => {
         store.getState().application.activeEntity?.type
     ) {
       store.dispatch(setApplicationActiveState(appState.activeEntity));
-      activeEntityChangeApi(appState.activeEntity);
+      handleActiveEntityChange(appState.activeEntity);
     }
   });
 };
 
-export const activeEntityChangeApi = (activeEntity: ActiveEntity) => {
+/**
+ * Whenever active entity changes we need to make sure the target entity has everything to display.
+ * Based on the entity type we call the appropriate bootstrap to load related entities.
+ */
+export const handleActiveEntityChange = (activeEntity: ActiveEntity) => {
   if (activeEntity.type === EntityType.MeasureDefinition) {
     store.dispatch(bootstrapMetricsDefinition(activeEntity.id));
   } else if (activeEntity.type === EntityType.MetricsExplorer) {

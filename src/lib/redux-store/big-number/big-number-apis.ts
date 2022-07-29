@@ -25,7 +25,7 @@ import { selectBigNumberById } from "$lib/redux-store/big-number/big-number-sele
 
 /**
  * Async-thunk to generate big numbers for given measures and filters.
- * Streams time series responses from backend  and updates it in the state.
+ * If referenceValue is missing it makes a call without any filters but with same measures and time range.
  */
 export const generateBigNumbersApi = createAsyncThunk(
   `${EntityType.MetricsExplorer}/generateBigNumbers`,
@@ -82,6 +82,9 @@ export const generateBigNumbersApi = createAsyncThunk(
   }
 );
 
+/**
+ * Sends a query to backend to get big number for given measures, filters and time range.
+ */
 const getBigNumberApi = createAsyncThunk(
   `${EntityType.MetricsExplorer}/getBigNumberApi`,
   async ({
