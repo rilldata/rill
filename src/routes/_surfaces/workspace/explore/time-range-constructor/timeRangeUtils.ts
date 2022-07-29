@@ -243,22 +243,29 @@ export const prettyFormatTimeRange = (
     return "";
   }
 
-  // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
-  const TIMEZONE = "UTC";
-
   const start = new Date(timeRange.start);
   const end = new Date(timeRange.end);
 
+  const TIMEZONE = "UTC";
+  // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
+
+  const startDate = start.getUTCDate(); // use start.getDate() for local timezone
+  const startMonth = start.getUTCMonth();
+  const startYear = start.getUTCFullYear();
+  const endDate = end.getUTCDate();
+  const endMonth = end.getUTCMonth();
+  const endYear = end.getUTCFullYear();
+
   // day is the same
   if (
-    start.getDate() === end.getDate() &&
-    start.getMonth() === end.getMonth() &&
-    start.getFullYear() === end.getFullYear()
+    startDate === endDate &&
+    startMonth === endMonth &&
+    startYear === endYear
   ) {
     return `${start.toLocaleDateString(undefined, {
       month: "long",
       timeZone: TIMEZONE,
-    })} ${start.getDate()}, ${start.getFullYear()} (${start
+    })} ${startDate}, ${startYear} (${start
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
@@ -274,15 +281,13 @@ export const prettyFormatTimeRange = (
       })
       .replace(/\s/g, "")})`;
   }
+
   // month is the same
-  if (
-    start.getMonth() === end.getMonth() &&
-    start.getFullYear() === end.getFullYear()
-  ) {
+  if (startMonth === endMonth && startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
       month: "long",
       timeZone: TIMEZONE,
-    })} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()} (${start
+    })} ${startDate}-${endDate}, ${startYear} (${start
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
@@ -299,7 +304,7 @@ export const prettyFormatTimeRange = (
       .replace(/\s/g, "")})`;
   }
   // year is the same
-  if (start.getFullYear() === end.getFullYear()) {
+  if (startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
       month: "long",
       day: "numeric",
@@ -308,7 +313,7 @@ export const prettyFormatTimeRange = (
       month: "long",
       day: "numeric",
       timeZone: TIMEZONE,
-    })}, ${start.getFullYear()}`;
+    })}, ${startYear}`;
   }
   // year is different
   const dateFormatOptions: Intl.DateTimeFormatOptions = {
