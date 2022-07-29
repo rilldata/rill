@@ -26,7 +26,7 @@ export interface TimeSeriesRollup {
 }
 
 export enum TimeRangeName {
-  LastHour = "Last hour",
+  // LastHour = "Last hour",
   Last6Hours = "Last 6 hours",
   LastDay = "Last day",
   Last2Days = "Last 2 days",
