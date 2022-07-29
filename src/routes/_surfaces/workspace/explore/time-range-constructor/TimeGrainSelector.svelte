@@ -2,7 +2,6 @@
   import type {
     TimeGrain,
     TimeRangeName,
-    TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
@@ -12,9 +11,9 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { tick } from "svelte";
   import {
-    getTimeOptions,
+    getDefaultTimeGrain,
+    getSelectableTimeGrains,
     prettyTimeGrain,
-    TimeGrainOption,
   } from "./timeRangeUtils";
 
   export let metricsDefId: string;
@@ -24,41 +23,26 @@
 
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  const getSelectableTimeGrains = (
-    allTimeRangeInDataset: TimeSeriesTimeRange,
-    selectedTimeRangeName: TimeRangeName
-  ) => {
-    if (!allTimeRangeInDataset || !selectedTimeRangeName) return;
+  let selectableTimeGrains: TimeGrain[];
 
-    // TODO: replace this with a call to the `/meta` endpoint, once available.
-    const timeOptions = getTimeOptions(allTimeRangeInDataset);
-    const selectableTimeGrains = timeOptions.find(
-      (timeOption) => timeOption.timeRangeName === selectedTimeRangeName
-    ).timeGrains;
-    return selectableTimeGrains;
-  };
-  $: selectableTimeGrains = getSelectableTimeGrains(
-    $metricsExplorer?.allTimeRange,
-    selectedTimeRangeName
-  );
+  // TODO: replace this with a call to the `/meta` endpoint, once available.
+  $: if (selectedTimeRangeName && $metricsExplorer?.allTimeRange) {
+    selectableTimeGrains = getSelectableTimeGrains(
+      selectedTimeRangeName,
+      $metricsExplorer.allTimeRange
+    );
+  }
 
-  const getDefaultTimeGrain = (
-    selectableTimeGrains: TimeGrainOption[]
-  ): TimeGrain => {
-    if (!selectableTimeGrains || selectableTimeGrains.length === 0) return;
-
-    return selectableTimeGrains.find((timeGrain) => timeGrain.default).grain;
-  };
   // Set the default time grain when:
   // - there's no time grain currently selected
   // - the selected time grain is not in the list of selectable time grains (which can happen when the time range name is changed)
   $: if (
     !selectedTimeGrain ||
     selectableTimeGrains.find(
-      (timeGrainOption) => timeGrainOption.grain === selectedTimeGrain
+      (timeGrain) => timeGrain === selectedTimeGrain
     ) === undefined
   ) {
-    selectedTimeGrain = getDefaultTimeGrain(selectableTimeGrains);
+    selectedTimeGrain = getDefaultTimeGrain(selectedTimeRangeName);
     onSelectTimeGrain(selectedTimeGrain);
   }
 
@@ -110,9 +94,9 @@
     >
       <Menu on:escape={() => (timeGrainMenuOpen = false)}>
         {#each selectableTimeGrains as timeGrain}
-          <MenuItem on:select={() => onSelectTimeGrain(timeGrain.grain)}>
+          <MenuItem on:select={() => onSelectTimeGrain(timeGrain)}>
             <div class="font-bold">
-              {prettyTimeGrain(timeGrain.grain)}
+              {prettyTimeGrain(timeGrain)}
             </div>
           </MenuItem>
         {/each}

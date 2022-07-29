@@ -9,6 +9,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   import type {
     TimeGrain,
     TimeRangeName,
+    TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
@@ -34,9 +35,10 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   const constructTimeRangeAndUpdateStore = (
     timeRangeName: TimeRangeName,
-    timeGrain: TimeGrain
+    timeGrain: TimeGrain,
+    allTimeRangeInDataset: TimeSeriesTimeRange
   ) => {
-    if (!timeRangeName || !timeGrain) return;
+    if (!timeRangeName || !timeGrain || !allTimeRangeInDataset) return;
 
     const newTimeRange = makeTimeRange(
       selectedTimeRangeName,
@@ -55,7 +57,11 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   };
 
   // reactive statement that makes a new time range whenever the selected options change
-  $: constructTimeRangeAndUpdateStore(selectedTimeRangeName, selectedTimeGrain);
+  $: constructTimeRangeAndUpdateStore(
+    selectedTimeRangeName,
+    selectedTimeGrain,
+    $metricsExplorer.allTimeRange
+  );
 </script>
 
 <div class="flex flex-row">

@@ -3,7 +3,6 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
-
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
@@ -12,7 +11,8 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { tick } from "svelte";
   import {
-    getTimeOptions,
+    getDefaultTimeRangeName,
+    getSelectableTimeRangeNames,
     makeTimeRanges,
     prettyFormatTimeRange,
   } from "./timeRangeUtils";
@@ -23,35 +23,30 @@
 
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
+  let selectableTimeRanges: TimeSeriesTimeRange[];
+
   const getSelectableTimeRanges = (
     allTimeRangeInDataset: TimeSeriesTimeRange
   ) => {
-    if (!allTimeRangeInDataset) return;
     // TODO: replace this with a call to the `/meta` endpoint, once available.
-    const timeOptions = getTimeOptions(allTimeRangeInDataset);
-    const selectableTimeRanges = makeTimeRanges(
-      timeOptions,
+    const selectableTimeRangeNames = getSelectableTimeRangeNames(
       allTimeRangeInDataset
     );
-
-    const defaultTimeOption = timeOptions.find(
-      (timeOption) => timeOption.default
+    const selectableTimeRanges = makeTimeRanges(
+      selectableTimeRangeNames,
+      allTimeRangeInDataset
     );
-    let defaultTimeRangeName;
-    if (defaultTimeOption) {
-      defaultTimeRangeName = defaultTimeOption.timeRangeName;
-    } else {
-      defaultTimeRangeName = selectableTimeRanges[0].name;
-    }
-    return {
-      selectableTimeRanges: selectableTimeRanges,
-      defaultTimeRangeName: defaultTimeRangeName,
-    };
+    return selectableTimeRanges;
   };
-  $: data = getSelectableTimeRanges($metricsExplorer?.allTimeRange); // TODO: revist the "data" object
+  $: if ($metricsExplorer?.allTimeRange) {
+    selectableTimeRanges = getSelectableTimeRanges(
+      $metricsExplorer.allTimeRange
+    );
+  }
 
-  $: if (!selectedTimeRangeName && data?.defaultTimeRangeName) {
-    onSelectTimeRangeName(data.defaultTimeRangeName);
+  $: if (!selectedTimeRangeName) {
+    const defaultTimeRangeName = getDefaultTimeRangeName();
+    onSelectTimeRangeName(defaultTimeRangeName);
   }
 
   // TODO: replace selectable time ranges with the selected time range (which may use a non-default time grain)
@@ -112,7 +107,7 @@
       distance={8}
     >
       <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
-        {#each data.selectableTimeRanges as timeRange}
+        {#each selectableTimeRanges as timeRange}
           <MenuItem on:select={() => onSelectTimeRangeName(timeRange.name)}>
             <div class="font-bold">
               {timeRange.name}

@@ -4,17 +4,6 @@ import {
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
 
-export interface TimeGrainOption {
-  grain: TimeGrain;
-  default?: boolean;
-}
-
-export interface TimeOption {
-  timeRangeName: TimeRangeName;
-  timeGrains: TimeGrainOption[];
-  default?: boolean;
-}
-
 // TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
 export const getSelectableTimeRangeNames = (
   allTimeRange: TimeSeriesTimeRange
@@ -54,6 +43,7 @@ export const getSelectableTimeGrains = (
   timeRangeName: TimeRangeName,
   allTimeRange: TimeSeriesTimeRange
 ): TimeGrain[] => {
+  if (!allTimeRange) return [];
   const timeRangeDuration = getTimeRangeDuration(timeRangeName, allTimeRange);
 
   const timeGrains: TimeGrain[] = [];
@@ -85,6 +75,10 @@ export const getDefaultTimeGrain = (
     case TimeRangeName.Last6Hours:
       return TimeGrain.FifteenMinutes;
     case TimeRangeName.LastDay:
+      return TimeGrain.OneHour;
+    case TimeRangeName.Last2Days:
+      return TimeGrain.OneHour;
+    case TimeRangeName.Last5Days:
       return TimeGrain.OneHour;
     case TimeRangeName.LastWeek:
       return TimeGrain.OneHour;
@@ -216,18 +210,16 @@ export const makeTimeRange = (
 };
 
 export const makeTimeRanges = (
-  timeOptions: TimeOption[],
+  timeRangeNames: TimeRangeName[],
   allTimeRangeInDataset: TimeSeriesTimeRange
 ): TimeSeriesTimeRange[] => {
-  if (!timeOptions || !allTimeRangeInDataset) return [];
+  if (!timeRangeNames || !allTimeRangeInDataset) return [];
 
   const timeRanges: TimeSeriesTimeRange[] = [];
-  for (const timeOption of timeOptions) {
-    const defaultTimeGrain = timeOption.timeGrains.find(
-      (timeGrainOption) => timeGrainOption.default
-    ).grain;
+  for (const timeRangeName of timeRangeNames) {
+    const defaultTimeGrain = getDefaultTimeGrain(timeRangeName);
     const timeRange = makeTimeRange(
-      timeOption.timeRangeName,
+      timeRangeName,
       defaultTimeGrain,
       allTimeRangeInDataset
     );
