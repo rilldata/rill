@@ -8,6 +8,10 @@ import {
 } from "$lib/redux-store/redux-toolkit-wrapper";
 import { setStatusPrepare } from "$lib/redux-store/utils/loading-utils";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import {
+  setFieldPrepare,
+  setFieldReducer,
+} from "$lib/redux-store/utils/slice-utils";
 
 export interface LeaderboardValue {
   value: number;
@@ -37,6 +41,11 @@ export interface MetricsExplorerEntity {
   timeRange?: TimeSeriesTimeRange;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
+  selectableTimeRanges?: TimeSeriesTimeRange[];
+  // this marks whether anything related to this explore is stale
+  // this is set to true when any measure or dimension changes.
+  // this also is set to true when related model and its dependant source updates (TODO)
+  isStale: boolean;
 }
 
 const metricsExplorerAdapter = createEntityAdapter<MetricsExplorerEntity>();
@@ -69,6 +78,7 @@ export const exploreSlice = createSlice({
           })),
           activeValues: {},
           selectedCount: 0,
+          isStale: false,
         };
         dimensions.forEach((column) => {
           metricsExplorer.activeValues[column.dimensionColumn] = [];
@@ -166,18 +176,10 @@ export const exploreSlice = createSlice({
     },
 
     setLeaderboardMeasureId: {
-      reducer: (
-        state,
-        {
-          payload: { id, leaderboardMeasureId },
-        }: PayloadAction<{ id: string; leaderboardMeasureId: string }>
-      ) => {
-        if (!state.entities[id]) return;
-        state.entities[id].leaderboardMeasureId = leaderboardMeasureId;
-      },
-      prepare: (id: string, leaderboardMeasureId: string) => ({
-        payload: { id, leaderboardMeasureId },
-      }),
+      reducer: setFieldReducer("leaderboardMeasureId"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "leaderboardMeasureId">(
+        "leaderboardMeasureId"
+      ),
     },
 
     addDimensionToExplore: {
@@ -382,18 +384,8 @@ export const exploreSlice = createSlice({
     },
 
     setExploreTimeRange: {
-      reducer: (
-        state,
-        {
-          payload: { id, timeRange },
-        }: PayloadAction<{ id: string; timeRange: TimeSeriesTimeRange }>
-      ) => {
-        if (!state.entities[id]) return;
-        state.entities[id].timeRange = timeRange;
-      },
-      prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
-        payload: { id, timeRange },
-      }),
+      reducer: setFieldReducer("timeRange"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "timeRange">("timeRange"),
     },
 
     setExploreSelectedTimeRange: {
@@ -420,6 +412,18 @@ export const exploreSlice = createSlice({
         payload: { id, selectedTimeRange },
       }),
     },
+
+    setExplorerSelectableTimeRange: {
+      reducer: setFieldReducer("selectableTimeRanges"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "selectableTimeRanges">(
+        "selectableTimeRanges"
+      ),
+    },
+
+    setExplorerIsStale: {
+      reducer: setFieldReducer("isStale"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "isStale">("isStale"),
+    },
   },
 });
 
@@ -438,6 +442,8 @@ export const {
   clearSelectedLeaderboardValues,
   setExploreTimeRange,
   setExploreSelectedTimeRange,
+  setExplorerSelectableTimeRange,
+  setExplorerIsStale,
 } = exploreSlice.actions;
 export const MetricsExplorerSliceActions = exploreSlice.actions;
 export type MetricsExplorerSliceTypes = typeof MetricsExplorerSliceActions;
