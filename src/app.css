@@ -16,7 +16,10 @@ html {
 }
 
 body {
-  font-family: "MD IO";
+  font-family: "Inter";
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' on;      /* low-level (all new browsers) */
+
   font-size: 12px;
 
   /* Use this for a few keyboard characters in tooltips, etc. */
