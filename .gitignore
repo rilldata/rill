@@ -41,3 +41,4 @@ last-query-output.json
 staging-databases
 projects/
 rilldata
+/lib
