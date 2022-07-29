@@ -1,6 +1,4 @@
 <script>
-  //   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-
   import { SimpleDataGraphic } from "$lib/components/data-graphic/elements";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
@@ -78,6 +76,19 @@
   let:point
 >
   <TimeSeriesChartContainer start={startValue} end={endValue}>
+    <div style:padding-left="10px" style:padding-top="30px">
+      {#if point?.ts}
+        <div class="absolute italic text-gray-600">
+          {new Intl.DateTimeFormat("en-US", {
+            dateStyle: "medium",
+            timeStyle: "medium",
+          }).format(point?.ts)}
+        </div>
+        &nbsp;
+      {:else}
+        &nbsp;
+      {/if}
+    </div>
     <div />
     <SimpleDataGraphic
       height={32}
@@ -88,6 +99,7 @@
     >
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
+    <div />
     <TimeSeriesBody
       bind:mouseoverValue
       formatPreset={NicelyFormattedTypes.HUMANIZE}
