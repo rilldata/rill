@@ -1,0 +1,41 @@
+<script lang="ts">
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
+
+  import type { PersistentTableStore } from "$lib/application-state-stores/table-stores";
+
+  import Source from "$lib/components/icons/Source.svelte";
+  import { getContext } from "svelte";
+  import WorkspaceHeader from "../WorkspaceHeader.svelte";
+
+  export let id;
+
+  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
+
+  const persistentTableStore = getContext(
+    "rill:app:persistent-table-store"
+  ) as PersistentTableStore;
+
+  $: currentSource = $persistentTableStore?.entities?.find(
+    (entity) => entity.id === id
+  );
+
+  const onChangeCallback = async (e) => {
+    dataModelerService.dispatch("updateTableName", [id, e.target.value]);
+  };
+
+  $: titleInput = currentSource?.name;
+</script>
+
+<div
+  class="grid gap-x-3 items-center pr-4"
+  style:grid-template-columns="auto max-content"
+>
+  <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
+    <svelte:fragment slot="icon">
+      <Source />
+    </svelte:fragment>
+  </WorkspaceHeader>
+</div>

@@ -1,10 +1,29 @@
-import { DataModelerActions } from ".//DataModelerActions";
+import {
+  ActionResponse,
+  ActionStatus,
+} from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import type {
+  DerivedTableEntity,
+  DerivedTableStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import {
+  EntityStatus,
+  EntityType,
+  StateType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+  PersistentTableEntity,
+  PersistentTableStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
+import { getName } from "$common/utils/incrementName";
 import {
   FILE_EXTENSION_TO_TABLE_TYPE,
   ProfileColumn,
   TableSourceType,
 } from "$lib/types";
-import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import {
   extractFileExtension,
   extractTableName,
@@ -12,27 +31,8 @@ import {
   INVALID_CHARS,
   sanitizeTableName,
 } from "$lib/util/extract-table-name";
-import type {
-  PersistentTableEntity,
-  PersistentTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import {
-  EntityStatus,
-  EntityType,
-  StateType,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type {
-  DerivedTableEntity,
-  DerivedTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { existsSync } from "fs";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import {
-  ActionResponse,
-  ActionStatus,
-} from "$common/data-modeler-service/response/ActionResponse";
-import { getName } from "$common/utils/incrementName";
+import { DataModelerActions } from ".//DataModelerActions";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
@@ -199,7 +199,7 @@ export class TableActions extends DataModelerActions {
                 priority: DatabaseActionQueuePriority.TableProfile,
               },
               "getFirstNOfTable",
-              [persistentTable.tableName]
+              [persistentTable.tableName, 250]
             )),
         ].map((asyncFunc) => asyncFunc())
       );

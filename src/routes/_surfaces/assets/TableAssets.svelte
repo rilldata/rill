@@ -31,6 +31,8 @@
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
 
+  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
+
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
@@ -95,14 +97,22 @@
         {@const derivedTable = $derivedTableStore.entities.find(
           (t) => t["id"] === id
         )}
+        {@const entityIsAtive = $rillAppStore?.activeEntity?.id === id}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
+            on:select={() => {
+              dataModelerService.dispatch("setActiveAsset", [
+                EntityType.Table,
+                id,
+              ]);
+            }}
             entityType={EntityType.Table}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             on:delete={() =>
               dataModelerService.dispatch("dropTable", [tableName])}
+            active={entityIsAtive}
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry

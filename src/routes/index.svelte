@@ -29,6 +29,7 @@
   import FileDrop from "$lib/components/overlay/FileDrop.svelte";
   import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
+  import QuickStartDashboard from "$lib/components/overlay/QuickStartDashboard.svelte";
   import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
   import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
   import { store } from "$lib/redux-store/store-root";
@@ -36,7 +37,6 @@
   import AssetsSidebar from "./_surfaces/assets/index.svelte";
   import InspectorSidebar from "./_surfaces/inspector/index.svelte";
   import Workspace from "./_surfaces/workspace/index.svelte";
-  import QuickStartDashboard from "$lib/components/overlay/QuickStartDashboard.svelte";
 
   let showDropOverlay = false;
 
@@ -76,7 +76,7 @@
    * in favor of ironing out more modular routing and suface management.
    */
   const views = {
-    Source: {
+    Table: {
       hasInspector: true,
     },
     Model: {
