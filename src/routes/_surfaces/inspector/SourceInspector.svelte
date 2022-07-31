@@ -67,8 +67,22 @@
   let showSourceTables = true;
 </script>
 
-<div class="Table-profile">
+<div class="table-profile">
   {#if currentTable}
+    <div class="p-4">
+      <div class="font-bold">
+        {#if currentTable.sourceType === 0}
+          parquet
+        {:else if currentTable.sourceType === 1}
+          <!-- CSV file. Show delimiter-->
+          csv
+          {currentTable.csvDelimiter || "comma"}
+        {:else if currentTable.sourceType === 2}
+          duckb
+        {/if}
+      </div>
+    </div>
+
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
