@@ -33,12 +33,7 @@
 
   $: if (metricsDefId && $derivedModelStore) {
     // TODO: move this to bootstrapMetricsExplorer once model store is on redux
-    store.dispatch(
-      validateSelectedSources({
-        id: metricsDefId,
-        derivedModelState: $derivedModelStore,
-      })
-    );
+    store.dispatch(validateSelectedSources(metricsDefId));
   }
 
   onMount(() => {

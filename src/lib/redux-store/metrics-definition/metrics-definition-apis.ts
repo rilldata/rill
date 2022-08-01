@@ -114,13 +114,7 @@ export const generateMeasuresAndDimensionsApi = createAsyncThunk(
 
 export const validateSelectedSources = createAsyncThunk(
   `${EntityType.MetricsDefinition}/validateSelectedSources`,
-  async (
-    {
-      id,
-      derivedModelState,
-    }: { id: string; derivedModelState: DerivedModelState },
-    thunkAPI
-  ) => {
+  async (id: string, thunkAPI) => {
     const metricsDefinition = selectMetricsDefinitionById(
       thunkAPI.getState() as RillReduxState,
       id
@@ -130,10 +124,7 @@ export const validateSelectedSources = createAsyncThunk(
     let derivedModel: DerivedModelEntity;
     if (metricsDefinition.sourceModelId) {
       // if some source model is selected, pull the derived model from the derived model state.
-      derivedModel = selectDerivedModelById(
-        derivedModelState,
-        metricsDefinition.sourceModelId
-      );
+      derivedModel = selectDerivedModelById(metricsDefinition.sourceModelId);
       if (derivedModel) {
         // if a model is found, mark as INVALID if it has error
         sourceModelValidationStatus = derivedModel.error

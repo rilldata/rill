@@ -10,8 +10,10 @@
   import Source from "$lib/components/icons/Source.svelte";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
+  import type {
+    DerivedModelStore,
+    PersistentModelStore,
+  } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
@@ -30,6 +32,7 @@
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
+  import { deleteSourceApi } from "$lib/redux-store/source/source-apis";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -42,6 +45,10 @@
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
+
+  const derivedModelStore = getContext(
+    "rill:app:derived-model-store"
+  ) as DerivedModelStore;
 
   let showTables = true;
 
@@ -65,6 +72,14 @@
       $derivedTableStore.entities,
       id,
       tableName
+    );
+  };
+
+  const deleteSource = (tableName: string) => {
+    deleteSourceApi(
+      tableName,
+      $persistentModelStore.entities,
+      $derivedModelStore.entities
     );
   };
 </script>
@@ -101,8 +116,7 @@
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            on:delete={() =>
-              dataModelerService.dispatch("dropTable", [tableName])}
+            on:delete={() => deleteSource(tableName)}
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry
@@ -146,11 +160,7 @@
                 rename...
               </MenuItem>
               <!-- FIXME: this should pop up an "are you sure?" modal -->
-              <MenuItem
-                icon
-                on:select={() =>
-                  dataModelerService.dispatch("dropTable", [tableName])}
-              >
+              <MenuItem icon on:select={() => deleteSource(tableName)}>
                 <svelte:fragment slot="icon">
                   <Cancel />
                 </svelte:fragment>

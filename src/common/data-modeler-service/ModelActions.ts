@@ -110,7 +110,10 @@ export class ModelActions extends DataModelerActions {
   public async updateModelQuery(
     { stateService }: PersistentModelStateActionArg,
     modelId: string,
-    query: string
+    query: string,
+    // force update the query even if the query didn't change
+    // this is to update model when associated sources change
+    force = false
   ): Promise<ActionResponse> {
     const model = stateService.getById(modelId);
     const derivedModel = this.dataModelerStateService.getEntityById(
@@ -125,7 +128,7 @@ export class ModelActions extends DataModelerActions {
     }
 
     const sanitizedQuery = sanitizeQuery(query);
-    if (sanitizedQuery === derivedModel.sanitizedQuery) {
+    if (!force && sanitizedQuery === derivedModel.sanitizedQuery) {
       if (derivedModel.error) {
         return ActionResponseFactory.getModelQueryError(derivedModel.error);
       }
@@ -144,9 +147,9 @@ export class ModelActions extends DataModelerActions {
     // validate query with the original query first.
     const validationResponse = await this.validateModelQuery(model, query);
     if (validationResponse) {
-      this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
       return this.setModelError(modelId, validationResponse);
     }
+    this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
     this.dataModelerStateService.dispatch("clearModelError", [modelId]);
 
     if (this.config.profileWithUpdate) {
