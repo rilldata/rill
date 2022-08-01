@@ -424,16 +424,19 @@ const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
     case TimeGrain.OneWeek: {
-      const interval = 7 * 24 * 60 * 60 * 1000;
-      return new Date(Math.floor(date.getTime() / interval) * interval);
+      // rounds to the most recent Monday
+      const day = date.getUTCDay();
+      const dateRoundedDownByDay = roundDateDown(date, TimeGrain.OneDay);
+      const timeFromMonday = (day === 0 ? 6 : day - 1) * 24 * 60 * 60 * 1000;
+      return new Date(dateRoundedDownByDay.getTime() - timeFromMonday);
     }
     case TimeGrain.OneMonth: {
-      const interval = 30 * 24 * 60 * 60 * 1000;
-      return new Date(Math.floor(date.getTime() / interval) * interval);
+      // rounds to the 1st of the current month
+      return new Date(date.getUTCFullYear(), date.getUTCMonth(), 1);
     }
     case TimeGrain.OneYear: {
-      const interval = 365 * 24 * 60 * 60 * 1000;
-      return new Date(Math.floor(date.getTime() / interval) * interval);
+      // rounds to January 1st of the current year
+      return new Date(date.getUTCFullYear(), 1, 1);
     }
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
@@ -460,16 +463,19 @@ const roundDateUp = (date: Date | undefined, timeGrain: TimeGrain): Date => {
       return new Date(Math.ceil(date.getTime() / interval) * interval);
     }
     case TimeGrain.OneWeek: {
-      const interval = 7 * 24 * 60 * 60 * 1000;
-      return new Date(Math.ceil(date.getTime() / interval) * interval);
+      // rounds to the next Monday
+      const day = date.getUTCDay();
+      const dateRoundedDownByDay = roundDateDown(date, TimeGrain.OneDay);
+      const timeUntilMonday = (day === 0 ? 1 : 8 - day) * 24 * 60 * 60 * 1000;
+      return new Date(dateRoundedDownByDay.getTime() + timeUntilMonday);
     }
     case TimeGrain.OneMonth: {
-      const interval = 30 * 24 * 60 * 60 * 1000;
-      return new Date(Math.ceil(date.getTime() / interval) * interval);
+      // rounds to the 1st of the next month
+      return new Date(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
     }
     case TimeGrain.OneYear: {
-      const interval = 365 * 24 * 60 * 60 * 1000;
-      return new Date(Math.ceil(date.getTime() / interval) * interval);
+      // rounds to Jan 1st of the next year
+      return new Date(date.getUTCFullYear() + 1, 1, 1);
     }
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
