@@ -3,10 +3,6 @@ import type { Request, Response, Router } from "express";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import path from "path";
 import { existsSync } from "fs";
-import {
-  EntityType,
-  StateType,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { EntityController } from "$server/controllers/EntityController";
 
 interface FileUploadEntry {
