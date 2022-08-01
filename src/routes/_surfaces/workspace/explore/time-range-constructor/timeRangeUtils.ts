@@ -332,19 +332,19 @@ export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
   if (!timeGrain) return "";
   switch (timeGrain) {
     case TimeGrain.FiveMinutes:
-      return "5 minutes";
+      return "5 minute";
     case TimeGrain.FifteenMinutes:
-      return "15 minutes";
+      return "15 minute";
     case TimeGrain.OneHour:
-      return "1 hour";
+      return "hourly";
     case TimeGrain.OneDay:
-      return "1 day";
+      return "daily";
     case TimeGrain.OneWeek:
-      return "1 week";
+      return "weekly";
     case TimeGrain.OneMonth:
-      return "1 month";
+      return "monthly";
     case TimeGrain.OneYear:
-      return "1 year";
+      return "yearly";
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
   }
