@@ -21,7 +21,7 @@ export interface MetricsExplorerTestDataType {
 
 const DefaultPublisherLeaderboard: [string, Array<string>] = [
   "publisher",
-  ["Facebook", "Google", "Yahoo", "Microsoft"],
+  [null, "Facebook", "Google", "Yahoo", "Microsoft"],
 ];
 const DefaultDomainLeaderboard: [string, Array<string>] = [
   "domain",
@@ -38,6 +38,7 @@ const DefaultDomainLeaderboard: [string, Array<string>] = [
 const DefaultCityLeaderboard: [string, Array<string>] = [
   "city",
   [
+    null,
     "Bengaluru",
     "Boston",
     "Delhi",
@@ -88,7 +89,7 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
       { impressions: [750, 1250], bid_price: [1, 2] },
     ],
     leaderboards: [
-      ["publisher", ["Yahoo"]],
+      ["publisher", ["Yahoo", null]],
       DefaultDomainLeaderboard,
       DefaultCityLeaderboard,
       ["country", ["India", "USA", "Ireland", "UK"]],
@@ -105,7 +106,7 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
     measures: [1],
     measureRanges: [{ bid_price: [2.5, 3] }, { bid_price: [3, 3.5] }],
     leaderboards: [
-      ["publisher", ["Microsoft", "Facebook", "Google", "Yahoo"]],
+      ["publisher", ["Microsoft", "Facebook", "Google", "Yahoo", null]],
       [
         "domain",
         [
@@ -116,7 +117,7 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
           "news.google.com",
         ],
       ],
-      DefaultCityLeaderboard,
+      ["city", [...DefaultCityLeaderboard[1].slice(1), null]],
       ["country", ["India", "Ireland", "UK", "USA"]],
     ],
     bigNumber: { bid_price: [2.75, 3.25] },
@@ -137,7 +138,7 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
       { bid_price: [2.75, 3.25] },
     ],
     leaderboards: [
-      ["publisher", ["Google", "Yahoo", "Facebook", "Microsoft"]],
+      ["publisher", ["Google", "Yahoo", null, "Facebook", "Microsoft"]],
       [
         "domain",
         [
@@ -150,7 +151,7 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
           "msn.com",
         ],
       ],
-      DefaultCityLeaderboard,
+      ["city", [...DefaultCityLeaderboard[1].slice(1), null]],
       ["country", ["India", "Ireland", "UK", "USA"]],
     ],
     bigNumber: { bid_price: [2.75, 3.25] },
@@ -164,7 +165,7 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
     },
     previewRollupInterval: PreviewRollupInterval.month,
     leaderboards: [
-      ["publisher", ["Google", "Yahoo", "Facebook", "Microsoft"]],
+      ["publisher", [null, "Google", "Yahoo", "Facebook", "Microsoft"]],
       [
         "domain",
         [
