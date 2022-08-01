@@ -24,15 +24,10 @@
 
   export let metricsDefId;
 
-  // get all the measure ids that are available.
-
   $: allMeasures = getValidMeasuresByMetricsId(metricsDefId);
-
-  // get the active big numbers
 
   let bigNumbers: Readable<BigNumberEntity>;
   $: bigNumbers = getBigNumberById(metricsDefId);
-  // plot the data
 
   let timeSeries: Readable<TimeSeriesEntity>;
   $: timeSeries = getTimeSeriesById(metricsDefId);
