@@ -82,16 +82,18 @@
 
 <button
   bind:this={target}
-  class="px-4 py-2 rounded flex flex-row gap-x-4 hover:bg-gray-200 transition-tranform duration-100"
+  class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
   on:click={buttonClickHandler}
 >
-  <span class="font-bold">
-    <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-    {selectedTimeRangeName ?? "Select a time range"}
-  </span>
-  <span>
-    {prettyFormatTimeRange($metricsExplorer.selectedTimeRange)}
-  </span>
+  <div class="flex flew-row gap-x-3">
+    <span class="font-bold">
+      <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
+      {selectedTimeRangeName ?? "Select a time range"}
+    </span>
+    <span>
+      {prettyFormatTimeRange($metricsExplorer.selectedTimeRange)}
+    </span>
+  </div>
   <span class="transition-transform" class:-rotate-180={timeRangeNameMenuOpen}>
     <CaretDownIcon size="16px" />
   </span>

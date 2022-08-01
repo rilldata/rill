@@ -71,7 +71,7 @@
 
 <button
   bind:this={target}
-  class="px-4 py-2 rounded flex flex-row gap-x-4 hover:bg-gray-200 transition-tranform duration-100"
+  class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
   on:click={buttonClickHandler}
 >
   <div>
