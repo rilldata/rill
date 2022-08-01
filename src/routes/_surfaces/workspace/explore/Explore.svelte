@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { syncExplore } from "$lib/redux-store/explore/explore-apis";
@@ -8,6 +9,7 @@
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
   import { getContext, onMount } from "svelte";
   import type { Readable } from "svelte/store";
@@ -15,8 +17,6 @@
   import ExploreHeader from "./ExploreHeader.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
   import MetricsTimeSeriesCharts from "./time-series-charts/MetricsTimeSeriesCharts.svelte";
-  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
-  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
 
   export let metricsDefId: string;
 
@@ -74,16 +74,7 @@
     <ExploreHeader bind:whichReferenceValue {metricsDefId} />
   </svelte:fragment>
   <svelte:fragment slot="metrics">
-    <MetricsTimeSeriesCharts
-      start={$metricsExplorer?.selectedTimeRange?.start ||
-        $metricsExplorer?.timeRange?.start}
-      end={$metricsExplorer?.selectedTimeRange?.end ||
-        $metricsExplorer?.timeRange?.end}
-      activeMeasureIds={$measures?.map((measure) => measure.id) || []}
-      {metricsDefId}
-      interval={$metricsExplorer?.selectedTimeRange?.interval ||
-        $metricsExplorer?.timeRange?.interval}
-    />
+    <MetricsTimeSeriesCharts {metricsDefId} />
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">
     <LeaderboardDisplay {columns} {whichReferenceValue} {metricsDefId} />

@@ -9,7 +9,10 @@
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
-  import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
+  import type {
+    TimeSeriesEntity,
+    TimeSeriesValue,
+  } from "$lib/redux-store/timeseries/timeseries-slice";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
@@ -20,8 +23,6 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricsDefId;
-  export let start: Date;
-  export let end: Date;
 
   // get all the measure ids that are available.
 
@@ -41,10 +42,32 @@
 
   let mouseoverValue = undefined;
 
-  $: key = `${start}` + `${end}`;
+  $: key = `${startValue}` + `${endValue}`;
 
-  $: startValue = removeTimezoneOffset(new Date(start));
-  $: endValue = removeTimezoneOffset(new Date(end));
+  function getMinTs(values: TimeSeriesValue[]): Date {
+    if (!values) return new Date();
+    let min = new Date(values[0].ts);
+    for (let i = 1; i < values.length; i++) {
+      if (new Date(values[i].ts).getTime() < min.getTime()) {
+        min = new Date(values[i].ts);
+      }
+    }
+    return min;
+  }
+  function getMaxTs(values: TimeSeriesValue[]): Date {
+    if (!values) return new Date();
+    let max = new Date(values[0].ts);
+    for (let i = 1; i < values.length; i++) {
+      if (new Date(values[i].ts).getTime() > max.getTime()) {
+        max = new Date(values[i].ts);
+      }
+    }
+    return max;
+  }
+  $: minDate = getMinTs($timeSeries?.values);
+  $: maxDate = getMaxTs($timeSeries?.values);
+  $: startValue = removeTimezoneOffset(minDate);
+  $: endValue = removeTimezoneOffset(maxDate);
 </script>
 
 <WithBisector
