@@ -4,10 +4,12 @@
 
 import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
 
-const shortHandSymbols = ["B", "M", "k", "none"] as const;
+const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
 export type ShortHandSymbols = typeof shortHandSymbols[number];
 
 const shortHandMap = {
+  Q: 1.0e15,
+  T: 1.0e12,
   B: 1.0e9,
   M: 1.0e6,
   k: 1.0e3,
@@ -76,8 +78,14 @@ function formatNicely(
 function convertToShorthand(value: number): string | number {
   if (value < 1000) return formatNicely(value, NicelyFormattedTypes.DECIMAL);
 
-  // Nine Zeroes for Billions
-  return Math.abs(value) >= 1.0e9
+  // Fifteen Zeros for Quadrillion
+  return Math.abs(value) >= 1.0e15
+    ? (Math.abs(value) / 1.0e15).toFixed(1) + "Q"
+    : // Twelve Zeros for Trillions
+    Math.abs(value) >= 1.0e12
+    ? (Math.abs(value) / 1.0e12).toFixed(1) + "T"
+    : // Nine Zeroes for Billions
+    Math.abs(value) >= 1.0e9
     ? (Math.abs(value) / 1.0e9).toFixed(1) + "B"
     : // Six Zeroes for Millions
     Math.abs(value) >= 1.0e6
@@ -89,7 +97,11 @@ function convertToShorthand(value: number): string | number {
 }
 
 function getScaleForValue(value: number): ShortHandSymbols {
-  return Math.abs(value) >= 1.0e9
+  return Math.abs(value) >= 1.0e15
+    ? "Q"
+    : Math.abs(value) >= 1.0e12
+    ? "T"
+    : Math.abs(value) >= 1.0e9
     ? "B"
     : Math.abs(value) >= 1.0e6
     ? "M"
