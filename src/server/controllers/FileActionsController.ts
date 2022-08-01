@@ -7,6 +7,7 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityController } from "$server/controllers/EntityController";
 
 interface FileUploadEntry {
   name: string;
@@ -40,23 +41,17 @@ export class FileActionsController extends RillDeveloperController {
     const filePath = `${this.config.projectFolder}/tmp/${req.files.file.name}`;
     req.files.file.mv(filePath);
 
-    if (req.body.tableName) {
-      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
-        filePath,
-        req.body.tableName,
-      ]);
-    } else {
-      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
-        filePath,
-      ]);
-    }
-
-    // this is simpler than changing addOrUpdateTableFromFile and potentially causing regressions
-    // TODO: once we move to a cleaner backend for sources and models we should replace this
-    res.json({
-      data: this.rillDeveloperService.dataModelerStateService
-        .getEntityStateService(EntityType.Table, StateType.Persistent)
-        .getByField("path", filePath),
+    await EntityController.wrapAction(res, () => {
+      if (req.body.tableName) {
+        return this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+          filePath,
+          req.body.tableName,
+        ]);
+      } else {
+        return this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+          filePath,
+        ]);
+      }
     });
   }
 

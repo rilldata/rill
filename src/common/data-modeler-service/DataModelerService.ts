@@ -140,7 +140,6 @@ export class DataModelerService {
       if (!returnResponse)
         returnResponse = ActionResponseFactory.getSuccessResponse();
     } catch (err) {
-      console.log(err);
       returnResponse = ActionResponseFactory.getErrorResponse(err);
     }
 

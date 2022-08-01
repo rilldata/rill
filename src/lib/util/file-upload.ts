@@ -82,6 +82,7 @@ export async function uploadFile(file: File, url: string, tableName?: string) {
       formData,
       {}
     );
+    console.log(persistentTable);
     await sourceUpdated(persistentTable.tableName);
   } catch (err) {
     console.error(err);

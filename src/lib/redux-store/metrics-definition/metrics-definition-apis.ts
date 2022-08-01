@@ -197,5 +197,6 @@ export const validateSelectedSources = createAsyncThunk(
     selectDimensionsByMetricsId(state, id).forEach((dimension) =>
       thunkAPI.dispatch(validateDimensionColumnApi(dimension.id))
     );
+    // TODO: if timestamp column is invalid select the next valid timestamp column
   }
 );
