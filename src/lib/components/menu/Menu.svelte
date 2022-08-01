@@ -139,7 +139,7 @@
     : 'bg-white border border-gray-300 shadow-md'}
         "
   style:outline="none"
-  style:min-width="300px"
+  style:min-width={"300px"}
   tabindex="0"
   {...ariaProperties}
 >

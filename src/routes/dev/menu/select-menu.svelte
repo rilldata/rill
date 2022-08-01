@@ -32,6 +32,26 @@
   >
 
   <div class="flex flex-row gap-x-8 content-start items-start">
+    <div class="grid grid-flow-row gap-y-4" style:width="600px">
+      <div>
+        here is a test hm <SimpleSelectorMenu
+          {style}
+          options={singleSelectorOptions}
+          bind:selections={singleSelections}
+          let:toggleMenu
+          let:active
+        />
+      </div>
+
+      <div class="pl-4">
+        {#each singleSelections as option}
+          <div>
+            {option.main}
+          </div>
+        {/each}
+      </div>
+    </div>
+
     <div class="grid grid-flow-row gap-y-4">
       <SimpleSelectorMenu
         {style}

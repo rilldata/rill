@@ -5,6 +5,7 @@ and the menu closes.
 -->
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
+  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import Check from "../icons/Check.svelte";
   import CheckBox from "../icons/CheckBox.svelte";
   import CheckCircle from "../icons/CheckCircle.svelte";
@@ -21,6 +22,13 @@ and the menu closes.
   export let style = "obvious";
   export let multiple = false;
 
+  export let tailwindClasses = undefined;
+  export let activeTailwindClasses = undefined;
+
+  /** When true, will make the trigger element a block-level element.
+   */
+  export let block = false;
+
   export let dark: boolean = undefined;
   export let location: "left" | "right" | "top" | "bottom" = "bottom";
   export let alignment: "start" | "middle" | "end" = "start";
@@ -35,7 +43,14 @@ and the menu closes.
   const dispatch = createEventDispatcher();
 
   let temporarilySelectedKey;
-  function createOnClickHandler(main, right, key, index, closeEventHandler) {
+  function createOnClickHandler(
+    main,
+    right,
+    description,
+    key,
+    index,
+    closeEventHandler
+  ) {
     return async () => {
       // single-select: do nothing if already selected
       if (!multiple && isSelected(selections, key)) {
@@ -49,11 +64,14 @@ and the menu closes.
         if (isSelected(selections, key)) {
           selections = [...selections.filter((s) => s.key !== key)];
         } else {
-          selections = [...selections, { main, right, key, index }];
+          selections = [
+            ...selections,
+            { main, right, key, description, index },
+          ];
         }
       } else {
         // replace selected with a single value.
-        selections = [{ main, right, key, index }];
+        selections = [{ main, right, description, key, index }];
       }
       dispatch("select", selections);
       if (!multiple) closeEventHandler();
@@ -75,7 +93,23 @@ and the menu closes.
   let:handleClose
   let:toggleMenu
 >
-  <slot {handleClose} {toggleMenu} {active} />
+  <button
+    class="
+    {block ? 'flex w-full h-full px-2' : 'inline-flex w-max rounded px-1'} 
+      items-center gap-x-2 justify-between {!active
+      ? 'hover:bg-gray-100'
+      : `${activeTailwindClasses} bg-gray-200`}
+      {tailwindClasses}"
+    on:click={toggleMenu}
+  >
+    <slot>
+      <div>
+        {selections[0].main}
+      </div>
+    </slot>
+    <CaretDownIcon />
+  </button>
+
   <Menu
     slot="menu"
     {dark}
@@ -84,7 +118,7 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each options as { key, main, right }, i}
+    {#each options as { key, main, description, right }, i}
       {@const selected = isSelected(selections, key)}
       <MenuItem
         icon
@@ -92,7 +126,14 @@ and the menu closes.
         on:before-select={() => {
           temporarilySelectedKey = key;
         }}
-        on:select={createOnClickHandler(main, right, key, i, handleClose)}
+        on:select={createOnClickHandler(
+          main,
+          right,
+          description,
+          key,
+          i,
+          handleClose
+        )}
         {selected}
       >
         <svelte:fragment slot="icon">
@@ -111,6 +152,11 @@ and the menu closes.
         </svelte:fragment>
 
         {main}
+        <svelte:fragment slot="description">
+          {#if description}
+            {description}
+          {/if}
+        </svelte:fragment>
         <svelte:fragment slot="right">
           {right || ""}
         </svelte:fragment>
