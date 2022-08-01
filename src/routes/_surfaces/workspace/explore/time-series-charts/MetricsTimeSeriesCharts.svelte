@@ -18,11 +18,13 @@
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
+  import { formatDateByInterval } from "../time-range-constructor/timeRangeUtils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricsDefId;
+  export let interval;
 
   $: allMeasures = getValidMeasuresByMetricsId(metricsDefId);
 
@@ -81,10 +83,7 @@
           class="absolute italic text-gray-600"
           transition:fly|local={{ duration: 100, y: 4 }}
         >
-          {new Intl.DateTimeFormat("en-US", {
-            dateStyle: "medium",
-            timeStyle: "medium",
-          }).format(point?.ts)}
+          {formatDateByInterval(interval, point.ts)}
         </div>
         &nbsp;
       {:else}

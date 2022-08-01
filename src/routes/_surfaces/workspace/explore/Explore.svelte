@@ -74,7 +74,11 @@
     <ExploreHeader bind:whichReferenceValue {metricsDefId} />
   </svelte:fragment>
   <svelte:fragment slot="metrics">
-    <MetricsTimeSeriesCharts {metricsDefId} />
+    <MetricsTimeSeriesCharts
+      {metricsDefId}
+      interval={$metricsExplorer?.selectedTimeRange?.interval ||
+        $metricsExplorer?.allTimeRange?.interval}
+    />
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">
     <LeaderboardDisplay {columns} {whichReferenceValue} {metricsDefId} />

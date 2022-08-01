@@ -345,6 +345,60 @@ export const prettyFormatTimeRange = (
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
+export const formatDateByInterval = (
+  interval: string, // DuckDB interval
+  date: string
+): string => {
+  switch (interval) {
+    case "5 minute":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+      });
+    case "15 minute":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+      });
+    case "1 hour":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+      });
+    case "1 day":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    case "7 day":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    case "1 month":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+      });
+    case "1 year":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+      });
+    default:
+      throw new Error(`Unknown interval: ${interval}`);
+  }
+};
+
 export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
   if (!timeGrain) return "";
   switch (timeGrain) {
