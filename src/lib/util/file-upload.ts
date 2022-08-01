@@ -5,7 +5,6 @@ import {
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
 import notifications from "$lib/components/notifications";
 import {
-  config,
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,

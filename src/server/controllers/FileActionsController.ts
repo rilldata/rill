@@ -3,7 +3,6 @@ import type { Request, Response, Router } from "express";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import path from "path";
 import { existsSync } from "fs";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   EntityType,
   StateType,
