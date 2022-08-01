@@ -26,7 +26,6 @@
   import { CATEGORICALS } from "$lib/duckdb-data-types";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
@@ -106,10 +105,6 @@
     validDimensionSelectorOption
   );
 
-  $: if ($selectedMetricsDef && $derivedModelStore) {
-    // TODO: move this to bootstrapMetricsExplorer once model store is on redux
-    store.dispatch(validateSelectedSources(metricsDefId));
-  }
   $: metricsSourceSelectionError = $selectedMetricsDef
     ? MetricsSourceSelectionError($selectedMetricsDef)
     : "";
