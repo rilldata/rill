@@ -17,6 +17,7 @@
     grid-template-rows: var(--header) 1fr;
     grid-template-columns: 540px minmax(350px, auto);
     overflow-x: scroll;
+    overflow-y: hidden;
     grid-row-gap: 1rem;
     grid-template-areas:
       "header header"
