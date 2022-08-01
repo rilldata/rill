@@ -73,7 +73,7 @@ export const getDefaultTimeGrain = (
     case TimeRangeName.LastHour:
       return TimeGrain.FifteenMinutes;
     case TimeRangeName.Last6Hours:
-      return TimeGrain.FifteenMinutes;
+      return TimeGrain.OneHour;
     case TimeRangeName.LastDay:
       return TimeGrain.OneHour;
     case TimeRangeName.Last2Days:

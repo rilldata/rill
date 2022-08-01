@@ -26,7 +26,7 @@ export interface TimeSeriesRollup {
 }
 
 export enum TimeRangeName {
-  LastHour = "Last hour",
+  // LastHour = "Last hour",
   Last6Hours = "Last 6 hours",
   LastDay = "Last day",
   Last2Days = "Last 2 days",
@@ -43,11 +43,11 @@ export enum TimeRangeName {
 
 // The string values must adhere to DuckDB INTERVAL syntax, since, in some places, we interpolate an SQL queries with these values.
 export enum TimeGrain {
-  FiveMinutes = "5 minute",
-  FifteenMinutes = "15 minute",
+  // FiveMinutes = "5 minute",
+  // FifteenMinutes = "15 minute",
   OneHour = "1 hour",
   OneDay = "1 day",
-  OneWeek = "7 day",
+  // OneWeek = "7 day",
   OneMonth = "1 month",
   OneYear = "1 year",
 }
@@ -121,6 +121,11 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
      * then compute the result set + any M4-like reduction on it.
      * We first create a resultset of zero-values,
      * then join this result set against the empirical counts.
+     *
+     * Limitation: due to the use of `date_trunc()` in the `series` CTE,
+     * this query cannot handle a DuckDB interval that uses
+     * n>1 unit, e.g. 15 minutes, 7 days, etc. See this StackOverflow answer
+     * for a different approach: https://stackoverflow.com/a/41944083
      */
     try {
       await this.databaseClient.execute(
