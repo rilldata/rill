@@ -103,8 +103,9 @@ export const makeTimeRange = (
 ): TimeSeriesTimeRange => {
   switch (timeRangeName) {
     case TimeRangeName.LastHour: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(anchorDate.getTime() - 60 * 60 * 1000);
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -113,8 +114,9 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last6Hours: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(anchorDate.getTime() - 6 * 60 * 60 * 1000);
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -123,8 +125,9 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.LastDay: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(anchorDate.getTime() - 24 * 60 * 60 * 1000);
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -133,8 +136,11 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last2Days: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 2 * 24 * 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(
+        anchorDate.getTime() - 2 * 24 * 60 * 60 * 1000
+      );
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -143,8 +149,11 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last5Days: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 5 * 24 * 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(
+        anchorDate.getTime() - 5 * 24 * 60 * 60 * 1000
+      );
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -153,8 +162,11 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.LastWeek: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(
+        anchorDate.getTime() - 7 * 24 * 60 * 60 * 1000
+      );
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -163,10 +175,11 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last2Weeks: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       const startDate = new Date(
-        endDate.getTime() - 2 * 7 * 24 * 60 * 60 * 1000
+        anchorDate.getTime() - 2 * 7 * 24 * 60 * 60 * 1000
       );
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -175,8 +188,11 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last30Days: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(
+        anchorDate.getTime() - 30 * 24 * 60 * 60 * 1000
+      );
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -185,8 +201,11 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.Last60Days: {
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
-      const startDate = new Date(endDate.getTime() - 60 * 24 * 60 * 60 * 1000);
+      const anchorDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
+      const startDate = new Date(
+        anchorDate.getTime() - 60 * 24 * 60 * 60 * 1000
+      );
+      const endDate = subtractOneUnit(anchorDate, TimeUnit.Second);
       return {
         name: timeRangeName,
         start: startDate.toISOString(),
@@ -195,12 +214,10 @@ export const makeTimeRange = (
       };
     }
     case TimeRangeName.AllTime: {
-      const startDate = roundDateDown(new Date(allTimeRange?.start), timeGrain);
-      const endDate = roundDateUp(new Date(allTimeRange?.end), timeGrain);
       return {
         name: timeRangeName,
-        start: startDate.toISOString(),
-        end: endDate.toISOString(),
+        start: allTimeRange?.start,
+        end: allTimeRange?.end,
         interval: timeGrain.toString(),
       };
     }
@@ -432,11 +449,13 @@ const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
     }
     case TimeGrain.OneMonth: {
       // rounds to the 1st of the current month
-      return new Date(date.getUTCFullYear(), date.getUTCMonth(), 1);
+      return new Date(
+        Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0)
+      );
     }
     case TimeGrain.OneYear: {
       // rounds to January 1st of the current year
-      return new Date(date.getUTCFullYear(), 1, 1);
+      return new Date(Date.UTC(date.getUTCFullYear(), 1, 1));
     }
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
@@ -471,13 +490,46 @@ const roundDateUp = (date: Date | undefined, timeGrain: TimeGrain): Date => {
     }
     case TimeGrain.OneMonth: {
       // rounds to the 1st of the next month
-      return new Date(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
+      return new Date(
+        Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)
+      );
     }
     case TimeGrain.OneYear: {
       // rounds to Jan 1st of the next year
-      return new Date(date.getUTCFullYear() + 1, 1, 1);
+      return new Date(Date.UTC(date.getUTCFullYear() + 1, 1, 1));
     }
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
+  }
+};
+
+enum TimeUnit {
+  Second = "second",
+  Minute = "minute",
+  Hour = "hour",
+  Day = "day",
+  Week = "week",
+  Month = "month",
+  Year = "year",
+}
+
+const subtractOneUnit = (date: Date, unit: TimeUnit): Date => {
+  switch (unit) {
+    case TimeUnit.Second:
+      return new Date(date.getTime() - 1000);
+    case TimeUnit.Minute:
+      return new Date(date.getTime() - 60 * 1000);
+    case TimeUnit.Hour:
+      return new Date(date.getTime() - 60 * 60 * 1000);
+    case TimeUnit.Day:
+      return new Date(date.getTime() - 24 * 60 * 60 * 1000);
+    case TimeUnit.Week:
+      return new Date(date.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case TimeUnit.Month:
+      return new Date(date.getUTCFullYear(), date.getUTCMonth() - 1, 1);
+    case TimeUnit.Year:
+      return new Date(date.getUTCFullYear() - 1, 1, 1);
+    default:
+      throw new Error(`Unknown time unit: ${unit}`);
   }
 };
