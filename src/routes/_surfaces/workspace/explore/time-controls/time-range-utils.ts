@@ -306,8 +306,8 @@ export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
       return "hourly";
     case TimeGrain.OneDay:
       return "daily";
-    // case TimeGrain.OneWeek:
-    //   return "weekly";
+    case TimeGrain.OneWeek:
+      return "weekly";
     case TimeGrain.OneMonth:
       return "monthly";
     case TimeGrain.OneYear:
@@ -385,8 +385,8 @@ const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
       return 60 * 60 * 1000;
     case TimeGrain.OneDay:
       return 24 * 60 * 60 * 1000;
-    // case TimeGrain.OneWeek:
-    //   return 7 * 24 * 60 * 60 * 1000;
+    case TimeGrain.OneWeek:
+      return 7 * 24 * 60 * 60 * 1000;
     case TimeGrain.OneMonth:
       return 30 * 24 * 60 * 60 * 1000;
     case TimeGrain.OneYear:
@@ -415,13 +415,13 @@ const roundDateUp = (date: Date | undefined, timeGrain: TimeGrain): Date => {
       const interval = 24 * 60 * 60 * 1000;
       return new Date(Math.ceil(date.getTime() / interval) * interval);
     }
-    // case TimeGrain.OneWeek: {
-    //   // rounds to the next Monday
-    //   const day = date.getUTCDay();
-    //   const dateRoundedDownByDay = roundDateDown(date, TimeGrain.OneDay);
-    //   const timeUntilMonday = (day === 0 ? 1 : 8 - day) * 24 * 60 * 60 * 1000;
-    //   return new Date(dateRoundedDownByDay.getTime() + timeUntilMonday);
-    // }
+    case TimeGrain.OneWeek: {
+      // rounds to the next Monday
+      const day = date.getUTCDay();
+      const dateRoundedDownByDay = date; //roundDateDown(date, TimeGrain.OneDay);
+      const timeUntilMonday = (day === 0 ? 1 : 8 - day) * 24 * 60 * 60 * 1000;
+      return new Date(dateRoundedDownByDay.getTime() + timeUntilMonday);
+    }
     case TimeGrain.OneMonth: {
       // rounds to the 1st of the next month
       return new Date(
