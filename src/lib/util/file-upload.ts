@@ -5,12 +5,14 @@ import {
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
 import notifications from "$lib/components/notifications";
 import {
-  config,
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
 } from "$lib/application-state-stores/application-store";
 import { importOverlayVisible } from "$lib/application-state-stores/layout-store";
+import { sourceUpdated } from "$lib/redux-store/source/source-apis";
+import { fetchWrapper } from "$lib/util/fetchWrapper";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 /**
  * uploadTableFiles
@@ -35,31 +37,35 @@ export function uploadTableFiles(files, apiBase: string) {
   return invalidFiles;
 }
 
-export function validateFile(file: File, apiBase: string) {
+export async function validateFile(file: File, apiBase: string) {
   const tableUploadURL = `${apiBase}/table-upload`;
   const tableValidateURL = `${apiBase}/validate-table`;
 
   const currentTableName = getTableNameFromFile(file.name);
-  fetch(tableValidateURL + `?tableName=${currentTableName}`)
-    .then((response) => response.json())
-    .then(async (d) => {
-      if (d.isDuplicate) {
-        const userResponse = await getResponseFromModal(currentTableName);
-        if (userResponse == DuplicateActions.Cancel) {
-          return;
-        } else if (userResponse == DuplicateActions.KeepBoth) {
-          uploadFile(file, tableUploadURL, d.name);
-        } else if (userResponse == DuplicateActions.Overwrite) {
-          uploadFile(file, tableUploadURL);
-        }
-      } else {
-        uploadFile(file, tableUploadURL);
+
+  try {
+    const validateResp = await fetchWrapper(
+      tableValidateURL + `?tableName=${currentTableName}`,
+      "GET"
+    );
+    if (validateResp.isDuplicate) {
+      const userResponse = await getResponseFromModal(currentTableName);
+      if (userResponse == DuplicateActions.Cancel) {
+        return;
+      } else if (userResponse == DuplicateActions.KeepBoth) {
+        await uploadFile(file, tableUploadURL, validateResp.name);
+      } else if (userResponse == DuplicateActions.Overwrite) {
+        await uploadFile(file, tableUploadURL);
       }
-    })
-    .catch((...args) => console.error(...args));
+    } else {
+      await uploadFile(file, tableUploadURL);
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-export function uploadFile(file: File, url: string, tableName?: string) {
+export async function uploadFile(file: File, url: string, tableName?: string) {
   importOverlayVisible.set(true);
 
   const formData = new FormData();
@@ -69,13 +75,19 @@ export function uploadFile(file: File, url: string, tableName?: string) {
     formData.append("tableName", tableName);
   }
 
-  fetch(url, {
-    method: "POST",
-    body: formData,
-  })
-    .then((...args) => console.error(...args))
-    .catch((...args) => console.error(...args))
-    .finally(() => importOverlayVisible.set(false));
+  try {
+    const persistentTable: PersistentTableEntity = await fetchWrapper(
+      url,
+      "POST",
+      formData,
+      {}
+    );
+    console.log(persistentTable);
+    await sourceUpdated(persistentTable.tableName);
+  } catch (err) {
+    console.error(err);
+  }
+  importOverlayVisible.set(false);
 }
 
 function reportFileErrors(invalidFiles: File[]) {
@@ -95,10 +107,7 @@ function reportFileErrors(invalidFiles: File[]) {
 export function handleFileUploads(filesArray: File[]) {
   let invalidFiles = [];
   if (filesArray) {
-    invalidFiles = uploadTableFiles(
-      filesArray,
-      `${config.server.serverUrl}/api/file`
-    );
+    invalidFiles = uploadTableFiles(filesArray, "file");
   }
   if (invalidFiles.length) {
     importOverlayVisible.set(false);
