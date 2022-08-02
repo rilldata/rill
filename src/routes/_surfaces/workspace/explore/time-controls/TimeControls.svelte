@@ -14,7 +14,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
-  import _ from "lodash";
   import { makeTimeRange } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
@@ -46,7 +45,12 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       $metricsExplorer.allTimeRange
     );
 
-    if (_.isEqual(newTimeRange, $metricsExplorer.selectedTimeRange)) return;
+    if (
+      newTimeRange.start === $metricsExplorer.selectedTimeRange?.start &&
+      newTimeRange.end === $metricsExplorer.selectedTimeRange?.end &&
+      newTimeRange.interval === $metricsExplorer.selectedTimeRange?.interval
+    )
+      return;
 
     setExploreSelectedTimeRangeAndUpdate(store.dispatch, metricsDefId, {
       name: newTimeRange.name,
