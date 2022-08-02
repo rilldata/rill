@@ -4,12 +4,12 @@ import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import {
   createEntityAdapter,
-  createSlice
+  createSlice,
 } from "$lib/redux-store/redux-toolkit-wrapper";
 import { setStatusPrepare } from "$lib/redux-store/utils/loading-utils";
 import {
   setFieldPrepare,
-  setFieldReducer
+  setFieldReducer,
 } from "$lib/redux-store/utils/slice-utils";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -396,6 +396,7 @@ export const exploreSlice = createSlice({
       prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
         payload: { id, timeRange },
       }),
+    },
 
     setExploreSelectedTimeRange: {
       reducer: (
