@@ -78,7 +78,9 @@
           const key = event.detail[0].key;
           handleMeasureUpdate(key);
         }}
-      />
+      >
+        <span class="font-bold">{selections[0]?.main}</span>
+      </SelectMenu>
     </div>
   {:else}
     <div
