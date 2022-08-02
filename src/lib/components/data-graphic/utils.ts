@@ -90,8 +90,11 @@ export function getTicks(
   let ticks = scale.ticks(tickCount);
 
   if (ticks.length <= 1) {
-    if (isDate) ticks = scale.domain();
-    else ticks = scale.nice().domain();
+    if (isDate) {
+      const domain = scale.domain() as Date[];
+      const midTick = new Date((domain[0].getTime() + domain[1].getTime()) / 2);
+      ticks = [...domain, midTick];
+    } else ticks = scale.nice().domain();
   }
 
   return ticks;
