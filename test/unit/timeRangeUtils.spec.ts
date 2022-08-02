@@ -17,7 +17,7 @@ describe("getSelectableTimeRangeNames", () => {
       end: "2020-03-31",
     });
     expect(timeRangeNames).toEqual([
-      TimeRangeName.LastHour,
+      // TimeRangeName.LastHour,
       TimeRangeName.Last6Hours,
       TimeRangeName.LastDay,
       TimeRangeName.Last2Days,
@@ -46,7 +46,7 @@ describe("getSelectableTimeGrains", () => {
     expect(timeGrains).toEqual([
       TimeGrain.OneHour,
       TimeGrain.OneDay,
-      TimeGrain.OneWeek,
+      // TimeGrain.OneWeek,
     ]);
   });
 });
@@ -68,34 +68,8 @@ describe("makeTimeRange", () => {
     ).toEqual({
       name: TimeRangeName.Last2Weeks,
       start: "2022-03-17T00:00:00.000Z",
-      end: "2022-03-31T00:00:00.000Z",
+      end: "2022-03-30T23:59:59.000Z",
       interval: "1 day",
-    });
-  });
-  it("should create a TimeRange object representing the Last Two Weeks using only *complete* days", () => {
-    expect(
-      makeTimeRange(TimeRangeName.Last2Weeks, TimeGrain.OneDay, {
-        start: "2022-01-01",
-        end: "2022-03-30 14:35:01.000Z",
-      })
-    ).toEqual({
-      name: TimeRangeName.Last2Weeks,
-      start: "2022-03-16T00:00:00.000Z",
-      end: "2022-03-30T00:00:00.000Z",
-      interval: "1 day",
-    });
-  });
-  it("should create a TimeRange object representing the Last Two Weeks using only *complete* 15min periods", () => {
-    expect(
-      makeTimeRange(TimeRangeName.Last2Weeks, TimeGrain.FifteenMinutes, {
-        start: "2022-01-01",
-        end: "2022-03-30 14:35:01.000Z",
-      })
-    ).toEqual({
-      name: TimeRangeName.Last2Weeks,
-      start: "2022-03-16T14:30:00.000Z",
-      end: "2022-03-30T14:30:00.000Z",
-      interval: "15 minute",
     });
   });
 });
