@@ -60,7 +60,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: constructTimeRangeAndUpdateStore(
     selectedTimeRangeName,
     selectedTimeGrain,
-    $metricsExplorer.allTimeRange
+    $metricsExplorer?.allTimeRange
   );
 </script>
 

@@ -83,7 +83,7 @@
       {selectedTimeRangeName ?? "Select a time range"}
     </span>
     <span>
-      {prettyFormatTimeRange($metricsExplorer.selectedTimeRange)}
+      {prettyFormatTimeRange($metricsExplorer?.selectedTimeRange)}
     </span>
   </div>
   <span class="transition-transform" class:-rotate-180={timeRangeNameMenuOpen}>
