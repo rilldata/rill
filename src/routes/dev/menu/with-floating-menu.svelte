@@ -1,11 +1,11 @@
 <script lang="ts">
   import { Menu, MenuItem } from "$lib/components/menu";
 
-  import { WithToggleableFloatingElement } from "$lib/components/floating-element";
+  import { WithTogglableFloatingElement } from "$lib/components/floating-element";
   let item;
 </script>
 
-<WithToggleableFloatingElement
+<WithTogglableFloatingElement
   let:active
   let:handleClose
   let:toggleFloatingElement
@@ -34,6 +34,6 @@
       }}>three</MenuItem
     >
   </Menu>
-</WithToggleableFloatingElement>
+</WithTogglableFloatingElement>
 
 <p>Here is more text underneath this! {item}</p>
