@@ -53,6 +53,10 @@ describe("getSelectableTimeGrains", () => {
         timeGrain: "1 day",
       },
       {
+        enabled: true,
+        timeGrain: "7 day",
+      },
+      {
         enabled: false,
         timeGrain: "1 month",
       },
