@@ -16,6 +16,7 @@
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+  import { extent } from "d3-array";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
@@ -41,30 +42,12 @@
 
   $: key = `${startValue}` + `${endValue}`;
 
-  function getMinTs(values: TimeSeriesValue[]): Date {
-    if (!values) return new Date();
-    let min = new Date(values[0].ts);
-    for (let i = 1; i < values.length; i++) {
-      if (new Date(values[i].ts).getTime() < min.getTime()) {
-        min = new Date(values[i].ts);
-      }
-    }
-    return min;
-  }
-  function getMaxTs(values: TimeSeriesValue[]): Date {
-    if (!values) return new Date();
-    let max = new Date(values[0].ts);
-    for (let i = 1; i < values.length; i++) {
-      if (new Date(values[i].ts).getTime() > max.getTime()) {
-        max = new Date(values[i].ts);
-      }
-    }
-    return max;
-  }
-  $: minDate = getMinTs($timeSeries?.values);
-  $: maxDate = getMaxTs($timeSeries?.values);
-  $: startValue = removeTimezoneOffset(minDate);
-  $: endValue = removeTimezoneOffset(maxDate);
+  $: [minVal, maxVal] = extent(
+    $timeSeries?.values ?? [],
+    (d: TimeSeriesValue) => d.ts
+  );
+  $: startValue = removeTimezoneOffset(new Date(minVal));
+  $: endValue = removeTimezoneOffset(new Date(maxVal));
 </script>
 
 <WithBisector
