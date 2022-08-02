@@ -1,3 +1,11 @@
+<!-- @component 
+The FloatingElement component is the backbone of all of our floating UI element functionality.
+It handles the setting of the location of the floating element relative to these possible options, set in the relationship prop:
+- a direct DOM element passed in through target through the 'direct' prop
+- a child of target through the "parent" prop (this is confusing and we should fix it)
+display:contents. This is useful when nesting a floating element within a tooltip.
+- a mouse click location through "mouse". This is an {x,y} coordinate that matches where the pointer is.
+-->
 <script lang="ts">
   import {
     mouseLocationToBoundingRect,
@@ -14,8 +22,6 @@
   export let distance = 0;
   // edge padding
   export let pad = 8;
-  /** the delay in miliseconds before rendering the tooltip once mouse has entered */
-  /** the delay in miliseconds before unrendering the tooltip once mouse has left */
 
   let top = 0;
   let left = 0;
@@ -57,7 +63,6 @@
     let possibleChild = element?.children[0];
     // check for display: contents, which may indicate
     // another wrapped object.
-    console.log(possibleChild, getComputedStyle(possibleChild).display);
     if (getComputedStyle(possibleChild).display === "contents") {
       return getFirstValidChildElement(possibleChild);
     } else {

@@ -66,7 +66,7 @@ A slot is provided to change the text within the button.
   >
     <slot>
       <div>
-        {selections[0]?.main}
+        {selections[0]?.main || ""}
       </div>
     </slot>
   </SelectButton>

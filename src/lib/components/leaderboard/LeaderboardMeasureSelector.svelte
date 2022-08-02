@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import SelectMenu from "$lib/components/menu/SimpleSelectorMenu.svelte";
   import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
@@ -9,6 +11,7 @@
   import { store } from "$lib/redux-store/store-root";
   import type { Readable } from "svelte/store";
   import { crossfade, fly } from "svelte/transition";
+  import Spinner from "../Spinner.svelte";
 
   export let metricsDefId;
 
@@ -33,10 +36,11 @@
     };
   }
 
+  let [send, receive] = crossfade({ fallback: fly });
+
   /** this should be a single element */
   let selections = [];
   // reset selections based on the active leaderboard measure
-  $: previous = { ...activeLeaderboardMeasure };
   let activeLeaderboardMeasure;
 
   $: activeLeaderboardMeasure =
@@ -47,29 +51,29 @@
       )
     );
 
-  const [send, receive] = crossfade({ fallback: fly, duration: 200 });
-
   /** this controls the animation direction */
-  let dir = 1;
 
   $: options =
     $measures?.map((measure) => {
       let main = measure.label?.length ? measure.label : measure.expression;
-      let description = main === measure.expression ? "" : measure.expression;
       return {
         ...measure,
         key: measure.id,
         main,
-        description,
       };
     }) || [];
   $: selections = $measures ? [activeLeaderboardMeasure] : [];
 </script>
 
-<div class="flex flex-row items-center" style:grid-column-gap=".4rem">
-  {#if $measures}
-    <div>Dimension Leaders by</div>
-    {#if $measures}
+<div>
+  {#if $measures && options.length && selections.length}
+    <div
+      class="flex flex-row items-center"
+      style:grid-column-gap=".4rem"
+      in:send={{ key: "leaderboard-metric", y: 8 }}
+    >
+      <div>Dimension Leaders by</div>
+
       <SelectMenu
         {options}
         {selections}
@@ -79,58 +83,14 @@
           handleMeasureUpdate(key);
         }}
       />
-    {/if}
-    <!-- <SelectMenu
-      alignment="end"
-      options={}
-      on:select={(event) => {
-        const key = event.detail[0].key;
-        /** set the direction based on the movement*/
-        if (
-          $measures.findIndex(
-            (measure) => measure.id === activeLeaderboardMeasure.key
-          ) > $measures.findIndex((measure) => measure.id === key)
-        ) {
-          dir = -1;
-        } else {
-          dir = 1;
-        }
-        handleMeasureUpdate(key);
-      }}
-      {selections}
-      let:toggleMenu
-      let:active
+    </div>
+  {:else}
+    <div
+      class="flex flex-row items-center"
+      style:grid-column-gap=".4rem"
+      in:receive={{ key: "loading-leaderboard-metric", y: 8 }}
     >
-      <button
-        on:click={toggleMenu}
-        class="font-bold grid grid-flow-col items-center gap-x-2 px-2 py-1 hover:bg-gray-200 {active
-          ? 'bg-gray-200'
-          : ''} rounded transition-color"
-      >
-        <div class="invisible ">
-          {activeLeaderboardMeasure?.main}
-        </div>
-        {#key activeLeaderboardMeasure?.main}
-          <div
-            class="absolute "
-            in:send|local={{
-              key: activeLeaderboardMeasure.key,
-              y: 8 * dir,
-              duration: 200,
-            }}
-            out:receive|local={{
-              key: activeLeaderboardMeasure.key,
-              y: 8 * dir,
-              duration: 200,
-            }}
-          >
-            {activeLeaderboardMeasure?.main}
-          </div>
-        {/key}
-        <div class=" -rotate-{active ? '180' : '0'} transition-transform">
-          <CaretDownIcon />
-        </div></button
-      >
-    </SelectMenu> -->
+      pulling leaderboards <Spinner status={EntityStatus.Running} />
+    </div>
   {/if}
 </div>

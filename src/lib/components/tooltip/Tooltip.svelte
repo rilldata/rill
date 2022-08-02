@@ -1,3 +1,22 @@
+<!-- @component 
+The Tooltip component is a workhorse generalized-render component wrapper.
+By default, it will take the first DOM element in the <slot /> and 
+listen to mouseover changes to it to trigger the tooltip.
+
+You can set the following parameters:
+- location: left, right, top, bottom.
+- alignment: start, middle, end. This will align using flexbox-like language.
+  - start on left or right means that the top of the tooltip aligns with the top of the target.
+  - start on top or  bottom means that the left side of the tooltip aligns with the left side of the target.
+
+The suppress prop gives programmatic access to suppressing the tooltip, e.g. if a menu is open or you just need
+to stop all tooltips.
+
+This component also passes down a boolean writable store to its children, so a child can suppress the tooltip
+without the consumer needing to figure out the logic to suppress in the parent component.
+
+FIXME: In the future, we should also be listening to focus events from the child.
+-->
 <script lang="ts">
   import { setContext } from "svelte";
 
@@ -29,7 +48,8 @@
   /** create child-supported suppression.
    * If a child changes this context store to true, we should
    * suppress the tooltip.
-   * This enables us to disentangle the tooltip state in certain cases.
+   * This enables us to disentangle the tooltip state in certain cases
+   * where it doesn't make sense to have the user deal with the logic of suppression.
    */
   const childRequestedTooltipSuppression = writable(false);
   setContext(
