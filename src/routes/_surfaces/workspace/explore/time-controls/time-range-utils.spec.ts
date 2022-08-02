@@ -8,7 +8,7 @@ import {
   getSelectableTimeGrains,
   getSelectableTimeRangeNames,
   makeTimeRange,
-} from "../../src/routes/_surfaces/workspace/explore/time-controls/timeRangeUtils";
+} from "./time-range-utils";
 
 describe("getSelectableTimeRangeNames", () => {
   it("should return an array of available time range names", () => {

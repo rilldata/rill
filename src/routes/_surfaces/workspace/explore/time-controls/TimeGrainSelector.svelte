@@ -14,7 +14,7 @@
     getDefaultTimeGrain,
     getSelectableTimeGrains,
     prettyTimeGrain,
-  } from "./timeRangeUtils";
+  } from "./time-range-utils";
 
   export let metricsDefId: string;
   export let selectedTimeRangeName: TimeRangeName;

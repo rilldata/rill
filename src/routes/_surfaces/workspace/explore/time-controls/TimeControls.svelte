@@ -15,9 +15,9 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
   import _ from "lodash";
+  import { makeTimeRange } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
-  import { makeTimeRange } from "./timeRangeUtils";
 
   export let metricsDefId: string;
 

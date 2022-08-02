@@ -18,7 +18,7 @@
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import { formatDateByInterval } from "../time-controls/timeRangeUtils";
+  import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
