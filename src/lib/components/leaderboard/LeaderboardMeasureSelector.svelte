@@ -9,7 +9,6 @@
   import { store } from "$lib/redux-store/store-root";
   import type { Readable } from "svelte/store";
   import { crossfade, fly } from "svelte/transition";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
 
   export let metricsDefId;
 
@@ -48,26 +47,42 @@
       )
     );
 
-  $: selections = $measures ? [activeLeaderboardMeasure] : [];
-
   const [send, receive] = crossfade({ fallback: fly, duration: 200 });
 
   /** this controls the animation direction */
   let dir = 1;
+
+  $: options =
+    $measures?.map((measure) => {
+      let main = measure.label?.length ? measure.label : measure.expression;
+      let description = main === measure.expression ? "" : measure.expression;
+      return {
+        ...measure,
+        key: measure.id,
+        main,
+        description,
+      };
+    }) || [];
+  $: selections = $measures ? [activeLeaderboardMeasure] : [];
 </script>
 
 <div class="flex flex-row items-center" style:grid-column-gap=".4rem">
   {#if $measures}
     <div>Dimension Leaders by</div>
-    <SelectMenu
+    {#if $measures}
+      <SelectMenu
+        {options}
+        {selections}
+        alignment="end"
+        on:select={(event) => {
+          const key = event.detail[0].key;
+          handleMeasureUpdate(key);
+        }}
+      />
+    {/if}
+    <!-- <SelectMenu
       alignment="end"
-      options={$measures?.map((measure) => {
-        return {
-          ...measure,
-          key: measure.id,
-          main: measure.label?.length ? measure.label : measure.expression,
-        };
-      }) || []}
+      options={}
       on:select={(event) => {
         const key = event.detail[0].key;
         /** set the direction based on the movement*/
@@ -112,11 +127,10 @@
             {activeLeaderboardMeasure?.main}
           </div>
         {/key}
-        <!--  -rotate-45 -rotate-135 -->
         <div class=" -rotate-{active ? '180' : '0'} transition-transform">
           <CaretDownIcon />
         </div></button
       >
-    </SelectMenu>
+    </SelectMenu> -->
   {/if}
 </div>

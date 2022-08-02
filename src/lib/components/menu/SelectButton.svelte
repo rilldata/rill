@@ -1,7 +1,5 @@
 <script lang="ts">
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { getContext, hasContext } from "svelte";
   import { Writable } from "svelte/store";
 
@@ -14,15 +12,17 @@
   let parentHasTooltipSomewhere = hasContext(
     "rill:app:childRequestedTooltipSuppression"
   );
+  //
   if (parentHasTooltipSomewhere) {
     childRequestedTooltipSuppression = getContext(
       "rill:app:childRequestedTooltipSuppression"
     ) as Writable<boolean>;
   }
+
   $: if (parentHasTooltipSomewhere && active) {
-    childRequestedTooltipSuppression.set(true);
+    childRequestedTooltipSuppression?.set(true);
   } else {
-    childRequestedTooltipSuppression.set(false);
+    childRequestedTooltipSuppression?.set(false);
   }
 
   $: classes = {
@@ -35,21 +35,16 @@
   };
 </script>
 
-<Tooltip suppress={active}>
-  <button
-    class="
+<button
+  class="
 {block ? 'flex w-full h-full px-2' : 'inline-flex w-max rounded px-1'} 
   items-center gap-x-2 justify-between 
   {classes[level]}
   {tailwindClasses}"
-    on:click
-  >
-    <slot />
-    <span class="{active ? '-rotate-180' : ''} transition-transform">
-      <CaretDownIcon />
-    </span>
-  </button>
-  <TooltipContent slot="tooltip-content">
-    <slot name="tooltip-content" />
-  </TooltipContent>
-</Tooltip>
+  on:click
+>
+  <slot />
+  <span class="{active ? '-rotate-180' : ''} transition-transform">
+    <CaretDownIcon />
+  </span>
+</button>

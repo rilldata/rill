@@ -38,13 +38,6 @@ A slot is provided to change the text within the button.
   }
 
   const dispatch = createEventDispatcher();
-
-  // dispatch selections when it changes.
-  $: dispatch("select", selections);
-
-  function isSelected(selections, key) {
-    return selections?.some((selection) => selection.key === key);
-  }
 </script>
 
 <!-- wrap a WithSelectMenu with a SelectButton -->
@@ -55,6 +48,7 @@ A slot is provided to change the text within the button.
   {distance}
   on:select={(event) => {
     selections = event.detail;
+    dispatch("select", selections);
   }}
   bind:selections
   bind:options
@@ -72,7 +66,7 @@ A slot is provided to change the text within the button.
   >
     <slot>
       <div>
-        {selections[0].main}
+        {selections[0]?.main}
       </div>
     </slot>
   </SelectButton>
