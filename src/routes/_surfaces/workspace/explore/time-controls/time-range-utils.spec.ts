@@ -17,7 +17,7 @@ describe("getSelectableTimeRangeNames", () => {
       end: "2020-03-31",
     });
     expect(timeRangeNames).toEqual([
-      // TimeRangeName.LastHour,
+      TimeRangeName.LastHour,
       TimeRangeName.Last6Hours,
       TimeRangeName.LastDay,
       TimeRangeName.Last2Days,
@@ -44,6 +44,10 @@ describe("getSelectableTimeGrains", () => {
       end: "2020-03-31",
     });
     expect(timeGrains).toEqual([
+      {
+        enabled: false,
+        timeGrain: "1 minute",
+      },
       {
         enabled: true,
         timeGrain: "1 hour",
