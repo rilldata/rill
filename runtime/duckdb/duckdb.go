@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"unsafe"
 )
 
@@ -25,9 +26,19 @@ func init() {
 
 type impl struct{}
 
+const InMemoryDbName string = ":memory:"
+
 func (impl) Open(dataSourceName string) (driver.Conn, error) {
 	var db C.duckdb_database
 	var con C.duckdb_connection
+
+	isInMemory := false
+	// strip :memory: from name to let url.Parse succeed.
+	// this way we can parse query params and convert to config
+	if strings.HasPrefix(dataSourceName, InMemoryDbName) {
+		dataSourceName = dataSourceName[len(InMemoryDbName):]
+		isInMemory = true
+	}
 
 	parsedDSN, err := url.Parse(dataSourceName)
 	if err != nil {
@@ -35,7 +46,12 @@ func (impl) Open(dataSourceName string) (driver.Conn, error) {
 	}
 
 	path := C.CString(parsedDSN.Path)
+	// if in memory db is passed then replace path with :memory:
+	if isInMemory {
+		path = C.CString(InMemoryDbName)
+	}
 	defer C.free(unsafe.Pointer(path))
+	fmt.Println(parsedDSN)
 
 	// Check for config options.
 	if len(parsedDSN.RawQuery) == 0 {

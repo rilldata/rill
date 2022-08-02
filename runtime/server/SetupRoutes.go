@@ -44,7 +44,6 @@ func handleQuery(c *gin.Context, db *sql.DB) {
 		returnError(c, err)
 		return
 	}
-	fmt.Println("Processing query:", queryRequest.Query)
 
 	rows, queryError := db.Query(queryRequest.Query)
 	if queryError != nil {

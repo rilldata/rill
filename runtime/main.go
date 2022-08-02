@@ -10,9 +10,6 @@ import (
 
 func main() {
 	duckDbFile := os.Args[1] + "?access_mode=READ_WRITE"
-	if os.Args[1] == ":memory:" {
-		duckDbFile = os.Args[1]
-	}
 	db, err := sql.Open("duckdb", duckDbFile)
 	if err != nil {
 		fmt.Println(err)
