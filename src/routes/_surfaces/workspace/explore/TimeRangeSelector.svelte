@@ -10,32 +10,22 @@
   import { store } from "$lib/redux-store/store-root";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { tick } from "svelte";
-  import {
-    getDefaultSelectedTimeRange,
-    getTimeRangeNameForButton,
-    makeSelectableTimeRanges,
-    prettyFormatTimeRange,
-  } from "./utils";
+  import { getTimeRangeNameForButton, prettyFormatTimeRange } from "./utils";
 
   export let metricsDefId: string;
 
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-  $: if ($metricsExplorer?.timeRange) {
-    selectableTimeRanges = makeSelectableTimeRanges($metricsExplorer.timeRange);
-  }
+  $: selectableTimeRanges = $metricsExplorer?.selectableTimeRanges;
   let selectedTimeRange: TimeSeriesTimeRange;
-  $: if ($metricsExplorer?.selectedTimeRange) {
-    selectedTimeRange = $metricsExplorer?.selectedTimeRange;
-  } else if (selectableTimeRanges) {
-    selectedTimeRange = getDefaultSelectedTimeRange(selectableTimeRanges);
-    setExploreSelectedTimeRangeAndUpdate(store.dispatch, metricsDefId, {
-      name: selectedTimeRange.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    });
-  }
+  $: if ($metricsExplorer?.selectedTimeRange)
+    selectedTimeRange = selectableTimeRanges.find(
+      (selectableTimeRange) =>
+        selectableTimeRange.start ===
+          $metricsExplorer?.selectedTimeRange?.start &&
+        selectableTimeRange.end === $metricsExplorer?.selectedTimeRange?.end
+    );
 
   let timeSelectorMenu;
   let timeSelectorMenuOpen = false;

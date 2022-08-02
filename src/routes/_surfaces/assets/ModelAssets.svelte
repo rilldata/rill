@@ -20,6 +20,13 @@
   } from "$lib/application-state-stores/model-stores";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
+  import Explore from "$lib/components/icons/Explore.svelte";
+  import Divider from "$lib/components/menu/Divider.svelte";
+  import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
+  import {
+    derivedProfileEntityHasTimestampColumn,
+    selectTimestampColumnFromProfileEntity,
+  } from "$lib/redux-store/source/source-selectors";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -96,6 +103,9 @@
     id="assets-model-list"
   >
     {#each availableModels as { id, tableSummaryProps }, i (id)}
+      {@const derivedModel = $derivedModelStore.entities.find(
+        (t) => t["id"] === id
+      )}
       <CollapsibleTableSummary
         entityType={EntityType.Model}
         on:select={() => {
@@ -117,6 +127,28 @@
         </svelte:fragment>
         <svelte:fragment slot="menu-items">
           <MenuItem
+            disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
+            icon
+            on:select={() => {
+              autoCreateMetricsDefinitionForModel(
+                $persistentModelStore.entities.find(
+                  (model) => model.id === derivedModel.id
+                ).tableName,
+                derivedModel.id,
+                selectTimestampColumnFromProfileEntity(derivedModel)[0].name
+              );
+            }}
+          >
+            <svelte:fragment slot="icon"><Explore /></svelte:fragment>
+            create dashboard from model
+            <svelte:fragment slot="description">
+              {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
+                requires a timestamp column
+              {/if}
+            </svelte:fragment>
+          </MenuItem>
+          <Divider />
+          <MenuItem
             icon
             on:select={() => {
               dataModelerService.dispatch("deleteModel", [id]);
@@ -125,7 +157,7 @@
             <svelte:fragment slot="icon">
               <Cancel />
             </svelte:fragment>
-            delete model</MenuItem
+            delete</MenuItem
           >
         </svelte:fragment>
       </CollapsibleTableSummary>

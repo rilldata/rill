@@ -1,16 +1,16 @@
 <script lang="ts">
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import Metrics from "$lib/components/icons/Metrics.svelte";
   import { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import { getContext } from "svelte";
   import {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+  import Button from "$lib/components/Button.svelte";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
+  import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+  import { getContext } from "svelte";
+  import Explore from "../icons/Explore.svelte";
 
   export let activeEntityID: string;
 
@@ -50,7 +50,7 @@
     type="primary"
     disabled={!timestampColumns?.length}
     on:click={handleCreateMetric}
-    >Create Dashboard<Metrics size="16px" /></Button
+    >Create Dashboard<Explore size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     {#if timestampColumns?.length}

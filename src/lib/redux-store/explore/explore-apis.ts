@@ -16,6 +16,8 @@ import {
   MetricsExplorerEntity,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
+  setExplorerIsStale,
+  setExplorerSelectableTimeRange,
   setExploreSelectedTimeRange,
   setExploreTimeRange,
   setLeaderboardDimensionValues,
@@ -30,7 +32,13 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
 import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
+import {
+  getDefaultSelectedTimeRange,
+  makeSelectableTimeRanges,
+  prune,
+} from "../../../routes/_surfaces/workspace/explore/utils";
+import { selectMetricsExplorerById } from "$lib/redux-store/explore/explore-selectors";
+import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
 
 /**
  * A wrapper to dispatch updates to explore.
@@ -51,13 +59,12 @@ const updateExploreWrapper = (dispatch, metricsDefId: string) => {
  * It then calls {@link updateExploreWrapper} to update explore.
  * It also dispatches {@link fetchTimestampColumnRangeApi} to update time range.
  */
-export const syncExplore = (
+export const syncExplore = async (
   dispatch,
   metricsDefId: string,
   metricsExplorer: MetricsExplorerEntity,
   dimensions: Array<DimensionDefinitionEntity>,
-  measures: Array<MeasureDefinitionEntity>,
-  force = false
+  measures: Array<MeasureDefinitionEntity>
 ) => {
   if (measures) measures = selectValidMeasures(measures);
 
@@ -73,8 +80,9 @@ export const syncExplore = (
   }
 
   // To avoid infinite loop only update if something changed.
-  if (shouldUpdate || force) {
-    dispatch(fetchTimestampColumnRangeApi(metricsDefId));
+  if (shouldUpdate || metricsExplorer.isStale) {
+    dispatch(setExplorerIsStale(metricsDefId, false));
+    await dispatch(fetchTimestampColumnRangeApi(metricsDefId));
     updateExploreWrapper(dispatch, metricsDefId);
   }
 };
@@ -208,6 +216,7 @@ export const setExploreSelectedTimeRangeAndUpdate = (
   metricsDefId: string,
   selectedTimeRange: Partial<TimeSeriesTimeRange>
 ) => {
+  dispatch(setReferenceValues(metricsDefId, undefined));
   dispatch(setExploreSelectedTimeRange(metricsDefId, selectedTimeRange));
   updateExploreWrapper(dispatch, metricsDefId);
 };
@@ -268,5 +277,23 @@ export const fetchTimestampColumnRangeApi = createAsyncThunk(
       "GET"
     );
     thunkAPI.dispatch(setExploreTimeRange(metricsDefId, timeRange));
+    const selectableTimeRanges = makeSelectableTimeRanges(timeRange);
+    thunkAPI.dispatch(
+      setExplorerSelectableTimeRange(metricsDefId, selectableTimeRanges)
+    );
+
+    const metricsExplorer = selectMetricsExplorerById(
+      thunkAPI.getState() as RillReduxState,
+      metricsDefId
+    );
+    if (!metricsExplorer.selectedTimeRange) {
+      const selectedTimeRange =
+        getDefaultSelectedTimeRange(selectableTimeRanges);
+      setExploreSelectedTimeRangeAndUpdate(thunkAPI.dispatch, metricsDefId, {
+        name: selectedTimeRange.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+      });
+    }
   }
 );

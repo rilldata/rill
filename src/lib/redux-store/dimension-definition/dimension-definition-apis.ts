@@ -11,6 +11,8 @@ import { generateApis } from "$lib/redux-store/utils/api-utils";
 import type { ValidationConfig } from "$lib/redux-store/utils/validation-utils";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { handleErrorResponse } from "$lib/redux-store/utils/handleErrorResponse";
+import { selectDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
+import { invalidateExplorerThunk } from "$lib/redux-store/utils/invalidateExplorerThunk";
 
 const DimensionColumnValidation: ValidationConfig<DimensionDefinitionEntity> = {
   field: "dimensionColumn",
@@ -46,4 +48,10 @@ export const {
   [EntityType.DimensionDefinition, "dimensionDefinition", "dimensions"],
   [addManyDimensions, addOneDimension, updateDimension, removeDimension],
   [DimensionColumnValidation]
+);
+export const updateDimensionsWrapperApi = invalidateExplorerThunk(
+  EntityType.DimensionDefinition,
+  updateDimensionsApi,
+  ["dimensionColumn"],
+  (state, id) => [selectDimensionById(state, id).metricsDefId]
 );

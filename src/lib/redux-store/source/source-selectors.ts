@@ -1,5 +1,5 @@
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import type { DataProfileEntity } from "$common/data-modeler-state-service/entity-state-service/DataProfileEntity";
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import type { ProfileColumn } from "$lib/types";
 
 // Source doesn't have a slice as of now.

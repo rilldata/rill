@@ -6,10 +6,10 @@
  * for the store value. This enables us to determine, for instance, if
  * multiple lines are on the same chart, which ones determine the bounds.
  */
+import { max, min } from "d3-array";
 import { cubicOut } from "svelte/easing";
-import { writable, derived, Writable, get } from "svelte/store";
 import { tweened } from "svelte/motion";
-import { min, max } from "d3-array";
+import { derived, get, writable, Writable } from "svelte/store";
 import type { EasingFunction } from "svelte/transition";
 
 const LINEAR_SCALE_STORE_DEFAULTS = {
