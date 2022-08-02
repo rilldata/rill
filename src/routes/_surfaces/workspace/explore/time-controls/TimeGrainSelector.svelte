@@ -14,6 +14,7 @@
     getDefaultTimeGrain,
     getSelectableTimeGrains,
     prettyTimeGrain,
+    TimeGrainOption,
   } from "./time-range-utils";
 
   export let metricsDefId: string;
@@ -24,7 +25,7 @@
 
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  let selectableTimeGrains: TimeGrain[];
+  let selectableTimeGrains: TimeGrainOption[];
 
   // TODO: replace this with a call to the `/meta` endpoint, once available.
   $: if (selectedTimeRangeName && $metricsExplorer?.allTimeRange) {
@@ -39,8 +40,8 @@
   $: if (
     selectableTimeGrains &&
     selectableTimeGrains.find(
-      (timeGrain) => timeGrain === selectedTimeGrain
-    ) === undefined
+      (timeGrainOption) => timeGrainOption.timeGrain === selectedTimeGrain
+    ).enabled === false
   ) {
     const defaultTimeGrain = getDefaultTimeGrain(selectedTimeRangeName);
     dispatch("select-time-grain", { timeGrain: defaultTimeGrain });
@@ -92,16 +93,24 @@
       distance={8}
     >
       <Menu on:escape={() => (timeGrainMenuOpen = false)}>
-        {#each selectableTimeGrains as timeGrain}
+        {#each selectableTimeGrains as { timeGrain, enabled }}
           <MenuItem
+            disabled={!enabled}
             on:select={() => {
               timeGrainMenuOpen = !timeGrainMenuOpen;
               dispatch("select-time-grain", { timeGrain });
             }}
           >
-            <div class="font-bold">
+            <div class={!enabled ? "text-gray-500" : "font-bold "}>
               {prettyTimeGrain(timeGrain)}
             </div>
+            <svelte:fragment slot="description">
+              <div class="italic">
+                {#if !enabled}
+                  not valid for this time range
+                {/if}
+              </div>
+            </svelte:fragment>
           </MenuItem>
         {/each}
       </Menu>
