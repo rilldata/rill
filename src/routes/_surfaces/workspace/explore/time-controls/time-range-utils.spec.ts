@@ -44,9 +44,22 @@ describe("getSelectableTimeGrains", () => {
       end: "2020-03-31",
     });
     expect(timeGrains).toEqual([
-      TimeGrain.OneHour,
-      TimeGrain.OneDay,
-      // TimeGrain.OneWeek,
+      {
+        enabled: true,
+        timeGrain: "1 hour",
+      },
+      {
+        enabled: true,
+        timeGrain: "1 day",
+      },
+      {
+        enabled: false,
+        timeGrain: "1 month",
+      },
+      {
+        enabled: false,
+        timeGrain: "1 year",
+      },
     ]);
   });
 });

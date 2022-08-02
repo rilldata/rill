@@ -38,16 +38,21 @@ export const getDefaultTimeRangeName = (): TimeRangeName => {
   return TimeRangeName.AllTime;
 };
 
+export interface TimeGrainOption {
+  timeGrain: TimeGrain;
+  enabled: boolean;
+}
+
 // This is for pre-set relative time ranges – where the start/end dates are not yet deterimined.
 // For custom time ranges, we'll need another function with "breakpoint" logic that analyzes the user-determined start/end dates.
 export const getSelectableTimeGrains = (
   timeRangeName: TimeRangeName,
   allTimeRange: TimeSeriesTimeRange
-): TimeGrain[] => {
+): TimeGrainOption[] => {
   if (!allTimeRange) return [];
   const timeRangeDuration = getTimeRangeDuration(timeRangeName, allTimeRange);
 
-  const timeGrains: TimeGrain[] = [];
+  const timeGrains: TimeGrainOption[] = [];
   for (const timeGrain in TimeGrain) {
     // only show a time grain if it results in a reasonable number of points on the line chart
     const MINIMUM_POINTS_ON_LINE_CHART = 2;
@@ -57,9 +62,10 @@ export const getSelectableTimeGrains = (
     const showTimeGrain =
       pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
       pointsOnLineChart <= MAXIMUM_POINTS_ON_LINE_CHART;
-    if (showTimeGrain) {
-      timeGrains.push(TimeGrain[timeGrain]);
-    }
+    timeGrains.push({
+      timeGrain: TimeGrain[timeGrain],
+      enabled: showTimeGrain,
+    });
   }
   if (timeGrains.length === 0) {
     throw new Error(`No time grains generated for time range ${timeRangeName}`);
