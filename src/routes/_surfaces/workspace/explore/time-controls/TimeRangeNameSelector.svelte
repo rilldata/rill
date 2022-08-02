@@ -102,7 +102,12 @@
     >
       <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
         {#each selectableTimeRanges as timeRange}
-          <MenuItem on:select={() => onSelectTimeRangeName(timeRange.name)}>
+          <MenuItem
+            on:select={() => {
+              timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
+              onSelectTimeRangeName(timeRange.name);
+            }}
+          >
             <div class="font-bold">
               {timeRange.name}
             </div>

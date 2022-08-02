@@ -93,7 +93,12 @@
     >
       <Menu on:escape={() => (timeGrainMenuOpen = false)}>
         {#each selectableTimeGrains as timeGrain}
-          <MenuItem on:select={() => onSelectTimeGrain(timeGrain)}>
+          <MenuItem
+            on:select={() => {
+              timeGrainMenuOpen = !timeGrainMenuOpen;
+              onSelectTimeGrain(timeGrain);
+            }}
+          >
             <div class="font-bold">
               {prettyTimeGrain(timeGrain)}
             </div>
