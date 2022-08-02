@@ -41,16 +41,7 @@ export class DatabaseTableActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     tableName: string
   ): Promise<unknown[]> {
-    const guid = guidGenerator().replace(/-/g, "_");
-    await this.databaseClient.execute(`-- parquetToDBTypes
-	        CREATE TEMP TABLE tbl_${guid} AS (
-                SELECT * from '${tableName}' LIMIT 1
-            );
-	    `);
-    const tableDef = await this.databaseClient.execute(`-- parquetToDBTypes
-            PRAGMA table_info(tbl_${guid});`);
-    await this.databaseClient.execute(`DROP TABLE tbl_${guid};`);
-    return tableDef;
+    return this.databaseClient.execute(`PRAGMA table_info(${tableName});`);
   }
 
   public async validateQuery(

@@ -39,8 +39,8 @@ import type { RillDeveloper } from "$server/RillDeveloper";
 import { SocketServer } from "$server/SocketServer";
 import { readFileSync } from "fs";
 import { initLocalConfig } from "$common/utils/initLocalConfig";
-// import { DuckDBRemoteClient } from "$common/database-service/DuckDBRemoteClient";
-import { DuckDBClient } from "$common/database-service/DuckDBClient";
+import { DuckDBRemoteClient } from "$common/database-service/DuckDBRemoteClient";
+// import { DuckDBClient } from "$common/database-service/DuckDBClient";
 
 let PACKAGE_JSON = "";
 try {
@@ -50,7 +50,8 @@ try {
 }
 
 export function databaseServiceFactory(config: RootConfig) {
-  const duckDbClient = DuckDBClient.getInstance(config.database);
+  // const duckDbClient = DuckDBClient.getInstance(config.database);
+  const duckDbClient = DuckDBRemoteClient.getInstance(config.database);
   return new DatabaseService(
     duckDbClient,
     [

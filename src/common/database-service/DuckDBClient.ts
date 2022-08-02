@@ -24,7 +24,7 @@ export class DuckDBClient {
   // duckdb doesn't work well with multiple connections to same database from same process
   // if we ever need to have different connections modify this to have a map of database to instance
   protected static instance: DuckDBClient;
-  protected constructor(private readonly databaseConfig: DatabaseConfig) {}
+  protected constructor(protected readonly databaseConfig: DatabaseConfig) {}
   public static getInstance(databaseConfig: DatabaseConfig) {
     if (!this.instance) this.instance = new DuckDBClient(databaseConfig);
     return this.instance;
@@ -35,6 +35,10 @@ export class DuckDBClient {
     // we can later on swap this over to WASM and update data loader
     this.db = new duckdb.Database(this.databaseConfig.databaseName);
     this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
+  }
+
+  public async destroy(): Promise<void> {
+    // no op
   }
 
   public execute<Row = Record<string, unknown>>(

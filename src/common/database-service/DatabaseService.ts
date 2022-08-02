@@ -79,6 +79,6 @@ export class DatabaseService
   }
 
   public async destroy(): Promise<void> {
-    // FIXME add descriptive comment describing why this empy method is needed
+    await this.databaseClient?.destroy();
   }
 }

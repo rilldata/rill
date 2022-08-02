@@ -3,13 +3,16 @@ export function asyncWait(time: number): Promise<void> {
 }
 
 export async function waitUntil(
-  checkFunc: () => boolean,
+  checkFunc: () => boolean | Promise<boolean>,
   timeout = 30000,
   interval = 250
 ): Promise<boolean> {
   const startTime = Date.now();
 
-  while (!checkFunc() && (timeout === -1 || Date.now() - startTime < timeout)) {
+  while (
+    !(await checkFunc()) &&
+    (timeout === -1 || Date.now() - startTime < timeout)
+  ) {
     await asyncWait(interval);
   }
 
