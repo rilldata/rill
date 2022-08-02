@@ -6,7 +6,7 @@ node_js:
 branches:
   only:
   - /^main$/
-
+  - /^v\d+\.\d+(\.\d+)?$/
 cache:
   directories:
     - "$HOME/.npm"
