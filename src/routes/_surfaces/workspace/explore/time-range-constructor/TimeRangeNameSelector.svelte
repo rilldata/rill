@@ -49,14 +49,6 @@
     onSelectTimeRangeName(defaultTimeRangeName);
   }
 
-  // TODO: replace selectable time ranges with the selected time range (which may use a non-default time grain)
-  // if (selectedTimeRangeName) {
-  //   const indexToReplace = selectableTimeRanges.findIndex(
-  //     (timeRange) => timeRange.name === selectedTimeRangeName
-  //   );
-  //   selectableTimeRanges[indexToReplace] = $metricsExplorer.selectedTimeRange;
-  // }
-
   /// Start boilerplate for DIY Dropdown menu ///
   let timeRangeNameMenu;
   let timeRangeNameMenuOpen = false;
