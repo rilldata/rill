@@ -41,6 +41,17 @@ export enum TimeRangeName {
   // CustomRange = "Custom range",
 }
 
+export const lastXTimeRanges: TimeRangeName[] = [
+  TimeRangeName.Last6Hours,
+  TimeRangeName.LastDay,
+  TimeRangeName.Last2Days,
+  TimeRangeName.Last5Days,
+  TimeRangeName.LastWeek,
+  TimeRangeName.Last2Weeks,
+  TimeRangeName.Last30Days,
+  TimeRangeName.Last60Days,
+];
+
 // The string values must adhere to DuckDB INTERVAL syntax, since, in some places, we interpolate an SQL queries with these values.
 export enum TimeGrain {
   // FiveMinutes = "5 minute",
