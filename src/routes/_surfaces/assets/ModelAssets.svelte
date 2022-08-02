@@ -27,7 +27,7 @@
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "$lib/redux-store/source/source-selectors";
-  import { deleteModelApi } from "$lib/redux-store/model/model-apis.js";
+  import { deleteModelApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
