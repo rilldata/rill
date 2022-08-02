@@ -32,6 +32,7 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
+import { invalidateExplorerThunk } from "$lib/redux-store/utils/invalidateExplorerThunk";
 
 const handleMetricsDefDelete = async (id: string) => {
   const activeEntity = selectApplicationActiveEntity(store.getState());
@@ -80,6 +81,12 @@ export const createMetricsDefsAndFocusApi = createAsyncThunk(
     ]);
     return createdMetricsDef;
   }
+);
+export const updateMetricsDefsWrapperApi = invalidateExplorerThunk(
+  EntityType.MetricsDefinition,
+  updateMetricsDefsApi,
+  ["sourceModelId", "timeDimension"],
+  (state, id) => [id]
 );
 
 export const generateMeasuresAndDimensionsApi = createAsyncThunk(

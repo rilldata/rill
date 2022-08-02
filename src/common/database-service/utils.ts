@@ -11,9 +11,17 @@ export function getFilterFromFilters(filters: ActiveValues): string {
       return (
         "(" +
         filters[field]
-          .map(([value, filterType]) =>
-            filterType ? `"${field}" = '${value}'` : `"${field}" != '${value}'`
-          )
+          .map(([value, filterType]) => {
+            if (value == null) {
+              return filterType
+                ? `"${field}" IS NULL`
+                : `"${field}" IS NOT NULL`;
+            } else {
+              return filterType
+                ? `"${field}" = '${value}'`
+                : `"${field}" != '${value}'`;
+            }
+          })
           .join(" OR ") +
         ")"
       );

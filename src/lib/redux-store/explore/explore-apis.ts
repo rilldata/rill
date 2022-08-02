@@ -7,6 +7,7 @@ import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
+import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
 import {
   addDimensionToExplore,
   addMeasureToExplore,
@@ -17,6 +18,7 @@ import {
   removeDimensionFromExplore,
   removeMeasureFromExplore,
   setExploreAllTimeRange,
+  setExplorerIsStale,
   setExploreSelectedTimeRange,
   setLeaderboardDimensionValues,
   setLeaderboardMeasureId,
@@ -51,13 +53,12 @@ const updateExploreWrapper = (dispatch, metricsDefId: string) => {
  * It then calls {@link updateExploreWrapper} to update explore.
  * It also dispatches {@link fetchTimestampColumnRangeApi} to update time range.
  */
-export const syncExplore = (
+export const syncExplore = async (
   dispatch,
   metricsDefId: string,
   metricsExplorer: MetricsExplorerEntity,
   dimensions: Array<DimensionDefinitionEntity>,
-  measures: Array<MeasureDefinitionEntity>,
-  force = false
+  measures: Array<MeasureDefinitionEntity>
 ) => {
   if (measures) measures = selectValidMeasures(measures);
 
@@ -73,8 +74,9 @@ export const syncExplore = (
   }
 
   // To avoid infinite loop only update if something changed.
-  if (shouldUpdate || force) {
-    dispatch(fetchTimestampColumnRangeApi(metricsDefId));
+  if (shouldUpdate || metricsExplorer.isStale) {
+    dispatch(setExplorerIsStale(metricsDefId, false));
+    await dispatch(fetchTimestampColumnRangeApi(metricsDefId));
     updateExploreWrapper(dispatch, metricsDefId);
   }
 };
@@ -208,6 +210,7 @@ export const setExploreSelectedTimeRangeAndUpdate = (
   metricsDefId: string,
   selectedTimeRange: Partial<TimeSeriesTimeRange>
 ) => {
+  dispatch(setReferenceValues(metricsDefId, undefined));
   dispatch(setExploreSelectedTimeRange(metricsDefId, selectedTimeRange));
   updateExploreWrapper(dispatch, metricsDefId);
 };

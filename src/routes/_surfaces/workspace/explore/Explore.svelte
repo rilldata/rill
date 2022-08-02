@@ -1,13 +1,11 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
-  import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import { syncExplore } from "$lib/redux-store/explore/explore-apis";
+  import { bootstrapMetricsExplorer } from "$lib/redux-store/explore/bootstrapMetricsExplorer";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
@@ -22,10 +20,6 @@
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
-  $: if (metricsDefId) {
-    store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
-    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
-  }
 
   let measures: Readable<Array<MeasureDefinitionEntity>>;
   $: measures = getMeasuresByMetricsId(metricsDefId);
@@ -38,6 +32,7 @@
   ) as DerivedModelStore;
 
   $: if (metricsDefId && $derivedModelStore) {
+    // TODO: move this to bootstrapMetricsExplorer once model store is on redux
     store.dispatch(
       validateSelectedSources({
         id: metricsDefId,
@@ -46,24 +41,8 @@
     );
   }
 
-  $: syncExplore(
-    store.dispatch,
-    metricsDefId,
-    $metricsExplorer,
-    $dimensions,
-    $measures
-  );
   onMount(() => {
-    // force sync explore onMount to make sure any changes to dimensions and measure are fixed.
-    // TODO: Fix the redux store so that this can be a reactive statement instead.
-    syncExplore(
-      store.dispatch,
-      metricsDefId,
-      $metricsExplorer,
-      $dimensions,
-      $measures,
-      true
-    );
+    store.dispatch(bootstrapMetricsExplorer(metricsDefId));
   });
 
   let whichReferenceValue: string;
