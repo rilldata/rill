@@ -12,7 +12,7 @@
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import TimeRangeConstructor from "./time-range-constructor/TimeRangeConstructor.svelte";
+  import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
 
@@ -40,7 +40,7 @@
       </div>
     </h1>
 
-    <TimeRangeConstructor {metricsDefId} />
+    <TimeControls {metricsDefId} />
   </div>
   <div
     class="
