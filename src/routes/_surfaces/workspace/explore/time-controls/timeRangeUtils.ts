@@ -475,47 +475,6 @@ const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
   }
 };
 
-// const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
-//   if (!date) return new Date();
-//   switch (timeGrain) {
-//     // case TimeGrain.FiveMinutes: {
-//     //   const interval = 5 * 60 * 1000;
-//     //   return new Date(Math.round(date.getTime() / interval) * interval);
-//     // }
-//     // case TimeGrain.FifteenMinutes: {
-//     //   const interval = 15 * 60 * 1000;
-//     //   return new Date(Math.floor(date.getTime() / interval) * interval);
-//     // }
-//     case TimeGrain.OneHour: {
-//       const interval = 60 * 60 * 1000;
-//       return new Date(Math.floor(date.getTime() / interval) * interval);
-//     }
-//     case TimeGrain.OneDay: {
-//       const interval = 24 * 60 * 60 * 1000;
-//       return new Date(Math.floor(date.getTime() / interval) * interval);
-//     }
-//     // case TimeGrain.OneWeek: {
-//     //   // rounds to the most recent Monday
-//     //   const day = date.getUTCDay();
-//     //   const dateRoundedDownByDay = roundDateDown(date, TimeGrain.OneDay);
-//     //   const timeFromMonday = (day === 0 ? 6 : day - 1) * 24 * 60 * 60 * 1000;
-//     //   return new Date(dateRoundedDownByDay.getTime() - timeFromMonday);
-//     // }
-//     case TimeGrain.OneMonth: {
-//       // rounds to the 1st of the current month
-//       return new Date(
-//         Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0)
-//       );
-//     }
-//     case TimeGrain.OneYear: {
-//       // rounds to January 1st of the current year
-//       return new Date(Date.UTC(date.getUTCFullYear(), 1, 1));
-//     }
-//     default:
-//       throw new Error(`Unknown time grain: ${timeGrain}`);
-//   }
-// };
-
 const roundDateUp = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   if (!date) return new Date();
   switch (timeGrain) {
