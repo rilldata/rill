@@ -30,12 +30,12 @@
 </script>
 
 <header
-  class="grid w-full bg-white self-stretch justify-between"
+  class="grid w-full bg-white self-stretch justify-between px-4 pt-3"
   style:grid-template-columns="auto auto"
   style:grid-template-rows="auto max-content"
 >
   <div class="grid gap-y-2 grid-flow-row">
-    <h1 style:line-height="1.1">
+    <h1 style:line-height="1.1" class="pt-3">
       <div class="pl-4 text-gray-600" style:font-size="24px">
         {#if $metricsDefinition}
           {$metricsDefinition?.metricDefLabel}
