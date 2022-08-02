@@ -15,6 +15,8 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { getMessageFromParseError } from "$common/expression-parser/getMessageFromParseError";
 import { Debounce } from "$common/utils/Debounce";
 import { handleErrorResponse } from "$lib/redux-store/utils/handleErrorResponse";
+import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+import { invalidateExplorerThunk } from "$lib/redux-store/utils/invalidateExplorerThunk";
 
 const MeasureExpressionValidation: ValidationConfig<MeasureDefinitionEntity> = {
   field: "expression",
@@ -55,6 +57,12 @@ export const {
   [EntityType.MeasureDefinition, "measureDefinition", "measures"],
   [addManyMeasures, addOneMeasure, updateMeasure, removeMeasure],
   [MeasureExpressionValidation]
+);
+export const updateMeasuresWrapperApi = invalidateExplorerThunk(
+  EntityType.MeasureDefinition,
+  updateMeasuresApi,
+  ["expression", "sqlName"],
+  (state, id) => [selectMeasureById(state, id).metricsDefId]
 );
 
 const validationDebounce = new Debounce();

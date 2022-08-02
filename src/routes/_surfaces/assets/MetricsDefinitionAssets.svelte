@@ -1,6 +1,7 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
   import { waitUntil } from "$common/utils/waitUtils";
   import {
     ApplicationStore,
@@ -12,12 +13,13 @@
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
-  import ExploreIcon from "$lib/components/icons/Explore.svelte";
+  import { default as Explore } from "$lib/components/icons/Explore.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
-  import { MenuItem } from "$lib/components/menu";
+  import Model from "$lib/components/icons/Model.svelte";
+  import { Divider, MenuItem } from "$lib/components/menu";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
-    createMetricsDefsApi,
+    createMetricsDefsAndFocusApi,
     deleteMetricsDefsApi,
     fetchManyMetricsDefsApi,
     validateSelectedSources,
@@ -38,7 +40,7 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    store.dispatch(createMetricsDefsApi());
+    store.dispatch(createMetricsDefsAndFocusApi());
   };
 
   const dispatchSetMetricsDefActive = (id: string) => {
@@ -97,41 +99,69 @@
     transition:slide={{ duration: 200 }}
     id="assets-model-list"
   >
-    {#each $metricsDefinitions as { id, metricDefLabel, sourceModelValidationStatus, timeDimensionValidationStatus } (id)}
+    {#each $metricsDefinitions as metricsDef (metricsDef.id)}
       <CollapsibleTableSummary
         entityType={EntityType.MetricsDefinition}
-        name={metricDefLabel ?? ""}
-        active={$appStore?.activeEntity?.id === id}
+        name={metricsDef.metricDefLabel ?? ""}
+        active={$appStore?.activeEntity?.id === metricsDef.id}
         showRows={false}
-        on:select={() => dispatchSetMetricsDefActive(id)}
-        on:delete={() => dispatchDeleteMetricsDef(id)}
+        on:select={() => dispatchSetMetricsDefActive(metricsDef.id)}
+        on:delete={() => dispatchDeleteMetricsDef(metricsDef.id)}
         notExpandable={true}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
         </svelte:fragment>
-        <span class="self-center" slot="header-buttons">
-          {#if sourceModelValidationStatus === SourceModelValidationStatus.OK && timeDimensionValidationStatus === SourceModelValidationStatus.OK}
-            <!-- Do not show the "explore metrics" button if metrics is invalid -->
-            <ContextButton
-              {id}
-              tooltipText="explore metrics"
-              location="left"
-              on:click={() => {
-                dataModelerService.dispatch("setActiveAsset", [
-                  EntityType.MetricsExplorer,
-                  id,
-                ]);
-              }}><ExploreIcon /></ContextButton
-            >
-          {/if}
-        </span>
+
         <svelte:fragment slot="menu-items">
-          <MenuItem icon on:select={() => dispatchDeleteMetricsDef(id)}>
+          {@const selectionError = MetricsSourceSelectionError(metricsDef)}
+          {@const hasSourceError =
+            selectionError !== SourceModelValidationStatus.OK &&
+            selectionError !== ""}
+          <MenuItem
+            icon
+            disabled={hasSourceError}
+            on:select={() => {
+              dataModelerService.dispatch("setActiveAsset", [
+                EntityType.Model,
+                metricsDef.sourceModelId,
+              ]);
+            }}
+          >
+            <svelte:fragment slot="icon">
+              <Model />
+            </svelte:fragment>
+            see model for metrics
+            <svelte:fragment slot="description">
+              {#if hasSourceError}
+                {selectionError}
+              {/if}
+            </svelte:fragment>
+          </MenuItem>
+          <MenuItem
+            icon
+            disabled={hasSourceError}
+            on:select={() => {
+              dataModelerService.dispatch("setActiveAsset", [
+                EntityType.MetricsExplorer,
+                metricsDef.id,
+              ]);
+            }}
+          >
+            <svelte:fragment slot="icon">
+              <Explore />
+            </svelte:fragment>
+            go to dashboard
+          </MenuItem>
+          <Divider />
+          <MenuItem
+            icon
+            on:select={() => dispatchDeleteMetricsDef(metricsDef.id)}
+          >
             <svelte:fragment slot="icon">
               <Cancel />
             </svelte:fragment>
-            delete metrics</MenuItem
+            delete</MenuItem
           >
         </svelte:fragment>
       </CollapsibleTableSummary>

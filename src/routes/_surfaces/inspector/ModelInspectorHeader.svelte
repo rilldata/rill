@@ -21,14 +21,12 @@
   import Button from "$lib/components/Button.svelte";
   import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
   import Export from "$lib/components/icons/Export.svelte";
-  import Metrics from "$lib/components/icons/Metrics.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
+
   import ExportError from "$lib/components/modal/ExportError.svelte";
+  import ModelerToMetricsButton from "$lib/components/modeler/ModelerToMetricsButton.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
-  import { createMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
-  import { store } from "$lib/redux-store/store-root";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -89,29 +87,6 @@
         .join("\n")}`;
       showExportErrorModal = true;
     }
-  };
-
-  const detectTimestampColumn = (model: DerivedModelEntity) => {
-    if (!model) return false;
-    const profile = model.profile;
-    const timestampColumn = profile?.find((column) => {
-      return TIMESTAMPS.has(column.type);
-    });
-    return !!timestampColumn;
-  };
-
-  $: hasTimestampColumn = detectTimestampColumn(currentDerivedModel);
-
-  const handleCreateMetric = () => {
-    // A side effect of the createMetricsDefsApi is we switch active assets to
-    // the newly created metrics definition. So, this'll bring us to the
-    // MetricsDefinition page. (The logic for this is contained in the
-    // not-pictured async thunk.)
-    store.dispatch(
-      createMetricsDefsApi({
-        sourceModelId: currentModel.id,
-      })
-    );
   };
 
   let rollup;
@@ -227,21 +202,7 @@
           Export this model as a dataset
         </TooltipContent>
       </Tooltip>
-      <Tooltip location="bottom" alignment="right" distance={16}>
-        <Button
-          type="primary"
-          disabled={!hasTimestampColumn}
-          on:click={handleCreateMetric}
-          >Create Metrics<Metrics size="16px" /></Button
-        >
-        <TooltipContent slot="tooltip-content">
-          {#if hasTimestampColumn}
-            Create metrics based on your model
-          {:else}
-            Add a timestamp column to your model in order to create a metric
-          {/if}
-        </TooltipContent>
-      </Tooltip>
+      <ModelerToMetricsButton {activeEntityID} />
     {/if}
   </div>
   <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">

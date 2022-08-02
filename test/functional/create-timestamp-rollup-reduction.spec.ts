@@ -96,10 +96,10 @@ export class CreateTimestampRollupReduction extends FunctionalTestBase {
     );
 
     /** roll up our _test.ts column */
-    const result = await this.databaseService.dispatch(
+    const result = (await this.databaseService.dispatch(
       "createTimestampRollupReduction",
       ["_test", "ts", "count", args.pixels]
-    );
+    )) as Array<unknown>;
 
     /** drop the temporarily-made view */
     await this.dbClient.execute(`DROP VIEW _test`);

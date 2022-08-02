@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import PreviewTable from "$lib/components/table-editable/PreviewTable.svelte";
+  import EditableTable from "$lib/components/table-editable/EditableTable.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
 
@@ -36,7 +36,7 @@
     </div>
   </div>
   <div class="rounded border border-gray-200 overflow-auto flex-1 max-w-[100%]">
-    <PreviewTable
+    <EditableTable
       {rows}
       {columnNames}
       on:change={updateEntityHandler}

@@ -5,16 +5,16 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import {
     generateMeasuresAndDimensionsApi,
-    updateMetricsDefsApi,
+    updateMetricsDefsWrapperApi,
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefinitionGenerateButtonModal from "./MetricsDefinitionGenerateButtomModal.svelte";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import type { ProfileColumn } from "$lib/types";
+  import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
   $: selectedDimensions = getDimensionsByMetricsId(metricsDefId);
@@ -28,7 +28,7 @@
       // select the first available timestamp column if one has not been
       // selected and there are some available
       store.dispatch(
-        updateMetricsDefsApi({
+        updateMetricsDefsWrapperApi({
           id: metricsDefId,
           changes: { timeDimension: timestampColumns[0].name },
         })
@@ -44,9 +44,11 @@
   let timestampColumns: Array<ProfileColumn>;
 
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    timestampColumns = $derivedModelStore?.entities
-      .find((model) => model.id === $selectedMetricsDef.sourceModelId)
-      .profile.filter((column) => TIMESTAMPS.has(column.type));
+    timestampColumns = selectTimestampColumnFromProfileEntity(
+      $derivedModelStore?.entities.find(
+        (model) => model.id === $selectedMetricsDef.sourceModelId
+      )
+    );
   } else {
     timestampColumns = [];
   }

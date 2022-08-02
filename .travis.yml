@@ -3,6 +3,11 @@ dist: focal
 node_js:
   - 16
 
+branches:
+  only:
+  - /^main$/
+  - /^v\d+\.\d+(\.\d+)?$/
+
 cache:
   directories:
     - "$HOME/.npm"
@@ -27,6 +32,8 @@ jobs:
       install: &npm-install
         - echo "NPM Install can take up to 15 mins"
         - npm i
+        - echo "Disabling telmetry"
+        - cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
 
       script:
         - echo "Running npm install"

@@ -33,13 +33,13 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       isolatedFilters,
       timestampColumn,
       timeRange,
-      "AND"
+      "WHERE"
     );
 
     return this.databaseClient.execute(
       `
       SELECT ${expression} as value, "${column}" as label from "${table}"
-      WHERE "${column}" IS NOT NULL ${whereClause}
+      ${whereClause}
       GROUP BY "${column}"
       ORDER BY value desc NULLS LAST
       LIMIT 15
