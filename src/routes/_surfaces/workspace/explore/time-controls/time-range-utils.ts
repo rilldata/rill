@@ -114,7 +114,7 @@ export const getDefaultTimeGrain = (
       if (allTimeRangeDuration <= 365 * 24 * 60 * 60 * 1000) {
         return TimeGrain.OneWeek;
       }
-      if (allTimeRangeDuration <= 10 * 365 * 24 * 60 * 60 * 1000) {
+      if (allTimeRangeDuration <= 20 * 365 * 24 * 60 * 60 * 1000) {
         return TimeGrain.OneMonth;
       }
       return TimeGrain.OneYear;
