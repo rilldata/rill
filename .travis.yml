@@ -3,6 +3,11 @@ dist: focal
 node_js:
   - 16
 
+branches:
+  only:
+  - /^main$/
+  - /^v\d+\.\d+(\.\d+)?$/
+
 cache:
   directories:
     - "$HOME/.npm"
