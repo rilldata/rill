@@ -34,7 +34,6 @@
       <div>
         {#if value && status === EntityStatus.Idle}
           <div
-            class="absolute"
             in:receive|local={{ key: "value" }}
             out:send|local={{ key: "value" }}
           >
