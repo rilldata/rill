@@ -58,7 +58,7 @@ export enum TimeGrain {
   // FifteenMinutes = "15 minute",
   OneHour = "1 hour",
   OneDay = "1 day",
-  // OneWeek = "7 day",
+  OneWeek = "7 day",
   OneMonth = "1 month",
   OneYear = "1 year",
 }
@@ -120,7 +120,13 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       timeRange
     );
 
-    const timeGranularity = timeRange.interval.split(" ")[1];
+    let timeGranularity = timeRange.interval.split(" ")[1];
+    // add workaround for weekly. DuckDB does not support
+    // a 1 week syntax, so in the case that we have 7 day, let's use
+    // the week timeGranularity for truncation.
+    if (timeRange.interval === "7 day") {
+      timeGranularity = "week";
+    }
 
     const filter =
       filters && Object.keys(filters).length > 0
