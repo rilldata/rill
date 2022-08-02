@@ -90,6 +90,7 @@
     "
   style:grid-template-columns="{icon ? "max-content" : ""} auto max-content"
   class:selected
+  class:cursor-not-allowed={disabled}
   aria-disabled={disabled}
   on:mouseover={onFocus}
   on:mouseleave={onBlur}
