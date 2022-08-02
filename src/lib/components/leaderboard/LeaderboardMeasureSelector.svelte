@@ -2,7 +2,7 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { SimpleSelectMenu } from "$lib/components/menu";
+  import { SelectMenu } from "$lib/components/menu";
   import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
@@ -70,7 +70,7 @@
     >
       <div>Dimension Leaders by</div>
 
-      <SimpleSelectMenu
+      <SelectMenu
         {options}
         {selections}
         alignment="end"

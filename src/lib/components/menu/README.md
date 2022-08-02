@@ -10,4 +10,4 @@ This directory contains our menu components. There are three types of components
 - `triggers` – Trigger components used in compositions
   - `SelectButton.svelte` – a composed trigger button for use in `SimpleSelectMenu.svelte`.
 - `compositions` – Convenience components comprised of all of the above, ready-made for usage.
-  - `SimpleSelectMenu.svelte` – this is a full component, combining `SelectButton` and `WithSelectMenu` to create a simple drop-in replacement for `select`. It has other features as well; see the props.
+  - `SelectMenu.svelte` – this is a full component, combining `SelectButton` and `WithSelectMenu` to create a simple drop-in replacement for `select`. It has other features as well; see the props.

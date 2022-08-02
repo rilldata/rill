@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SimpleSelectorMenu } from "$lib/components/menu";
+  import { SelectMenu } from "$lib/components/menu";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
@@ -29,7 +29,7 @@
   <h1 class="text-lg">Select Menus</h1>
 
   <p>
-    the <code>SimpleSelectMenu</code> component takes care of the basic cases
+    the <code>SelectMenu</code> component takes care of the basic cases
     covered by the {`<select>`}
     element. It has a few additional bells and whistles:
   </p>
@@ -53,7 +53,7 @@
     <div>
       Currently selecting
       <Tooltip distance={16}>
-        <SimpleSelectorMenu
+        <SelectMenu
           {level}
           options={singleSelectorOptions}
           bind:selections={singleSelections}
@@ -96,7 +96,7 @@
       <tr>
         {#each [0, 0] as row}
           <td class="border border-gray-200" style:height="32px">
-            <SimpleSelectorMenu
+            <SelectMenu
               block
               options={singleSelectorOptions}
               bind:selections={singleSelections}

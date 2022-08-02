@@ -1,6 +1,6 @@
 /** See README.md for more information. */
 /** ready-made components */
-export { default as SimpleSelectMenu } from "./compositions/SimpleSelectorMenu.svelte";
+export { default as SelectMenu } from "./compositions/SelectMenu.svelte";
 /** core components */
 export { default as Divider } from "./core/Divider.svelte";
 export { default as Menu } from "./core/Menu.svelte";
