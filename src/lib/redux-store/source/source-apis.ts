@@ -14,9 +14,34 @@ import {
   resetQuickStartDashboardOverlay,
   showQuickStartDashboardOverlay,
 } from "$lib/application-state-stores/layout-store";
+import { updateModelQueryApi } from "$lib/redux-store/model/model-apis";
+import {
+  selectDerivedModelBySourceName,
+  selectPersistentModelById,
+} from "$lib/redux-store/model/model-selector";
 
 // Source doesn't have a slice as of now.
 // This file has simple code that will eventually be moved into async thunks
+
+export const deleteSourceApi = async (persistentTableName: string) => {
+  await dataModelerService.dispatch("dropTable", [persistentTableName]);
+  await sourceUpdated(persistentTableName);
+};
+
+/**
+ * Called when a source is created or deleted.
+ */
+export const sourceUpdated = async (persistentTableName: string) => {
+  await Promise.all(
+    selectDerivedModelBySourceName(persistentTableName).map((derivedModel) =>
+      updateModelQueryApi(
+        derivedModel.id,
+        selectPersistentModelById(derivedModel.id).query,
+        true
+      )
+    )
+  );
+};
 
 /**
  * Create a model for the given source by selecting all columns.

@@ -62,12 +62,7 @@
         return !!$derivedModelStore;
       }, -1);
       $metricsDefinitions.forEach((metricsDefinition) =>
-        store.dispatch(
-          validateSelectedSources({
-            id: metricsDefinition.id,
-            derivedModelState: $derivedModelStore,
-          })
-        )
+        store.dispatch(validateSelectedSources(metricsDefinition.id))
       );
     });
   });

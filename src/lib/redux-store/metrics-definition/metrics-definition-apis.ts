@@ -1,7 +1,4 @@
-import type {
-  DerivedModelEntity,
-  DerivedModelState,
-} from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
@@ -32,7 +29,15 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import { invalidateExplorerThunk } from "$lib/redux-store/utils/invalidateExplorerThunk";
+import { invalidateExplorer } from "$lib/redux-store/utils/invalidateExplorerThunk";
+import { validateMeasureExpression } from "$lib/redux-store/measure-definition/measure-definition-apis";
+import {
+  selectMeasureById,
+  selectMeasuresByMetricsId,
+} from "$lib/redux-store/measure-definition/measure-definition-selectors";
+import { validateDimensionColumnApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
+import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 
 const handleMetricsDefDelete = async (id: string) => {
   const activeEntity = selectApplicationActiveEntity(store.getState());
@@ -40,7 +45,8 @@ const handleMetricsDefDelete = async (id: string) => {
 
   if (
     activeEntity.id === id &&
-    activeEntity.type === EntityType.MetricsDefinition
+    (activeEntity.type === EntityType.MetricsDefinition ||
+      activeEntity.type === EntityType.MetricsExplorer)
   ) {
     const nextId = store.getState().metricsDefinition.ids[0];
     if (!nextId) {
@@ -82,11 +88,30 @@ export const createMetricsDefsAndFocusApi = createAsyncThunk(
     return createdMetricsDef;
   }
 );
-export const updateMetricsDefsWrapperApi = invalidateExplorerThunk(
-  EntityType.MetricsDefinition,
-  updateMetricsDefsApi,
-  ["sourceModelId", "timeDimension"],
-  (state, id) => [id]
+export const updateMetricsDefsWrapperApi = createAsyncThunk(
+  `${EntityType.MetricsDefinition}/updateWrapperApi`,
+  async (
+    { id, changes }: { id: string; changes: Partial<MetricsDefinitionEntity> },
+    thunkAPI
+  ) => {
+    if ("sourceModelId" in changes) {
+      changes.timeDimension = selectTimestampColumnFromProfileEntity(
+        selectDerivedModelById(changes.sourceModelId)
+      )[0]?.name;
+    }
+    await invalidateExplorer(
+      id,
+      changes,
+      thunkAPI,
+      EntityType.MetricsDefinition,
+      updateMetricsDefsApi,
+      ["sourceModelId", "timeDimension"],
+      (state, id) => [id]
+    );
+    if ("sourceModelId" in changes || "timeDimension" in changes) {
+      thunkAPI.dispatch(validateSelectedSources(id));
+    }
+  }
 );
 
 export const generateMeasuresAndDimensionsApi = createAsyncThunk(
@@ -114,26 +139,15 @@ export const generateMeasuresAndDimensionsApi = createAsyncThunk(
 
 export const validateSelectedSources = createAsyncThunk(
   `${EntityType.MetricsDefinition}/validateSelectedSources`,
-  async (
-    {
-      id,
-      derivedModelState,
-    }: { id: string; derivedModelState: DerivedModelState },
-    thunkAPI
-  ) => {
-    const metricsDefinition = selectMetricsDefinitionById(
-      thunkAPI.getState() as RillReduxState,
-      id
-    );
+  async (id: string, thunkAPI) => {
+    const state = thunkAPI.getState() as RillReduxState;
+    const metricsDefinition = selectMetricsDefinitionById(state, id);
 
     let sourceModelValidationStatus: SourceModelValidationStatus;
     let derivedModel: DerivedModelEntity;
     if (metricsDefinition.sourceModelId) {
       // if some source model is selected, pull the derived model from the derived model state.
-      derivedModel = selectDerivedModelById(
-        derivedModelState,
-        metricsDefinition.sourceModelId
-      );
+      derivedModel = selectDerivedModelById(metricsDefinition.sourceModelId);
       if (derivedModel) {
         // if a model is found, mark as INVALID if it has error
         sourceModelValidationStatus = derivedModel.error
@@ -178,5 +192,31 @@ export const validateSelectedSources = createAsyncThunk(
     thunkAPI.dispatch(
       setTimeDimensionValidationStatus(id, timeDimensionValidationStatus)
     );
+
+    // metrics explorer is active and model is no longer valid switch back to metrics definition
+    if (
+      state.application.activeEntity.id === id &&
+      state.application.activeEntity.type === EntityType.MetricsExplorer &&
+      sourceModelValidationStatus !== SourceModelValidationStatus.OK
+    ) {
+      await dataModelerService.dispatch("setActiveAsset", [
+        EntityType.MetricsDefinition,
+        id,
+      ]);
+    }
+
+    // trigger measure and dimension validations
+    selectMeasuresByMetricsId(state, id).forEach((measure) =>
+      validateMeasureExpression(
+        thunkAPI.dispatch,
+        id,
+        measure.id,
+        selectMeasureById(state, measure.id).expression
+      )
+    );
+    selectDimensionsByMetricsId(state, id).forEach((dimension) =>
+      thunkAPI.dispatch(validateDimensionColumnApi(dimension.id))
+    );
+    // TODO: if timestamp column is invalid select the next valid timestamp column
   }
 );
