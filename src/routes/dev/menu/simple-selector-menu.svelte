@@ -29,8 +29,8 @@
   <h1 class="text-lg">Select Menus</h1>
 
   <p>
-    the <code>SelectMenu</code> component takes care of the basic cases
-    covered by the {`<select>`}
+    the <code>SelectMenu</code> component takes care of the basic cases covered
+    by the {`<select>`}
     element. It has a few additional bells and whistles:
   </p>
 
@@ -110,7 +110,7 @@
                     : 'text-gray-500'} italic">{singleSelections[0].right}</span
                 >
               </div>
-            </SimpleSelectorMenu>
+            </SelectMenu>
           </td>
         {/each}
       </tr>
