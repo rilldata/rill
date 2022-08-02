@@ -9,9 +9,8 @@
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { tick } from "svelte";
+  import { createEventDispatcher, tick } from "svelte";
   import {
-    getDefaultTimeRangeName,
     getSelectableTimeRangeNames,
     makeTimeRanges,
     prettyFormatTimeRange,
@@ -19,7 +18,8 @@
 
   export let metricsDefId: string;
   export let selectedTimeRangeName: TimeRangeName;
-  export let onSelectTimeRangeName: (timeRangeName: TimeRangeName) => void;
+
+  const dispatch = createEventDispatcher();
 
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
@@ -42,11 +42,6 @@
     selectableTimeRanges = getSelectableTimeRanges(
       $metricsExplorer.allTimeRange
     );
-  }
-
-  $: if (!selectedTimeRangeName) {
-    const defaultTimeRangeName = getDefaultTimeRangeName();
-    onSelectTimeRangeName(defaultTimeRangeName);
   }
 
   /// Start boilerplate for DIY Dropdown menu ///
@@ -105,7 +100,9 @@
           <MenuItem
             on:select={() => {
               timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
-              onSelectTimeRangeName(timeRange.name);
+              dispatch("select-time-range-name", {
+                timeRangeName: timeRange.name,
+              });
             }}
           >
             <div class="font-bold">

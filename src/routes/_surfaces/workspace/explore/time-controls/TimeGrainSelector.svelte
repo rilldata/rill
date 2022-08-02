@@ -9,7 +9,7 @@
   import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { tick } from "svelte";
+  import { createEventDispatcher, tick } from "svelte";
   import {
     getDefaultTimeGrain,
     getSelectableTimeGrains,
@@ -19,7 +19,8 @@
   export let metricsDefId: string;
   export let selectedTimeRangeName: TimeRangeName;
   export let selectedTimeGrain: TimeGrain;
-  export let onSelectTimeGrain: (timeGrain: TimeGrain) => void;
+
+  const dispatch = createEventDispatcher();
 
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
@@ -33,17 +34,16 @@
     );
   }
 
-  // Set the default time grain when:
-  // - there's no time grain currently selected
-  // - the selected time grain is not in the list of selectable time grains (which can happen when the time range name is changed)
+  // When the selected time grain is not in the list of selectable time grains (which can
+  // happen when the time range name is changed), set the default time grain
   $: if (
-    !selectedTimeGrain ||
+    selectableTimeGrains &&
     selectableTimeGrains.find(
       (timeGrain) => timeGrain === selectedTimeGrain
     ) === undefined
   ) {
-    selectedTimeGrain = getDefaultTimeGrain(selectedTimeRangeName);
-    onSelectTimeGrain(selectedTimeGrain);
+    const defaultTimeGrain = getDefaultTimeGrain(selectedTimeRangeName);
+    dispatch("select-time-grain", { timeGrain: defaultTimeGrain });
   }
 
   /// Start boilerplate for DIY Dropdown menu ///
@@ -96,7 +96,7 @@
           <MenuItem
             on:select={() => {
               timeGrainMenuOpen = !timeGrainMenuOpen;
-              onSelectTimeGrain(timeGrain);
+              dispatch("select-time-grain", { timeGrain });
             }}
           >
             <div class="font-bold">

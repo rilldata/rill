@@ -14,7 +14,12 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
-  import { makeTimeRange } from "./time-range-utils";
+  import { onMount } from "svelte";
+  import {
+    getDefaultTimeGrain,
+    getDefaultTimeRangeName,
+    makeTimeRange,
+  } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
 
@@ -23,16 +28,23 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let selectedTimeRangeName;
-  const setSelectedTimeRangeName = (timeRangeName: TimeRangeName) => {
-    selectedTimeRangeName = timeRangeName;
+  const setSelectedTimeRangeName = (evt) => {
+    selectedTimeRangeName = evt.detail.timeRangeName;
   };
 
   let selectedTimeGrain;
-  const setSelectedTimeGrain = (timeGrain: TimeGrain) => {
-    selectedTimeGrain = timeGrain;
+  const setSelectedTimeGrain = (evt) => {
+    selectedTimeGrain = evt.detail.timeGrain;
   };
 
-  const constructTimeRangeAndUpdateStore = (
+  onMount(() => {
+    const defaultTimeRangeName = getDefaultTimeRangeName();
+    selectedTimeRangeName = defaultTimeRangeName;
+    const defaultTimeGrain = getDefaultTimeGrain(selectedTimeRangeName);
+    selectedTimeGrain = defaultTimeGrain;
+  });
+
+  const makeTimeRangeAndUpdateStore = (
     timeRangeName: TimeRangeName,
     timeGrain: TimeGrain,
     allTimeRangeInDataset: TimeSeriesTimeRange
@@ -61,7 +73,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   };
 
   // reactive statement that makes a new time range whenever the selected options change
-  $: constructTimeRangeAndUpdateStore(
+  $: makeTimeRangeAndUpdateStore(
     selectedTimeRangeName,
     selectedTimeGrain,
     $metricsExplorer?.allTimeRange
@@ -72,12 +84,12 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   <TimeRangeNameSelector
     {metricsDefId}
     {selectedTimeRangeName}
-    onSelectTimeRangeName={setSelectedTimeRangeName}
+    on:select-time-range-name={setSelectedTimeRangeName}
   />
   <TimeGrainSelector
     {metricsDefId}
     {selectedTimeRangeName}
     {selectedTimeGrain}
-    onSelectTimeGrain={setSelectedTimeGrain}
+    on:select-time-grain={setSelectedTimeGrain}
   />
 </div>
