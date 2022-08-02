@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { setContext } from "svelte";
+
+  import { writable } from "svelte/store";
+
   import FloatingElement from "../floating-element/FloatingElement.svelte";
   import Portal from "../Portal.svelte";
   export let location = "bottom";
@@ -21,6 +25,17 @@
     if (waitUntilTimer) clearTimeout(waitUntilTimer);
     waitUntilTimer = setTimeout(callback, time);
   }
+
+  /** create child-supported suppression.
+   * If a child changes this context store to true, we should
+   * suppress the tooltip.
+   * This enables us to disentangle the tooltip state in certain cases.
+   */
+  const childRequestedTooltipSuppression = writable(false);
+  setContext(
+    "rill:app:childRequestedTooltipSuppression",
+    childRequestedTooltipSuppression
+  );
 </script>
 
 <div
@@ -38,7 +53,7 @@
   }}
 >
   <slot />
-  {#if active && !suppress}
+  {#if active && !suppress && !$childRequestedTooltipSuppression}
     <Portal>
       <div style="z-index:50;">
         <FloatingElement

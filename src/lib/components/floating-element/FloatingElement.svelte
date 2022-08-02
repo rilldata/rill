@@ -52,6 +52,19 @@
 
   let firstParentElement;
 
+  function getFirstValidChildElement(element) {
+    // get this child.
+    let possibleChild = element?.children[0];
+    // check for display: contents, which may indicate
+    // another wrapped object.
+    console.log(possibleChild, getComputedStyle(possibleChild).display);
+    if (getComputedStyle(possibleChild).display === "contents") {
+      return getFirstValidChildElement(possibleChild);
+    } else {
+      return possibleChild;
+    }
+  }
+
   $: if (relationship === "parent") {
     if (firstParentElement)
       setLocation(
@@ -74,12 +87,13 @@
       innerHeight
     );
   }
+  $: getFirstValidChildElement(target);
 
   onMount(() => {
     // we listen to the parent.
     // actually, we listen to the first chidl element!
     if (relationship === "parent") {
-      firstParentElement = target?.children[0];
+      firstParentElement = getFirstValidChildElement(target); // target?.children[0];
       const config = { attributes: true };
       const observer = new MutationObserver(() => {
         setLocation(

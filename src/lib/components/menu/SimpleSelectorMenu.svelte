@@ -2,32 +2,29 @@
 A simple menu of actions. When one is clicked, the callback fires,
 and the menu closes.
 
+This component is a fully-opinionated way of using selects.
+A slot is provided to change the text within the button.
+
 -->
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
-  import Check from "../icons/Check.svelte";
-  import CheckBox from "../icons/CheckBox.svelte";
-  import CheckCircle from "../icons/CheckCircle.svelte";
-  import EmptyBox from "../icons/EmptyBox.svelte";
-  import EmptyCircle from "../icons/EmptyCircle.svelte";
-  import Spacer from "../icons/Spacer.svelte";
 
-  import Menu from "./Menu.svelte";
-  import MenuItem from "./MenuItem.svelte";
-  import WithFloatingMenu from "./WithFloatingMenu.svelte";
+  import SelectButton from "./SelectButton.svelte";
+  import WithSelectMenu from "./WithSelectMenu.svelte";
 
   export let options;
   export let selections = [];
-  export let style = "obvious";
-  export let multiple = false;
 
   export let tailwindClasses = undefined;
   export let activeTailwindClasses = undefined;
 
   /** When true, will make the trigger element a block-level element.
+   * This is most useful when embedding a select menu in a table or wherever
+   * a block-level treatment is needed.
    */
   export let block = false;
+
+  export let level: undefined | "error" = undefined;
 
   export let dark: boolean = undefined;
   export let location: "left" | "right" | "top" | "bottom" = "bottom";
@@ -42,125 +39,41 @@ and the menu closes.
 
   const dispatch = createEventDispatcher();
 
-  let temporarilySelectedKey;
-  function createOnClickHandler(
-    main,
-    right,
-    description,
-    key,
-    index,
-    closeEventHandler
-  ) {
-    return async () => {
-      // single-select: do nothing if already selected
-      if (!multiple && isSelected(selections, key)) {
-        return;
-      }
-      // set temporarily selected to get the icon to change instantly, then wait for tick
-      // proceed with rest of update
-      if (multiple) {
-        // check to see if exists
-        // if not, add.
-        if (isSelected(selections, key)) {
-          selections = [...selections.filter((s) => s.key !== key)];
-        } else {
-          selections = [
-            ...selections,
-            { main, right, key, description, index },
-          ];
-        }
-      } else {
-        // replace selected with a single value.
-        selections = [{ main, right, description, key, index }];
-      }
-      dispatch("select", selections);
-      if (!multiple) closeEventHandler();
-
-      temporarilySelectedKey = undefined;
-    };
-  }
+  // dispatch selections when it changes.
+  $: dispatch("select", selections);
 
   function isSelected(selections, key) {
     return selections?.some((selection) => selection.key === key);
   }
 </script>
 
-<WithFloatingMenu
-  bind:active
+<!-- wrap a WithSelectMenu with a SelectButton -->
+<WithSelectMenu
+  {dark}
   {location}
   {alignment}
   {distance}
-  let:handleClose
+  on:select={(event) => {
+    selections = event.detail;
+  }}
+  bind:selections
+  bind:options
+  bind:active
   let:toggleMenu
+  let:active
 >
-  <button
-    class="
-    {block ? 'flex w-full h-full px-2' : 'inline-flex w-max rounded px-1'} 
-      items-center gap-x-2 justify-between {!active
-      ? 'hover:bg-gray-100'
-      : `${activeTailwindClasses} bg-gray-200`}
-      {tailwindClasses}"
+  <SelectButton
     on:click={toggleMenu}
+    {activeTailwindClasses}
+    {tailwindClasses}
+    {active}
+    {block}
+    {level}
   >
     <slot>
       <div>
         {selections[0].main}
       </div>
     </slot>
-    <CaretDownIcon />
-  </button>
-
-  <Menu
-    slot="menu"
-    {dark}
-    on:lose-focus={() => {
-      if (active) handleClose();
-    }}
-    on:escape={handleClose}
-  >
-    {#each options as { key, main, description, right }, i}
-      {@const selected = isSelected(selections, key)}
-      <MenuItem
-        icon
-        animateSelect={!multiple}
-        on:before-select={() => {
-          temporarilySelectedKey = key;
-        }}
-        on:select={createOnClickHandler(
-          main,
-          right,
-          description,
-          key,
-          i,
-          handleClose
-        )}
-        {selected}
-      >
-        <svelte:fragment slot="icon">
-          <!-- this conditional will make the circle check appear briefly before the menu closes
-          in the case of a single-select menu. -->
-          {#if !multiple}
-            {#if (temporarilySelectedKey !== undefined && temporarilySelectedKey === key) || (temporarilySelectedKey === undefined && selected)}
-              {#if style === "obvious"}<CheckCircle />{:else}<Check />{/if}
-            {:else if style === "obvious"}
-              <EmptyCircle />{:else}<Spacer />
-            {/if}
-            <!-- multi -->
-          {:else if selected}
-            {#if style === "obvious"}<CheckBox />{:else}<Check />{/if}
-          {:else if style === "obvious"}<EmptyBox />{:else}<Spacer />{/if}
-        </svelte:fragment>
-
-        {main}
-        <svelte:fragment slot="description">
-          {#if description}
-            {description}
-          {/if}
-        </svelte:fragment>
-        <svelte:fragment slot="right">
-          {right || ""}
-        </svelte:fragment>
-      </MenuItem>
-    {/each}
-  </Menu>
-</WithFloatingMenu>
+  </SelectButton>
+</WithSelectMenu>
