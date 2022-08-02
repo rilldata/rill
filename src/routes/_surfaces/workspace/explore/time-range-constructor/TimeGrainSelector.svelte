@@ -74,9 +74,9 @@
   class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
   on:click={buttonClickHandler}
 >
-  <div>
-    by <span class="font-bold">{prettyTimeGrain(selectedTimeGrain)}</span> increments
-  </div>
+  <span class="font-bold"
+    >by {prettyTimeGrain(selectedTimeGrain)} increments</span
+  >
   <span class="transition-transform" class:-rotate-180={timeGrainMenuOpen}>
     <CaretDownIcon size="16px" />
   </span>
