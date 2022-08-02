@@ -26,7 +26,7 @@ export interface TimeSeriesRollup {
 }
 
 export enum TimeRangeName {
-  // LastHour = "Last hour",
+  LastHour = "Last hour",
   Last6Hours = "Last 6 hours",
   LastDay = "Last day",
   Last2Days = "Last 2 days",
@@ -42,6 +42,7 @@ export enum TimeRangeName {
 }
 
 export const lastXTimeRanges: TimeRangeName[] = [
+  TimeRangeName.LastHour,
   TimeRangeName.Last6Hours,
   TimeRangeName.LastDay,
   TimeRangeName.Last2Days,
@@ -54,6 +55,7 @@ export const lastXTimeRanges: TimeRangeName[] = [
 
 // The string values must adhere to DuckDB INTERVAL syntax, since, in some places, we interpolate an SQL queries with these values.
 export enum TimeGrain {
+  OneMinute = "1 minute",
   // FiveMinutes = "5 minute",
   // FifteenMinutes = "15 minute",
   OneHour = "1 hour",

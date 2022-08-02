@@ -77,8 +77,8 @@ export const getDefaultTimeGrain = (
   timeRangeName: TimeRangeName
 ): TimeGrain => {
   switch (timeRangeName) {
-    // case TimeRangeName.LastHour:
-    //   return TimeGrain.FifteenMinutes;
+    case TimeRangeName.LastHour:
+      return TimeGrain.OneMinute;
     case TimeRangeName.Last6Hours:
       return TimeGrain.OneHour;
     case TimeRangeName.LastDay:
@@ -252,6 +252,14 @@ export const formatDateByInterval = (
   date: string
 ): string => {
   switch (interval) {
+    case "1 minute":
+      return new Date(date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+      });
     case "5 minute":
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
@@ -304,6 +312,8 @@ export const formatDateByInterval = (
 export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
   if (!timeGrain) return "";
   switch (timeGrain) {
+    case TimeGrain.OneMinute:
+      return "minute";
     // case TimeGrain.FiveMinutes:
     //   return "5 minute";
     // case TimeGrain.FifteenMinutes:
@@ -358,8 +368,8 @@ const getTimeRangeDuration = (
 
 const getLastXTimeRangeDuration = (name: TimeRangeName): number => {
   switch (name) {
-    // case TimeRangeName.LastHour:
-    //   return 60 * 60 * 1000;
+    case TimeRangeName.LastHour:
+      return 60 * 60 * 1000;
     case TimeRangeName.Last6Hours:
       return 6 * 60 * 60 * 1000;
     case TimeRangeName.LastDay:
@@ -383,6 +393,8 @@ const getLastXTimeRangeDuration = (name: TimeRangeName): number => {
 
 const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
   switch (timeGrain) {
+    case TimeGrain.OneMinute:
+      return 60 * 1000;
     // case TimeGrain.FiveMinutes:
     //   return 5 * 60 * 1000;
     // case TimeGrain.FifteenMinutes:
@@ -405,6 +417,10 @@ const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
 const roundDateUp = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   if (!date) return new Date();
   switch (timeGrain) {
+    case TimeGrain.OneMinute: {
+      const interval = 60 * 1000;
+      return new Date(Math.ceil(date.getTime() / interval) * interval);
+    }
     // case TimeGrain.FiveMinutes: {
     //   const interval = 5 * 60 * 1000;
     //   return new Date(Math.ceil(date.getTime() / interval) * interval);
@@ -446,6 +462,10 @@ const roundDateUp = (date: Date | undefined, timeGrain: TimeGrain): Date => {
 const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   if (!date) return new Date();
   switch (timeGrain) {
+    case TimeGrain.OneMinute: {
+      const interval = 60 * 1000;
+      return new Date(Math.floor(date.getTime() / interval) * interval);
+    }
     // case TimeGrain.FiveMinutes: {
     //   const interval = 5 * 60 * 1000;
     //   return new Date(Math.round(date.getTime() / interval) * interval);
