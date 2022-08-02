@@ -1,9 +1,12 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { waitUntil } from "$common/utils/waitUtils";
   import {
     ApplicationStore,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
+  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
@@ -11,7 +14,7 @@
   import Cancel from "$lib/components/icons/Cancel.svelte";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { MenuItem } from "$lib/components/menu";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
     createMetricsDefsApi,
@@ -23,9 +26,6 @@
   import { store } from "$lib/redux-store/store-root";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
-  import { waitUntil } from "$common/utils/waitUtils";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;

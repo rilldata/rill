@@ -1,19 +1,22 @@
 <script lang="ts">
-  import Menu from "$lib/components/menu/Menu.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
-  import WithFloatingMenu from "$lib/components/menu/WithFloatingMenu.svelte";
+  import { Menu, MenuItem } from "$lib/components/menu";
 
+  import { WithToggleableFloatingElement } from "$lib/components/floating-element";
   let item;
 </script>
 
-<WithFloatingMenu let:active let:handleClose let:toggleMenu>
-  <button on:click={toggleMenu}>click me! {active} {item}</button>
+<WithToggleableFloatingElement
+  let:active
+  let:handleClose
+  let:toggleFloatingElement
+>
+  <button on:click={toggleFloatingElement}>click me! {active} {item}</button>
   <Menu
     dark
     on:item-select={handleClose}
     on:lose-focus={handleClose}
     on:escape={handleClose}
-    slot="menu"
+    slot="floating-element"
   >
     <MenuItem
       on:select={() => {
@@ -31,6 +34,6 @@
       }}>three</MenuItem
     >
   </Menu>
-</WithFloatingMenu>
+</WithToggleableFloatingElement>
 
 <p>Here is more text underneath this! {item}</p>

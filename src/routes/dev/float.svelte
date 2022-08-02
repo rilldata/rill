@@ -1,10 +1,8 @@
 <script>
-  import Menu from "$lib/components/menu/Menu.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
-  import Divider from "$lib/components/menu/Divider.svelte";
+  import { Divider, Menu, MenuItem } from "$lib/components/menu";
 
-  import CircleEmpty from "$lib/components/icons/EmptyCircle.svelte";
   import CheckCircle from "$lib/components/icons/CheckCircle.svelte";
+  import CircleEmpty from "$lib/components/icons/EmptyCircle.svelte";
 
   let commands = [];
   function add(cmd) {

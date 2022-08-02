@@ -3,7 +3,7 @@
   import { slide } from "svelte/transition";
 
   import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
-  import Menu from "$lib/components/menu/Menu.svelte";
+  import { Menu } from "$lib/components/menu";
 
   import CollapsibleTableHeader from "./CollapsibleTableHeader.svelte";
 

@@ -6,9 +6,8 @@ and the menu closes.
 <script lang="ts">
   import { setContext } from "svelte";
 
-  import Menu from "./Menu.svelte";
-  import MenuItem from "./MenuItem.svelte";
-  import WithFloatingMenu from "./WithFloatingMenu.svelte";
+  import { WithTogglableFloatingElement } from "$lib/components/floating-element";
+  import { Menu, MenuItem } from "./";
 
   export let options = [];
   export let dark: boolean = undefined;
@@ -30,17 +29,17 @@ and the menu closes.
   }
 </script>
 
-<WithFloatingMenu
+<WithTogglableFloatingElement
   bind:active
   {location}
   {alignment}
   {distance}
   let:handleClose
-  let:toggleMenu
+  let:toggleFloatingElement
 >
-  <slot {handleClose} {toggleMenu} {active} />
+  <slot {handleClose} toggleMenu={toggleFloatingElement} {active} />
   <Menu
-    slot="menu"
+    slot="floating-element"
     {dark}
     on:select-item={handleClose}
     on:lose-focus={() => {
@@ -57,4 +56,4 @@ and the menu closes.
       </MenuItem>
     {/each}
   </Menu>
-</WithFloatingMenu>
+</WithTogglableFloatingElement>

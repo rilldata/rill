@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SimpleSelectorMenu from "$lib/components/menu/SimpleSelectorMenu.svelte";
+  import { SimpleSelectorMenu } from "$lib/components/menu";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
 
@@ -11,7 +11,7 @@
       key: 3,
       main: "option 4",
       right: "opt4",
-      description: "adding a description",
+      description: "triggers error state",
     },
     { key: 4, main: "option 5", right: "opt5" },
   ];
@@ -26,19 +26,44 @@
 </script>
 
 <section class="grid grid-flow-row gap-y-4">
-  <h2>Select Menus</h2>
+  <h1 class="text-lg">Select Menus</h1>
+
+  <p>
+    the <code>SimpleSelectMenu</code> component takes care of the basic cases
+    covered by the {`<select>`}
+    element. It has a few additional bells and whistles:
+  </p>
+
+  <ul>
+    <li>you can add descriptions & right-text to the menu items</li>
+    <li>you can change the styling of the overall element</li>
+    <li>it's easy to make a block-level select element</li>
+    <li>
+      tooltips attached to the top-level element will suppress when active
+    </li>
+    <li>
+      you can add a level prop, which currently accepts "error" and turns the
+      element red
+    </li>
+  </ul>
+
+  <h2 class="text-md">basic inline select</h2>
 
   <div class="grid grid-flow-row gap-y-4" style:width="600px">
     <div>
       Currently selecting
-      <Tooltip>
+      <Tooltip distance={16}>
         <SimpleSelectorMenu
           {level}
           options={singleSelectorOptions}
           bind:selections={singleSelections}
         />
         <TooltipContent slot="tooltip-content">
-          {#if level} {level} {:else} a simple selector {/if}
+          {#if level}
+            {level}
+          {:else}
+            a simple selector. This will disappear on click
+          {/if}
         </TooltipContent>
       </Tooltip>
     </div>
@@ -51,6 +76,10 @@
       {/each}
     </div>
   </div>
+
+  <h2 class="text-md">
+    using the block prop for tables (along with custom slot value for menu text)
+  </h2>
 
   <div>
     <p>

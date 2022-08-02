@@ -9,8 +9,7 @@ A slot is provided to change the text within the button.
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
 
-  import SelectButton from "./SelectButton.svelte";
-  import WithSelectMenu from "./WithSelectMenu.svelte";
+  import { SelectButton, WithSelectMenu } from "../";
 
   export let options;
   export let selections = [];

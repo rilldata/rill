@@ -2,8 +2,8 @@
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
 
-  import FloatingElement from "../floating-element/FloatingElement.svelte";
-  import Portal from "../Portal.svelte";
+  import { FloatingElement } from "$lib/components/floating-element";
+  import Portal from "$lib/components/Portal.svelte";
   export let location = "bottom";
   export let alignment = "middle";
   export let distance = 0;
@@ -29,7 +29,7 @@
     handleClose={() => {
       active = false;
     }}
-    toggleMenu={() => {
+    toggleFloatingElement={() => {
       active = !active;
     }}
   />
@@ -43,7 +43,7 @@
           {distance}
           {pad}
         >
-          <slot name="menu" />
+          <slot name="floating-element" />
         </FloatingElement>
       </div>
     </Portal>

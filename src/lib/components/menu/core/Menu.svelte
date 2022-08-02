@@ -13,10 +13,9 @@
   } from "svelte";
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
-  import { clickOutside } from "../actions/click-outside";
+  import { clickOutside } from "../../actions/click-outside";
 
   export let dark: boolean = undefined;
-  export let elementsToIgnoreOnClickOutside = [];
 
   export let role = "menu";
   /** used for selector-style menus */

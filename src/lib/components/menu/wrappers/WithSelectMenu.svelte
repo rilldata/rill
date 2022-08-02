@@ -5,14 +5,13 @@ and the menu closes.
 -->
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
-  import Check from "../icons/Check.svelte";
-  import CheckBox from "../icons/CheckBox.svelte";
-  import EmptyBox from "../icons/EmptyBox.svelte";
-  import Spacer from "../icons/Spacer.svelte";
+  import Check from "../../icons/Check.svelte";
+  import CheckBox from "../../icons/CheckBox.svelte";
+  import EmptyBox from "../../icons/EmptyBox.svelte";
+  import Spacer from "../../icons/Spacer.svelte";
 
-  import Menu from "./Menu.svelte";
-  import MenuItem from "./MenuItem.svelte";
-  import WithFloatingMenu from "./WithFloatingMenu.svelte";
+  import { WithTogglableFloatingElement } from "$lib/components/floating-element";
+  import { Menu, MenuItem } from "../";
 
   export let options;
   export let selections = [];
@@ -77,18 +76,18 @@ and the menu closes.
   }
 </script>
 
-<WithFloatingMenu
+<WithTogglableFloatingElement
   bind:active
   {location}
   {alignment}
   {distance}
   let:handleClose
-  let:toggleMenu
+  let:toggleFloatingElement
 >
-  <slot {active} {handleClose} {toggleMenu} />
+  <slot {active} {handleClose} toggleMenu={toggleFloatingElement} />
 
   <Menu
-    slot="menu"
+    slot="floating-element"
     {dark}
     on:lose-focus={() => {
       if (active) handleClose();
@@ -142,4 +141,4 @@ and the menu closes.
       </MenuItem>
     {/each}
   </Menu>
-</WithFloatingMenu>
+</WithTogglableFloatingElement>
