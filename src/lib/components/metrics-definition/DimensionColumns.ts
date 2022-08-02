@@ -22,7 +22,8 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
       cellRenderer: new CellConfigSelector(
         inputChangeHandler,
         dimensionOptions,
-        "select a column..."
+        "select a column...",
+        "The selected dimension is not present in this model. Please choose a valid dimension."
       ),
     },
     {
