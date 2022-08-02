@@ -29,10 +29,7 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import {
-  invalidateExplorer,
-  invalidateExplorerThunk,
-} from "$lib/redux-store/utils/invalidateExplorerThunk";
+import { invalidateExplorer } from "$lib/redux-store/utils/invalidateExplorerThunk";
 import { validateMeasureExpression } from "$lib/redux-store/measure-definition/measure-definition-apis";
 import {
   selectMeasureById,
