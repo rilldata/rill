@@ -29,7 +29,10 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import { invalidateExplorerThunk } from "$lib/redux-store/utils/invalidateExplorerThunk";
+import {
+  invalidateExplorer,
+  invalidateExplorerThunk,
+} from "$lib/redux-store/utils/invalidateExplorerThunk";
 import { validateMeasureExpression } from "$lib/redux-store/measure-definition/measure-definition-apis";
 import {
   selectMeasureById,
@@ -37,6 +40,7 @@ import {
 } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import { validateDimensionColumnApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
 import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
+import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 
 const handleMetricsDefDelete = async (id: string) => {
   const activeEntity = selectApplicationActiveEntity(store.getState());
@@ -87,11 +91,30 @@ export const createMetricsDefsAndFocusApi = createAsyncThunk(
     return createdMetricsDef;
   }
 );
-export const updateMetricsDefsWrapperApi = invalidateExplorerThunk(
-  EntityType.MetricsDefinition,
-  updateMetricsDefsApi,
-  ["sourceModelId", "timeDimension"],
-  (state, id) => [id]
+export const updateMetricsDefsWrapperApi = createAsyncThunk(
+  `${EntityType.MetricsDefinition}/updateWrapperApi`,
+  async (
+    { id, changes }: { id: string; changes: Partial<MetricsDefinitionEntity> },
+    thunkAPI
+  ) => {
+    if ("sourceModelId" in changes) {
+      changes.timeDimension = selectTimestampColumnFromProfileEntity(
+        selectDerivedModelById(changes.sourceModelId)
+      )[0]?.name;
+    }
+    await invalidateExplorer(
+      id,
+      changes,
+      thunkAPI,
+      EntityType.MetricsDefinition,
+      updateMetricsDefsApi,
+      ["sourceModelId", "timeDimension"],
+      (state, id) => [id]
+    );
+    if ("sourceModelId" in changes || "timeDimension" in changes) {
+      thunkAPI.dispatch(validateSelectedSources(id));
+    }
+  }
 );
 
 export const generateMeasuresAndDimensionsApi = createAsyncThunk(

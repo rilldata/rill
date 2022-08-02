@@ -16,6 +16,15 @@ export const updateModelQueryApi = async (
     force,
   ]);
 
+  syncMetricsDefinitions(modelId);
+};
+
+export const deleteModelApi = async (modelId: string) => {
+  await dataModelerService.dispatch("deleteModel", [modelId]);
+  syncMetricsDefinitions(modelId);
+};
+
+const syncMetricsDefinitions = (modelId: string) => {
   const state = store.getState();
   const activeEntity = selectApplicationActiveEntity(state);
 
