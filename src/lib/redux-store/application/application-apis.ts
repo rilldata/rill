@@ -30,7 +30,7 @@ export const syncApplicationState = (appStore: ApplicationStore) => {
  * Based on the entity type we call the appropriate bootstrap to load related entities.
  */
 export const handleActiveEntityChange = (activeEntity: ActiveEntity) => {
-  if (activeEntity.type === EntityType.MeasureDefinition) {
+  if (activeEntity.type === EntityType.MetricsDefinition) {
     store.dispatch(bootstrapMetricsDefinition(activeEntity.id));
   } else if (activeEntity.type === EntityType.MetricsExplorer) {
     store.dispatch(bootstrapMetricsExplorer(activeEntity.id));

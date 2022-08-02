@@ -1,15 +1,13 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { bootstrapMetricsExplorer } from "$lib/redux-store/explore/bootstrapMetricsExplorer";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
-  import { getContext, onMount } from "svelte";
+  import { onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
@@ -26,20 +24,6 @@
 
   let dimensions: Readable<Array<DimensionDefinitionEntity>>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
-
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  $: if (metricsDefId && $derivedModelStore) {
-    // TODO: move this to bootstrapMetricsExplorer once model store is on redux
-    store.dispatch(
-      validateSelectedSources({
-        id: metricsDefId,
-        derivedModelState: $derivedModelStore,
-      })
-    );
-  }
 
   onMount(() => {
     store.dispatch(bootstrapMetricsExplorer(metricsDefId));

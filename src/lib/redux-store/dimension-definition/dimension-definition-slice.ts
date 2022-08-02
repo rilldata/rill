@@ -4,6 +4,10 @@ import {
 } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import {
+  setFieldPrepare,
+  setFieldReducer,
+} from "$lib/redux-store/utils/slice-utils";
 
 const dimensionDefAdapter = createEntityAdapter<DimensionDefinitionEntity>();
 
@@ -48,6 +52,15 @@ export const dimensionDefSlice = createSlice({
       },
       prepare: (id: string) => ({ payload: id }),
     },
+
+    setDimensionValidationStatus: {
+      reducer: setFieldReducer<DimensionDefinitionEntity, "dimensionIsValid">(
+        "dimensionIsValid"
+      ),
+      prepare: setFieldPrepare<DimensionDefinitionEntity, "dimensionIsValid">(
+        "dimensionIsValid"
+      ),
+    },
   },
 });
 
@@ -57,6 +70,7 @@ export const {
   updateDimension,
   removeDimension,
   clearDimensionsForMetricsDefId,
+  setDimensionValidationStatus,
 } = dimensionDefSlice.actions;
 
 export const dimensionDefSliceReducer = dimensionDefSlice.reducer;
