@@ -37,13 +37,16 @@
 
   // When the selected time grain is not in the list of selectable time grains (which can
   // happen when the time range name is changed), set the default time grain
-  $: if (
+  $: isSelectedTimeGrainInvalid =
     selectableTimeGrains &&
     selectableTimeGrains.find(
       (timeGrainOption) => timeGrainOption.timeGrain === selectedTimeGrain
-    ).enabled === false
-  ) {
-    const defaultTimeGrain = getDefaultTimeGrain(selectedTimeRangeName);
+    ).enabled === false;
+  $: if (isSelectedTimeGrainInvalid && $metricsExplorer?.allTimeRange) {
+    const defaultTimeGrain = getDefaultTimeGrain(
+      selectedTimeRangeName,
+      $metricsExplorer.allTimeRange
+    );
     dispatch("select-time-grain", { timeGrain: defaultTimeGrain });
   }
 

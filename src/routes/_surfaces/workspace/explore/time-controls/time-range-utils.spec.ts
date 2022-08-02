@@ -73,9 +73,19 @@ describe("getSelectableTimeGrains", () => {
 });
 
 describe("getDefaultTimeGrain", () => {
-  it("should return the default time grain", () => {
-    const timeGrain = getDefaultTimeGrain(TimeRangeName.Last30Days);
+  it("should return the default time grain (for a LastX time range)", () => {
+    const timeGrain = getDefaultTimeGrain(TimeRangeName.Last30Days, {
+      start: "2020-03-01",
+      end: "2020-03-31",
+    });
     expect(timeGrain).toEqual(TimeGrain.OneDay);
+  });
+  it("should return the default time grain (for an AllTime time range", () => {
+    const timeGrain = getDefaultTimeGrain(TimeRangeName.AllTime, {
+      start: "2010-03-01",
+      end: "2020-03-31",
+    });
+    expect(timeGrain).toEqual(TimeGrain.OneYear);
   });
 });
 

@@ -40,7 +40,10 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   onMount(() => {
     const defaultTimeRangeName = getDefaultTimeRangeName();
     selectedTimeRangeName = defaultTimeRangeName;
-    const defaultTimeGrain = getDefaultTimeGrain(selectedTimeRangeName);
+    const defaultTimeGrain = getDefaultTimeGrain(
+      selectedTimeRangeName,
+      $metricsExplorer?.allTimeRange
+    );
     selectedTimeGrain = defaultTimeGrain;
   });
 

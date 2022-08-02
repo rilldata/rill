@@ -74,7 +74,8 @@ export const getSelectableTimeGrains = (
 };
 
 export const getDefaultTimeGrain = (
-  timeRangeName: TimeRangeName
+  timeRangeName: TimeRangeName,
+  allTimeRange: TimeSeriesTimeRange
 ): TimeGrain => {
   switch (timeRangeName) {
     case TimeRangeName.LastHour:
@@ -95,9 +96,29 @@ export const getDefaultTimeGrain = (
       return TimeGrain.OneDay;
     case TimeRangeName.Last60Days:
       return TimeGrain.OneDay;
-    case TimeRangeName.AllTime:
-      // TODO: this needs breakpoint logic using start/end time.
-      return TimeGrain.OneDay;
+    case TimeRangeName.AllTime: {
+      if (!allTimeRange) return TimeGrain.OneDay;
+      const allTimeRangeDuration = getTimeRangeDuration(
+        TimeRangeName.AllTime,
+        allTimeRange
+      );
+      if (allTimeRangeDuration <= 2 * 60 * 60 * 1000) {
+        return TimeGrain.OneMinute;
+      }
+      if (allTimeRangeDuration <= 14 * 24 * 60 * 60 * 1000) {
+        return TimeGrain.OneHour;
+      }
+      if (allTimeRangeDuration <= 60 * 24 * 60 * 60 * 1000) {
+        return TimeGrain.OneDay;
+      }
+      if (allTimeRangeDuration <= 365 * 24 * 60 * 60 * 1000) {
+        return TimeGrain.OneWeek;
+      }
+      if (allTimeRangeDuration <= 10 * 365 * 24 * 60 * 60 * 1000) {
+        return TimeGrain.OneMonth;
+      }
+      return TimeGrain.OneYear;
+    }
     default:
       throw new Error(`No default time grain for time range ${timeRangeName}`);
   }
@@ -136,7 +157,10 @@ export const makeTimeRanges = (
 
   const timeRanges: TimeSeriesTimeRange[] = [];
   for (const timeRangeName of timeRangeNames) {
-    const defaultTimeGrain = getDefaultTimeGrain(timeRangeName);
+    const defaultTimeGrain = getDefaultTimeGrain(
+      timeRangeName,
+      allTimeRangeInDataset
+    );
     const timeRange = makeTimeRange(
       timeRangeName,
       defaultTimeGrain,
