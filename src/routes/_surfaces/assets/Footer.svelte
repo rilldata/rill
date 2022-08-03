@@ -28,8 +28,8 @@
     },
     {
       icon: Github,
-      label: "Feature request",
-      href: "https://github.com/rilldata/rill-developer/issues/new?assignees=&labels=request&template=feature_request.md&title=",
+      label: "Report an issue",
+      href: "https://github.com/rilldata/rill-developer/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
       className: "fill-gray-500",
       shrinkIcon: true,
     },
