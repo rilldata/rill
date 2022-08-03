@@ -6,10 +6,11 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
+  import type { ApplicationMetadata } from "$lib/types";
   import { getContext } from "svelte";
   import { fly } from "svelte/transition";
 
-  const metadata = getContext("rill:app:metadata");
+  const metadata: ApplicationMetadata = getContext("rill:app:metadata");
 
   const lineItems = [
     {
@@ -87,7 +88,6 @@
         </div>
       </Tooltip>
     </span>
-    version {metadata?.version ?? "unknown version"} –
-    {metadata?.commit ?? "no commit"}
+    version {metadata.version} – {metadata.commitHash}
   </div>
 </div>

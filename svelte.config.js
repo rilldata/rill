@@ -5,7 +5,7 @@ import { resolve } from "path";
 import preprocess from "svelte-preprocess";
 import { fileURLToPath } from 'url';
 
-const commit = execSync('git rev-parse --short HEAD')
+const commitHash = execSync('git rev-parse --short HEAD')
   .toString().trim()
  
 const file = fileURLToPath(new URL('package.json', import.meta.url));
@@ -34,7 +34,7 @@ const config = {
       },
       define: {
         RILL_VERSION: `"${pkg.version}"`,
-        RILL_COMMIT: `"${commit}"`
+        RILL_COMMIT: `"${commitHash}"`
       }
     },
   },
