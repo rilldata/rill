@@ -28,4 +28,8 @@ module.exports = {
     "no-useless-escape": "warn",
     "@typescript-eslint/no-empty-interface": "warn",
   },
+  globals: {
+    "RILL_VERSION": true,
+    "RILL_COMMIT": true
+  }
 };
