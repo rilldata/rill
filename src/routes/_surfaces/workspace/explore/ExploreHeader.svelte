@@ -1,10 +1,7 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-
   import Button from "$lib/components/Button.svelte";
-
   import Close from "$lib/components/icons/Close.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { clearSelectedLeaderboardValuesAndUpdate } from "$lib/redux-store/explore/explore-apis";
@@ -15,7 +12,7 @@
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import TimeRangeSelector from "./TimeRangeSelector.svelte";
+  import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
 
@@ -43,9 +40,7 @@
       </div>
     </h1>
 
-    <div class="w-max self-start">
-      <TimeRangeSelector {metricsDefId} />
-    </div>
+    <TimeControls {metricsDefId} />
   </div>
   <div
     class="

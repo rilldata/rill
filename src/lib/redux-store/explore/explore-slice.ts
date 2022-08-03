@@ -7,11 +7,11 @@ import {
   createSlice,
 } from "$lib/redux-store/redux-toolkit-wrapper";
 import { setStatusPrepare } from "$lib/redux-store/utils/loading-utils";
-import type { PayloadAction } from "@reduxjs/toolkit";
 import {
   setFieldPrepare,
   setFieldReducer,
 } from "$lib/redux-store/utils/slice-utils";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 export interface LeaderboardValue {
   value: number;
@@ -38,7 +38,7 @@ export interface MetricsExplorerEntity {
   activeValues: ActiveValues;
   selectedCount: number;
   // time range of the selected timestamp column
-  timeRange?: TimeSeriesTimeRange;
+  allTimeRange?: TimeSeriesTimeRange;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
   selectableTimeRanges?: TimeSeriesTimeRange[];
@@ -383,9 +383,19 @@ export const exploreSlice = createSlice({
       prepare: (id: string) => ({ payload: id }),
     },
 
-    setExploreTimeRange: {
-      reducer: setFieldReducer("timeRange"),
-      prepare: setFieldPrepare<MetricsExplorerEntity, "timeRange">("timeRange"),
+    setExploreAllTimeRange: {
+      reducer: (
+        state,
+        {
+          payload: { id, timeRange },
+        }: PayloadAction<{ id: string; timeRange: TimeSeriesTimeRange }>
+      ) => {
+        if (!state.entities[id]) return;
+        state.entities[id].allTimeRange = timeRange;
+      },
+      prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
+        payload: { id, timeRange },
+      }),
     },
 
     setExploreSelectedTimeRange: {
@@ -440,7 +450,7 @@ export const {
   setLeaderboardValuesStatus,
   setLeaderboardValuesErrorStatus,
   clearSelectedLeaderboardValues,
-  setExploreTimeRange,
+  setExploreAllTimeRange,
   setExploreSelectedTimeRange,
   setExplorerSelectableTimeRange,
   setExplorerIsStale,

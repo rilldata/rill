@@ -1,12 +1,12 @@
-import {
-  INTERVALS,
-  INTEGERS,
-  FLOATS,
-  CATEGORICALS,
-  TIMESTAMPS,
-  PreviewRollupInterval,
-} from "$lib/duckdb-data-types";
 import type { Interval } from "$lib/duckdb-data-types";
+import {
+  CATEGORICALS,
+  FLOATS,
+  INTEGERS,
+  INTERVALS,
+  PreviewRollupInterval,
+  TIMESTAMPS,
+} from "$lib/duckdb-data-types";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
 
@@ -34,7 +34,7 @@ export function formatBigNumberPercentage(v) {
   }
 }
 
-export function removeTimezoneOffset(dt) {
+export function removeTimezoneOffset(dt: Date) {
   return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
 }
 

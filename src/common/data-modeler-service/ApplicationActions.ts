@@ -11,7 +11,6 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { PersistentModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 
 export class ApplicationActions extends DataModelerActions {
   @DataModelerActions.ApplicationAction()
@@ -20,17 +19,6 @@ export class ApplicationActions extends DataModelerActions {
     entityType: EntityType,
     entityId: string
   ) {
-    const newActiveService = this.dataModelerStateService.getEntityStateService(
-      entityType,
-      StateType.Persistent
-    );
-    const newActiveAsset = newActiveService?.getById(entityId);
-    if (newActiveService && !newActiveAsset) {
-      return ActionResponseFactory.getErrorResponse(
-        new Error(`${entityType} with id ${entityId} doesnt exist.`)
-      );
-    }
-
     const currentActiveAsset = (
       stateService.getCurrentState() as ApplicationState
     ).activeEntity;
