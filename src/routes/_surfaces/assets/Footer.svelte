@@ -1,6 +1,7 @@
 <script lang="ts">
   import Discord from "$lib/components/icons/Discord.svelte";
   import Docs from "$lib/components/icons/Docs.svelte";
+  import InfoCircle from "$lib/components/icons/InfoCircle.svelte";
   import { getContext } from "svelte";
 
   const metadata = getContext("rill:app:metadata");
@@ -38,8 +39,14 @@
       </div></a
     >
   {/each}
-  <div class="italic px-4 py-1 text-gray-600" style:font-size="10px">
-    version {metadata?.version ?? "unknown version"} – {metadata?.commit ??
-      "no commit"}
+  <div
+    class="italic px-4 py-1 text-gray-600 flex flex-row items-center gap-x-2"
+    style:font-size="10px"
+  >
+    <span class="text-gray-400">
+      <InfoCircle size="16px" />
+    </span>
+    version {metadata?.version ?? "unknown version"} –
+    {metadata?.commit ?? "no commit"}
   </div>
 </div>
