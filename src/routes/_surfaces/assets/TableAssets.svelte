@@ -26,10 +26,10 @@
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
+    deleteSourceApi,
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
-  import { deleteSourceApi } from "$lib/redux-store/source/source-apis";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -117,7 +117,7 @@
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>
-                create model from source
+                autogenerate model
               </MenuItem>
 
               <MenuItem
@@ -126,7 +126,7 @@
                 on:select={() => quickStartMetrics(id, tableName)}
               >
                 <svelte:fragment slot="icon"><Explore /></svelte:fragment>
-                create dashboard from source
+                autogenerate dashboard
                 <svelte:fragment slot="description">
                   {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
                     requires a timestamp column

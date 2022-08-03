@@ -22,12 +22,12 @@
   import Cancel from "$lib/components/icons/Cancel.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import Divider from "$lib/components/menu/Divider.svelte";
+  import { deleteModelApi } from "$lib/redux-store/model/model-apis";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import {
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "$lib/redux-store/source/source-selectors";
-  import { deleteModelApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -141,7 +141,7 @@
             }}
           >
             <svelte:fragment slot="icon"><Explore /></svelte:fragment>
-            create dashboard from model
+            autogenerate dashboard
             <svelte:fragment slot="description">
               {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
                 requires a timestamp column
