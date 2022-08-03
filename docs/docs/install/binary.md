@@ -1,10 +1,10 @@
 # Using a Rill binary
 Our binary is the fastest path to installing Rill Developer. Download the latest package that is relevant for your OS and architecture:
 
-- [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-arm64/rill)
-- [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-x64/rill)
-- [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/linux-x64/rill)
-- [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/win-x64/rill.exe)
+- [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/macos-arm64/rill)
+- [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/macos-x64/rill)
+- [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/linux-x64/rill)
+- [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/win-x64/rill.exe)
 
 ## CLI commands
 To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands.
