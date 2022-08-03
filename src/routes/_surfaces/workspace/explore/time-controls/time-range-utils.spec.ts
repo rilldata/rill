@@ -85,6 +85,13 @@ describe("getDefaultTimeGrain", () => {
       start: "2010-03-01",
       end: "2020-03-31",
     });
+    expect(timeGrain).toEqual(TimeGrain.OneMonth);
+  });
+  it("should return the default time grain (for an AllTime time range", () => {
+    const timeGrain = getDefaultTimeGrain(TimeRangeName.AllTime, {
+      start: "2010-03-01",
+      end: "2030-03-31",
+    });
     expect(timeGrain).toEqual(TimeGrain.OneYear);
   });
 });
