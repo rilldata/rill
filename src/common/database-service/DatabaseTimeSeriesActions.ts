@@ -26,7 +26,7 @@ export interface TimeSeriesRollup {
 }
 
 export enum TimeRangeName {
-  // LastHour = "Last hour",
+  LastHour = "Last hour",
   Last6Hours = "Last 6 hours",
   LastDay = "Last day",
   Last2Days = "Last 2 days",
@@ -40,11 +40,35 @@ export enum TimeRangeName {
   // MonthToDate = "Month to date",
   // CustomRange = "Custom range",
 }
+
+export const lastXTimeRanges: TimeRangeName[] = [
+  TimeRangeName.LastHour,
+  TimeRangeName.Last6Hours,
+  TimeRangeName.LastDay,
+  TimeRangeName.Last2Days,
+  TimeRangeName.Last5Days,
+  TimeRangeName.LastWeek,
+  TimeRangeName.Last2Weeks,
+  TimeRangeName.Last30Days,
+  TimeRangeName.Last60Days,
+];
+
+// The string values must adhere to DuckDB INTERVAL syntax, since, in some places, we interpolate an SQL queries with these values.
+export enum TimeGrain {
+  OneMinute = "1 minute",
+  // FiveMinutes = "5 minute",
+  // FifteenMinutes = "15 minute",
+  OneHour = "1 hour",
+  OneDay = "1 day",
+  OneWeek = "7 day",
+  OneMonth = "1 month",
+  OneYear = "1 year",
+}
 export interface TimeSeriesTimeRange {
   name?: TimeRangeName;
-  interval?: string;
   start?: string;
   end?: string;
+  interval?: string; // TODO: switch this to TimeGrain
 }
 
 interface TimeseriesReductionQueryResponse {
@@ -98,7 +122,13 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       timeRange
     );
 
-    const timeGranularity = timeRange.interval.split(" ")[1];
+    let timeGranularity = timeRange.interval.split(" ")[1];
+    // add workaround for weekly. DuckDB does not support
+    // a 1 week syntax, so in the case that we have 7 day, let's use
+    // the week timeGranularity for truncation.
+    if (timeRange.interval === "7 day") {
+      timeGranularity = "week";
+    }
 
     const filter =
       filters && Object.keys(filters).length > 0
@@ -110,6 +140,11 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
      * then compute the result set + any M4-like reduction on it.
      * We first create a resultset of zero-values,
      * then join this result set against the empirical counts.
+     *
+     * Limitation: due to the use of `date_trunc()` in the `series` CTE,
+     * this query cannot handle a DuckDB interval that uses
+     * n>1 unit, e.g. 15 minutes, 7 days, etc. See this StackOverflow answer
+     * for a different approach: https://stackoverflow.com/a/41944083
      */
     try {
       await this.databaseClient.execute(

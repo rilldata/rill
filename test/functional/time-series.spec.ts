@@ -25,7 +25,7 @@ describe("TimeSeries", () => {
 
   it("Should return estimated time", async () => {
     const resp = await request(inlineServer.app)
-      .get(`/api/metrics/${metricsDef.id}/time-range`)
+      .get(`/api/metrics/${metricsDef.id}/all-time-range`)
       .set("Accept", "application/json");
     const timeRange = resp.body.data as TimeSeriesTimeRange;
     expect(timeRange.interval).toBe("1 day");
