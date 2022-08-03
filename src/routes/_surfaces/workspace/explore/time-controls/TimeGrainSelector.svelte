@@ -10,8 +10,8 @@
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
   import type { Readable } from "svelte/store";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { selectTimeGrainApi } from "$lib/redux-store/explore/explore-apis.js";
-  import { store } from "$lib/redux-store/store-root.js";
+  import { selectTimeGrainApi } from "$lib/redux-store/explore/explore-apis";
+  import { store } from "$lib/redux-store/store-root";
 
   export let metricsDefId: string;
 
