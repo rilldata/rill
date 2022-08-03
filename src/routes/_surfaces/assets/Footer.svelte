@@ -33,17 +33,17 @@
   ];
 </script>
 
-<div class="flex flex-col bg-gray-50 pt-3 pb-1 gap-y-1">
+<div class="flex flex-col bg-gray-50 pt-3 pb-3 gap-y-1 border-t">
   {#each lineItems as lineItem}
     <a href={lineItem.href} target="_blank"
       ><div
-        class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-700 font-bold hover:bg-gray-200"
+        class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-700 font-semibold hover:bg-gray-200"
       >
         <div>
           <svelte:component
             this={lineItem.icon}
             className={lineItem.className}
-            size="1.25em"
+            size="16px"
           />
         </div>
         {lineItem.label}
