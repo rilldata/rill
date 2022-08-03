@@ -10,39 +10,24 @@
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { createEventDispatcher, tick } from "svelte";
-  import {
-    getSelectableTimeRangeNames,
-    makeTimeRanges,
-    prettyFormatTimeRange,
-  } from "./time-range-utils";
+  import { prettyFormatTimeRange } from "./time-range-utils";
+  import type { Readable } from "svelte/store";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import { selectTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis.js";
+  import { store } from "$lib/redux-store/store-root.js";
 
   export let metricsDefId: string;
-  export let selectedTimeRangeName: TimeRangeName;
 
   const dispatch = createEventDispatcher();
 
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
+  $: selectableTimeRanges = $metricsExplorer?.selectableTimeRanges ?? [];
 
-  const getSelectableTimeRanges = (
-    allTimeRangeInDataset: TimeSeriesTimeRange
-  ) => {
-    // TODO: replace this with a call to the `/meta` endpoint, once available.
-    const selectableTimeRangeNames = getSelectableTimeRangeNames(
-      allTimeRangeInDataset
-    );
-    const selectableTimeRanges = makeTimeRanges(
-      selectableTimeRangeNames,
-      allTimeRangeInDataset
-    );
-    return selectableTimeRanges;
-  };
-  $: if ($metricsExplorer?.allTimeRange) {
-    selectableTimeRanges = getSelectableTimeRanges(
-      $metricsExplorer.allTimeRange
-    );
-  }
+  let selectedTimeRangeName: TimeRangeName;
+  $: selectedTimeRangeName = $metricsExplorer?.selectedTimeRange?.name;
 
   /// Start boilerplate for DIY Dropdown menu ///
   let timeRangeNameMenu;
@@ -65,6 +50,19 @@
 
   let target: HTMLElement;
   /// End boilerplate for DIY Dropdown menu ///
+
+  const onTimeRangeSelect = (timeRangeName: TimeRangeName) => {
+    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
+    store.dispatch(
+      selectTimeRangeNameApi({
+        metricsDefId,
+        timeRangeName,
+      })
+    );
+    dispatch("select-time-range-name", {
+      timeRangeName,
+    });
+  };
 </script>
 
 <button
@@ -97,14 +95,7 @@
     >
       <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
         {#each selectableTimeRanges as timeRange}
-          <MenuItem
-            on:select={() => {
-              timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
-              dispatch("select-time-range-name", {
-                timeRangeName: timeRange.name,
-              });
-            }}
-          >
+          <MenuItem on:select={() => onTimeRangeSelect(timeRange.name)}>
             <div class="font-bold">
               {timeRange.name}
             </div>

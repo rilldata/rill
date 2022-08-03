@@ -1,8 +1,5 @@
 <script lang="ts">
-  import type {
-    TimeGrain,
-    TimeRangeName,
-  } from "$common/database-service/DatabaseTimeSeriesActions";
+  import type { TimeGrain } from "$common/database-service/DatabaseTimeSeriesActions";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import Menu from "$lib/components/menu/Menu.svelte";
   import MenuItem from "$lib/components/menu/MenuItem.svelte";
@@ -10,45 +7,24 @@
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { createEventDispatcher, tick } from "svelte";
-  import {
-    getDefaultTimeGrain,
-    getSelectableTimeGrains,
-    prettyTimeGrain,
-    TimeGrainOption,
-  } from "./time-range-utils";
+  import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
+  import type { Readable } from "svelte/store";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import { selectTimeGrainApi } from "$lib/redux-store/explore/explore-apis.js";
+  import { store } from "$lib/redux-store/store-root.js";
 
   export let metricsDefId: string;
-  export let selectedTimeRangeName: TimeRangeName;
-  export let selectedTimeGrain: TimeGrain;
 
   const dispatch = createEventDispatcher();
 
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   let selectableTimeGrains: TimeGrainOption[];
+  $: selectableTimeGrains = $metricsExplorer?.selectableTimeGrains ?? [];
 
-  // TODO: replace this with a call to the `/meta` endpoint, once available.
-  $: if (selectedTimeRangeName && $metricsExplorer?.allTimeRange) {
-    selectableTimeGrains = getSelectableTimeGrains(
-      selectedTimeRangeName,
-      $metricsExplorer.allTimeRange
-    );
-  }
-
-  // When the selected time grain is not in the list of selectable time grains (which can
-  // happen when the time range name is changed), set the default time grain
-  $: isSelectedTimeGrainInvalid =
-    selectableTimeGrains &&
-    selectableTimeGrains.find(
-      (timeGrainOption) => timeGrainOption.timeGrain === selectedTimeGrain
-    ).enabled === false;
-  $: if (isSelectedTimeGrainInvalid && $metricsExplorer?.allTimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(
-      selectedTimeRangeName,
-      $metricsExplorer.allTimeRange
-    );
-    dispatch("select-time-grain", { timeGrain: defaultTimeGrain });
-  }
+  let selectedTimeGrain: TimeGrain;
+  $: selectedTimeGrain = $metricsExplorer?.selectedTimeGrain;
 
   /// Start boilerplate for DIY Dropdown menu ///
   let timeSelectorMenu;
@@ -71,6 +47,12 @@
 
   let target: HTMLElement;
   /// End boilerplate for DIY Dropdown menu ///
+
+  const onTimeGrainSelect = (timeGrain: TimeGrain) => {
+    timeGrainMenuOpen = !timeGrainMenuOpen;
+    dispatch("select-time-grain", { timeGrain });
+    store.dispatch(selectTimeGrainApi({ metricsDefId, timeGrain }));
+  };
 </script>
 
 <button
@@ -99,10 +81,7 @@
         {#each selectableTimeGrains as { timeGrain, enabled }}
           <MenuItem
             disabled={!enabled}
-            on:select={() => {
-              timeGrainMenuOpen = !timeGrainMenuOpen;
-              dispatch("select-time-grain", { timeGrain });
-            }}
+            on:select={() => onTimeGrainSelect(timeGrain)}
           >
             <div class={!enabled ? "text-gray-500" : "font-bold "}>
               {prettyTimeGrain(timeGrain)}
