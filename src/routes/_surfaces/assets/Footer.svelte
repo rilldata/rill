@@ -1,6 +1,7 @@
 <script lang="ts">
   import Discord from "$lib/components/icons/Discord.svelte";
   import Docs from "$lib/components/icons/Docs.svelte";
+  import Github from "$lib/components/icons/Github.svelte";
   import InfoCircle from "$lib/components/icons/InfoCircle.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -13,14 +14,20 @@
   const lineItems = [
     {
       icon: Docs,
-      label: "Docs",
+      label: "Documentation",
       href: "https://docs.rilldata.com",
       className: "fill-gray-600",
     },
     {
       icon: Discord,
-      label: "Share your feedback",
+      label: "Ask a question",
       href: "http://bit.ly/3jg4IsF",
+      className: "fill-gray-500",
+    },
+    {
+      icon: Github,
+      label: "Feature request",
+      href: "https://github.com/rilldata/rill-developer/issues/new?assignees=&labels=request&template=feature_request.md&title=",
       className: "fill-gray-500",
     },
   ];
