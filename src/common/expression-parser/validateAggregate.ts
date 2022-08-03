@@ -21,6 +21,8 @@ export const AllowedAggregates: {
   sumKahan: [NUMERICS],
   kahan_sum: [NUMERICS],
   sum: [NUMERICS],
+  max: [NUMERICS],
+  min: [NUMERICS],
   kurtosis: [NUMERICS],
   mad: [NUMERICS],
   median: [NUMERICS],

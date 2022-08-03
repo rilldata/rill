@@ -15,6 +15,8 @@
   export let description: string = undefined;
   export let formatPreset: NicelyFormattedTypes;
 
+  $: valusIsPresent = value !== undefined && value !== null;
+
   const [send, receive] = crossfade({ fallback: fly });
 </script>
 
@@ -32,7 +34,7 @@
     override this by filling the slot in the consuming component. -->
     <slot name="value">
       <div>
-        {#if value && status === EntityStatus.Idle}
+        {#if valusIsPresent && status === EntityStatus.Idle}
           <div
             in:receive|local={{ key: "value" }}
             out:send|local={{ key: "value" }}
