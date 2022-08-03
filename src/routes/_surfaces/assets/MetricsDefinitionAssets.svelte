@@ -46,7 +46,7 @@
 
   const dispatchSetMetricsDefActive = (id: string) => {
     dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsDefinition,
+      EntityType.MetricsExplorer,
       id,
     ]);
   };
