@@ -81,7 +81,8 @@ const config = {
       navbar: {
         logo: {
           alt: "Rill Logo",
-          src: "img/logo.svg",
+          src: "img/rill-logo-light.svg",
+          srcDark: "img/rill-logo-dark.svg",
           href: "https://www.rilldata.com",
           target: "_self",
         },

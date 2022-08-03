@@ -1,12 +1,12 @@
-<section class="grid items-stretch leaderboard-layout bg-white p-8">
+<section class="grid items-stretch leaderboard-layout bg-white">
   <div class="explore-header">
     <slot name="header" />
   </div>
   <hr />
-  <div class="explore-metrics">
+  <div class="explore-metrics pl-8 pb-8">
     <slot name="metrics" />
   </div>
-  <div class="explore-leaderboards">
+  <div class="explore-leaderboards pr-8 pb-8">
     <slot name="leaderboards" />
   </div>
 </section>
@@ -15,9 +15,9 @@
   section {
     --header: 120px;
     grid-template-rows: var(--header) 1fr;
-    grid-template-columns: 540px minmax(350px, auto);
+    grid-template-columns: 560px minmax(355px, auto);
     height: 100vh;
-    overflow-x: scroll;
+    overflow-x: auto;
     overflow-y: hidden;
     grid-row-gap: 1rem;
     grid-template-areas:
@@ -34,7 +34,7 @@
   }
   .explore-metrics {
     grid-area: metrics;
-    overflow-y: scroll;
+    overflow-y: auto;
   }
   .explore-leaderboards {
     grid-area: leaderboards;

@@ -7,6 +7,7 @@ import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
+import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
 import {
   addDimensionToExplore,
   addMeasureToExplore,
@@ -16,10 +17,9 @@ import {
   MetricsExplorerEntity,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
+  setExploreAllTimeRange,
   setExplorerIsStale,
-  setExplorerSelectableTimeRange,
   setExploreSelectedTimeRange,
-  setExploreTimeRange,
   setLeaderboardDimensionValues,
   setLeaderboardMeasureId,
   setLeaderboardValuesErrorStatus,
@@ -32,13 +32,7 @@ import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
 import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import {
-  getDefaultSelectedTimeRange,
-  makeSelectableTimeRanges,
-  prune,
-} from "../../../routes/_surfaces/workspace/explore/utils";
-import { selectMetricsExplorerById } from "$lib/redux-store/explore/explore-selectors";
-import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
+import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 
 /**
  * A wrapper to dispatch updates to explore.
@@ -208,7 +202,7 @@ export const clearSelectedLeaderboardValuesAndUpdate = (
 };
 
 /**
- * Sets user selected time rage.
+ * Sets user selected time range.
  * It then calls {@link updateExploreWrapper} to update explore.
  */
 export const setExploreSelectedTimeRangeAndUpdate = (
@@ -267,33 +261,15 @@ export const updateLeaderboardValuesApi = createAsyncThunk(
 
 /**
  * Fetches time range for the selected timestamp column.
- * Store the response in MetricsExplorer slice by calling {@link setExploreTimeRange}
+ * Store the response in MetricsExplorer slice by calling {@link setExploreAllTimeRange}
  */
 export const fetchTimestampColumnRangeApi = createAsyncThunk(
   `${EntityType.MetricsExplorer}/getTimestampColumnRange`,
   async (metricsDefId: string, thunkAPI) => {
     const timeRange = await fetchWrapper(
-      `metrics/${metricsDefId}/time-range`,
+      `metrics/${metricsDefId}/all-time-range`,
       "GET"
     );
-    thunkAPI.dispatch(setExploreTimeRange(metricsDefId, timeRange));
-    const selectableTimeRanges = makeSelectableTimeRanges(timeRange);
-    thunkAPI.dispatch(
-      setExplorerSelectableTimeRange(metricsDefId, selectableTimeRanges)
-    );
-
-    const metricsExplorer = selectMetricsExplorerById(
-      thunkAPI.getState() as RillReduxState,
-      metricsDefId
-    );
-    if (!metricsExplorer.selectedTimeRange) {
-      const selectedTimeRange =
-        getDefaultSelectedTimeRange(selectableTimeRanges);
-      setExploreSelectedTimeRangeAndUpdate(thunkAPI.dispatch, metricsDefId, {
-        name: selectedTimeRange.name,
-        start: selectedTimeRange.start,
-        end: selectedTimeRange.end,
-      });
-    }
+    thunkAPI.dispatch(setExploreAllTimeRange(metricsDefId, timeRange));
   }
 );

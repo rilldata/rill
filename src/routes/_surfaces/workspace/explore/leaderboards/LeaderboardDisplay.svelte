@@ -90,7 +90,7 @@
   function onResize() {
     if (!leaderboardContainer) return;
     availableWidth = leaderboardContainer.offsetWidth;
-    columns = Math.floor(availableWidth / (315 + 20));
+    columns = Math.max(1, Math.floor(availableWidth / (315 + 20)));
   }
 
   onMount(() => {
@@ -110,6 +110,7 @@
 <!-- container for the metrics leaderboard components and controls -->
 <div
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
+  style:min-width="365px"
   bind:this={leaderboardContainer}
 >
   <div

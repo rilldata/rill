@@ -109,11 +109,9 @@ export abstract class EntityController extends RillDeveloperController {
         );
       } else {
         res.status(200);
-        res.send(
-          JSON.stringify({
-            data: response.data,
-          })
-        );
+        res.json({
+          data: response.data,
+        });
       }
     } catch (err) {
       res.status(500);

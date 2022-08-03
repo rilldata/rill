@@ -8,14 +8,22 @@ import { InfoCommand } from "$cli/InfoCommand";
 import { InitCommand } from "$cli/InitCommand";
 import { StartCommand } from "$cli/StartCommand";
 import { Command } from "commander";
-import { version } from "../../package.json";
+import { readFileSync } from "fs";
+
+let PACKAGE_JSON = "";
+try {
+  PACKAGE_JSON = __dirname + "/../../package.json";
+} catch (err) {
+  PACKAGE_JSON = "package.json";
+}
+const packageJson = JSON.parse(readFileSync(PACKAGE_JSON).toString());
 
 const program = new Command();
 
 program
   .name("rill")
   .description("Rill Developer CLI.")
-  .version(version, "-v, --version", "Output the current version.")
+  .version(packageJson.version, "-v, --version", "Output the current version.")
   // Override help to add a capital D for display.
   .helpOption("-h, --help", "Displays help for all commands. ")
   .addHelpCommand("help [command]", "Displays help for a specific command.")

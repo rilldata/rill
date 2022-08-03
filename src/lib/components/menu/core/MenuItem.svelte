@@ -110,6 +110,7 @@
   style:grid-template-columns="{icon ? "max-content" : ""} auto max-content"
   class:recently-clicked={justClicked}
   class:selected
+  class:cursor-not-allowed={disabled}
   aria-disabled={disabled}
   on:mouseover={onFocus}
   on:mouseleave={onBlur}

@@ -7,7 +7,7 @@ export class MetricsExplorerController extends RillDeveloperController {
     router.post("/metrics/:id/time-series", (req: Request, res: Response) =>
       this.handleGetTimeSeries(req, res)
     );
-    router.get("/metrics/:id/time-range", (req: Request, res: Response) =>
+    router.get("/metrics/:id/all-time-range", (req: Request, res: Response) =>
       this.handleGetTimeRange(req, res)
     );
     router.post("/metrics/:id/leaderboards", (req: Request, res: Response) =>
