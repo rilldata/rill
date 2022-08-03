@@ -1,27 +1,35 @@
 <script>
-  import "../fonts.css";
-  import "../app.css";
-  import { onMount, setContext } from "svelte";
-  import { createStore } from "$lib/application-state-stores/application-store";
   import { browser } from "$app/env";
+  import { createStore } from "$lib/application-state-stores/application-store";
+  import { onMount, setContext } from "svelte";
+  import "../app.css";
+  import "../fonts.css";
 
-  import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
   import notification from "$lib/components/notifications/";
+  import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
 
+  import {
+    createDerivedModelStore,
+    createPersistentModelStore,
+  } from "$lib/application-state-stores/model-stores";
   import { createQueryHighlightStore } from "$lib/application-state-stores/query-highlight-store";
   import {
     createDerivedTableStore,
     createPersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import {
-    createDerivedModelStore,
-    createPersistentModelStore,
-  } from "$lib/application-state-stores/model-stores";
   import { initMetrics } from "$lib/metrics/initMetrics";
   import { syncApplicationState } from "$lib/redux-store/application/application-apis";
 
   let store;
   let queryHighlight = createQueryHighlightStore();
+
+  const applicationMetadata = {
+    version: RILL_VERSION,
+    commit: RILL_COMMIT,
+  };
+
+  setContext("rill:app:metadata", applicationMetadata);
+
   if (browser) {
     store = createStore();
     setContext("rill:app:store", store);
