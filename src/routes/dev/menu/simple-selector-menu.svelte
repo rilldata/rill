@@ -23,10 +23,31 @@
   } else {
     level = undefined;
   }
+
+  let dark = false;
 </script>
 
 <section class="grid grid-flow-row gap-y-4">
   <h1 class="text-lg">Select Menus</h1>
+
+  <div>
+    <button
+      class="px-2 py-1 rounded {!dark && 'bg-gray-100'}"
+      on:click={() => {
+        dark = false;
+      }}
+    >
+      light
+    </button>
+    <button
+      class="px-2 py-1 rounded {dark && 'bg-gray-100'}"
+      on:click={() => {
+        dark = true;
+      }}
+    >
+      dark
+    </button>
+  </div>
 
   <p>
     the <code>SelectMenu</code> component takes care of the basic cases covered
@@ -54,6 +75,7 @@
       Currently selecting
       <Tooltip distance={16}>
         <SelectMenu
+          {dark}
           {level}
           options={singleSelectorOptions}
           bind:selection={singleSelection}
@@ -96,6 +118,7 @@
           <td class="border border-gray-200" style:height="32px">
             <SelectMenu
               block
+              {dark}
               options={singleSelectorOptions}
               bind:selection={singleSelection}
               {level}
