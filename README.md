@@ -44,8 +44,8 @@ or try our example:
 
 ```
 rill init-example
-
 ```
+(Please note that the command `rill init-example` is temporarily unavailable on Windows.)
 
 ## More information
 See our [documentation](https://docs.rilldata.com) for more information.
