@@ -20,8 +20,7 @@
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import Model from "$lib/components/icons/Model.svelte";
-  import Divider from "$lib/components/menu/Divider.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { Divider, MenuItem } from "$lib/components/menu";
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import {
     autoCreateMetricsDefinitionForSource,

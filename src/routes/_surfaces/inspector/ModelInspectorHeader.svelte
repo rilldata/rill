@@ -19,11 +19,12 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
   import Button from "$lib/components/Button.svelte";
+  import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
   import Export from "$lib/components/icons/Export.svelte";
-  import Menu from "$lib/components/menu/Menu.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { Menu, MenuItem } from "$lib/components/menu";
+
   import ExportError from "$lib/components/modal/ExportError.svelte";
-  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+  import ModelerToMetricsButton from "$lib/components/modeler/ModelerToMetricsButton.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import {
@@ -34,7 +35,6 @@
   import { getContext, tick } from "svelte";
   import { sineOut as easing } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import ModelerToMetricsButton from "$lib/components/modeler/ModelerToMetricsButton.svelte";
 
   export let containerWidth = 0;
 

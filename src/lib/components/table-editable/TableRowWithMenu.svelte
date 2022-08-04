@@ -3,11 +3,10 @@
   import { tick } from "svelte/internal";
 
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import FloatingElement from "$lib/components/tooltip/FloatingElement.svelte";
+  import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
 
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
-  import Menu from "$lib/components/menu/Menu.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { Menu, MenuItem } from "$lib/components/menu";
   import TableHeader from "./TableHeader.svelte";
 
   import { guidGenerator } from "$lib/util/guid";

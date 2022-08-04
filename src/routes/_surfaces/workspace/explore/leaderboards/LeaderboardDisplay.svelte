@@ -113,7 +113,9 @@
   style:min-width="365px"
   bind:this={leaderboardContainer}
 >
-  <div class="grid grid-auto-cols justify-end grid-flow-col items-end p-1 pb-3">
+  <div
+    class="grid grid-auto-cols justify-start grid-flow-col items-end p-1 pb-3"
+  >
     <LeaderboardMeasureSelector {metricsDefId} />
   </div>
   {#if $metricsExplorer}
