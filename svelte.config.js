@@ -5,11 +5,18 @@ import { resolve } from "path";
 import preprocess from "svelte-preprocess";
 import { fileURLToPath } from "url";
 
-const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
-
+// get current version
 const file = fileURLToPath(new URL("package.json", import.meta.url));
 const json = readFileSync(file, "utf8");
 const pkg = JSON.parse(json);
+
+// attempt to get current commit hash
+let commitHash = "";
+try {
+  commitHash = execSync("git rev-parse --short HEAD").toString().trim()
+} catch (e) {
+  console.log("Could not get commit hash - most likely not in a git repo");
+}
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {

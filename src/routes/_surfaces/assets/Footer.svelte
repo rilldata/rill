@@ -88,6 +88,8 @@
         </div>
       </Tooltip>
     </span>
-    version {metadata.version} – {metadata.commitHash}
+    version {metadata.version}{metadata.commitHash
+      ? ` – ${metadata.commitHash}`
+      : ""}
   </div>
 </div>
