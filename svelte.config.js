@@ -1,17 +1,15 @@
 import adapter from "@sveltejs/adapter-static";
 import { execSync } from "child_process";
-import { readFileSync } from 'fs';
+import { readFileSync } from "fs";
 import { resolve } from "path";
 import preprocess from "svelte-preprocess";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 
-const commitHash = execSync('git rev-parse --short HEAD')
-  .toString().trim()
- 
-const file = fileURLToPath(new URL('package.json', import.meta.url));
-const json = readFileSync(file, 'utf8');
+const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
+
+const file = fileURLToPath(new URL("package.json", import.meta.url));
+const json = readFileSync(file, "utf8");
 const pkg = JSON.parse(json);
-
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -34,8 +32,8 @@ const config = {
       },
       define: {
         RILL_VERSION: `"${pkg.version}"`,
-        RILL_COMMIT: `"${commitHash}"`
-      }
+        RILL_COMMIT: `"${commitHash}"`,
+      },
     },
   },
 };

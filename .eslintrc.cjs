@@ -29,7 +29,7 @@ module.exports = {
     "@typescript-eslint/no-empty-interface": "warn",
   },
   globals: {
-    "RILL_VERSION": true,
-    "RILL_COMMIT": true
-  }
+    RILL_VERSION: true,
+    RILL_COMMIT: true,
+  },
 };
