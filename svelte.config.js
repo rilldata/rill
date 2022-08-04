@@ -13,7 +13,7 @@ const pkg = JSON.parse(json);
 // attempt to get current commit hash
 let commitHash = "";
 try {
-  commitHash = execSync("git rev-parse --short HEAD").toString().trim()
+  commitHash = execSync("git rev-parse --short HEAD").toString().trim();
 } catch (e) {
   console.log("Could not get commit hash - most likely not in a git repo");
 }
