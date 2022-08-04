@@ -75,6 +75,7 @@
   /** Workaround for hiding inspector for now. Post July 19 2022 we will remove this
    * in favor of ironing out more modular routing and suface management.
    */
+
   const views = {
     Source: {
       hasInspector: true,
@@ -91,6 +92,7 @@
   };
 
   $: activeEntityType = $app?.activeEntity?.type;
+  $: console.log(activeEntityType);
   $: hasInspector = activeEntityType
     ? views[activeEntityType].hasInspector
     : false;

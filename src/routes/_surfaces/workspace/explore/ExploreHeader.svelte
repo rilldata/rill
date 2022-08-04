@@ -27,20 +27,23 @@
   }
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
-  $: console.log($dimensions);
 
-  $: selectedValues = Object.entries($metricsLeaderboard.activeValues)
-    .map(([k, v]) => {
-      const dimensionMetadata = $dimensions?.find(
-        (dimension) => dimension.id === k
-      );
-      return {
-        name:
-          dimensionMetadata.labelSingle || dimensionMetadata.dimensionColumn,
-        values: v,
-      };
-    })
-    .filter((v) => v.values.length);
+  $: selectedValues = $metricsExplorer
+    ? Object.entries($metricsExplorer.activeValues)
+        .filter(([k, v]) => v.length)
+        .map(([k, v]) => {
+          const dimensionMetadata = $dimensions?.find(
+            (dimension) => dimension.id === k
+          );
+          return {
+            name:
+              dimensionMetadata.labelSingle ||
+              dimensionMetadata.dimensionColumn,
+            values: v,
+          };
+        })
+        .filter((v) => v.values.length)
+    : [];
 </script>
 
 <header
