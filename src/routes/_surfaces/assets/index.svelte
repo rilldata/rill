@@ -9,6 +9,7 @@
   import Portal from "$lib/components/Portal.svelte";
   import { drag } from "$lib/drag";
   import { onMount } from "svelte";
+  import Footer from "./Footer.svelte";
 
   import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
   import ModelAssets from "./ModelAssets.svelte";
@@ -69,17 +70,6 @@
       <ModelAssets />
       <MetricsDefinitionAssets />
     </div>
-    <!-- assets pane footer. -->
-    <a
-      href="http://bit.ly/3jg4IsF"
-      target="_blank"
-      class="p-3 italic bg-gray-50 flex items-center text-center justify-center"
-      style:height="var(--header-height)"
-    >
-      <div class="text-left">Bugs, complaints, feedback? &nbsp;</div>
-      <div class="inline not-italic text-right text-blue-500 font-bold">
-        Ask us on Discord 💬
-      </div>
-    </a>
+    <Footer />
   </div>
 </div>
