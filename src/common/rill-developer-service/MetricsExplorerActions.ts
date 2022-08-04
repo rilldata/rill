@@ -1,7 +1,5 @@
-import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
-import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import {
   EntityType,
   StateType,
@@ -10,15 +8,18 @@ import type {
   BasicMeasureDefinition,
   MeasureDefinitionEntity,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 import type {
   TimeSeriesRollup,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
+import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 
-export class MetricsExploreActions extends RillDeveloperActions {
+export class MetricsExplorerActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
   public async getTimeRange(
     rillRequestContext: MetricsDefinitionContext,
@@ -32,6 +33,12 @@ export class MetricsExploreActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     const rollupInterval: RollupInterval =
       await this.databaseActionQueue.enqueue(
         {
@@ -72,6 +79,15 @@ export class MetricsExploreActions extends RillDeveloperActions {
       !measures.length
     )
       return;
+
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
 
     if (isolated) {
       await Promise.all(
@@ -145,6 +161,15 @@ export class MetricsExploreActions extends RillDeveloperActions {
     }
   ) {
     if (!rillRequestContext.record?.sourceModelId || !measures.length) return;
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     if (isolated) {
       await Promise.all(
         measures.map((measure) =>

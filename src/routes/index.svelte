@@ -1,25 +1,4 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import AssetsSidebar from "./_surfaces/assets/index.svelte";
-  import InspectorSidebar from "./_surfaces/inspector/index.svelte";
-  import Workspace from "./_surfaces/workspace/index.svelte";
-
-  import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
-  import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
-
-  import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
-  import FileDrop from "$lib/components/overlay/FileDrop.svelte";
-  import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
-
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "$lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "$lib/application-state-stores/table-stores";
-
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     ApplicationStore,
@@ -32,13 +11,32 @@
     inspectorVisibilityTween,
     inspectorVisible,
     layout,
+    quickStartDashboardOverlay,
     SIDE_PAD,
   } from "$lib/application-state-stores/layout-store";
+  import type {
+    DerivedModelStore,
+    PersistentModelStore,
+  } from "$lib/application-state-stores/model-stores";
+  import type {
+    DerivedTableStore,
+    PersistentTableStore,
+  } from "$lib/application-state-stores/table-stores";
   import HideSidebar from "$lib/components/icons/HideSidebar.svelte";
+  import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
   import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
+  import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
+  import FileDrop from "$lib/components/overlay/FileDrop.svelte";
+  import ImportingTable from "$lib/components/overlay/ImportingTable.svelte";
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
+  import QuickStartDashboard from "$lib/components/overlay/QuickStartDashboard.svelte";
+  import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
   import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
   import { store } from "$lib/redux-store/store-root";
+  import { getContext } from "svelte";
+  import AssetsSidebar from "./_surfaces/assets/index.svelte";
+  import InspectorSidebar from "./_surfaces/inspector/index.svelte";
+  import Workspace from "./_surfaces/workspace/index.svelte";
 
   let showDropOverlay = false;
 
@@ -87,7 +85,7 @@
     MetricsDefinition: {
       hasInspector: false,
     },
-    MetricsLeaderboard: {
+    MetricsExplorer: {
       hasInspector: false,
     },
   };
@@ -111,6 +109,11 @@
   />
 {:else if $importOverlayVisible}
   <PreparingImport />
+{:else if $quickStartDashboardOverlay?.show}
+  <QuickStartDashboard
+    sourceName={$quickStartDashboardOverlay.sourceName}
+    timeDimension={$quickStartDashboardOverlay.timeDimension}
+  />
 {:else if showDropOverlay}
   <FileDrop bind:showDropOverlay />
 {/if}
@@ -173,7 +176,7 @@
 
   <!-- inspector sidebar -->
   <!-- Workaround: hide the inspector on MetricsDefinition or 
-        on MetricsLeaderboard for now.
+        on MetricsExplorer for now.
       Once we refactor how layout routing works, we will have a better solution to this.
   -->
   {#if hasInspector}

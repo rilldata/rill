@@ -10,17 +10,22 @@ Rill Developer is a tool that makes it effortless to transform your datasets wit
 
 It's best to show and not tell, so here's a little preview of Rill Developer:
 
-
-https://user-images.githubusercontent.com/5587788/179843488-2a626ddf-fed1-435d-8329-ce4c309ba647.mp4
-
+![Kapture 2022-07-21 at 15 34 45](https://user-images.githubusercontent.com/5587788/180313544-a7a03fcc-ea85-4b51-8ec3-ad5ed5043571.gif)
 
 ### We want to hear from you if you have any questions or ideas to share
 
 You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 ## Pick an install option:
+Our binary is the fastest way to install Rill Developer:
+- [binary](https://docs.rilldata.com/install/binary) : download the most recent version's binary.
+  - [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/macos-arm64/rill)
+  - [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/macos-x64/rill)
+  - [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/linux-x64/rill)
+  - [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/win-x64/rill.exe)
+- `cd` to your download directory and get started with the Rill [CLI](https://docs.rilldata.com/cli).
 
-- [binary](https://docs.rilldata.com/install/binary) : download the most recent [assets binary](https://github.com/rilldata/rill-developer/releases).
+You can also install Rill Developer using npm or docker:
 - [npm](https://docs.rilldata.com/install/npm) : run `npm install -g @rilldata/rill`
 - [docker](https://docs.rilldata.com/install/docker) : download our [docker container](https://hub.docker.com/r/rilldata/rill-developer)
 
@@ -39,8 +44,8 @@ or try our example:
 
 ```
 rill init-example
-
 ```
+(Please note that the command `rill init-example` is temporarily unavailable on Windows.)
 
 ## More information
 See our [documentation](https://docs.rilldata.com) for more information.

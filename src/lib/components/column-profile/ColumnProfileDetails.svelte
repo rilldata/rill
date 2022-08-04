@@ -6,7 +6,6 @@
     NUMERICS,
     TIMESTAMPS,
     DATA_TYPE_COLORS,
-    BOOLEANS,
   } from "$lib/duckdb-data-types";
 
   import TimestampHistogram from "$lib/components/viz/histogram/TimestampHistogram.svelte";
@@ -28,7 +27,7 @@
   and potentially move to another file -->
 {#if active}
   <div transition:slide|local={{ duration: 200 }} class="pt-3 pb-3  w-full">
-    {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.topK}
+    {#if CATEGORICALS.has(type) && summary?.topK}
       <div class="pl-{indentLevel === 1 ? 16 : 10} pr-4 w-full">
         <!-- pl-16 pl-8 -->
         <TopKSummary

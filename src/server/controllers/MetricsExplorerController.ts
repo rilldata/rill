@@ -1,13 +1,13 @@
-import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
-import type { Router, Request, Response } from "express";
 import { EntityController } from "$server/controllers/EntityController";
+import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
+import type { Request, Response, Router } from "express";
 
-export class MetricsExploreController extends RillDeveloperController {
+export class MetricsExplorerController extends RillDeveloperController {
   protected setupRouter(router: Router) {
     router.post("/metrics/:id/time-series", (req: Request, res: Response) =>
       this.handleGetTimeSeries(req, res)
     );
-    router.get("/metrics/:id/time-range", (req: Request, res: Response) =>
+    router.get("/metrics/:id/all-time-range", (req: Request, res: Response) =>
       this.handleGetTimeRange(req, res)
     );
     router.post("/metrics/:id/leaderboards", (req: Request, res: Response) =>

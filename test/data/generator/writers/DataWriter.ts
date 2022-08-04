@@ -5,6 +5,6 @@ export abstract class DataWriter {
   ) {}
 
   public abstract init(): Promise<void>;
-  public abstract write(rows: Array<Record<string, any>>): Promise<void>;
+  public abstract write(rows: Array<Record<string, unknown>>): Promise<void>;
   public abstract close(): Promise<void>;
 }

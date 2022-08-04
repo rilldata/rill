@@ -1,15 +1,25 @@
 import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
-import type { Router, Request, Response } from "express";
+import type { Request, Response, Router } from "express";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import path from "path";
 import { existsSync } from "fs";
+import { EntityController } from "$server/controllers/EntityController";
+
+interface FileUploadEntry {
+  name: string;
+  tempFilePath: string;
+  mimetype: string;
+  data: Buffer;
+  size: number;
+  mv: (string) => void;
+}
+type FileUploadRequest = Request & { files: { file: FileUploadEntry } };
 
 export class FileActionsController extends RillDeveloperController {
   protected setupRouter(router: Router) {
-    router.post("/table-upload", (req: Request, res: Response) => {
-      this.handleFileUpload((req as any).files.file, req.body.tableName);
-      res.send("OK");
-    });
+    router.post("/table-upload", (req: FileUploadRequest, res: Response) =>
+      this.handleFileUpload(req, res)
+    );
     router.get("/export", async (req: Request, res: Response) =>
       this.handleFileExport(req, res)
     );
@@ -18,30 +28,27 @@ export class FileActionsController extends RillDeveloperController {
     );
   }
 
-  private async handleFileUpload(
-    file: {
-      name: string;
-      tempFilePath: string;
-      mimetype: string;
-      data: Buffer;
-      size: number;
-      mv: (string) => void;
-    },
-    tableName?: string
-  ) {
-    const filePath = `${this.config.projectFolder}/tmp/${file.name}`;
-    file.mv(filePath);
-
-    if (tableName) {
-      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
-        filePath,
-        tableName,
-      ]);
-    } else {
-      await this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
-        filePath,
-      ]);
+  private async handleFileUpload(req: FileUploadRequest, res: Response) {
+    if (!req.files?.file) {
+      res.status(500);
+      res.send(`Failed to import source`);
+      return;
     }
+    const filePath = `${this.config.projectFolder}/tmp/${req.files.file.name}`;
+    req.files.file.mv(filePath);
+
+    await EntityController.wrapAction(res, () => {
+      if (req.body.tableName) {
+        return this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+          filePath,
+          req.body.tableName,
+        ]);
+      } else {
+        return this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
+          filePath,
+        ]);
+      }
+    });
   }
 
   private async handleFileExport(req: Request, res: Response) {
@@ -73,12 +80,16 @@ export class FileActionsController extends RillDeveloperController {
     if (response.status === ActionStatus.Success) {
       if (!response.messages.length) {
         res.json({
-          isDuplicate: false,
+          data: {
+            isDuplicate: false,
+          },
         });
       } else {
         res.json({
-          isDuplicate: true,
-          name: response.messages[0].message,
+          data: {
+            isDuplicate: true,
+            name: response.messages[0].message,
+          },
         });
       }
     } else {

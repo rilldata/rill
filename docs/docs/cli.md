@@ -18,8 +18,9 @@ rill start
 
 or try our example:
 ```
-rill initialize-example-project
+rill init-example
 ```
+(Please note that the command `rill init-example` is temporarily unavailable on Windows.)
 
 :::
 

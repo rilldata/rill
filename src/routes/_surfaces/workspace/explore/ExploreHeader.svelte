@@ -1,30 +1,27 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-
   import Button from "$lib/components/Button.svelte";
-
   import Close from "$lib/components/icons/Close.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { clearSelectedLeaderboardValuesAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExploreById } from "$lib/redux-store/explore/explore-readables";
-  import type { MetricsExploreEntity } from "$lib/redux-store/explore/explore-slice";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import SelectedDimensions from "./selected-dimensions/SelectedDimensions.svelte";
-  import TimeRangeSelector from "./TimeRangeSelector.svelte";
+  import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
 
-  let metricsLeaderboard: Readable<MetricsExploreEntity>;
-  $: metricsLeaderboard = getMetricsExploreById(metricsDefId);
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  $: anythingSelected = isAnythingSelected($metricsLeaderboard?.activeValues);
+  $: anythingSelected = isAnythingSelected($metricsExplorer?.activeValues);
   function clearAllFilters() {
     clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
   }
@@ -47,12 +44,12 @@
 </script>
 
 <header
-  class="grid w-full bg-white self-stretch justify-between"
+  class="grid w-full bg-white self-stretch justify-between px-4 pt-3"
   style:grid-template-columns="auto auto"
   style:grid-template-rows="auto max-content"
 >
   <div class="grid gap-y-2 grid-flow-row">
-    <h1 style:line-height="1.1">
+    <h1 style:line-height="1.1" class="pt-3">
       <div class="pl-4 text-gray-600" style:font-size="24px">
         {#if $metricsDefinition}
           {$metricsDefinition?.metricDefLabel}
@@ -60,9 +57,7 @@
       </div>
     </h1>
 
-    <div class="w-max self-start">
-      <TimeRangeSelector {metricsDefId} />
-    </div>
+    <TimeControls {metricsDefId} />
   </div>
   <div
     class="

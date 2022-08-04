@@ -6,7 +6,6 @@
   import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
 
   import {
-    BOOLEANS,
     CATEGORICALS,
     DATA_TYPE_COLORS,
     NUMERICS,
@@ -51,7 +50,7 @@
 <div class="flex gap-2 items-center" class:hidden={view !== "summaries"}>
   <div class="flex items-center" style:width="{summaryWidthSize}px">
     {#if totalRows}
-      {#if (CATEGORICALS.has(type) || BOOLEANS.has(type)) && summary?.cardinality}
+      {#if CATEGORICALS.has(type) && summary?.cardinality}
         <Tooltip location="right" alignment="center" distance={8}>
           <BarAndLabel
             color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
@@ -119,7 +118,7 @@
       <Tooltip location="right" alignment="center" distance={8}>
         <BarAndLabel
           showBackground={nullCount !== 0}
-          color={DATA_TYPE_COLORS[type].bgClass}
+          color={DATA_TYPE_COLORS[type]?.bgClass}
           value={nullCount / totalRows || 0}
         >
           <span class:text-gray-300={nullCount === 0}

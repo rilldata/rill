@@ -4,20 +4,30 @@
 
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
 
-  import ModelIcon from "$lib/components/icons/Model.svelte";
-  import AddIcon from "$lib/components/icons/Add.svelte";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
+  import MenuItem from "$lib/components/menu/MenuItem.svelte";
 
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import Cancel from "$lib/components/icons/Cancel.svelte";
+  import Explore from "$lib/components/icons/Explore.svelte";
+  import Divider from "$lib/components/menu/Divider.svelte";
+  import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
+  import {
+    derivedProfileEntityHasTimestampColumn,
+    selectTimestampColumnFromProfileEntity,
+  } from "$lib/redux-store/source/source-selectors";
+  import { deleteModelApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -94,13 +104,13 @@
     id="assets-model-list"
   >
     {#each availableModels as { id, tableSummaryProps }, i (id)}
+      {@const derivedModel = $derivedModelStore.entities.find(
+        (t) => t["id"] === id
+      )}
       <CollapsibleTableSummary
         entityType={EntityType.Model}
         on:select={() => {
           dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
-        }}
-        on:delete={() => {
-          dataModelerService.dispatch("deleteModel", [id]);
         }}
         cardinality={tableSummaryProps.cardinality}
         name={tableSummaryProps.name}
@@ -115,6 +125,36 @@
             profile={tableSummaryProps.profile}
             head={tableSummaryProps.head}
           />
+        </svelte:fragment>
+        <svelte:fragment slot="menu-items">
+          <MenuItem
+            disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
+            icon
+            on:select={() => {
+              autoCreateMetricsDefinitionForModel(
+                $persistentModelStore.entities.find(
+                  (model) => model.id === derivedModel.id
+                ).tableName,
+                derivedModel.id,
+                selectTimestampColumnFromProfileEntity(derivedModel)[0].name
+              );
+            }}
+          >
+            <svelte:fragment slot="icon"><Explore /></svelte:fragment>
+            create dashboard from model
+            <svelte:fragment slot="description">
+              {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
+                requires a timestamp column
+              {/if}
+            </svelte:fragment>
+          </MenuItem>
+          <Divider />
+          <MenuItem icon on:select={() => deleteModelApi(id)}>
+            <svelte:fragment slot="icon">
+              <Cancel />
+            </svelte:fragment>
+            delete</MenuItem
+          >
         </svelte:fragment>
       </CollapsibleTableSummary>
     {/each}

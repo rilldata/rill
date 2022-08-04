@@ -24,7 +24,7 @@
 
   export let entityType: EntityType;
   export let name: string;
-  export let cardinality: number;
+  export let cardinality: number = undefined;
   export let showRows = true;
   export let sizeInBytes: number = undefined;
   export let active = false;
@@ -115,7 +115,8 @@
     style:height="24px"
     style:grid-template-columns="[left-control] max-content [body] auto
     [contextual-information] max-content"
-    class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {active
+    class=" grid grid-flow-col gap-2 items-center hover:bg-gray-200 pl-4 pr-4 {active ||
+    contextMenuOpen
       ? 'bg-gray-100'
       : 'bg-transparent'}
     "

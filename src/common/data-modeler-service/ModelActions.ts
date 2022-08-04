@@ -1,32 +1,32 @@
-import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
 import { MODEL_PREVIEW_COUNT } from "$common/constants";
-import { sanitizeQuery } from "$lib/util/sanitize-query";
-import type { NewModelParams } from "$common/data-modeler-state-service/ModelStateActions";
-import type {
-  PersistentModelEntity,
-  PersistentModelEntityService,
-  PersistentModelStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import type { DerivedModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import {
   EntityStatus,
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { DerivedModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type {
+  PersistentModelEntity,
+  PersistentModelEntityService,
+  PersistentModelStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { NewModelParams } from "$common/data-modeler-state-service/ModelStateActions";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import {
   cleanModelName,
   getNewDerivedModel,
   getNewModel,
 } from "$common/stateInstancesFactory";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
-import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 import {
   extractTableName,
   sanitizeTableName,
 } from "$lib/util/extract-table-name";
+import { sanitizeQuery } from "$lib/util/sanitize-query";
 
 export enum FileExportType {
   Parquet = "exportToParquet",
@@ -110,7 +110,10 @@ export class ModelActions extends DataModelerActions {
   public async updateModelQuery(
     { stateService }: PersistentModelStateActionArg,
     modelId: string,
-    query: string
+    query: string,
+    // force update the query even if the query didn't change
+    // this is to update model when associated sources change
+    force = false
   ): Promise<ActionResponse> {
     const model = stateService.getById(modelId);
     const derivedModel = this.dataModelerStateService.getEntityById(
@@ -125,7 +128,7 @@ export class ModelActions extends DataModelerActions {
     }
 
     const sanitizedQuery = sanitizeQuery(query);
-    if (sanitizedQuery === derivedModel.sanitizedQuery) {
+    if (!force && sanitizedQuery === derivedModel.sanitizedQuery) {
       if (derivedModel.error) {
         return ActionResponseFactory.getModelQueryError(derivedModel.error);
       }
@@ -144,9 +147,9 @@ export class ModelActions extends DataModelerActions {
     // validate query with the original query first.
     const validationResponse = await this.validateModelQuery(model, query);
     if (validationResponse) {
-      this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
       return this.setModelError(modelId, validationResponse);
     }
+    this.dataModelerStateService.dispatch("clearSourceTables", [modelId]);
     this.dataModelerStateService.dispatch("clearModelError", [modelId]);
 
     if (this.config.profileWithUpdate) {
@@ -225,6 +228,67 @@ export class ModelActions extends DataModelerActions {
       model.id,
       persistentModel.query,
     ]);
+
+    // check the sanitizeQuery. If it matches a simple select *, copy over the
+    // source profile
+    const derivedModel = this.dataModelerStateService.getEntityById(
+      EntityType.Model,
+      StateType.Derived,
+      modelId
+    );
+
+    const sourceTableName = derivedModel.sources?.[0]?.name;
+    const canCopyExistingProfile =
+      sourceTableName &&
+      derivedModel?.sanitizedQuery === `select * from ${sourceTableName}`;
+
+    if (canCopyExistingProfile) {
+      /** copy over the source profile columns here if profiling is done */
+      // get the associated derived table
+      //const persistentTable
+      const table = this.dataModelerStateService
+        .getEntityStateService(EntityType.Table, StateType.Persistent)
+        .getByField("tableName", sanitizeTableName(sourceTableName));
+
+      const derivedTable = this.dataModelerStateService.getEntityById(
+        EntityType.Table,
+        StateType.Derived,
+        table.id
+      );
+
+      /** if the source table has been profiled, we will copy over the relevant
+       * state parts from the derived source.
+       */
+      if (derivedTable.profiled) {
+        this.dataModelerStateService.dispatch("updateModelCardinality", [
+          modelId,
+          derivedTable.cardinality,
+        ]);
+        this.dataModelerStateService.dispatch("updateModelProfileColumns", [
+          modelId,
+          derivedTable.profile,
+        ]);
+        /** enqueue a preview table since we don't have one yet. */
+        this.dataModelerStateService.dispatch("updateModelPreview", [
+          modelId,
+          await this.databaseActionQueue.enqueue(
+            {
+              id: modelId,
+              priority: DatabaseActionQueuePriority.ActiveModel,
+            },
+            "getFirstNOfTable",
+            [persistentModel.tableName, MODEL_PREVIEW_COUNT]
+          ),
+        ]),
+          this.dataModelerStateService.dispatch("markAsProfiled", [
+            EntityType.Model,
+            modelId,
+            true,
+          ]);
+
+        return;
+      }
+    }
 
     this.dataModelerStateService.dispatch("updateModelProfileColumns", [
       modelId,
@@ -426,13 +490,15 @@ export class ModelActions extends DataModelerActions {
   ) {
     const model = stateService.getById(modelId);
     await this.setModelStatus(modelId, EntityStatus.Exporting);
-    const exportPath = await this.databaseService.dispatch(exportType, [
+    const exportPath = (await this.databaseService.dispatch(exportType, [
       sanitizeQuery(model.query, false),
       exportFile,
-    ]);
+    ])) as string;
     await this.dataModelerStateService.dispatch("updateModelDestinationSize", [
       modelId,
-      await this.databaseService.dispatch("getDestinationSize", [exportPath]),
+      (await this.databaseService.dispatch("getDestinationSize", [
+        exportPath,
+      ])) as number,
     ]);
   }
 

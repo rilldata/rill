@@ -1,6 +1,12 @@
 language: node_js
+dist: focal
 node_js:
   - 16
+
+branches:
+  only:
+  - /^main$/
+  - /^v\d+\.\d+(\.\d+)?$/
 
 cache:
   directories:
@@ -20,15 +26,14 @@ jobs:
     - stage: Test
       name: "Verify build"
 
-      before_install: &python-setup
-        - echo "Installing python 3.7.0 needed during npm install"
-        - pyenv install 3.7.0
-        - pyenv global 3.7.0
+
 
       # in order to achieve npm ci (clean install) delete the travis cache.
       install: &npm-install
         - echo "NPM Install can take up to 15 mins"
         - npm i
+        - echo "Disabling telmetry"
+        - cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
 
       script:
         - echo "Running npm install"
@@ -44,7 +49,7 @@ jobs:
         - npm run build
 
         - echo "Verify lint of the repo"
-        - npm run lint
+        - npm run lint -- --quiet
 
         - echo "Run all tests"
         - npm run test
@@ -130,7 +135,11 @@ jobs:
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
-      before_install: *python-setup
+      before_install: &python-setup
+        - echo "Installing python 3.7.0 needed during npm install"
+        - pyenv install 3.7.0
+        - pyenv global 3.7.0
+      #before_install: *python-setup
       install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg

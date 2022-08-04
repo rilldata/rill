@@ -1,38 +1,36 @@
 <script lang="ts">
-  import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { fly } from "svelte/transition";
-  import MeasureBigNumber from "./MeasureBigNumber.svelte";
-  import TimeSeriesBody from "./TimeSeriesBody.svelte";
-
-  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
-
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
-  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
-  import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-
-  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { Readable } from "svelte/store";
-  import type { TimeSeriesEntity } from "$lib/redux-store/timeseries/timeseries-slice";
-  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
+  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
+  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
+  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
+  import type {
+    TimeSeriesEntity,
+    TimeSeriesValue,
+  } from "$lib/redux-store/timeseries/timeseries-slice";
+  import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
+  import { removeTimezoneOffset } from "$lib/util/formatters";
+  import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+  import { extent } from "d3-array";
+  import type { Readable } from "svelte/store";
+  import { fly } from "svelte/transition";
+  import { formatDateByInterval } from "../time-controls/time-range-utils";
+  import MeasureBigNumber from "./MeasureBigNumber.svelte";
+  import TimeSeriesBody from "./TimeSeriesBody.svelte";
+  import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricsDefId;
-  export let start: Date;
-  export let end: Date;
-
-  // get all the measure ids that are available.
+  export let interval;
 
   $: allMeasures = getValidMeasuresByMetricsId(metricsDefId);
 
-  // get the active big numbers
-
   let bigNumbers: Readable<BigNumberEntity>;
   $: bigNumbers = getBigNumberById(metricsDefId);
-  // plot the data
 
   let timeSeries: Readable<TimeSeriesEntity>;
   $: timeSeries = getTimeSeriesById(metricsDefId);
@@ -42,16 +40,14 @@
 
   let mouseoverValue = undefined;
 
-  function initializeToMidnight(dt) {
-    let newDt = new Date(dt);
-    newDt.setHours(0, 0, 0, 0);
-    return newDt;
-  }
+  $: key = `${startValue}` + `${endValue}`;
 
-  $: key = `${start}` + `${end}`;
-
-  $: startValue = initializeToMidnight(new Date(start));
-  $: endValue = new Date(end);
+  $: [minVal, maxVal] = extent(
+    $timeSeries?.values ?? [],
+    (d: TimeSeriesValue) => d.ts
+  );
+  $: startValue = removeTimezoneOffset(new Date(minVal));
+  $: endValue = removeTimezoneOffset(new Date(maxVal));
 </script>
 
 <WithBisector
@@ -70,10 +66,7 @@
           class="absolute italic text-gray-600"
           transition:fly|local={{ duration: 100, y: 4 }}
         >
-          {new Intl.DateTimeFormat("en-US", {
-            dateStyle: "medium",
-            timeStyle: "medium",
-          }).format(point?.ts)}
+          {formatDateByInterval(interval, point.ts)}
         </div>
         &nbsp;
       {:else}
@@ -102,7 +95,7 @@
         description={measure?.description ||
           measure?.label ||
           measure?.expression}
-        formatPreset={measure?.formatPreset}
+        formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
         status={$bigNumbers?.status}
       >
         <svelte:fragment slot="name">
@@ -115,7 +108,8 @@
         {:else if formattedData}
           <TimeSeriesBody
             bind:mouseoverValue
-            formatPreset={measure?.formatPreset}
+            formatPreset={measure?.formatPreset ||
+              NicelyFormattedTypes.HUMANIZE}
             data={formattedData}
             accessor={`measure_${index}`}
             mouseover={point}

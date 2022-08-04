@@ -8,6 +8,7 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
 
 export abstract class EntityController extends RillDeveloperController {
   protected static entityPath: string;
@@ -102,17 +103,15 @@ export abstract class EntityController extends RillDeveloperController {
           JSON.stringify(
             response ??
               ActionResponseFactory.getErrorResponse(
-                new Error("Missing response")
+                new ActionDefinitionError("Missing response")
               )
           )
         );
       } else {
         res.status(200);
-        res.send(
-          JSON.stringify({
-            data: response.data,
-          })
-        );
+        res.json({
+          data: response.data,
+        });
       }
     } catch (err) {
       res.status(500);

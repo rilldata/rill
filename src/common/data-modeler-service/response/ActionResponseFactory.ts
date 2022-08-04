@@ -5,6 +5,7 @@ import { ImportTableError } from "$common/errors/ImportTableError";
 import { ModelQueryError } from "$common/errors/ModelQueryError";
 import { EntityError } from "$common/errors/EntityError";
 import { ExistingEntityError } from "$common/errors/ExistingEntityError";
+import type { TypedError } from "$common/errors/TypedError";
 
 export class ActionResponseFactory {
   public static getSuccessResponse(
@@ -25,14 +26,14 @@ export class ActionResponseFactory {
     };
   }
 
-  public static getErrorResponse(error: Error): ActionResponse {
+  public static getErrorResponse(error: Error & TypedError): ActionResponse {
     return {
       messages: [
         {
           type: ActionResponseMessageType.Error,
           message: error.message,
           stack: error.stack,
-          errorType: (error as any).errorType,
+          errorType: error.errorType,
         },
       ],
       status: ActionStatus.Failure,

@@ -1,28 +1,28 @@
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import {
   EntityStatus,
   EntityType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type {
   TimeSeriesResponse,
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
+import { selectMetricsExplorerParams } from "$lib/redux-store/explore/explore-selectors";
+import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
+import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
+import type { RillReduxState } from "$lib/redux-store/store-root";
 import {
   setTimeSeriesStatus,
   updateTimeSeries,
 } from "$lib/redux-store/timeseries/timeseries-slice";
-import type { RillReduxState } from "$lib/redux-store/store-root";
-import { selectMetricsExploreParams } from "$lib/redux-store/explore/explore-selectors";
+import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 
 /**
  * Async-thunk for generating time series for given measures and filters.
  * Streams time series responses from backend  and updates it in the state.
  */
 export const generateTimeSeriesApi = createAsyncThunk(
-  `${EntityType.MetricsLeaderboard}/generateTimeSeries`,
+  `${EntityType.MetricsExplorer}/generateTimeSeries`,
   async (
     {
       id,
@@ -40,8 +40,8 @@ export const generateTimeSeriesApi = createAsyncThunk(
     thunkAPI
   ) => {
     const state = thunkAPI.getState() as RillReduxState;
-    const { metricsExplore, prunedFilters, normalisedMeasures } =
-      selectMetricsExploreParams(state, id, {
+    const { metricsExplorer, prunedFilters, normalisedMeasures } =
+      selectMetricsExplorerParams(state, id, {
         measures,
         filters,
         dimensions: state.dimensionDefinition.entities,
@@ -56,7 +56,7 @@ export const generateTimeSeriesApi = createAsyncThunk(
         measures: normalisedMeasures,
         filters: prunedFilters,
         pixels,
-        timeRange: timeRange ?? metricsExplore.selectedTimeRange,
+        timeRange: timeRange ?? metricsExplorer.selectedTimeRange,
       }
     );
     for await (const timeSeriesResponse of stream) {

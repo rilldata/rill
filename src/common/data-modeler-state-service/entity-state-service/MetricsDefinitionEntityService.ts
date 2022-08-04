@@ -16,11 +16,27 @@ export enum ValidationState {
   ERROR = "ERROR",
 }
 
+export enum SourceModelValidationStatus {
+  OK = "OK",
+  // No source model selected.
+  EMPTY = "EMPTY",
+  // Source model query is invalid.
+  INVALID = "INVALID",
+  // Selected source model is no longer present.
+  MISSING = "MISSING",
+}
+
 export interface MetricsDefinitionEntity extends EntityRecord {
   type: EntityType.MetricsDefinition;
   metricDefLabel: string;
   sourceModelId: string | undefined;
+  sourceModelValidationStatus?: SourceModelValidationStatus;
   timeDimension: string | undefined;
+  // We can reuse SourceModelStatus as everything there applies here as well.
+  // EMPTY => no time dimension selected
+  // INVALID => source model query is invalid. will apply once some time dimension was selected
+  // MISSING => selected time dimension is no longer present.
+  timeDimensionValidationStatus?: SourceModelValidationStatus;
   creationTime: number;
   rollupInterval?: RollupInterval;
   measureIds: Array<string>;

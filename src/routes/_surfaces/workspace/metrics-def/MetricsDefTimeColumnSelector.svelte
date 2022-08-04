@@ -7,11 +7,9 @@
   import { getContext } from "svelte";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import type { ProfileColumn } from "$lib/types";
-  import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
-  import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import { updateMetricsDefsApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
+  import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 
   export let metricsDefId;
 
@@ -20,30 +18,24 @@
   $: timeColumnSelectedValue =
     $selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
 
-  // FIXME: this pattern of calling the `fetch*API` from components should
-  // be replaced by a call within a thunk fetches the relevant data at the
-  // time the active metricsDefId is set in the redux store. (Currently, the
-  // active metricsDefId is not available in the redux store, but it sh0uld be)
-  $: if (metricsDefId) {
-    store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
-    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
-  }
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
   let derivedModelColumns: Array<ProfileColumn>;
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    derivedModelColumns = $derivedModelStore?.entities
-      .find((model) => model.id === $selectedMetricsDef.sourceModelId)
-      .profile.filter((column) => TIMESTAMPS.has(column.type));
+    derivedModelColumns = selectTimestampColumnFromProfileEntity(
+      $derivedModelStore?.entities.find(
+        (model) => model.id === $selectedMetricsDef.sourceModelId
+      )
+    );
   } else {
     derivedModelColumns = [];
   }
 
   function updateMetricsDefinitionHandler(evt: Event) {
     store.dispatch(
-      updateMetricsDefsApi({
+      updateMetricsDefsWrapperApi({
         id: metricsDefId,
         changes: { timeDimension: (<HTMLSelectElement>evt.target).value },
       })

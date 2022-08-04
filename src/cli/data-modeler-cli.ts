@@ -1,25 +1,36 @@
 #!/usr/bin/env node
 import "../moduleAlias";
-import { Command } from "commander";
-import { InitCommand } from "$cli/InitCommand";
-import { ImportTableCommand } from "$cli/ImportTableCommand";
-import { StartCommand } from "$cli/StartCommand";
-import { InfoCommand } from "$cli/InfoCommand";
+
 import { DropTableCommand } from "$cli/DropTableCommand";
 import { ExampleProjectCommand } from "$cli/ExampleProjectCommand";
+import { ImportTableCommand } from "$cli/ImportTableCommand";
+import { InfoCommand } from "$cli/InfoCommand";
+import { InitCommand } from "$cli/InitCommand";
+import { StartCommand } from "$cli/StartCommand";
+import { Command } from "commander";
+import { readFileSync } from "fs";
+
+let PACKAGE_JSON = "";
+try {
+  PACKAGE_JSON = __dirname + "/../../package.json";
+} catch (err) {
+  PACKAGE_JSON = "package.json";
+}
+const packageJson = JSON.parse(readFileSync(PACKAGE_JSON).toString());
 
 const program = new Command();
 
 program
-  .name("rill-developer")
+  .name("rill")
   .description("Rill Developer CLI.")
+  .version(packageJson.version, "-v, --version", "Output the current version.")
   // Override help to add a capital D for display.
   .helpOption("-h, --help", "Displays help for all commands. ")
-  .addHelpCommand("help [command]", "Displays help for a specific command. ")
+  .addHelpCommand("help [command]", "Displays help for a specific command.")
   // common across all commands
   .option(
-    "--project <projectPath> ",
-    "Optionally indicate the path to your project. This path defaults to the current directory. "
+    "--project <projectPath>",
+    "Optionally indicate the path to your project. This path defaults to the current directory."
   );
 
 [

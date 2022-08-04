@@ -1,13 +1,17 @@
-import {
-  createSlice,
-  createEntityAdapter,
-} from "$lib/redux-store/redux-toolkit-wrapper";
-import type { PayloadAction } from "@reduxjs/toolkit";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  createEntityAdapter,
+  createSlice,
+} from "$lib/redux-store/redux-toolkit-wrapper";
 import { setStatusPrepare } from "$lib/redux-store/utils/loading-utils";
+import {
+  setFieldPrepare,
+  setFieldReducer,
+} from "$lib/redux-store/utils/slice-utils";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 export interface LeaderboardValue {
   value: number;
@@ -22,7 +26,7 @@ export interface LeaderboardValues {
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 
-export interface MetricsExploreEntity {
+export interface MetricsExplorerEntity {
   id: string;
   // full list of measure IDs available to explore
   measureIds: Array<string>;
@@ -34,18 +38,23 @@ export interface MetricsExploreEntity {
   activeValues: ActiveValues;
   selectedCount: number;
   // time range of the selected timestamp column
-  timeRange?: TimeSeriesTimeRange;
+  allTimeRange?: TimeSeriesTimeRange;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
+  selectableTimeRanges?: TimeSeriesTimeRange[];
+  // this marks whether anything related to this explore is stale
+  // this is set to true when any measure or dimension changes.
+  // this also is set to true when related model and its dependant source updates (TODO)
+  isStale: boolean;
 }
 
-const metricsExploreAdapter = createEntityAdapter<MetricsExploreEntity>();
+const metricsExplorerAdapter = createEntityAdapter<MetricsExplorerEntity>();
 
 export const exploreSlice = createSlice({
-  name: "metricsLeaderboard",
-  initialState: metricsExploreAdapter.getInitialState(),
+  name: "metricsExplorer",
+  initialState: metricsExplorerAdapter.getInitialState(),
   reducers: {
-    initMetricsExplore: {
+    initMetricsExplorer: {
       reducer: (
         state,
         {
@@ -57,7 +66,7 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (state.entities[id]) return;
-        const metricsExplore: MetricsExploreEntity = {
+        const metricsExplorer: MetricsExplorerEntity = {
           id,
           measureIds: measures.map((measure) => measure.id),
           selectedMeasureIds: measures.map((measure) => measure.id),
@@ -69,11 +78,12 @@ export const exploreSlice = createSlice({
           })),
           activeValues: {},
           selectedCount: 0,
+          isStale: false,
         };
         dimensions.forEach((column) => {
-          metricsExplore.activeValues[column.dimensionColumn] = [];
+          metricsExplorer.activeValues[column.dimensionColumn] = [];
         });
-        metricsExploreAdapter.addOne(state, metricsExplore);
+        metricsExplorerAdapter.addOne(state, metricsExplorer);
       },
       prepare: (
         id: string,
@@ -92,16 +102,16 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; measureId: string }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
-        if (metricsExplore.measureIds.indexOf(measureId) !== -1) return;
-        metricsExplore.measureIds = [...metricsExplore.measureIds, measureId];
+        const metricsExplorer = state.entities[id];
+        if (metricsExplorer.measureIds.indexOf(measureId) !== -1) return;
+        metricsExplorer.measureIds = [...metricsExplorer.measureIds, measureId];
         // this makes it so that new measure gets selected by default.
-        metricsExplore.selectedMeasureIds = [
-          ...metricsExplore.selectedMeasureIds,
+        metricsExplorer.selectedMeasureIds = [
+          ...metricsExplorer.selectedMeasureIds,
           measureId,
         ];
-        if (!metricsExplore.leaderboardMeasureId) {
-          metricsExplore.leaderboardMeasureId = measureId;
+        if (!metricsExplorer.leaderboardMeasureId) {
+          metricsExplorer.leaderboardMeasureId = measureId;
         }
       },
       prepare: (id: string, measureId: string) => ({
@@ -117,18 +127,18 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; measureId: string }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
-        if (metricsExplore.measureIds.indexOf(measureId) === -1) return;
-        metricsExplore.measureIds = metricsExplore.measureIds.filter(
+        const metricsExplorer = state.entities[id];
+        if (metricsExplorer.measureIds.indexOf(measureId) === -1) return;
+        metricsExplorer.measureIds = metricsExplorer.measureIds.filter(
           (existingMeasureId) => existingMeasureId !== measureId
         );
-        metricsExplore.selectedMeasureIds =
-          metricsExplore.selectedMeasureIds.filter(
+        metricsExplorer.selectedMeasureIds =
+          metricsExplorer.selectedMeasureIds.filter(
             (existingMeasureId) => existingMeasureId !== measureId
           );
-        if (metricsExplore.leaderboardMeasureId === measureId) {
-          metricsExplore.leaderboardMeasureId =
-            metricsExplore.measureIds[0] ?? "";
+        if (metricsExplorer.leaderboardMeasureId === measureId) {
+          metricsExplorer.leaderboardMeasureId =
+            metricsExplorer.measureIds[0] ?? "";
         }
       },
       prepare: (id: string, measureId: string) => ({
@@ -144,18 +154,18 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; selectedMeasureId: string }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
+        const metricsExplorer = state.entities[id];
         const existingIndex =
-          metricsExplore.selectedMeasureIds.indexOf(selectedMeasureId);
+          metricsExplorer.selectedMeasureIds.indexOf(selectedMeasureId);
 
         if (existingIndex >= 0) {
-          metricsExplore.selectedMeasureIds =
-            metricsExplore.selectedMeasureIds.filter(
+          metricsExplorer.selectedMeasureIds =
+            metricsExplorer.selectedMeasureIds.filter(
               (selectedMeasureId) => selectedMeasureId === selectedMeasureId
             );
         } else {
-          metricsExplore.selectedMeasureIds = [
-            ...metricsExplore.selectedMeasureIds,
+          metricsExplorer.selectedMeasureIds = [
+            ...metricsExplorer.selectedMeasureIds,
             selectedMeasureId,
           ];
         }
@@ -166,18 +176,10 @@ export const exploreSlice = createSlice({
     },
 
     setLeaderboardMeasureId: {
-      reducer: (
-        state,
-        {
-          payload: { id, leaderboardMeasureId },
-        }: PayloadAction<{ id: string; leaderboardMeasureId: string }>
-      ) => {
-        if (!state.entities[id]) return;
-        state.entities[id].leaderboardMeasureId = leaderboardMeasureId;
-      },
-      prepare: (id: string, leaderboardMeasureId: string) => ({
-        payload: { id, leaderboardMeasureId },
-      }),
+      reducer: setFieldReducer("leaderboardMeasureId"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "leaderboardMeasureId">(
+        "leaderboardMeasureId"
+      ),
     },
 
     addDimensionToExplore: {
@@ -191,18 +193,18 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
+        const metricsExplorer = state.entities[id];
         if (
-          metricsExplore.leaderboards.findIndex(
+          metricsExplorer.leaderboards.findIndex(
             (leaderboard) => leaderboard.dimensionId === dimensionId
           ) !== -1
         )
           return;
-        metricsExplore.leaderboards = [
-          ...metricsExplore.leaderboards,
+        metricsExplorer.leaderboards = [
+          ...metricsExplorer.leaderboards,
           { dimensionId, values: [], status: EntityStatus.Idle },
         ];
-        metricsExplore.activeValues[dimensionId] = [];
+        metricsExplorer.activeValues[dimensionId] = [];
       },
       prepare: (id: string, dimensionId: string) => ({
         payload: { id, dimensionId },
@@ -220,17 +222,17 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
+        const metricsExplorer = state.entities[id];
         if (
-          metricsExplore.leaderboards.findIndex(
+          metricsExplorer.leaderboards.findIndex(
             (leaderboard) => leaderboard.dimensionId === dimensionId
           ) === -1
         )
           return;
-        metricsExplore.leaderboards = metricsExplore.leaderboards.filter(
+        metricsExplorer.leaderboards = metricsExplorer.leaderboards.filter(
           (leaderboard) => leaderboard.dimensionId !== dimensionId
         );
-        delete metricsExplore.activeValues[dimensionId];
+        delete metricsExplorer.activeValues[dimensionId];
       },
       prepare: (id: string, dimensionId: string) => ({
         payload: { id, dimensionId },
@@ -250,35 +252,35 @@ export const exploreSlice = createSlice({
         }>
       ) => {
         if (!state.entities[id]) return;
-        const metricsExplore = state.entities[id];
-        const existingIndex = metricsExplore.activeValues[
+        const metricsExplorer = state.entities[id];
+        const existingIndex = metricsExplorer.activeValues[
           dimensionId
         ]?.findIndex(([value]) => value === dimensionValue);
         const existing =
-          metricsExplore.activeValues[dimensionId]?.[existingIndex];
+          metricsExplorer.activeValues[dimensionId]?.[existingIndex];
 
         if (existing) {
           if (existing[1] === include) {
             // if existing value is an 'include' then remove the value
-            metricsExplore.activeValues[dimensionId] =
-              metricsExplore.activeValues[dimensionId].filter(
+            metricsExplorer.activeValues[dimensionId] =
+              metricsExplorer.activeValues[dimensionId].filter(
                 (activeValue) => activeValue[0] !== dimensionValue
               );
-            metricsExplore.selectedCount--;
+            metricsExplorer.selectedCount--;
           } else {
             // else toggle the 'include' of the value
-            metricsExplore.activeValues[dimensionId][existingIndex] = [
+            metricsExplorer.activeValues[dimensionId][existingIndex] = [
               existing[0],
               include,
             ];
           }
         } else {
           // add the value if not present
-          metricsExplore.activeValues[dimensionId] = [
-            ...(metricsExplore.activeValues[dimensionId] ?? []),
+          metricsExplorer.activeValues[dimensionId] = [
+            ...(metricsExplorer.activeValues[dimensionId] ?? []),
             [dimensionValue, include],
           ];
-          metricsExplore.selectedCount++;
+          metricsExplorer.selectedCount++;
         }
       },
       prepare: (
@@ -381,7 +383,7 @@ export const exploreSlice = createSlice({
       prepare: (id: string) => ({ payload: id }),
     },
 
-    setExploreTimeRange: {
+    setExploreAllTimeRange: {
       reducer: (
         state,
         {
@@ -389,7 +391,7 @@ export const exploreSlice = createSlice({
         }: PayloadAction<{ id: string; timeRange: TimeSeriesTimeRange }>
       ) => {
         if (!state.entities[id]) return;
-        state.entities[id].timeRange = timeRange;
+        state.entities[id].allTimeRange = timeRange;
       },
       prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
         payload: { id, timeRange },
@@ -420,11 +422,23 @@ export const exploreSlice = createSlice({
         payload: { id, selectedTimeRange },
       }),
     },
+
+    setExplorerSelectableTimeRange: {
+      reducer: setFieldReducer("selectableTimeRanges"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "selectableTimeRanges">(
+        "selectableTimeRanges"
+      ),
+    },
+
+    setExplorerIsStale: {
+      reducer: setFieldReducer("isStale"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "isStale">("isStale"),
+    },
   },
 });
 
 export const {
-  initMetricsExplore,
+  initMetricsExplorer,
   addMeasureToExplore,
   removeMeasureFromExplore,
   toggleExploreMeasure,
@@ -436,11 +450,12 @@ export const {
   setLeaderboardValuesStatus,
   setLeaderboardValuesErrorStatus,
   clearSelectedLeaderboardValues,
-  setExploreTimeRange,
+  setExploreAllTimeRange,
   setExploreSelectedTimeRange,
+  setExplorerSelectableTimeRange,
+  setExplorerIsStale,
 } = exploreSlice.actions;
-export const MetricsLeaderboardSliceActions = exploreSlice.actions;
-export type MetricsLeaderboardSliceTypes =
-  typeof MetricsLeaderboardSliceActions;
+export const MetricsExplorerSliceActions = exploreSlice.actions;
+export type MetricsExplorerSliceTypes = typeof MetricsExplorerSliceActions;
 
-export const metricsLeaderboardReducer = exploreSlice.reducer;
+export const metricsExplorerReducer = exploreSlice.reducer;

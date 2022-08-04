@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import { store } from "$lib/redux-store/store-root";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
 
   import { initDimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
@@ -9,25 +9,27 @@
   import {
     createDimensionsApi,
     deleteDimensionsApi,
-    fetchManyDimensionsApi,
-    updateDimensionsApi,
+    updateDimensionsWrapperApi,
   } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
   import {
     createMeasuresApi,
     deleteMeasuresApi,
-    fetchManyMeasuresApi,
-    updateMeasuresApi,
+    updateMeasuresWrapperApi,
     validateMeasureExpression,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
 
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
+  import { Callout } from "$lib/components/callout";
   import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
   import { CATEGORICALS } from "$lib/duckdb-data-types";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
+  import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
+  import { bootstrapMetricsDefinition } from "$lib/redux-store/metrics-definition/bootstrapMetricsDefinition";
 
   export let metricsDefId;
 
@@ -35,21 +37,12 @@
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
 
-  // FIXME: this pattern of calling the `fetch*API` from components should
-  // be replaced by a call within a thunk fetches the relevant data at the
-  // time the active metricsDefId is set in the redux store. (Currently, the
-  // active metricsDefId is not available in the redux store, but it sh0uld be)
-  $: if (metricsDefId) {
-    store.dispatch(fetchManyMeasuresApi({ metricsDefId }));
-    store.dispatch(fetchManyDimensionsApi({ metricsDefId }));
-  }
-
   function handleCreateMeasure() {
     store.dispatch(createMeasuresApi({ metricsDefId }));
   }
   function handleUpdateMeasure(index, name, value) {
     store.dispatch(
-      updateMeasuresApi({
+      updateMeasuresWrapperApi({
         id: $measures[index].id,
         changes: { [name]: value },
       })
@@ -72,7 +65,7 @@
   }
   function handleUpdateDimension(index, name, value) {
     store.dispatch(
-      updateDimensionsApi({
+      updateDimensionsWrapperApi({
         id: $dimensions[index].id,
         changes: {
           [name]: value,
@@ -92,9 +85,10 @@
 
   let validDimensionSelectorOption: SelectorOption[] = [];
   $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    const selectedMetricsDefModelProfile = $derivedModelStore?.entities.find(
-      (model) => model.id === $selectedMetricsDef.sourceModelId
-    ).profile;
+    const selectedMetricsDefModelProfile =
+      $derivedModelStore?.entities.find(
+        (model) => model.id === $selectedMetricsDef.sourceModelId
+      )?.profile ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
       .filter((column) => CATEGORICALS.has(column.type))
       .map((column) => ({ label: column.name, value: column.name }));
@@ -110,6 +104,14 @@
     handleUpdateDimension,
     validDimensionSelectorOption
   );
+
+  $: metricsSourceSelectionError = $selectedMetricsDef
+    ? MetricsSourceSelectionError($selectedMetricsDef)
+    : "";
+
+  onMount(() => {
+    store.dispatch(bootstrapMetricsDefinition(metricsDefId));
+  });
 </script>
 
 <div
@@ -122,7 +124,13 @@
       <MetricsDefTimeColumnSelector {metricsDefId} />
     </div>
     <div class="self-center pl-10">
-      <MetricsDefinitionGenerateButton {metricsDefId} />
+      {#if metricsSourceSelectionError}
+        <Callout level="error">
+          {metricsSourceSelectionError}
+        </Callout>
+      {:else}
+        <MetricsDefinitionGenerateButton {metricsDefId} />
+      {/if}
     </div>
   </div>
 
@@ -130,26 +138,32 @@
     style="display: flex; flex-direction:column; overflow:hidden;"
     class="flex-1"
   >
-    <MetricsDefEntityTable
-      label={"Measures"}
-      addEntityHandler={handleCreateMeasure}
-      updateEntityHandler={handleUpdateMeasure}
-      deleteEntityHandler={handleDeleteMeasure}
-      rows={$measures ?? []}
-      columnNames={MeasuresColumns}
-      tooltipText={"add a new measure"}
-      addButtonId={"add-measure-button"}
-    />
+    <LayoutManager let:topResizeCallback let:bottomResizeCallback>
+      <MetricsDefEntityTable
+        slot="top-item"
+        resizeCallback={topResizeCallback}
+        label={"Measures"}
+        addEntityHandler={handleCreateMeasure}
+        updateEntityHandler={handleUpdateMeasure}
+        deleteEntityHandler={handleDeleteMeasure}
+        rows={$measures ?? []}
+        columnNames={MeasuresColumns}
+        tooltipText={"add a new measure"}
+        addButtonId={"add-measure-button"}
+      />
 
-    <MetricsDefEntityTable
-      label={"Dimensions"}
-      addEntityHandler={handleCreateDimension}
-      updateEntityHandler={handleUpdateDimension}
-      deleteEntityHandler={handleDeleteDimension}
-      rows={$dimensions ?? []}
-      columnNames={DimensionColumns}
-      tooltipText={"add a new dimension"}
-      addButtonId={"add-dimension-button"}
-    />
+      <MetricsDefEntityTable
+        slot="bottom-item"
+        resizeCallback={bottomResizeCallback}
+        label={"Dimensions"}
+        addEntityHandler={handleCreateDimension}
+        updateEntityHandler={handleUpdateDimension}
+        deleteEntityHandler={handleDeleteDimension}
+        rows={$dimensions ?? []}
+        columnNames={DimensionColumns}
+        tooltipText={"add a new dimension"}
+        addButtonId={"add-dimension-button"}
+      />
+    </LayoutManager>
   </div>
 </div>

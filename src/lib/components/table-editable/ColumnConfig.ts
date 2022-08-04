@@ -53,7 +53,8 @@ export class CellConfigSelector implements CellConfig {
   constructor(
     public onchange: TableEventHandler,
     public options: SelectorOption[],
-    public placeholderLabel?: string
+    public placeholderLabel?: string,
+    public invalidOptionMessage?: string
   ) {}
 }
 

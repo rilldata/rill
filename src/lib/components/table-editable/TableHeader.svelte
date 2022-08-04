@@ -1,12 +1,14 @@
 <script lang="ts">
   export let position: "top" | "left" | "top-left" = "top";
   export let maxWidth = "";
+  export let zIndexClass = "z-20";
 </script>
 
 <th
   class="
           p-0
           sticky
+          {zIndexClass}
           {position === 'top' && 'top-0'}
           {position === 'left' && 'left-0'}
           {position === 'top-left' && 'top-0 left-0 z-10'}

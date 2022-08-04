@@ -3,13 +3,19 @@ import { config } from "$lib/application-state-stores/application-store";
 export async function fetchWrapper(
   path: string,
   method: string,
-  body?: Record<string, unknown>
+  body?: BodyInit | Record<string, unknown>,
+  headers: HeadersInit = { "Content-Type": "application/json" }
 ) {
   const resp = await fetch(`${config.server.serverUrl}/api/${path}`, {
     method,
-    ...(body ? { body: JSON.stringify(body) } : {}),
-    headers: { "Content-Type": "application/json" },
+    ...(body ? { body: serializeBody(body) } : {}),
+    headers,
   });
+  if (!resp.ok) {
+    const err = new Error();
+    (err as any).response = await resp.json();
+    return Promise.reject(err);
+  }
   return (await resp.json())?.data;
 }
 
@@ -46,4 +52,8 @@ export async function* streamingFetchWrapper<T>(
     }
     readResult = await reader.read();
   }
+}
+
+function serializeBody(body: BodyInit | Record<string, unknown>): BodyInit {
+  return body instanceof FormData ? body : JSON.stringify(body);
 }
