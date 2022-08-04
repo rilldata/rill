@@ -100,7 +100,9 @@ export class TableActions extends DataModelerActions {
 
     table.lastUpdated = Date.now();
 
-    return await this.addOrUpdateTable(table, !existingTable);
+    const response = await this.addOrUpdateTable(table, !existingTable);
+    if (response) return response;
+    return ActionResponseFactory.getSuccessResponse("", table);
   }
 
   @DataModelerActions.PersistentTableAction()

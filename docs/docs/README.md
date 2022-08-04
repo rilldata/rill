@@ -24,10 +24,10 @@ You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/ch
 ## Pick an install option:
 Our binary is the fastest way to install Rill Developer:
 - [binary](https://docs.rilldata.com/install/binary) : download the most recent assets binary.
-  - [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-arm64/rill)
-  - [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/macos-x64/rill)
-  - [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/linux-x64/rill)
-  - [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.6/win-x64/rill.exe)
+  - [macos-arm64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/macos-arm64/rill)
+  - [macos-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/macos-x64/rill)
+  - [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/linux-x64/rill)
+  - [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.7/win-x64/rill.exe)
 - `cd` to your download directory and get started with the Rill [CLI](./cli.md).
 
 You can also install Rill Developer using npm or docker:
@@ -51,6 +51,9 @@ or try our example:
 rill init-example
 
 ```
+
+(Please note that the command `rill init-example` is temporarily unavailable on Windows.)
+
 
 ## Legal
 By downloading and using our application you are agreeing to the [Rill Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).

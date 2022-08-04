@@ -1,6 +1,6 @@
 {
   "name": "@rilldata/rill",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "ts-node-dev --quiet --project tsconfig.node.json src/dev.ts",
@@ -20,7 +20,7 @@
     "duckdb": "node ./server/server.duckdb.js",
     "dev:ui": "svelte-kit dev",
     "dev:backend": "ts-node-dev --project tsconfig.node.json -- src/server/server.ts",
-    "test": "npm run test:backend; npm run test:ui",
+    "test": "npm run test:backend && npm run test:ui",
     "test:backend": "jest --testPathIgnorePatterns test/ui",
     "test:ui": "jest --detectOpenHandles test/ui",
     "test:watch": "npm run test -- --watch",

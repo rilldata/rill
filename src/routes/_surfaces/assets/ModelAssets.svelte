@@ -27,6 +27,7 @@
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "$lib/redux-store/source/source-selectors";
+  import { deleteModelApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -148,12 +149,7 @@
             </svelte:fragment>
           </MenuItem>
           <Divider />
-          <MenuItem
-            icon
-            on:select={() => {
-              dataModelerService.dispatch("deleteModel", [id]);
-            }}
-          >
+          <MenuItem icon on:select={() => deleteModelApi(id)}>
             <svelte:fragment slot="icon">
               <Cancel />
             </svelte:fragment>

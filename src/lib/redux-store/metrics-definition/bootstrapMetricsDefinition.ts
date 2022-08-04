@@ -5,6 +5,7 @@ import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/m
 import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
 import { fetchManyMeasuresApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
 import { fetchManyDimensionsApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
 
 /**
  * Bootstrap a metrics definition.
@@ -25,5 +26,6 @@ export const bootstrapMetricsDefinition = createAsyncThunk(
         ? thunkAPI.dispatch(fetchManyDimensionsApi({ metricsDefId }))
         : Promise.resolve(),
     ]);
+    thunkAPI.dispatch(validateSelectedSources(metricsDefId));
   }
 );
