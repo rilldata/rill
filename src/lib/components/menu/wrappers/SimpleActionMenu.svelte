@@ -7,12 +7,16 @@ and the menu closes.
   import { setContext } from "svelte";
 
   import { WithTogglableFloatingElement } from "$lib/components/floating-element";
+  import type {
+    Alignment,
+    Location,
+  } from "$lib/components/floating-element/types";
   import { Menu, MenuItem } from "./";
 
   export let options = [];
   export let dark: boolean = undefined;
-  export let location: "left" | "right" | "top" | "bottom" = "bottom";
-  export let alignment: "start" | "middle" | "end" = "start";
+  export let location: Location = "bottom";
+  export let alignment: Alignment = "start";
   export let distance = 16;
 
   export let active = false;
@@ -42,7 +46,7 @@ and the menu closes.
     slot="floating-element"
     {dark}
     on:select-item={handleClose}
-    on:lose-focus={() => {
+    on:click-outsie={() => {
       if (active) handleClose();
     }}
     on:escape={handleClose}

@@ -4,20 +4,23 @@ and the menu closes.
 
 -->
 <script lang="ts">
+  import Check from "$lib/components/icons/Check.svelte";
+  import Spacer from "$lib/components/icons/Spacer.svelte";
   import { createEventDispatcher, setContext } from "svelte";
-  import Check from "../../icons/Check.svelte";
-  import Spacer from "../../icons/Spacer.svelte";
 
   import { WithTogglableFloatingElement } from "$lib/components/floating-element";
+  import type {
+    Alignment,
+    Location,
+  } from "$lib/components/floating-element/types.d";
   import { Menu, MenuItem } from "../";
 
   export let options;
   export let selection = undefined;
-  export let multiple = false;
 
   export let dark: boolean = undefined;
-  export let location: "left" | "right" | "top" | "bottom" = "bottom";
-  export let alignment: "start" | "middle" | "end" = "start";
+  export let location: Location = "bottom";
+  export let alignment: Alignment = "start";
   export let distance = 16;
 
   export let active = false;
@@ -30,21 +33,20 @@ and the menu closes.
 
   let temporarilySelectedKey;
   function createOnClickHandler(
-    main,
-    right,
-    description,
-    key,
-    index,
-    closeEventHandler
+    main: string,
+    right: string,
+    description: string,
+    key: string,
+    index: number,
+    closeEventHandler: () => void
   ) {
     return async () => {
-      // single-select: do nothing if already selected
       if (isSelected(selection, key)) {
         return;
       }
       selection = { main, right, description, key, index };
       dispatch("select", selection);
-      if (!multiple) closeEventHandler();
+      closeEventHandler();
 
       temporarilySelectedKey = undefined;
     };
@@ -53,6 +55,17 @@ and the menu closes.
   function isSelected(selection, key) {
     return selection.key === key;
   }
+
+  /** this function will make the circle check appear briefly before the menu closes */
+  $: showCheckJustAfterClick = (key: string) =>
+    temporarilySelectedKey !== undefined && temporarilySelectedKey === key;
+  /** this function will otherwise render the check if selected, but only
+   * if this is not part of the animation ticks
+   */
+  $: isAlreadySelectedButNotBeingAnimated = (
+    key: string,
+    isSelected: boolean
+  ) => temporarilySelectedKey === undefined && isSelected;
 </script>
 
 <WithTogglableFloatingElement
@@ -68,7 +81,7 @@ and the menu closes.
   <Menu
     slot="floating-element"
     {dark}
-    on:lose-focus={() => {
+    on:click-outside={() => {
       if (active) handleClose();
     }}
     on:escape={handleClose}
@@ -77,7 +90,7 @@ and the menu closes.
       {@const selected = isSelected(selection, key)}
       <MenuItem
         icon
-        animateSelect={!multiple}
+        animateSelect
         on:before-select={() => {
           temporarilySelectedKey = key;
         }}
@@ -92,8 +105,7 @@ and the menu closes.
         {selected}
       >
         <svelte:fragment slot="icon">
-          <!-- this conditional will make the circle check appear briefly before the menu closes -->
-          {#if (temporarilySelectedKey !== undefined && temporarilySelectedKey === key) || (temporarilySelectedKey === undefined && selected)}
+          {#if showCheckJustAfterClick(key) || isAlreadySelectedButNotBeingAnimated(key, selected)}
             <Check />
           {:else}
             <Spacer />

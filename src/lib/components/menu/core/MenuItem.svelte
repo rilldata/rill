@@ -83,6 +83,27 @@
     }
   }
 
+  function handleClick() {
+    if (disabled) return;
+    // set justClicked to true if this item isn't already selected.
+    // this happens when these menu items are multi-selectable
+    if (!selected) {
+      // only animate if animateSelect is true, which it is by default.
+      if (animateSelect) justClicked = true;
+      // fire an event to change anything before any selection animation occurs.
+      dispatch("before-select");
+    }
+    // pre-select
+    setTimeout(
+      () => {
+        dispatch("select");
+        onSelect();
+        justClicked = false;
+      },
+      animateSelect ? 150 : 0
+    );
+  }
+
   $: textColor = dark
     ? `${disabled ? "text-gray-400" : "text-white focus:bg-gray-600"}`
     : `${disabled ? "text-gray-600" : "text-gray-900 focus:bg-gray-200"}`;
@@ -93,7 +114,7 @@
   {...ariaProperties}
   style="--tw-ring-color: transparent; --flicker-color:{dark
     ? 'rgb(75, 85, 99)'
-    : 'rgb(225, 225, 225)'}"
+    : 'rgb(235, 235, 235)'}"
   class="
         text-left 
         py-1
@@ -120,26 +141,7 @@
       hovered = false;
     }
   }}
-  on:click|stopPropagation={() => {
-    if (disabled) return;
-    // set justClicked to true if this item isn't already selected.
-    // this happens when these menu items are multi-selectable
-    if (!selected) {
-      // only animate if animateSelect is true, which it is by default.
-      if (animateSelect) justClicked = true;
-      // fire an event to change anything before any selection animation occurs.
-      dispatch("before-select");
-    }
-    // pre-select
-    setTimeout(
-      () => {
-        dispatch("select");
-        onSelect();
-        justClicked = false;
-      },
-      animateSelect ? 150 : 0
-    );
-  }}
+  on:click|stopPropagation={handleClick}
 >
   {#if icon}
     <div

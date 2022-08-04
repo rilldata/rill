@@ -2,7 +2,7 @@
 The FloatingElement component is the backbone of all of our floating UI element functionality.
 It handles the setting of the location of the floating element relative to these possible options, set in the relationship prop:
 - a direct DOM element passed in through target through the 'direct' prop
-- a child of target through the "parent" prop (this is confusing and we should fix it)
+- the first child of target through the "parent" prop
 display:contents. This is useful when nesting a floating element within a tooltip.
 - a mouse click location through "mouse". This is an {x,y} coordinate that matches where the pointer is.
 -->
@@ -14,9 +14,10 @@ display:contents. This is useful when nesting a floating element within a toolti
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import Portal from "../Portal.svelte";
+  import type { FloatingElementRelationship } from "./types";
 
   export let target;
-  export let relationship = "parent"; // parent, mouse {x, y}
+  export let relationship: FloatingElementRelationship = "parent"; // parent, mouse {x, y}
   export let location = "bottom";
   export let alignment = "middle";
   export let distance = 0;

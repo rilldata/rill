@@ -14,7 +14,7 @@
   <Menu
     dark
     on:item-select={handleClose}
-    on:lose-focus={handleClose}
+    on:click-outside={handleClose}
     on:escape={handleClose}
     slot="floating-element"
   >

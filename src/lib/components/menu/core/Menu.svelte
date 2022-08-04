@@ -11,7 +11,7 @@
     onMount,
     setContext,
   } from "svelte";
-  import { writable } from "svelte/store";
+  import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
   import { clickOutside } from "../../actions/click-outside";
 
@@ -86,7 +86,7 @@
   setContext("rill:menu:menuItems", menuItems);
   setContext("rill:menu:currentItem", currentItem);
 
-  const menuTrigger =
+  const menuTrigger: Writable<HTMLElement> =
     getContext("rill:menu:menuTrigger") || writable(undefined);
 
   let mounted = false;
@@ -123,7 +123,7 @@
   use:clickOutside={[
     [$menuTrigger],
     () => {
-      dispatch("lose-focus");
+      dispatch("click-outside");
     },
   ]}
   class="

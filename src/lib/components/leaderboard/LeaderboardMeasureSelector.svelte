@@ -20,11 +20,15 @@
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  function handleMeasureUpdate(measureID) {
-    setMeasureIdAndUpdateLeaderboard(store.dispatch, metricsDefId, measureID);
+  function handleMeasureUpdate(event: CustomEvent) {
+    setMeasureIdAndUpdateLeaderboard(
+      store.dispatch,
+      metricsDefId,
+      event.detail.key
+    );
   }
 
-  function formatForSelector(measure) {
+  function formatForSelector(measure: MeasureDefinitionEntity) {
     return {
       ...measure,
       key: measure.id,
@@ -35,7 +39,6 @@
   let [send, receive] = crossfade({ fallback: fly });
 
   /** this should be a single element */
-  let selections = [];
   // reset selections based on the active leaderboard measure
   let activeLeaderboardMeasure;
   $: activeLeaderboardMeasure =
@@ -58,6 +61,8 @@
         main,
       };
     }) || [];
+
+  /** set the selection only if $measures is not undefined */
   $: selection = $measures ? activeLeaderboardMeasure : [];
 </script>
 
@@ -74,10 +79,7 @@
         {options}
         {selection}
         alignment="end"
-        on:select={(event) => {
-          const key = event.detail.key;
-          handleMeasureUpdate(key);
-        }}
+        on:select={handleMeasureUpdate}
       >
         <span class="font-bold">{selection?.main}</span>
       </SelectMenu>
