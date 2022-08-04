@@ -6,18 +6,13 @@ and the menu closes.
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
   import Check from "../../icons/Check.svelte";
-  import CheckBox from "../../icons/CheckBox.svelte";
-  import EmptyBox from "../../icons/EmptyBox.svelte";
   import Spacer from "../../icons/Spacer.svelte";
 
   import { WithTogglableFloatingElement } from "$lib/components/floating-element";
   import { Menu, MenuItem } from "../";
 
   export let options;
-  export let selections = [];
-  /** set selections to the first option, if not provided on initialization */
-  if (!selections.length) selections = [options[0]];
-  export let style = "obvious";
+  export let selection = undefined;
   export let multiple = false;
 
   export let dark: boolean = undefined;
@@ -44,35 +39,19 @@ and the menu closes.
   ) {
     return async () => {
       // single-select: do nothing if already selected
-      if (!multiple && isSelected(selections, key)) {
+      if (isSelected(selection, key)) {
         return;
       }
-      // set temporarily selected to get the icon to change instantly, then wait for tick
-      // proceed with rest of update
-      if (multiple) {
-        // check to see if exists
-        // if not, add.
-        if (isSelected(selections, key)) {
-          selections = [...selections.filter((s) => s.key !== key)];
-        } else {
-          selections = [
-            ...selections,
-            { main, right, key, description, index },
-          ];
-        }
-      } else {
-        // replace selected with a single value.
-        selections = [{ main, right, description, key, index }];
-      }
-      dispatch("select", selections);
+      selection = { main, right, description, key, index };
+      dispatch("select", selection);
       if (!multiple) closeEventHandler();
 
       temporarilySelectedKey = undefined;
     };
   }
 
-  function isSelected(selections, key) {
-    return selections?.some((selection) => selection.key === key);
+  function isSelected(selection, key) {
+    return selection.key === key;
   }
 </script>
 
@@ -95,7 +74,7 @@ and the menu closes.
     on:escape={handleClose}
   >
     {#each options as { key, main, description, right }, i}
-      {@const selected = isSelected(selections, key)}
+      {@const selected = isSelected(selection, key)}
       <MenuItem
         icon
         animateSelect={!multiple}
@@ -113,20 +92,12 @@ and the menu closes.
         {selected}
       >
         <svelte:fragment slot="icon">
-          <!-- this conditional will make the circle check appear briefly before the menu closes
-          in the case of a single-select menu. -->
-          {#if !multiple}
-            {#if (temporarilySelectedKey !== undefined && temporarilySelectedKey === key) || (temporarilySelectedKey === undefined && selected)}
-              <!-- {#if style === "obvious"}<CheckCircle />{:else}<Check />{/if} -->
-              <Check />
-            {:else}
-              <Spacer />
-              <!-- {:else if style === "obvious"}
-              <EmptyCircle />{:else}<Spacer /> -->
-            {/if}
-          {:else if selected}
-            {#if style === "obvious"}<CheckBox />{:else}<Check />{/if}
-          {:else if style === "obvious"}<EmptyBox />{:else}<Spacer />{/if}
+          <!-- this conditional will make the circle check appear briefly before the menu closes -->
+          {#if (temporarilySelectedKey !== undefined && temporarilySelectedKey === key) || (temporarilySelectedKey === undefined && selected)}
+            <Check />
+          {:else}
+            <Spacer />
+          {/if}
         </svelte:fragment>
 
         {main}

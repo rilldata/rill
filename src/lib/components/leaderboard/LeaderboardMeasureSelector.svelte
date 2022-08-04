@@ -58,11 +58,11 @@
         main,
       };
     }) || [];
-  $: selections = $measures ? [activeLeaderboardMeasure] : [];
+  $: selection = $measures ? activeLeaderboardMeasure : [];
 </script>
 
 <div>
-  {#if $measures && options.length && selections.length}
+  {#if $measures && options.length && selection}
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
@@ -72,14 +72,14 @@
 
       <SelectMenu
         {options}
-        {selections}
+        {selection}
         alignment="end"
         on:select={(event) => {
-          const key = event.detail[0].key;
+          const key = event.detail.key;
           handleMeasureUpdate(key);
         }}
       >
-        <span class="font-bold">{selections[0]?.main}</span>
+        <span class="font-bold">{selection?.main}</span>
       </SelectMenu>
     </div>
   {:else}

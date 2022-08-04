@@ -12,10 +12,15 @@ A slot is provided to change the text within the button.
   import { SelectButton, WithSelectMenu } from "../";
 
   export let options;
-  export let selections = [];
+  export let selection;
 
   export let tailwindClasses = undefined;
   export let activeTailwindClasses = undefined;
+
+  /** TODO: figure out how we will support multiple selections
+   * with the trigger. Until then, only allow single selections.
+   */
+  const multiple = false;
 
   /** When true, will make the trigger element a block-level element.
    * This is most useful when embedding a select menu in a table or wherever
@@ -46,10 +51,11 @@ A slot is provided to change the text within the button.
   {alignment}
   {distance}
   on:select={(event) => {
-    selections = event.detail;
-    dispatch("select", selections);
+    /** TODO: change this to work for multiple selections later. */
+    selection = event.detail;
+    dispatch("select", selection);
   }}
-  bind:selections
+  bind:selection
   bind:options
   bind:active
   let:toggleMenu
@@ -65,7 +71,7 @@ A slot is provided to change the text within the button.
   >
     <slot>
       <div>
-        {selections[0]?.main || ""}
+        {selection?.main || ""}
       </div>
     </slot>
   </SelectButton>

@@ -15,10 +15,10 @@
     },
     { key: 4, main: "option 5", right: "opt5" },
   ];
-  let singleSelections = [singleSelectorOptions[0]];
+  let singleSelection = singleSelectorOptions[0];
 
   let level = undefined;
-  $: if (singleSelections[0]?.description) {
+  $: if (singleSelection?.description) {
     level = "error";
   } else {
     level = undefined;
@@ -56,7 +56,7 @@
         <SelectMenu
           {level}
           options={singleSelectorOptions}
-          bind:selections={singleSelections}
+          bind:selection={singleSelection}
         />
         <TooltipContent slot="tooltip-content">
           {#if level}
@@ -69,11 +69,9 @@
     </div>
 
     <div class="pl-4">
-      {#each singleSelections as option}
-        <div>
-          {option.main}
-        </div>
-      {/each}
+      <div>
+        {singleSelection?.main}
+      </div>
     </div>
   </div>
 
@@ -99,15 +97,15 @@
             <SelectMenu
               block
               options={singleSelectorOptions}
-              bind:selections={singleSelections}
+              bind:selection={singleSelection}
               {level}
             >
               <div class="flex justify-between w-full gap-x-4">
-                {singleSelections[0].main}
+                {singleSelection?.main}
                 <span
                   class="{level === 'error'
                     ? 'text-red-600'
-                    : 'text-gray-500'} italic">{singleSelections[0].right}</span
+                    : 'text-gray-500'} italic">{singleSelection?.right}</span
                 >
               </div>
             </SelectMenu>
