@@ -37,7 +37,7 @@ and the menu closes.
     right: string,
     description: string,
     key: string,
-    disabled: boolean = false,
+    disabled = false,
     index: number,
     closeEventHandler: () => void
   ) {
