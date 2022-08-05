@@ -201,6 +201,7 @@
                   dark
                   on:click-outside={toggleFloatingElement}
                   on:escape={toggleFloatingElement}
+                  on:item-select={toggleFloatingElement}
                   slot="floating-element"
                 >
                   <slot name="menu-items" toggleMenu={toggleFloatingElement} />
