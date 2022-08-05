@@ -37,6 +37,7 @@ and the menu closes.
     right: string,
     description: string,
     key: string,
+    disabled = false,
     index: number,
     closeEventHandler: () => void
   ) {
@@ -44,7 +45,7 @@ and the menu closes.
       if (isSelected(selection, key)) {
         return;
       }
-      selection = { main, right, description, key, index };
+      selection = { main, right, description, key, disabled, index };
       dispatch("select", selection);
       closeEventHandler();
 
@@ -86,11 +87,12 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each options as { key, main, description, right }, i}
+    {#each options as { key, main, description, right, disabled = false }, i}
       {@const selected = isSelected(selection, key)}
       <MenuItem
         icon
         animateSelect
+        {disabled}
         on:before-select={() => {
           temporarilySelectedKey = key;
         }}
@@ -99,6 +101,7 @@ and the menu closes.
           right,
           description,
           key,
+          disabled,
           i,
           handleClose
         )}
@@ -111,8 +114,9 @@ and the menu closes.
             <Spacer />
           {/if}
         </svelte:fragment>
-
-        {main}
+        <div class:text-gray-400={disabled}>
+          {main}
+        </div>
         <svelte:fragment slot="description">
           {#if description}
             {description}

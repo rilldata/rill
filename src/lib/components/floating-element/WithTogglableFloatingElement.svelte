@@ -6,6 +6,7 @@
   import Portal from "$lib/components/Portal.svelte";
   export let location = "bottom";
   export let alignment = "middle";
+  export let relationship = "parent";
   export let distance = 0;
   export let pad = 8;
   export let suppress = false;
@@ -38,6 +39,7 @@
       <div style="z-index: 50;">
         <FloatingElement
           target={parent}
+          {relationship}
           {location}
           {alignment}
           {distance}

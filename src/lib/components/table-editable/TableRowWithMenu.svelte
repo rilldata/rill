@@ -3,22 +3,19 @@
   import { tick } from "svelte/internal";
 
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
 
   import MoreIcon from "$lib/components/icons/MoreHorizontal.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
   import TableHeader from "./TableHeader.svelte";
 
   import { guidGenerator } from "$lib/util/guid";
-  import { onClickOutside } from "$lib/util/on-click-outside";
+  import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
+  import Cancel from "../icons/Cancel.svelte";
 
   export let index: number;
   const dispatch = createEventDispatcher();
 
   let rowHovered = false;
-
-  let menuX: number;
-  let menuY: number;
 
   const rowMouseEnter = () => {
     rowHovered = true;
@@ -40,16 +37,7 @@
 
   const contextButtonId = guidGenerator();
 
-  let contextMenuOpen = false;
-  const closeContextMenu = () => {
-    contextMenuOpen = false;
-  };
-  let clickOutsideListener;
-  $: if (!contextMenuOpen && clickOutsideListener) {
-    clickOutsideListener();
-    clickOutsideListener = undefined;
-  }
-  let contextMenu: any;
+  let contextMenuActive = false;
 
   $: rowActive = rowHovered || menuContainerHovered;
 </script>
@@ -65,7 +53,7 @@
 >
   <TableHeader position="left">
     <span style={rowActive ? "visibility:hidden" : ""}>{index + 1}</span>
-    {#if rowActive}
+    {#if rowActive || contextMenuActive}
       <div
         style="position:absolute; top:50%; left:50%; width: 0px; height: 0px;"
         on:mouseenter={menuContainerEnter}
@@ -73,42 +61,34 @@
         class="bg-gray-200"
       >
         <div style="position:absolute; top:-8px; left:-8px">
-          <ContextButton
-            id={contextButtonId}
-            tooltipText=""
-            suppressTooltip={true}
-            on:click={async (event) => {
-              contextMenuOpen = !contextMenuOpen;
-              menuX = event.clientX;
-              menuY = event.clientY;
-              if (!clickOutsideListener) {
-                await tick();
-                clickOutsideListener = onClickOutside(() => {
-                  contextMenuOpen = false;
-                }, contextMenu);
-              }
-            }}
+          <WithTogglableFloatingElement
+            bind:active={contextMenuActive}
+            let:toggleFloatingElement
           >
-            <MoreIcon />
-          </ContextButton>
+            <ContextButton
+              id={contextButtonId}
+              tooltipText=""
+              suppressTooltip={true}
+              on:click={toggleFloatingElement}
+            >
+              <MoreIcon />
+            </ContextButton>
+            <Menu
+              dark
+              on:escape={toggleFloatingElement}
+              on:click-outside={toggleFloatingElement}
+              on:item-select={toggleFloatingElement}
+              slot="floating-element"
+            >
+              <MenuItem icon on:select={() => dispatch("delete")}>
+                <svelte:fragment slot="icon"><Cancel /></svelte:fragment>
+                delete row</MenuItem
+              >
+            </Menu>
+          </WithTogglableFloatingElement>
         </div>
       </div>
     {/if}
   </TableHeader>
   <slot />
 </tr>
-
-{#if contextMenuOpen}
-  <div bind:this={contextMenu}>
-    <FloatingElement
-      relationship="mouse"
-      target={{ x: menuX, y: menuY }}
-      location="left"
-      alignment="start"
-    >
-      <Menu dark on:escape={closeContextMenu} on:item-select={closeContextMenu}>
-        <MenuItem on:select={() => dispatch("delete")}>delete row</MenuItem>
-      </Menu>
-    </FloatingElement>
-  </div>
-{/if}

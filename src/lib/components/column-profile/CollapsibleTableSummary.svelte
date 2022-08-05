@@ -2,9 +2,6 @@
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
 
-  import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
-  import { Menu } from "$lib/components/menu";
-
   import CollapsibleTableHeader from "./CollapsibleTableHeader.svelte";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -58,31 +55,11 @@
         {notExpandable}
       >
         <slot name="header-buttons" />
+        <svelte:fragment slot="menu-items" let:toggleMenu>
+          <slot name="menu-items" {toggleMenu} />
+        </svelte:fragment>
       </CollapsibleTableHeader>
     </div>
-    {#if contextMenuOpen}
-      <!-- place this above codemirror.-->
-      <div bind:this={contextMenu}>
-        <FloatingElement
-          relationship="mouse"
-          target={{ x: menuX, y: menuY }}
-          location="right"
-          alignment="start"
-        >
-          <Menu
-            dark
-            on:escape={() => {
-              contextMenuOpen = false;
-            }}
-            on:item-select={() => {
-              contextMenuOpen = false;
-            }}
-          >
-            <slot name="menu-items" />
-          </Menu>
-        </FloatingElement>
-      </div>
-    {/if}
   {/if}
 
   {#if show}
