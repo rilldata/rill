@@ -3,15 +3,35 @@
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
+  import Button from "$lib/components/Button.svelte";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import Explore from "$lib/components/icons/Explore.svelte";
+  import Model from "$lib/components/icons/Model.svelte";
+  import { GridCell, LeftRightGrid } from "$lib/components/left-right-grid";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import {
+    autoCreateMetricsDefinitionForSource,
+    createModelForSource,
+  } from "$lib/redux-store/source/source-apis";
+  import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+  import {
+    formatBigNumberPercentage,
+    formatInteger,
+  } from "$lib/util/formatters";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
+
+  const persistentModelStore = getContext(
+    "rill:app:persistent-model-store"
+  ) as PersistentModelStore;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -65,23 +85,144 @@
 
   // toggle state for inspector sections
   let showSourceTables = true;
+
+  $: timestampColumns =
+    selectTimestampColumnFromProfileEntity(currentDerivedTable);
+
+  const handleCreateModelFromSource = async () => {
+    await createModelForSource(
+      $persistentModelStore.entities,
+      currentTable.tableName
+    );
+  };
+
+  const handleCreateMetric = () => {
+    // A side effect of the createMetricsDefsApi is we switch active assets to
+    // the newly created metrics definition. So, this'll bring us to the
+    // MetricsDefinition page. (The logic for this is contained in the
+    // not-pictured async thunk.)
+    autoCreateMetricsDefinitionForSource(
+      $persistentModelStore.entities,
+      $derivedTableStore.entities,
+      currentTable.id,
+      $persistentTableStore.entities.find(
+        (table) => table.id === activeEntityID
+      ).tableName
+    );
+    // autoCreateMetricsDefinitionForModel(
+    //   $persistentTableStore.entities.find(
+    //     (table) => table.id === activeEntityID
+    //   ).tableName,
+    //   activeEntityID,
+    //   timestampColumns[0].name
+    // );
+  };
+
+  /** source summary information */
+  let sourceType;
+  let rowCount;
+  let columnCount;
+  let nullPercentage;
+  $: {
+    switch (currentTable.sourceType) {
+      case 0: {
+        sourceType = "Parquet";
+        break;
+      }
+      case 1: {
+        sourceType = `CSV (${currentTable.csvDelimiter || "comma"})`;
+        break;
+      }
+      case 2: {
+        sourceType = "DuckDB";
+        break;
+      }
+      default: {
+        sourceType = "unknown";
+        break;
+      }
+    }
+  }
+
+  /** get the current row count */
+  $: {
+    rowCount = `${formatInteger(currentDerivedTable.cardinality)} row${
+      currentDerivedTable.cardinality !== 1 ? "s" : ""
+    }`;
+  }
+
+  /** get the current column count */
+  $: {
+    columnCount = `${formatInteger(
+      currentDerivedTable?.profile?.length
+    )} columns`;
+  }
+
+  /** total % null cells */
+
+  $: {
+    const totalCells =
+      currentDerivedTable?.profile?.length * currentDerivedTable.cardinality;
+    const totalNulls = currentDerivedTable?.profile
+      .map((profile) => profile.nullCount)
+      .reduce((total, count) => total + count, 0);
+    nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
+  }
 </script>
 
 <div class="table-profile">
   {#if currentTable}
-    <div class="p-4">
-      <div class="font-bold">
-        {#if currentTable.sourceType === 0}
-          parquet
-        {:else if currentTable.sourceType === 1}
-          <!-- CSV file. Show delimiter-->
-          csv
-          {currentTable.csvDelimiter || "comma"}
-        {:else if currentTable.sourceType === 2}
-          duckb
-        {/if}
-      </div>
+    <!-- CTAs -->
+    <div
+      style:height="var(--header-height)"
+      class="px-4 flex flex-row items-center gap-x-2 justify-end"
+    >
+      <Button type="secondary" on:click={handleCreateModelFromSource}
+        >Create Model <Model size="16px" /></Button
+      >
+
+      <Tooltip location="bottom" alignment="right" distance={16}>
+        <Button
+          type="primary"
+          disabled={!timestampColumns?.length}
+          on:click={handleCreateMetric}
+          >Create Dashboard<Explore size="16px" /></Button
+        >
+        <TooltipContent slot="tooltip-content">
+          {#if timestampColumns?.length}
+            Auto create metrics based on your data source and go to dashboard
+          {:else}
+            This data source does not have a TIMESTAMP column
+          {/if}
+        </TooltipContent>
+      </Tooltip>
     </div>
+
+    <!-- summary info -->
+    <div class=" p-4 pt-2">
+      <LeftRightGrid>
+        <GridCell side="left">
+          {sourceType}
+        </GridCell>
+        <GridCell side="right" classes="text-gray-800 font-bold">
+          {rowCount}
+        </GridCell>
+
+        <Tooltip location="left" alignment="start" distance={24}>
+          <GridCell side="left" classes="text-gray-600 italic">
+            {nullPercentage} null
+          </GridCell>
+          <TooltipContent slot="tooltip-content">
+            {nullPercentage} of table values are null
+          </TooltipContent>
+        </Tooltip>
+        <GridCell side="right" classes="text-gray-800 font-bold">
+          {columnCount}
+        </GridCell>
+      </LeftRightGrid>
+    </div>
+
+    <hr />
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">

@@ -13,14 +13,14 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { createCommandClickAction } from "$lib/util/command-click-action";
   import { guidGenerator } from "$lib/util/guid";
-  import { onClickOutside } from "$lib/util/on-click-outside";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { cubicInOut as easing } from "svelte/easing";
-  import { tick } from "svelte/internal";
   import { tweened } from "svelte/motion";
+  import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
   import Spacer from "../icons/Spacer.svelte";
+  import { Menu } from "../menu";
 
   export let entityType: EntityType;
   export let name: string;
@@ -28,11 +28,8 @@
   export let showRows = true;
   export let sizeInBytes: number = undefined;
   export let active = false;
-  export let menuX: number = undefined;
-  export let menuY: number = undefined;
   export let show = false;
   export let contextMenuOpen = false;
-  export let contextMenu: any;
   export let notExpandable = false;
 
   const dispatch = createEventDispatcher();
@@ -53,12 +50,6 @@
 
   const contextButtonId = guidGenerator();
 
-  let clickOutsideListener;
-  $: if (!contextMenuOpen && clickOutsideListener) {
-    clickOutsideListener();
-    clickOutsideListener = undefined;
-  }
-
   let hovered = false;
   $: showEntityDetails = hovered || active || contextMenuOpen;
 
@@ -77,19 +68,6 @@
     dispatch("select");
     if (entityType == EntityType.Model && active) {
       show = !show;
-    }
-  };
-
-  const clickContextButtonHandler = async (event) => {
-    contextMenuOpen = !contextMenuOpen;
-    menuX = event.clientX;
-    menuY = event.clientY;
-
-    if (!clickOutsideListener) {
-      await tick();
-      clickOutsideListener = onClickOutside(() => {
-        contextMenuOpen = false;
-      }, contextMenu);
     }
   };
 
@@ -189,17 +167,34 @@
                   row{#if cardinality !== 1}s{/if}
                 </span>
               {/if}
-              <span class="self-center">
-                <ContextButton
-                  id={contextButtonId}
-                  tooltipText="more actions"
-                  suppressTooltip={contextMenuOpen}
-                  on:click={clickContextButtonHandler}
-                  bind:isHovered={contextButtonIsHovered}
+              <WithTogglableFloatingElement
+                location="right"
+                alignment="start"
+                distance={16}
+                let:toggleFloatingElement
+                bind:active={contextMenuOpen}
+              >
+                <span class="self-center">
+                  <ContextButton
+                    id={contextButtonId}
+                    tooltipText="more actions"
+                    suppressTooltip={contextMenuOpen}
+                    on:click={toggleFloatingElement}
+                    bind:isHovered={contextButtonIsHovered}
+                  >
+                    <MoreIcon />
+                  </ContextButton>
+                </span>
+                <Menu
+                  dark
+                  on:click-outside={toggleFloatingElement}
+                  on:escape={toggleFloatingElement}
+                  on:item-select={toggleFloatingElement}
+                  slot="floating-element"
                 >
-                  <MoreIcon />
-                </ContextButton>
-              </span>
+                  <slot name="menu-items" toggleMenu={toggleFloatingElement} />
+                </Menu>
+              </WithTogglableFloatingElement>
               <slot />
             {/if}
           </span>

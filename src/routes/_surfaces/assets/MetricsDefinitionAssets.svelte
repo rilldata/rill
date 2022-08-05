@@ -7,7 +7,7 @@
     ApplicationStore,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
-  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
+  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
@@ -16,8 +16,7 @@
   import { default as Explore } from "$lib/components/icons/Explore.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import Model from "$lib/components/icons/Model.svelte";
-  import Divider from "$lib/components/menu/Divider.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { Divider, MenuItem } from "$lib/components/menu";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import {
     createMetricsDefsAndFocusApi,

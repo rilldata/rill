@@ -10,7 +10,10 @@
   import Source from "$lib/components/icons/Source.svelte";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -21,8 +24,7 @@
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import Model from "$lib/components/icons/Model.svelte";
-  import Divider from "$lib/components/menu/Divider.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { Divider, MenuItem } from "$lib/components/menu";
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import {
     autoCreateMetricsDefinitionForSource,
@@ -123,7 +125,7 @@
                 head={derivedTable?.preview ?? []}
               />
             </svelte:fragment>
-            <svelte:fragment slot="menu-items">
+            <svelte:fragment slot="menu-items" let:toggleMenu>
               <MenuItem icon on:select={() => queryHandler(tableName)}>
                 <svelte:fragment slot="icon">
                   <Model />
@@ -148,7 +150,9 @@
               <Divider />
               <MenuItem
                 icon
-                on:select={() => openRenameTableModal(id, tableName)}
+                on:select={() => {
+                  openRenameTableModal(id, tableName);
+                }}
               >
                 <svelte:fragment slot="icon">
                   <EditIcon />
