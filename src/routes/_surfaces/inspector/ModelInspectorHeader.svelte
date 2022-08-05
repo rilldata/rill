@@ -55,12 +55,6 @@
 
   let contextMenuOpen = false;
 
-  let clickOutsideListener;
-  $: if (!contextMenuOpen && clickOutsideListener) {
-    clickOutsideListener();
-    clickOutsideListener = undefined;
-  }
-
   const onExport = async (fileType: FileExportType) => {
     let extension = ".csv";
     if (fileType === FileExportType.Parquet) {

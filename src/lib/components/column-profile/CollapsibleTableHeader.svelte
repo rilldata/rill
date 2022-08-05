@@ -28,11 +28,8 @@
   export let showRows = true;
   export let sizeInBytes: number = undefined;
   export let active = false;
-  export let menuX: number = undefined;
-  export let menuY: number = undefined;
   export let show = false;
   export let contextMenuOpen = false;
-  export let contextMenu: any;
   export let notExpandable = false;
 
   const dispatch = createEventDispatcher();
@@ -52,12 +49,6 @@
   let selectedColumns = [];
 
   const contextButtonId = guidGenerator();
-
-  let clickOutsideListener;
-  $: if (!contextMenuOpen && clickOutsideListener) {
-    clickOutsideListener();
-    clickOutsideListener = undefined;
-  }
 
   let hovered = false;
   $: showEntityDetails = hovered || active || contextMenuOpen;
