@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
@@ -17,7 +19,6 @@
     getMeasuresByMetricsId,
   } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
-  import type { DimensionConfiguration } from "$lib/types";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
@@ -33,7 +34,7 @@
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  let dimensions: Readable<DimensionConfiguration>;
+  let dimensions: Readable<DimensionDefinitionEntity[]>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
   let measureField: Readable<string>;
@@ -65,15 +66,28 @@
         : $bigNumberEntity.referenceValues?.[$measureField];
   }
 
+  /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
+  $: validLeaderboards =
+    $dimensions && $metricsExplorer?.leaderboards
+      ? $metricsExplorer?.leaderboards.filter((leaderboard) => {
+          const dimensionConfiguration = $dimensions?.find(
+            (dimension) => dimension.id === leaderboard.dimensionId
+          );
+          return (
+            dimensionConfiguration &&
+            dimensionConfiguration?.dimensionIsValid === ValidationState.OK
+          );
+        })
+      : [];
+
+  /** create a scale for the valid leaderboards */
   let leaderboardFormatScale: ShortHandSymbols = "none";
   $: if (
-    $metricsExplorer &&
+    validLeaderboards &&
     (formatPreset === NicelyFormattedTypes.HUMANIZE ||
       formatPreset === NicelyFormattedTypes.CURRENCY)
   ) {
-    leaderboardFormatScale = getScaleForLeaderboard(
-      $metricsExplorer.leaderboards
-    );
+    leaderboardFormatScale = getScaleForLeaderboard(validLeaderboards);
   }
 
   let leaderboardExpanded;
@@ -111,20 +125,6 @@
   onDestroy(() => {
     observer?.disconnect();
   });
-
-  /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
-  $: validDimensions =
-    $dimensions && $metricsExplorer?.leaderboards
-      ? $metricsExplorer?.leaderboards.filter((leaderboard) => {
-          const dimensionConfiguration = $dimensions?.find(
-            (dimension) => dimension.id === leaderboard.dimensionId
-          );
-          return (
-            dimensionConfiguration &&
-            dimensionConfiguration?.dimensionIsValid === ValidationState.OK
-          );
-        })
-      : [];
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -143,7 +143,7 @@
     <VirtualizedGrid
       {columns}
       height="100%"
-      items={validDimensions ?? []}
+      items={validLeaderboards ?? []}
       let:item
     >
       <!-- the single virtual element -->
