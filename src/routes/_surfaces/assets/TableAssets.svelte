@@ -137,7 +137,6 @@
               <MenuItem
                 icon
                 on:select={() => {
-                  toggleMenu();
                   openRenameTableModal(id, tableName);
                 }}
               >
