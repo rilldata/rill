@@ -19,11 +19,10 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
   import Button from "$lib/components/Button.svelte";
-  import FloatingElement from "$lib/components/floating-element/FloatingElement.svelte";
+  import WithTogglableFloatingElement from "$lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "$lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
 
-  import ExportError from "$lib/components/modal/ExportError.svelte";
   import ModelerToMetricsButton from "$lib/components/modeler/ModelerToMetricsButton.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -31,10 +30,11 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "$lib/util/formatters";
-  import { onClickOutside } from "$lib/util/on-click-outside";
-  import { getContext, tick } from "svelte";
+  import { getContext } from "svelte";
   import { sineOut as easing } from "svelte/easing";
   import { tweened } from "svelte/motion";
+
+  import notification from "$lib/components/notifications";
 
   export let containerWidth = 0;
 
@@ -53,10 +53,8 @@
 
   const appStore = getContext("rill:app:store") as ApplicationStore;
 
-  let contextMenu;
   let contextMenuOpen = false;
-  let menuX;
-  let menuY;
+
   let clickOutsideListener;
   $: if (!contextMenuOpen && clickOutsideListener) {
     clickOutsideListener();
@@ -82,10 +80,11 @@
         }/api/file/export?fileName=${encodeURIComponent(exportFilename)}`
       );
     } else if (exportResp.status === ActionStatus.Failure) {
-      exportErrorMessage = `Failed to export.\n${exportResp.messages
-        .map((message) => message.message)
-        .join("\n")}`;
-      showExportErrorModal = true;
+      notification.send({
+        message: `Failed to export.\n${exportResp.messages
+          .map((message) => message.message)
+          .join("\n")}`,
+      });
     }
   };
 
@@ -93,9 +92,6 @@
   let tables;
   // get source tables?
   let sourceTableReferences;
-
-  let showExportErrorModal: boolean;
-  let exportErrorMessage: string;
 
   // interface tweens for the  big numbers
   let bigRollupNumber = tweened(0, { duration: 700, easing });
@@ -181,23 +177,37 @@
         distance={16}
         suppress={contextMenuOpen}
       >
-        <Button
-          type="secondary"
-          on:click={async (event) => {
-            contextMenuOpen = !contextMenuOpen;
-            menuX = event.detail.x;
-            menuY = event.detail.y;
-            if (!clickOutsideListener) {
-              await tick();
-              clickOutsideListener = onClickOutside(() => {
-                contextMenuOpen = false;
-              }, contextMenu);
-            }
-          }}
+        <!-- attach floating element right here-->
+        <WithTogglableFloatingElement
+          location="left"
+          alignment="start"
+          distance={16}
+          let:toggleFloatingElement
+          bind:active={contextMenuOpen}
         >
-          Export Results
-          <Export size="16px" />
-        </Button>
+          <Button type="secondary" on:click={toggleFloatingElement}>
+            Export Results
+            <Export size="16px" />
+          </Button>
+          <Menu dark on:escape={toggleFloatingElement} slot="floating-element">
+            <MenuItem
+              on:select={() => {
+                toggleFloatingElement();
+                onExport(FileExportType.Parquet);
+              }}
+            >
+              Export as Parquet
+            </MenuItem>
+            <MenuItem
+              on:select={() => {
+                toggleFloatingElement();
+                onExport(FileExportType.CSV);
+              }}
+            >
+              Export as CSV
+            </MenuItem>
+          </Menu>
+        </WithTogglableFloatingElement>
         <TooltipContent slot="tooltip-content">
           Export this model as a dataset
         </TooltipContent>
@@ -272,34 +282,4 @@
       </div>
     {/if}
   </div>
-{/if}
-
-{#if contextMenuOpen}
-  <!-- place this above codemirror.-->
-  <div bind:this={contextMenu}>
-    <FloatingElement
-      relationship="mouse"
-      target={{ x: menuX, y: menuY }}
-      location="left"
-      alignment="start"
-    >
-      <Menu
-        dark
-        on:escape={() => {
-          contextMenuOpen = false;
-        }}
-        on:item-select={() => {
-          contextMenuOpen = false;
-        }}
-      >
-        <MenuItem on:select={() => onExport(FileExportType.Parquet)}>
-          Export as Parquet
-        </MenuItem>
-        <MenuItem on:select={() => onExport(FileExportType.CSV)}>
-          Export as CSV
-        </MenuItem>
-      </Menu>
-    </FloatingElement>
-  </div>
-  <ExportError bind:exportErrorMessage bind:showExportErrorModal />
 {/if}
