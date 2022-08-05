@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type {
@@ -14,6 +17,7 @@
     getMeasuresByMetricsId,
   } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
+  import type { DimensionConfiguration } from "$lib/types";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
@@ -28,6 +32,9 @@
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  let dimensions: Readable<DimensionConfiguration>;
+  $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
   let measureField: Readable<string>;
   $: if ($metricsExplorer?.leaderboardMeasureId)
@@ -104,6 +111,20 @@
   onDestroy(() => {
     observer?.disconnect();
   });
+
+  /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
+  $: validDimensions =
+    $dimensions && $metricsExplorer?.leaderboards
+      ? $metricsExplorer?.leaderboards.filter((leaderboard) => {
+          const dimensionConfiguration = $dimensions?.find(
+            (dimension) => dimension.id === leaderboard.dimensionId
+          );
+          return (
+            dimensionConfiguration &&
+            dimensionConfiguration?.dimensionIsValid === ValidationState.OK
+          );
+        })
+      : [];
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -122,7 +143,7 @@
     <VirtualizedGrid
       {columns}
       height="100%"
-      items={$metricsExplorer.leaderboards ?? []}
+      items={validDimensions ?? []}
       let:item
     >
       <!-- the single virtual element -->
