@@ -55,8 +55,8 @@
         {notExpandable}
       >
         <slot name="header-buttons" />
-        <svelte:fragment slot="menu-items">
-          <slot name="menu-items" />
+        <svelte:fragment slot="menu-items" let:toggleMenu>
+          <slot name="menu-items" {toggleMenu} />
         </svelte:fragment>
       </CollapsibleTableHeader>
     </div>

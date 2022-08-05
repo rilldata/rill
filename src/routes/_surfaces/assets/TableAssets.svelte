@@ -25,10 +25,10 @@
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
+    deleteSourceApi,
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
-  import { deleteSourceApi } from "$lib/redux-store/source/source-apis";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -111,7 +111,7 @@
                 head={derivedTable?.preview ?? []}
               />
             </svelte:fragment>
-            <svelte:fragment slot="menu-items">
+            <svelte:fragment slot="menu-items" let:toggleMenu>
               <MenuItem icon on:select={() => queryHandler(tableName)}>
                 <svelte:fragment slot="icon">
                   <Model />
@@ -136,7 +136,10 @@
               <Divider />
               <MenuItem
                 icon
-                on:select={() => openRenameTableModal(id, tableName)}
+                on:select={() => {
+                  toggleMenu();
+                  openRenameTableModal(id, tableName);
+                }}
               >
                 <svelte:fragment slot="icon">
                   <EditIcon />

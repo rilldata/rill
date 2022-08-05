@@ -189,7 +189,12 @@
             Export Results
             <Export size="16px" />
           </Button>
-          <Menu dark on:escape={toggleFloatingElement} slot="floating-element">
+          <Menu
+            dark
+            on:click-outside={toggleFloatingElement}
+            on:escape={toggleFloatingElement}
+            slot="floating-element"
+          >
             <MenuItem
               on:select={() => {
                 toggleFloatingElement();
