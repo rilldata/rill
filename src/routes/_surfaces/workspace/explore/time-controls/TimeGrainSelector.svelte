@@ -50,7 +50,7 @@
 
   $: options = selectableTimeGrains
     ? selectableTimeGrains.map(({ timeGrain, enabled }) => ({
-        main: timeGrain,
+        main: prettyTimeGrain(timeGrain),
         disabled: !enabled,
         key: timeGrain,
         description: !enabled ? "not valid for this time range" : undefined,
@@ -61,7 +61,10 @@
 {#if selectedTimeGrain && selectableTimeGrains}
   <WithSelectMenu
     {options}
-    selection={{ main: selectedTimeGrain, key: selectedTimeGrain }}
+    selection={{
+      main: prettyTimeGrain(selectedTimeGrain),
+      key: selectedTimeGrain,
+    }}
     on:select={(event) => {
       dispatch(SELECT_TIME_GRAIN, { timeGrain: event.detail.key });
     }}
