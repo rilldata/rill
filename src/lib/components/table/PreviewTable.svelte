@@ -5,7 +5,7 @@
    * Its goal it so utilize all of the other container components
    * and provide the interactions needed to do things with the table.
    */
-  import { Table, TableRow, TableCell } from "$lib/components/table/";
+  import { Table, TableCell, TableRow } from "$lib/components/table/";
   import PreviewTableHeader from "./PreviewTableHeader.svelte";
   import TableHeader from "./TableHeader.svelte";
 

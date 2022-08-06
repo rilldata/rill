@@ -1,28 +1,28 @@
 <script lang="ts">
-  import DataTypeIcon from "$lib/components/data-types/DataTypeIcon.svelte";
-  import Pin from "$lib/components/icons/Pin.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import { createEventDispatcher } from "svelte";
-  import TableHeader from "./TableHeader.svelte";
-
-  import notificationStore from "$lib/components/notifications/";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
+  import { createEventDispatcher } from "svelte";
+  import { DataTypeIcon } from "../data-types";
+  import Pin from "../icons/Pin.svelte";
+  import notificationStore from "../notifications";
   import Shortcut from "../tooltip/Shortcut.svelte";
   import StackingWord from "../tooltip/StackingWord.svelte";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
+  import StickyHeader from "./StickyHeader.svelte";
 
+  export let pinned = false;
   export let name: string;
   export let type: string;
-  export let pinned = false;
-  export let maxWidth = "";
+  export let header;
 
   const dispatch = createEventDispatcher();
+
   const { shiftClickAction } = createShiftClickAction();
 </script>
 
-<TableHeader {maxWidth}>
+<StickyHeader {header}>
   <div
     use:shiftClickAction
     on:shift-click={async () => {
@@ -41,7 +41,10 @@
   >
     <Tooltip location="top" alignment="middle" distance={16}>
       <div
-        class="w-full pr-5 flex flex-row gap-x-2 items-center cursor-pointer"
+        class="
+        grid
+        w-full gap-x-2 items-center cursor-pointer"
+        style:grid-template-columns="max-content auto max-content"
       >
         <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         <span class="text-ellipsis overflow-hidden whitespace-nowrap ">
@@ -86,4 +89,4 @@
       </TooltipContent>
     </Tooltip>
   </div>
-</TableHeader>
+</StickyHeader>

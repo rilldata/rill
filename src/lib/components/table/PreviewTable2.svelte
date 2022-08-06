@@ -2,6 +2,7 @@
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { tweened } from "svelte/motion";
   import Cell from "./Cell.svelte";
+  import ColumnHeader from "./ColumnHeader.svelte";
   import Row from "./Row.svelte";
 
   export let data;
@@ -33,7 +34,7 @@
       getScrollElement: () => container,
       count: data.length,
       estimateSize: () => 36,
-      overscan: 32,
+      overscan: 54,
       paddingStart: 36,
     });
     columnVirtualizer = createVirtualizer({
@@ -41,7 +42,7 @@
       horizontal: true,
       count: columns.length,
       estimateSize: (index) => $columnSizes[index],
-      overscan: 10,
+      overscan: 18,
     });
   }
 
@@ -77,14 +78,20 @@
 >
   {#if rowVirtualizer}
     <table
-      style:height="{$rowVirtualizer.getTotalSize()}px"
       class="relative bg-white"
       on:mouseleave={clearActiveIndex}
       on:blur={clearActiveIndex}
     >
       <tr class="sticky top-0 z-10">
         {#each $columnVirtualizer.getVirtualItems() as header, i (header.key)}
-          <th
+          {@const name = columnOrder[header.index].name}
+          {@const type = columnOrder[header.index].type}
+          <ColumnHeader {header} {name} {type} />
+          <!-- <StickyHeader {header}>
+            <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+            {name}
+          </StickyHeader> -->
+          <!-- <th
             style:left={0}
             style:top={0}
             style:transform="translateX({header.start}px)"
@@ -93,11 +100,16 @@
             class="absolute bg-white text-left border-b border-b-4 border-r border-r-1 text-ellipsis overflow-hidden whitespace-nowrap "
           >
             {columnOrder[header.index].name}
-          </th>
+          </th> -->
         {/each}
       </tr>
       {#each $rowVirtualizer.getVirtualItems() as row (row.key)}
         <Row>
+          <!-- <StickyHeader header={row} position="left" name={row.index + 1}>
+            <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+            {name}
+          </StickyHeader> -->
+
           {#each $columnVirtualizer.getVirtualItems() as column (`${row.key}-${column.key}`)}
             {@const value = data[row.index][columnOrder[column.index].name]}
             {@const type = columnOrder[column.index].type}
