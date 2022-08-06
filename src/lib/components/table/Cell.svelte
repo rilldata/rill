@@ -1,17 +1,12 @@
-<script lang="ts">
-  /**
-   * TableCell.svelte
-   * notes:
-   * - the max cell-width that preserves a timestamp is 210px.
-   */
-  import { FormattedDataType } from "$lib/components/data-types/";
+<script>
   import { INTERVALS, TIMESTAMPS } from "$lib/duckdb-data-types";
   import {
     formatDataType,
     standardTimestampFormat,
   } from "$lib/util/formatters";
+  import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { createEventDispatcher } from "svelte";
-  import { fade } from "svelte/transition";
+  import { FormattedDataType } from "../data-types";
   import notificationStore from "../notifications";
   import Shortcut from "../tooltip/Shortcut.svelte";
   import StackingWord from "../tooltip/StackingWord.svelte";
@@ -20,25 +15,18 @@
   import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "../tooltip/TooltipTitle.svelte";
 
-  import { createShiftClickAction } from "$lib/util/shift-click-action";
-
-  const { shiftClickAction } = createShiftClickAction();
-
-  export let type;
+  export let row;
+  export let column;
   export let value;
-  export let name;
-  export let index = undefined;
-  export let isNull = false;
-  export let maxWidth = "";
+  export let type;
+  export let rowActive = false;
+  export let suppressTooltip = false;
+
+  let cellActive = false;
 
   const dispatch = createEventDispatcher();
-  /**
-   * FIXME: should we format the date according to the range?
-   * IF date and time varies, we show with same styling
-   * IF date differs but time does not, we gray out time
-   * IF time differs but date does not, we gray out date.
-   * For now, let's just default to showing the value.
-   */
+
+  const { shiftClickAction } = createShiftClickAction();
 
   let formattedValue;
   $: {
@@ -56,36 +44,56 @@
     }
   }
 
-  let activeCell = false;
+  function onFocus() {
+    dispatch("inspect", row.index);
+    cellActive = true;
+  }
+
+  function onBlur() {
+    cellActive = false;
+  }
+
+  /** Because this table is virtualized,
+   * it's a bit harder to get the proper
+   * row-based hover highlighting. So let's
+   * use javascript to solve this issue.
+   */
+  let activityStatus;
+  $: {
+    if (cellActive) {
+      activityStatus = "bg-gray-200";
+    } else if (rowActive && !cellActive) {
+      activityStatus = "bg-gray-100";
+    } else {
+      activityStatus = "bg-white";
+    }
+  }
 </script>
 
-<Tooltip location="top" distance={16}>
+<Tooltip location="top" distance={16} suppress={suppressTooltip}>
   <td
-    on:mouseover={() => {
-      dispatch("inspect", index);
-      activeCell = true;
-    }}
-    on:mouseout={() => {
-      activeCell = false;
-    }}
-    on:focus={() => {
-      dispatch("inspect", index);
-      activeCell = true;
-    }}
-    on:blur={() => {
-      activeCell = false;
-    }}
+    on:mouseover={onFocus}
+    on:mouseout={onBlur}
+    on:focus={onFocus}
+    on:blur={onBlur}
     class="
-        py-2
-        px-4
-        border
-        border-gray-200
-        {activeCell && 'bg-gray-200'}
-    "
-    style={maxWidth && `max-width: ${maxWidth}`}
+      absolute 
+      z-9 
+      text-ellipsis 
+      whitespace-nowrap 
+      border-r border-b 
+      {activityStatus}
+      "
+    style:left={0}
+    style:top={0}
+    style:transform="translateX({column.start}px) translateY({row.start}px)"
+    style:width="{column.size}px"
+    style:height="{row.size}px"
   >
     <button
-      class="text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
+      class="
+      py-2 px-4 
+      text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap"
       use:shiftClickAction
       on:shift-click={async () => {
         let exportedValue = value;
@@ -99,11 +107,12 @@
         // update this to set the active animation in the tooltip text
       }}
     >
-      {#if value !== undefined}
-        <span transition:fade|local={{ duration: 75 }}>
-          <FormattedDataType {value} {type} {isNull} inTable />
-        </span>
-      {/if}
+      <FormattedDataType
+        value={formattedValue}
+        {type}
+        isNull={value === null}
+        inTable
+      />
     </button>
   </td>
   <TooltipContent slot="tooltip-content">

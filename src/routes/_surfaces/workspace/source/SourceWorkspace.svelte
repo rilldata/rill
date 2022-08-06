@@ -7,7 +7,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+  import PreviewTable2 from "$lib/components/table/PreviewTable2.svelte";
 
   import { getContext } from "svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
@@ -48,9 +48,13 @@
     style:height="100%"
     class="m-3 border border-gray-300 rounded"
   >
-    <PreviewTable
-      rows={currentDerivedSource?.preview.slice(0, 50)}
-      columnNames={currentDerivedSource?.profile}
-    />
+    {#if currentDerivedSource}
+      {#key currentDerivedSource.id}
+        <PreviewTable2
+          data={currentDerivedSource?.preview}
+          columns={currentDerivedSource?.profile}
+        />
+      {/key}
+    {/if}
   </div>
 </div>

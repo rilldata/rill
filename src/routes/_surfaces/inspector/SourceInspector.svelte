@@ -124,13 +124,13 @@
   let columnCount;
   let nullPercentage;
   $: {
-    switch (currentTable.sourceType) {
+    switch (currentTable?.sourceType) {
       case 0: {
         sourceType = "Parquet";
         break;
       }
       case 1: {
-        sourceType = `CSV (${currentTable.csvDelimiter || "comma"})`;
+        sourceType = `CSV (${currentTable?.csvDelimiter || "comma"})`;
         break;
       }
       case 2: {
@@ -146,8 +146,8 @@
 
   /** get the current row count */
   $: {
-    rowCount = `${formatInteger(currentDerivedTable.cardinality)} row${
-      currentDerivedTable.cardinality !== 1 ? "s" : ""
+    rowCount = `${formatInteger(currentDerivedTable?.cardinality)} row${
+      currentDerivedTable?.cardinality !== 1 ? "s" : ""
     }`;
   }
 
@@ -162,9 +162,9 @@
 
   $: {
     const totalCells =
-      currentDerivedTable?.profile?.length * currentDerivedTable.cardinality;
+      currentDerivedTable?.profile?.length * currentDerivedTable?.cardinality;
     const totalNulls = currentDerivedTable?.profile
-      .map((profile) => profile.nullCount)
+      .map((profile) => profile?.nullCount)
       .reduce((total, count) => total + count, 0);
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }

@@ -201,7 +201,7 @@ export class TableActions extends DataModelerActions {
                 priority: DatabaseActionQueuePriority.TableProfile,
               },
               "getFirstNOfTable",
-              [persistentTable.tableName, 250]
+              [persistentTable.tableName, 500]
             )),
         ].map((asyncFunc) => asyncFunc())
       );
