@@ -7,11 +7,13 @@
   style:transform="translateX({header.start}px)"
   style:width="{header.size}px"
   style:height="36px"
+  style:left={0}
+  style:top={0}
   class="
-  {position === 'top' && 'top-0'}
+  {position === 'top' && 'left-0 top-0'}
   {position === 'left' && 'left-0'}
   {position === 'top-left' && 'top-0 left-0 z-10'}
-  absolute bg-white text-left border-b border-b-4 border-r border-r-1  "
+  absolute bg-white text-left border-b border-b-4 border-r border-r-1"
 >
   <div
     class="

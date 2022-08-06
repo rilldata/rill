@@ -34,7 +34,7 @@
       getScrollElement: () => container,
       count: data.length,
       estimateSize: () => 36,
-      overscan: 54,
+      overscan: 60,
       paddingStart: 36,
     });
     columnVirtualizer = createVirtualizer({
@@ -42,7 +42,7 @@
       horizontal: true,
       count: columns.length,
       estimateSize: (index) => $columnSizes[index],
-      overscan: 18,
+      overscan: 10,
     });
   }
 
@@ -78,6 +78,7 @@
 >
   {#if rowVirtualizer}
     <table
+      style:height="{$rowVirtualizer.getTotalSize()}px"
       class="relative bg-white"
       on:mouseleave={clearActiveIndex}
       on:blur={clearActiveIndex}
