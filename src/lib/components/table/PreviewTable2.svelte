@@ -1,10 +1,10 @@
 <script lang="ts">
   import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import { onMount } from "svelte";
   import { tweened } from "svelte/motion";
   import Cell from "./Cell.svelte";
   import ColumnHeader from "./ColumnHeader.svelte";
   import Row from "./Row.svelte";
+  import StickyHeader from "./StickyHeader.svelte";
 
   export let data;
   export let columns;
@@ -78,87 +78,61 @@
       }, 200);
     }
   }
-
-  /** we're going to hard-position the row number column due to
-   * eccentricities in the virtual table.
-   */
-  let containerLeft = 0;
-  let containerTop = 0;
-  let scrollLeft = 0;
-  let scrollTop = 0;
-
-  function place() {
-    const rect = container.getBoundingClientRect();
-    containerLeft = rect.left;
-    containerTop = rect.top;
-  }
-  onMount(() => {
-    const config = { attributes: true };
-
-    const observer = new ResizeObserver(() => {
-      place();
-    });
-    place();
-    observer.observe(container, config);
-  });
 </script>
 
-translateX({scrollLeft}px), translateY({scrollTop}px)
 <div
   bind:this={container}
   style:width="100%"
   style:height="100%"
   class="overflow-auto"
-  on:scroll={(event) => {
+  on:scroll={() => {
     /** capture to suppress cell tooltips. Otherwise,
      * there's quite a bit of rendering jank.
      */
-    scrollLeft = event?.target?.scrollLeft || 32;
-    scrollTop = event?.target?.scrollTop || 0;
     scrolling = true;
   }}
 >
   {#if rowVirtualizer}
-    <table
-      style:height="{$rowVirtualizer.getTotalSize()}px"
+    <div
       class="relative bg-white"
       on:mouseleave={clearActiveIndex}
       on:blur={clearActiveIndex}
+      style:will-change="transform, contents"
+      style:width="{$columnVirtualizer.getTotalSize()}px"
+      style:height="{$rowVirtualizer.getTotalSize()}px"
     >
-      <tr class="w-full sticky relative top-0 z-10">
-        <!-- <StickyHeader position="top-left" header={{ size: 100, start: 0 }}>
-          "row"
-        </StickyHeader> -->
-        <th
-          class="fixed z-10"
-          style:left="{containerLeft}px"
-          style:top="{containerTop}px"
-        >
-          row
-        </th>
-        <!-- <StickyHeader position="top-left" header={{ size: 60, start: 0 }}>
-          row
-        </StickyHeader> -->
+      <div class="w-full sticky relative top-0 z-10">
         {#each $columnVirtualizer.getVirtualItems() as header, i (header.key)}
           {@const name = columnOrder[header.index]?.name}
           {@const type = columnOrder[header.index]?.type}
           <ColumnHeader {header} {name} {type} />
         {/each}
-      </tr>
-      {#each $rowVirtualizer.getVirtualItems() as row (row.key)}
-        <Row {row} width={$columnVirtualizer.getTotalSize()}>
-          <th
-            style:height="36px"
+      </div>
+      <div
+        class="sticky left-0 top-0 z-20"
+        style:height="{$rowVirtualizer.getTotalSize()}px"
+        style:width="60px"
+      >
+        <StickyHeader header={{ size: 60, start: 0 }} position="top-left"
+          >row</StickyHeader
+        >
+        {#each $rowVirtualizer.getVirtualItems() as row (`row-${row.key}`)}
+          <div
+            class="absolute left-0 z-20 bg-gray-100 grid place-items-center font-bold border-r border-gray-300 border-b"
+            style:height="{row.size}px"
             style:width="60px"
             style:left={0}
-            style:top="{row.start}px"
-            class="sticky z-20"
+            style:top={0}
+            style:transform="translateY({row.start}px)"
           >
-            <div style:left={0} class="absolute z-12">
-              {row.index + 1}
-            </div>
-          </th>
-          {#each $columnVirtualizer.getVirtualItems() as column (`${row.key}-${column.key}`)}
+            {row.key + 1}
+          </div>
+        {/each}
+      </div>
+
+      {#each $columnVirtualizer.getVirtualItems() as column (column.key)}
+        <Row>
+          {#each $rowVirtualizer.getVirtualItems() as row (`${row.key}-${column.key}`)}
             {@const value = data[row.index][columnOrder[column.index]?.name]}
             {@const type = columnOrder[column.index]?.type}
             {@const rowActive = activeIndex === row?.index}
@@ -178,6 +152,6 @@ translateX({scrollLeft}px), translateY({scrollTop}px)
           {/each}
         </Row>
       {/each}
-    </table>
+    </div>
   {/if}
 </div>

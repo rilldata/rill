@@ -71,7 +71,7 @@
 </script>
 
 <Tooltip location="top" distance={16} suppress={suppressTooltip}>
-  <td
+  <div
     on:mouseover={onFocus}
     on:mouseout={onBlur}
     on:focus={onFocus}
@@ -84,9 +84,9 @@
       border-r border-b 
       {activityStatus}
       "
-    style:left={0}
-    style:top={0}
-    style:transform="translateX({column.start}px)"
+    style:will-change="transform"
+    style:left="{column.start}px"
+    style:top="{row.start}px"
     style:width="{column.size}px"
     style:height="{row.size}px"
   >
@@ -114,7 +114,7 @@
         inTable
       />
     </button>
-  </td>
+  </div>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>
       <svelte:fragment slot="name">

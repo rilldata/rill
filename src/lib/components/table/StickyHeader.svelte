@@ -9,13 +9,13 @@
     } else if (position === "left") {
       positionClasses = "absolute left-0";
     } else if (position === "top-left") {
-      positionClasses = "fixed z-20";
+      positionClasses = "sticky left-0 top-0 z-40";
     }
   }
 </script>
 
-<th
-  style:transform="translateX({position === "top-left" ? 0 : header.start}px)"
+<div
+  style:transform="translateX({header.start}px)"
   style:width="{header.size}px"
   style:height="36px"
   class="{positionClasses}
@@ -37,4 +37,4 @@
   >
     <slot />
   </div>
-</th>
+</div>
