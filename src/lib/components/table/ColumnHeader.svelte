@@ -16,13 +16,14 @@
   export let name: string;
   export let type: string;
   export let header;
+  export let position = "top";
 
   const dispatch = createEventDispatcher();
 
   const { shiftClickAction } = createShiftClickAction();
 </script>
 
-<StickyHeader {header}>
+<StickyHeader {position} {header}>
   <div
     use:shiftClickAction
     on:shift-click={async () => {

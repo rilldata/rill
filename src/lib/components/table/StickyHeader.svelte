@@ -1,19 +1,25 @@
 <script lang="ts">
   export let header;
   export let position: "top" | "left" | "top-left" = "top";
+
+  let positionClasses;
+  $: {
+    if (position === "top") {
+      positionClasses = "absolute left-0 top-0";
+    } else if (position === "left") {
+      positionClasses = "absolute left-0";
+    } else if (position === "top-left") {
+      positionClasses = "fixed z-20";
+    }
+  }
 </script>
 
 <th
-  style:transform="translateX({header.start}px)"
+  style:transform="translateX({position === "top-left" ? 0 : header.start}px)"
   style:width="{header.size}px"
   style:height="36px"
-  style:left={0}
-  style:top={0}
-  class="
-  {position === 'top' && 'left-0 top-0'}
-  {position === 'left' && 'left-0'}
-  {position === 'top-left' && 'top-0 left-0 z-10'}
-  absolute bg-white text-left border-b border-b-4 border-r border-r-1"
+  class="{positionClasses}
+   bg-white text-left border-b border-b-4 border-r border-r-1"
 >
   <div
     class="
@@ -26,7 +32,7 @@
   bg-gray-100
   {position === 'top' && 'py-2 text-left'}
   {position === 'left' && 'py-2'}
-  {position === 'top-left' && 'py-3'}
+  {position === 'top-left' && 'py-2'}
 "
   >
     <slot />

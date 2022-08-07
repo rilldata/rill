@@ -86,7 +86,7 @@
       "
     style:left={0}
     style:top={0}
-    style:transform="translateX({column.start}px) translateY({row.start}px)"
+    style:transform="translateX({column.start}px)"
     style:width="{column.size}px"
     style:height="{row.size}px"
   >
