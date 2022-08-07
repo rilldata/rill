@@ -15,23 +15,7 @@
   let columnOrder;
   let columnSizes;
 
-  const defaultRangeExtractor = (range) => {
-    const start = Math.max(range.startIndex - range.overscan, 0);
-    const end = Math.min(range.endIndex + range.overscan, range.count - 1);
-    const arr = [];
-
-    for (let i = start; i <= end; i++) {
-      arr.push(i);
-    }
-
-    return arr;
-  };
-
-  let stickyIndexes = [0];
-  let activeStickyIndex;
   $: if (data && columns) {
-    // get row count
-
     columnOrder = columns.reduce((obj, profile, i) => {
       obj[i] = profile;
       return obj;
@@ -49,7 +33,7 @@
       getScrollElement: () => container,
       count: data.length,
       estimateSize: () => 36,
-      overscan: 60,
+      overscan: 90,
       paddingStart: 36,
     });
     columnVirtualizer = createVirtualizer({

@@ -50,6 +50,10 @@
   >
     {#if currentDerivedSource}
       {#key currentDerivedSource.id}
+        <!-- <PreviewTable
+          rows={currentDerivedSource?.preview.slice(0, 100)}
+          columnNames={currentDerivedSource?.profile}
+        /> -->
         <PreviewTable2
           data={currentDerivedSource?.preview}
           columns={currentDerivedSource?.profile}

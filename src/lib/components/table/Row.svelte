@@ -1,7 +1,3 @@
-<script>
-  export let hovered = false;
-  export let row;
-  export let width;
-</script>
-
-<slot />
+<div class="display-contents" role="row">
+  <slot />
+</div>

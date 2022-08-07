@@ -84,7 +84,6 @@
       border-r border-b 
       {activityStatus}
       "
-    style:will-change="transform"
     style:left="{column.start}px"
     style:top="{row.start}px"
     style:width="{column.size}px"
