@@ -9,7 +9,10 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import {
+  DatabaseActionQueuePriority,
+  MetadataPriority,
+} from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { PersistentModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 
 export class ApplicationActions extends DataModelerActions {
@@ -27,10 +30,18 @@ export class ApplicationActions extends DataModelerActions {
       currentActiveAsset?.type === EntityType.Model &&
       currentActiveAsset?.id
     ) {
-      this.databaseActionQueue.updatePriority(
-        currentActiveAsset.id,
-        DatabaseActionQueuePriority.InactiveModelProfile
-      );
+      const columns = this.dataModelerStateService
+        .getEntityStateService(EntityType.Model, StateType.Derived)
+        .getById(currentActiveAsset.id)
+        .profile.map((column) => column.name);
+      columns.forEach((column) => {
+        Object.values(MetadataPriority).forEach((priority) => {
+          this.databaseActionQueue.updatePriority(
+            currentActiveAsset.id + column + priority,
+            DatabaseActionQueuePriority.InactiveModelProfile
+          );
+        });
+      });
     }
     this.dataModelerStateService.dispatch("setActiveAsset", [
       entityType,

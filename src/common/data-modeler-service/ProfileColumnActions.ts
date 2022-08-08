@@ -6,12 +6,18 @@ import type { DataProfileStateActionArg } from "$common/data-modeler-state-servi
 import { DataModelerActions } from "$common/data-modeler-service/DataModelerActions";
 import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
 import type { ProfileColumn } from "$lib/types";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import {
+  DatabaseActionQueuePriority,
+  DatabaseProfilesFieldPriority,
+  MetadataPriority,
+  getProfilePriority,
+  ProfileMetadataPriorityMap,
+} from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { COLUMN_PROFILE_CONFIG } from "$lib/application-config";
 import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
-const ColumnProfilePriorityMap = {
+const ProfileEntityPriorityMap = {
   [EntityType.Table]: DatabaseActionQueuePriority.TableProfile,
   [EntityType.Model]: DatabaseActionQueuePriority.ActiveModelProfile,
 };
@@ -61,12 +67,16 @@ export class ProfileColumnActions extends DataModelerActions {
     const promises = [];
     if (CATEGORICALS.has(column.type)) {
       promises.push(
-        this.collectTopKAndCardinality(entityType, entityId, tableName, column)
+        this.collectCardinality(entityType, entityId, tableName, column)
       );
+      promises.push(this.collectTopK(entityType, entityId, tableName, column));
     } else {
       if (NUMERICS.has(column.type)) {
         promises.push(
           this.collectNumericHistogram(entityType, entityId, tableName, column)
+        );
+        promises.push(
+          this.collectRugHistogram(entityType, entityId, tableName, column)
         );
       }
       if (TIMESTAMPS.has(column.type)) {
@@ -109,7 +119,7 @@ export class ProfileColumnActions extends DataModelerActions {
     await Promise.all(promises);
   }
 
-  private async collectTopKAndCardinality(
+  private async collectTopK(
     entityType: EntityType,
     entityId: string,
     tableName: string,
@@ -120,8 +130,40 @@ export class ProfileColumnActions extends DataModelerActions {
       entityId,
       column.name,
       await this.databaseActionQueue.enqueue(
-        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
-        "getTopKAndCardinality",
+        {
+          id: entityId + column.name + MetadataPriority.Essential,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Essential]
+          ),
+        },
+        "getTopK",
+        [tableName, column.name]
+      ),
+    ]);
+  }
+
+  private async collectCardinality(
+    entityType: EntityType,
+    entityId: string,
+    tableName: string,
+    column: ProfileColumn
+  ): Promise<void> {
+    this.dataModelerStateService.dispatch("updateColumnSummary", [
+      entityType,
+      entityId,
+      column.name,
+      await this.databaseActionQueue.enqueue(
+        {
+          id: entityId + column.name + MetadataPriority.Summary,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Summary]
+          ),
+        },
+        "getCardinalityOfColumn",
         [tableName, column.name]
       ),
     ]);
@@ -138,7 +180,14 @@ export class ProfileColumnActions extends DataModelerActions {
       entityId,
       column.name,
       await this.databaseActionQueue.enqueue(
-        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+        {
+          id: entityId + column.name + MetadataPriority.Essential,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Essential]
+          ),
+        },
         "estimateSmallestTimeGrain",
         [tableName, column.name]
       ),
@@ -158,7 +207,14 @@ export class ProfileColumnActions extends DataModelerActions {
       entityId,
       column.name,
       await this.databaseActionQueue.enqueue(
-        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+        {
+          id: entityId + column.name + MetadataPriority.Summary,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Summary]
+          ),
+        },
         "generateTimeSeries",
         [
           {
@@ -183,8 +239,40 @@ export class ProfileColumnActions extends DataModelerActions {
       entityId,
       column.name,
       await this.databaseActionQueue.enqueue(
-        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+        {
+          id: entityId + column.name + MetadataPriority.Summary,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Summary]
+          ),
+        },
         "getNumericHistogram",
+        [tableName, column.name, column.type]
+      ),
+    ]);
+  }
+
+  private async collectRugHistogram(
+    entityType: EntityType,
+    entityId: string,
+    tableName: string,
+    column: ProfileColumn
+  ): Promise<void> {
+    this.dataModelerStateService.dispatch("updateColumnSummary", [
+      entityType,
+      entityId,
+      column.name,
+      await this.databaseActionQueue.enqueue(
+        {
+          id: entityId + column.name + MetadataPriority.Deeper,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Deeper]
+          ),
+        },
+        "getRugHistogram",
         [tableName, column.name, column.type]
       ),
     ]);
@@ -201,7 +289,14 @@ export class ProfileColumnActions extends DataModelerActions {
       entityId,
       column.name,
       await this.databaseActionQueue.enqueue(
-        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+        {
+          id: entityId + column.name + MetadataPriority.Essential,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Essential]
+          ),
+        },
         "getTimeRange",
         [tableName, column.name]
       ),
@@ -219,7 +314,14 @@ export class ProfileColumnActions extends DataModelerActions {
       entityId,
       column.name,
       await this.databaseActionQueue.enqueue(
-        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+        {
+          id: entityId + column.name + MetadataPriority.Essential,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Essential]
+          ),
+        },
         "getDescriptiveStatistics",
         [tableName, column.name]
       ),
@@ -237,7 +339,14 @@ export class ProfileColumnActions extends DataModelerActions {
       entityId,
       column.name,
       await this.databaseActionQueue.enqueue(
-        { id: entityId, priority: ColumnProfilePriorityMap[entityType] },
+        {
+          id: entityId + column.name + MetadataPriority.Summary,
+          priority: getProfilePriority(
+            ProfileEntityPriorityMap[entityType],
+            DatabaseProfilesFieldPriority.NonFocused,
+            ProfileMetadataPriorityMap[MetadataPriority.Summary]
+          ),
+        },
         "getNullCount",
         [tableName, column.name]
       ),
