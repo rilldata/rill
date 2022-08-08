@@ -1,21 +1,28 @@
+<!-- @component 
+The FloatingElement component is the backbone of all of our floating UI element functionality.
+It handles the setting of the location of the floating element relative to these possible options, set in the relationship prop:
+- a direct DOM element passed in through target through the 'direct' prop
+- the first child of target through the "parent" prop
+display:contents. This is useful when nesting a floating element within a tooltip.
+- a mouse click location through "mouse". This is an {x,y} coordinate that matches where the pointer is.
+-->
 <script lang="ts">
+  import {
+    mouseLocationToBoundingRect,
+    placeElement,
+  } from "$lib/util/place-element";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import {
-    placeElement,
-    mouseLocationToBoundingRect,
-  } from "$lib/util/place-element";
   import Portal from "../Portal.svelte";
+  import type { FloatingElementRelationship } from "./types";
 
   export let target;
-  export let relationship = "parent"; // parent, mouse {x, y}
+  export let relationship: FloatingElementRelationship = "parent"; // parent, mouse {x, y}
   export let location = "bottom";
   export let alignment = "middle";
   export let distance = 0;
   // edge padding
   export let pad = 8;
-  /** the delay in miliseconds before rendering the tooltip once mouse has entered */
-  /** the delay in miliseconds before unrendering the tooltip once mouse has left */
 
   let top = 0;
   let left = 0;
@@ -52,6 +59,18 @@
 
   let firstParentElement;
 
+  function getFirstValidChildElement(element) {
+    // get this child.
+    let possibleChild = element?.children[0];
+    // check for display: contents, which may indicate
+    // another wrapped object.
+    if (getComputedStyle(possibleChild).display === "contents") {
+      return getFirstValidChildElement(possibleChild);
+    } else {
+      return possibleChild;
+    }
+  }
+
   $: if (relationship === "parent") {
     if (firstParentElement)
       setLocation(
@@ -74,12 +93,13 @@
       innerHeight
     );
   }
+  $: getFirstValidChildElement(target);
 
   onMount(() => {
     // we listen to the parent.
     // actually, we listen to the first chidl element!
     if (relationship === "parent") {
-      firstParentElement = target?.children[0];
+      firstParentElement = getFirstValidChildElement(target); // target?.children[0];
       const config = { attributes: true };
       const observer = new MutationObserver(() => {
         setLocation(

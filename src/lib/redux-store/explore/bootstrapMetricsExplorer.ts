@@ -14,12 +14,14 @@ export const bootstrapMetricsExplorer = createAsyncThunk(
     await thunkAPI.dispatch(bootstrapMetricsDefinition(metricsDefId));
 
     const state = thunkAPI.getState() as RillReduxState;
+    const dimensions = selectDimensionsByMetricsId(state, metricsDefId);
+    const measures = selectMeasuresByMetricsId(state, metricsDefId);
     await syncExplore(
       thunkAPI.dispatch,
       metricsDefId,
       selectMetricsExplorerById(state, metricsDefId),
-      selectDimensionsByMetricsId(state, metricsDefId),
-      selectMeasuresByMetricsId(state, metricsDefId)
+      dimensions,
+      measures
     );
   }
 );

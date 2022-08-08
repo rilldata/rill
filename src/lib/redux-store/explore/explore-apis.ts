@@ -94,7 +94,6 @@ export const syncExplore = async (
   if (shouldUpdate || metricsExplorer.isStale) {
     dispatch(setExplorerIsStale(metricsDefId, false));
     await dispatch(fetchTimestampColumnRangeApi(metricsDefId));
-    // updateExploreWrapper(dispatch, metricsDefId);
   }
 };
 /**
@@ -233,7 +232,6 @@ export const setExploreSelectedTimeRangeAndUpdate = (
     metricsDefId
   );
   if (!timeRangeName || !timeGrain || !metricsExplorer?.allTimeRange) return;
-  console.log("setExploreSelectedTimeRangeAndUpdate", timeRangeName, timeGrain);
 
   const newTimeRange = makeTimeRange(
     timeRangeName,

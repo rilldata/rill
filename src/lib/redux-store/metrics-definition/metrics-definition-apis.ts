@@ -30,7 +30,7 @@ import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import { invalidateExplorer } from "$lib/redux-store/utils/invalidateExplorerThunk";
-import { validateMeasureExpression } from "$lib/redux-store/measure-definition/measure-definition-apis";
+import { validateMeasureExpressionApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
 import {
   selectMeasureById,
   selectMeasuresByMetricsId,
@@ -206,16 +206,21 @@ export const validateSelectedSources = createAsyncThunk(
     }
 
     // trigger measure and dimension validations
-    selectMeasuresByMetricsId(state, id).forEach((measure) =>
-      validateMeasureExpression(
-        thunkAPI.dispatch,
-        id,
-        measure.id,
-        selectMeasureById(state, measure.id).expression
+    await Promise.all(
+      selectMeasuresByMetricsId(state, id).map((measure) =>
+        thunkAPI.dispatch(
+          validateMeasureExpressionApi({
+            metricsDefId: id,
+            measureId: measure.id,
+            expression: selectMeasureById(state, measure.id).expression,
+          })
+        )
       )
     );
-    selectDimensionsByMetricsId(state, id).forEach((dimension) =>
-      thunkAPI.dispatch(validateDimensionColumnApi(dimension.id))
+    await Promise.all(
+      selectDimensionsByMetricsId(state, id).map((dimension) =>
+        thunkAPI.dispatch(validateDimensionColumnApi(dimension.id))
+      )
     );
     // TODO: if timestamp column is invalid select the next valid timestamp column
   }

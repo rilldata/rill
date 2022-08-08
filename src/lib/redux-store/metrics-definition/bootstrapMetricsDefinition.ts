@@ -26,6 +26,6 @@ export const bootstrapMetricsDefinition = createAsyncThunk(
         ? thunkAPI.dispatch(fetchManyDimensionsApi({ metricsDefId }))
         : Promise.resolve(),
     ]);
-    thunkAPI.dispatch(validateSelectedSources(metricsDefId));
+    await thunkAPI.dispatch(validateSelectedSources(metricsDefId));
   }
 );
