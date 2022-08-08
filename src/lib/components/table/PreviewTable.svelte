@@ -1,3 +1,10 @@
+<!-- @component 
+Creates a virtualized preview table. This consists of four sub-components:
+ColumnHeaders – sticky column headers. Utilizes the columnVirtualizer (for now).
+RowHeaders – a sticky row number header.
+TableCells – the cell contents.
+PinnedColumns – any reference columns pinned on the right side of the overall table.
+-->
 <script lang="ts">
   import type { ProfileColumn } from "$lib/types";
 
@@ -15,6 +22,10 @@
   let columnVirtualizer;
   let container;
   let pinnedColumns = [];
+  let virtualRows;
+  let virtualColumns;
+  let virtualWidth;
+  let virtualHeight;
 
   $: if (rows && columnNames) {
     rowVirtualizer = createVirtualizer({
@@ -34,7 +45,19 @@
     });
   }
 
+  $: if (rowVirtualizer) {
+    virtualRows = $rowVirtualizer.getVirtualItems();
+    virtualHeight = $rowVirtualizer.getTotalSize();
+  }
+  $: if (columnVirtualizer) {
+    virtualColumns = $columnVirtualizer.getVirtualItems();
+    virtualWidth = $columnVirtualizer.getTotalSize();
+  }
+
   let activeIndex;
+  function setActiveIndex(event) {
+    activeIndex = event.detail;
+  }
   function clearActiveIndex() {
     activeIndex = false;
   }
@@ -52,7 +75,8 @@
   }
 
   /** pinning functionality */
-  function handlePin(column) {
+  function handlePin(event) {
+    const column = event.detail;
     if (pinnedColumns.some((p) => p.name === column.name)) {
       pinnedColumns = [...pinnedColumns.filter((c) => c.name !== column.name)];
     } else {
@@ -80,34 +104,27 @@
       on:mouseleave={clearActiveIndex}
       on:blur={clearActiveIndex}
       style:will-change="transform, contents"
-      style:width="{$columnVirtualizer.getTotalSize()}px"
-      style:height="{$rowVirtualizer.getTotalSize()}px"
+      style:width="{virtualWidth}px"
+      style:height="{virtualHeight}px"
     >
       <!-- ColumnHeaders -->
       <ColumnHeaders
-        virtualColumnItems={$columnVirtualizer.getVirtualItems()}
+        virtualColumnItems={virtualColumns}
         columns={columnNames}
         {pinnedColumns}
-        on:pin={(event) => {
-          handlePin(event.detail);
-        }}
+        on:pin={handlePin}
       />
       <!-- RowHeader -->
-      <RowHeaders
-        virtualRowItems={$rowVirtualizer.getVirtualItems()}
-        totalHeight={$rowVirtualizer.getTotalSize()}
-      />
+      <RowHeaders virtualRowItems={virtualRows} totalHeight={virtualHeight} />
       <!-- VirtualTableBody -->
       <TableCells
-        virtualColumnItems={$columnVirtualizer.getVirtualItems()}
-        virtualRowItems={$rowVirtualizer.getVirtualItems()}
+        virtualColumnItems={virtualColumns}
+        virtualRowItems={virtualRows}
         {rows}
         columns={columnNames}
         {activeIndex}
         {scrolling}
-        on:inspect={(event) => {
-          activeIndex = event.detail;
-        }}
+        on:inspect={setActiveIndex}
       />
     </div>
     <!-- PinnedContent -->
@@ -117,11 +134,9 @@
         {pinnedColumns}
         {scrolling}
         {activeIndex}
-        virtualRowItems={$rowVirtualizer.getVirtualItems()}
-        on:pin={(event) => handlePin(event.detail)}
-        on:inspect={(event) => {
-          activeIndex = event.detail;
-        }}
+        virtualRowItems={virtualRows}
+        on:pin={handlePin}
+        on:inspect={setActiveIndex}
       />
     {/if}
   {/if}

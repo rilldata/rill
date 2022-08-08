@@ -48,7 +48,7 @@
         style:grid-template-columns="max-content auto max-content"
       >
         <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
-        <span class="text-ellipsis overflow-hidden whitespace-nowrap ">
+        <span class="text-ellipsis overflow-hidden whitespace-nowrap font-bold">
           {name}
         </span>
       </div>

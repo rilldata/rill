@@ -32,7 +32,7 @@
   bg-gray-100
   {position === 'top' && 'py-2 text-left'}
   {position === 'left' && 'py-2'}
-  {position === 'top-left' && 'py-2'}
+  {position === 'top-left' && 'py-2 text-center'}
 "
   >
     <slot />
