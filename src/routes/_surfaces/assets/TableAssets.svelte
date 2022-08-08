@@ -72,6 +72,8 @@
       tableName
     );
   };
+
+  $: activeEntityID = $rillAppStore?.activeEntity?.id;
 </script>
 
 <div
@@ -100,7 +102,7 @@
         {@const derivedTable = $derivedTableStore.entities.find(
           (t) => t["id"] === id
         )}
-        {@const entityIsAtive = $rillAppStore?.activeEntity?.id === id}
+        {@const entityIsActive = id === activeEntityID}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             on:select={() => {
@@ -113,7 +115,7 @@
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            active={entityIsAtive}
+            active={entityIsActive}
             on:delete={() => deleteSourceApi(tableName)}
           >
             <svelte:fragment slot="summary" let:containerWidth>

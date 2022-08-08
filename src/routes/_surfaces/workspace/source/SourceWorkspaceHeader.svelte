@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "$lib/application-state-stores/application-store";
+  import { dataModelerService } from "$lib/application-state-stores/application-store";
 
   import type { PersistentTableStore } from "$lib/application-state-stores/table-stores";
 
@@ -11,8 +8,6 @@
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
 
   export let id;
-
-  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"

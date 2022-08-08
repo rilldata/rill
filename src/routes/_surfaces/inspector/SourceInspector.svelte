@@ -66,6 +66,7 @@
     sourceTableReferences = currentDerivedTable?.sources;
   }
 
+  $: console.log(activeEntityID, currentTable);
   // map and filter these source tables.
   $: if (sourceTableReferences?.length) {
     tables = sourceTableReferences
@@ -242,7 +243,7 @@
             show={showColumns}
             name={currentTable.name}
             cardinality={currentDerivedTable?.cardinality ?? 0}
-            active={currentTable?.id === $store?.activeEntity?.id}
+            active={currentTable?.id === activeEntityID}
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry

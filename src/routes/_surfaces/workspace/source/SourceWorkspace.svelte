@@ -22,18 +22,15 @@
   ) as DerivedTableStore;
 
   let currentSource: PersistentTableEntity;
+  $: activeEntityID = $store.activeEntity.id;
   $: currentSource =
     $store?.activeEntity && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find(
-          (q) => q.id === $store.activeEntity.id
-        )
+      ? $persistentTableStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
   let currentDerivedSource: DerivedTableEntity;
   $: currentDerivedSource =
     $store?.activeEntity && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find(
-          (q) => q.id === $store.activeEntity?.id
-        )
+      ? $derivedTableStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
 </script>
 
