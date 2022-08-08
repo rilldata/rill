@@ -6,23 +6,24 @@
   import Row from "./Row.svelte";
   import StickyHeader from "./StickyHeader.svelte";
 
-  export let data;
-  export let columns;
+  export let rows;
+  export let columnNames;
 
   let rowVirtualizer;
   let columnVirtualizer;
   let container;
   let columnOrder;
   let columnSizes;
+  let pinnedColumns = [];
 
-  $: if (data && columns) {
-    columnOrder = columns.reduce((obj, profile, i) => {
+  $: if (rows && columnNames) {
+    columnOrder = columnNames.reduce((obj, profile, i) => {
       obj[i] = profile;
       return obj;
     }, {});
 
     columnSizes = tweened(
-      columns.reduce((obj, _, i) => {
+      columnNames.reduce((obj, _, i) => {
         obj[i] = 200;
         return obj;
       }, {}),
@@ -31,7 +32,7 @@
 
     rowVirtualizer = createVirtualizer({
       getScrollElement: () => container,
-      count: data.length,
+      count: rows.length,
       estimateSize: () => 36,
       overscan: 90,
       paddingStart: 36,
@@ -39,7 +40,7 @@
     columnVirtualizer = createVirtualizer({
       getScrollElement: () => container,
       horizontal: true,
-      count: columns.length,
+      count: columnNames.length,
       estimateSize: (index) => $columnSizes[index],
       overscan: 10,
       paddingStart: 60,
@@ -62,13 +63,23 @@
       }, 200);
     }
   }
+
+  /** pinning functionality */
+  function handlePin(column) {
+    if (pinnedColumns.some((p) => p.name === column.name)) {
+      pinnedColumns = [...pinnedColumns.filter((c) => c.name !== column.name)];
+    } else {
+      pinnedColumns = [...pinnedColumns, column];
+    }
+  }
 </script>
 
 <div
   bind:this={container}
   style:width="100%"
   style:height="100%"
-  class="overflow-auto"
+  class="overflow-auto grid"
+  style:grid-template-columns="max-content auto"
   on:scroll={() => {
     /** capture to suppress cell tooltips. Otherwise,
      * there's quite a bit of rendering jank.
@@ -85,20 +96,31 @@
       style:width="{$columnVirtualizer.getTotalSize()}px"
       style:height="{$rowVirtualizer.getTotalSize()}px"
     >
+      <!-- header-->
       <div class="w-full sticky relative top-0 z-10">
         {#each $columnVirtualizer.getVirtualItems() as header, i (header.key)}
           {@const name = columnOrder[header.index]?.name}
           {@const type = columnOrder[header.index]?.type}
-          <ColumnHeader {header} {name} {type} />
+          {@const pinned = pinnedColumns.some((column) => column.name === name)}
+          <ColumnHeader
+            {header}
+            {name}
+            {type}
+            {pinned}
+            on:pin={() => {
+              handlePin(columnOrder[header.index]);
+            }}
+          />
         {/each}
       </div>
+      <!-- body -->
       <div
         class="sticky left-0 top-0 z-20"
         style:height="{$rowVirtualizer.getTotalSize()}px"
         style:width="60px"
       >
         <StickyHeader header={{ size: 60, start: 0 }} position="top-left"
-          >row</StickyHeader
+          >#</StickyHeader
         >
         {#each $rowVirtualizer.getVirtualItems() as row (`row-${row.key}`)}
           <div
@@ -113,11 +135,10 @@
           </div>
         {/each}
       </div>
-
       {#each $columnVirtualizer.getVirtualItems() as column (column.key)}
         <Row>
           {#each $rowVirtualizer.getVirtualItems() as row (`${row.key}-${column.key}`)}
-            {@const value = data[row.index][columnOrder[column.index]?.name]}
+            {@const value = rows[row.index][columnOrder[column.index]?.name]}
             {@const type = columnOrder[column.index]?.type}
             {@const rowActive = activeIndex === row?.index}
             {@const suppressTooltip = scrolling}
@@ -137,5 +158,48 @@
         </Row>
       {/each}
     </div>
+    <!-- sticker -->
+
+    {#if pinnedColumns.length}
+      <div
+        style:right={0}
+        class=" top-0 sticky z-40 border-l-2 border-gray-400"
+        style:width="{pinnedColumns.length * 200}px"
+      >
+        <div class="w-full sticky relative top-0 z-10">
+          {#each pinnedColumns as column, i (column.name)}
+            <ColumnHeader
+              header={{ start: i * 200, size: 200 }}
+              name={column.name}
+              type={column.type}
+              on:pin={() => handlePin(column)}
+              pinned={true}
+            />
+          {/each}
+        </div>
+        {#each pinnedColumns as column, i (column.name)}
+          <Row>
+            {#each $rowVirtualizer.getVirtualItems() as row (`${row.key}-${column.index}`)}
+              {@const value = rows[row.index][column.name]}
+              {@const type = column.type}
+              {@const rowActive = activeIndex === row?.index}
+              {@const suppressTooltip = scrolling}
+
+              <Cell
+                {suppressTooltip}
+                {rowActive}
+                {value}
+                {row}
+                column={{ start: i * 200, size: 200 }}
+                {type}
+                on:inspect={(event) => {
+                  activeIndex = event.detail;
+                }}
+              />
+            {/each}
+          </Row>
+        {/each}
+      </div>
+    {/if}
   {/if}
 </div>

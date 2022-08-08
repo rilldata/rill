@@ -55,8 +55,8 @@
           columnNames={currentDerivedSource?.profile}
         /> -->
         <PreviewTable2
-          data={currentDerivedSource?.preview}
-          columns={currentDerivedSource?.profile}
+          rows={currentDerivedSource?.preview}
+          columnNames={currentDerivedSource?.profile}
         />
       {/key}
     {/if}
