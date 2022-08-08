@@ -1,8 +1,13 @@
 <script lang="ts">
+  import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+
+  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type {
@@ -28,6 +33,9 @@
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  let dimensions: Readable<DimensionDefinitionEntity[]>;
+  $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
   let measureField: Readable<string>;
   $: if ($metricsExplorer?.leaderboardMeasureId)
@@ -58,15 +66,28 @@
         : $bigNumberEntity.referenceValues?.[$measureField];
   }
 
+  /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
+  $: validLeaderboards =
+    $dimensions && $metricsExplorer?.leaderboards
+      ? $metricsExplorer?.leaderboards.filter((leaderboard) => {
+          const dimensionConfiguration = $dimensions?.find(
+            (dimension) => dimension.id === leaderboard.dimensionId
+          );
+          return (
+            dimensionConfiguration &&
+            dimensionConfiguration?.dimensionIsValid === ValidationState.OK
+          );
+        })
+      : [];
+
+  /** create a scale for the valid leaderboards */
   let leaderboardFormatScale: ShortHandSymbols = "none";
   $: if (
-    $metricsExplorer &&
+    validLeaderboards &&
     (formatPreset === NicelyFormattedTypes.HUMANIZE ||
       formatPreset === NicelyFormattedTypes.CURRENCY)
   ) {
-    leaderboardFormatScale = getScaleForLeaderboard(
-      $metricsExplorer.leaderboards
-    );
+    leaderboardFormatScale = getScaleForLeaderboard(validLeaderboards);
   }
 
   let leaderboardExpanded;
@@ -90,7 +111,7 @@
   function onResize() {
     if (!leaderboardContainer) return;
     availableWidth = leaderboardContainer.offsetWidth;
-    columns = Math.floor(availableWidth / (315 + 20));
+    columns = Math.max(1, Math.floor(availableWidth / (315 + 20)));
   }
 
   onMount(() => {
@@ -110,16 +131,19 @@
 <!-- container for the metrics leaderboard components and controls -->
 <div
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
+  style:min-width="365px"
   bind:this={leaderboardContainer}
 >
-  <div class="grid grid-auto-cols justify-end grid-flow-col items-end p-1 pb-3">
+  <div
+    class="grid grid-auto-cols justify-start grid-flow-col items-end p-1 pb-3"
+  >
     <LeaderboardMeasureSelector {metricsDefId} />
   </div>
   {#if $metricsExplorer}
     <VirtualizedGrid
       {columns}
       height="100%"
-      items={$metricsExplorer.leaderboards ?? []}
+      items={validLeaderboards ?? []}
       let:item
     >
       <!-- the single virtual element -->
