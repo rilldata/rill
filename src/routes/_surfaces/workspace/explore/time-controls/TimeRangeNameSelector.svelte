@@ -12,7 +12,7 @@
   import { prettyFormatTimeRange } from "./time-range-utils";
   import type { Readable } from "svelte/store";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { selectTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis";
+  import { updateSelectedTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis";
   import { store } from "$lib/redux-store/store-root";
 
   export let metricsDefId: string;
@@ -53,7 +53,7 @@
   const onTimeRangeSelect = (timeRangeName: TimeRangeName) => {
     timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
     store.dispatch(
-      selectTimeRangeNameApi({
+      updateSelectedTimeRangeNameApi({
         metricsDefId,
         timeRangeName,
       })

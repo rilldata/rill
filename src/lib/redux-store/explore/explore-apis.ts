@@ -313,12 +313,12 @@ export const fetchTimestampColumnRangeApi = createAsyncThunk(
     );
 
     return thunkAPI.dispatch(
-      selectTimeRangeNameApi({ metricsDefId, timeRangeName })
+      updateSelectedTimeRangeNameApi({ metricsDefId, timeRangeName })
     );
   }
 );
 
-export const selectTimeRangeNameApi = createAsyncThunk(
+export const updateSelectedTimeRangeNameApi = createAsyncThunk(
   `${EntityType.MetricsExplorer}/selectTimeRangeName`,
   async (
     {
@@ -360,7 +360,7 @@ export const selectTimeRangeNameApi = createAsyncThunk(
   }
 );
 
-export const selectTimeGrainApi = createAsyncThunk(
+export const updateSelectedTimeGrainApi = createAsyncThunk(
   `${EntityType.MetricsExplorer}/selectTimeGrain`,
   async (
     {

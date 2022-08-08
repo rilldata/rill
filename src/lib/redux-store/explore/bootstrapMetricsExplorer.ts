@@ -4,8 +4,9 @@ import { bootstrapMetricsDefinition } from "$lib/redux-store/metrics-definition/
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { selectMetricsExplorerById } from "$lib/redux-store/explore/explore-selectors";
 import { syncExplore } from "$lib/redux-store/explore/explore-apis";
-import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
-import { selectMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+import { selectValidDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
+import { selectValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-selectors";
+import { dataModelerService } from "$lib/application-state-stores/application-store";
 
 export const bootstrapMetricsExplorer = createAsyncThunk(
   `${EntityType.MetricsExplorer}/bootstrapMetricsExplorer`,
@@ -14,8 +15,17 @@ export const bootstrapMetricsExplorer = createAsyncThunk(
     await thunkAPI.dispatch(bootstrapMetricsDefinition(metricsDefId));
 
     const state = thunkAPI.getState() as RillReduxState;
-    const dimensions = selectDimensionsByMetricsId(state, metricsDefId);
-    const measures = selectMeasuresByMetricsId(state, metricsDefId);
+    const dimensions = selectValidDimensionsByMetricsId(state, metricsDefId);
+    const measures = selectValidMeasuresByMetricsId(state, metricsDefId);
+    // if there are no valid dimensions or measures take the user to metrics definition editor
+    if (!dimensions.length || !measures.length) {
+      await dataModelerService.dispatch("setActiveAsset", [
+        EntityType.MetricsDefinition,
+        metricsDefId,
+      ]);
+      return;
+    }
+
     await syncExplore(
       thunkAPI.dispatch,
       metricsDefId,

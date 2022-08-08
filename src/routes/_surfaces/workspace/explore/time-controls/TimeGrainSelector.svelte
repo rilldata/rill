@@ -5,7 +5,7 @@
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { Readable } from "svelte/store";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { selectTimeGrainApi } from "$lib/redux-store/explore/explore-apis";
+  import { updateSelectedTimeGrainApi } from "$lib/redux-store/explore/explore-apis";
   import { store } from "$lib/redux-store/store-root";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
@@ -30,7 +30,7 @@
     : undefined;
 
   const onTimeGrainSelect = (timeGrain: TimeGrain) => {
-    store.dispatch(selectTimeGrainApi({ metricsDefId, timeGrain }));
+    store.dispatch(updateSelectedTimeGrainApi({ metricsDefId, timeGrain }));
   };
 </script>
 
