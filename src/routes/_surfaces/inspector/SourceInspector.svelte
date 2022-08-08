@@ -41,11 +41,7 @@
   ) as DerivedTableStore;
 
   const store = getContext("rill:app:store") as ApplicationStore;
-  const queryHighlight = getContext("rill:app:query-highlight");
 
-  let tables;
-  // get source tables?
-  let sourceTableReferences;
   let showColumns = true;
 
   /** Select the explicit ID to prevent unneeded reactive updates in currentTable */
@@ -62,30 +58,8 @@
       ? $derivedTableStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
   // get source table references.
-  $: if (currentDerivedTable?.sources) {
-    sourceTableReferences = currentDerivedTable?.sources;
-  }
-
-  $: console.log(activeEntityID, currentTable);
-  // map and filter these source tables.
-  $: if (sourceTableReferences?.length) {
-    tables = sourceTableReferences
-      .map((sourceTableReference) => {
-        const table = $persistentTableStore.entities.find(
-          (t) => sourceTableReference.name === t.tableName
-        );
-        if (!table) return undefined;
-        return $derivedTableStore.entities.find(
-          (derivedTable) => derivedTable.id === table.id
-        );
-      })
-      .filter((t) => !!t);
-  } else {
-    tables = [];
-  }
 
   // toggle state for inspector sections
-  let showSourceTables = true;
 
   $: timestampColumns =
     selectTimestampColumnFromProfileEntity(currentDerivedTable);
@@ -110,13 +84,6 @@
         (table) => table.id === activeEntityID
       ).tableName
     );
-    // autoCreateMetricsDefinitionForModel(
-    //   $persistentTableStore.entities.find(
-    //     (table) => table.id === activeEntityID
-    //   ).tableName,
-    //   activeEntityID,
-    //   timestampColumns[0].name
-    // );
   };
 
   /** source summary information */
