@@ -7,7 +7,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import PreviewTable2 from "$lib/components/table/PreviewTable2.svelte";
+  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 
   import { getContext } from "svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
@@ -54,7 +54,7 @@
           rows={currentDerivedSource?.preview.slice(0, 100)}
           columnNames={currentDerivedSource?.profile}
         /> -->
-        <PreviewTable2
+        <PreviewTable
           rows={currentDerivedSource?.preview}
           columnNames={currentDerivedSource?.profile}
         />

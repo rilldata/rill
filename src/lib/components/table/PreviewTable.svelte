@@ -1,114 +1,128 @@
 <script lang="ts">
-  /**
-   * PreviewTable.svelte
-   * Use this component to drop into the application.
-   * Its goal it so utilize all of the other container components
-   * and provide the interactions needed to do things with the table.
-   */
-  import { Table, TableCell, TableRow } from "$lib/components/table/";
-  import PreviewTableHeader from "./PreviewTableHeader.svelte";
-  import TableHeader from "./TableHeader.svelte";
+  import type { ProfileColumn } from "$lib/types";
 
-  interface ColumnName {
-    name: string;
-    type: string;
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
+  import ColumnHeaders from "./ColumnHeaders.svelte";
+  import { config } from "./config";
+  import PinnedColumns from "./PinnedColumns.svelte";
+  import RowHeaders from "./RowHeaders.svelte";
+  import TableCells from "./TableCells.svelte";
+
+  export let rows;
+  export let columnNames: ProfileColumn[];
+
+  let rowVirtualizer;
+  let columnVirtualizer;
+  let container;
+  let pinnedColumns = [];
+
+  $: if (rows && columnNames) {
+    rowVirtualizer = createVirtualizer({
+      getScrollElement: () => container,
+      count: rows.length,
+      estimateSize: () => config.rowHeight,
+      overscan: 90,
+      paddingStart: config.rowHeight,
+    });
+    columnVirtualizer = createVirtualizer({
+      getScrollElement: () => container,
+      horizontal: true,
+      count: columnNames.length,
+      estimateSize: () => config.columnWidth,
+      overscan: 10,
+      paddingStart: config.indexWidth,
+    });
   }
 
-  export let columnNames: ColumnName[];
-  export let rows: any[];
-
-  const MAX_COLUMN_WIDTH = "250px";
-
-  let selectedColumns = [];
   let activeIndex;
-
-  function columnIsPinned(name, selectedCols) {
-    return selectedCols.map((column) => column.name).includes(name);
+  function clearActiveIndex() {
+    activeIndex = false;
   }
 
-  function togglePin(name, type, selectedCols) {
-    // if column is already pinned, remove.
-    if (columnIsPinned(name, selectedCols)) {
-      selectedColumns = [
-        ...selectedCols.filter((column) => column.name !== name),
-      ];
+  /** handle scrolling tooltip suppression */
+  let scrolling = false;
+  let timeoutID;
+  $: {
+    if (scrolling) {
+      if (timeoutID) clearTimeout(timeoutID);
+      timeoutID = setTimeout(() => {
+        scrolling = false;
+      }, 200);
+    }
+  }
+
+  /** pinning functionality */
+  function handlePin(column) {
+    if (pinnedColumns.some((p) => p.name === column.name)) {
+      pinnedColumns = [...pinnedColumns.filter((c) => c.name !== column.name)];
     } else {
-      selectedColumns = [...selectedCols, { name, type }];
+      pinnedColumns = [...pinnedColumns, column];
     }
   }
 </script>
 
-<div class="flex relative">
-  <Table>
-    <!-- headers -->
-    <TableRow>
-      <TableHeader position="top-left">#</TableHeader>
-      {#each columnNames as { name, type } (name)}
-        {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-        <PreviewTableHeader
-          {name}
-          {type}
-          pinned={thisColumnIsPinned}
-          on:pin={() => {
-            togglePin(name, type, selectedColumns);
-          }}
-          maxWidth={MAX_COLUMN_WIDTH}
-        />
-      {/each}
-    </TableRow>
-    <!-- values -->
-    {#each rows as row, index}
-      <TableRow hovered={activeIndex === index && activeIndex !== undefined}>
-        <TableHeader position="left">{index + 1}</TableHeader>
-        {#each columnNames as { name, type } (index + name)}
-          <TableCell
-            {name}
-            {type}
-            value={row[name]}
-            isNull={row[name] === null}
-            maxWidth={MAX_COLUMN_WIDTH}
-          />
-        {/each}
-      </TableRow>
-    {/each}
-  </Table>
-
-  {#if selectedColumns.length}
+<div
+  bind:this={container}
+  style:width="100%"
+  style:height="100%"
+  class="overflow-auto grid"
+  style:grid-template-columns="max-content auto"
+  on:scroll={() => {
+    /** capture to suppress cell tooltips. Otherwise,
+     * there's quite a bit of rendering jank.
+     */
+    scrolling = true;
+  }}
+>
+  {#if rowVirtualizer}
     <div
-      class="sticky right-0 z-20 bg-white border border-l-4 border-y-0 border-r-0 border-gray-300"
+      class="relative bg-white"
+      on:mouseleave={clearActiveIndex}
+      on:blur={clearActiveIndex}
+      style:will-change="transform, contents"
+      style:width="{$columnVirtualizer.getTotalSize()}px"
+      style:height="{$rowVirtualizer.getTotalSize()}px"
     >
-      <Table>
-        <TableRow>
-          {#each selectedColumns as { name, type } (name)}
-            {@const thisColumnIsPinned = columnIsPinned(name, selectedColumns)}
-            <PreviewTableHeader
-              {name}
-              {type}
-              maxWidth={MAX_COLUMN_WIDTH}
-              pinned={thisColumnIsPinned}
-              on:pin={() => {
-                togglePin(name, type, selectedColumns);
-              }}
-            />
-          {/each}
-        </TableRow>
-        {#each rows as row, index}
-          <TableRow
-            hovered={activeIndex === index && activeIndex !== undefined}
-          >
-            {#each selectedColumns as { name, type }}
-              <TableCell
-                {name}
-                {type}
-                {index}
-                isNull={row[name] === null}
-                value={row[name]}
-                maxWidth={MAX_COLUMN_WIDTH}
-              />
-            {/each}
-          </TableRow>
-        {/each}
-      </Table>
+      <!-- ColumnHeaders -->
+      <ColumnHeaders
+        virtualColumnItems={$columnVirtualizer.getVirtualItems()}
+        columns={columnNames}
+        {pinnedColumns}
+        on:pin={(event) => {
+          handlePin(event.detail);
+        }}
+      />
+      <!-- RowHeader -->
+      <RowHeaders
+        virtualRowItems={$rowVirtualizer.getVirtualItems()}
+        totalHeight={$rowVirtualizer.getTotalSize()}
+      />
+      <!-- VirtualTableBody -->
+      <TableCells
+        virtualColumnItems={$columnVirtualizer.getVirtualItems()}
+        virtualRowItems={$rowVirtualizer.getVirtualItems()}
+        {rows}
+        columns={columnNames}
+        {activeIndex}
+        {scrolling}
+        on:inspect={(event) => {
+          activeIndex = event.detail;
+        }}
+      />
     </div>
+    <!-- PinnedContent -->
+    {#if pinnedColumns.length}
+      <PinnedColumns
+        {rows}
+        {pinnedColumns}
+        {scrolling}
+        {activeIndex}
+        virtualRowItems={$rowVirtualizer.getVirtualItems()}
+        on:pin={(event) => handlePin(event.detail)}
+        on:inspect={(event) => {
+          activeIndex = event.detail;
+        }}
+      />
+    {/if}
   {/if}
 </div>

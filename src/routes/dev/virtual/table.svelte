@@ -4,7 +4,7 @@
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
   import { SelectMenu } from "$lib/components/menu";
-  import PreviewTable2 from "$lib/components/table/PreviewTable2.svelte";
+  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
 
   import { getContext } from "svelte";
 
@@ -72,7 +72,7 @@
 </div>
 {#if currentDerived}
   {#key selection?.key}
-    <PreviewTable2
+    <PreviewTable
       data={currentDerived.preview}
       columns={currentDerived.profile}
     />

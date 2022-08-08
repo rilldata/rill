@@ -23,7 +23,7 @@
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
   import Portal from "$lib/components/Portal.svelte";
-  import PreviewTable2 from "$lib/components/table/PreviewTable2.svelte";
+  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
   import { updateModelQueryApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;
@@ -130,7 +130,7 @@
             {currentDerivedModel.error}
           </div>
         {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
-          <PreviewTable2
+          <PreviewTable
             rows={currentDerivedModel.preview}
             columnNames={currentDerivedModel.profile}
           />
