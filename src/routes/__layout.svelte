@@ -1,27 +1,34 @@
-<script>
-  import "../fonts.css";
-  import "../app.css";
-  import { onMount, setContext } from "svelte";
-  import { createStore } from "$lib/application-state-stores/application-store";
+<script lang="ts">
   import { browser } from "$app/env";
-
-  import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
-  import notification from "$lib/components/notifications/";
-
+  import { createStore } from "$lib/application-state-stores/application-store";
+  import {
+    createDerivedModelStore,
+    createPersistentModelStore,
+  } from "$lib/application-state-stores/model-stores";
   import { createQueryHighlightStore } from "$lib/application-state-stores/query-highlight-store";
   import {
     createDerivedTableStore,
     createPersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import {
-    createDerivedModelStore,
-    createPersistentModelStore,
-  } from "$lib/application-state-stores/model-stores";
+  import notification from "$lib/components/notifications/";
+  import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
   import { initMetrics } from "$lib/metrics/initMetrics";
   import { syncApplicationState } from "$lib/redux-store/application/application-apis";
+  import type { ApplicationMetadata } from "$lib/types";
+  import { onMount, setContext } from "svelte";
+  import "../app.css";
+  import "../fonts.css";
 
   let store;
   let queryHighlight = createQueryHighlightStore();
+
+  const applicationMetadata: ApplicationMetadata = {
+    version: RILL_VERSION, // constant defined in svelte.config.js
+    commitHash: RILL_COMMIT, // constant defined in svelte.config.js
+  };
+
+  setContext("rill:app:metadata", applicationMetadata);
+
   if (browser) {
     store = createStore();
     setContext("rill:app:store", store);

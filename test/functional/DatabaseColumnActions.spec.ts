@@ -1,7 +1,7 @@
-import { FunctionalTestBase } from "./FunctionalTestBase";
+import { TestBase } from "@adityahegde/typescript-test-utils";
 import type { SinonSpy } from "sinon";
 import { numericHistograms } from "../data/HistogramSummary.data";
-import { TestBase } from "@adityahegde/typescript-test-utils";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 @FunctionalTestBase.Suite
 export class DatabaseColumns extends FunctionalTestBase {

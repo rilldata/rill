@@ -9,7 +9,6 @@
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import ModelIcon from "$lib/components/icons/Model.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
@@ -21,7 +20,7 @@
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
-  import Divider from "$lib/components/menu/Divider.svelte";
+  import { Divider, MenuItem } from "$lib/components/menu";
   import { deleteModelApi } from "$lib/redux-store/model/model-apis";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import {
