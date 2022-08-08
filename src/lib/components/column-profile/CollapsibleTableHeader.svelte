@@ -13,6 +13,7 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { createCommandClickAction } from "$lib/util/command-click-action";
   import { guidGenerator } from "$lib/util/guid";
+  import { isMac } from "$lib/util/os-detection";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
@@ -217,16 +218,30 @@
         <div>
           <StackingWord key="command">query</StackingWord> in workspace
         </div>
-        <Shortcut>command + click</Shortcut>
+        <Shortcut>
+          {#if isMac()}<span
+              style="
+          font-family: var(--system); 
+          font-size: 11.5px;
+        ">⌘</span
+            >{:else}ctrl{/if} + Click</Shortcut
+        >
       {/if}
       {#if entityType === EntityType.Model}
         <div>open in workspace</div>
-        <Shortcut>click</Shortcut>
+        <Shortcut>Click</Shortcut>
       {/if}
       <div>
         <StackingWord key="shift">copy</StackingWord> name to clipboard
       </div>
-      <Shortcut>shift + click</Shortcut>
+      <Shortcut>
+        <span
+          style="
+          font-family: var(--system); 
+          font-size: 11.5px;
+        ">⇧</span
+        > + Click</Shortcut
+      >
     </TooltipShortcutContainer>
   </TooltipContent>
 </Tooltip>
