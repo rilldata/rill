@@ -116,7 +116,7 @@
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>
-                create model from source
+                autogenerate model
               </MenuItem>
 
               <MenuItem
@@ -125,7 +125,7 @@
                 on:select={() => quickStartMetrics(id, tableName)}
               >
                 <svelte:fragment slot="icon"><Explore /></svelte:fragment>
-                create dashboard from source
+                autogenerate dashboard
                 <svelte:fragment slot="description">
                   {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
                     requires a timestamp column
