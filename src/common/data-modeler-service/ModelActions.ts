@@ -16,7 +16,10 @@ import type {
   PersistentModelStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { NewModelParams } from "$common/data-modeler-state-service/ModelStateActions";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import {
+  DatabaseActionQueuePriority,
+  MetadataPriority,
+} from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import {
   cleanModelName,
   getNewDerivedModel,
@@ -136,6 +139,17 @@ export class ModelActions extends DataModelerActions {
     }
 
     this.databaseActionQueue.clearQueue(modelId);
+    // Clear existing profile actions in queue
+    const columns = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(modelId)
+      .profile.map((column) => column.name);
+
+    columns.forEach((column) => {
+      Object.values(MetadataPriority).forEach((priority) => {
+        this.databaseActionQueue.clearQueue(modelId + column + priority);
+      });
+    });
     await this.setModelStatus(modelId, EntityStatus.Validating);
 
     this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query]);
@@ -184,6 +198,18 @@ export class ModelActions extends DataModelerActions {
     }
     if (!model.sanitizedQuery) return;
     this.databaseActionQueue.clearQueue(modelId);
+
+    // Clear existing profile action in queue
+    const columns = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(modelId)
+      .profile.map((column) => column.name);
+
+    columns.forEach((column) => {
+      Object.values(MetadataPriority).forEach((priority) => {
+        this.databaseActionQueue.clearQueue(modelId + column + priority);
+      });
+    });
 
     try {
       // create a view of the query for other analysis

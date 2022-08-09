@@ -25,7 +25,10 @@ import type {
   DerivedTableEntity,
   DerivedTableStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import {
+  DatabaseActionQueuePriority,
+  MetadataPriority,
+} from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { existsSync } from "fs";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import {
@@ -144,6 +147,17 @@ export class TableActions extends DataModelerActions {
       );
     }
     this.databaseActionQueue.clearQueue(tableId);
+    // Clear existing profile action in queue
+    const columns = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(tableId)
+      .profile.map((column) => column.name);
+
+    columns.forEach((column) => {
+      Object.values(MetadataPriority).forEach((priority) => {
+        this.databaseActionQueue.clearQueue(tableId + column + priority);
+      });
+    });
 
     try {
       this.dataModelerStateService.dispatch("setEntityStatus", [

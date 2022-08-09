@@ -11,7 +11,10 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
   DatabaseActionQueuePriority,
+  DatabaseProfilesFieldPriority,
+  getProfilePriority,
   MetadataPriority,
+  ProfileMetadataPriorityMap,
 } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { PersistentModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 
@@ -38,7 +41,11 @@ export class ApplicationActions extends DataModelerActions {
         Object.values(MetadataPriority).forEach((priority) => {
           this.databaseActionQueue.updatePriority(
             currentActiveAsset.id + column + priority,
-            DatabaseActionQueuePriority.InactiveModelProfile
+            getProfilePriority(
+              DatabaseActionQueuePriority.InactiveModelProfile,
+              DatabaseProfilesFieldPriority.NonFocused,
+              ProfileMetadataPriorityMap[priority]
+            )
           );
         });
       });
@@ -83,6 +90,18 @@ export class ApplicationActions extends DataModelerActions {
     }
 
     this.databaseActionQueue.clearQueue(entityId);
+
+    // Clear existing profile action in queue
+    const columns = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(entityId)
+      .profile.map((column) => column.name);
+
+    columns.forEach((column) => {
+      Object.values(MetadataPriority).forEach((priority) => {
+        this.databaseActionQueue.clearQueue(entityId + column + priority);
+      });
+    });
 
     this.dataModelerStateService.dispatch("deleteEntity", [
       entityType,
