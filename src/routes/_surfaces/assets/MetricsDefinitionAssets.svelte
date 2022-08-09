@@ -126,7 +126,7 @@
             <svelte:fragment slot="icon">
               <Model />
             </svelte:fragment>
-            see model for metrics
+            edit model
             <svelte:fragment slot="description">
               {#if hasSourceError}
                 {selectionError}
