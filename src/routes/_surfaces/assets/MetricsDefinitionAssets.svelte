@@ -73,7 +73,7 @@
   out:slide={{ duration: 200 }}
 >
   <CollapsibleSectionTitle
-    tooltipText={"metrics"}
+    tooltipText={"dashboards"}
     bind:active={showMetricsDefs}
   >
     <h4 class="flex flex-row items-center gap-x-2">
@@ -81,8 +81,8 @@
     </h4>
   </CollapsibleSectionTitle>
   <ContextButton
-    id={"create-model-button"}
-    tooltipText="create a new model"
+    id={"create-dashboard-button"}
+    tooltipText="create a new dashboard"
     on:click={dispatchAddEmptyMetricsDef}
   >
     <AddIcon />
