@@ -96,6 +96,7 @@
         )}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
+            on:query={() => queryHandler(tableName)}
             entityType={EntityType.Table}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
