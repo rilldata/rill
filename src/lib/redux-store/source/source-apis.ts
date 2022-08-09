@@ -1,24 +1,24 @@
-import { dataModelerService } from "$lib/application-state-stores/application-store";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import notificationStore from "$lib/components/notifications";
-import { store } from "$lib/redux-store/store-root";
-import {
-  createMetricsDefsApi,
-  generateMeasuresAndDimensionsApi,
-} from "$lib/redux-store/metrics-definition/metrics-definition-apis";
 import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import { selectMetricsDefinitionMatchingName } from "$lib/redux-store/metrics-definition/metrics-definition-selectors";
+import { dataModelerService } from "$lib/application-state-stores/application-store";
 import {
   resetQuickStartDashboardOverlay,
   showQuickStartDashboardOverlay,
 } from "$lib/application-state-stores/layout-store";
+import notificationStore from "$lib/components/notifications";
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
+import {
+  createMetricsDefsApi,
+  generateMeasuresAndDimensionsApi,
+} from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+import { selectMetricsDefinitionMatchingName } from "$lib/redux-store/metrics-definition/metrics-definition-selectors";
 import { updateModelQueryApi } from "$lib/redux-store/model/model-apis";
 import {
   selectDerivedModelBySourceName,
   selectPersistentModelById,
 } from "$lib/redux-store/model/model-selector";
+import { store } from "$lib/redux-store/store-root";
 
 // Source doesn't have a slice as of now.
 // This file has simple code that will eventually be moved into async thunks
@@ -100,7 +100,7 @@ export const autoCreateMetricsDefinitionForModel = async (
   sourceModelId: string,
   timeDimension: string
 ) => {
-  const metricsLabel = `metrics_${sourceName}`;
+  const metricsLabel = `${sourceName}_dashboard`;
   const existingMetrics = selectMetricsDefinitionMatchingName(
     store.getState(),
     metricsLabel
