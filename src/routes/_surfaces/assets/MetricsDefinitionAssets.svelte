@@ -77,7 +77,7 @@
     bind:active={showMetricsDefs}
   >
     <h4 class="flex flex-row items-center gap-x-2">
-      <MetricsIcon size="16px" /> Metrics
+      <Explore size="16px" /> Dashboards
     </h4>
   </CollapsibleSectionTitle>
   <ContextButton
@@ -144,7 +144,7 @@
             }}
           >
             <svelte:fragment slot="icon">
-              <Explore />
+              <MetricsIcon />
             </svelte:fragment>
             edit metrics
           </MenuItem>
