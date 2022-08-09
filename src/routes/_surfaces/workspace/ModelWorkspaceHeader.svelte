@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { getContext } from "svelte";
   import {
     ApplicationStore,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
+  import { getContext } from "svelte";
 
-  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import WorkspaceHeader from "./WorkspaceHeader.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
@@ -43,4 +43,6 @@
   };
 </script>
 
-<WorkspaceHeader {...{ titleInput, onChangeCallback }} />
+<WorkspaceHeader
+  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
+/>
