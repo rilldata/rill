@@ -4,6 +4,11 @@ import { InitCommand } from "$cli/InitCommand";
 import { StartCommand } from "$cli/StartCommand";
 import { Command } from "commander";
 import { execSync } from "node:child_process";
+import Os from "os";
+
+function isWindows() {
+  return Os.platform() === "win32";
+}
 
 export class ExampleProjectCommand extends DataModelerCliCommand {
   public getCommand(): Command {
@@ -32,9 +37,19 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
         `--output ${project}/example-assets-0.6.zip`,
       { stdio: "inherit" }
     );
-    execSync(`unzip ${project}/example-assets-0.6.zip ` + `-d ${project}/`, {
-      stdio: "inherit",
-    });
+    if (isWindows()) {
+      execSync(
+        `powershell -Command "Expand-Archive -Force ${project}/example-assets-0.6.zip ${project}/"`,
+
+        {
+          stdio: "inherit",
+        }
+      );
+    } else {
+      execSync(`unzip ${project}/example-assets-0.6.zip ` + `-d ${project}/`, {
+        stdio: "inherit",
+      });
+    }
 
     console.log("Importing example datasets into the project...");
     console.log("Ecommerce...");
