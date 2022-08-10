@@ -1,4 +1,5 @@
-import { FunctionalTestBase } from "./FunctionalTestBase";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { asyncWait } from "$common/utils/waitUtils";
 import { assert } from "sinon";
 import {
   SingleTableQuery,
@@ -6,8 +7,7 @@ import {
   TwoTableJoinQuery,
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
-import { asyncWait } from "$common/utils/waitUtils";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 @FunctionalTestBase.Suite
 export class DatabasePriorityQueueSpec extends FunctionalTestBase {
@@ -16,7 +16,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
     await this.clientDataModelerService.dispatch("clearAllTables", []);
     await this.clientDataModelerService.dispatch("clearAllModels", []);
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: "" },
+      { name: "model_0", query: "" },
     ]);
   }
 
@@ -28,7 +28,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
     );
     await asyncWait(1);
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("tableName", "model_0");
     const modelQueryPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model.id, SingleTableQuery]
@@ -46,7 +46,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       "test/data/AdImpressions.parquet",
     ]);
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("tableName", "model_0");
     const modelQueryOnePromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model.id, TwoTableJoinQuery]
@@ -61,7 +61,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       modelQueryOnePromise,
       modelQueryTwoPromise
     );
-    const [, derivedModel] = this.getModels("tableName", "query_0");
+    const [, derivedModel] = this.getModels("tableName", "model_0");
     this.assertColumns(derivedModel.profile, SingleTableQueryColumnsTestData);
   }
 
@@ -74,10 +74,10 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       "test/data/AdImpressions.parquet",
     ]);
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_1", query: "" },
+      { name: "model_1", query: "" },
     ]);
 
-    const [model0] = this.getModels("tableName", "query_1");
+    const [model0] = this.getModels("tableName", "model_1");
     const modelQueryOnePromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model0.id, TwoTableJoinQuery]
@@ -87,7 +87,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       model0.id,
     ]);
     await asyncWait(50);
-    const [model1] = this.getModels("tableName", "query_0");
+    const [model1] = this.getModels("tableName", "model_0");
     const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model1.id, SingleTableQuery]
@@ -110,7 +110,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       "test/data/AdImpressions.parquet",
     ]);
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("tableName", "model_0");
     const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model.id, TwoTableJoinQuery]
@@ -125,7 +125,7 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       modelQueryOnePromise,
       modelQueryTwoPromise
     );
-    const [, derivedModel] = this.getModels("tableName", "query_0");
+    const [, derivedModel] = this.getModels("tableName", "model_0");
     this.assertColumns(derivedModel.profile, TwoTableJoinQueryColumnsTestData);
   }
 
