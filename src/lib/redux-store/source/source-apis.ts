@@ -133,13 +133,13 @@ const createModelFromSourceAndGetId = async (
 ): Promise<string> => {
   // check existing models to avoid a name conflict
   const existingNames = models
-    .filter((model) => model.name.includes(`query_${sourceName}`))
+    .filter((model) => model.name.includes(`${sourceName}_model`))
     .map((model) => model.tableName)
     .sort();
   const nextName =
     existingNames.length === 0
-      ? `query_${sourceName}`
-      : `query_${sourceName}_${existingNames.length + 1}`;
+      ? `${sourceName}_model`
+      : `${sourceName}_model_${existingNames.length + 1}`;
 
   const response = await dataModelerService.dispatch("addModel", [
     {
