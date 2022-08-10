@@ -1,7 +1,14 @@
 <script lang="ts">
   import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
 
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        placeholderData: [],
+      },
+    },
+  });
 </script>
 
 <QueryClientProvider client={queryClient}>

@@ -7,11 +7,13 @@
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { fetchWrapper } from "$lib/util/fetchWrapper";
   import UpdatedMetrics from "./UpdatedMetrics.svelte";
+  import QueriedExplore from "./QueriedExplore.svelte";
 
   const queryClient = useQueryClient();
 
-  const metricsDefinitions = useQuery("metrics", () =>
-    fetchWrapper("metrics", "GET")
+  const metricsDefinitions = useQuery<Array<MetricsDefinitionEntity>>(
+    "metrics",
+    () => fetchWrapper("metrics", "GET")
   );
 
   const updateMetricsDefinition = useMutation(
@@ -35,7 +37,7 @@
   };
 </script>
 
-<div>
+<div class="fixed" style="width: 30%;">
   {#if $metricsDefinitions.isLoading}
     <span>Loading...</span>
   {:else if $metricsDefinitions.error}
@@ -48,6 +50,6 @@
       </div>
     {/each}
   {/if}
+  <UpdatedMetrics />
 </div>
-
-<UpdatedMetrics />
+<div class="fixed" style="left: 30%;"><QueriedExplore /></div>
