@@ -91,17 +91,19 @@ export class ApplicationActions extends DataModelerActions {
 
     this.databaseActionQueue.clearQueue(entityId);
 
-    // Clear existing profile action in queue
-    const columns = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Derived)
-      .getById(entityId)
-      .profile.map((column) => column.name);
+    if (entityType === EntityType.Model || entityType === EntityType.Table) {
+      // Clear existing profile action in queue
+      const columns = this.dataModelerStateService
+        .getEntityStateService(entityType, StateType.Derived)
+        .getById(entityId)
+        .profile.map((column) => column.name);
 
-    columns.forEach((column) => {
-      Object.values(MetadataPriority).forEach((priority) => {
-        this.databaseActionQueue.clearQueue(entityId + column + priority);
+      columns.forEach((column) => {
+        Object.values(MetadataPriority).forEach((priority) => {
+          this.databaseActionQueue.clearQueue(entityId + column + priority);
+        });
       });
-    });
+    }
 
     this.dataModelerStateService.dispatch("deleteEntity", [
       entityType,
