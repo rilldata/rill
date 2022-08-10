@@ -38,7 +38,7 @@ export class PersistentModelEntityService extends EntityStateService<
       initialState.modelNumber = 0;
     }
     initialState.entities.forEach((entity) => {
-      const match = entity.name.match(/query_(\d*).sql/);
+      const match = entity.name.match(/model_(\d*).sql/);
       const num = Number(match?.[1]);
       if (!Number.isNaN(num)) {
         initialState.modelNumber = Math.max(

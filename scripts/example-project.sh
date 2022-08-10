@@ -32,7 +32,7 @@ echo "Importing example SQL transforamtions into the project..."
 mv -v ${PROJECT_BASE}/rill-developer-example/example-assets/models/* ${PROJECT_BASE}/rill-developer-example/models
 
 echo "Cleaning up the project..."
-rm ${PROJECT_BASE}/rill-developer-example/models/query_1.sql
+rm ${PROJECT_BASE}/rill-developer-example/models/model_1.sql
 rm -rf ${PROJECT_BASE}/rill-developer-example/example-assets
 rm -rf ${PROJECT_BASE}/rill-developer-example/__MACOSX
 rm -rf ${PROJECT_BASE}/rill-developer-example/example-assets.zip
