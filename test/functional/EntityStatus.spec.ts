@@ -1,12 +1,12 @@
-import { FunctionalTestBase } from "./FunctionalTestBase";
+import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import {
   EntityStatus,
   EntityType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { EntityStatusTracker } from "../utils/EntityStatusTracker";
 import { asyncWait } from "$common/utils/waitUtils";
 import { TwoTableJoinQuery } from "../data/ModelQuery.data";
-import { ApplicationStatus } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import { EntityStatusTracker } from "../utils/EntityStatusTracker";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 @FunctionalTestBase.Suite
 export class EntityStatusSpec extends FunctionalTestBase {
@@ -54,10 +54,10 @@ export class EntityStatusSpec extends FunctionalTestBase {
   //         "addOrUpdateTableFromFile", ["test/data/AdBids.csv"]);
   //     await this.waitForTables();
   //     await this.clientDataModelerService.dispatch(
-  //         "addModel", [{name: "query_0", query: ""}]);
+  //         "addModel", [{name: "model_0", query: ""}]);
   //     await asyncWait(50);
 
-  //     const [model] = this.getModels("name", "query_0.sql");
+  //     const [model] = this.getModels("name", "model_0.sql");
   //     this.entityStatusTracker.startTracker(EntityType.Model);
   //     await asyncWait(50);
 
@@ -88,11 +88,11 @@ export class EntityStatusSpec extends FunctionalTestBase {
     ]);
     await this.waitForTables();
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: TwoTableJoinQuery },
+      { name: "model_0", query: TwoTableJoinQuery },
     ]);
     await asyncWait(50);
 
-    const [model] = this.getModels("name", "query_0.sql");
+    const [model] = this.getModels("name", "model_0.sql");
     this.entityStatusTracker.startTracker(EntityType.Model);
     await asyncWait(50);
 
@@ -117,13 +117,13 @@ export class EntityStatusSpec extends FunctionalTestBase {
   // @FunctionalTestBase.Test()
   // public async shouldOnlySwitchApplicationStatusOnce() {
   //     await this.clientDataModelerService.dispatch(
-  //         "addModel", [{name: "query_0", query: ""}]);
+  //         "addModel", [{name: "model_0", query: ""}]);
   //     await this.clientDataModelerService.dispatch(
-  //         "addModel", [{name: "query_1", query: ""}]);
+  //         "addModel", [{name: "model_1", query: ""}]);
   //     await asyncWait(50);
 
-  //     const [model0] = this.getModels("name", "query_0.sql");
-  //     const [model1] = this.getModels("name", "query_1.sql");
+  //     const [model0] = this.getModels("name", "model_0.sql");
+  //     const [model1] = this.getModels("name", "model_1.sql");
 
   //     this.entityStatusTracker.startTracker(EntityType.Table);
   //     await asyncWait(50);

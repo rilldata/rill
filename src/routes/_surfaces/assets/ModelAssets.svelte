@@ -140,7 +140,7 @@
             }}
           >
             <svelte:fragment slot="icon"><Explore /></svelte:fragment>
-            create dashboard from model
+            autogenerate dashboard
             <svelte:fragment slot="description">
               {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
                 requires a timestamp column
