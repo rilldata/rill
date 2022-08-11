@@ -56,6 +56,24 @@ export class ApplicationActions extends DataModelerActions {
     ]);
   }
 
+  @DataModelerActions.ApplicationAction()
+  public async updateColumnPriority(
+    _: ApplicationStateActionArg,
+    entityId: string,
+    column: string
+  ) {
+    Object.values(MetadataPriority).forEach((priority) => {
+      this.databaseActionQueue.updatePriority(
+        entityId + column + priority,
+        getProfilePriority(
+          DatabaseActionQueuePriority.ActiveModelProfile,
+          DatabaseProfilesFieldPriority.Focused,
+          ProfileMetadataPriorityMap[priority]
+        )
+      );
+    });
+  }
+
   @DataModelerActions.PersistentModelAction()
   public async setModelAsActiveAsset({
     stateService,
@@ -91,18 +109,25 @@ export class ApplicationActions extends DataModelerActions {
 
     this.databaseActionQueue.clearQueue(entityId);
 
+    console.log(stateService.getById(entityId));
+
     if (entityType === EntityType.Model || entityType === EntityType.Table) {
       // Clear existing profile action in queue
+      // console.log("Trying to call DMSS");
+
       const columns = this.dataModelerStateService
         .getEntityStateService(entityType, StateType.Derived)
         .getById(entityId)
-        .profile.map((column) => column.name);
+        .profile?.map((column) => column.name);
 
-      columns.forEach((column) => {
-        Object.values(MetadataPriority).forEach((priority) => {
-          this.databaseActionQueue.clearQueue(entityId + column + priority);
+      // console.log(columns);
+      if (columns) {
+        columns.forEach((column) => {
+          Object.values(MetadataPriority).forEach((priority) => {
+            this.databaseActionQueue.clearQueue(entityId + column + priority);
+          });
         });
-      });
+      }
     }
 
     this.dataModelerStateService.dispatch("deleteEntity", [

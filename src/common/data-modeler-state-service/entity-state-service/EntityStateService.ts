@@ -109,6 +109,12 @@ export abstract class EntityStateService<
   }
 
   public getById(id: string, state: State = this.getCurrentState()): Entity {
+    // console.log(
+    //   "The state for id ",
+    //   id,
+    //   "is ",
+    //   state.entities.find((entity) => entity.id === id)
+    // );
     return state.entities.find((entity) => entity.id === id);
   }
 
