@@ -25,7 +25,7 @@
   import Explore from "$lib/components/icons/Explore.svelte";
   import Model from "$lib/components/icons/Model.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
-  import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
+  import RenameTableModal from "$lib/components/preview-table/RenameTableModal.svelte";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,

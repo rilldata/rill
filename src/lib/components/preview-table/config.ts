@@ -1,5 +1,5 @@
 export const config = {
-  defaultcolumnWidth: 200,
+  defaultColumnWidth: 200,
   maxColumnWidth: 320,
   minColumnWidth: 120,
   rowHeight: 36,

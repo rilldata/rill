@@ -23,7 +23,7 @@
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
   import Portal from "$lib/components/Portal.svelte";
-  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
+  import { PreviewTable } from "$lib/components/preview-table";
   import { updateModelQueryApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;

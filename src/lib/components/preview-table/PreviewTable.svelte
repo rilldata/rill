@@ -38,7 +38,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
 
   /** this is a perceived character width value, in pixels, when our monospace
    * font is 12px high. */
-  const CHARACTER_WIDTH = 8;
+  const CHARACTER_WIDTH = 7;
   const CHARACTER_X_PAD = 16 * 2;
   const HEADER_ICON_WIDTHS = 16 * 2;
   const HEADER_X_PAD = CHARACTER_X_PAD;
@@ -72,6 +72,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       getScrollElement: () => container,
       horizontal: true,
       count: columnNames.length,
+      getItemKey: (index) => columnNames[index].name,
       estimateSize: (index) => {
         const column = columnNames[index];
         /** if we are inferring column widths from the data,
@@ -199,6 +200,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
         {pinnedColumns}
         {scrolling}
         {activeIndex}
+        virtualColumnItems={virtualColumns}
         virtualRowItems={virtualRows}
         on:pin={handlePin}
         on:inspect={setActiveIndex}
