@@ -1,3 +1,4 @@
+import { SOURCE_PREVIEW_COUNT } from "$common/constants";
 import {
   ActionResponse,
   ActionStatus,
@@ -201,7 +202,7 @@ export class TableActions extends DataModelerActions {
                 priority: DatabaseActionQueuePriority.TableProfile,
               },
               "getFirstNOfTable",
-              [persistentTable.tableName, 500]
+              [persistentTable.tableName, SOURCE_PREVIEW_COUNT]
             )),
         ].map((asyncFunc) => asyncFunc())
       );

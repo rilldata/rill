@@ -10,7 +10,10 @@
   import Source from "$lib/components/icons/Source.svelte";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -103,6 +106,12 @@
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             on:query={() => queryHandler(tableName)}
+            on:select={() => {
+              dataModelerService.dispatch("setActiveAsset", [
+                EntityType.Table,
+                id,
+              ]);
+            }}
             entityType={EntityType.Table}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
