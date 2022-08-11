@@ -1,6 +1,8 @@
 <script lang="ts">
+  import type { HeaderPosition } from "../types";
+
   export let header;
-  export let position: "top" | "left" | "top-left" = "top";
+  export let position: HeaderPosition = "top";
 
   let positionClasses;
   $: {

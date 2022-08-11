@@ -1,22 +1,23 @@
 <script lang="ts">
+  import { DataTypeIcon } from "$lib/components/data-types";
+  import Pin from "$lib/components/icons/Pin.svelte";
+  import notificationStore from "$lib/components/notifications";
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
+  import StackingWord from "$lib/components/tooltip/StackingWord.svelte";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { createEventDispatcher } from "svelte";
-  import { DataTypeIcon } from "../data-types";
-  import Pin from "../icons/Pin.svelte";
-  import notificationStore from "../notifications";
-  import Shortcut from "../tooltip/Shortcut.svelte";
-  import StackingWord from "../tooltip/StackingWord.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
+  import type { HeaderPosition } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
   export let pinned = false;
   export let name: string;
   export let type: string;
   export let header;
-  export let position = "top";
+  export let position: HeaderPosition = "top";
 
   const dispatch = createEventDispatcher();
 

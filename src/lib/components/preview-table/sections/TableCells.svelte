@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ProfileColumn } from "$lib/types";
-  import Cell from "./Cell.svelte";
-  import Row from "./Row.svelte";
+  import Cell from "../core/Cell.svelte";
+  import Row from "../core/Row.svelte";
   export let virtualColumnItems;
   export let virtualRowItems;
   export let rows;

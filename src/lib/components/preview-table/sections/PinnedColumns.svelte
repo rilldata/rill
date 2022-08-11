@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { ProfileColumn } from "$lib/types";
   import { createEventDispatcher } from "svelte";
-  import Cell from "./Cell.svelte";
-  import ColumnHeader from "./ColumnHeader.svelte";
-  import Row from "./Row.svelte";
+  import Cell from "../core/Cell.svelte";
+  import ColumnHeader from "../core/ColumnHeader.svelte";
+  import Row from "../core/Row.svelte";
 
   const dispatch = createEventDispatcher();
 

@@ -11,11 +11,11 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import type { ProfileColumn } from "$lib/types";
 
   import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import ColumnHeaders from "./ColumnHeaders.svelte";
   import { config } from "./config";
-  import PinnedColumns from "./PinnedColumns.svelte";
-  import RowHeaders from "./RowHeaders.svelte";
-  import TableCells from "./TableCells.svelte";
+  import ColumnHeaders from "./sections/ColumnHeaders.svelte";
+  import PinnedColumns from "./sections/PinnedColumns.svelte";
+  import RowHeaders from "./sections/RowHeaders.svelte";
+  import TableCells from "./sections/TableCells.svelte";
 
   export let rows;
   export let columnNames: ProfileColumn[];

@@ -3,7 +3,7 @@
 
   import { createEventDispatcher } from "svelte";
 
-  import ColumnHeader from "./ColumnHeader.svelte";
+  import ColumnHeader from "../core/ColumnHeader.svelte";
   const dispatch = createEventDispatcher();
   export let columns: ProfileColumn[];
   export let pinnedColumns: ProfileColumn[];

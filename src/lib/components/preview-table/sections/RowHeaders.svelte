@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { config } from "./config";
-  import StickyHeader from "./StickyHeader.svelte";
+  import { config } from "../config";
+  import StickyHeader from "../core/StickyHeader.svelte";
   export let totalHeight: number;
   export let virtualRowItems;
 </script>
