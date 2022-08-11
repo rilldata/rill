@@ -10,10 +10,7 @@
   import Source from "$lib/components/icons/Source.svelte";
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "$lib/application-state-stores/application-store";
+  import { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -105,12 +102,7 @@
         {@const entityIsActive = id === activeEntityID}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
-            on:select={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Table,
-                id,
-              ]);
-            }}
+            on:query={() => queryHandler(tableName)}
             entityType={EntityType.Table}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
@@ -132,7 +124,7 @@
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>
-                create model from source
+                create new model
               </MenuItem>
 
               <MenuItem
@@ -141,7 +133,7 @@
                 on:select={() => quickStartMetrics(id, tableName)}
               >
                 <svelte:fragment slot="icon"><Explore /></svelte:fragment>
-                create dashboard from source
+                autogenerate dashboard
                 <svelte:fragment slot="description">
                   {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
                     requires a timestamp column
