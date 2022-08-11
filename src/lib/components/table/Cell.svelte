@@ -1,9 +1,6 @@
 <script>
   import { INTERVALS, TIMESTAMPS } from "$lib/duckdb-data-types";
-  import {
-    formatDataType,
-    standardTimestampFormat,
-  } from "$lib/util/formatters";
+  import { formatDataType } from "$lib/util/formatters";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { createEventDispatcher } from "svelte";
   import { FormattedDataType } from "../data-types";
@@ -27,22 +24,6 @@
   const dispatch = createEventDispatcher();
 
   const { shiftClickAction } = createShiftClickAction();
-
-  let formattedValue;
-  $: {
-    if (TIMESTAMPS.has(type)) {
-      formattedValue = standardTimestampFormat(value, type);
-    } else if (value === null) {
-      formattedValue = `∅ null`;
-    } else {
-      if (typeof value === "string" && !value.length) {
-        // replace with a whitespace chracter to preserve the cell height when we have an empty string
-        formattedValue = "&nbsp;";
-      } else {
-        formattedValue = value;
-      }
-    }
-  }
 
   function onFocus() {
     dispatch("inspect", row.index);
@@ -106,12 +87,7 @@
         // update this to set the active animation in the tooltip text
       }}
     >
-      <FormattedDataType
-        value={formattedValue}
-        {type}
-        isNull={value === null}
-        inTable
-      />
+      <FormattedDataType {value} {type} inTable />
     </button>
   </div>
   <TooltipContent slot="tooltip-content">

@@ -6,6 +6,7 @@ export interface ProfileColumn {
   name: string;
   type: string;
   conceptualType: string;
+  largestStringLength?: number;
   summary?: ProfileColumnSummary | any;
   nullCount?: number;
 }

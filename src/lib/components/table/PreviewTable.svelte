@@ -6,6 +6,8 @@ TableCells – the cell contents.
 PinnedColumns – any reference columns pinned on the right side of the overall table.
 -->
 <script lang="ts">
+  import { TIMESTAMPS } from "$lib/duckdb-data-types";
+
   import type { ProfileColumn } from "$lib/types";
 
   import { createVirtualizer } from "@tanstack/svelte-virtual";
@@ -17,6 +19,13 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
 
   export let rows;
   export let columnNames: ProfileColumn[];
+  /** if this is set to true, we will use the data passed in as rows
+   * to calculate the column widths. Otherwise, we use the table / view's
+   * largest values in each column, which is useful if we're building an
+   * infinite-scroll table and need to compute the largest possible column width
+   * ahead of time.
+   */
+  export let inferColumnWidthFromData = true;
 
   let rowVirtualizer;
   let columnVirtualizer;
@@ -27,6 +36,14 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   let virtualWidth;
   let virtualHeight;
 
+  /** this is a perceived character width value, in pixels, when our monospace
+   * font is 12px high. */
+  const CHARACTER_WIDTH = 8;
+  const CHARACTER_X_PAD = 16 * 2;
+  const HEADER_ICON_WIDTHS = 16 * 2;
+  const HEADER_X_PAD = CHARACTER_X_PAD;
+  const HEADER_FLEX_SPACING = 16 * 2;
+
   $: if (rows && columnNames) {
     rowVirtualizer = createVirtualizer({
       getScrollElement: () => container,
@@ -35,11 +52,59 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       overscan: 90,
       paddingStart: config.rowHeight,
     });
+
+    /** if we're inferring the column widths from static-ish data, let's
+     * find the largest strings in the column and use that to bootstrap the
+     * column widths.
+     */
+    let columnWidths: { [key: string]: number } = {};
+    if (inferColumnWidthFromData) {
+      columnNames.forEach((column) => {
+        // get values
+        const largest = Math.max(
+          ...rows.map((row) => `${row[column.name]}`.length)
+        );
+        columnWidths[column.name] = TIMESTAMPS.has(column.type) ? 22 : largest;
+      });
+    }
+
     columnVirtualizer = createVirtualizer({
       getScrollElement: () => container,
       horizontal: true,
       count: columnNames.length,
-      estimateSize: () => config.columnWidth,
+      estimateSize: (index) => {
+        const column = columnNames[index];
+        /** if we are inferring column widths from the data,
+         * let's utilize columnWidths, calculated above.
+         */
+        const largestStringLength =
+          (inferColumnWidthFromData
+            ? columnWidths[column.name]
+            : column?.largestStringLength) *
+            CHARACTER_WIDTH +
+          CHARACTER_X_PAD;
+
+        return largestStringLength
+          ? /** the largest value for a column should be config.maxColumnWidth.
+             * the smallest value should either be the largestStringLength (which comes from the actual)
+             * table values, the header string, or the config.minColumnWidth.
+             */
+            Math.min(
+              config.maxColumnWidth,
+              Math.max(
+                largestStringLength,
+                column.name.length * CHARACTER_WIDTH +
+                  HEADER_ICON_WIDTHS +
+                  HEADER_X_PAD +
+                  HEADER_FLEX_SPACING,
+                config.minColumnWidth
+              )
+            )
+          : /** if there isn't a longet string length for some reason, let's go with a
+             * default column width. We should not be in this state.
+             */
+            config.defaultColumnWidth;
+      },
       overscan: 10,
       paddingStart: config.indexWidth,
     });
