@@ -59,7 +59,7 @@ export class ApplicationActions extends DataModelerActions {
   }
 
   @DataModelerActions.ApplicationAction()
-  public async updateColumnPriority(
+  public async updateColumnProfilePriority(
     _: ApplicationStateActionArg,
     entityId: string,
     column: string
