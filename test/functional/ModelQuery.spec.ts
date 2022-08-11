@@ -149,8 +149,6 @@ export class ModelQuerySpec extends FunctionalTestBase {
       ids.push(model.id);
     }
 
-    console.log(ids);
-
     await this.clientDataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
       ids[1],
