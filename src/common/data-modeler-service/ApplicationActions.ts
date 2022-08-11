@@ -33,10 +33,12 @@ export class ApplicationActions extends DataModelerActions {
       currentActiveAsset?.type === EntityType.Model &&
       currentActiveAsset?.id
     ) {
-      const columns = this.dataModelerStateService
-        .getEntityStateService(EntityType.Model, StateType.Derived)
-        .getById(currentActiveAsset.id)
-        .profile.map((column) => column.name);
+      const columns =
+        this.dataModelerStateService
+          .getEntityStateService(EntityType.Model, StateType.Derived)
+          .getById(currentActiveAsset.id)
+          .profile?.map((column) => column.name) || [];
+
       columns.forEach((column) => {
         Object.values(MetadataPriority).forEach((priority) => {
           this.databaseActionQueue.updatePriority(
@@ -109,25 +111,19 @@ export class ApplicationActions extends DataModelerActions {
 
     this.databaseActionQueue.clearQueue(entityId);
 
-    console.log(stateService.getById(entityId));
-
     if (entityType === EntityType.Model || entityType === EntityType.Table) {
-      // Clear existing profile action in queue
-      // console.log("Trying to call DMSS");
+      // Clear existing profile actions in queue
+      const columns =
+        this.dataModelerStateService
+          .getEntityStateService(entityType, StateType.Derived)
+          .getById(entityId)
+          .profile?.map((column) => column.name) || [];
 
-      const columns = this.dataModelerStateService
-        .getEntityStateService(entityType, StateType.Derived)
-        .getById(entityId)
-        .profile?.map((column) => column.name);
-
-      // console.log(columns);
-      if (columns) {
-        columns.forEach((column) => {
-          Object.values(MetadataPriority).forEach((priority) => {
-            this.databaseActionQueue.clearQueue(entityId + column + priority);
-          });
+      columns.forEach((column) => {
+        Object.values(MetadataPriority).forEach((priority) => {
+          this.databaseActionQueue.clearQueue(entityId + column + priority);
         });
-      }
+      });
     }
 
     this.dataModelerStateService.dispatch("deleteEntity", [

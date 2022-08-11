@@ -140,10 +140,11 @@ export class ModelActions extends DataModelerActions {
 
     this.databaseActionQueue.clearQueue(modelId);
     // Clear existing profile actions in queue
-    const columns = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Derived)
-      .getById(modelId)
-      .profile.map((column) => column.name);
+    const columns =
+      this.dataModelerStateService
+        .getEntityStateService(EntityType.Model, StateType.Derived)
+        .getById(modelId)
+        .profile?.map((column) => column.name) || [];
 
     columns.forEach((column) => {
       Object.values(MetadataPriority).forEach((priority) => {
@@ -200,10 +201,11 @@ export class ModelActions extends DataModelerActions {
     this.databaseActionQueue.clearQueue(modelId);
 
     // Clear existing profile action in queue
-    const columns = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Derived)
-      .getById(modelId)
-      .profile.map((column) => column.name);
+    const columns =
+      this.dataModelerStateService
+        .getEntityStateService(EntityType.Model, StateType.Derived)
+        .getById(modelId)
+        .profile.map((column) => column.name) || [];
 
     columns.forEach((column) => {
       Object.values(MetadataPriority).forEach((priority) => {

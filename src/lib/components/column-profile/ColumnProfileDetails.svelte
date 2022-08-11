@@ -30,7 +30,6 @@
   // Make sure priority is updated in case the profile is already opened
   afterUpdate(async () => {
     if (active) {
-      console.log("gonna update");
       dataModelerService.dispatch("updateColumnPriority", [entityId, name]);
     }
   });

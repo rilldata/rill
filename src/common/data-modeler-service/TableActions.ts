@@ -148,10 +148,11 @@ export class TableActions extends DataModelerActions {
     }
     this.databaseActionQueue.clearQueue(tableId);
     // Clear existing profile action in queue
-    const columns = this.dataModelerStateService
-      .getEntityStateService(EntityType.Table, StateType.Derived)
-      .getById(tableId)
-      .profile.map((column) => column.name);
+    const columns =
+      this.dataModelerStateService
+        .getEntityStateService(EntityType.Table, StateType.Derived)
+        .getById(tableId)
+        .profile.map((column) => column.name) || [];
 
     columns.forEach((column) => {
       Object.values(MetadataPriority).forEach((priority) => {
