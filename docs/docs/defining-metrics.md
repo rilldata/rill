@@ -3,7 +3,7 @@ title: Defining Metrics
 ---
 
 In Rill, Your dashboards are powered by _metrics_. Metrics are composed of:
-* a _time dimension_, which will be a time stamp column from your data model. The time dimension will be the x-axis in the line charts shown on your dashboard, as well as serving as the dimension over which _measure_ aggregates are computed.
+* a _time dimension_, which will be a time stamp column from your data model. The time dimension will be the x-axis in the line charts shown on your dashboard, as well as serving as the grouping dimension over which _measure_ aggregates are computed.
 
 * _measures_ which are numerical aggregates of columns from your data model, and are shown on the y-axis of the line charts in your dashboard as well as the "big number" summaries next to the line charts. 
 
