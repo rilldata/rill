@@ -102,7 +102,9 @@
         format={(value) =>
           formatPreset === NicelyFormattedTypes.NONE
             ? `${value}`
-            : humanizeDataType(value, formatPreset)}
+            : humanizeDataType(value, formatPreset, {
+                excludeDecimalZeros: true,
+              })}
       />
       <Grid />
       {#if allZeros || (mouseover && !allZeros) || !dataInDomain}
