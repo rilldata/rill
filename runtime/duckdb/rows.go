@@ -67,13 +67,16 @@ func (r *rows) Next(dst []driver.Value) error {
 
 	colCount := len(r.columns)
 
+	fmt.Println("Next Row", r.chunkRowIdx)
 	for colIdx := C.idx_t(0); colIdx < C.idx_t(colCount); colIdx++ {
+		fmt.Println("Next Column", r.columns[colIdx])
 		vector := C.duckdb_data_chunk_get_vector(r.chunk, colIdx)
 		value, err := scanValue(vector, r.chunkRowIdx)
 		if err != nil {
 			return err
 		}
 		dst[colIdx] = value
+		fmt.Println("Next Column Value", r.columns[colIdx], value)
 	}
 
 	r.chunkRowIdx++
@@ -335,11 +338,20 @@ func scanString(vector C.duckdb_vector, rowIdx C.idx_t) string {
 // `json`, `varchar`, and `blob` have the same repr
 func scanBlob(vector C.duckdb_vector, rowIdx C.idx_t) []byte {
 	s := get[duckdb_string_t](vector, rowIdx)
-	//fmt.Println("scanBlob", s)
+	if s.length < 0 {
+		fmt.Println("scanBlob invalid length", s.length)
+		return []byte{}
+	}
 	if s.length <= stringInlineLength {
+		//fmt.Println("scanBlob inline", s)
 		// inline data is stored from byte 4..16 (up to 12 bytes)
 		return C.GoBytes(unsafe.Pointer(&s.prefix), C.int(s.length))
 	} else {
+		//fmt.Println("scanBlob ptr", s)
+		if s.prefix[0] == 0 {
+			fmt.Println("scanBlob ptr invalid")
+			return []byte{}
+		}
 		// any longer strings are stored as a pointer in `ptr`
 		return C.GoBytes(unsafe.Pointer(s.ptr), C.int(s.length))
 	}

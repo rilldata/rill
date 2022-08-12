@@ -46,27 +46,30 @@ export class DuckDBRemoteClient extends DuckDBClient {
     query: string,
     log = false
   ): Promise<Array<Row>> {
-    const resp = await axios.post(`${this.databaseConfig.goServerUrl}/query`, {
-      query,
-    });
-    if (log) console.log(query, resp.data);
-    if (resp.status === 200) {
-      return resp.data.data;
-    } else {
-      console.error(resp.data.message);
-      return Promise.reject(new Error(resp.data.message));
-    }
+    return this.wrapAxios(query, "query", log);
   }
 
   public async prepare(query: string): Promise<void> {
-    const resp = await axios.post(
-      `${this.databaseConfig.goServerUrl}/prepare`,
-      { query }
-    );
-    if (resp.status === 200) {
-      return resp.data;
-    } else {
-      return Promise.reject(new Error(resp.data.message));
+    return this.wrapAxios(query, "prepare", false);
+  }
+
+  private async wrapAxios(query: string, path: string, log: boolean) {
+    try {
+      const resp = await axios.post(
+        `${this.databaseConfig.goServerUrl}/${path}`,
+        {
+          query,
+        }
+      );
+      if (log) console.log(query, resp.data);
+      if (resp.status === 200) {
+        return resp.data.data;
+      } else {
+        console.error(resp.data.message);
+        return Promise.reject(new Error(resp.data.message));
+      }
+    } catch (err: any) {
+      return Promise.reject(new Error(err.response.data.message));
     }
   }
 }
