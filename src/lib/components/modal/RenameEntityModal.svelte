@@ -12,7 +12,10 @@
   } from "$lib/components/modal";
   import notifications from "$lib/components/notifications/";
 
-  export let entityType: EntityType.Table | EntityType.Model;
+  export let entityType:
+    | EntityType.Table
+    | EntityType.Model
+    | EntityType.MetricsDefinition;
   export let openModal = false;
   export let closeModal: () => void;
   export let entityId = null;
@@ -21,10 +24,16 @@
   let newAssetName = null;
   let error = null;
   let renameAction;
+  let entityLabel: string;
   if (entityType === EntityType.Table) {
     renameAction = "updateTableName";
+    entityLabel = "source";
   } else if (entityType === EntityType.Model) {
     renameAction = "updateModelName";
+    entityLabel = "model";
+  } else if (entityType === EntityType.MetricsDefinition) {
+    renameAction = "updateMetricsDefinitionName";
+    entityLabel = "dashboard";
   } else {
     throw new Error("assetType must be either 'Table' or 'Model'");
   }
@@ -44,16 +53,21 @@
       error = "new name must be different from current name";
       return;
     }
-    dataModelerService
-      .dispatch(renameAction, [assetID, newAssetName])
-      .then((response) => {
-        if (response.status === 0) {
-          notifications.send({ message: response.messages[0].message });
-          resetVariablesAndCloseModal();
-        } else if (response.status === 1) {
-          error = response.messages[0].message;
-        }
-      });
+    if (entityType === EntityType.Table || entityType === EntityType.Model) {
+      dataModelerService
+        .dispatch(renameAction, [assetID, newAssetName])
+        .then((response) => {
+          if (response.status === 0) {
+            notifications.send({ message: response.messages[0].message });
+            resetVariablesAndCloseModal();
+          } else if (response.status === 1) {
+            error = response.messages[0].message;
+          }
+        });
+    }
+    if (entityType === EntityType.MetricsDefinition) {
+      // TODO: need to use the rillDeveloperService to access the metricsDefinition actions.
+    }
   };
 </script>
 
@@ -66,8 +80,8 @@
       on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
     >
       <Input
-        id="{entityType.toLowerCase()}-name"
-        label="{entityType.toLowerCase()} name"
+        id="{entityLabel}-name"
+        label="{entityLabel} name"
         bind:value={newAssetName}
         {error}
       />
