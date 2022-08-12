@@ -19,8 +19,10 @@
   } from "$lib/application-state-stores/model-stores";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
+  import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
+  import RenameAssetModal from "$lib/components/modal/RenameEntityModal.svelte";
   import { deleteModelApi } from "$lib/redux-store/model/model-apis";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import {
@@ -37,6 +39,16 @@
   ) as DerivedModelStore;
 
   let showModels = true;
+
+  let showRenameModelModal = false;
+  let renameModelID = null;
+  let renameModelName = null;
+
+  const openRenameModelModal = (modelID: string, modelName: string) => {
+    showRenameModelModal = true;
+    renameModelID = modelID;
+    renameModelName = modelName;
+  };
 
   async function addModel() {
     // create the new model.
@@ -66,6 +78,7 @@
 
     return {
       id: query.id,
+      modelName: query.name,
       tableSummaryProps: {
         name: query.name,
         cardinality: derivedModel?.cardinality ?? 0,
@@ -102,7 +115,7 @@
     transition:slide={{ duration: 200 }}
     id="assets-model-list"
   >
-    {#each availableModels as { id, tableSummaryProps }, i (id)}
+    {#each availableModels as { id, modelName, tableSummaryProps }, i (id)}
       {@const derivedModel = $derivedModelStore.entities.find(
         (t) => t["id"] === id
       )}
@@ -148,6 +161,12 @@
             </svelte:fragment>
           </MenuItem>
           <Divider />
+          <MenuItem icon on:select={() => openRenameModelModal(id, modelName)}>
+            <svelte:fragment slot="icon">
+              <EditIcon />
+            </svelte:fragment>
+            rename...</MenuItem
+          >
           <MenuItem icon on:select={() => deleteModelApi(id)}>
             <svelte:fragment slot="icon">
               <Cancel />
@@ -158,4 +177,11 @@
       </CollapsibleTableSummary>
     {/each}
   </div>
+  <RenameAssetModal
+    entityType={EntityType.Model}
+    openModal={showRenameModelModal}
+    closeModal={() => (showRenameModelModal = false)}
+    entityId={renameModelID}
+    currentEntityName={renameModelName}
+  />
 {/if}
