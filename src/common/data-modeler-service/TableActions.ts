@@ -1,38 +1,38 @@
-import { DataModelerActions } from ".//DataModelerActions";
 import {
-  FILE_EXTENSION_TO_TABLE_TYPE,
-  ProfileColumn,
-  TableSourceType,
-} from "$lib/types";
-import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
-import {
-  extractFileExtension,
-  extractTableName,
-  getTableNameFromFile,
-  INVALID_CHARS,
-  sanitizeTableName,
-} from "$lib/util/extract-table-name";
+  ActionResponse,
+  ActionStatus,
+} from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type {
-  PersistentTableEntity,
-  PersistentTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  DerivedTableEntity,
+  DerivedTableStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import {
   EntityStatus,
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {
-  DerivedTableEntity,
-  DerivedTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+  PersistentTableEntity,
+  PersistentTableStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
-import { existsSync } from "fs";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import {
-  ActionResponse,
-  ActionStatus,
-} from "$common/data-modeler-service/response/ActionResponse";
+import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import { getName } from "$common/utils/incrementName";
+import {
+  FILE_EXTENSION_TO_TABLE_TYPE,
+  ProfileColumn,
+  TableSourceType,
+} from "$lib/types";
+import {
+  extractFileExtension,
+  extractTableName,
+  getTableNameFromFile,
+  INVALID_CHARS,
+  sanitizeEntityName,
+} from "$lib/util/extract-table-name";
+import { existsSync } from "fs";
+import { DataModelerActions } from ".//DataModelerActions";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
@@ -231,7 +231,7 @@ export class TableActions extends DataModelerActions {
     tableId: string,
     name: string
   ): Promise<ActionResponse> {
-    const sanitizedNewName = sanitizeTableName(extractTableName(name));
+    const sanitizedNewName = sanitizeEntityName(extractTableName(name));
     const existingTable = stateService.getByField(
       "tableName",
       sanitizedNewName
@@ -264,7 +264,7 @@ export class TableActions extends DataModelerActions {
     { stateService }: PersistentTableStateActionArg,
     tableName: string
   ): Promise<ActionResponse> {
-    const sanitizedTableName = sanitizeTableName(extractTableName(tableName));
+    const sanitizedTableName = sanitizeEntityName(extractTableName(tableName));
     const existingNames = stateService
       .getCurrentState()
       .entities.map((table) => table.tableName);
