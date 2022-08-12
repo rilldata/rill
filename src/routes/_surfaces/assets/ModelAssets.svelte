@@ -22,7 +22,7 @@
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
-  import RenameAssetModal from "$lib/components/modal/RenameEntityModal.svelte";
+  import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
   import { deleteModelApi } from "$lib/redux-store/model/model-apis";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import {
@@ -177,7 +177,7 @@
       </CollapsibleTableSummary>
     {/each}
   </div>
-  <RenameAssetModal
+  <RenameEntityModal
     entityType={EntityType.Model}
     openModal={showRenameModelModal}
     closeModal={() => (showRenameModelModal = false)}
