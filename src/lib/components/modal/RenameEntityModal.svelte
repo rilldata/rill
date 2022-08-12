@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import Input from "$lib/components/Input.svelte";
   import {
@@ -10,31 +12,40 @@
   } from "$lib/components/modal";
   import notifications from "$lib/components/notifications/";
 
+  export let entityType: EntityType.Table | EntityType.Model;
   export let openModal = false;
   export let closeModal: () => void;
-  export let tableID = null;
-  export let currentTableName = null;
+  export let entityId = null;
+  export let currentEntityName = null;
 
-  let newTableName = null;
+  let newAssetName = null;
   let error = null;
+  let renameAction;
+  if (entityType === EntityType.Table) {
+    renameAction = "updateTableName";
+  } else if (entityType === EntityType.Model) {
+    renameAction = "updateModelName";
+  } else {
+    throw new Error("assetType must be either 'Table' or 'Model'");
+  }
 
   const resetVariablesAndCloseModal = () => {
-    newTableName = null;
+    newAssetName = null;
     error = null;
     closeModal();
   };
 
-  const submitHandler = (tableID: string, newTableName: string) => {
-    if (!newTableName || newTableName.length === 0) {
-      error = "source name cannot be empty";
+  const submitHandler = (assetID: string, newAssetName: string) => {
+    if (!newAssetName || newAssetName.length === 0) {
+      error = `${entityType.toLowerCase()} name cannot be empty`;
       return;
     }
-    if (newTableName === currentTableName) {
+    if (newAssetName === currentEntityName) {
       error = "new name must be different from current name";
       return;
     }
     dataModelerService
-      .dispatch("updateTableName", [tableID, newTableName])
+      .dispatch(renameAction, [assetID, newAssetName])
       .then((response) => {
         if (response.status === 0) {
           notifications.send({ message: response.messages[0].message });
@@ -48,14 +59,16 @@
 
 <Modal open={openModal} onBackdropClick={() => resetVariablesAndCloseModal()}>
   <ModalTitle>
-    rename <span class="text-gray-500 italic">{currentTableName}</span>
+    rename <span class="text-gray-500 italic">{currentEntityName}</span>
   </ModalTitle>
   <ModalContent>
-    <form on:submit|preventDefault={() => submitHandler(tableID, newTableName)}>
+    <form
+      on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
+    >
       <Input
-        id="source-name"
-        label="source name"
-        bind:value={newTableName}
+        id="{entityType.toLowerCase()}-name"
+        label="{entityType.toLowerCase()} name"
+        bind:value={newAssetName}
         {error}
       />
     </form>
@@ -64,7 +77,7 @@
     <ModalAction on:click={() => resetVariablesAndCloseModal()}>
       cancel
     </ModalAction>
-    <ModalAction primary on:click={() => submitHandler(tableID, newTableName)}>
+    <ModalAction primary on:click={() => submitHandler(entityId, newAssetName)}>
       submit
     </ModalAction>
   </ModalActions>
