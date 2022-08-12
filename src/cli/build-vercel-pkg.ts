@@ -36,4 +36,9 @@ execSync(
   { stdio: "inherit" }
 );
 console.log(`Generated binary for ${platform} ${cpuArch}`);
-console.log(execSync(`ls -ltr rilldata`).toString());
+if (platform !== "win") {
+  console.log(execSync(`ls -ltr rilldata`).toString());
+} else {
+  // `ls` not available on windows
+  console.log(execSync(`dir rilldata`).toString());
+}

@@ -5,11 +5,22 @@
 
 <script lang="ts">
   import { guidGenerator } from "$lib/util/guid";
-  import { createEventDispatcher, onMount, setContext } from "svelte";
-  import { writable } from "svelte/store";
+  import {
+    createEventDispatcher,
+    getContext,
+    onMount,
+    setContext,
+  } from "svelte";
+  import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
+  import { clickOutside } from "../../actions/click-outside";
 
   export let dark: boolean = undefined;
+
+  export let role = "menu";
+  /** used for selector-style menus */
+  export let multiselectable = false;
+
   if (dark) {
     setContext("rill:menu:dark", dark);
   }
@@ -75,6 +86,9 @@
   setContext("rill:menu:menuItems", menuItems);
   setContext("rill:menu:currentItem", currentItem);
 
+  const menuTrigger: Writable<HTMLElement> =
+    getContext("rill:menu:menuTrigger") || writable(undefined);
+
   let mounted = false;
   // once open, we should select the first menu item.
   onMount(() => {
@@ -89,15 +103,29 @@
   $: if ($globalActiveMenu !== menuID) {
     dispatch("escape");
   }
+
+  /** Accessibility properties */
+  let ariaProperties = {};
+  $: if (role === "menu") {
+    ariaProperties = { role };
+  } else if (role === "listbox") {
+    ariaProperties = { role, ["aria-multiselectable"]: multiselectable };
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
 <div
-  transition:fade|local={{ duration: 35 }}
+  transition:fade|local={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
   }}
+  use:clickOutside={[
+    [$menuTrigger],
+    () => {
+      dispatch("click-outside");
+    },
+  ]}
   class="
         py-2 
         w-max 
@@ -110,9 +138,9 @@
     : 'bg-white border border-gray-300 shadow-md'}
         "
   style:outline="none"
-  style:min-width="300px"
+  style:min-width={"300px"}
   tabindex="0"
-  role="menu"
+  {...ariaProperties}
 >
   <slot />
 </div>

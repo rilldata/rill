@@ -20,16 +20,15 @@
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import Model from "$lib/components/icons/Model.svelte";
-  import Divider from "$lib/components/menu/Divider.svelte";
-  import MenuItem from "$lib/components/menu/MenuItem.svelte";
+  import { Divider, MenuItem } from "$lib/components/menu";
   import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
+    deleteSourceApi,
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
-  import { deleteSourceApi } from "$lib/redux-store/source/source-apis";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -97,6 +96,7 @@
         )}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
+            on:query={() => queryHandler(tableName)}
             entityType={EntityType.Table}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
@@ -112,12 +112,12 @@
                 head={derivedTable?.preview ?? []}
               />
             </svelte:fragment>
-            <svelte:fragment slot="menu-items">
+            <svelte:fragment slot="menu-items" let:toggleMenu>
               <MenuItem icon on:select={() => queryHandler(tableName)}>
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>
-                create model from source
+                create new model
               </MenuItem>
 
               <MenuItem
@@ -126,7 +126,7 @@
                 on:select={() => quickStartMetrics(id, tableName)}
               >
                 <svelte:fragment slot="icon"><Explore /></svelte:fragment>
-                create dashboard from source
+                autogenerate dashboard
                 <svelte:fragment slot="description">
                   {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
                     requires a timestamp column
@@ -137,7 +137,9 @@
               <Divider />
               <MenuItem
                 icon
-                on:select={() => openRenameTableModal(id, tableName)}
+                on:select={() => {
+                  openRenameTableModal(id, tableName);
+                }}
               >
                 <svelte:fragment slot="icon">
                   <EditIcon />
