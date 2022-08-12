@@ -1,17 +1,17 @@
-import { FunctionalTestBase } from "./FunctionalTestBase";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import {
+  EntityType,
+  StateType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { asyncWait } from "$common/utils/waitUtils";
 import type { TestDataColumns } from "../data/DataLoader.data";
 import {
   ModelQueryTestData,
   ModelQueryTestDataProvider,
   SingleTableQuery,
 } from "../data/ModelQuery.data";
-import { asyncWait } from "$common/utils/waitUtils";
-import {
-  EntityType,
-  StateType,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 @FunctionalTestBase.Suite
 export class ModelQuerySpec extends FunctionalTestBase {
@@ -19,7 +19,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
   public async setupTables(): Promise<void> {
     await this.loadTestTables();
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: "" },
+      { name: "model_0", query: "" },
     ]);
   }
 
@@ -32,7 +32,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     query: string,
     columns: TestDataColumns
   ): Promise<void> {
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("tableName", "model_0");
     await this.clientDataModelerService.dispatch("updateModelQuery", [
       model.id,
       query,
@@ -41,7 +41,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
 
     const [persistentModel, derivedModel] = this.getModels(
       "tableName",
-      "query_0"
+      "model_0"
     );
     expect(derivedModel.error).toBeUndefined();
     expect(persistentModel.query).toBe(query);
@@ -75,7 +75,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     newModel = service.getCurrentState().entities[1];
     expect(newModel.name).toBe(NEW_MODEL_UPDATE_NAME);
 
-    const OTHER_MODEL_NAME = "query_0.sql";
+    const OTHER_MODEL_NAME = "model_0.sql";
     await this.clientDataModelerService.dispatch("moveModelUp", [newModel.id]);
     await asyncWait(50);
     expect(service.getCurrentState().entities[0].name).toBe(
@@ -101,7 +101,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
   public async shouldReturnModelQueryError(): Promise<void> {
     const INVALID_QUERY = "slect * from AdBids";
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("tableName", "model_0");
     // invalid query
     let response = await this.clientDataModelerService.dispatch(
       "updateModelQuery",
@@ -110,7 +110,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     await this.waitForModels();
     expect(response.status).toBe(ActionStatus.Failure);
     expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
-    let [, derivedModel] = this.getModels("tableName", "query_0");
+    let [, derivedModel] = this.getModels("tableName", "model_0");
     expect(derivedModel.error).toBe(response.messages[0].message);
 
     response = await this.clientDataModelerService.dispatch(
@@ -120,7 +120,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     await this.waitForModels();
     expect(response.status).toBe(ActionStatus.Failure);
     expect(response.messages[0].errorType).toBe(ActionErrorType.ModelQuery);
-    [, derivedModel] = this.getModels("tableName", "query_0");
+    [, derivedModel] = this.getModels("tableName", "model_0");
     expect(derivedModel.error).toBe(response.messages[0].message);
 
     // clearing query should clear the error
@@ -130,7 +130,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     );
     expect(response.status).toBe(ActionStatus.Success);
     expect(response.messages.length).toBe(0);
-    [, derivedModel] = this.getModels("tableName", "query_0");
+    [, derivedModel] = this.getModels("tableName", "model_0");
     expect(derivedModel.error).toBeUndefined();
   }
 
@@ -138,14 +138,14 @@ export class ModelQuerySpec extends FunctionalTestBase {
   public async shouldSwitchActiveEntityOnDelete() {
     for (let i = 1; i <= 5; i++) {
       await this.clientDataModelerService.dispatch("addModel", [
-        { name: `query_${i}`, query: "" },
+        { name: `model_${i}`, query: "" },
       ]);
       await asyncWait(50);
     }
 
     const ids = [];
     for (let i = 0; i < 5; i++) {
-      const [model] = this.getModels("name", `query_${i}.sql`);
+      const [model] = this.getModels("name", `model_${i}.sql`);
       ids.push(model.id);
     }
 

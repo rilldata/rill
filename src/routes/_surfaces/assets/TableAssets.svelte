@@ -118,7 +118,7 @@
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>
-                autogenerate model
+                create new model
               </MenuItem>
 
               <MenuItem
