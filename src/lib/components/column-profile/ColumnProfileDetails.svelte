@@ -30,15 +30,12 @@
   // Make sure priority is updated in case the profile is already opened
   afterUpdate(async () => {
     if (active) {
-      dataModelerService.dispatch("updateColumnProfilePriority", [
+      dataModelerService.dispatch("updateFocusProfilePriority", [
         entityId,
         name,
       ]);
     }
   });
-  // $: if (active) {
-  //   dataModelerService.dispatch("updateColumnProfilePriority", [entityId, name]);
-  // }
 </script>
 
 <!-- FIXME: document all magic number sums of indent levels in this component,

@@ -33,11 +33,10 @@ export class ApplicationActions extends DataModelerActions {
       currentActiveAsset?.type === EntityType.Model &&
       currentActiveAsset?.id
     ) {
-      const columns =
-        this.dataModelerStateService
-          .getEntityStateService(EntityType.Model, StateType.Derived)
-          .getById(currentActiveAsset.id)
-          .profile?.map((column) => column.name) || [];
+      const columns = this.getEntityColumns(
+        EntityType.Model,
+        currentActiveAsset.id
+      );
 
       columns.forEach((column) => {
         Object.values(MetadataPriority).forEach((priority) => {
@@ -52,6 +51,25 @@ export class ApplicationActions extends DataModelerActions {
         });
       });
     }
+
+    // upgrade profile priority of newly selected asset
+    if (entityType === EntityType.Model) {
+      const columns = this.getEntityColumns(EntityType.Model, entityId);
+
+      columns.forEach((column) => {
+        Object.values(MetadataPriority).forEach((priority) => {
+          this.databaseActionQueue.updatePriority(
+            currentActiveAsset.id + column + priority,
+            getProfilePriority(
+              DatabaseActionQueuePriority.ActiveModelProfile,
+              DatabaseProfilesFieldPriority.NonFocused,
+              ProfileMetadataPriorityMap[priority]
+            )
+          );
+        });
+      });
+    }
+
     this.dataModelerStateService.dispatch("setActiveAsset", [
       entityType,
       entityId,
@@ -59,7 +77,7 @@ export class ApplicationActions extends DataModelerActions {
   }
 
   @DataModelerActions.ApplicationAction()
-  public async updateColumnProfilePriority(
+  public async updateFocusProfilePriority(
     _: ApplicationStateActionArg,
     entityId: string,
     column: string
@@ -73,6 +91,20 @@ export class ApplicationActions extends DataModelerActions {
           ProfileMetadataPriorityMap[priority]
         )
       );
+    });
+  }
+
+  @DataModelerActions.ApplicationAction()
+  public async clearColumnProfilePriority(
+    _: ApplicationStateActionArg,
+    entityType: EntityType,
+    entityId: string
+  ) {
+    const columns = this.getEntityColumns(entityType, entityId);
+    columns.forEach((column) => {
+      Object.values(MetadataPriority).forEach((priority) => {
+        this.databaseActionQueue.clearQueue(entityId + column + priority);
+      });
     });
   }
 
@@ -110,21 +142,10 @@ export class ApplicationActions extends DataModelerActions {
     }
 
     this.databaseActionQueue.clearQueue(entityId);
-
-    if (entityType === EntityType.Model || entityType === EntityType.Table) {
-      // Clear existing profile actions in queue
-      const columns =
-        this.dataModelerStateService
-          .getEntityStateService(entityType, StateType.Derived)
-          .getById(entityId)
-          .profile?.map((column) => column.name) || [];
-
-      columns.forEach((column) => {
-        Object.values(MetadataPriority).forEach((priority) => {
-          this.databaseActionQueue.clearQueue(entityId + column + priority);
-        });
-      });
-    }
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      entityType,
+      entityId,
+    ]);
 
     this.dataModelerStateService.dispatch("deleteEntity", [
       entityType,
@@ -149,5 +170,16 @@ export class ApplicationActions extends DataModelerActions {
     } else {
       return entities[idx - 1].id;
     }
+  }
+
+  private getEntityColumns(entityType: EntityType, entityId: string) {
+    if (entityType === EntityType.Table || entityType === EntityType.Model) {
+      return (
+        this.dataModelerStateService
+          .getEntityStateService(entityType, StateType.Derived)
+          .getById(entityId)
+          .profile?.map((column) => column.name) || []
+      );
+    } else return [];
   }
 }
