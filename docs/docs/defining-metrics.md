@@ -18,6 +18,10 @@ To get you up and running quickly, Rill can generate a dashboard directly from a
 
 :::
 
+# Editing your dashboard
+
+Dashboards can be created and improved using the metrics editor. The metrics editor helps you define a time series, set of measures, and categorical dimensions that are directly tied to your dashboard.
+
 ### Time Dimension
 
 Your time dimension must be a column from your data model of type `[TIMESTAMP](https://duckdb.org/docs/sql/data_types/timestamp)`, `[TIME](https://duckdb.org/docs/sql/data_types/overview)`, or `[DATE](https://duckdb.org/docs/sql/data_types/date)`.
