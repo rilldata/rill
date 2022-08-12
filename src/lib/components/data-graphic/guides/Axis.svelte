@@ -10,7 +10,7 @@ This component will draw an axis on the specified side.
   import { getTicks } from "../utils";
 
   export let side: AxisSide = "left";
-  export let format: (arg0: number | Date) => string = undefined;
+  export let format: (arg0: number | Date) => string | number = undefined;
 
   export let showTicks = false;
   export let tickLength = 4;
