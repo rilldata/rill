@@ -1,6 +1,7 @@
 import { DatabaseActions } from "./DatabaseActions";
 import { guidGenerator } from "$lib/util/guid";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import * as prql from "prql-js/dist/node/";
 
 export class DatabaseTableActions extends DatabaseActions {
   public async createViewOfQuery(
@@ -8,8 +9,23 @@ export class DatabaseTableActions extends DatabaseActions {
     tableName: string,
     query: string
   ): Promise<void> {
-    await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
-            CREATE OR REPLACE TEMPORARY VIEW ${tableName} AS (${query});`);
+    let prql_query = query;
+    if (query.startsWith('from')) {
+      try {
+        const ptos = query.replace('\\n', '|').replace('||', '|');
+        console.log('prql_ptos -->', ptos);
+        prql_query = prql.to_sql(ptos);
+        console.log('prql_query --> ', prql_query);
+        // return Promise.resolve();
+      } catch (err) {
+        console.log('prql_err --> createViewOfQuery --> ', err);
+        return Promise.reject(404);
+      }
+    }
+    const q = `-- wrapQueryAsTemporaryView
+            CREATE OR REPLACE TEMPORARY VIEW ${tableName} AS (${prql_query});`;
+    console.log(`'query --> ${q}`);
+    await this.databaseClient.execute(q);
   }
 
   public async getFirstNOfTable(
@@ -57,7 +73,20 @@ export class DatabaseTableActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     query: string
   ): Promise<void> {
-    return this.databaseClient.prepare(query);
+    if (query.trim().toLowerCase().startsWith('from')) {
+      try {
+        const sql = prql.to_sql(query);
+        return  this.databaseClient.prepare(sql);
+      } catch (err) {
+        const cleaned_error = err.toString().replace(/\n/g, "<br>")
+        console.log('prql_err --> validateQuery --> ', cleaned_error);
+        return Promise.reject("FAILED TO VALIDATE QUERY");
+      }
+
+    } else {
+      return this.databaseClient.prepare(query);
+    }
+
   }
 
   public async renameTable(

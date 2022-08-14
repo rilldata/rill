@@ -108,6 +108,7 @@
     "immer": "^9.0.12",
     "module-alias": "^2.2.2",
     "pgsql-ast-parser": "^10.3.1",
+    "prql-js": "^0.2.6",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1",
     "svelte": "^3.48.0"
