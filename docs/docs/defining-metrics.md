@@ -7,7 +7,7 @@ In Rill, your dashboards are defined by _metrics_. Metrics are composed of:
 
 * _measures_ which are numerical aggregates of columns from your data model, and are shown on the y-axis of the line charts in your dashboard as well as the "big number" summaries next to the line charts. 
 
-* _dimensions_ which are categorical columns from your data model. Dimensions are shown in _leaderboards_, which showed them most frequently occurring values from the categorical column, allow you to filter the data shown in your dashboard to only include data points that have the values you have selected from these leader boards.
+* _dimensions_ which are categorical columns from your data model. Dimensions are shown in _leaderboards_, which display the most frequently occurring values in each dimension, allow you to filter the data shown in your dashboard to only include data points that have the values you have selected from these leaderboards.
 
 :::tip
 
