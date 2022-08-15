@@ -49,7 +49,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       getScrollElement: () => container,
       count: rows.length,
       estimateSize: () => config.rowHeight,
-      overscan: 90,
+      overscan: 40,
       paddingStart: config.rowHeight,
     });
 
