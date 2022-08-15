@@ -24,11 +24,11 @@ Dashboards can be created and improved using the metrics editor. The metrics edi
 
 ### Time Dimension
 
-Your time dimension must be a column from your data model of type `[TIMESTAMP](https://duckdb.org/docs/sql/data_types/timestamp)`, `[TIME](https://duckdb.org/docs/sql/data_types/overview)`, or `[DATE](https://duckdb.org/docs/sql/data_types/date)`.
+Your time dimension must be a column from your data model of type [`TIMESTAMP`](https://duckdb.org/docs/sql/data_types/timestamp), [`TIME`](https://duckdb.org/docs/sql/data_types/overview), or [`DATE`](https://duckdb.org/docs/sql/data_types/date).
 
 :::tip
 
-Strings representing dates are not supported, but you may be able to `[CAST](https://duckdb.org/docs/sql/expressions/cast)` such a string to one of these types while developing your data model.
+Strings representing dates are not supported, but you may be able to [`CAST`](https://duckdb.org/docs/sql/expressions/cast) such a string to one of these types while developing your data model.
 
 :::
 
@@ -55,7 +55,7 @@ You can also add labels and descriptions to your dimensions to customize how the
 
 :::tip
 
-Try creating categorical columns from numeric columns in your data model by using SQL `[CASE](https://duckdb.org/docs/sql/expressions/case#:~:text=DuckDB%20%2D%20Case%20Statement&text=The%20CASE%20statement%20performs%20a,a%20%3A%20b%20).)` statements to convert numeric ranges into meaningful categories.
+Try creating categorical columns from numeric columns in your data model by using SQL [`CASE`](https://duckdb.org/docs/sql/expressions/case#:~:text=DuckDB%20%2D%20Case%20Statement&text=The%20CASE%20statement%20performs%20a,a%20%3A%20b%20) statements to convert numeric ranges into meaningful categories.
 
 :::
 
