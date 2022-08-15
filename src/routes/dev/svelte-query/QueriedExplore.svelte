@@ -4,23 +4,13 @@
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import QueriedExploreMeasure from "./QueriedExploreMeasure.svelte";
 
   const metricsDefinitions = useQuery<Array<MetricsDefinitionEntity>>(
     "metrics",
     () => fetchWrapper("metrics", "GET")
   );
   let metricsDefId: string;
-
-  const measuresFetcher = async ({ queryKey }) => {
-    const [, metricsId] = queryKey;
-    return await fetchWrapper(`measures/?metricsDefId=${metricsId}`, "GET");
-  };
-  const measures = useQuery<Array<MeasureDefinitionEntity>>(
-    ["measures", metricsDefId],
-    measuresFetcher
-  );
-  $: measures.setOptions(["measures", metricsDefId], measuresFetcher);
-  let measureId = "";
 
   const dimensionsFetcher = ({ queryKey }) => {
     const [, metricsId] = queryKey;
@@ -38,7 +28,6 @@
   <select
     on:change={(evt) => {
       metricsDefId = evt.target.value;
-      measureId = "";
       dimensionId = "";
     }}
   >
@@ -47,16 +36,7 @@
     {/each}
   </select>
 </div>
-<div>
-  Measure: <select
-    value={measureId}
-    on:change={(evt) => (measureId = evt.target.value)}
-  >
-    {#each $measures.data as measure (measure.id)}
-      <option value={measure.id}>{measure.expression}</option>
-    {/each}
-  </select>
-</div>
+<QueriedExploreMeasure {metricsDefId} />
 <div>
   Dimension: <select
     value={dimensionId}
