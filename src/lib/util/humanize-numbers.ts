@@ -7,6 +7,13 @@ import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
 export type ShortHandSymbols = typeof shortHandSymbols[number];
 
+interface HumanizeOptions {
+  scale?: ShortHandSymbols;
+  excludeDecimalZeros?: boolean;
+}
+
+type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
+
 const shortHandMap = {
   Q: 1.0e15,
   T: 1.0e12,
@@ -52,7 +59,7 @@ const DEFAULT_OPTIONS = {
 
 function getNumberFormatter(
   type: NicelyFormattedTypes,
-  options?: { [key: string]: any }
+  options?: formatterOptions
 ): Intl.NumberFormat {
   const o = { ...DEFAULT_OPTIONS, ...(options || {}) };
 
@@ -69,9 +76,14 @@ function getNumberFormatter(
 function formatNicely(
   value: number,
   type: NicelyFormattedTypes,
-  options?: { [key: string]: any }
+  options?: formatterOptions
 ): string {
-  const formatter = getNumberFormatter(type, options);
+  const formatterOptions = Object.assign({}, options);
+  if (options?.excludeDecimalZeros) {
+    delete formatterOptions["excludeDecimalZeros"];
+  }
+
+  const formatter = getNumberFormatter(type, formatterOptions);
   return formatter.format(value);
 }
 
@@ -110,18 +122,29 @@ function getScaleForValue(value: number): ShortHandSymbols {
     : "none";
 }
 
+/*
+  Format a single value using the given type and options
+*/
 export function humanizeDataType(
-  value: number,
+  value: unknown,
   type: NicelyFormattedTypes,
-  options?: { [key: string]: any }
+  options?: formatterOptions
 ) {
-  if (type == NicelyFormattedTypes.NONE) return value;
+  let formattedValue;
+  if (typeof value != "number" || type == NicelyFormattedTypes.NONE)
+    return value;
   else if (type == NicelyFormattedTypes.HUMANIZE) {
-    return convertToShorthand(value);
+    formattedValue = convertToShorthand(value);
   } else if (type == NicelyFormattedTypes.CURRENCY) {
-    return "$" + convertToShorthand(value);
+    formattedValue = "$" + convertToShorthand(value);
   } else {
     return formatNicely(value, type, options);
+  }
+
+  if (options?.excludeDecimalZeros) {
+    return formattedValue.replace(".0", "");
+  } else {
+    return formattedValue;
   }
 }
 
@@ -179,7 +202,7 @@ function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
 function humanizeGroupValuesUtil(
   values: number[],
   type: NicelyFormattedTypes,
-  options?: { [key: string]: any }
+  options?: formatterOptions
 ) {
   if (!values.length) return values;
   if (type == NicelyFormattedTypes.NONE) return values;
@@ -212,7 +235,7 @@ function humanizeGroupValuesUtil(
 export function humanizeGroupValues(
   values: Array<any>,
   type: NicelyFormattedTypes,
-  options?: { [key: string]: any }
+  options?: formatterOptions
 ) {
   let numValues = values.map((v) => v.value);
 
