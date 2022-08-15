@@ -226,6 +226,25 @@ export class TableActions extends DataModelerActions {
     }
   }
 
+  @DataModelerActions.DerivedTableAction()
+  public async refreshPreview(
+    _: DerivedTableStateActionArg,
+    tableId: string,
+    tableName: string
+  ): Promise<void> {
+    this.dataModelerStateService.dispatch("updateTablePreview", [
+      tableId,
+      await this.dataModelerService.databaseActionQueue.enqueue(
+        {
+          id: tableId,
+          priority: DatabaseActionQueuePriority.TableProfile,
+        },
+        "getFirstNOfTable",
+        [tableName, SOURCE_PREVIEW_COUNT]
+      ),
+    ]);
+  }
+
   @DataModelerActions.PersistentTableAction()
   public async updateTableName(
     { stateService }: PersistentTableStateActionArg,
