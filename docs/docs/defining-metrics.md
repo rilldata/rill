@@ -33,7 +33,7 @@ Strings representing dates are not supported, but you may be able to [`CAST`](ht
 :::
 
 ### Measures
-measures are numeric aggregates of columns from your data model, and power the line charts that you see in Rill.
+Measures are numeric aggregates of columns from your data model, and power the line charts that you see in Rill.
 
 A measure must be defined with a [DuckSQL](./sqldialects/duck-sql.md) aggregation function over columns from your data model, or a mathematical expression built with one or more such aggregates.
 
