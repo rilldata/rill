@@ -22,6 +22,7 @@
     createModelForSource,
   } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+  import { TableSourceType } from "$lib/types";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -93,15 +94,15 @@
   let nullPercentage;
   $: {
     switch (currentTable?.sourceType) {
-      case 0: {
+      case TableSourceType.ParquetFile: {
         sourceType = "Parquet";
         break;
       }
-      case 1: {
+      case TableSourceType.CSVFile: {
         sourceType = `CSV (${currentTable?.csvDelimiter || "comma"})`;
         break;
       }
-      case 2: {
+      case TableSourceType.DuckDB: {
         sourceType = "DuckDB";
         break;
       }
