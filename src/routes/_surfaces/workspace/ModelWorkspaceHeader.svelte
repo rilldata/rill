@@ -43,6 +43,8 @@
   };
 </script>
 
-<WorkspaceHeader
-  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-/>
+{#if titleInput}
+  <WorkspaceHeader
+    {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
+  />
+{/if}
