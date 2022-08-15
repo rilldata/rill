@@ -50,7 +50,7 @@
           {#if CATEGORICALS.has(type)}
             the top 10 values
           {:else if TIMESTAMPS.has(type)}
-            the count(*) over time
+            row over time
           {:else if NUMERICS.has(type)}
             the distribution of values
           {/if}
