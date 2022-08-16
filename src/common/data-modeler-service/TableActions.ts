@@ -149,6 +149,10 @@ export class TableActions extends DataModelerActions {
       );
     }
     this.databaseActionQueue.clearQueue(tableId);
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      EntityType.Table,
+      tableId,
+    ]);
 
     try {
       this.dataModelerStateService.dispatch("setEntityStatus", [

@@ -9,7 +9,13 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import {
+  DatabaseActionQueuePriority,
+  DatabaseProfilesFieldPriority,
+  getProfilePriority,
+  MetadataPriority,
+  ProfileMetadataPriorityMap,
+} from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import type { PersistentModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 
 export class ApplicationActions extends DataModelerActions {
@@ -27,15 +33,79 @@ export class ApplicationActions extends DataModelerActions {
       currentActiveAsset?.type === EntityType.Model &&
       currentActiveAsset?.id
     ) {
-      this.databaseActionQueue.updatePriority(
-        currentActiveAsset.id,
-        DatabaseActionQueuePriority.InactiveModelProfile
+      const columns = this.getEntityColumns(
+        EntityType.Model,
+        currentActiveAsset.id
       );
+
+      columns.forEach((column) => {
+        Object.values(MetadataPriority).forEach((priority) => {
+          this.databaseActionQueue.updatePriority(
+            currentActiveAsset.id + column + priority,
+            getProfilePriority(
+              DatabaseActionQueuePriority.InactiveModelProfile,
+              DatabaseProfilesFieldPriority.NonFocused,
+              ProfileMetadataPriorityMap[priority]
+            )
+          );
+        });
+      });
     }
+
+    // upgrade profile priority of newly selected asset
+    if (entityType === EntityType.Model) {
+      const columns = this.getEntityColumns(EntityType.Model, entityId);
+
+      columns.forEach((column) => {
+        Object.values(MetadataPriority).forEach((priority) => {
+          this.databaseActionQueue.updatePriority(
+            currentActiveAsset.id + column + priority,
+            getProfilePriority(
+              DatabaseActionQueuePriority.ActiveModelProfile,
+              DatabaseProfilesFieldPriority.NonFocused,
+              ProfileMetadataPriorityMap[priority]
+            )
+          );
+        });
+      });
+    }
+
     this.dataModelerStateService.dispatch("setActiveAsset", [
       entityType,
       entityId,
     ]);
+  }
+
+  @DataModelerActions.ApplicationAction()
+  public async updateFocusProfilePriority(
+    _: ApplicationStateActionArg,
+    entityId: string,
+    column: string
+  ) {
+    Object.values(MetadataPriority).forEach((priority) => {
+      this.databaseActionQueue.updatePriority(
+        entityId + column + priority,
+        getProfilePriority(
+          DatabaseActionQueuePriority.ActiveModelProfile,
+          DatabaseProfilesFieldPriority.Focused,
+          ProfileMetadataPriorityMap[priority]
+        )
+      );
+    });
+  }
+
+  @DataModelerActions.ApplicationAction()
+  public async clearColumnProfilePriority(
+    _: ApplicationStateActionArg,
+    entityType: EntityType,
+    entityId: string
+  ) {
+    const columns = this.getEntityColumns(entityType, entityId);
+    columns.forEach((column) => {
+      Object.values(MetadataPriority).forEach((priority) => {
+        this.databaseActionQueue.clearQueue(entityId + column + priority);
+      });
+    });
   }
 
   @DataModelerActions.PersistentModelAction()
@@ -72,6 +142,10 @@ export class ApplicationActions extends DataModelerActions {
     }
 
     this.databaseActionQueue.clearQueue(entityId);
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      entityType,
+      entityId,
+    ]);
 
     this.dataModelerStateService.dispatch("deleteEntity", [
       entityType,
@@ -96,5 +170,16 @@ export class ApplicationActions extends DataModelerActions {
     } else {
       return entities[idx - 1].id;
     }
+  }
+
+  private getEntityColumns(entityType: EntityType, entityId: string) {
+    if (entityType === EntityType.Table || entityType === EntityType.Model) {
+      return (
+        this.dataModelerStateService
+          .getEntityStateService(entityType, StateType.Derived)
+          .getById(entityId)
+          .profile?.map((column) => column.name) || []
+      );
+    } else return [];
   }
 }
