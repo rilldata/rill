@@ -1,6 +1,9 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
