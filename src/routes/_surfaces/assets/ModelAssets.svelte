@@ -123,6 +123,7 @@
             cardinality={tableSummaryProps.cardinality}
             profile={tableSummaryProps.profile}
             head={tableSummaryProps.head}
+            entityId={id}
           />
         </svelte:fragment>
         <svelte:fragment slot="menu-items">

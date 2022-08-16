@@ -136,6 +136,10 @@ export class ModelActions extends DataModelerActions {
     }
 
     this.databaseActionQueue.clearQueue(modelId);
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      EntityType.Model,
+      modelId,
+    ]);
     await this.setModelStatus(modelId, EntityStatus.Validating);
 
     this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query]);
@@ -184,6 +188,11 @@ export class ModelActions extends DataModelerActions {
     }
     if (!model.sanitizedQuery) return;
     this.databaseActionQueue.clearQueue(modelId);
+
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      EntityType.Model,
+      modelId,
+    ]);
 
     try {
       // create a view of the query for other analysis

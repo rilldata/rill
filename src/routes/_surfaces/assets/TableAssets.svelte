@@ -126,6 +126,7 @@
                 cardinality={derivedTable?.cardinality ?? 0}
                 profile={derivedTable?.profile ?? []}
                 head={derivedTable?.preview ?? []}
+                entityId={id}
               />
             </svelte:fragment>
             <svelte:fragment slot="menu-items" let:toggleMenu>

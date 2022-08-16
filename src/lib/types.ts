@@ -86,8 +86,8 @@ export type ProfileColumnSummary =
   | TimeRangeSummary;
 
 export interface CategoricalSummary {
-  topK: TopKEntry[];
-  cardinality: number;
+  topK?: TopKEntry[];
+  cardinality?: number;
 }
 
 export interface NumericSummary {
