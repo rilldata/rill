@@ -1,3 +1,4 @@
+import { SOURCE_PREVIEW_COUNT } from "$common/constants";
 import {
   ActionResponse,
   ActionStatus,
@@ -149,6 +150,10 @@ export class TableActions extends DataModelerActions {
       );
     }
     this.databaseActionQueue.clearQueue(tableId);
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      EntityType.Table,
+      tableId,
+    ]);
 
     try {
       this.dataModelerStateService.dispatch("setEntityStatus", [
@@ -206,7 +211,7 @@ export class TableActions extends DataModelerActions {
                 priority: DatabaseActionQueuePriority.TableProfile,
               },
               "getFirstNOfTable",
-              [persistentTable.tableName]
+              [persistentTable.tableName, SOURCE_PREVIEW_COUNT]
             )),
         ].map((asyncFunc) => asyncFunc())
       );
@@ -228,6 +233,25 @@ export class TableActions extends DataModelerActions {
     } catch (err) {
       return ActionResponseFactory.getErrorResponse(err);
     }
+  }
+
+  @DataModelerActions.DerivedTableAction()
+  public async refreshPreview(
+    _: DerivedTableStateActionArg,
+    tableId: string,
+    tableName: string
+  ): Promise<void> {
+    this.dataModelerStateService.dispatch("updateTablePreview", [
+      tableId,
+      await this.dataModelerService.databaseActionQueue.enqueue(
+        {
+          id: tableId,
+          priority: DatabaseActionQueuePriority.TableProfile,
+        },
+        "getFirstNOfTable",
+        [tableName, SOURCE_PREVIEW_COUNT]
+      ),
+    ]);
   }
 
   @DataModelerActions.PersistentTableAction()

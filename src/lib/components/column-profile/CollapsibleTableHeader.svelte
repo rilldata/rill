@@ -68,8 +68,8 @@
   const clickEntityNameHandler = () => {
     dispatch("select");
     if (
-      entityType == EntityType.Table ||
-      (entityType == EntityType.Model && active)
+      (entityType == EntityType.Table || entityType == EntityType.Model) &&
+      active
     ) {
       show = !show;
     }

@@ -2,9 +2,13 @@ import { spawn } from "node:child_process";
 
 function spawnNpmProcess(scriptName) {
   console.log(`Starting "npm run ${scriptName}"`);
-  const childProcess = spawn("npm", ["run", scriptName], {
-    stdio: "inherit",
-  });
+  const childProcess = spawn(
+    /^win/.test(process.platform) ? "npm.cmd" : "npm",
+    ["run", scriptName],
+    {
+      stdio: "inherit",
+    }
+  );
   childProcess.on("error", (err) => {
     console.log(`Script "npm run ${scriptName}" failed.`, err);
   });
