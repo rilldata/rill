@@ -7,7 +7,7 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import { INTERVALS, TIMESTAMPS } from "$lib/duckdb-data-types";
+  import { INTERVALS, STRING_LIKES, TIMESTAMPS } from "$lib/duckdb-data-types";
   import { formatDataType } from "$lib/util/formatters";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { createEventDispatcher } from "svelte";
@@ -49,6 +49,12 @@
       activityStatus = "bg-white";
     }
   }
+
+  let TOOLTIP_STRING_LIMIT = 200;
+  $: tooltipValue =
+    value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
+      ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
+      : value;
 </script>
 
 <Tooltip location="top" distance={16} suppress={suppressTooltip}>
@@ -90,10 +96,10 @@
       <FormattedDataType {value} {type} inTable />
     </button>
   </div>
-  <TooltipContent slot="tooltip-content">
+  <TooltipContent slot="tooltip-content" maxWidth="360px">
     <TooltipTitle>
       <svelte:fragment slot="name">
-        <FormattedDataType {value} {type} dark />
+        <FormattedDataType value={tooltipValue} {type} dark />
       </svelte:fragment>
     </TooltipTitle>
     <TooltipShortcutContainer>

@@ -6,7 +6,7 @@ TableCells – the cell contents.
 PinnedColumns – any reference columns pinned on the right side of the overall table.
 -->
 <script lang="ts">
-  import { TIMESTAMPS } from "$lib/duckdb-data-types";
+  import { DATES, TIMESTAMPS } from "$lib/duckdb-data-types";
 
   import type { ProfileColumn } from "$lib/types";
 
@@ -48,7 +48,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
    * font is 12px high. */
   const CHARACTER_WIDTH = 7;
   const CHARACTER_X_PAD = 16 * 2;
-  const HEADER_ICON_WIDTHS = 16 * 2;
+  const HEADER_ICON_WIDTHS = 16;
   const HEADER_X_PAD = CHARACTER_X_PAD;
   const HEADER_FLEX_SPACING = 16 * 2;
 
@@ -69,10 +69,18 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
     if (inferColumnWidthFromData) {
       columnNames.forEach((column) => {
         // get values
-        const largest = Math.max(
-          ...rows.map((row) => `${row[column.name]}`.length)
-        );
-        columnWidths[column.name] = TIMESTAMPS.has(column.type) ? 22 : largest;
+        const values = rows
+          .filter((row) => row[column.name] !== null)
+          .map((row) => `${row[column.name]}`.length);
+        values.sort();
+        let largest = Math.max(...values);
+
+        // const largest = Math.max(values);
+        columnWidths[column.name] = largest;
+
+        if (TIMESTAMPS.has(column.type)) {
+          columnWidths[column.name] = DATES.has(column.type) ? 13 : 22;
+        }
       });
     }
 
@@ -93,6 +101,20 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
             CHARACTER_WIDTH +
           CHARACTER_X_PAD;
 
+        /** The header width is largely a function of the total number of characters in the column.*/
+        const headerWidth =
+          column.name.length * CHARACTER_WIDTH +
+          HEADER_ICON_WIDTHS +
+          HEADER_X_PAD +
+          HEADER_FLEX_SPACING;
+
+        let effectiveHeaderWidth = Math.max(
+          config.minHeaderWidth,
+          headerWidth / 2 > largestStringLength && headerWidth > 180
+            ? headerWidth / 2
+            : headerWidth
+        );
+
         return largestStringLength
           ? /** the largest value for a column should be config.maxColumnWidth.
              * the smallest value should either be the largestStringLength (which comes from the actual)
@@ -102,10 +124,8 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
               config.maxColumnWidth,
               Math.max(
                 largestStringLength,
-                column.name.length * CHARACTER_WIDTH +
-                  HEADER_ICON_WIDTHS +
-                  HEADER_X_PAD +
-                  HEADER_FLEX_SPACING,
+                /** use effective header width, unless its a timestamp, in which case just use largest string length */
+                TIMESTAMPS.has(column.type) ? 0 : effectiveHeaderWidth,
                 config.minColumnWidth
               )
             )

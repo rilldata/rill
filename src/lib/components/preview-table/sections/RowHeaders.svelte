@@ -15,15 +15,11 @@
     position="top-left">#</StickyHeader
   >
   {#each virtualRowItems as row (`row-${row.key}`)}
-    <div
-      class="absolute left-0 z-20 bg-gray-100 grid place-items-center font-bold border-r border-gray-300 border-b"
-      style:height="{row.size}px"
-      style:width="{config.indexWidth}px"
-      style:left={0}
-      style:top={0}
-      style:transform="translateY({row.start}px)"
+    <StickyHeader
+      position="left"
+      header={{ size: config.indexWidth, start: row.start }}
     >
       {row.key + 1}
-    </div>
+    </StickyHeader>
   {/each}
 </div>

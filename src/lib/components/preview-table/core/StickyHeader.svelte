@@ -1,23 +1,39 @@
 <script lang="ts">
-  import type { HeaderPosition } from "../types";
+  import { createEventDispatcher } from "svelte";
 
+  import type { HeaderPosition } from "../types";
+  const dispatch = createEventDispatcher();
   export let header;
   export let position: HeaderPosition = "top";
 
   let positionClasses;
+  let offsetTop = false;
   $: {
     if (position === "top") {
       positionClasses = "absolute left-0 top-0";
     } else if (position === "left") {
-      positionClasses = "absolute left-0";
+      positionClasses = "absolute left-0 top-0 text-center font-bold";
+      offsetTop = true;
     } else if (position === "top-left") {
-      positionClasses = "sticky left-0 top-0 z-40";
+      positionClasses = "sticky left-0 top-0 z-40  font-bold";
     }
+  }
+
+  function focus() {
+    dispatch("focus");
+  }
+
+  function blur() {
+    dispatch("blur");
   }
 </script>
 
 <div
-  style:transform="translateX({header.start}px)"
+  on:mouseover={focus}
+  on:mouseleave={blur}
+  on:focus={focus}
+  on:blur={blur}
+  style:transform="translate{position === "left" ? "Y" : "X"}({header.start}px)"
   style:width="{header.size}px"
   style:height="36px"
   class="{positionClasses}

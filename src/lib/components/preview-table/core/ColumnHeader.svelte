@@ -10,6 +10,7 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
   import type { HeaderPosition } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -22,9 +23,20 @@
   const dispatch = createEventDispatcher();
 
   const { shiftClickAction } = createShiftClickAction();
+
+  let showMore = false;
 </script>
 
-<StickyHeader {position} {header}>
+<StickyHeader
+  {position}
+  {header}
+  on:focus={() => {
+    showMore = true;
+  }}
+  on:blur={() => {
+    showMore = false;
+  }}
+>
   <div
     use:shiftClickAction
     on:shift-click={async () => {
@@ -73,22 +85,25 @@
         </TooltipShortcutContainer>
       </TooltipContent>
     </Tooltip>
-    <Tooltip location="top" alignment="middle" distance={16}>
-      <button
-        class:text-gray-900={pinned}
-        class:text-gray-400={!pinned}
-        class="transition-colors duration-100 justify-self-end"
-        on:click={() => {
-          dispatch("pin");
-        }}
-      >
-        <Pin size="16px" />
-      </button>
-      <TooltipContent slot="tooltip-content">
-        {pinned
-          ? "unpin this column from the right side of the table"
-          : "pin this column to the right side of the table"}
-      </TooltipContent>
-    </Tooltip>
+    {#if showMore}
+      <Tooltip location="top" alignment="middle" distance={16}>
+        <button
+          transition:fly|local={{ duration: 200, y: 4 }}
+          class:text-gray-900={pinned}
+          class:text-gray-400={!pinned}
+          class="transition-colors duration-100 justify-self-end"
+          on:click={() => {
+            dispatch("pin");
+          }}
+        >
+          <Pin size="16px" />
+        </button>
+        <TooltipContent slot="tooltip-content">
+          {pinned
+            ? "unpin this column from the right side of the table"
+            : "pin this column to the right side of the table"}
+        </TooltipContent>
+      </Tooltip>
+    {/if}
   </div>
 </StickyHeader>
