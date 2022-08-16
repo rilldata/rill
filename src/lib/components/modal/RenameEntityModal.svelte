@@ -11,6 +11,8 @@
     ModalTitle,
   } from "$lib/components/modal";
   import notifications from "$lib/components/notifications/";
+  import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
+  import { store } from "$lib/redux-store/store-root";
 
   export let entityType:
     | EntityType.Table
@@ -44,7 +46,7 @@
     closeModal();
   };
 
-  const submitHandler = (assetID: string, newAssetName: string) => {
+  const submitHandler = (assetId: string, newAssetName: string) => {
     if (!newAssetName || newAssetName.length === 0) {
       error = `${entityType.toLowerCase()} name cannot be empty`;
       return;
@@ -55,7 +57,7 @@
     }
     if (entityType === EntityType.Table || entityType === EntityType.Model) {
       dataModelerService
-        .dispatch(renameAction, [assetID, newAssetName])
+        .dispatch(renameAction, [assetId, newAssetName])
         .then((response) => {
           if (response.status === 0) {
             notifications.send({ message: response.messages[0].message });
@@ -65,8 +67,16 @@
           }
         });
     }
+    // TODO: remove this branching logic once we have a unified backend for all entities
     if (entityType === EntityType.MetricsDefinition) {
-      // TODO: need to use the rillDeveloperService to access the metricsDefinition actions.
+      store.dispatch(
+        updateMetricsDefsWrapperApi({
+          id: assetId,
+          changes: { metricDefLabel: newAssetName },
+        })
+      );
+      resetVariablesAndCloseModal();
+      notifications.send({ message: `dashboard renamed to ${newAssetName}` });
     }
   };
 </script>
