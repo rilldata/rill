@@ -29,7 +29,7 @@
 </script>
 
 <StickyHeader
-  enableResize
+  {enableResize}
   on:resize={(event) => {
     dispatch("resize-column", {
       size: event.detail.size,
