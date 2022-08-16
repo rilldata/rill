@@ -164,7 +164,7 @@
     class:text-gray-300={currentDerivedModel?.error}
     class="px-4 flex flex-row items-center gap-x-2 justify-end"
   >
-    {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
+    {#if rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
       <Tooltip
         location="left"
         alignment="middle"
@@ -179,7 +179,11 @@
           let:toggleFloatingElement
           bind:active={contextMenuOpen}
         >
-          <Button type="secondary" on:click={toggleFloatingElement}>
+          <Button
+            disabled={currentDerivedModel?.error}
+            type="secondary"
+            on:click={toggleFloatingElement}
+          >
             Export Results
             <Export size="16px" />
           </Button>
@@ -208,10 +212,16 @@
           </Menu>
         </WithTogglableFloatingElement>
         <TooltipContent slot="tooltip-content">
-          Export this model as a dataset
+          {#if currentDerivedModel?.error}Fix the errors in your model to export
+          {:else}
+            Export this model as a dataset
+          {/if}
         </TooltipContent>
       </Tooltip>
-      <ModelerToMetricsButton {activeEntityID} />
+      <ModelerToMetricsButton
+        hasError={!!currentDerivedModel?.error}
+        {activeEntityID}
+      />
     {/if}
   </div>
   <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
