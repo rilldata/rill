@@ -164,75 +164,73 @@
     class:text-gray-300={currentDerivedModel?.error}
     class="px-4 flex flex-row items-center gap-x-2 justify-end"
   >
-    {#if rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
-      <Tooltip
+    <Tooltip
+      location="left"
+      alignment="middle"
+      distance={16}
+      suppress={contextMenuOpen}
+    >
+      <!-- attach floating element right here-->
+      <WithTogglableFloatingElement
         location="left"
-        alignment="middle"
+        alignment="start"
         distance={16}
-        suppress={contextMenuOpen}
+        let:toggleFloatingElement
+        bind:active={contextMenuOpen}
       >
-        <!-- attach floating element right here-->
-        <WithTogglableFloatingElement
-          location="left"
-          alignment="start"
-          distance={16}
-          let:toggleFloatingElement
-          bind:active={contextMenuOpen}
+        <Button
+          disabled={!!currentDerivedModel?.error}
+          type="secondary"
+          on:click={toggleFloatingElement}
         >
-          <Button
-            disabled={currentDerivedModel?.error}
-            type="secondary"
-            on:click={toggleFloatingElement}
+          Export Results
+          <Export size="16px" />
+        </Button>
+        <Menu
+          dark
+          on:click-outside={toggleFloatingElement}
+          on:escape={toggleFloatingElement}
+          slot="floating-element"
+        >
+          <MenuItem
+            on:select={() => {
+              toggleFloatingElement();
+              onExport(FileExportType.Parquet);
+            }}
           >
-            Export Results
-            <Export size="16px" />
-          </Button>
-          <Menu
-            dark
-            on:click-outside={toggleFloatingElement}
-            on:escape={toggleFloatingElement}
-            slot="floating-element"
+            Export as Parquet
+          </MenuItem>
+          <MenuItem
+            on:select={() => {
+              toggleFloatingElement();
+              onExport(FileExportType.CSV);
+            }}
           >
-            <MenuItem
-              on:select={() => {
-                toggleFloatingElement();
-                onExport(FileExportType.Parquet);
-              }}
-            >
-              Export as Parquet
-            </MenuItem>
-            <MenuItem
-              on:select={() => {
-                toggleFloatingElement();
-                onExport(FileExportType.CSV);
-              }}
-            >
-              Export as CSV
-            </MenuItem>
-          </Menu>
-        </WithTogglableFloatingElement>
-        <TooltipContent slot="tooltip-content">
-          {#if currentDerivedModel?.error}Fix the errors in your model to export
-          {:else}
-            Export this model as a dataset
-          {/if}
-        </TooltipContent>
-      </Tooltip>
-      <ModelerToMetricsButton
-        hasError={!!currentDerivedModel?.error}
-        {activeEntityID}
-      />
-    {/if}
+            Export as CSV
+          </MenuItem>
+        </Menu>
+      </WithTogglableFloatingElement>
+      <TooltipContent slot="tooltip-content">
+        {#if currentDerivedModel?.error}Fix the errors in your model to export
+        {:else}
+          Export this model as a dataset
+        {/if}
+      </TooltipContent>
+    </Tooltip>
+    <ModelerToMetricsButton
+      hasError={!!currentDerivedModel?.error}
+      {activeEntityID}
+    />
   </div>
   <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
-    {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
+    {#if true}
       <!-- top row: row analysis -->
       <div
         class="flex flex-row items-center justify-between"
         class:text-gray-300={currentDerivedModel?.error}
       >
         <div class="italic text-gray-500">
-          {#if !currentDerivedModel?.error && rollup !== undefined && rollup !== Infinity && rollup !== -Infinity}
+          {#if !currentDerivedModel?.error}
             <Tooltip location="left" alignment="center" distance={8}>
               <div>
                 {#if validRollup(rollup)}
@@ -282,7 +280,7 @@
           {:else if columnDelta === 0}
             no change in column count
           {:else}
-            &nbsp;
+            no change in column count
           {/if}
         </div>
         <div class="text-gray-800 font-bold">
