@@ -76,7 +76,7 @@
    * in favor of ironing out more modular routing and suface management.
    */
   const views = {
-    Source: {
+    Table: {
       hasInspector: true,
     },
     Model: {
@@ -92,7 +92,7 @@
 
   $: activeEntityType = $app?.activeEntity?.type;
   $: hasInspector = activeEntityType
-    ? views[activeEntityType].hasInspector
+    ? views[activeEntityType]?.hasInspector
     : false;
   function isEventWithFiles(event: DragEvent) {
     let types = event.dataTransfer.types;
