@@ -1,6 +1,6 @@
+import { EntityController } from "$server/controllers/EntityController";
 import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
 import type { Request, Response, Router } from "express";
-import { EntityController } from "$server/controllers/EntityController";
 
 /**
  * Controller for metrics explore endpoints.
@@ -8,19 +8,19 @@ import { EntityController } from "$server/controllers/EntityController";
  */
 export class MetricViewController extends RillDeveloperController {
   protected setupRouter(router: Router) {
-    router.get("vi/metric-views/:id/meta", (req: Request, res: Response) =>
+    router.get("/v1/metric-views/:id/meta", (req: Request, res: Response) =>
       this.handleGetMetricsMeta(req, res)
     );
     router.post(
-      "vi/metric-views/:id/timeseries",
+      "/v1/metric-views/:id/timeseries",
       (req: Request, res: Response) => this.handleGetTimeSeries(req, res)
     );
     router.post(
-      "vi/metric-views/:id/toplist/:dimension",
+      "/v1/metric-views/:id/toplist/:dimension",
       (req: Request, res: Response) => this.handleGetLeaderboards(req, res)
     );
     router.post(
-      "vi/metric-views/:id/big-number",
+      "/v1/metric-views/:id/big-number",
       (req: Request, res: Response) => this.bigNumber(req, res)
     );
   }
