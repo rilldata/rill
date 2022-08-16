@@ -5,6 +5,7 @@ import {
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
 import notifications from "$lib/components/notifications";
 import {
+  dataModelerService,
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
@@ -82,8 +83,9 @@ export async function uploadFile(file: File, url: string, tableName?: string) {
       formData,
       {}
     );
-    console.log(persistentTable);
     await sourceUpdated(persistentTable.tableName);
+    // do not await here. it should not block importOverlayVisible being set to false
+    dataModelerService.dispatch("collectTableInfo", [persistentTable.id]);
   } catch (err) {
     console.error(err);
   }
