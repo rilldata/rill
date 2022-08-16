@@ -19,7 +19,7 @@ import type {
   PickActionFunctions,
 } from "$common/ServiceBase";
 import { getActionMethods } from "$common/ServiceBase";
-import type { RillRuntimeMetricsActions } from "$common/rill-developer-service/RillRuntimeMetricsActions";
+import type { MetricViewActions } from "$common/rill-developer-service/MetricViewActions";
 
 type RillDeveloperActionsClasses = PickActionFunctions<
   RillRequestContext<EntityType, StateType>,
@@ -27,7 +27,7 @@ type RillDeveloperActionsClasses = PickActionFunctions<
     DimensionsActions &
     MeasuresActions &
     MetricsExplorerActions &
-    RillRuntimeMetricsActions
+    MetricViewActions
 >;
 export type RillDeveloperActionsDefinition = ExtractActionTypeDefinitions<
   RillRequestContext<EntityType, StateType>,

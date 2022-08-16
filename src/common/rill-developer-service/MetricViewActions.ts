@@ -93,9 +93,9 @@ function convertToActiveValues(filters: RuntimeRequestFilter): ActiveValues {
  * Actions that get info for metrics explore.
  * Based on rill runtime specs.
  */
-export class RillRuntimeMetricsActions extends RillDeveloperActions {
+export class MetricViewActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
-  public async getRuntimeMetricsMeta(
+  public async getMetricViewMeta(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string
   ) {
@@ -124,7 +124,7 @@ export class RillRuntimeMetricsActions extends RillDeveloperActions {
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
-  public async getRuntimeTimeSeries(
+  public async getMetricViewTimeSeries(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
     request: RuntimeTimeSeriesRequest
@@ -161,7 +161,7 @@ export class RillRuntimeMetricsActions extends RillDeveloperActions {
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
-  public async getRuntimeTopList(
+  public async getMetricViewTopList(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
     dimensionId: string,

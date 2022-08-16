@@ -6,26 +6,28 @@ import { EntityController } from "$server/controllers/EntityController";
  * Controller for metrics explore endpoints.
  * Based on rill runtime specs.
  */
-export class RillRuntimeMetricsController extends RillDeveloperController {
+export class MetricViewController extends RillDeveloperController {
   protected setupRouter(router: Router) {
-    router.get("/metric-views/:id/meta", (req: Request, res: Response) =>
+    router.get("vi/metric-views/:id/meta", (req: Request, res: Response) =>
       this.handleGetMetricsMeta(req, res)
     );
-    router.post("/metric-views/:id/timeseries", (req: Request, res: Response) =>
-      this.handleGetTimeSeries(req, res)
+    router.post(
+      "vi/metric-views/:id/timeseries",
+      (req: Request, res: Response) => this.handleGetTimeSeries(req, res)
     );
     router.post(
-      "/metric-views/:id/toplist/:dimension",
+      "vi/metric-views/:id/toplist/:dimension",
       (req: Request, res: Response) => this.handleGetLeaderboards(req, res)
     );
-    router.post("/metric-views/:id/big-number", (req: Request, res: Response) =>
-      this.bigNumber(req, res)
+    router.post(
+      "vi/metric-views/:id/big-number",
+      (req: Request, res: Response) => this.bigNumber(req, res)
     );
   }
 
   private async handleGetTimeSeries(req: Request, res: Response) {
     return EntityController.wrapAction(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "getRuntimeTimeSeries", [
+      this.rillDeveloperService.dispatch(context, "getMetricViewTimeSeries", [
         req.params.id,
         req.body,
       ])
@@ -34,7 +36,7 @@ export class RillRuntimeMetricsController extends RillDeveloperController {
 
   private async handleGetMetricsMeta(req: Request, res: Response) {
     await EntityController.wrapAction(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "getRuntimeMetricsMeta", [
+      this.rillDeveloperService.dispatch(context, "getMetricViewMeta", [
         req.params.id,
       ])
     );
@@ -42,7 +44,7 @@ export class RillRuntimeMetricsController extends RillDeveloperController {
 
   private async handleGetLeaderboards(req: Request, res: Response) {
     return EntityController.wrapAction(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "getRuntimeTopList", [
+      this.rillDeveloperService.dispatch(context, "getMetricViewTopList", [
         req.params.id,
         req.params.dimension,
         req.body,

@@ -40,7 +40,7 @@ import type { RillDeveloper } from "$server/RillDeveloper";
 import { SocketServer } from "$server/SocketServer";
 import { readFileSync } from "fs";
 import { initLocalConfig } from "$common/utils/initLocalConfig";
-import { RillRuntimeMetricsActions } from "$common/rill-developer-service/RillRuntimeMetricsActions";
+import { MetricViewActions } from "$common/rill-developer-service/MetricViewActions";
 
 let PACKAGE_JSON = "";
 try {
@@ -155,7 +155,7 @@ export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
       DimensionsActions,
       MeasuresActions,
       MetricsExplorerActions,
-      RillRuntimeMetricsActions,
+      MetricViewActions,
     ].map(
       (RillDeveloperActionsClass) =>
         new RillDeveloperActionsClass(

@@ -16,7 +16,7 @@ import express from "express";
 import fileUpload from "express-fileupload";
 import { existsSync, mkdirSync } from "fs";
 import http from "http";
-import { RillRuntimeMetricsController } from "$server/controllers/RillRuntimeMetricsController";
+import { MetricViewController } from "$server/controllers/MetricViewController";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -95,7 +95,7 @@ export class ExpressServer {
       MetricsDimensionController,
       MetricsMeasureController,
       MetricsExplorerController,
-      RillRuntimeMetricsController,
+      MetricViewController,
     ].forEach((MetricsControllerClass) =>
       new MetricsControllerClass(
         this.config,
