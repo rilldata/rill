@@ -127,19 +127,32 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
             ? headerWidth / 2
             : headerWidth
         );
+
+        let hasUserDefinedColumnWidth =
+          $manuallyResizedColumns[column.name] !== undefined;
+
         return largestStringLength
           ? /** the largest value for a column should be config.maxColumnWidth.
              * the smallest value should either be the largestStringLength (which comes from the actual)
              * table values, the header string, or the config.minColumnWidth.
              */
             Math.min(
-              config.maxColumnWidth,
-              $manuallyResizedColumns[column.name] !== undefined
+              /** Define the maximum column size. If the user has set the column width, go with that (meaning columns
+               * can be infinitely large if the user wants it). Otherwise, set a default width that is sensible.
+               */
+              hasUserDefinedColumnWidth ? Infinity : config.maxColumnWidth,
+              /** If iuser has set the column width, we'll go with that (as long as it is larger than minColumnWidth).
+               * If they haven't set it, we'll go with the effectiveHeaderWidth.
+               * In the case of TIMESTAMP columns, we are effectively skipping out on worrying about the header column
+               * and going strictly with a fixed-width based on the time stamp representation.
+               */
+              hasUserDefinedColumnWidth
                 ? $manuallyResizedColumns[column.name]
                 : Math.max(
                     largestStringLength,
                     /** use effective header width, unless its a timestamp, in which case just use largest string length */
                     TIMESTAMPS.has(column.type) ? 0 : effectiveHeaderWidth,
+                    /** All columns must be minColumnWidth regardless of user settings. */
                     config.minColumnWidth
                   )
             )
