@@ -28,6 +28,11 @@ const sidebars = {
       items: ['install/binary', 'install/docker', 'install/npm'],
     },
     {
+      type: 'doc',
+      id: 'defining-metrics',
+      label: 'Defining Metrics',
+    },
+    {
       type: 'category',
       label: 'SQL Dialects',
       items: ['sqldialects/duck-sql'],
