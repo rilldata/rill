@@ -26,7 +26,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
    * to render on initial load.
    */
   export let rowOverscanAmount = 40;
-  export let columnOverscanAmount = 10;
+  export let columnOverscanAmount = 5;
 
   /** if this is set to true, we will use the data passed in as rows
    * to calculate the column widths. Otherwise, we use the table / view's
