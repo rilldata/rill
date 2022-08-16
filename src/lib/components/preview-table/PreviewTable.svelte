@@ -19,6 +19,14 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
 
   export let rows;
   export let columnNames: ProfileColumn[];
+
+  /** the overscan values tell us how much to render off-screen. These may be set by the consumer
+   * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
+   * to render on initial load.
+   */
+  export let rowOverscanAmount = 40;
+  export let columnOverscanAmount = 10;
+
   /** if this is set to true, we will use the data passed in as rows
    * to calculate the column widths. Otherwise, we use the table / view's
    * largest values in each column, which is useful if we're building an
@@ -49,7 +57,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       getScrollElement: () => container,
       count: rows.length,
       estimateSize: () => config.rowHeight,
-      overscan: 40,
+      overscan: rowOverscanAmount,
       paddingStart: config.rowHeight,
     });
 
@@ -106,7 +114,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
              */
             config.defaultColumnWidth;
       },
-      overscan: 10,
+      overscan: columnOverscanAmount,
       paddingStart: config.indexWidth,
     });
   }

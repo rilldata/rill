@@ -133,6 +133,7 @@
           <PreviewTable
             rows={currentDerivedModel.preview}
             columnNames={currentDerivedModel.profile}
+            rowOverscanAmount={20}
           />
         {:else}
           <div
