@@ -16,6 +16,7 @@
     {@const type = columns[header.index]?.type}
     {@const pinned = pinnedColumns.some((column) => column.name === name)}
     <ColumnHeader
+      on:resize-column
       {header}
       {name}
       {type}

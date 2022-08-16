@@ -60,6 +60,7 @@
           start: virtualColumn.start,
           size: virtualColumn.size,
         }}
+        enableResize={false}
         name={columnProfile.name}
         type={columnProfile.type}
         on:pin={() => dispatch("pin", columnProfile)}

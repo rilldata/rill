@@ -12,10 +12,12 @@
 >
   <StickyHeader
     header={{ size: config.indexWidth, start: 0 }}
+    enableResize={false}
     position="top-left">#</StickyHeader
   >
   {#each virtualRowItems as row (`row-${row.key}`)}
     <StickyHeader
+      enableResize={false}
       position="left"
       header={{ size: config.indexWidth, start: row.start }}
     >

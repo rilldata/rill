@@ -19,6 +19,7 @@
   export let type: string;
   export let header;
   export let position: HeaderPosition = "top";
+  export let enableResize = true;
 
   const dispatch = createEventDispatcher();
 
@@ -28,6 +29,13 @@
 </script>
 
 <StickyHeader
+  enableResize
+  on:resize={(event) => {
+    dispatch("resize-column", {
+      size: event.detail.size,
+      name,
+    });
+  }}
   {position}
   {header}
   on:focus={() => {

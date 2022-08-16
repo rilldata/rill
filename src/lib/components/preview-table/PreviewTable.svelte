@@ -11,6 +11,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import type { ProfileColumn } from "$lib/types";
 
   import { createVirtualizer } from "@tanstack/svelte-virtual";
+  import { tweened } from "svelte/motion";
   import { config } from "./config";
   import ColumnHeaders from "./sections/ColumnHeaders.svelte";
   import PinnedColumns from "./sections/PinnedColumns.svelte";
@@ -52,7 +53,19 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   const HEADER_X_PAD = CHARACTER_X_PAD;
   const HEADER_FLEX_SPACING = 16 * 2;
 
+  let manuallyResizedColumns = tweened({});
   $: if (rows && columnNames) {
+    // initialize resizers?
+    if (Object.keys(manuallyResizedColumns).length === 0) {
+      manuallyResizedColumns = tweened(
+        columnNames.reduce((tbl, column) => {
+          tbl[column.name] = undefined;
+          return tbl;
+        }),
+        { duration: 200 }
+      );
+    }
+
     rowVirtualizer = createVirtualizer({
       getScrollElement: () => container,
       count: rows.length,
@@ -114,7 +127,6 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
             ? headerWidth / 2
             : headerWidth
         );
-
         return largestStringLength
           ? /** the largest value for a column should be config.maxColumnWidth.
              * the smallest value should either be the largestStringLength (which comes from the actual)
@@ -122,12 +134,14 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
              */
             Math.min(
               config.maxColumnWidth,
-              Math.max(
-                largestStringLength,
-                /** use effective header width, unless its a timestamp, in which case just use largest string length */
-                TIMESTAMPS.has(column.type) ? 0 : effectiveHeaderWidth,
-                config.minColumnWidth
-              )
+              $manuallyResizedColumns[column.name] !== undefined
+                ? $manuallyResizedColumns[column.name]
+                : Math.max(
+                    largestStringLength,
+                    /** use effective header width, unless its a timestamp, in which case just use largest string length */
+                    TIMESTAMPS.has(column.type) ? 0 : effectiveHeaderWidth,
+                    config.minColumnWidth
+                  )
             )
           : /** if there isn't a longet string length for some reason, let's go with a
              * default column width. We should not be in this state.
@@ -177,6 +191,16 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       pinnedColumns = [...pinnedColumns, column];
     }
   }
+
+  async function handleResizeColumn(event) {
+    const { size, name } = event.detail;
+    manuallyResizedColumns.update((state) => {
+      state[name] = Math.max(config.minColumnWidth, size);
+      return state;
+    });
+    // await tick();
+    // virtualColumns = $columnVirtualizer.getVirtualItems();
+  }
 </script>
 
 <div
@@ -207,6 +231,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
         columns={columnNames}
         {pinnedColumns}
         on:pin={handlePin}
+        on:resize-column={handleResizeColumn}
       />
       <!-- RowHeader -->
       <RowHeaders virtualRowItems={virtualRows} totalHeight={virtualHeight} />

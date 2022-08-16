@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { dragTableCell } from "../drag-table-cell";
+
   import { createEventDispatcher } from "svelte";
 
   import type { HeaderPosition } from "../types";
   const dispatch = createEventDispatcher();
   export let header;
   export let position: HeaderPosition = "top";
+  export let enableResize = true;
 
   let positionClasses;
   let offsetTop = false;
@@ -54,5 +57,21 @@
 "
   >
     <slot />
+    {#if enableResize}
+      <div
+        use:dragTableCell
+        on:resize
+        class="absolute top-0 right-0 cursor-col-resize grid place-items-end"
+        style:padding-right="1.25px"
+        style:width="12px"
+        style:height="32px"
+      >
+        <!-- <div
+          style:width="2px"
+          style:height="34px"
+          class="border border-l border-gray-200"
+        /> -->
+      </div>
+    {/if}
   </div>
 </div>
