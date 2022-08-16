@@ -1,20 +1,20 @@
-import type { DataModelerState } from "$lib/types";
-import { guidGenerator } from "$lib/util/guid";
-import {
-  extractTableName,
-  sanitizeTableName,
-} from "$lib/util/extract-table-name";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import {
   EntityStatus,
   EntityType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DataModelerState } from "$lib/types";
+import {
+  extractTableName,
+  sanitizeTableName,
+} from "$lib/util/extract-table-name";
+import { guidGenerator } from "$lib/util/guid";
 
 interface NewModelArguments {
   query?: string;
@@ -50,7 +50,7 @@ export function getNewModel(
 ): PersistentModelEntity {
   const query = params.query || "";
   const name = `${
-    params.name ? cleanModelName(params.name) : `query_${modelNumber}`
+    params.name ? cleanModelName(params.name) : `model_${modelNumber}`
   }.sql`;
   return {
     id: guidGenerator(),

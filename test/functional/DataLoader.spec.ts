@@ -1,20 +1,20 @@
-import { TestBase } from "@adityahegde/typescript-test-utils";
-import { FunctionalTestBase } from "./FunctionalTestBase";
-import {
-  ParquetFileTestData,
-  CSVFileTestData,
-  FileImportTestDataProvider,
-  TestDataColumns,
-} from "../data/DataLoader.data";
-import { DATA_FOLDER } from "../data/generator/data-constants";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import { asyncWait } from "$common/utils/waitUtils";
 import {
   extractFileExtension,
   extractTableName,
 } from "$lib/util/extract-table-name";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
+import { TestBase } from "@adityahegde/typescript-test-utils";
+import {
+  CSVFileTestData,
+  FileImportTestDataProvider,
+  ParquetFileTestData,
+  TestDataColumns,
+} from "../data/DataLoader.data";
+import { DATA_FOLDER } from "../data/generator/data-constants";
 import { SingleTableQuery, TwoTableJoinQuery } from "../data/ModelQuery.data";
-import { asyncWait } from "$common/utils/waitUtils";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 const UserFile = "test/data/Users.csv";
 
@@ -94,7 +94,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
       ]),
     ]);
     await this.clientDataModelerService.dispatch("addModel", [
-      { name: "query_0", query: SingleTableQuery },
+      { name: "model_0", query: SingleTableQuery },
     ]);
     await this.waitForTables();
     await this.waitForModels();
@@ -108,7 +108,7 @@ export class DataLoaderSpec extends FunctionalTestBase {
     expect(table).toBeUndefined();
     expect(derivedTable).toBeUndefined();
 
-    const [model] = this.getModels("tableName", "query_0");
+    const [model] = this.getModels("tableName", "model_0");
     const response = await this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model.id, TwoTableJoinQuery]
