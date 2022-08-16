@@ -36,6 +36,7 @@ import { getName } from "$common/utils/incrementName";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
+  shouldNotProfile?: boolean;
 }
 
 export class TableActions extends DataModelerActions {
@@ -100,7 +101,11 @@ export class TableActions extends DataModelerActions {
 
     table.lastUpdated = Date.now();
 
-    const response = await this.addOrUpdateTable(table, !existingTable);
+    const response = await this.addOrUpdateTable(
+      table,
+      !existingTable,
+      !options.shouldNotProfile
+    );
     if (response) return response;
     return ActionResponseFactory.getSuccessResponse("", table);
   }
@@ -116,7 +121,7 @@ export class TableActions extends DataModelerActions {
     table.name = table.tableName = tableName;
     table.sourceType = TableSourceType.DuckDB;
 
-    await this.addOrUpdateTable(table, !existingTable);
+    await this.addOrUpdateTable(table, !existingTable, true);
   }
 
   @DataModelerActions.DerivedTableAction()
@@ -375,7 +380,8 @@ export class TableActions extends DataModelerActions {
 
   private async addOrUpdateTable(
     table: PersistentTableEntity,
-    isNew: boolean
+    isNew: boolean,
+    shouldProfile: boolean
   ): Promise<ActionResponse> {
     // get the original Table state if not new.
     let originalPersistentTable: PersistentTableEntity;
@@ -456,7 +462,10 @@ export class TableActions extends DataModelerActions {
     }
 
     if (this.config.profileWithUpdate) {
-      await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+      // this check should not hit else on false. hence it is nested
+      if (shouldProfile) {
+        await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+      }
     } else {
       this.dataModelerStateService.dispatch("markAsProfiled", [
         EntityType.Table,
