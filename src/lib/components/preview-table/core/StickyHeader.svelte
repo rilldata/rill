@@ -61,6 +61,9 @@
       <div
         use:dragTableCell
         on:resize
+        on:dblclick={() => {
+          dispatch("reset-column-width");
+        }}
         class="absolute top-0 right-0 cursor-col-resize grid place-items-end"
         style:padding-right="1.25px"
         style:width="12px"

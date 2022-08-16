@@ -30,6 +30,9 @@
 
 <StickyHeader
   {enableResize}
+  on:reset-column-width={() => {
+    dispatch("reset-column-size", { name });
+  }}
   on:resize={(event) => {
     dispatch("resize-column", {
       size: event.detail.size,
@@ -46,9 +49,6 @@
   }}
 >
   <div
-    on:dblclick={() => {
-      dispatch("reset-column-size", { name });
-    }}
     use:shiftClickAction
     on:shift-click={async () => {
       await navigator.clipboard.writeText(name);
@@ -95,8 +95,6 @@
           <Shortcut>
             <span style="font-family: var(--system);">⇧</span> + Click
           </Shortcut>
-          <div>reset column width</div>
-          <Shortcut>Double-Click</Shortcut>
         </TooltipShortcutContainer>
       </TooltipContent>
     </Tooltip>
