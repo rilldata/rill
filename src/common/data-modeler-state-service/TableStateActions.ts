@@ -1,5 +1,6 @@
-import { StateActions } from ".//StateActions";
 import type { PersistentTableStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { StateActions } from ".//StateActions";
+import type { DerivedTableStateActionArg } from "./entity-state-service/DerivedTableEntityService";
 
 export class TableStateActions extends StateActions {
   @StateActions.PersistentTableAction()
@@ -17,5 +18,14 @@ export class TableStateActions extends StateActions {
     // update both "name" and "tableName" while both properties exist in the data model
     stateService.updateEntityField(draftState, tableId, "name", name);
     stateService.updateEntityField(draftState, tableId, "tableName", name);
+  }
+
+  @StateActions.DerivedTableAction()
+  public updateTablePreview(
+    { stateService, draftState }: DerivedTableStateActionArg,
+    tableId: string,
+    preview: Array<unknown>
+  ): void {
+    stateService.updateEntityField(draftState, tableId, "preview", preview);
   }
 }

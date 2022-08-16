@@ -1,11 +1,11 @@
 <script>
   /** provides the formatting for data types */
   import { INTERVALS, NUMERICS, TIMESTAMPS } from "$lib/duckdb-data-types";
-  import Varchar from "./Varchar.svelte";
+  import { formatDataType } from "$lib/util/formatters";
+  import Interval from "./Interval.svelte";
   import Number from "./Number.svelte";
   import Timestamp from "./Timestamp.svelte";
-  import Interval from "./Interval.svelte";
-  import { formatDataType } from "$lib/util/formatters";
+  import Varchar from "./Varchar.svelte";
 
   export let type = "VARCHAR";
   export let isNull = false;
