@@ -160,6 +160,7 @@
                 cardinality={currentDerivedModel?.cardinality ?? 0}
                 profile={currentDerivedModel?.profile ?? []}
                 head={currentDerivedModel?.preview ?? []}
+                entityId={activeEntityID}
               />
             </svelte:fragment>
           </CollapsibleTableSummary>
