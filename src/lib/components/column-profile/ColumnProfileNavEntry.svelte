@@ -14,6 +14,7 @@
   export let cardinality: number;
   export let profile: any;
   export let head: any; // FIXME
+  export let entityId: string;
   export let showContextButton = true;
   export let indentLevel = 0;
 
@@ -64,6 +65,7 @@
     {#each sortedProfile as column (column.name)}
       <ColumnProfile
         {indentLevel}
+        {entityId}
         example={head[0][column.name] || ""}
         {containerWidth}
         hideNullPercentage={containerWidth <
