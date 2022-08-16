@@ -17,6 +17,7 @@
     {@const pinned = pinnedColumns.some((column) => column.name === name)}
     <ColumnHeader
       on:resize-column
+      on:reset-column-size
       {header}
       {name}
       {type}

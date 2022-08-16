@@ -212,8 +212,14 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       state[name] = Math.max(config.minColumnWidth, size);
       return state;
     });
-    // await tick();
-    // virtualColumns = $columnVirtualizer.getVirtualItems();
+  }
+
+  async function handleResetColumnSize(event) {
+    const { name } = event.detail;
+    manuallyResizedColumns.update((state) => {
+      state[name] = undefined;
+      return state;
+    });
   }
 </script>
 
@@ -246,6 +252,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
         {pinnedColumns}
         on:pin={handlePin}
         on:resize-column={handleResizeColumn}
+        on:reset-column-size={handleResetColumnSize}
       />
       <!-- RowHeader -->
       <RowHeaders virtualRowItems={virtualRows} totalHeight={virtualHeight} />
