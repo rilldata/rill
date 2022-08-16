@@ -51,7 +51,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   const CHARACTER_X_PAD = 16 * 2;
   const HEADER_ICON_WIDTHS = 16;
   const HEADER_X_PAD = CHARACTER_X_PAD;
-  const HEADER_FLEX_SPACING = 16 * 2;
+  const HEADER_FLEX_SPACING = 16;
 
   let manuallyResizedColumns = tweened({});
   $: if (rows && columnNames) {
@@ -121,12 +121,13 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
           HEADER_X_PAD +
           HEADER_FLEX_SPACING;
 
-        let effectiveHeaderWidth = Math.max(
-          config.minHeaderWidth,
-          headerWidth / 2 > largestStringLength && headerWidth > 180
-            ? headerWidth / 2
-            : headerWidth
-        );
+        /** If the header is bigger than the largestStringLength and that's not at threshold, default to threshold.
+         * This will prevent the case where we have very long column names for very short column values.
+         */
+        let effectiveHeaderWidth =
+          headerWidth > 160 && largestStringLength < 160
+            ? config.minHeaderWidthWhenColumsAreSmall
+            : headerWidth;
 
         let hasUserDefinedColumnWidth =
           $manuallyResizedColumns[column.name] !== undefined;

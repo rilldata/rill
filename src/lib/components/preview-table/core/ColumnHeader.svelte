@@ -66,7 +66,9 @@
         class="
         grid
         w-full gap-x-2 items-center cursor-pointer"
-        style:grid-template-columns="max-content auto max-content"
+        style:grid-template-columns="max-content auto {showMore
+          ? "max-content"
+          : ""}"
       >
         <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         <span class="text-ellipsis overflow-hidden whitespace-nowrap font-bold">
