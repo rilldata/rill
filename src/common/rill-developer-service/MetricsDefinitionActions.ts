@@ -1,18 +1,16 @@
-import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
+import type { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
 import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
-import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
-import type { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
 import { getMetricsDefinition } from "$common/stateInstancesFactory";
-import { shallowCopy } from "$common/utils/shallowCopy";
-import { CATEGORICALS } from "$lib/duckdb-data-types";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { ProfileColumn } from "$lib/types";
-import { sanitizeEntityName } from "$lib/util/extract-table-name";
+import { CATEGORICALS } from "$lib/duckdb-data-types";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import { shallowCopy } from "$common/utils/shallowCopy";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 
 export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -64,38 +62,6 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       this.dataModelerStateService
         .getMetricsDefinitionService()
         .getById(metricsDefId)
-    );
-  }
-
-  @RillDeveloperActions.MetricsDefinitionAction()
-  public async updateMetricsDefinitionName(
-    rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string,
-    name: string
-  ): Promise<ActionResponse> {
-    const stateService = rillRequestContext.entityStateService;
-    const sanitizedNewName = sanitizeEntityName(name);
-
-    const existingMetricsDef = stateService.getByField(
-      "metricDefLabel",
-      sanitizedNewName
-    );
-
-    if (existingMetricsDef) {
-      return ActionResponseFactory.getExisingEntityError(
-        `another dashboard named "${existingMetricsDef.metricDefLabel}" already exists`
-      );
-    }
-
-    const metricsDef = stateService.getById(metricsDefId);
-    const currentName = metricsDef.metricDefLabel;
-
-    this.dataModelerStateService.dispatch("updateMetricsDefinitionName", [
-      metricsDefId,
-      sanitizedNewName,
-    ]);
-    return ActionResponseFactory.getSuccessResponse(
-      `dashboard ${currentName} renamed to ${sanitizedNewName}`
     );
   }
 

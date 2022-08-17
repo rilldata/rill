@@ -1,5 +1,5 @@
-import type { MetricsDefinitionStateActionArg } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { StateActions } from "$common/data-modeler-state-service/StateActions";
+import type { MetricsDefinitionStateActionArg } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export class MetricsDefinitionStateActions extends StateActions {
@@ -21,20 +21,6 @@ export class MetricsDefinitionStateActions extends StateActions {
       metricsDefId,
       "sourceModelId",
       modelId
-    );
-  }
-
-  @StateActions.MetricsDefinitionAction()
-  public updateMetricsDefinitionName(
-    { draftState, stateService }: MetricsDefinitionStateActionArg,
-    metricsDefId: string,
-    name: string
-  ) {
-    stateService.updateEntityField(
-      draftState,
-      metricsDefId,
-      "metricDefLabel",
-      name
     );
   }
 
