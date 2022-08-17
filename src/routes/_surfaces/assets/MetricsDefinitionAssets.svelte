@@ -7,7 +7,7 @@
     ApplicationStore,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
-  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
+  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
@@ -45,7 +45,7 @@
 
   const dispatchSetMetricsDefActive = (id: string) => {
     dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsDefinition,
+      EntityType.MetricsExplorer,
       id,
     ]);
   };
@@ -73,16 +73,16 @@
   out:slide={{ duration: 200 }}
 >
   <CollapsibleSectionTitle
-    tooltipText={"metrics"}
+    tooltipText={"dashboards"}
     bind:active={showMetricsDefs}
   >
     <h4 class="flex flex-row items-center gap-x-2">
-      <MetricsIcon size="16px" /> Metrics
+      <Explore size="16px" /> Dashboards
     </h4>
   </CollapsibleSectionTitle>
   <ContextButton
-    id={"create-model-button"}
-    tooltipText="create a new model"
+    id={"create-dashboard-button"}
+    tooltipText="create a new dashboard"
     on:click={dispatchAddEmptyMetricsDef}
   >
     <AddIcon />
@@ -138,15 +138,15 @@
             disabled={hasSourceError}
             on:select={() => {
               dataModelerService.dispatch("setActiveAsset", [
-                EntityType.MetricsExplorer,
+                EntityType.MetricsDefinition,
                 metricsDef.id,
               ]);
             }}
           >
             <svelte:fragment slot="icon">
-              <Explore />
+              <MetricsIcon />
             </svelte:fragment>
-            view dashboard
+            edit metrics
           </MenuItem>
           <Divider />
           <MenuItem
