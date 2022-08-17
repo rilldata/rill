@@ -34,7 +34,7 @@
     renameAction = "updateModelName";
     entityLabel = "model";
   } else if (entityType === EntityType.MetricsDefinition) {
-    renameAction = "updateMetricsDefinitionName";
+    renameAction = ""; // not used in submitHandler for MetricsDefinitions
     entityLabel = "dashboard";
   } else {
     throw new Error("assetType must be either 'Table' or 'Model'");
