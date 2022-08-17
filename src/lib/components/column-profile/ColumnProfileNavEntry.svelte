@@ -61,7 +61,7 @@
 </div>
 
 <div>
-  {#if sortedProfile}
+  {#if sortedProfile && head.length}
     {#each sortedProfile as column (column.name)}
       <ColumnProfile
         {indentLevel}
