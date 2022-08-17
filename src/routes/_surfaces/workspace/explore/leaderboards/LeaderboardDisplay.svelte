@@ -2,6 +2,7 @@
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
 
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
@@ -20,10 +21,15 @@
   } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
+  import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
+  import { useQuery } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import Leaderboard from "./Leaderboard.svelte";
@@ -37,14 +43,31 @@
   let dimensions: Readable<DimensionDefinitionEntity[]>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
+  // query the `/meta` endpoint to get the available measures for the metric
+  $: queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
+    queryKey,
+    () => getMetricViewMetadata(metricsDefId)
+  );
+  $: queryResult.setOptions(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
+  );
+
   let measureField: Readable<string>;
-  $: if ($metricsExplorer?.leaderboardMeasureId)
+  $: if ($metricsExplorer?.leaderboardMeasureId) {
     measureField = getMeasureFieldNameByIdAndIndex(
       $metricsExplorer.leaderboardMeasureId,
       $metricsExplorer.measureIds.indexOf(
         $metricsExplorer?.leaderboardMeasureId
       )
     );
+    // THIS IS BROKEN
+    // const measureIds = $queryResult.data?.measures.map((measure) => measure.id);
+    // measureField = getMeasureFieldNameByIdAndIndex(
+    //   $metricsExplorer.leaderboardMeasureId,
+    //   measureIds.indexOf($metricsExplorer?.leaderboardMeasureId)
+    // );
+  }
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: leaderboardMeasureDefinition = $measures.find(

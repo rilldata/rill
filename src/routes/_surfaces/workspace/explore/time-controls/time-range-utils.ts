@@ -275,6 +275,7 @@ export const formatDateByInterval = (
   interval: string, // DuckDB interval
   date: string
 ): string => {
+  if (!interval || !date) return "";
   switch (interval) {
     case "1 minute":
       return new Date(date).toLocaleDateString(undefined, {

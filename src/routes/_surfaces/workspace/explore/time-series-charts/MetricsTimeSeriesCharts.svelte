@@ -1,5 +1,6 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
@@ -7,15 +8,22 @@
   import Spinner from "$lib/components/Spinner.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
   import type {
     TimeSeriesEntity,
     TimeSeriesValue,
   } from "$lib/redux-store/timeseries/timeseries-slice";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+  import { useQuery } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
@@ -25,7 +33,30 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricsDefId;
-  export let interval;
+
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  // query the `/meta` endpoint to get the default time grain of the dataset
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
+    queryKey,
+    () => getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
+
+  // Question: why isn't queryResult.data available here?
+  $: console.log("$queryResult.data", $queryResult.data);
+
+  $: {
+    let interval =
+      $metricsExplorer?.selectedTimeRange?.interval ||
+      $queryResult.data?.timeDimension?.timeRange?.interval;
+    console.log("interval", interval);
+  }
 
   $: allMeasures = getValidMeasuresByMetricsId(metricsDefId);
 
