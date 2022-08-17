@@ -10,7 +10,7 @@ export const getMetricViewMetadata = (
 };
 
 export const getMetricViewMetaQueryKey = (metricViewId: string) => {
-  return [`v1/metric-views/${metricViewId}/meta`];
+  return [`v1/metric-view/meta`, metricViewId];
 };
 
 // POST /api/v1/metric-views/{view-name}/timeseries
