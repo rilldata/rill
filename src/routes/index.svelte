@@ -76,7 +76,7 @@
    * in favor of ironing out more modular routing and suface management.
    */
   const views = {
-    Source: {
+    Table: {
       hasInspector: true,
     },
     Model: {
