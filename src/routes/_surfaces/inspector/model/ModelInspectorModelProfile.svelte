@@ -65,7 +65,9 @@
 
   function focus(reference) {
     return () => {
-      if (!currentDerivedModel?.error) queryHighlight.set(reference.tables);
+      if (!currentDerivedModel?.error && reference) {
+        queryHighlight.set(reference.tables);
+      }
     };
   }
   function blur() {
@@ -104,8 +106,8 @@
               <div
                 class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
-                on:focus={focus(derivedTableRef)}
-                on:mouseover={focus(derivedTableRef)}
+                on:focus={focus(table)}
+                on:mouseover={focus(table)}
                 on:mouseleave={blur}
                 on:blur={blur}
                 class:text-gray-500={modelHasError}
