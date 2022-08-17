@@ -116,10 +116,7 @@
                   {persistentTableRef?.tableName}
                 </div>
 
-                <div
-                  class="text-gray-500 italic"
-                  class:line-through={modelHasError}
-                >
+                <div class="text-gray-500 italic">
                   <!-- is there a source table with this name and cardinality established? -->
                   {#if correspondingTableCardinality}
                     {`${formatInteger(correspondingTableCardinality)} rows` ||

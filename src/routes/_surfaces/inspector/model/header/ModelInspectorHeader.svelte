@@ -224,7 +224,6 @@
       class="italic text-gray-500"
       class:text-gray-500={modelHasError}
       class:italic={modelHasError}
-      class:line-through={modelHasError}
     >
       <Tooltip location="left" alignment="center" distance={8}>
         <div>
@@ -253,7 +252,6 @@
     </div>
     <div
       class="text-gray-800 font-bold"
-      class:line-through={modelHasError}
       class:font-normal={modelHasError}
       class:italic={modelHasError}
       class:text-gray-500={modelHasError}
@@ -269,7 +267,7 @@
   </div>
   <!-- bottom row: column analysis -->
   <div class="flex flex-row justify-between">
-    <div class="italic text-gray-500" class:line-through={modelHasError}>
+    <div class="italic text-gray-500">
       {#if columnDelta > 0}
         {formatInteger(columnDelta)} column{#if columnDelta !== 1}s{/if} added
       {:else if columnDelta < 0}
@@ -282,7 +280,6 @@
     </div>
     <div
       class="text-gray-800 font-bold"
-      class:line-through={modelHasError}
       class:font-normal={modelHasError}
       class:text-gray-500={modelHasError}
     >
