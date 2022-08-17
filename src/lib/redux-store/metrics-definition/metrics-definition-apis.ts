@@ -197,7 +197,8 @@ export const validateSelectedSources = createAsyncThunk(
     if (
       state.application.activeEntity.id === id &&
       state.application.activeEntity.type === EntityType.MetricsExplorer &&
-      sourceModelValidationStatus !== SourceModelValidationStatus.OK
+      (sourceModelValidationStatus !== SourceModelValidationStatus.OK ||
+        timeDimensionValidationStatus !== SourceModelValidationStatus.OK)
     ) {
       await dataModelerService.dispatch("setActiveAsset", [
         EntityType.MetricsDefinition,
