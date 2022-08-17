@@ -14,12 +14,11 @@
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import * as classes from "$lib/util/component-classes";
   import { formatInteger } from "$lib/util/formatters";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
+  import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -39,7 +38,7 @@
 
   let tables;
   // get source tables?
-  let sourceTableReferences;
+  let sourceTableReferences = [];
   let showColumns = true;
 
   /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
@@ -101,7 +100,8 @@
             )}
             {@const correspondingTableCardinality =
               derivedTableRef?.cardinality}
-            <Tooltip location="left" distance={16} suppress={!modelHasError}>
+
+            <WithModelResultTooltip {modelHasError}>
               <div
                 class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
@@ -124,11 +124,17 @@
                   {/if}
                 </div>
               </div>
-              <TooltipContent maxWidth="240px" slot="tooltip-content">
-                This model has an error. Showing the last available source
-                information.
-              </TooltipContent>
-            </Tooltip>
+
+              <!-- tooltip content -->
+              <svelte:fragment slot="tooltip-title"
+                >{persistentTableRef?.tableName}</svelte:fragment
+              >
+              <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
+
+              <svelte:fragment slot="tooltip-description">
+                This source table is referenced in the model query.
+              </svelte:fragment>
+            </WithModelResultTooltip>
           {/each}
         </div>
       {/if}

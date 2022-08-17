@@ -33,6 +33,7 @@
   import { getContext } from "svelte";
 
   import notification from "$lib/components/notifications";
+  import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
 
   export let containerWidth = 0;
 
@@ -225,7 +226,7 @@
       class:text-gray-500={modelHasError}
       class:italic={modelHasError}
     >
-      <Tooltip location="left" alignment="center" distance={8}>
+      <WithModelResultTooltip {modelHasError}>
         <div>
           {#if validRollup(rollup)}
             {#if isNaN(rollup)}
@@ -242,13 +243,14 @@
             selected
           {/if}
         </div>
-        <TooltipContent slot="tooltip-content">
-          <div class="py-1 font-bold">the rollup percentage</div>
-          <div style:width="240px" class="pb-1">
-            the ratio of resultset rows to source rows, as a percentage
-          </div>
-        </TooltipContent>
-      </Tooltip>
+
+        <!-- tooltip content -->
+        <svelte:fragment slot="tooltip-title">rollup percentage</svelte:fragment
+        >
+        <svelte:fragment slot="tooltip-description"
+          >the ratio of resultset rows to source rows, as a percentage.</svelte:fragment
+        >
+      </WithModelResultTooltip>
     </div>
     <div
       class="text-gray-800 font-bold"
@@ -266,22 +268,36 @@
     </div>
   </div>
   <!-- bottom row: column analysis -->
+
   <div class="flex flex-row justify-between">
-    <div class="italic text-gray-500">
-      {#if columnDelta > 0}
-        {formatInteger(columnDelta)} column{#if columnDelta !== 1}s{/if} added
-      {:else if columnDelta < 0}
-        {formatInteger(-columnDelta)} column{#if -columnDelta !== 1}s{/if} dropped
-      {:else if columnDelta === 0}
-        no change in column count
-      {:else}
-        no change in column count
-      {/if}
-    </div>
+    <WithModelResultTooltip {modelHasError}>
+      <div
+        class:font-normal={modelHasError}
+        class:text-gray-500={modelHasError}
+        class:italic={modelHasError}
+      >
+        {#if columnDelta > 0}
+          {formatInteger(columnDelta)} column{#if columnDelta !== 1}s{/if} added
+        {:else if columnDelta < 0}
+          {formatInteger(-columnDelta)} column{#if -columnDelta !== 1}s{/if} dropped
+        {:else if columnDelta === 0}
+          no change in column count
+        {:else}
+          no change in column count
+        {/if}
+      </div>
+
+      <!-- tooltip content -->
+      <svelte:fragment slot="tooltip-title">column diff</svelte:fragment>
+      <svelte:fragment slot="tooltip-description">
+        the difference in column counts between the sources and model.</svelte:fragment
+      >
+    </WithModelResultTooltip>
     <div
       class="text-gray-800 font-bold"
       class:font-normal={modelHasError}
       class:text-gray-500={modelHasError}
+      class:italic={modelHasError}
     >
       {currentDerivedModel?.profile?.length} columns
     </div>
