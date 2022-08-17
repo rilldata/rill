@@ -36,7 +36,6 @@
   const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
 
-  let tables;
   // get source tables?
   let sourceTableReferences = [];
   let showColumns = true;
