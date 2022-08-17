@@ -248,7 +248,7 @@
         <svelte:fragment slot="tooltip-title">rollup percentage</svelte:fragment
         >
         <svelte:fragment slot="tooltip-description"
-          >the ratio of resultset rows to source rows, as a percentage.</svelte:fragment
+          >The ratio of resultset rows to source rows, as a percentage.</svelte:fragment
         >
       </WithModelResultTooltip>
     </div>
@@ -290,7 +290,7 @@
       <!-- tooltip content -->
       <svelte:fragment slot="tooltip-title">column diff</svelte:fragment>
       <svelte:fragment slot="tooltip-description">
-        the difference in column counts between the sources and model.</svelte:fragment
+        The difference in column counts between the sources and model.</svelte:fragment
       >
     </WithModelResultTooltip>
     <div
