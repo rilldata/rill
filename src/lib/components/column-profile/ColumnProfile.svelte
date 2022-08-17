@@ -13,6 +13,7 @@
   export let totalRows;
   export let nullCount;
   export let example;
+  export let entityId;
   export let view = "summaries"; // summaries, example
   export let containerWidth: number;
 
@@ -75,6 +76,15 @@
 
   <ColumnProfileDetails
     slot="details"
-    {...{ active, type, summary, totalRows, containerWidth, indentLevel }}
+    {...{
+      active,
+      type,
+      summary,
+      totalRows,
+      containerWidth,
+      indentLevel,
+      name,
+      entityId,
+    }}
   />
 </ColumnEntry>

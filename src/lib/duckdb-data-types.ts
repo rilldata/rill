@@ -26,10 +26,10 @@ export const FLOATS = new Set([
   "NUMERIC",
   "FLOAT",
 ]);
-
+export const DATES = new Set(["DATE"]);
 export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
 export const BOOLEANS = new Set(["BOOLEAN", "BOOL", "LOGICAL"]);
-export const TIMESTAMPS = new Set(["TIMESTAMP", "TIME", "DATETIME", "DATE"]);
+export const TIMESTAMPS = new Set(["TIMESTAMP", "TIME", "DATETIME", ...DATES]);
 export const INTERVALS = new Set(["INTERVAL"]);
 export const STRING_LIKES = new Set([
   "BYTE_ARRAY",
