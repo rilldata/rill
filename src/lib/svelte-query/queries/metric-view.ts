@@ -1,4 +1,8 @@
-import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+import type {
+  RuntimeMetricsMetaResponse,
+  RuntimeTimeSeriesRequest,
+  RuntimeTimeSeriesResponse,
+} from "$common/rill-developer-service/MetricViewActions";
 import { fetchWrapper } from "$lib/util/fetchWrapper";
 
 // GET /api/v1/metric-views/{view-name}/meta
@@ -15,7 +19,18 @@ export const getMetricViewMetaQueryKey = (metricViewId: string) => {
 
 // POST /api/v1/metric-views/{view-name}/timeseries
 
-// TODO...
+export const postMetricViewTimeSeries = (
+  metricViewId: string,
+  request: RuntimeTimeSeriesRequest
+): Promise<RuntimeTimeSeriesResponse> => {
+  return fetchWrapper(`v1/metric-views/${metricViewId}/timeseries`, "POST", {
+    ...request,
+  });
+};
+
+export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
+  return [`v1/metric-views/${metricViewId}/timeseries`];
+};
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
 
