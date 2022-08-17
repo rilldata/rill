@@ -14,6 +14,8 @@
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import * as classes from "$lib/util/component-classes";
   import { formatInteger } from "$lib/util/formatters";
   import { getContext } from "svelte";
@@ -43,40 +45,36 @@
   /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
   $: activeEntityID = $store?.activeEntity?.id;
 
+  /** get current model */
   let currentModel: PersistentModelEntity;
   $: currentModel =
     activeEntityID && $persistentModelStore?.entities
       ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
+  /** get current derived model*/
   let currentDerivedModel: DerivedModelEntity;
   $: currentDerivedModel =
     activeEntityID && $derivedModelStore?.entities
       ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
   // get source table references.
-  $: if (currentDerivedModel?.sources) {
-    sourceTableReferences = currentDerivedModel?.sources;
-  }
-
-  // map and filter these source tables.
-  $: if (sourceTableReferences?.length) {
-    tables = sourceTableReferences
-      .map((sourceTableReference) => {
-        const table = $persistentTableStore.entities.find(
-          (t) => sourceTableReference.name === t.tableName
-        );
-        if (!table) return undefined;
-        return $derivedTableStore.entities.find(
-          (derivedTable) => derivedTable.id === table.id
-        );
-      })
-      .filter((t) => !!t);
-  } else {
-    tables = [];
+  $: if (currentDerivedModel?.sources?.length) {
+    sourceTableReferences = currentDerivedModel.sources;
   }
 
   // toggle state for inspector sections
   let showSourceTables = true;
+
+  function focus(reference) {
+    return () => {
+      if (!currentDerivedModel?.error) queryHighlight.set(reference.tables);
+    };
+  }
+  function blur() {
+    queryHighlight.set(undefined);
+  }
+
+  $: modelHasError = !!currentDerivedModel?.error;
 </script>
 
 <div class="model-profile">
@@ -90,32 +88,38 @@
           Sources
         </CollapsibleSectionTitle>
       </div>
+
+      <!-- source tables -->
       {#if showSourceTables}
         <div transition:slide|local={{ duration: 200 }} class="mt-1">
-          {#if sourceTableReferences?.length && tables}
-            {#each sourceTableReferences as reference, index (reference.name)}
-              {@const correspondingTableCardinality =
-                tables[index]?.cardinality}
+          {#each sourceTableReferences as table}
+            {@const persistentTableRef = $persistentTableStore.entities.find(
+              (t) => table.name === t.tableName
+            )}
+            {@const derivedTableRef = $derivedTableStore.entities.find(
+              (derivedTable) => derivedTable.id === persistentTableRef.id
+            )}
+            {@const correspondingTableCardinality =
+              derivedTableRef?.cardinality}
+            <Tooltip location="left" distance={16} suppress={!modelHasError}>
               <div
                 class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
-                on:focus={() => {
-                  queryHighlight.set(reference.tables);
-                }}
-                on:mouseover={() => {
-                  queryHighlight.set(reference.tables);
-                }}
-                on:mouseleave={() => {
-                  queryHighlight.set(undefined);
-                }}
-                on:blur={() => {
-                  queryHighlight.set(undefined);
-                }}
+                on:focus={focus(derivedTableRef)}
+                on:mouseover={focus(derivedTableRef)}
+                on:mouseleave={blur}
+                on:blur={blur}
+                class:text-gray-500={modelHasError}
+                class:italic={modelHasError}
               >
                 <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-                  {reference.name}
+                  {persistentTableRef?.tableName}
                 </div>
-                <div class="text-gray-500 italic">
+
+                <div
+                  class="text-gray-500 italic"
+                  class:line-through={modelHasError}
+                >
                   <!-- is there a source table with this name and cardinality established? -->
                   {#if correspondingTableCardinality}
                     {`${formatInteger(correspondingTableCardinality)} rows` ||
@@ -123,10 +127,12 @@
                   {/if}
                 </div>
               </div>
-            {/each}
-          {:else}
-            <div class="pl-4 pr-5 p-1 italic text-gray-400">none selected</div>
-          {/if}
+              <TooltipContent maxWidth="240px" slot="tooltip-content">
+                This model has an error. Showing the last available source
+                information.
+              </TooltipContent>
+            </Tooltip>
+          {/each}
         </div>
       {/if}
     </div>
