@@ -97,10 +97,15 @@
               (t) => table.name === t.tableName
             )}
             {@const derivedTableRef = $derivedTableStore.entities.find(
-              (derivedTable) => derivedTable.id === persistentTableRef.id
+              (derivedTable) => derivedTable?.id === persistentTableRef?.id
             )}
             {@const correspondingTableCardinality =
               derivedTableRef?.cardinality}
+
+            {@const sourceName =
+              persistentTableRef?.tableName || "unknown source"}
+
+            {@const sourceIsDefined = !!persistentTableRef?.tableName}
 
             <WithModelResultTooltip {modelHasError}>
               <div
@@ -114,7 +119,7 @@
                 class:italic={modelHasError}
               >
                 <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-                  {persistentTableRef?.tableName}
+                  {sourceName}
                 </div>
 
                 <div class="text-gray-500 italic">
@@ -128,12 +133,17 @@
 
               <!-- tooltip content -->
               <svelte:fragment slot="tooltip-title"
-                >{persistentTableRef?.tableName}</svelte:fragment
+                >{sourceName}</svelte:fragment
               >
               <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
 
               <svelte:fragment slot="tooltip-description">
-                This source table is referenced in the model query.
+                {#if sourceIsDefined}
+                  This source table is referenced in the model query.
+                {:else}
+                  Data source is not known. This is likely due to a source name
+                  changing.
+                {/if}
               </svelte:fragment>
             </WithModelResultTooltip>
           {/each}
