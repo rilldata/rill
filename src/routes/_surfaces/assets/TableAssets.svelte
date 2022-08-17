@@ -1,14 +1,4 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { flip } from "svelte/animate";
-  import { slide } from "svelte/transition";
-
-  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
-  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import AddIcon from "$lib/components/icons/Add.svelte";
-  import Source from "$lib/components/icons/Source.svelte";
-
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     ApplicationStore,
@@ -19,13 +9,18 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import Model from "$lib/components/icons/Model.svelte";
+  import Source from "$lib/components/icons/Source.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
-  import RenameTableModal from "$lib/components/modal/RenameTableModal.svelte";
+  import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
@@ -33,6 +28,9 @@
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
+  import { getContext } from "svelte";
+  import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
@@ -176,10 +174,11 @@
       {/each}
     {/if}
   </div>
-  <RenameTableModal
+  <RenameEntityModal
+    entityType={EntityType.Table}
     openModal={showRenameTableModal}
     closeModal={() => (showRenameTableModal = false)}
-    tableID={renameTableID}
-    currentTableName={renameTableName}
+    entityId={renameTableID}
+    currentEntityName={renameTableName}
   />
 {/if}
