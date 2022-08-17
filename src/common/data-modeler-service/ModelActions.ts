@@ -136,6 +136,10 @@ export class ModelActions extends DataModelerActions {
     }
 
     this.databaseActionQueue.clearQueue(modelId);
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      EntityType.Model,
+      modelId,
+    ]);
     await this.setModelStatus(modelId, EntityStatus.Validating);
 
     this.dataModelerStateService.dispatch("updateModelQuery", [modelId, query]);
@@ -184,6 +188,11 @@ export class ModelActions extends DataModelerActions {
     }
     if (!model.sanitizedQuery) return;
     this.databaseActionQueue.clearQueue(modelId);
+
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      EntityType.Model,
+      modelId,
+    ]);
 
     try {
       // create a view of the query for other analysis
@@ -400,14 +409,40 @@ export class ModelActions extends DataModelerActions {
     modelId: string,
     name: string
   ): Promise<ActionResponse> {
-    const duplicateResp = this.checkDuplicateModel(stateService, name, modelId);
-    if (duplicateResp) {
-      return duplicateResp;
+    const existingModel = stateService
+      .getCurrentState()
+      .entities.find(
+        (model) => cleanModelName(model.name) === name && model.id !== modelId
+      );
+
+    if (existingModel) {
+      return ActionResponseFactory.getExisingEntityError(
+        `Another model with the name ${name} already exists`
+      );
     }
+
+    const existingTable = this.dataModelerStateService
+      .getEntityStateService(EntityType.Table, StateType.Persistent)
+      .getByField("tableName", sanitizeTableName(extractTableName(name)));
+
+    if (existingTable) {
+      return ActionResponseFactory.getExisingEntityError(
+        `Another table with the sanitised table name ${existingTable.tableName} already exists`
+      );
+    }
+
+    const model = stateService.getById(modelId);
+    const currentName = model.tableName;
+    const sanitizedModelName = cleanModelName(name);
+
     this.dataModelerStateService.dispatch("updateModelName", [
       modelId,
-      cleanModelName(name),
+      sanitizedModelName,
     ]);
+
+    return ActionResponseFactory.getSuccessResponse(
+      `model ${currentName} renamed to ${sanitizedModelName}`
+    );
   }
 
   @DataModelerActions.PersistentModelAction()

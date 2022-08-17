@@ -1,10 +1,30 @@
-import { DataModelerActions } from ".//DataModelerActions";
+import { SOURCE_PREVIEW_COUNT } from "$common/constants";
+import {
+  ActionResponse,
+  ActionStatus,
+} from "$common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
+import type {
+  DerivedTableEntity,
+  DerivedTableStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import {
+  EntityStatus,
+  EntityType,
+  StateType,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+  PersistentTableEntity,
+  PersistentTableStateActionArg,
+} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
+import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
+import { getName } from "$common/utils/incrementName";
 import {
   FILE_EXTENSION_TO_TABLE_TYPE,
   ProfileColumn,
   TableSourceType,
 } from "$lib/types";
-import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import {
   extractFileExtension,
   extractTableName,
@@ -12,30 +32,12 @@ import {
   INVALID_CHARS,
   sanitizeTableName,
 } from "$lib/util/extract-table-name";
-import type {
-  PersistentTableEntity,
-  PersistentTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import {
-  EntityStatus,
-  EntityType,
-  StateType,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type {
-  DerivedTableEntity,
-  DerivedTableStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { existsSync } from "fs";
-import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
-import {
-  ActionResponse,
-  ActionStatus,
-} from "$common/data-modeler-service/response/ActionResponse";
-import { getName } from "$common/utils/incrementName";
+import { DataModelerActions } from ".//DataModelerActions";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
+  shouldNotProfile?: boolean;
 }
 
 export class TableActions extends DataModelerActions {
@@ -100,7 +102,11 @@ export class TableActions extends DataModelerActions {
 
     table.lastUpdated = Date.now();
 
-    const response = await this.addOrUpdateTable(table, !existingTable);
+    const response = await this.addOrUpdateTable(
+      table,
+      !existingTable,
+      !options.shouldNotProfile
+    );
     if (response) return response;
     return ActionResponseFactory.getSuccessResponse("", table);
   }
@@ -116,7 +122,7 @@ export class TableActions extends DataModelerActions {
     table.name = table.tableName = tableName;
     table.sourceType = TableSourceType.DuckDB;
 
-    await this.addOrUpdateTable(table, !existingTable);
+    await this.addOrUpdateTable(table, !existingTable, true);
   }
 
   @DataModelerActions.DerivedTableAction()
@@ -144,6 +150,10 @@ export class TableActions extends DataModelerActions {
       );
     }
     this.databaseActionQueue.clearQueue(tableId);
+    this.dataModelerService.dispatch("clearColumnProfilePriority", [
+      EntityType.Table,
+      tableId,
+    ]);
 
     try {
       this.dataModelerStateService.dispatch("setEntityStatus", [
@@ -201,7 +211,7 @@ export class TableActions extends DataModelerActions {
                 priority: DatabaseActionQueuePriority.TableProfile,
               },
               "getFirstNOfTable",
-              [persistentTable.tableName]
+              [persistentTable.tableName, SOURCE_PREVIEW_COUNT]
             )),
         ].map((asyncFunc) => asyncFunc())
       );
@@ -223,6 +233,25 @@ export class TableActions extends DataModelerActions {
     } catch (err) {
       return ActionResponseFactory.getErrorResponse(err);
     }
+  }
+
+  @DataModelerActions.DerivedTableAction()
+  public async refreshPreview(
+    _: DerivedTableStateActionArg,
+    tableId: string,
+    tableName: string
+  ): Promise<void> {
+    this.dataModelerStateService.dispatch("updateTablePreview", [
+      tableId,
+      await this.dataModelerService.databaseActionQueue.enqueue(
+        {
+          id: tableId,
+          priority: DatabaseActionQueuePriority.TableProfile,
+        },
+        "getFirstNOfTable",
+        [tableName, SOURCE_PREVIEW_COUNT]
+      ),
+    ]);
   }
 
   @DataModelerActions.PersistentTableAction()
@@ -371,7 +400,8 @@ export class TableActions extends DataModelerActions {
 
   private async addOrUpdateTable(
     table: PersistentTableEntity,
-    isNew: boolean
+    isNew: boolean,
+    shouldProfile: boolean
   ): Promise<ActionResponse> {
     // get the original Table state if not new.
     let originalPersistentTable: PersistentTableEntity;
@@ -452,7 +482,10 @@ export class TableActions extends DataModelerActions {
     }
 
     if (this.config.profileWithUpdate) {
-      await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+      // this check should not hit else on false. hence it is nested
+      if (shouldProfile) {
+        await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+      }
     } else {
       this.dataModelerStateService.dispatch("markAsProfiled", [
         EntityType.Table,

@@ -1,29 +1,29 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import { cubicOut as easing } from "svelte/easing";
-  import Editor from "$lib/components/Editor.svelte";
-  import { drag } from "$lib/drag";
   import {
-    modelPreviewVisibilityTween,
-    modelPreviewVisible,
-    layout,
     assetVisibilityTween,
     inspectorVisibilityTween,
+    layout,
+    modelPreviewVisibilityTween,
+    modelPreviewVisible,
     SIDE_PAD,
   } from "$lib/application-state-stores/layout-store";
+  import Editor from "$lib/components/Editor.svelte";
+  import { drag } from "$lib/drag";
+  import { getContext } from "svelte";
+  import { cubicOut as easing } from "svelte/easing";
+  import { slide } from "svelte/transition";
 
-  import PreviewTable from "$lib/components/table/PreviewTable.svelte";
-  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Portal from "$lib/components/Portal.svelte";
+  import { PreviewTable } from "$lib/components/preview-table";
   import { updateModelQueryApi } from "$lib/redux-store/model/model-apis";
 
   const store = getContext("rill:app:store") as ApplicationStore;
@@ -131,9 +131,9 @@
           </div>
         {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
           <PreviewTable
-            tableConfig={{ enablePreview: true }}
             rows={currentDerivedModel.preview}
             columnNames={currentDerivedModel.profile}
+            rowOverscanAmount={20}
           />
         {:else}
           <div

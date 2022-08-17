@@ -46,7 +46,7 @@ export const MICROS = {
  * return an object.
  */
 export class DatabaseColumnActions extends DatabaseActions {
-  public async getTopKAndCardinality(
+  public async getTopK(
     metadata: DatabaseMetadata,
     tableName: string,
     columnName: string,
@@ -54,11 +54,6 @@ export class DatabaseColumnActions extends DatabaseActions {
   ): Promise<CategoricalSummary> {
     return {
       topK: await this.getTopKOfColumn(metadata, tableName, columnName, func),
-      cardinality: await this.getCardinalityOfColumn(
-        metadata,
-        tableName,
-        columnName
-      ),
     };
   }
 
@@ -261,6 +256,16 @@ export class DatabaseColumnActions extends DatabaseActions {
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
 	      `);
+    return { histogram: result };
+  }
+
+  public async getRugHistogram(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    columnName: string,
+    columnType: string
+  ): Promise<NumericSummary> {
+    const sanitizedColumnName = sanitizeColumn(columnName);
 
     const outlierPseudoBucketSize = 500;
     const outlierResults = await this.databaseClient.execute<NumericOutliers>(`
@@ -320,7 +325,7 @@ export class DatabaseColumnActions extends DatabaseActions {
           FROM histrogram_with_edge
           WHERE present=true
         `);
-    return { histogram: result, outliers: outlierResults };
+    return { outliers: outlierResults };
   }
 
   public async getTimeRange(
@@ -353,15 +358,15 @@ export class DatabaseColumnActions extends DatabaseActions {
         `);
   }
 
-  private async getCardinalityOfColumn(
+  public async getCardinalityOfColumn(
     _: DatabaseMetadata,
     tableName: string,
     columnName: string
-  ): Promise<number> {
+  ): Promise<CategoricalSummary> {
     const sanitizedColumnName = sanitizeColumn(columnName);
     const [results] = await this.databaseClient.execute<{ count: number }>(
       `SELECT approx_count_distinct(${sanitizedColumnName}) as count from '${tableName}';`
     );
-    return results.count;
+    return { cardinality: results.count };
   }
 }

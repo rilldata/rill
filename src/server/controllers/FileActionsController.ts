@@ -42,10 +42,13 @@ export class FileActionsController extends RillDeveloperController {
         return this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
           filePath,
           req.body.tableName,
+          { shouldNotProfile: true },
         ]);
       } else {
         return this.dataModelerService.dispatch("addOrUpdateTableFromFile", [
           filePath,
+          undefined,
+          { shouldNotProfile: true },
         ]);
       }
     });
