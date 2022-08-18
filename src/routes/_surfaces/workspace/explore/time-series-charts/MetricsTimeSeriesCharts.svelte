@@ -1,6 +1,9 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type {
+    RuntimeMetricsMetaResponse,
+    RuntimeTimeSeriesResponse,
+  } from "$common/rill-developer-service/MetricViewActions";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
@@ -10,14 +13,12 @@
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
-  import type {
-    TimeSeriesEntity,
-    TimeSeriesValue,
-  } from "$lib/redux-store/timeseries/timeseries-slice";
+  import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
+    getMetricViewTimeSeries,
+    getMetricViewTimeSeriesQueryKey,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
@@ -54,10 +55,29 @@
   let bigNumbers: Readable<BigNumberEntity>;
   $: bigNumbers = getBigNumberById(metricsDefId);
 
-  let timeSeries: Readable<TimeSeriesEntity>;
-  $: timeSeries = getTimeSeriesById(metricsDefId);
-  $: formattedData = $timeSeries?.values
-    ? convertTimestampPreview($timeSeries.values, true)
+  // query the `/timeseries` endpoint
+  let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
+  let timeSeriesQueryFn = () =>
+    getMetricViewTimeSeries(metricsDefId, {
+      measures: $metricsExplorer.measureIds,
+      time: {
+        start: $metricsExplorer.selectedTimeRange.start, // TODO: make selectedTimeRange a required field (use "default" functions in time-range-utils.ts)
+        end: $metricsExplorer.selectedTimeRange.end,
+        granularity: $metricsExplorer.selectedTimeRange.interval,
+      },
+      filter: { include: [], exclude: [] }, // TODO: remove the filter, once we've designated it as optional in the API
+    });
+  const timeSeriesQueryResult = useQuery<RuntimeTimeSeriesResponse, Error>(
+    timeSeriesQueryKey,
+    timeSeriesQueryFn
+  );
+  $: {
+    timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
+    timeSeriesQueryResult.setOptions(timeSeriesQueryKey, timeSeriesQueryFn);
+  }
+
+  $: formattedData = $timeSeriesQueryResult.data.data
+    ? convertTimestampPreview($timeSeriesQueryResult.data.data, true)
     : undefined;
 
   let mouseoverValue = undefined;
@@ -65,7 +85,7 @@
   $: key = `${startValue}` + `${endValue}`;
 
   $: [minVal, maxVal] = extent(
-    $timeSeries?.values ?? [],
+    $timeSeriesQueryResult.data.data ?? [],
     (d: TimeSeriesValue) => d.ts
   );
   $: startValue = removeTimezoneOffset(new Date(minVal));
@@ -125,7 +145,7 @@
           </svelte:fragment>
         </MeasureBigNumber>
         <div class="time-series-body" style:height="125px">
-          {#if $timeSeries?.status === EntityStatus.Error}
+          {#if $timeSeriesQueryResult.isError}
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData}
             <TimeSeriesBody
