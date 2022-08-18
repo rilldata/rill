@@ -1,21 +1,34 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { SelectMenu } from "$lib/components/menu";
   import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
+  import { useQuery } from "@sveltestack/svelte-query";
   import type { Readable } from "svelte/store";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
 
   export let metricsDefId;
 
-  let measures: Readable<Array<MeasureDefinitionEntity>>;
-  $: measures = getMeasuresByMetricsId(metricsDefId);
+  // query the `/meta` endpoint to get the valid measures
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
+  let measures: MeasureDefinitionEntity[];
+  $: measures = $queryResult.data.measures;
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
@@ -42,10 +55,10 @@
   // reset selections based on the active leaderboard measure
   let activeLeaderboardMeasure;
   $: activeLeaderboardMeasure =
-    $measures?.length &&
+    measures?.length &&
     $metricsExplorer?.leaderboardMeasureId &&
     formatForSelector(
-      $measures.find(
+      measures.find(
         (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
       ) ?? undefined
     );
@@ -53,7 +66,7 @@
   /** this controls the animation direction */
 
   $: options =
-    $measures?.map((measure) => {
+    measures?.map((measure) => {
       let main = measure.label?.length ? measure.label : measure.expression;
       return {
         ...measure,
@@ -63,11 +76,11 @@
     }) || [];
 
   /** set the selection only if $measures is not undefined */
-  $: selection = $measures ? activeLeaderboardMeasure : [];
+  $: selection = measures ? activeLeaderboardMeasure : [];
 </script>
 
 <div>
-  {#if $measures && options.length && selection}
+  {#if measures && options.length && selection}
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
