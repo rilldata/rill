@@ -29,14 +29,15 @@
   let selectableTimeGrains: TimeGrainOption[];
 
   // query the `/meta` endpoint to get the full time range of the dataset
-  $: queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
   const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
     queryKey,
     () => getMetricViewMetadata(metricsDefId)
   );
-  $: queryResult.setOptions(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
   $: if (selectedTimeRangeName && $queryResult.data?.timeDimension?.timeRange) {
     selectableTimeGrains = getSelectableTimeGrains(
       selectedTimeRangeName,

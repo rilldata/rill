@@ -34,14 +34,15 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   // query the `/meta` endpoint to get the full time range of the dataset
-  $: queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
   const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
     queryKey,
     () => getMetricViewMetadata(metricsDefId)
   );
-  $: queryResult.setOptions(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
 
   let selectedTimeRangeName;
   const setSelectedTimeRangeName = (evt) => {
@@ -77,9 +78,9 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     );
 
     if (
-      newTimeRange.start === $metricsExplorer.selectedTimeRange?.start &&
-      newTimeRange.end === $metricsExplorer.selectedTimeRange?.end &&
-      newTimeRange.interval === $metricsExplorer.selectedTimeRange?.interval
+      newTimeRange.start === $metricsExplorer?.selectedTimeRange?.start &&
+      newTimeRange.end === $metricsExplorer?.selectedTimeRange?.end &&
+      newTimeRange.interval === $metricsExplorer?.selectedTimeRange?.interval
     )
       return;
 

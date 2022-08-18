@@ -31,14 +31,15 @@
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
   // query the `/meta` endpoint to get the full time range of the dataset
-  $: queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
   const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
     queryKey,
     () => getMetricViewMetadata(metricsDefId)
   );
-  $: queryResult.setOptions(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
 
   // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
   const getSelectableTimeRanges = (
