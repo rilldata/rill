@@ -4,8 +4,9 @@
  */
 
 import type {
-  RuntimeTimeSeriesRequest,
-  RuntimeTimeSeriesResponse,
+  MetricViewMetaResponse,
+  MetricViewTimeSeriesRequest,
+  MetricViewTimeSeriesResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 
@@ -37,8 +38,8 @@ export const getMetricViewMetaQueryKey = (metricViewId: string) => {
 
 export const getMetricViewTimeSeries = async (
   metricViewId: string,
-  request: RuntimeTimeSeriesRequest
-): Promise<RuntimeTimeSeriesResponse> => {
+  request: MetricViewTimeSeriesRequest
+): Promise<MetricViewTimeSeriesResponse> => {
   const resp = await fetch(
     `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/timeseries`,
     {

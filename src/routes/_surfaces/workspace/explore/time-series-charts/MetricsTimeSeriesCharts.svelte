@@ -2,7 +2,7 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type {
     MetricViewMetaResponse,
-    RuntimeTimeSeriesResponse,
+    MetricViewTimeSeriesResponse,
   } from "$common/rill-developer-service/MetricViewActions";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
@@ -66,7 +66,7 @@
       },
       filter: { include: [], exclude: [] }, // TODO: remove the filter, once we've designated it as optional in the API
     });
-  const timeSeriesQueryResult = useQuery<RuntimeTimeSeriesResponse, Error>(
+  const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(
     timeSeriesQueryKey,
     timeSeriesQueryFn
   );
