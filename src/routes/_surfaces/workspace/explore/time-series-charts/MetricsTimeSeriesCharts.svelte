@@ -48,15 +48,9 @@
     queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
   }
 
-  // Question: why isn't queryResult.data available here?
-  $: console.log("$queryResult.data", $queryResult.data);
-
-  $: {
-    let interval =
-      $metricsExplorer?.selectedTimeRange?.interval ||
-      $queryResult.data?.timeDimension?.timeRange?.interval;
-    console.log("interval", interval);
-  }
+  $: interval =
+    $metricsExplorer?.selectedTimeRange?.interval ||
+    $queryResult.data?.timeDimension?.timeRange?.interval;
 
   $: allMeasures = getValidMeasuresByMetricsId(metricsDefId);
 
