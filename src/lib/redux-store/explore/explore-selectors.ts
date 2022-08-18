@@ -14,6 +14,11 @@ import {
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { generateEntitySelectors } from "$lib/redux-store/utils/selector-utils";
 import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
+import {
+  getDefaultTimeGrain,
+  getDefaultTimeRangeName,
+} from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
+import type { TimeRangeName } from "$common/database-service/DatabaseTimeSeriesActions";
 
 export const {
   manySelector: selectMetricsExplorers,
@@ -66,4 +71,46 @@ export const selectMetricsExplorerParams = (
         } as BasicMeasureDefinition)
     ),
   };
+};
+
+/**
+ * Selects time range name from metrics explorer.
+ * If there is none selected or if the selected time range name is not in the selectable ranges
+ * returns {@link getDefaultTimeRangeName}()
+ */
+export const selectMetricsExploreSelectedTimeRangeName = (
+  state: RillReduxState,
+  id: string
+) => {
+  const metricsExplorer = selectMetricsExplorerById(state, id);
+  if (metricsExplorer.selectedTimeRange) {
+    const selectedTimeRange = metricsExplorer.selectableTimeRanges.find(
+      (selectableTimeRange) =>
+        selectableTimeRange.name === metricsExplorer.selectedTimeRange.name
+    );
+    if (selectedTimeRange) return selectedTimeRange.name;
+  }
+  return getDefaultTimeRangeName();
+};
+
+/**
+ * Selects time grain from metrics explorer.
+ * If there is none selected or if the selected time grain is not in the selectable grains
+ * returns {@link getDefaultTimeGrain}()
+ */
+export const selectMetricsExplorerSelectedTimeGrain = (
+  state: RillReduxState,
+  id: string,
+  timeRangeName: TimeRangeName
+) => {
+  const metricsExplorer = selectMetricsExplorerById(state, id);
+  if (metricsExplorer.selectedTimeGrain) {
+    const selectedTimeGrain = metricsExplorer.selectableTimeGrains.find(
+      (selectableTimeGrain) =>
+        selectableTimeGrain.timeGrain === metricsExplorer.selectedTimeGrain &&
+        selectableTimeGrain.enabled === true
+    );
+    if (selectedTimeGrain) return selectedTimeGrain.timeGrain;
+  }
+  return getDefaultTimeGrain(timeRangeName, metricsExplorer.allTimeRange);
 };

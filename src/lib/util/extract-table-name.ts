@@ -2,7 +2,7 @@ const FILE_PATH_SPLIT_REGEX = /\//;
 export const INVALID_CHARS = /[^a-zA-Z_\d]/g;
 
 export function getTableNameFromFile(filePath: string, name?: string) {
-  return name ?? sanitizeTableName(extractTableName(filePath));
+  return name ?? sanitizeEntityName(extractTableName(filePath));
 }
 
 export function extractTableName(filePath: string): string {
@@ -17,6 +17,6 @@ export function extractFileExtension(filePath: string): string {
   return lastIndexOfDot >= 0 ? fileName.substring(lastIndexOfDot + 1) : "";
 }
 
-export function sanitizeTableName(tableName: string): string {
-  return tableName.replace(INVALID_CHARS, "_");
+export function sanitizeEntityName(entityName: string): string {
+  return entityName.replace(INVALID_CHARS, "_");
 }

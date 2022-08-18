@@ -30,7 +30,7 @@ import {
   extractTableName,
   getTableNameFromFile,
   INVALID_CHARS,
-  sanitizeTableName,
+  sanitizeEntityName,
 } from "$lib/util/extract-table-name";
 import { existsSync } from "fs";
 import { DataModelerActions } from ".//DataModelerActions";
@@ -260,7 +260,7 @@ export class TableActions extends DataModelerActions {
     tableId: string,
     name: string
   ): Promise<ActionResponse> {
-    const sanitizedNewName = sanitizeTableName(extractTableName(name));
+    const sanitizedNewName = sanitizeEntityName(extractTableName(name));
     const existingTable = stateService.getByField(
       "tableName",
       sanitizedNewName
@@ -293,7 +293,7 @@ export class TableActions extends DataModelerActions {
     { stateService }: PersistentTableStateActionArg,
     tableName: string
   ): Promise<ActionResponse> {
-    const sanitizedTableName = sanitizeTableName(extractTableName(tableName));
+    const sanitizedTableName = sanitizeEntityName(extractTableName(tableName));
     const existingNames = stateService
       .getCurrentState()
       .entities.map((table) => table.tableName);
