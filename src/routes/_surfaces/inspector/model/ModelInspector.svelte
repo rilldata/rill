@@ -3,7 +3,7 @@
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import { getContext, onMount } from "svelte";
-  import ModelInspectorHeader from "./ModelInspectorHeader.svelte";
+  import ModelInspectorHeader from "./header/ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 
   const persistentModelStore = getContext(

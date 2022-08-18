@@ -12,7 +12,7 @@ import type { PersistentTableEntity } from "$common/data-modeler-state-service/e
 import type { DataModelerState } from "$lib/types";
 import {
   extractTableName,
-  sanitizeTableName,
+  sanitizeEntityName,
 } from "$lib/util/extract-table-name";
 import { guidGenerator } from "$lib/util/guid";
 
@@ -57,7 +57,7 @@ export function getNewModel(
     type: EntityType.Model,
     query,
     name,
-    tableName: sanitizeTableName(extractTableName(name)),
+    tableName: sanitizeEntityName(extractTableName(name)),
     lastUpdated: 0,
   };
 }
@@ -80,7 +80,7 @@ export function getMetricsDefinition(counter: number): MetricsDefinitionEntity {
     id: guidGenerator(),
     type: EntityType.MetricsDefinition,
     creationTime: Date.now(),
-    metricDefLabel: `metrics ${counter}`,
+    metricDefLabel: `dashboard_${counter}`,
     sourceModelId: undefined,
     timeDimension: undefined,
     measureIds: [],

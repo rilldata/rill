@@ -24,7 +24,7 @@ import {
 } from "$common/stateInstancesFactory";
 import {
   extractTableName,
-  sanitizeTableName,
+  sanitizeEntityName,
 } from "$lib/util/extract-table-name";
 import { sanitizeQuery } from "$lib/util/sanitize-query";
 
@@ -257,7 +257,7 @@ export class ModelActions extends DataModelerActions {
       //const persistentTable
       const table = this.dataModelerStateService
         .getEntityStateService(EntityType.Table, StateType.Persistent)
-        .getByField("tableName", sanitizeTableName(sourceTableName));
+        .getByField("tableName", sanitizeEntityName(sourceTableName));
 
       const derivedTable = this.dataModelerStateService.getEntityById(
         EntityType.Table,
@@ -423,7 +423,7 @@ export class ModelActions extends DataModelerActions {
 
     const existingTable = this.dataModelerStateService
       .getEntityStateService(EntityType.Table, StateType.Persistent)
-      .getByField("tableName", sanitizeTableName(extractTableName(name)));
+      .getByField("tableName", sanitizeEntityName(extractTableName(name)));
 
     if (existingTable) {
       return ActionResponseFactory.getExisingEntityError(
@@ -574,7 +574,7 @@ export class ModelActions extends DataModelerActions {
       );
     const existingTable = this.dataModelerStateService
       .getEntityStateService(EntityType.Table, StateType.Persistent)
-      .getByField("tableName", sanitizeTableName(extractTableName(name)));
+      .getByField("tableName", sanitizeEntityName(extractTableName(name)));
 
     if (existing) {
       this.notificationService.notify({

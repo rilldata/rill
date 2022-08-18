@@ -7,17 +7,19 @@
     ApplicationStore,
     dataModelerService,
   } from "$lib/application-state-stores/application-store";
-  import { DerivedModelStore } from "$lib/application-state-stores/model-stores";
+  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
+  import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import { default as Explore } from "$lib/components/icons/Explore.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import Model from "$lib/components/icons/Model.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
+  import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
   import {
     createMetricsDefsAndFocusApi,
     deleteMetricsDefsApi,
@@ -36,6 +38,20 @@
   ) as DerivedModelStore;
 
   let showMetricsDefs = true;
+
+  let showRenameMetricsDefinitionModal = false;
+  let renameMetricsDefId = null;
+  let renameMetricsDefName = null;
+
+  const openRenameMetricsDefModal = (
+    metricsDefId: string,
+    metricsDefName: string
+  ) => {
+    showRenameMetricsDefinitionModal = true;
+    renameMetricsDefId = metricsDefId;
+    renameMetricsDefName = metricsDefName;
+  };
+
   const dispatchAddEmptyMetricsDef = () => {
     if (!showMetricsDefs) {
       showMetricsDefs = true;
@@ -45,7 +61,7 @@
 
   const dispatchSetMetricsDefActive = (id: string) => {
     dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsDefinition,
+      EntityType.MetricsExplorer,
       id,
     ]);
   };
@@ -73,16 +89,16 @@
   out:slide={{ duration: 200 }}
 >
   <CollapsibleSectionTitle
-    tooltipText={"metrics"}
+    tooltipText={"dashboards"}
     bind:active={showMetricsDefs}
   >
     <h4 class="flex flex-row items-center gap-x-2">
-      <MetricsIcon size="16px" /> Metrics
+      <Explore size="16px" /> Dashboards
     </h4>
   </CollapsibleSectionTitle>
   <ContextButton
-    id={"create-model-button"}
-    tooltipText="create a new model"
+    id={"create-dashboard-button"}
+    tooltipText="create a new dashboard"
     on:click={dispatchAddEmptyMetricsDef}
   >
     <AddIcon />
@@ -138,17 +154,30 @@
             disabled={hasSourceError}
             on:select={() => {
               dataModelerService.dispatch("setActiveAsset", [
-                EntityType.MetricsExplorer,
+                EntityType.MetricsDefinition,
                 metricsDef.id,
               ]);
             }}
           >
             <svelte:fragment slot="icon">
-              <Explore />
+              <MetricsIcon />
             </svelte:fragment>
-            view dashboard
+            edit metrics
           </MenuItem>
           <Divider />
+          <MenuItem
+            icon
+            on:select={() =>
+              openRenameMetricsDefModal(
+                metricsDef.id,
+                metricsDef.metricDefLabel
+              )}
+          >
+            <svelte:fragment slot="icon">
+              <EditIcon />
+            </svelte:fragment>
+            rename...</MenuItem
+          >
           <MenuItem
             icon
             on:select={() => dispatchDeleteMetricsDef(metricsDef.id)}
@@ -162,4 +191,11 @@
       </CollapsibleTableSummary>
     {/each}
   </div>
+  <RenameEntityModal
+    entityType={EntityType.MetricsDefinition}
+    openModal={showRenameMetricsDefinitionModal}
+    closeModal={() => (showRenameMetricsDefinitionModal = false)}
+    entityId={renameMetricsDefId}
+    currentEntityName={renameMetricsDefName}
+  />
 {/if}

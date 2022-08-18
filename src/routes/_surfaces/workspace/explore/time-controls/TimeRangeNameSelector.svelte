@@ -3,11 +3,14 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
-  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
+  import { updateSelectedTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
@@ -15,6 +18,7 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { useQuery } from "@sveltestack/svelte-query";
   import { createEventDispatcher, tick } from "svelte";
+  import type { Readable } from "svelte/store";
   import {
     getSelectableTimeRangeNames,
     makeTimeRanges,
@@ -22,19 +26,21 @@
   } from "./time-range-utils";
 
   export let metricsDefId: string;
-  export let selectedTimeRangeName: TimeRangeName;
 
   const dispatch = createEventDispatcher();
 
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  let selectedTimeRangeName: TimeRangeName;
+  $: selectedTimeRangeName = $metricsExplorer?.selectedTimeRange?.name;
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
   // query the `/meta` endpoint to get the full time range of the dataset
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
-    queryKey,
-    () => getMetricViewMetadata(metricsDefId)
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
   );
   $: {
     queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -81,6 +87,19 @@
 
   let target: HTMLElement;
   /// End boilerplate for DIY Dropdown menu ///
+
+  const onTimeRangeSelect = (timeRangeName: TimeRangeName) => {
+    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
+    store.dispatch(
+      updateSelectedTimeRangeNameApi({
+        metricsDefId,
+        timeRangeName,
+      })
+    );
+    dispatch("select-time-range-name", {
+      timeRangeName,
+    });
+  };
 </script>
 
 <button
@@ -113,14 +132,7 @@
     >
       <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
         {#each selectableTimeRanges as timeRange}
-          <MenuItem
-            on:select={() => {
-              timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
-              dispatch("select-time-range-name", {
-                timeRangeName: timeRange.name,
-              });
-            }}
-          >
+          <MenuItem on:select={() => onTimeRangeSelect(timeRange.name)}>
             <div class="font-bold">
               {timeRange.name}
             </div>

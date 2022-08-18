@@ -171,6 +171,16 @@ export const makeTimeRanges = (
   return timeRanges;
 };
 
+export const getSelectableTimeRanges = (
+  allTimeRangeInDataset: TimeSeriesTimeRange
+) => {
+  // TODO: replace this with a call to the `/meta` endpoint, once available.
+  const selectableTimeRangeNames = getSelectableTimeRangeNames(
+    allTimeRangeInDataset
+  );
+  return makeTimeRanges(selectableTimeRangeNames, allTimeRangeInDataset);
+};
+
 export const prettyFormatTimeRange = (
   timeRange: TimeSeriesTimeRange
 ): string => {
