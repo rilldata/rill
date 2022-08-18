@@ -6,6 +6,7 @@ export interface ProfileColumn {
   name: string;
   type: string;
   conceptualType: string;
+  largestStringLength?: number;
   summary?: ProfileColumnSummary | any;
   nullCount?: number;
 }
@@ -85,8 +86,8 @@ export type ProfileColumnSummary =
   | TimeRangeSummary;
 
 export interface CategoricalSummary {
-  topK: TopKEntry[];
-  cardinality: number;
+  topK?: TopKEntry[];
+  cardinality?: number;
 }
 
 export interface NumericSummary {

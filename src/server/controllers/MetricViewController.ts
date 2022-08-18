@@ -25,19 +25,19 @@ export class MetricViewController extends RillDeveloperController {
     );
   }
 
+  private async handleGetMetricsMeta(req: Request, res: Response) {
+    await EntityController.wrapAction(res, (context) =>
+      this.rillDeveloperService.dispatch(context, "getMetricViewMeta", [
+        req.params.id,
+      ])
+    );
+  }
+
   private async handleGetTimeSeries(req: Request, res: Response) {
     return EntityController.wrapAction(res, (context) =>
       this.rillDeveloperService.dispatch(context, "getMetricViewTimeSeries", [
         req.params.id,
         req.body,
-      ])
-    );
-  }
-
-  private async handleGetMetricsMeta(req: Request, res: Response) {
-    await EntityController.wrapAction(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "getMetricViewMeta", [
-        req.params.id,
       ])
     );
   }

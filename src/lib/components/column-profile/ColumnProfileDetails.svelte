@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { afterUpdate } from "svelte";
   import { slide } from "svelte/transition";
+  import { dataModelerService } from "$lib/application-state-stores/application-store";
+
   import TopKSummary from "$lib/components/viz/TopKSummary.svelte";
   import {
     CATEGORICALS,
@@ -16,11 +19,23 @@
   export let type;
   export let summary;
   export let totalRows;
+  export let name;
+  export let entityId;
   export let containerWidth: number;
 
   export let indentLevel = 1;
 
   export let active = false;
+
+  // Make sure priority is updated in case the profile is already opened
+  afterUpdate(async () => {
+    if (active) {
+      dataModelerService.dispatch("updateFocusProfilePriority", [
+        entityId,
+        name,
+      ]);
+    }
+  });
 </script>
 
 <!-- FIXME: document all magic number sums of indent levels in this component,

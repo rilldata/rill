@@ -11,6 +11,8 @@ import { ActionResponseFactory } from "$common/data-modeler-service/response/Act
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { DatabaseActionQueuePriority } from "$common/priority-action-queue/DatabaseActionQueuePriority";
 import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
+import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 
 export class MeasuresActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
