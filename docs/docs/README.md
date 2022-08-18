@@ -52,7 +52,7 @@ rill init-example
 
 ```
 
-<!-- (Please note that the command `rill init-example` is temporarily unavailable on Windows.) -->
+(Please note that the command `rill init-example` is temporarily unavailable on Windows.)
 
 
 ## Legal
