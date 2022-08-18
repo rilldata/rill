@@ -39,7 +39,7 @@ export interface MetricViewDimensionValue {
   values: Array<unknown>;
 }
 export type MetricViewDimensionValues = Array<MetricViewDimensionValue>;
-export interface RuntimeRequestFilter {
+export interface MetricViewRequestFilter {
   include: MetricViewDimensionValues;
   exclude: MetricViewDimensionValues;
 }
@@ -47,7 +47,7 @@ export interface RuntimeRequestFilter {
 export interface MetricViewTimeSeriesRequest {
   measures: Array<string>;
   time: MetricViewRequestTimeRange;
-  filter?: RuntimeRequestFilter;
+  filter?: MetricViewRequestFilter;
 }
 export interface MetricViewTimeSeriesResponse {
   meta: Array<{ name: string; type: string }>;
@@ -61,7 +61,7 @@ export interface MetricViewTopListRequest {
   limit: number;
   offset: number;
   sort: Array<{ name: string; direction: "desc" | "asc" }>;
-  filter?: RuntimeRequestFilter;
+  filter?: MetricViewRequestFilter;
 }
 export interface MetricViewTopListResponse {
   meta: Array<{ name: string; type: string }>;
@@ -72,14 +72,14 @@ export interface MetricViewTopListResponse {
 export interface MetricViewBigNumberRequest {
   measures: Array<string>;
   time: Pick<MetricViewRequestTimeRange, "start" | "end">;
-  filter?: RuntimeRequestFilter;
+  filter?: MetricViewRequestFilter;
 }
 export interface MetricViewBigNumberResponse {
   meta: Array<{ name: string; type: string }>;
   data: Record<string, number>;
 }
 
-function convertToActiveValues(filters: RuntimeRequestFilter): ActiveValues {
+function convertToActiveValues(filters: MetricViewRequestFilter): ActiveValues {
   if (!filters) return {};
   const activeValues: ActiveValues = {};
   filters.include.forEach((value) => {
