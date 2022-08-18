@@ -13,11 +13,13 @@
   import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
   import AddIcon from "$lib/components/icons/Add.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
+  import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import { default as Explore } from "$lib/components/icons/Explore.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import Model from "$lib/components/icons/Model.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
+  import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
   import {
     createMetricsDefsAndFocusApi,
     deleteMetricsDefsApi,
@@ -36,6 +38,20 @@
   ) as DerivedModelStore;
 
   let showMetricsDefs = true;
+
+  let showRenameMetricsDefinitionModal = false;
+  let renameMetricsDefId = null;
+  let renameMetricsDefName = null;
+
+  const openRenameMetricsDefModal = (
+    metricsDefId: string,
+    metricsDefName: string
+  ) => {
+    showRenameMetricsDefinitionModal = true;
+    renameMetricsDefId = metricsDefId;
+    renameMetricsDefName = metricsDefName;
+  };
+
   const dispatchAddEmptyMetricsDef = () => {
     if (!showMetricsDefs) {
       showMetricsDefs = true;
@@ -151,6 +167,19 @@
           <Divider />
           <MenuItem
             icon
+            on:select={() =>
+              openRenameMetricsDefModal(
+                metricsDef.id,
+                metricsDef.metricDefLabel
+              )}
+          >
+            <svelte:fragment slot="icon">
+              <EditIcon />
+            </svelte:fragment>
+            rename...</MenuItem
+          >
+          <MenuItem
+            icon
             on:select={() => dispatchDeleteMetricsDef(metricsDef.id)}
           >
             <svelte:fragment slot="icon">
@@ -162,4 +191,11 @@
       </CollapsibleTableSummary>
     {/each}
   </div>
+  <RenameEntityModal
+    entityType={EntityType.MetricsDefinition}
+    openModal={showRenameMetricsDefinitionModal}
+    closeModal={() => (showRenameMetricsDefinitionModal = false)}
+    entityId={renameMetricsDefId}
+    currentEntityName={renameMetricsDefName}
+  />
 {/if}
