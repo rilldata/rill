@@ -16,8 +16,7 @@
   ) as PersistentModelStore;
 
   function formatModelName(str) {
-    let output = str.trim().replaceAll(" ", "_").replace(/\.sql/, "");
-    return output;
+    return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
   }
 
   let currentModel: PersistentModelEntity;

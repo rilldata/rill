@@ -12,6 +12,8 @@ import {
   setFieldReducer,
 } from "$lib/redux-store/utils/slice-utils";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import type { TimeGrainOption } from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
+import type { TimeGrain } from "$common/database-service/DatabaseTimeSeriesActions";
 
 export interface LeaderboardValue {
   value: number;
@@ -41,7 +43,12 @@ export interface MetricsExplorerEntity {
   allTimeRange?: TimeSeriesTimeRange;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
+  // all possible time ranges
   selectableTimeRanges?: TimeSeriesTimeRange[];
+  // user selected time grain
+  selectedTimeGrain?: TimeGrain;
+  // all possible time grains
+  selectableTimeGrains?: TimeGrainOption[];
   // this marks whether anything related to this explore is stale
   // this is set to true when any measure or dimension changes.
   // this also is set to true when related model and its dependant source updates (TODO)
@@ -423,10 +430,24 @@ export const exploreSlice = createSlice({
       }),
     },
 
-    setExplorerSelectableTimeRange: {
+    setExplorerSelectableTimeRanges: {
       reducer: setFieldReducer("selectableTimeRanges"),
       prepare: setFieldPrepare<MetricsExplorerEntity, "selectableTimeRanges">(
         "selectableTimeRanges"
+      ),
+    },
+
+    setExplorerSelectedTimeGrain: {
+      reducer: setFieldReducer("selectedTimeGrain"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "selectedTimeGrain">(
+        "selectedTimeGrain"
+      ),
+    },
+
+    setExplorerSelectableTimeGrains: {
+      reducer: setFieldReducer("selectableTimeGrains"),
+      prepare: setFieldPrepare<MetricsExplorerEntity, "selectableTimeGrains">(
+        "selectableTimeGrains"
       ),
     },
 
@@ -452,7 +473,9 @@ export const {
   clearSelectedLeaderboardValues,
   setExploreAllTimeRange,
   setExploreSelectedTimeRange,
-  setExplorerSelectableTimeRange,
+  setExplorerSelectableTimeRanges,
+  setExplorerSelectedTimeGrain,
+  setExplorerSelectableTimeGrains,
   setExplorerIsStale,
 } = exploreSlice.actions;
 export const MetricsExplorerSliceActions = exploreSlice.actions;
