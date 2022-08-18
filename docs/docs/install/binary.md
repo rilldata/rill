@@ -24,7 +24,7 @@ cd downloads
 chmod a+x rill
 xattr -d com.apple.quarantine ./rill
 ```
-<!-- 
+
 ## Safely open Rill on Windows 10
 If you see a warning "SmartScreen protected an unrecognized app from starting", [you can fix by by following these instructions here](https://www.windowscentral.com/how-fix-app-has-been-blocked-your-protection-windows-10#open).  In summary:
 
@@ -32,5 +32,5 @@ If you see a warning "SmartScreen protected an unrecognized app from starting", 
 * Right-click the file.
 * Click Properties.
 * Click the checkbox next to Unblock so that a checkmark appears.
-* Click Apply. -->
+* Click Apply.
 
