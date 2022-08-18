@@ -1,36 +1,51 @@
 <script lang="ts">
+  import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
+  import { useQuery } from "@sveltestack/svelte-query";
   import Button from "../Button.svelte";
-
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-  $: measures = getMeasuresByMetricsId(metricsDefId);
-  $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
   export let metricsDefId: string;
 
-  let tooltipText = "";
+  // query the `/meta` endpoint to get the valid measures and dimensions
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
+  let measures: MeasureDefinitionEntity[];
+  $: measures = $queryResult.data.measures;
+  let dimensions: DimensionDefinitionEntity[];
+  $: dimensions = $queryResult.data.dimensions;
+
+  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+
   let buttonDisabled = true;
   let buttonStatus = "OK";
   $: if (
     $selectedMetricsDef?.sourceModelId === undefined ||
     $selectedMetricsDef?.timeDimension === undefined
   ) {
-    tooltipText = "";
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
-  } else if ($measures.length === 0 || $dimensions.length === 0) {
-    tooltipText = "";
+  } else if (measures.length === 0 || dimensions.length === 0) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
   } else {
-    tooltipText = undefined;
     buttonDisabled = false;
   }
 </script>

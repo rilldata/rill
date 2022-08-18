@@ -1,5 +1,9 @@
+/**
+ * TODO: Instead of writing this file by hand, a better approach would be to use an OpenAPI spec and
+ * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
+ */
+
 import type {
-  RuntimeMetricsMetaResponse,
   RuntimeTimeSeriesRequest,
   RuntimeTimeSeriesResponse,
 } from "$common/rill-developer-service/MetricViewActions";
@@ -9,7 +13,7 @@ import { config } from "$lib/application-state-stores/application-store";
 
 export const getMetricViewMetadata = async (
   metricViewId: string
-): Promise<RuntimeMetricsMetaResponse> => {
+): Promise<MetricViewMetaResponse> => {
   const resp = await fetch(
     `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/meta`,
     {

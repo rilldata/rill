@@ -1,10 +1,7 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-
-  import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
-
+  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
@@ -38,9 +35,8 @@
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
-    queryKey,
-    () => getMetricViewMetadata(metricsDefId)
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
   );
   $: {
     queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -81,10 +77,7 @@
           const dimensionConfiguration = dimensions?.find(
             (dimension) => dimension.id === leaderboard.dimensionId
           );
-          return (
-            dimensionConfiguration &&
-            dimensionConfiguration?.dimensionIsValid === ValidationState.OK
-          );
+          return dimensionConfiguration;
         })
       : [];
 

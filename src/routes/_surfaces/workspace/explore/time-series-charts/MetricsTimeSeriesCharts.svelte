@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type {
-    RuntimeMetricsMetaResponse,
+    MetricViewMetaResponse,
     RuntimeTimeSeriesResponse,
   } from "$common/rill-developer-service/MetricViewActions";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
@@ -37,11 +37,10 @@
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  // query the `/meta` endpoint to get the default time grain of the dataset
+  // query the `/meta` endpoint to get the measures and the default time grain
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
-    queryKey,
-    () => getMetricViewMetadata(metricsDefId)
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
   );
   $: {
     queryKey = getMetricViewMetaQueryKey(metricsDefId);
