@@ -4,7 +4,6 @@ import type {
   RuntimeTimeSeriesResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
-import { fetchWrapper } from "$lib/util/fetchWrapper";
 
 // GET /api/v1/metric-views/{view-name}/meta
 
@@ -32,17 +31,28 @@ export const getMetricViewMetaQueryKey = (metricViewId: string) => {
 
 // POST /api/v1/metric-views/{view-name}/timeseries
 
-export const postMetricViewTimeSeries = (
+export const getMetricViewTimeSeries = async (
   metricViewId: string,
   request: RuntimeTimeSeriesRequest
 ): Promise<RuntimeTimeSeriesResponse> => {
-  return fetchWrapper(`v1/metric-views/${metricViewId}/timeseries`, "POST", {
-    ...request,
-  });
+  const resp = await fetch(
+    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/timeseries`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }
+  );
+  const json = await resp.json();
+  if (!resp.ok) {
+    const err = new Error(json);
+    return Promise.reject(err);
+  }
+  return json;
 };
 
 export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
-  return [`v1/metric-views/${metricViewId}/timeseries`];
+  return [`v1/metric-view/timeseries`, metricViewId];
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
