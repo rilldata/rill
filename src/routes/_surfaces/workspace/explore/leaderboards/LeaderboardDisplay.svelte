@@ -3,7 +3,7 @@
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
 
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
@@ -38,9 +38,8 @@
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
-    queryKey,
-    () => getMetricViewMetadata(metricsDefId)
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
   );
   $: {
     queryKey = getMetricViewMetaQueryKey(metricsDefId);

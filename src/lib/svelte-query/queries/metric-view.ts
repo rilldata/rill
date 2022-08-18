@@ -1,11 +1,11 @@
-import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 
 // GET /api/v1/metric-views/{view-name}/meta
 
 export const getMetricViewMetadata = async (
   metricViewId: string
-): Promise<RuntimeMetricsMetaResponse> => {
+): Promise<MetricViewMetaResponse> => {
   const resp = await fetch(
     `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/meta`,
     {
