@@ -92,7 +92,11 @@ export class ImportTableCommand extends DataModelerCliCommand {
     const tableName = getTableNameFromFile(tableSourceFile, name);
     const response = await this.dataModelerService.dispatch(
       "addOrUpdateTableFromFile",
-      [tableSourceFile, name, { csvDelimiter: delimiter }]
+      [
+        tableSourceFile,
+        name,
+        { csvDelimiter: delimiter, shouldNotProfile: true },
+      ]
     );
 
     if (response.status === ActionStatus.Failure) {

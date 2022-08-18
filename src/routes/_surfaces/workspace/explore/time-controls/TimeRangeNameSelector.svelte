@@ -3,11 +3,17 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
+  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
   import { onClickOutside } from "$lib/util/on-click-outside";
+  import { useQuery } from "@sveltestack/svelte-query";
   import { createEventDispatcher, tick } from "svelte";
   import {
     getSelectableTimeRangeNames,
@@ -24,10 +30,21 @@
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
+  // query the `/meta` endpoint to get the full time range of the dataset
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
+    queryKey,
+    () => getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
+
+  // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
   const getSelectableTimeRanges = (
     allTimeRangeInDataset: TimeSeriesTimeRange
   ) => {
-    // TODO: replace this with a call to the `/meta` endpoint, once available.
     const selectableTimeRangeNames = getSelectableTimeRangeNames(
       allTimeRangeInDataset
     );
@@ -37,9 +54,9 @@
     );
     return selectableTimeRanges;
   };
-  $: if ($metricsExplorer?.allTimeRange) {
+  $: if ($queryResult.data?.timeDimension?.timeRange) {
     selectableTimeRanges = getSelectableTimeRanges(
-      $metricsExplorer.allTimeRange
+      $queryResult.data.timeDimension.timeRange
     );
   }
 

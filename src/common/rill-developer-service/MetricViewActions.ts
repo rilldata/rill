@@ -13,6 +13,11 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
 import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
+import { getMapFromArray } from "$common/utils/getMapFromArray";
+import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
+import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export interface RuntimeMetricsMetaResponse {
   name: string;
@@ -113,12 +118,8 @@ export class MetricViewActions extends RillDeveloperActions {
         name: rillRequestContext.record.timeDimension,
         timeRange,
       },
-      measures: this.dataModelerStateService
-        .getMeasureDefinitionService()
-        .getManyByField("metricsDefId", metricsDefId),
-      dimensions: this.dataModelerStateService
-        .getDimensionDefinitionService()
-        .getManyByField("metricsDefId", metricsDefId),
+      measures: await this.getValidMeasures(rillRequestContext.record),
+      dimensions: this.getValidDimensions(rillRequestContext.record),
     };
     return ActionResponseFactory.getRawResponse(meta);
   }
@@ -231,5 +232,45 @@ export class MetricViewActions extends RillDeveloperActions {
       data: bigNumberResponse.bigNumbers,
     };
     return ActionResponseFactory.getRawResponse(response);
+  }
+
+  private getValidDimensions(metricsDef: MetricsDefinitionEntity) {
+    const derivedModel = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(metricsDef.sourceModelId);
+    if (!derivedModel) {
+      return [];
+    }
+
+    const columnMap = getMapFromArray(
+      derivedModel.profile,
+      (column) => column.name
+    );
+
+    return this.dataModelerStateService
+      .getDimensionDefinitionService()
+      .getManyByField("metricsDefId", metricsDef.id)
+      .filter((dimension) => columnMap.has(dimension.dimensionColumn));
+  }
+
+  private async getValidMeasures(metricsDef: MetricsDefinitionEntity) {
+    const measures = this.dataModelerStateService
+      .getMeasureDefinitionService()
+      .getManyByField("metricsDefId", metricsDef.id);
+    return (
+      await Promise.all(
+        measures.map(async (measure) => {
+          const measureValidation = await this.rillDeveloperService.dispatch(
+            RillRequestContext.getNewContext(),
+            "validateMeasureExpression",
+            [metricsDef.id, measure.expression]
+          );
+          return {
+            ...measure,
+            ...(measureValidation.data as MeasureDefinitionEntity),
+          };
+        })
+      )
+    ).filter((measure) => measure.expressionIsValid === ValidationState.OK);
   }
 }

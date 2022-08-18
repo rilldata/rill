@@ -8,12 +8,17 @@
   import MetricsDefWorkspaceHeader from "./metrics-def/MetricsDefWorkspaceHeader.svelte";
   import ModelView from "./Model.svelte";
   import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
+
   import Onboarding from "./Onboarding.svelte";
+  import SourceView from "./source/SourceWorkspace.svelte";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
+
+  $: useSourceWorkspace =
+    $rillAppStore?.activeEntity?.type === EntityType.Table;
 
   $: useModelWorkspace = $rillAppStore?.activeEntity?.type === EntityType.Model;
   $: useMetricsDefWorkspace =
@@ -30,7 +35,9 @@
       : undefined;
 </script>
 
-{#if useModelWorkspace}
+{#if useSourceWorkspace}
+  <SourceView />
+{:else if useModelWorkspace}
   {#if !isModelActive}
     <Onboarding />
   {:else}

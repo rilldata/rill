@@ -3,9 +3,14 @@
     TimeGrain,
     TimeRangeName,
   } from "$common/database-service/DatabaseTimeSeriesActions";
+  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "$lib/components/menu/wrappers/WithSelectMenu.svelte";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
+  import { useQuery } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import {
     getDefaultTimeGrain,
@@ -21,15 +26,22 @@
   const dispatch = createEventDispatcher();
   const SELECT_TIME_GRAIN = "select-time-grain";
 
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
-
   let selectableTimeGrains: TimeGrainOption[];
 
-  // TODO: replace this with a call to the `/meta` endpoint, once available.
-  $: if (selectedTimeRangeName && $metricsExplorer?.allTimeRange) {
+  // query the `/meta` endpoint to get the full time range of the dataset
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
+    queryKey,
+    () => getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
+  $: if (selectedTimeRangeName && $queryResult.data?.timeDimension?.timeRange) {
     selectableTimeGrains = getSelectableTimeGrains(
       selectedTimeRangeName,
-      $metricsExplorer.allTimeRange
+      $queryResult.data.timeDimension.timeRange
     );
   }
 
@@ -40,10 +52,13 @@
     selectableTimeGrains.find(
       (timeGrainOption) => timeGrainOption.timeGrain === selectedTimeGrain
     ).enabled === false;
-  $: if (isSelectedTimeGrainInvalid && $metricsExplorer?.allTimeRange) {
+  $: if (
+    isSelectedTimeGrainInvalid &&
+    $queryResult.data?.timeDimension.timeRange
+  ) {
     const defaultTimeGrain = getDefaultTimeGrain(
       selectedTimeRangeName,
-      $metricsExplorer.allTimeRange
+      $queryResult.data.timeDimension.timeRange
     );
     dispatch(SELECT_TIME_GRAIN, { timeGrain: defaultTimeGrain });
   }

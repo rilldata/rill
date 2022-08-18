@@ -1,29 +1,31 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
   import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
 
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
-  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type {
     LeaderboardValues,
     MetricsExplorerEntity,
   } from "$lib/redux-store/explore/explore-slice";
-  import {
-    getMeasureFieldNameByIdAndIndex,
-    getMeasuresByMetricsId,
-  } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { store } from "$lib/redux-store/store-root";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
+  import { useQuery } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import Leaderboard from "./Leaderboard.svelte";
@@ -34,43 +36,49 @@
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  let dimensions: Readable<DimensionDefinitionEntity[]>;
-  $: dimensions = getDimensionsByMetricsId(metricsDefId);
+  // query the `/meta` endpoint to get the metric's measures and dimensions
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
+    queryKey,
+    () => getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
 
-  let measureField: Readable<string>;
-  $: if ($metricsExplorer?.leaderboardMeasureId)
-    measureField = getMeasureFieldNameByIdAndIndex(
-      $metricsExplorer.leaderboardMeasureId,
-      $metricsExplorer.measureIds.indexOf(
-        $metricsExplorer?.leaderboardMeasureId
-      )
+  let dimensions: DimensionDefinitionEntity[];
+  $: dimensions = $queryResult.data.dimensions;
+
+  let measures: MeasureDefinitionEntity[];
+  $: measures = $queryResult.data.measures;
+
+  $: activeMeasure =
+    measures &&
+    measures.find(
+      (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
     );
 
-  $: measures = getMeasuresByMetricsId(metricsDefId);
-  $: leaderboardMeasureDefinition = $measures.find(
-    (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
-  );
-  // get the expression so we can determine if the measure is summable
-  $: expression = leaderboardMeasureDefinition?.expression;
   $: formatPreset =
-    leaderboardMeasureDefinition?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
+    activeMeasure?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
 
   let bigNumberEntity: Readable<BigNumberEntity>;
   $: bigNumberEntity = getBigNumberById(metricsDefId);
   let referenceValue: number;
 
-  $: if ($bigNumberEntity && $measureField) {
+  $: if ($bigNumberEntity && activeMeasure.sqlName) {
     referenceValue =
       whichReferenceValue === "filtered"
-        ? $bigNumberEntity.bigNumbers?.[$measureField]
-        : $bigNumberEntity.referenceValues?.[$measureField];
+        ? $bigNumberEntity.bigNumbers?.[activeMeasure.sqlName]
+        : $bigNumberEntity.referenceValues?.[activeMeasure.sqlName];
   }
 
   /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
+  // Q: We're doing this on the backend now, right? We can delete this?
   $: validLeaderboards =
-    $dimensions && $metricsExplorer?.leaderboards
+    dimensions && $metricsExplorer?.leaderboards
       ? $metricsExplorer?.leaderboards.filter((leaderboard) => {
-          const dimensionConfiguration = $dimensions?.find(
+          const dimensionConfiguration = dimensions?.find(
             (dimension) => dimension.id === leaderboard.dimensionId
           );
           return (
@@ -150,8 +158,10 @@
       <Leaderboard
         {formatPreset}
         {leaderboardFormatScale}
-        isSummableMeasure={expression?.toLowerCase()?.includes("count(") ||
-          expression?.toLowerCase()?.includes("sum(")}
+        isSummableMeasure={activeMeasure?.expression
+          .toLowerCase()
+          ?.includes("count(") ||
+          activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
         dimensionId={item.dimensionId}
         seeMore={leaderboardExpanded === item.dimensionId}
         on:expand={() => {

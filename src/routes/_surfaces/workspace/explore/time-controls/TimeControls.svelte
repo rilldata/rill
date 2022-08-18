@@ -11,9 +11,15 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
+  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import { store } from "$lib/redux-store/store-root";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+  } from "$lib/svelte-query/queries/metric-view";
+  import { useQuery } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
   import {
     getDefaultTimeGrain,
@@ -26,6 +32,17 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   export let metricsDefId: string;
 
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  // query the `/meta` endpoint to get the full time range of the dataset
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
+    queryKey,
+    () => getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
 
   let selectedTimeRangeName;
   const setSelectedTimeRangeName = (evt) => {
@@ -42,7 +59,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     selectedTimeRangeName = defaultTimeRangeName;
     const defaultTimeGrain = getDefaultTimeGrain(
       selectedTimeRangeName,
-      $metricsExplorer?.allTimeRange
+      $queryResult.data?.timeDimension?.timeRange
     );
     selectedTimeGrain = defaultTimeGrain;
   });
@@ -57,13 +74,13 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     const newTimeRange = makeTimeRange(
       selectedTimeRangeName,
       selectedTimeGrain,
-      $metricsExplorer.allTimeRange
+      allTimeRangeInDataset
     );
 
     if (
-      newTimeRange.start === $metricsExplorer.selectedTimeRange?.start &&
-      newTimeRange.end === $metricsExplorer.selectedTimeRange?.end &&
-      newTimeRange.interval === $metricsExplorer.selectedTimeRange?.interval
+      newTimeRange.start === $metricsExplorer?.selectedTimeRange?.start &&
+      newTimeRange.end === $metricsExplorer?.selectedTimeRange?.end &&
+      newTimeRange.interval === $metricsExplorer?.selectedTimeRange?.interval
     )
       return;
 
@@ -79,7 +96,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: makeTimeRangeAndUpdateStore(
     selectedTimeRangeName,
     selectedTimeGrain,
-    $metricsExplorer?.allTimeRange
+    $queryResult.data?.timeDimension?.timeRange
   );
 </script>
 
