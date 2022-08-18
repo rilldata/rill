@@ -13,13 +13,13 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
 import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
-import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 import { getMapFromArray } from "$common/utils/getMapFromArray";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { getFallbackMeasureName } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
-export interface RuntimeMetricsMetaResponse {
+export interface MetricViewMetaResponse {
   name: string;
   timeDimension: {
     name: string;
@@ -29,52 +29,52 @@ export interface RuntimeMetricsMetaResponse {
   measures: Array<MeasureDefinitionEntity>;
 }
 
-export interface RuntimeRequestTimeRange {
+export interface MetricViewRequestTimeRange {
   start: string;
   end: string;
   granularity: string;
 }
-export interface RuntimeDimensionValue {
+export interface MetricViewDimensionValue {
   name: string;
   values: Array<unknown>;
 }
-export type RuntimeDimensionValues = Array<RuntimeDimensionValue>;
+export type MetricViewDimensionValues = Array<MetricViewDimensionValue>;
 export interface RuntimeRequestFilter {
-  include: RuntimeDimensionValues;
-  exclude: RuntimeDimensionValues;
+  include: MetricViewDimensionValues;
+  exclude: MetricViewDimensionValues;
 }
 
-export interface RuntimeTimeSeriesRequest {
+export interface MetricViewTimeSeriesRequest {
   measures: Array<string>;
-  time: RuntimeRequestTimeRange;
-  filter: RuntimeRequestFilter;
+  time: MetricViewRequestTimeRange;
+  filter?: RuntimeRequestFilter;
 }
-export interface RuntimeTimeSeriesResponse {
+export interface MetricViewTimeSeriesResponse {
   meta: Array<{ name: string; type: string }>;
   // data: Array<{ time: string } & Record<string, number>>;
   data: Array<TimeSeriesValue>;
 }
 
-export interface RuntimeTopListRequest {
+export interface MetricViewTopListRequest {
   measures: Array<string>;
-  time: Pick<RuntimeRequestTimeRange, "start" | "end">;
+  time: Pick<MetricViewRequestTimeRange, "start" | "end">;
   limit: number;
   offset: number;
   sort: Array<{ name: string; direction: "desc" | "asc" }>;
-  filter: RuntimeRequestFilter;
+  filter?: RuntimeRequestFilter;
 }
-export interface RuntimeTopListResponse {
+export interface MetricViewTopListResponse {
   meta: Array<{ name: string; type: string }>;
   // data: Array<Record<string, number | string>>;
   data: Array<{ label: string; value: number }>;
 }
 
-export interface RuntimeBigNumberRequest {
+export interface MetricViewBigNumberRequest {
   measures: Array<string>;
-  time: Pick<RuntimeRequestTimeRange, "start" | "end">;
-  filter: RuntimeRequestFilter;
+  time: Pick<MetricViewRequestTimeRange, "start" | "end">;
+  filter?: RuntimeRequestFilter;
 }
-export interface RuntimeBigNumberResponse {
+export interface MetricViewBigNumberResponse {
   meta: Array<{ name: string; type: string }>;
   data: Record<string, number>;
 }
@@ -112,7 +112,7 @@ export class MetricViewActions extends RillDeveloperActions {
         [metricsDefId]
       )
     ).data;
-    const meta: RuntimeMetricsMetaResponse = {
+    const meta: MetricViewMetaResponse = {
       name: rillRequestContext.record.metricDefLabel,
       timeDimension: {
         name: rillRequestContext.record.timeDimension,
@@ -128,7 +128,7 @@ export class MetricViewActions extends RillDeveloperActions {
   public async getMetricViewTimeSeries(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
-    request: RuntimeTimeSeriesRequest
+    request: MetricViewTimeSeriesRequest
   ) {
     // TODO: validation
     const model = this.dataModelerStateService
@@ -144,17 +144,20 @@ export class MetricViewActions extends RillDeveloperActions {
         {
           tableName: model.tableName,
           timestampColumn: rillRequestContext.record.timeDimension,
-          measures: request.measures.map((measureId) =>
-            this.dataModelerStateService
+          measures: request.measures.map((measureId) => ({
+            ...this.dataModelerStateService
               .getMeasureDefinitionService()
-              .getById(measureId)
-          ),
+              .getById(measureId),
+          })),
           filters: convertToActiveValues(request.filter),
-          timeRange: request.time,
+          timeRange: {
+            ...request.time,
+            interval: request.time.granularity,
+          },
         },
       ]
     );
-    const response: RuntimeTimeSeriesResponse = {
+    const response: MetricViewTimeSeriesResponse = {
       meta: [], // TODO
       data: timeSeries.rollup.results,
     };
@@ -166,7 +169,7 @@ export class MetricViewActions extends RillDeveloperActions {
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
     dimensionId: string,
-    request: RuntimeTopListRequest
+    request: MetricViewTopListRequest
   ) {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
@@ -192,7 +195,7 @@ export class MetricViewActions extends RillDeveloperActions {
         request.time,
       ]
     );
-    const response: RuntimeTopListResponse = {
+    const response: MetricViewTopListResponse = {
       meta: [], // TODO
       data,
     };
@@ -203,7 +206,7 @@ export class MetricViewActions extends RillDeveloperActions {
   public async getRuntimeBigNumber(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
-    request: RuntimeBigNumberRequest
+    request: MetricViewBigNumberRequest
   ) {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
@@ -227,7 +230,7 @@ export class MetricViewActions extends RillDeveloperActions {
           request.time,
         ]
       );
-    const response: RuntimeBigNumberResponse = {
+    const response: MetricViewBigNumberResponse = {
       meta: [], // TODO
       data: bigNumberResponse.bigNumbers,
     };
@@ -259,7 +262,7 @@ export class MetricViewActions extends RillDeveloperActions {
       .getManyByField("metricsDefId", metricsDef.id);
     return (
       await Promise.all(
-        measures.map(async (measure) => {
+        measures.map(async (measure, index) => {
           const measureValidation = await this.rillDeveloperService.dispatch(
             RillRequestContext.getNewContext(),
             "validateMeasureExpression",
@@ -268,6 +271,7 @@ export class MetricViewActions extends RillDeveloperActions {
           return {
             ...measure,
             ...(measureValidation.data as MeasureDefinitionEntity),
+            sqlName: getFallbackMeasureName(index, measure.sqlName),
           };
         })
       )
