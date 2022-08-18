@@ -10,7 +10,6 @@
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { getValidMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getTimeSeriesById } from "$lib/redux-store/timeseries/timeseries-readables";
   import type {
     TimeSeriesEntity,
@@ -52,8 +51,6 @@
     $metricsExplorer?.selectedTimeRange?.interval ||
     $queryResult.data?.timeDimension?.timeRange?.interval;
 
-  $: allMeasures = getValidMeasuresByMetricsId(metricsDefId);
-
   let bigNumbers: Readable<BigNumberEntity>;
   $: bigNumbers = getBigNumberById(metricsDefId);
 
@@ -83,7 +80,6 @@
 >
   <TimeSeriesChartContainer start={startValue} end={endValue}>
     <!-- mouseover date elements-->
-
     <div />
     <div style:padding-left="24px">
       {#if point?.ts}
@@ -110,44 +106,46 @@
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
-    {#each $allMeasures as measure, index (measure.id)}
-      <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
+    {#if $queryResult.isSuccess}
+      {#each $queryResult.data.measures as measure, index (measure.id)}
+        <!-- FIXME: I can't select the big number by the measure id. -->
+        {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
 
-      <!-- FIXME: I can't select a time series by measure id. -->
-      <MeasureBigNumber
-        value={bigNum}
-        description={measure?.description ||
-          measure?.label ||
-          measure?.expression}
-        formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
-        status={$bigNumbers?.status}
-      >
-        <svelte:fragment slot="name">
-          {measure?.label || measure?.expression}
-        </svelte:fragment>
-      </MeasureBigNumber>
-      <div class="time-series-body" style:height="125px">
-        {#if $timeSeries?.status === EntityStatus.Error}
-          <div class="p-5"><CrossIcon /></div>
-        {:else if formattedData}
-          <TimeSeriesBody
-            bind:mouseoverValue
-            formatPreset={measure?.formatPreset ||
-              NicelyFormattedTypes.HUMANIZE}
-            data={formattedData}
-            accessor={`measure_${index}`}
-            mouseover={point}
-            {key}
-            start={startValue}
-            end={endValue}
-          />
-        {:else}
-          <div>
-            <Spinner status={EntityStatus.Running} />
-          </div>
-        {/if}
-      </div>
-    {/each}
+        <!-- FIXME: I can't select a time series by measure id. -->
+        <MeasureBigNumber
+          value={bigNum}
+          description={measure?.description ||
+            measure?.label ||
+            measure?.expression}
+          formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
+          status={$bigNumbers?.status}
+        >
+          <svelte:fragment slot="name">
+            {measure?.label || measure?.expression}
+          </svelte:fragment>
+        </MeasureBigNumber>
+        <div class="time-series-body" style:height="125px">
+          {#if $timeSeries?.status === EntityStatus.Error}
+            <div class="p-5"><CrossIcon /></div>
+          {:else if formattedData}
+            <TimeSeriesBody
+              bind:mouseoverValue
+              formatPreset={measure?.formatPreset ||
+                NicelyFormattedTypes.HUMANIZE}
+              data={formattedData}
+              accessor={`measure_${index}`}
+              mouseover={point}
+              {key}
+              start={startValue}
+              end={endValue}
+            />
+          {:else}
+            <div>
+              <Spinner status={EntityStatus.Running} />
+            </div>
+          {/if}
+        </div>
+      {/each}
+    {/if}
   </TimeSeriesChartContainer>
 </WithBisector>
