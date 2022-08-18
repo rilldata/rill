@@ -36,7 +36,7 @@
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  // query the `/meta` endpoint to get the default time grain of the dataset
+  // query the `/meta` endpoint to get the measures and the default time grain
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
   const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
     getMetricViewMetadata(metricsDefId)
