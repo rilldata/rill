@@ -1,6 +1,10 @@
 import { line, area, curveLinear, curveStep } from "d3-shape";
 import type { ScaleLinear, ScaleTime } from "d3-scale";
 import type { GraphicScale } from "./state/types";
+import { get, writable } from "svelte/store";
+
+export const breakpointX = writable(150);
+export const breakpointY = writable(50);
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -86,7 +90,9 @@ export function getTicks(
   axisLength: number,
   isDate: boolean
 ) {
-  const tickCount = ~~(axisLength / (xOrY === "x" ? 150 : 50));
+  const tickCount = ~~(
+    axisLength / (xOrY === "x" ? get(breakpointX) : get(breakpointY))
+  );
   let ticks = scale.ticks(tickCount);
 
   if (ticks.length <= 1) {

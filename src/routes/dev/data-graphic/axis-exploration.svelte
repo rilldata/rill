@@ -5,6 +5,13 @@
   } from "$lib/components/data-graphic/elements";
   import { Line } from "$lib/components/data-graphic/marks";
   import { Axis } from "$lib/components/data-graphic/guides";
+  import { breakpointX, breakpointY } from "$lib/components/data-graphic/utils";
+
+  /**
+   * Return a list of ticks to be represented on the
+   * axis or grid depending on axis-side, it's length and
+   * the data type of field
+   */
 
   function makeData(intervalSize = 1000) {
     let v = 50;
@@ -27,22 +34,54 @@
   }
 
   let interval = 1000 * 60 * 60 * 24;
-  const intervals = [1000, 1000 * 60, 1000 * 60 * 60, 1000 * 60 * 60 * 24];
 
   let widthMultiple = 150;
+  // let breakpointX = 150;
+  // let breakpointY = 50;
+
   $: data = makeData(interval);
 </script>
 
-Width Multiple:
-<input
-  autocomplete="off"
-  type="range"
-  bind:value={widthMultiple}
-  min={40}
-  max={320}
-  class="w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-/>
-<span>{widthMultiple}</span>
+<div>
+  Width Multiple:
+  <input
+    autocomplete="off"
+    type="range"
+    bind:value={widthMultiple}
+    min={40}
+    max={320}
+    class="w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+  />
+  <span>{widthMultiple}</span>
+</div>
+
+<div>
+  Breakpoint X:
+  <input
+    autocomplete="off"
+    type="range"
+    on:change={() => (widthMultiple = widthMultiple)}
+    bind:value={$breakpointX}
+    min={10}
+    max={300}
+    class="w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+  />
+  <span>{$breakpointX}</span>
+</div>
+
+<div>
+  Breakpoint Y:
+  <input
+    autocomplete="off"
+    type="range"
+    bind:value={$breakpointY}
+    min={10}
+    max={300}
+    class="w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+  />
+  <span>{$breakpointY}</span>
+</div>
+
 <div>
   Time Interval:
 

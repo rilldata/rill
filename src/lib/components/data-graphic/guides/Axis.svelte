@@ -7,7 +7,7 @@ This component will draw an axis on the specified side.
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import type { AxisSide } from "./types.d";
-  import { getTicks } from "../utils";
+  import { breakpointX, breakpointY, getTicks } from "../utils";
 
   export let side: AxisSide = "left";
   export let format: (arg0: number | Date) => string | number = undefined;
@@ -166,7 +166,7 @@ This component will draw an axis on the specified side.
   }
   let axisLength;
   let ticks = [];
-  $: if ($plotConfig) {
+  $: if ($plotConfig && $breakpointX && $breakpointY) {
     if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
     else axisLength = $plotConfig.graphicHeight;
 
