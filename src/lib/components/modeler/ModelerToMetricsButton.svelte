@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import {
     DerivedModelStore,
     PersistentModelStore,
@@ -13,6 +13,7 @@
   import Explore from "../icons/Explore.svelte";
 
   export let activeEntityID: string;
+  export let hasError = false;
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -53,10 +54,12 @@
     >Create Dashboard<Explore size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">
-    {#if timestampColumns?.length}
-      Auto create metrics based on your model and go to dashboard
+    {#if hasError}
+      Fix the errors in your model to autogenerate dashboard
+    {:else if timestampColumns?.length}
+      Generate a dashboard based on your model
     {:else}
-      Add a timestamp column to your model in order to create a metric
+      Add a timestamp column to your model in order to generate a dashboard
     {/if}
   </TooltipContent>
 </Tooltip>

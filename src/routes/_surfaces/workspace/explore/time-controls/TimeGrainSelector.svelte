@@ -3,36 +3,41 @@
     TimeGrain,
     TimeRangeName,
   } from "$common/database-service/DatabaseTimeSeriesActions";
-  import type { RuntimeMetricsMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "$lib/components/menu/wrappers/WithSelectMenu.svelte";
+  import { updateSelectedTimeGrainApi } from "$lib/redux-store/explore/explore-apis";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQuery } from "@sveltestack/svelte-query";
-  import { createEventDispatcher } from "svelte";
+  import type { Readable } from "svelte/store";
   import {
-    getDefaultTimeGrain,
     getSelectableTimeGrains,
     prettyTimeGrain,
     TimeGrainOption,
   } from "./time-range-utils";
 
   export let metricsDefId: string;
-  export let selectedTimeRangeName: TimeRangeName;
-  export let selectedTimeGrain: TimeGrain;
 
-  const dispatch = createEventDispatcher();
-  const SELECT_TIME_GRAIN = "select-time-grain";
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  let selectedTimeGrain: TimeGrain;
+  $: selectedTimeGrain = $metricsExplorer?.selectedTimeGrain;
+
+  let selectedTimeRangeName: TimeRangeName;
+  $: selectedTimeRangeName = $metricsExplorer?.selectedTimeRange?.name;
 
   let selectableTimeGrains: TimeGrainOption[];
-
   // query the `/meta` endpoint to get the full time range of the dataset
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<RuntimeMetricsMetaResponse, Error>(
-    queryKey,
-    () => getMetricViewMetadata(metricsDefId)
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
   );
   $: {
     queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -45,24 +50,6 @@
     );
   }
 
-  // When the selected time grain is not in the list of selectable time grains (which can
-  // happen when the time range name is changed), set the default time grain
-  $: isSelectedTimeGrainInvalid =
-    selectableTimeGrains &&
-    selectableTimeGrains.find(
-      (timeGrainOption) => timeGrainOption.timeGrain === selectedTimeGrain
-    ).enabled === false;
-  $: if (
-    isSelectedTimeGrainInvalid &&
-    $queryResult.data?.timeDimension.timeRange
-  ) {
-    const defaultTimeGrain = getDefaultTimeGrain(
-      selectedTimeRangeName,
-      $queryResult.data.timeDimension.timeRange
-    );
-    dispatch(SELECT_TIME_GRAIN, { timeGrain: defaultTimeGrain });
-  }
-
   $: options = selectableTimeGrains
     ? selectableTimeGrains.map(({ timeGrain, enabled }) => ({
         main: prettyTimeGrain(timeGrain),
@@ -71,6 +58,10 @@
         description: !enabled ? "not valid for this time range" : undefined,
       }))
     : undefined;
+
+  const onTimeGrainSelect = (timeGrain: TimeGrain) => {
+    store.dispatch(updateSelectedTimeGrainApi({ metricsDefId, timeGrain }));
+  };
 </script>
 
 {#if selectedTimeGrain && selectableTimeGrains}
@@ -80,9 +71,7 @@
       main: prettyTimeGrain(selectedTimeGrain),
       key: selectedTimeGrain,
     }}
-    on:select={(event) => {
-      dispatch(SELECT_TIME_GRAIN, { timeGrain: event.detail.key });
-    }}
+    on:select={(event) => onTimeGrainSelect(event.detail.key)}
     let:toggleMenu
     let:active
   >

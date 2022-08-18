@@ -29,11 +29,8 @@ export const selectMeasureFieldNameByIdAndIndex = (
 
 export const measureIsValid = (measure: MeasureDefinitionEntity) =>
   measure.expressionIsValid === ValidationState.OK;
-export const selectValidMeasures = (
-  measures: Array<MeasureDefinitionEntity>
-) => {
-  return measures.filter(measureIsValid);
-};
+export const selectValidMeasures = (measures: Array<MeasureDefinitionEntity>) =>
+  measures.filter(measureIsValid);
 
 export const selectValidMeasuresByMetricsId = (
   state: RillReduxState,

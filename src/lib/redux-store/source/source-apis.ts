@@ -100,7 +100,7 @@ export const autoCreateMetricsDefinitionForModel = async (
   sourceModelId: string,
   timeDimension: string
 ) => {
-  const metricsLabel = `metrics_${sourceName}`;
+  const metricsLabel = `${sourceName}_dashboard`;
   const existingMetrics = selectMetricsDefinitionMatchingName(
     store.getState(),
     metricsLabel
