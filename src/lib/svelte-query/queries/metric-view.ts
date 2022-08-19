@@ -1,3 +1,8 @@
+/**
+ * TODO: Instead of writing this file by hand, a better approach would be to use an OpenAPI spec and
+ * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
+ */
+
 import type {
   MetricViewMetaResponse,
   MetricViewTimeSeriesRequest,

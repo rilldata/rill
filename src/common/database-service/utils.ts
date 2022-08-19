@@ -95,6 +95,7 @@ export function getWhereClauseFromFilters(
   ) {
     whereClauses.push(getFilterFromMetricViewFilters(metricViewFilters));
   }
+  console.log(timeRange);
   if (timeRange?.start || timeRange?.end) {
     whereClauses.push(getFilterFromTimeRange(timestampColumn, timeRange));
   }

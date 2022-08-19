@@ -45,7 +45,8 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       GROUP BY "${column}"
       ORDER BY value desc NULLS LAST
       LIMIT 15
-    `
+    `,
+      true
     );
   }
 

@@ -7,15 +7,28 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 -->
 <script lang="ts">
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import {
+    getMetricViewTimeSeriesQueryKey,
+    invalidateMetricViewTopList,
+  } from "$lib/svelte-query/queries/metric-view";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import type { Readable } from "svelte/store";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
-  import type { Readable } from "svelte/store";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
 
   export let metricsDefId: string;
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  // invalidate the timeseries query when the selected time range changes
+  const queryClient = useQueryClient();
+  const timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
+  $: if ($metricsExplorer?.selectedTimeRange) {
+    queryClient.invalidateQueries(timeSeriesQueryKey);
+    invalidateMetricViewTopList(queryClient, metricsDefId);
+  }
 </script>
 
 <div class="flex flex-row">

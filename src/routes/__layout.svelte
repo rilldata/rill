@@ -15,10 +15,10 @@
   import { initMetrics } from "$lib/metrics/initMetrics";
   import { syncApplicationState } from "$lib/redux-store/application/application-apis";
   import type { ApplicationMetadata } from "$lib/types";
+  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
   import { onMount, setContext } from "svelte";
   import "../app.css";
   import "../fonts.css";
-  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
 
   let store;
   let queryHighlight = createQueryHighlightStore();
@@ -42,6 +42,15 @@
     syncApplicationState(store);
   }
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        placeholderData: [],
+      },
+    },
+  });
+
   onMount(() => {
     initMetrics();
   });
@@ -57,15 +66,6 @@
   }
 
   $: debounceRunstate($store?.status || "disconnected");
-
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnWindowFocus: false,
-        placeholderData: [],
-      },
-    },
-  });
 </script>
 
 <QueryClientProvider client={queryClient}>

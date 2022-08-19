@@ -34,7 +34,7 @@
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService.js";
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   export let metricsDefId: string;
   export let dimensionId: string;
