@@ -24,12 +24,21 @@
 
   /** let's just take the first 3 values */
   $: visibleValues = selectedValues.slice(0, 1);
+
+  let hoverOverRemoveFilter = false;
+  function focusOnRemove() {
+    hoverOverRemoveFilter = true;
+  }
+  function blurOnRemove() {
+    hoverOverRemoveFilter = false;
+  }
 </script>
 
 <WithTogglableFloatingElement
   let:toggleFloatingElement
   bind:active
   distance={8}
+  alignment="start"
 >
   <div>
     <Tooltip
@@ -37,7 +46,7 @@
       alignment="start"
       distance={8}
       activeDelay={60}
-      suppress={active}
+      suppress={active || hoverOverRemoveFilter}
     >
       <button
         on:click={() => {
@@ -52,9 +61,21 @@
     "
         style:grid-template-columns="max-content max-content max-content"
       >
-        <button on:click|stopPropagation={() => dispatch("remove-filters")}>
-          <Close />
-        </button>
+        <Tooltip alignment="start" distance={12}>
+          <button
+            on:mouseover={focusOnRemove}
+            on:focus={focusOnRemove}
+            on:mouseleave={blurOnRemove}
+            on:blur={blurOnRemove}
+            on:click|stopPropagation={() => dispatch("remove-filters")}
+          >
+            <Close />
+          </button>
+          <TooltipContent slot="tooltip-content"
+            >clear filters for <span class="font-bold">{name}</span
+            ></TooltipContent
+          >
+        </Tooltip>
         <div
           class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
           style:max-width="160px"
@@ -99,6 +120,9 @@
     </Tooltip>
   </div>
   <Menu
+    paddingTop={1}
+    paddingBottom={1}
+    rounded={false}
     maxWidth="480px"
     slot="floating-element"
     on:escape={toggleFloatingElement}
@@ -117,7 +141,7 @@
         >
       </svelte:fragment>
     </MenuHeader>
-    <Divider />
+    <Divider marginTop={1} marginBottom={1} />
     {#each currentlyVisibleValuesInMenu as value}
       <MenuItem
         icon

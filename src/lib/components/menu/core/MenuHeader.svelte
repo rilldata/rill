@@ -1,6 +1,6 @@
 <header>
   <div
-    class="grid justify-between pl-3 pr-2 items-center"
+    class="grid justify-between pl-3 pr-1 items-center"
     style:grid-template-columns="max-content max-content"
   >
     <div class="font-bold">

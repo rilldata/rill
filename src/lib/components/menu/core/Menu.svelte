@@ -18,6 +18,9 @@
   export let dark: boolean = undefined;
   export let maxWidth: string = undefined;
   export let minHeight: string = undefined;
+  export let paddingTop = 2;
+  export let paddingBottom = 2;
+  export let rounded = true;
   export let role = "menu";
   /** used for selector-style menus */
   export let multiselectable = false;
@@ -112,6 +115,9 @@
   } else if (role === "listbox") {
     ariaProperties = { role, ["aria-multiselectable"]: multiselectable };
   }
+
+  // hints for tailwind re: spacing
+  // pt-1, pt-2, pt-3, pb-1, pb-2, pb-3
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -129,10 +135,11 @@
       dispatch("click-outside");
     },
   ]}
+  class:rounded
   class="
-        py-2 
-        w-max 
-        rounded 
+        pt-{paddingTop} 
+        pb-{paddingBottom}
+        w-max
         flex 
         flex-col
         outline-none
