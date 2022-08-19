@@ -10,17 +10,20 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { createEventDispatcher } from "svelte";
-  import { fly, slide } from "svelte/transition";
+  import { fly } from "svelte/transition";
+
   export let name;
   export let selectedValues;
+
   const dispatch = createEventDispatcher();
 
-  $: visibleValues = selectedValues.slice(0, 3);
-  let active = false;
-
   let currentlyVisibleValuesInMenu = selectedValues;
-  /** update only if menu is closed */
+  let active = false;
+  /** only update the floating menu items if the menu is not open */
   $: if (!active) currentlyVisibleValuesInMenu = selectedValues;
+
+  /** let's just take the first 3 values */
+  $: visibleValues = selectedValues.slice(0, 3);
 </script>
 
 <WithTogglableFloatingElement
@@ -40,7 +43,6 @@
         on:click={() => {
           toggleFloatingElement();
         }}
-        transition:slide={{ duration: 200 }}
         class="
       grid gap-x-3 items-center px-2 py-1 rounded cursor-pointer
       {!active ? 'hover:bg-blue-50' : ''}

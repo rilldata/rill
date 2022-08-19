@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import { flip } from "svelte/animate";
 
   import Filter from "$lib/components/icons/Filter.svelte";
   import ShiftKey from "$lib/components/tooltip/ShiftKey.svelte";
@@ -17,6 +18,7 @@
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
   import type { Readable } from "svelte/store";
+  import { fly } from "svelte/transition";
   import FilterContainer from "./FilterContainer.svelte";
   import FilterSet from "./FilterSet.svelte";
   export let metricsDefId;
@@ -79,9 +81,10 @@
       use:shiftClickAction
       on:shift-click={clearAllFilters}
       class:cursor-auto={!hasFilters}
-      class="ml-3 grid place-items-center {!hasFilters
-        ? ''
-        : 'hover:bg-gray-200'}"
+      class="ml-3 grid place-items-center 
+      {!hasFilters ? 'text-gray-400' : 'text-gray-800'}
+
+      {!hasFilters ? '' : 'hover:bg-gray-200'}"
       style:width="24px"
       style:height="24px"
       style:font-size="18px"
@@ -95,24 +98,31 @@
       </TooltipShortcutContainer>
     </TooltipContent>
   </Tooltip>
-  <FilterContainer>
-    {#if prunedValues?.length && $dimensions?.length}
-      {#each prunedValues as [dimensionId, selectedValues]}
+  {#if prunedValues?.length && $dimensions?.length}
+    <FilterContainer>
+      {#each prunedValues as [dimensionId, selectedValues] (dimensionId)}
         {@const name = $dimensions.find(
           (dim) => dim.id === dimensionId
         ).dimensionColumn}
-        <FilterSet
-          on:remove-filters={() => clearFilterForDimension(dimensionId)}
-          on:select={(event) => onSelectItem(event, { dimensionId })}
-          {name}
-          id={dimensionId}
-          {selectedValues}
-        />
+        <div animate:flip={{ duration: 200 }}>
+          <FilterSet
+            on:remove-filters={() => clearFilterForDimension(dimensionId)}
+            on:select={(event) => onSelectItem(event, { dimensionId })}
+            {name}
+            id={dimensionId}
+            {selectedValues}
+          />
+        </div>
       {/each}
-    {:else if prunedValues?.length === 0}
-      <div class="italic text-gray-400 ml-3">no filters selected</div>
-    {:else}
-      &nbsp;
-    {/if}
-  </FilterContainer>
+    </FilterContainer>
+  {:else if prunedValues?.length === 0}
+    <div
+      in:fly|local={{ duration: 200, x: 8 }}
+      class="italic text-gray-400 ml-3 grid items-center"
+    >
+      no filters selected
+    </div>
+  {:else}
+    &nbsp;
+  {/if}
 </section>
