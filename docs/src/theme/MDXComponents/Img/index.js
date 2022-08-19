@@ -7,7 +7,7 @@ function transformImgClassName(className) {
   return clsx(className, styles.img);
 }
 export default function MDXImg(props) {
-  if ((props.src.endsWith(".gif") || props.src.endsWith(".mp4")) && (typeof props.title !== 'undefined')) {
+  if (props.src.endsWith(".gif") && (typeof props.title !== 'undefined')) {
     return (
       <Video vimeoId={props.title} />
     )

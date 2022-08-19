@@ -72,10 +72,10 @@ const config = {
       },
       metadata: [
         { 
-          property: 'og:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+          property: 'og:image', content: 'https://uploads-ssl.webflow.com/5e4306d09c892720b9be39a6/607dc6fd92da47780c40b359_Opengraph.png'
         },
         {
-          name: 'twitter:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+          name: 'twitter:image', content: 'https://uploads-ssl.webflow.com/5e4306d09c892720b9be39a6/607dc6fd92da47780c40b359_Opengraph.png'
         },
       ],
       navbar: {
