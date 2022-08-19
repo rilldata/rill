@@ -1,7 +1,10 @@
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type {
+  TimeGrain,
+  TimeSeriesTimeRange,
+} from "$common/database-service/DatabaseTimeSeriesActions";
 import {
   createEntityAdapter,
   createSlice,
@@ -13,7 +16,6 @@ import {
 } from "$lib/redux-store/utils/slice-utils";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { TimeGrainOption } from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
-import type { TimeGrain } from "$common/database-service/DatabaseTimeSeriesActions";
 
 export interface LeaderboardValue {
   value: number;
@@ -375,6 +377,39 @@ export const exploreSlice = createSlice({
       prepare: (id: string) => ({ payload: id }),
     },
 
+    clearD: {
+      reducer: (state, { payload: id }: PayloadAction<string>) => {
+        if (!state.entities[id]) return;
+        state.entities[id].activeValues = {};
+        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
+          (leaderboard) => ({
+            dimensionId: leaderboard.dimensionId,
+            values: [],
+            status: EntityStatus.Idle,
+          })
+        );
+      },
+      prepare: (id: string) => ({ payload: id }),
+    },
+
+    clearSelectedDimensionLeaderboard: {
+      reducer: (
+        state,
+        { payload: { id, dimId } }: PayloadAction<{ id: string; dimId: string }>
+      ) => {
+        if (!state.entities[id]) return;
+        delete state.entities[id].activeValues[dimId];
+        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
+          (leaderboard) => ({
+            dimensionId: leaderboard.dimensionId,
+            values: leaderboard.dimensionId === dimId ? [] : leaderboard.values,
+            status: EntityStatus.Idle,
+          })
+        );
+      },
+      prepare: (id: string, dimId) => ({ payload: { id, dimId } }),
+    },
+
     clearSelectedLeaderboardValues: {
       reducer: (state, { payload: id }: PayloadAction<string>) => {
         if (!state.entities[id]) return;
@@ -477,6 +512,7 @@ export const {
   setExplorerSelectedTimeGrain,
   setExplorerSelectableTimeGrains,
   setExplorerIsStale,
+  clearSelectedDimensionLeaderboard,
 } = exploreSlice.actions;
 export const MetricsExplorerSliceActions = exploreSlice.actions;
 export type MetricsExplorerSliceTypes = typeof MetricsExplorerSliceActions;

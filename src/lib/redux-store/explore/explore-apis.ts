@@ -4,12 +4,22 @@ import {
   EntityType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type {
+  TimeGrain,
+  TimeRangeName,
+} from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
 import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
 import {
+  selectMetricsExplorerById,
+  selectMetricsExplorerSelectedTimeGrain,
+  selectMetricsExploreSelectedTimeRangeName,
+} from "$lib/redux-store/explore/explore-selectors";
+import {
   addDimensionToExplore,
   addMeasureToExplore,
+  clearSelectedDimensionLeaderboard,
   clearSelectedLeaderboardValues,
   initMetricsExplorer,
   LeaderboardValues,
@@ -32,24 +42,15 @@ import {
 import { selectValidMeasures } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
+import { store } from "$lib/redux-store/store-root";
 import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
 import { fetchWrapper, streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 import {
   getSelectableTimeGrains,
   getSelectableTimeRanges,
   makeTimeRange,
 } from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
-import type {
-  TimeGrain,
-  TimeRangeName,
-} from "$common/database-service/DatabaseTimeSeriesActions";
-import { store } from "$lib/redux-store/store-root";
-import {
-  selectMetricsExplorerById,
-  selectMetricsExplorerSelectedTimeGrain,
-  selectMetricsExploreSelectedTimeRangeName,
-} from "$lib/redux-store/explore/explore-selectors";
+import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
 
 /**
  * A wrapper to dispatch updates to explore.
@@ -214,6 +215,15 @@ export const clearSelectedLeaderboardValuesAndUpdate = (
   metricsDefId: string
 ) => {
   dispatch(clearSelectedLeaderboardValues(metricsDefId));
+  updateExploreWrapper(dispatch, metricsDefId);
+};
+
+export const clearSelectedDimensionLeaderboardAndUpdate = (
+  dispatch,
+  metricsDefId: string,
+  dimensionId: string
+) => {
+  dispatch(clearSelectedDimensionLeaderboard(metricsDefId, dimensionId));
   updateExploreWrapper(dispatch, metricsDefId);
 };
 
