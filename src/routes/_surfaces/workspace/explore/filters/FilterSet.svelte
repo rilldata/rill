@@ -23,7 +23,7 @@
   $: if (!active) currentlyVisibleValuesInMenu = selectedValues;
 
   /** let's just take the first 3 values */
-  $: visibleValues = selectedValues.slice(0, 3);
+  $: visibleValues = selectedValues.slice(0, 1);
 </script>
 
 <WithTogglableFloatingElement
@@ -44,8 +44,10 @@
           toggleFloatingElement();
         }}
         class="
-      grid gap-x-3 items-center px-2 py-1 rounded cursor-pointer
-      {!active ? 'hover:bg-blue-50' : ''}
+      grid gap-x-3 items-center pl-2 pr-3 py-1 rounded cursor-pointer
+      text-blue-900
+      bg-blue-50
+      hover:bg-blue-100
       {active ? 'bg-blue-100' : ''}
     "
         style:grid-template-columns="max-content max-content max-content"
@@ -61,15 +63,21 @@
         </div>
         <div class="flex flex-wrap gap-x-3 gap-y-1">
           {#each visibleValues as value, i (i)}
-            <div
+            <!-- <div
               class="text-ellipsis overflow-hidden whitespace-nowrap"
-              style:max-width={selectedValues.length === 1 ? "240px" : "120px"}
+              style:max-width={selectedValues.length === 1 ? "320px" : "160px"}
             >
               {value}{#if i < visibleValues.length - 1}, {/if}
+            </div> -->
+            <div
+              class="text-ellipsis overflow-hidden whitespace-nowrap"
+              style:max-width="320px"
+            >
+              {value}
             </div>
           {/each}
-          {#if selectedValues.length > 3}
-            {@const whatsLeft = selectedValues.length - 3}
+          {#if selectedValues.length > 1}
+            {@const whatsLeft = selectedValues.length - 1}
             <div class="italic">
               + {whatsLeft} other{#if whatsLeft !== 1}s{/if}
             </div>
