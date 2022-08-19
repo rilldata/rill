@@ -3,7 +3,8 @@
   import Check from "$lib/components/icons/Check.svelte";
   import Close from "$lib/components/icons/Close.svelte";
   import Spacer from "$lib/components/icons/Spacer.svelte";
-  import { Menu } from "$lib/components/menu";
+  import { Divider, Menu } from "$lib/components/menu";
+  import MenuHeader from "$lib/components/menu/core/MenuHeader.svelte";
   import MenuItem from "$lib/components/menu/core/MenuItem.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -22,7 +23,11 @@
   $: if (!active) currentlyVisibleValuesInMenu = selectedValues;
 </script>
 
-<WithTogglableFloatingElement let:toggleFloatingElement bind:active>
+<WithTogglableFloatingElement
+  let:toggleFloatingElement
+  bind:active
+  distance={8}
+>
   <div>
     <Tooltip
       location="bottom"
@@ -38,7 +43,8 @@
         transition:slide={{ duration: 200 }}
         class="
       grid gap-x-3 items-center px-2 py-1 rounded cursor-pointer
-      hover:bg-gray-200 
+      {!active ? 'hover:bg-blue-50' : ''}
+      {active ? 'bg-blue-100' : ''}
     "
         style:grid-template-columns="max-content max-content max-content"
       >
@@ -82,8 +88,26 @@
       </div>
     </Tooltip>
   </div>
-  <Menu slot="floating-element" on:escape={toggleFloatingElement}
-    >Hey dude.
+  <Menu
+    maxWidth="480px"
+    slot="floating-element"
+    on:escape={toggleFloatingElement}
+    on:click-outside={toggleFloatingElement}
+  >
+    <MenuHeader>
+      <svelte:fragment slot="title">Filters</svelte:fragment>
+      <svelte:fragment slot="right">
+        <button
+          class="hover:bg-gray-100  grid place-items-center"
+          style:width="24px"
+          style:height="24px"
+          on:click={toggleFloatingElement}
+        >
+          <Close size="16px" /></button
+        >
+      </svelte:fragment>
+    </MenuHeader>
+    <Divider />
     {#each currentlyVisibleValuesInMenu as value}
       <MenuItem
         icon
@@ -99,7 +123,11 @@
             <Spacer />
           {/if}
         </svelte:fragment>
-        {value}
+        {#if value.length > 240}
+          {value.slice(0, 240)}...
+        {:else}
+          {value}
+        {/if}
       </MenuItem>
     {/each}
   </Menu>

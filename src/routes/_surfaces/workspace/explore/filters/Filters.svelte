@@ -2,29 +2,30 @@
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 
   import Filter from "$lib/components/icons/Filter.svelte";
-  import FilterRemove from "$lib/components/icons/FilterRemove.svelte";
+  import ShiftKey from "$lib/components/tooltip/ShiftKey.svelte";
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
+  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
     clearSelectedDimensionLeaderboardAndUpdate,
     clearSelectedLeaderboardValuesAndUpdate,
     toggleSelectedLeaderboardValueAndUpdate,
   } from "$lib/redux-store/explore/explore-apis";
-  import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
   import { store } from "$lib/redux-store/store-root";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
+  import { createShiftClickAction } from "$lib/util/shift-click-action";
   import type { Readable } from "svelte/store";
-  import { fly } from "svelte/transition";
   import FilterContainer from "./FilterContainer.svelte";
   import FilterSet from "./FilterSet.svelte";
   export let metricsDefId;
   export let values;
 
+  const { shiftClickAction } = createShiftClickAction();
+
   let dimensions: Readable<DimensionDefinitionEntity[]>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
-
-  function clearAllFilters() {
-    clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
-  }
 
   function clearFilterForDimension(dimension) {
     clearSelectedDimensionLeaderboardAndUpdate(
@@ -36,21 +37,23 @@
 
   $: hasFilters = isAnythingSelected(values);
 
+  function clearAllFilters() {
+    if (hasFilters)
+      clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
+  }
+
   function pruneValues(set) {
     if (!set) return;
     return Object.keys(set)
       .filter((key) => set[key].length)
       .map((key) => {
-        return [
-          key,
-          set[key].filter(([k, v]) => v === true).map(([k, v]) => k),
-        ];
+        return [key, set[key].filter(([_, v]) => v === true).map(([k]) => k)];
       });
   }
 
   $: prunedValues = pruneValues(values);
 
-  function onSelectItem(event, item: LeaderboardValues) {
+  function onSelectItem(event, item) {
     toggleSelectedLeaderboardValueAndUpdate(
       store.dispatch,
       metricsDefId,
@@ -61,49 +64,55 @@
   }
 </script>
 
-<div class="pt-3 pb-3" style:min-height="50px">
-  <FilterContainer>
-    <div
-      class="grid place-items-center"
+<section
+  class="pt-3 pb-3 grid gap-x-2"
+  style:grid-template-columns="max-content auto"
+  style:min-height="44px"
+>
+  <Tooltip
+    location="right"
+    alignment="middle"
+    distance={8}
+    suppress={!hasFilters}
+  >
+    <button
+      use:shiftClickAction
+      on:shift-click={clearAllFilters}
+      class:cursor-auto={!hasFilters}
+      class="ml-3 grid place-items-center {!hasFilters
+        ? ''
+        : 'hover:bg-gray-200'}"
       style:width="24px"
       style:height="24px"
       style:font-size="18px"
     >
       <Filter />
-    </div>
-
+    </button>
+    <TooltipContent slot="tooltip-content">
+      <TooltipShortcutContainer padTop>
+        <div>clear all filters</div>
+        <Shortcut><ShiftKey /> + Click</Shortcut>
+      </TooltipShortcutContainer>
+    </TooltipContent>
+  </Tooltip>
+  <FilterContainer>
     {#if prunedValues?.length && $dimensions?.length}
       {#each prunedValues as [dimensionId, selectedValues]}
         {@const name = $dimensions.find(
           (dim) => dim.id === dimensionId
         ).dimensionColumn}
         <FilterSet
-          on:remove-filters={() => clearFilterForDimension(id)}
+          on:remove-filters={() => clearFilterForDimension(dimensionId)}
           on:select={(event) => onSelectItem(event, { dimensionId })}
           {name}
           id={dimensionId}
           {selectedValues}
         />
       {/each}
-    {/if}
-
-    {#if hasFilters}
-      <button
-        transition:fly|local={{ duration: 200, y: 5 }}
-        on:click={clearAllFilters}
-        class="
-            grid gap-x-2 items-center font-bold
-            bg-red-50
-            text-red-500
-            p-1
-            pl-2 pr-2
-            rounded
-        "
-        style:grid-template-columns="max-content max-content"
-      >
-        <FilterRemove size="18px" />
-        clear all filters
-      </button>
+    {:else if prunedValues?.length === 0}
+      <div class="italic text-gray-400 ml-3">no filters selected</div>
+    {:else}
+      &nbsp;
     {/if}
   </FilterContainer>
-</div>
+</section>

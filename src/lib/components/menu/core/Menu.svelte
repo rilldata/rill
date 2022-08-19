@@ -16,7 +16,8 @@
   import { clickOutside } from "../../actions/click-outside";
 
   export let dark: boolean = undefined;
-
+  export let maxWidth: string = undefined;
+  export let minHeight: string = undefined;
   export let role = "menu";
   /** used for selector-style menus */
   export let multiselectable = false;
@@ -116,6 +117,8 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div
+  style:max-width={maxWidth}
+  style:min-height={minHeight}
   transition:fade|local={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
