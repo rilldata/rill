@@ -60,11 +60,10 @@
     getMetricViewTimeSeries(metricsDefId, {
       measures: $metricsExplorer.measureIds,
       time: {
-        start: $metricsExplorer.selectedTimeRange.start, // TODO: make selectedTimeRange a required field (use "default" functions in time-range-utils.ts)
-        end: $metricsExplorer.selectedTimeRange.end,
-        granularity: $metricsExplorer.selectedTimeRange.interval,
+        start: $metricsExplorer?.selectedTimeRange?.start,
+        end: $metricsExplorer?.selectedTimeRange?.end,
+        granularity: $metricsExplorer?.selectedTimeRange?.interval,
       },
-      filter: { include: [], exclude: [] }, // TODO: remove the filter, once we've designated it as optional in the API
     });
   const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(
     timeSeriesQueryKey,
