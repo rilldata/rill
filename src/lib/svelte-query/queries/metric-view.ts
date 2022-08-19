@@ -3,7 +3,11 @@
  * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
  */
 
-import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+import type {
+  MetricViewMetaResponse,
+  MetricViewTimeSeriesRequest,
+  MetricViewTimeSeriesResponse,
+} from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 
 // GET /api/v1/metric-views/{view-name}/meta
@@ -32,7 +36,29 @@ export const getMetricViewMetaQueryKey = (metricViewId: string) => {
 
 // POST /api/v1/metric-views/{view-name}/timeseries
 
-// TODO...
+export const getMetricViewTimeSeries = async (
+  metricViewId: string,
+  request: MetricViewTimeSeriesRequest
+): Promise<MetricViewTimeSeriesResponse> => {
+  const resp = await fetch(
+    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/timeseries`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }
+  );
+  const json = await resp.json();
+  if (!resp.ok) {
+    const err = new Error(json);
+    return Promise.reject(err);
+  }
+  return json;
+};
+
+export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
+  return [`v1/metric-view/timeseries`, metricViewId];
+};
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
 
