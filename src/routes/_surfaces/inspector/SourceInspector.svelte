@@ -144,7 +144,7 @@
     <!-- CTAs -->
     <div
       style:height="var(--header-height)"
-      class="px-4 flex flex-row items-center gap-x-2 justify-end"
+      class="px-4 flex flex-row items-center gap-x-2 justify-end sticky top-0 bg-white z-10"
     >
       <Button type="secondary" on:click={handleCreateModelFromSource}
         >Create Model <Model size="16px" /></Button
@@ -191,7 +191,7 @@
       </LeftRightGrid>
     </div>
 
-    <hr />
+    <hr class="sticky bg-white z-10" style:top="var(--header-height)" />
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
