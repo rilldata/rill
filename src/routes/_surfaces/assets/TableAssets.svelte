@@ -1,27 +1,26 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { flip } from "svelte/animate";
-  import { slide } from "svelte/transition";
-
-  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
-  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import AddIcon from "$lib/components/icons/Add.svelte";
-  import Source from "$lib/components/icons/Source.svelte";
-
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
   import Model from "$lib/components/icons/Model.svelte";
+  import Source from "$lib/components/icons/Source.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
-  import RenameTableModal from "$lib/components/table/RenameTableModal.svelte";
+  import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
@@ -29,6 +28,11 @@
   } from "$lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "$lib/redux-store/source/source-selectors";
   import { uploadFilesWithDialog } from "$lib/util/file-upload";
+  import { getContext } from "svelte";
+  import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
+
+  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -66,6 +70,8 @@
       tableName
     );
   };
+
+  $: activeEntityID = $rillAppStore?.activeEntity?.id;
 </script>
 
 <div
@@ -94,13 +100,21 @@
         {@const derivedTable = $derivedTableStore.entities.find(
           (t) => t["id"] === id
         )}
+        {@const entityIsActive = id === activeEntityID}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             on:query={() => queryHandler(tableName)}
+            on:select={() => {
+              dataModelerService.dispatch("setActiveAsset", [
+                EntityType.Table,
+                id,
+              ]);
+            }}
             entityType={EntityType.Table}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
+            active={entityIsActive}
             on:delete={() => deleteSourceApi(tableName)}
           >
             <svelte:fragment slot="summary" let:containerWidth>
@@ -110,6 +124,7 @@
                 cardinality={derivedTable?.cardinality ?? 0}
                 profile={derivedTable?.profile ?? []}
                 head={derivedTable?.preview ?? []}
+                entityId={id}
               />
             </svelte:fragment>
             <svelte:fragment slot="menu-items" let:toggleMenu>
@@ -159,10 +174,11 @@
       {/each}
     {/if}
   </div>
-  <RenameTableModal
+  <RenameEntityModal
+    entityType={EntityType.Table}
     openModal={showRenameTableModal}
     closeModal={() => (showRenameTableModal = false)}
-    tableID={renameTableID}
-    currentTableName={renameTableName}
+    entityId={renameTableID}
+    currentEntityName={renameTableName}
   />
 {/if}

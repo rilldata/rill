@@ -1,6 +1,7 @@
-import { DatabaseActions } from "./DatabaseActions";
-import { guidGenerator } from "$lib/util/guid";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import type { ProfileColumn } from "$lib/types";
+import { guidGenerator } from "$lib/util/guid";
+import { DatabaseActions } from "./DatabaseActions";
 
 export class DatabaseTableActions extends DatabaseActions {
   public async createViewOfQuery(
@@ -37,6 +38,34 @@ export class DatabaseTableActions extends DatabaseActions {
     return cardinality.count;
   }
 
+  private async getMinAndMaxStringLengthsOfAllColumns(
+    table: string,
+    columns: ProfileColumn[]
+  ) {
+    /** get columns */
+    // template in the column mins and maxes.
+    // treat categoricals a little differently; all they have is length.
+    const minAndMax = columns
+      .map(
+        (column) => `min(length("${column.name}")) as "min_${column.name}", 
+        max(length("${column.name}")) as "max_${column.name}"`
+      )
+      .join(", ");
+    const largestStrings = columns
+      .map(
+        (column) => `
+      CASE WHEN "min_${column.name}" > "max_${column.name}" THEN "min_${column.name}" ELSE "max_${column.name}" END AS "${column.name}"
+    `
+      )
+      .join(",");
+    return (
+      await this.databaseClient.execute(`
+      WITH strings AS (SELECT ${minAndMax} from "${table}")
+      SELECT ${largestStrings} from strings;
+    `)
+    )[0];
+  }
+
   public async getProfileColumns(
     metadata: DatabaseMetadata,
     tableName: string
@@ -47,8 +76,17 @@ export class DatabaseTableActions extends DatabaseActions {
                 SELECT * from '${tableName}' LIMIT 1
             );
 	    `);
-    const tableDef = await this.databaseClient.execute(`-- parquetToDBTypes
-            PRAGMA table_info(tbl_${guid});`);
+    let tableDef = (await this.databaseClient.execute(`-- parquetToDBTypes
+            PRAGMA table_info(tbl_${guid});`)) as ProfileColumn[];
+    const characterLengths = (await this.getMinAndMaxStringLengthsOfAllColumns(
+      tableName,
+      tableDef
+    )) as { [key: string]: number };
+    tableDef = tableDef.map((column: ProfileColumn) => {
+      // get string rep length value to estimate preview table column sizes
+      column.largestStringLength = characterLengths[column.name];
+      return column;
+    });
     await this.databaseClient.execute(`DROP TABLE tbl_${guid};`);
     return tableDef;
   }
