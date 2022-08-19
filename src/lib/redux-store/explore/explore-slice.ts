@@ -6,14 +6,15 @@ import {
   createEntityAdapter,
   createSlice,
 } from "$lib/redux-store/redux-toolkit-wrapper";
-import { setStatusPrepare } from "$lib/redux-store/utils/loading-utils";
 import {
   setFieldPrepare,
   setFieldReducer,
 } from "$lib/redux-store/utils/slice-utils";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { TimeGrainOption } from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import { removeIfExists } from "$common/utils/arrayUtils";
 import type { TimeGrain } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { TimeGrainOption } from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
 
 export interface LeaderboardValue {
   value: number;
@@ -37,7 +38,7 @@ export interface MetricsExplorerEntity {
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
   leaderboards: Array<LeaderboardValues>;
-  activeValues: ActiveValues;
+  filters: MetricViewRequestFilter;
   selectedCount: number;
   // time range of the selected timestamp column
   allTimeRange?: TimeSeriesTimeRange;
@@ -83,13 +84,13 @@ export const exploreSlice = createSlice({
             dimensionId: column.id,
             status: EntityStatus.Idle,
           })),
-          activeValues: {},
+          filters: {
+            include: [],
+            exclude: [],
+          },
           selectedCount: 0,
           isStale: false,
         };
-        dimensions.forEach((column) => {
-          metricsExplorer.activeValues[column.dimensionColumn] = [];
-        });
         metricsExplorerAdapter.addOne(state, metricsExplorer);
       },
       prepare: (
@@ -211,7 +212,6 @@ export const exploreSlice = createSlice({
           ...metricsExplorer.leaderboards,
           { dimensionId, values: [], status: EntityStatus.Idle },
         ];
-        metricsExplorer.activeValues[dimensionId] = [];
       },
       prepare: (id: string, dimensionId: string) => ({
         payload: { id, dimensionId },
@@ -239,146 +239,84 @@ export const exploreSlice = createSlice({
         metricsExplorer.leaderboards = metricsExplorer.leaderboards.filter(
           (leaderboard) => leaderboard.dimensionId !== dimensionId
         );
-        delete metricsExplorer.activeValues[dimensionId];
+        removeIfExists(
+          metricsExplorer.filters.include,
+          (d) => d.name === dimensionId
+        );
+        removeIfExists(
+          metricsExplorer.filters.include,
+          (d) => d.name === dimensionId
+        );
       },
       prepare: (id: string, dimensionId: string) => ({
         payload: { id, dimensionId },
       }),
     },
 
+    // TODO: create a separate reducer for exclude value
     toggleLeaderboardActiveValue: {
       reducer: (
         state,
         {
-          payload: { id, dimensionId, dimensionValue, include },
+          payload: { id, dimensionId, dimensionValue },
         }: PayloadAction<{
           id: string;
           dimensionId: string;
           dimensionValue: unknown;
-          include: boolean;
         }>
       ) => {
         if (!state.entities[id]) return;
         const metricsExplorer = state.entities[id];
-        const existingIndex = metricsExplorer.activeValues[
-          dimensionId
-        ]?.findIndex(([value]) => value === dimensionValue);
-        const existing =
-          metricsExplorer.activeValues[dimensionId]?.[existingIndex];
+        const existingDimensionIndex =
+          metricsExplorer.filters.include.findIndex(
+            (dimensionValues) => dimensionValues.name === dimensionId
+          );
 
-        if (existing) {
-          if (existing[1] === include) {
-            // if existing value is an 'include' then remove the value
-            metricsExplorer.activeValues[dimensionId] =
-              metricsExplorer.activeValues[dimensionId].filter(
-                (activeValue) => activeValue[0] !== dimensionValue
-              );
-            metricsExplorer.selectedCount--;
-          } else {
-            // else toggle the 'include' of the value
-            metricsExplorer.activeValues[dimensionId][existingIndex] = [
-              existing[0],
-              include,
-            ];
-          }
+        // if entry for dimension doesnt exist, add it
+        if (existingDimensionIndex === -1) {
+          metricsExplorer.filters.include.push({
+            name: dimensionId,
+            values: [dimensionValue],
+          });
+          return;
+        }
+
+        const existingIncludeIndex =
+          metricsExplorer.filters.include[
+            existingDimensionIndex
+          ].values.indexOf(dimensionValue) ?? -1;
+
+        // add the value if it doesn't exist, remove the value if it does exist
+        if (existingIncludeIndex === -1) {
+          metricsExplorer.filters.include[existingDimensionIndex].values.push(
+            dimensionValue
+          );
         } else {
-          // add the value if not present
-          metricsExplorer.activeValues[dimensionId] = [
-            ...(metricsExplorer.activeValues[dimensionId] ?? []),
-            [dimensionValue, include],
-          ];
-          metricsExplorer.selectedCount++;
+          metricsExplorer.filters.include[existingDimensionIndex].values.splice(
+            existingIncludeIndex,
+            1
+          );
+          // remove the entry for dimension if no values are selected.
+          if (
+            metricsExplorer.filters.include[existingDimensionIndex].values
+              .length === 0
+          ) {
+            metricsExplorer.filters.include.splice(existingDimensionIndex, 1);
+          }
         }
       },
-      prepare: (
-        id: string,
-        dimensionId: string,
-        dimensionValue: unknown,
-        include = true
-      ) => ({
-        payload: { id, dimensionId, dimensionValue, include },
+      prepare: (id: string, dimensionId: string, dimensionValue: unknown) => ({
+        payload: { id, dimensionId, dimensionValue },
       }),
-    },
-
-    setLeaderboardDimensionValues: {
-      reducer: (
-        state,
-        {
-          payload: { id, dimensionId, values },
-        }: PayloadAction<{
-          id: string;
-          values: Array<LeaderboardValue>;
-          dimensionId: string;
-        }>
-      ) => {
-        if (!state.entities[id]) return;
-        const existing = state.entities[id].leaderboards.find(
-          (leaderboard) => leaderboard.dimensionId === dimensionId
-        );
-        if (existing) {
-          existing.dimensionId = dimensionId;
-          existing.values = values;
-          existing.status = EntityStatus.Idle;
-        } else {
-          state.entities[id].leaderboards = [
-            ...state.entities[id].leaderboards,
-            {
-              dimensionId,
-              values,
-              status: EntityStatus.Idle,
-            },
-          ];
-        }
-      },
-      prepare: (
-        id: string,
-        dimensionId: string,
-        values: Array<LeaderboardValue>
-      ) => ({
-        payload: { id, dimensionId, values },
-      }),
-    },
-
-    setLeaderboardValuesStatus: {
-      reducer: (
-        state,
-        {
-          payload: { id, status },
-        }: PayloadAction<{ id: string; status: EntityStatus }>
-      ) => {
-        if (!state.entities[id]) return;
-        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
-          (leaderboard) => ({
-            dimensionId: leaderboard.dimensionId,
-            values: leaderboard.values,
-            status,
-          })
-        );
-      },
-      prepare: setStatusPrepare,
-    },
-
-    setLeaderboardValuesErrorStatus: {
-      reducer: (state, { payload: id }: PayloadAction<string>) => {
-        if (!state.entities[id]) return;
-        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
-          (leaderboard) => {
-            if (leaderboard.status === EntityStatus.Idle) return leaderboard;
-            return {
-              dimensionId: leaderboard.dimensionId,
-              values: [],
-              status: EntityStatus.Error,
-            };
-          }
-        );
-      },
-      prepare: (id: string) => ({ payload: id }),
     },
 
     clearSelectedLeaderboardValues: {
       reducer: (state, { payload: id }: PayloadAction<string>) => {
         if (!state.entities[id]) return;
-        state.entities[id].activeValues = {};
+        state.entities[id].filters = {
+          include: [],
+          exclude: [],
+        };
         state.entities[id].leaderboards = state.entities[id].leaderboards.map(
           (leaderboard) => ({
             dimensionId: leaderboard.dimensionId,
@@ -467,9 +405,6 @@ export const {
   addDimensionToExplore,
   removeDimensionFromExplore,
   toggleLeaderboardActiveValue,
-  setLeaderboardDimensionValues,
-  setLeaderboardValuesStatus,
-  setLeaderboardValuesErrorStatus,
   clearSelectedLeaderboardValues,
   setExploreAllTimeRange,
   setExploreSelectedTimeRange,

@@ -6,12 +6,8 @@
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
-  import { toggleSelectedLeaderboardValueAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
-  import type {
-    LeaderboardValues,
-    MetricsExplorerEntity,
-  } from "$lib/redux-store/explore/explore-slice";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
@@ -26,9 +22,14 @@
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import Leaderboard from "./Leaderboard.svelte";
+  import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { invalidateMetricViewTopList } from "$lib/svelte-query/queries/metric-view";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
+
+  const queryClient = useQueryClient();
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
@@ -93,14 +94,11 @@
 
   let leaderboardExpanded;
 
-  function onSelectItem(event, item: LeaderboardValues) {
-    toggleSelectedLeaderboardValueAndUpdate(
-      store.dispatch,
-      metricsDefId,
-      item.dimensionId,
-      event.detail.label,
-      true
+  function onSelectItem(event, item: DimensionDefinitionEntity) {
+    store.dispatch(
+      toggleLeaderboardActiveValue(metricsDefId, item.id, event.detail.label)
     );
+    invalidateMetricViewTopList(queryClient, metricsDefId);
   }
 
   /** Functionality for resizing the virtual leaderboard */
@@ -141,12 +139,7 @@
     <LeaderboardMeasureSelector {metricsDefId} />
   </div>
   {#if $metricsExplorer}
-    <VirtualizedGrid
-      {columns}
-      height="100%"
-      items={validLeaderboards ?? []}
-      let:item
-    >
+    <VirtualizedGrid {columns} height="100%" items={dimensions ?? []} let:item>
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}
@@ -155,18 +148,17 @@
           .toLowerCase()
           ?.includes("count(") ||
           activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
-        dimensionId={item.dimensionId}
-        seeMore={leaderboardExpanded === item.dimensionId}
+        {metricsDefId}
+        dimensionId={item.id}
+        seeMore={leaderboardExpanded === item.id}
         on:expand={() => {
-          if (leaderboardExpanded === item.dimensionId) {
+          if (leaderboardExpanded === item.id) {
             leaderboardExpanded = undefined;
           } else {
-            leaderboardExpanded = item.dimensionId;
+            leaderboardExpanded = item.id;
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        activeValues={$metricsExplorer.activeValues[item.dimensionId] ?? []}
-        values={item.values}
         referenceValue={referenceValue || 0}
       />
     </VirtualizedGrid>

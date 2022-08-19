@@ -4,6 +4,7 @@ import {
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 
 export function getFilterFromFilters(filters: ActiveValues): string {
   return Object.keys(filters)
@@ -26,6 +27,23 @@ export function getFilterFromFilters(filters: ActiveValues): string {
         ")"
       );
     })
+    .join(" AND ");
+}
+
+export function getFilterFromMetricViewFilters(
+  filters: MetricViewRequestFilter
+): string {
+  // TODO: exclude filters
+  return filters.include
+    .map((dimensionValues) =>
+      dimensionValues.values
+        .map((value) =>
+          value === null
+            ? `"${dimensionValues.name}" IS NULL`
+            : `"${dimensionValues.name}" = '${value}'`
+        )
+        .join(" OR ")
+    )
     .join(" AND ");
 }
 
@@ -59,8 +77,10 @@ export function getCoalesceStatementsMeasures(
     .join(", ");
 }
 
+// TODO: remove ActiveValues once all uses have been moved
 export function getWhereClauseFromFilters(
   filters: ActiveValues,
+  metricViewFilters: MetricViewRequestFilter,
   timestampColumn: string,
   timeRange: TimeSeriesTimeRange,
   prefix: string
@@ -69,6 +89,13 @@ export function getWhereClauseFromFilters(
   if (filters && Object.keys(filters).length) {
     whereClauses.push(getFilterFromFilters(filters));
   }
+  if (
+    metricViewFilters?.include?.length ||
+    metricViewFilters?.exclude?.length
+  ) {
+    whereClauses.push(getFilterFromMetricViewFilters(metricViewFilters));
+  }
+  console.log(timeRange);
   if (timeRange?.start || timeRange?.end) {
     whereClauses.push(getFilterFromTimeRange(timestampColumn, timeRange));
   }

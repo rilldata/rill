@@ -1,6 +1,6 @@
-export function isAnythingSelected(filters): boolean {
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+
+export function isAnythingSelected(filters: MetricViewRequestFilter): boolean {
   if (!filters) return false;
-  return Object.keys(filters).some((key) => {
-    return filters[key]?.length;
-  });
+  return filters.include.length > 0 || filters.exclude.length > 0;
 }

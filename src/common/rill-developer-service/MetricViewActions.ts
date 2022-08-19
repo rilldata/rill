@@ -94,6 +94,20 @@ function convertToActiveValues(filters: MetricViewRequestFilter): ActiveValues {
   return activeValues;
 }
 
+function mapDimensionIdToName(
+  filters: MetricViewRequestFilter,
+  dimensions: Array<DimensionDefinitionEntity>
+): MetricViewRequestFilter {
+  const dimensionsIdMap = getMapFromArray(dimensions, (d) => d.id);
+  filters.include.forEach((value) => {
+    value.name = dimensionsIdMap.get(value.name).dimensionColumn;
+  });
+  filters.exclude.forEach((value) => {
+    value.name = dimensionsIdMap.get(value.name).dimensionColumn;
+  });
+  return filters;
+}
+
 /**
  * Actions that get info for metrics explore.
  * Based on rill runtime specs.
@@ -190,7 +204,12 @@ export class MetricViewActions extends RillDeveloperActions {
         model.tableName,
         dimension.dimensionColumn,
         measure.expression,
-        convertToActiveValues(request.filter),
+        mapDimensionIdToName(
+          request.filter,
+          this.dataModelerStateService
+            .getDimensionDefinitionService()
+            .getManyByField("metricsDefId", metricsDefId)
+        ),
         rillRequestContext.record.timeDimension,
         request.time,
       ]

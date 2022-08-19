@@ -20,7 +20,6 @@ import type {
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
-import { isAnythingSelected } from "$lib/util/isAnythingSelected";
 import { selectBigNumberById } from "$lib/redux-store/big-number/big-number-selectors";
 
 /**
@@ -33,11 +32,9 @@ export const generateBigNumbersApi = createAsyncThunk(
     {
       id,
       measures,
-      filters,
     }: {
       id: string;
       measures?: Array<MeasureDefinitionEntity>;
-      filters?: ActiveValues;
     },
     thunkAPI
   ) => {
@@ -45,10 +42,9 @@ export const generateBigNumbersApi = createAsyncThunk(
     const { metricsExplorer, prunedFilters, normalisedMeasures } =
       selectMetricsExplorerParams(state, id, {
         measures,
-        filters,
         dimensions: state.dimensionDefinition.entities,
       });
-    const anythingSelected = isAnythingSelected(prunedFilters);
+    const anythingSelected = false;
 
     thunkAPI.dispatch(setBigNumberStatus(id, EntityStatus.Running));
 

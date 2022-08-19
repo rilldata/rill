@@ -7,8 +7,11 @@ import type {
   MetricViewMetaResponse,
   MetricViewTimeSeriesRequest,
   MetricViewTimeSeriesResponse,
+  MetricViewTopListRequest,
+  MetricViewTopListResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
+import type { QueryClient } from "@sveltestack/svelte-query";
 
 // GET /api/v1/metric-views/{view-name}/meta
 
@@ -62,7 +65,47 @@ export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
 
-// TODO...
+export const getMetricViewTopList = async (
+  metricViewId: string,
+  dimensionId: string,
+  request: MetricViewTopListRequest
+): Promise<MetricViewTopListResponse> => {
+  if (!metricViewId || !dimensionId)
+    return {
+      meta: [],
+      data: [],
+    };
+
+  const resp = await fetch(
+    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/toplist/${dimensionId}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }
+  );
+  const json = await resp.json();
+  if (!resp.ok) {
+    const err = new Error(json);
+    return Promise.reject(err);
+  }
+  return json;
+};
+
+const TopListId = `v1/metric-view/toplist`;
+export const getMetricViewTopListQueryKey = (
+  metricsDefId: string,
+  dimensionId: string
+) => {
+  return [TopListId, metricsDefId, dimensionId];
+};
+
+export const invalidateMetricViewTopList = (
+  queryClient: QueryClient,
+  metricsDefId: string
+) => {
+  return queryClient.invalidateQueries([TopListId, metricsDefId]);
+};
 
 // POST /api/v1/metric-views/{view-name}/totals
 

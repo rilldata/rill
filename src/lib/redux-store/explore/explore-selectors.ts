@@ -3,17 +3,14 @@ import type {
   BasicMeasureDefinition,
   MeasureDefinitionEntity,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type {
-  ActiveValues,
-  MetricsExplorerEntity,
-} from "$lib/redux-store/explore/explore-slice";
+import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
 import {
   selectMeasureById,
   selectValidMeasures,
 } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { generateEntitySelectors } from "$lib/redux-store/utils/selector-utils";
-import { prune } from "../../../routes/_surfaces/workspace/explore/utils";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 import {
   getDefaultTimeGrain,
   getDefaultTimeRangeName,
@@ -37,20 +34,13 @@ export const selectMetricsExplorerParams = (
   id: string,
   {
     measures,
-    filters,
-    dimensions,
   }: {
     measures?: Array<MeasureDefinitionEntity>;
-    filters?: ActiveValues;
+    filters?: MetricViewRequestFilter;
     dimensions: Record<string, DimensionDefinitionEntity>;
   }
 ) => {
   const metricsExplorer = selectMetricsExplorerById(state, id);
-
-  if (!filters) {
-    filters = metricsExplorer.activeValues;
-  }
-  filters = prune(filters, dimensions);
 
   if (!measures) {
     measures = metricsExplorer.selectedMeasureIds.map((measureId) =>
@@ -61,7 +51,7 @@ export const selectMetricsExplorerParams = (
 
   return {
     metricsExplorer,
-    prunedFilters: filters,
+    prunedFilters: {},
     normalisedMeasures: measures.map(
       (measure) =>
         ({
