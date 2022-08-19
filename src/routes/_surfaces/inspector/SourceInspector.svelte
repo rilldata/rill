@@ -8,7 +8,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";

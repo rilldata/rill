@@ -4,7 +4,7 @@
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";

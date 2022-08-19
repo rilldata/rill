@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";

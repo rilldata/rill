@@ -18,7 +18,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import WithTogglableFloatingElement from "$lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "$lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";

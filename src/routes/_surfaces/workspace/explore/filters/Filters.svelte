@@ -2,6 +2,7 @@
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
 
+  import { IconButton } from "$lib/components/button";
   import Filter from "$lib/components/icons/Filter.svelte";
   import ShiftKey from "$lib/components/tooltip/ShiftKey.svelte";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
@@ -77,20 +78,10 @@
     distance={8}
     suppress={!hasFilters}
   >
-    <button
-      use:shiftClickAction
-      on:shift-click={clearAllFilters}
-      class:cursor-auto={!hasFilters}
-      class="ml-3 grid place-items-center 
-      {!hasFilters ? 'text-gray-400' : 'text-gray-800'}
-
-      {!hasFilters ? '' : 'hover:bg-gray-200'}"
-      style:width="24px"
-      style:height="24px"
-      style:font-size="18px"
-    >
+    <IconButton on:click={clearAllFilters}>
       <Filter />
-    </button>
+    </IconButton>
+
     <TooltipContent slot="tooltip-content">
       <TooltipShortcutContainer padTop>
         <div>clear all filters</div>
