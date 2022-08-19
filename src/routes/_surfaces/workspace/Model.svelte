@@ -127,7 +127,7 @@
             transition:slide={{ duration: 200, easing }}
             class="error font-bold rounded-lg p-5 text-gray-700"
           >
-            {currentDerivedModel.error}
+            {@html currentDerivedModel.error }
           </div>
         {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
           <PreviewTable
