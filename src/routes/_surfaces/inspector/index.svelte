@@ -9,7 +9,8 @@
   import Portal from "$lib/components/Portal.svelte";
   import { drag } from "$lib/drag";
   import { getContext } from "svelte";
-  import ModelInspector from "./ModelInspector.svelte";
+  import ModelInspector from "./model/ModelInspector.svelte";
+  import SourceInspector from "./SourceInspector.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
 </script>
@@ -47,6 +48,10 @@
       <!-- re-render if the id changes. -->
       {#key $store?.activeEntity?.id}
         <ModelInspector />
+      {/key}
+    {:else if $store?.activeEntity?.type === EntityType.Table}
+      {#key $store?.activeEntity?.id}
+        <SourceInspector />
       {/key}
     {/if}
   </div>

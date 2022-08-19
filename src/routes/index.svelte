@@ -77,7 +77,7 @@
    */
 
   const views = {
-    Source: {
+    Table: {
       hasInspector: true,
     },
     Model: {
@@ -94,7 +94,7 @@
   $: activeEntityType = $app?.activeEntity?.type;
   $: console.log(activeEntityType);
   $: hasInspector = activeEntityType
-    ? views[activeEntityType].hasInspector
+    ? views[activeEntityType]?.hasInspector
     : false;
   function isEventWithFiles(event: DragEvent) {
     let types = event.dataTransfer.types;
