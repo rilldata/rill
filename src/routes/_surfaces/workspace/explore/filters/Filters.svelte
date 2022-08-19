@@ -78,7 +78,7 @@
     distance={8}
     suppress={!hasFilters}
   >
-    <IconButton on:click={clearAllFilters}>
+    <IconButton active={hasFilters} on:click={clearAllFilters}>
       <Filter />
     </IconButton>
 
