@@ -8,6 +8,7 @@ import {
   getWhereClauseFromFilters,
   normaliseMeasures,
 } from "./utils";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 
 export interface BigNumberResponse {
   id?: string;
@@ -21,7 +22,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     table: string,
     column: string,
     expression: string,
-    filters: ActiveValues,
+    filters: MetricViewRequestFilter,
     timestampColumn: string,
     timeRange?: TimeSeriesTimeRange
   ) {
@@ -30,7 +31,8 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     delete isolatedFilters[column];
 
     const whereClause = getWhereClauseFromFilters(
-      isolatedFilters,
+      undefined,
+      filters,
       timestampColumn,
       timeRange,
       "WHERE"
@@ -59,6 +61,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
 
     const whereClause = getWhereClauseFromFilters(
       filters,
+      undefined,
       timestampColumn,
       timeRange,
       "WHERE"

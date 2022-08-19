@@ -27,13 +27,11 @@ export const generateTimeSeriesApi = createAsyncThunk(
     {
       id,
       measures,
-      filters,
       pixels,
       timeRange,
     }: {
       id: string;
       measures?: Array<MeasureDefinitionEntity>;
-      filters?: ActiveValues;
       pixels?: number;
       timeRange?: TimeSeriesTimeRange;
     },
@@ -43,7 +41,6 @@ export const generateTimeSeriesApi = createAsyncThunk(
     const { metricsExplorer, prunedFilters, normalisedMeasures } =
       selectMetricsExplorerParams(state, id, {
         measures,
-        filters,
         dimensions: state.dimensionDefinition.entities,
       });
 

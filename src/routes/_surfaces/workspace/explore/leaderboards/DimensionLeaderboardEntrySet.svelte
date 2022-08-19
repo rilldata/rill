@@ -12,7 +12,7 @@ see more button
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
   export let values;
-  export let activeValues;
+  export let activeValues: Array<unknown>;
   export let isSummableMeasure: boolean;
   export let referenceValue;
   export let atLeastOneActive;
@@ -21,9 +21,7 @@ see more button
 </script>
 
 {#each values as { label, value, formattedValue } (label)}
-  {@const active = activeValues
-    .filter((value) => value[1] === true)
-    .find((value) => value[0] === label)}
+  {@const active = activeValues.find((value) => value === label)}
   <div>
     <DimensionLeaderboardEntry
       measureValue={value}

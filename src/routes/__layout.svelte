@@ -18,6 +18,7 @@
   import { onMount, setContext } from "svelte";
   import "../app.css";
   import "../fonts.css";
+  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
 
   let store;
   let queryHighlight = createQueryHighlightStore();
@@ -56,10 +57,21 @@
   }
 
   $: debounceRunstate($store?.status || "disconnected");
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        placeholderData: [],
+      },
+    },
+  });
 </script>
 
-<div class="body">
-  <slot />
-</div>
+<QueryClientProvider client={queryClient}>
+  <div class="body">
+    <slot />
+  </div>
+</QueryClientProvider>
 
 <NotificationCenter />

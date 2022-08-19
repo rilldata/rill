@@ -255,7 +255,7 @@ export class MetricsExplorerActions extends RillDeveloperActions {
           model.tableName,
           dimension.dimensionColumn,
           measure.expression,
-          filters,
+          { include: [], exclude: [] },
           rillRequestContext.record.timeDimension,
           timeRange,
         ]

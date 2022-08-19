@@ -13,15 +13,20 @@
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import TimeControls from "./time-controls/TimeControls.svelte";
+  import { invalidateMetricViewTopList } from "$lib/svelte-query/queries/metric-view";
+  import { useQueryClient } from "@sveltestack/svelte-query";
 
   export let metricsDefId: string;
+
+  const queryClient = useQueryClient();
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  $: anythingSelected = isAnythingSelected($metricsExplorer?.activeValues);
+  $: anythingSelected = isAnythingSelected($metricsExplorer?.filters);
   function clearAllFilters() {
     clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
+    invalidateMetricViewTopList(queryClient, metricsDefId);
   }
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>
