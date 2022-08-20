@@ -6,7 +6,7 @@ Our binary is the fastest path to installing Rill Developer. Download the latest
 - [linux-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.8/linux-x64/rill)
 <!-- - [win-x64](https://storage.googleapis.com/pkg.rilldata.com/rill-developer-example/binaries/0.8/win-x64/rill.exe) -->
 
-_Note: Rill is temporarily unavailable on Windows. We're working on bring Rill back to Windows soon._
+_Note: Rill is temporarily unavailable on Windows. We're working on bringing Rill back to Windows soon._
 
 ## CLI commands
 To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands.
