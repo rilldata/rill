@@ -9,7 +9,6 @@
 
   export let removable = false;
   export let active = false;
-  export let disabled = false;
 
   /** color elements elements */
   export let bgBaseColor = "bg-blue-50";
