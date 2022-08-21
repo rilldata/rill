@@ -1,37 +1,20 @@
 <script>
+  import { Chip } from "$lib/components/chip";
   import WithTogglableFloatingElement from "$lib/components/floating-element/WithTogglableFloatingElement.svelte";
-  import Check from "$lib/components/icons/Check.svelte";
-  import Close from "$lib/components/icons/Close.svelte";
-  import Spacer from "$lib/components/icons/Spacer.svelte";
-  import { Divider, Menu } from "$lib/components/menu";
-  import MenuHeader from "$lib/components/menu/core/MenuHeader.svelte";
-  import MenuItem from "$lib/components/menu/core/MenuItem.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
+  import FilterMenu from "./FilterMenu.svelte";
+  import FilterSetBody from "./FilterSetBody.svelte";
 
   export let name;
   export let selectedValues;
 
   const dispatch = createEventDispatcher();
 
-  let currentlyVisibleValuesInMenu = selectedValues;
   let active = false;
-  /** only update the floating menu items if the menu is not open */
-  $: if (!active) currentlyVisibleValuesInMenu = selectedValues;
-
-  /** let's just take the first 3 values */
-  $: visibleValues = selectedValues.slice(0, 1);
-
-  let hoverOverRemoveFilter = false;
-  function focusOnRemove() {
-    hoverOverRemoveFilter = true;
-  }
-  function blurOnRemove() {
-    hoverOverRemoveFilter = false;
-  }
 </script>
 
 <WithTogglableFloatingElement
@@ -40,129 +23,49 @@
   distance={8}
   alignment="start"
 >
-  <div>
-    <Tooltip
-      location="bottom"
-      alignment="start"
-      distance={8}
-      activeDelay={60}
-      suppress={active || hoverOverRemoveFilter}
+  <Tooltip
+    location="bottom"
+    alignment="start"
+    distance={8}
+    activeDelay={60}
+    suppress={active}
+  >
+    <Chip
+      removable
+      on:click={toggleFloatingElement}
+      on:remove={() => dispatch("remove-filters")}
+      {active}
     >
-      <button
-        on:click={() => {
-          toggleFloatingElement();
-        }}
-        class="
-      grid gap-x-3 items-center pl-2 pr-3 py-1 rounded cursor-pointer
-      text-blue-900
-      bg-blue-50
-      hover:bg-blue-100
-      {active ? 'bg-blue-100' : ''}
-    "
-        style:grid-template-columns="max-content max-content max-content"
+      <!-- remove button tooltip -->
+      <svelte:fragment slot="remove-tooltip"
+        >remove {selectedValues.length}
+        {name}
+        dimension filter{#if selectedValues.length !== 1}s{/if}</svelte:fragment
       >
-        <Tooltip alignment="start" distance={12}>
-          <button
-            on:mouseover={focusOnRemove}
-            on:focus={focusOnRemove}
-            on:mouseleave={blurOnRemove}
-            on:blur={blurOnRemove}
-            on:click|stopPropagation={() => dispatch("remove-filters")}
-          >
-            <Close />
-          </button>
-          <TooltipContent slot="tooltip-content"
-            >clear filters for <span class="font-bold">{name}</span
-            ></TooltipContent
-          >
-        </Tooltip>
-        <div
-          class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
-          style:max-width="160px"
-        >
-          {name}
-        </div>
-        <div class="flex flex-wrap gap-x-3 gap-y-1">
-          {#each visibleValues as value, i (i)}
-            <!-- <div
-              class="text-ellipsis overflow-hidden whitespace-nowrap"
-              style:max-width={selectedValues.length === 1 ? "320px" : "160px"}
-            >
-              {value}{#if i < visibleValues.length - 1}, {/if}
-            </div> -->
-            <div
-              class="text-ellipsis overflow-hidden whitespace-nowrap"
-              style:max-width="320px"
-            >
-              {value}
-            </div>
-          {/each}
-          {#if selectedValues.length > 1}
-            {@const whatsLeft = selectedValues.length - 1}
-            <div class="italic">
-              + {whatsLeft} other{#if whatsLeft !== 1}s{/if}
-            </div>
-          {/if}
-        </div>
-      </button>
-      <div
-        slot="tooltip-content"
-        transition:fly|local={{ duration: 100, y: 4 }}
-      >
-        <TooltipContent maxWidth="400px">
-          <TooltipTitle>
-            <svelte:fragment slot="name">{name}</svelte:fragment>
-            <svelte:fragment slot="description">dimension</svelte:fragment>
-          </TooltipTitle>
-          click to edit the filters in this dimension
-        </TooltipContent>
-      </div>
-    </Tooltip>
-  </div>
-  <Menu
-    paddingTop={1}
-    paddingBottom={1}
-    rounded={false}
-    maxWidth="480px"
+      <!-- body -->
+      <FilterSetBody
+        slot="body"
+        label={name}
+        values={selectedValues}
+        show={1}
+      />
+    </Chip>
+    <div slot="tooltip-content" transition:fly|local={{ duration: 100, y: 4 }}>
+      <TooltipContent maxWidth="400px">
+        <TooltipTitle>
+          <svelte:fragment slot="name">{name}</svelte:fragment>
+          <svelte:fragment slot="description">dimension</svelte:fragment>
+        </TooltipTitle>
+        click to edit the filters in this dimension
+      </TooltipContent>
+    </div>
+  </Tooltip>
+  <FilterMenu
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
-  >
-    <MenuHeader>
-      <svelte:fragment slot="title">Filters</svelte:fragment>
-      <svelte:fragment slot="right">
-        <button
-          class="hover:bg-gray-100  grid place-items-center"
-          style:width="24px"
-          style:height="24px"
-          on:click={toggleFloatingElement}
-        >
-          <Close size="16px" /></button
-        >
-      </svelte:fragment>
-    </MenuHeader>
-    <Divider marginTop={1} marginBottom={1} />
-    {#each currentlyVisibleValuesInMenu as value}
-      <MenuItem
-        icon
-        {value}
-        on:select={() => {
-          dispatch("select", value);
-        }}
-      >
-        <svelte:fragment slot="icon">
-          {#if selectedValues.includes(value)}
-            <Check />
-          {:else}
-            <Spacer />
-          {/if}
-        </svelte:fragment>
-        {#if value.length > 240}
-          {value.slice(0, 240)}...
-        {:else}
-          {value}
-        {/if}
-      </MenuItem>
-    {/each}
-  </Menu>
+    on:close={toggleFloatingElement}
+    on:select
+    {selectedValues}
+  />
 </WithTogglableFloatingElement>

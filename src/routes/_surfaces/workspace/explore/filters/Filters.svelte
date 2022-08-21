@@ -17,15 +17,12 @@
   } from "$lib/redux-store/explore/explore-apis";
   import { store } from "$lib/redux-store/store-root";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
-  import { createShiftClickAction } from "$lib/util/shift-click-action";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import FilterContainer from "./FilterContainer.svelte";
   import FilterSet from "./FilterSet.svelte";
   export let metricsDefId;
   export let values;
-
-  const { shiftClickAction } = createShiftClickAction();
 
   let dimensions: Readable<DimensionDefinitionEntity[]>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
@@ -78,7 +75,7 @@
     distance={8}
     suppress={!hasFilters}
   >
-    <IconButton active={hasFilters} on:click={clearAllFilters}>
+    <IconButton disabled={!hasFilters} on:click={clearAllFilters}>
       <Filter />
     </IconButton>
 
@@ -100,7 +97,6 @@
             on:remove-filters={() => clearFilterForDimension(dimensionId)}
             on:select={(event) => onSelectItem(event, { dimensionId })}
             {name}
-            id={dimensionId}
             {selectedValues}
           />
         </div>
