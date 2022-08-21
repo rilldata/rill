@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import MetricsDefinitionExploreMetricsButton from "$lib/components/metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
-  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
 
   export let metricsDefId;
 

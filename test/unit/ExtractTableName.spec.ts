@@ -1,10 +1,10 @@
-import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
-import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import {
   extractFileExtension,
   extractTableName,
-  sanitizeTableName,
+  sanitizeEntityName,
 } from "$lib/util/extract-table-name";
+import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
+import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 
 @TestBase.Suite
 @TestBase.TestLibrary(JestTestLibrary)
@@ -55,7 +55,7 @@ export class ExtractTableNameSpec extends TestBase {
     tablePath: string,
     [expectedTableName]: [string, string]
   ) {
-    expect(sanitizeTableName(extractTableName(tablePath))).toBe(
+    expect(sanitizeEntityName(extractTableName(tablePath))).toBe(
       expectedTableName
     );
   }
