@@ -1,3 +1,6 @@
+<!-- @component
+The main feature-set component for dashboard filters
+ -->
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
@@ -105,7 +108,8 @@
   {:else if prunedValues?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
-      class="italic text-gray-400 ml-3 grid items-center"
+      class="italic text-gray-400 ml-1 grid items-center"
+      style:min-height="26px"
     >
       no filters selected
     </div>

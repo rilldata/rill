@@ -1,3 +1,13 @@
+<!-- @component 
+The main feature implementation for an individual FilterSet Chip component.default
+
+The FilterSet has a few features that are worth noting:
+- the cancel toggle is on the left side, rather than the right side, which is more traditional
+with chips. The main reason for this is the user should not have to look to the left side of a longer chip to see
+the name and then move the cursor to the right to cancel it.
+- clicking the chip body will expand out a the FilterMenu. This component will be in charge of both selecting / de-selecting
+existing filters as well as changing the type (include, exclude) and enabling dimension search.
+-->
 <script>
   import { Chip } from "$lib/components/chip";
   import WithTogglableFloatingElement from "$lib/components/floating-element/WithTogglableFloatingElement.svelte";

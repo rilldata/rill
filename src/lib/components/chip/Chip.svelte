@@ -3,6 +3,7 @@
   - center (text) – used primarily for label information
 -->
 <script>
+  import { slideRight } from "$lib/transitions";
   import { createEventDispatcher } from "svelte";
   import RemoveChipButton from "./RemoveChipButton.svelte";
 
@@ -26,7 +27,7 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div>
+<div transition:slideRight|local={{ duration: 150 }}>
   <button
     on:click
     class="

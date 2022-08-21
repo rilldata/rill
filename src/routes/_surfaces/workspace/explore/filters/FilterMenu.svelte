@@ -59,7 +59,7 @@
           <Spacer />
         {/if}
       </svelte:fragment>
-      {#if value.length > 240}
+      {#if value?.length > 240}
         {value.slice(0, 240)}...
       {:else}
         {value}
