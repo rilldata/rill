@@ -80,15 +80,19 @@
   const views = {
     Table: {
       hasInspector: true,
+      bg: "bg-gray-100",
     },
     Model: {
       hasInspector: true,
+      bg: "bg-gray-100",
     },
     MetricsDefinition: {
       hasInspector: false,
+      bg: "bg-gray-100",
     },
     MetricsExplorer: {
       hasInspector: false,
+      bg: "bg-white",
     },
   };
 
@@ -123,7 +127,7 @@
 <DuplicateSource />
 
 <div
-  class="absolute w-screen h-screen bg-gray-100"
+  class="index-body absolute w-screen h-screen bg-gray-100"
   on:drop|preventDefault|stopPropagation
   on:drag|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
@@ -185,9 +189,11 @@
 
   <!-- workspace component -->
   <div
-    class="box-border bg-gray-100 fixed"
+    class="box-border fixed {views[activeEntityType]?.bg || 'bg-gray-100'}"
     style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
-    style:padding-right="{$inspectorVisibilityTween * SIDE_PAD}px"
+    style:padding-right="{$inspectorVisibilityTween *
+      SIDE_PAD *
+      (hasInspector ? 1 : 0)}px"
     style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
     style:top="0px"
     style:right="{hasInspector
