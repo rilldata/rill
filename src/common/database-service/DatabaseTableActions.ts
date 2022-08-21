@@ -13,10 +13,7 @@ export class DatabaseTableActions extends DatabaseActions {
         if (query.startsWith('from')) {
             try {
                 const ptos = query.replace('\\n', '|').replace('||', '|');
-                console.log('prql_ptos -->', ptos);
                 prql_query = prql.to_sql(ptos);
-                console.log('prql_query --> ', prql_query);
-                // return Promise.resolve();
             } catch (err) {
                 console.log('prql_err --> createViewOfQuery --> ', err);
                 return Promise.reject(404);
@@ -85,7 +82,7 @@ export class DatabaseTableActions extends DatabaseActions {
                         .replace(/\n/g, "<br>")
                         .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
                         .replace(/\s/g, "&nbsp;")
-                        .replace('Error: ', '')
+                        .replace('"Error: ', '')
                 );
             }
         } else {

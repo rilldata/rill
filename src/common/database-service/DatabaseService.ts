@@ -70,9 +70,7 @@ export class DatabaseService
     action: Action,
     args: DatabaseActionsDefinition[Action]
   ): Promise<unknown> {
-    if (action != 'getCardinalityOfTable') {
-      console.log('dispatch --> ', action, args)
-    }
+
     if (!this.actionsMap[action]?.[action]) {
       console.log(`${action} not found`);
       return;
