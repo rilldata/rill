@@ -7,7 +7,7 @@ export default function slideRight(
     duration = 200,
     easing = cubicOut,
     rightOffset = 0,
-    leftOffset = 8,
+    leftOffset = 0,
   }
 ) {
   const style = getComputedStyle(node);
