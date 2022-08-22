@@ -40,7 +40,7 @@
   </button>
   <div slot="tooltip-content">
     {#if $$slots["remove-tooltip"]}
-      <TooltipContent slot="tooltip-content" maxWidth="400px">
+      <TooltipContent slot="tooltip-content" maxWidth="300px">
         <slot name="remove-tooltip" />
       </TooltipContent>
     {/if}

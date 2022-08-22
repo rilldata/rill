@@ -53,12 +53,12 @@
 
 <h1 class="text-xl">Chips</h1>
 
-<p class="mb-8 mt-2">
+<p class="mb-4 mt-2">
   This route contains basic "removable list" chips, which are used in the
   dashboard as filters.
 </p>
 
-<div class="flex items-center gap-x-2">
+<div class="mb-4 flex items-center gap-x-2">
   <button
     on:click={() => {
       if (activeChips.length > 0) {
@@ -100,7 +100,11 @@
           toggleActiveValue(name, event.detail);
         }}
       >
-        <svelte:fragment slot="tooltip-content"
+        <svelte:fragment slot="remove-tooltip-content">
+          a custom tooltip for removing the {actives[name].length} value{#if actives[name].length !== 1}s{/if}.
+          This is a custom tooltip that can be edited as a slot.
+        </svelte:fragment>
+        <svelte:fragment slot="body-tooltip-content"
           >click to change the values in this list</svelte:fragment
         >
       </RemovableListChip>
