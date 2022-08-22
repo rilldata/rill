@@ -6,6 +6,7 @@ The main feature-set component for dashboard filters
   import { flip } from "svelte/animate";
 
   import { IconButton } from "$lib/components/button";
+  import { ChipContainer, RemovableListChip } from "$lib/components/chip";
   import Filter from "$lib/components/icons/Filter.svelte";
   import ShiftKey from "$lib/components/tooltip/ShiftKey.svelte";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
@@ -22,8 +23,6 @@ The main feature-set component for dashboard filters
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import FilterContainer from "./FilterContainer.svelte";
-  import FilterSet from "./FilterSet.svelte";
   export let metricsDefId;
   export let values;
 
@@ -90,21 +89,23 @@ The main feature-set component for dashboard filters
     </TooltipContent>
   </Tooltip>
   {#if prunedValues?.length && $dimensions?.length}
-    <FilterContainer>
+    <ChipContainer>
       {#each prunedValues as [dimensionId, selectedValues] (dimensionId)}
-        {@const name = $dimensions.find(
-          (dim) => dim.id === dimensionId
-        ).dimensionColumn}
+        {@const dimension = $dimensions.find((dim) => dim.id === dimensionId)}
+        {@const name = dimension?.labelSingle?.length
+          ? dimension?.labelSingle
+          : dimension?.dimensionColumn}
         <div animate:flip={{ duration: 200 }}>
-          <FilterSet
-            on:remove-filters={() => clearFilterForDimension(dimensionId)}
+          <RemovableListChip
+            on:remove={() => clearFilterForDimension(dimensionId)}
             on:select={(event) => onSelectItem(event, { dimensionId })}
+            typeLabel="dimension"
             {name}
             {selectedValues}
           />
         </div>
       {/each}
-    </FilterContainer>
+    </ChipContainer>
   {:else if prunedValues?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
