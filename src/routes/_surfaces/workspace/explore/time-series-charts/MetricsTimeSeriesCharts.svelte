@@ -9,8 +9,6 @@
   import { Axis } from "$lib/components/data-graphic/guides";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
@@ -18,25 +16,29 @@
     getMetricViewMetaQueryKey,
     getMetricViewTimeSeries,
     getMetricViewTimeSeriesQueryKey,
+    getMetricViewTotals,
+    getMetricViewTotalsQueryKey,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
   import { useQuery } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
-  import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import {
+    MetricViewTotalsRequest,
+    MetricViewTotalsResponse,
+  } from "$common/rill-developer-service/MetricViewActions";
   import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
-  $: console.log(metricsExplorer);
 
   // query the `/meta` endpoint to get the measures and the default time grain
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -52,14 +54,33 @@
     metricsExplorer?.selectedTimeRange?.interval ||
     $queryResult.data?.timeDimension?.timeRange?.interval;
 
-  let bigNumbers: Readable<BigNumberEntity>;
-  $: bigNumbers = getBigNumberById(metricsDefId);
+  function getTotalsRequest(noFilters = false): MetricViewTotalsRequest {
+    return {
+      measures: [metricsExplorer.leaderboardMeasureId],
+      filter: noFilters ? undefined : metricsExplorer.filters,
+      time: {
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
+      },
+    };
+  }
+  let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
+  const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
+    getMetricViewTotals(metricsDefId, getTotalsRequest())
+  );
+  $: {
+    totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
+    totalsQuery.setOptions(totalsQueryKey, () =>
+      getMetricViewTotals(metricsDefId, getTotalsRequest())
+    );
+  }
 
   // query the `/timeseries` endpoint
   let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
   let timeSeriesQueryFn = () =>
     getMetricViewTimeSeries(metricsDefId, {
       measures: $queryResult.data.measures.map((measure) => measure.id),
+      filter: metricsExplorer.filters,
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
@@ -128,7 +149,7 @@
     {#if $queryResult.isSuccess}
       {#each $queryResult.data.measures as measure, index (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
+        {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}
 
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
@@ -137,7 +158,9 @@
             measure?.label ||
             measure?.expression}
           formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
-          status={$bigNumbers?.status}
+          status={$totalsQuery.isFetching
+            ? EntityStatus.Running
+            : EntityStatus.Idle}
         >
           <svelte:fragment slot="name">
             {measure?.label || measure?.expression}

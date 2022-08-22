@@ -38,6 +38,7 @@
   }
 
   function formatForSelector(measure: MeasureDefinitionEntity) {
+    if (!measure) return undefined;
     return {
       ...measure,
       key: measure.id,

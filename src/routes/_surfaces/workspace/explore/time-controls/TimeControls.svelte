@@ -16,8 +16,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
-    getMetricViewTimeSeriesQueryKey,
-    invalidateMetricViewTopList,
+    invalidateMetricViewData,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
@@ -61,7 +60,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: allTimeRange = $queryResult.data?.timeDimension?.timeRange;
 
   const queryClient = useQueryClient();
-  const timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
 
   // initialize the component with the default options
   onMount(() => {
@@ -96,8 +94,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
     setMetricsExplorerSelectedTimeRange(metricsDefId, newTimeRange);
 
-    queryClient.invalidateQueries(timeSeriesQueryKey);
-    invalidateMetricViewTopList(queryClient, metricsDefId);
+    invalidateMetricViewData(queryClient, metricsDefId);
   };
 
   // reactive statement that makes a new time range whenever the selected options change

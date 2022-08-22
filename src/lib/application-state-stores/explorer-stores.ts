@@ -68,7 +68,14 @@ export const setMetricsExplorerSelectedTimeRange = (
   id: string,
   timeRange: TimeSeriesTimeRange
 ) => {
-  UpdateMetricsExplorer(id, (metricsExplorer) => {
-    metricsExplorer.selectedTimeRange = timeRange;
-  });
+  UpdateMetricsExplorer(
+    id,
+    (metricsExplorer) => {
+      metricsExplorer.selectedTimeRange = timeRange;
+    },
+    () => {
+      console.log("setMetricsExplorerSelectedTimeRange missing");
+      return undefined;
+    }
+  );
 };

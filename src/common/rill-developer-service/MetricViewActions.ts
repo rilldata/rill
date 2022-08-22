@@ -69,12 +69,12 @@ export interface MetricViewTopListResponse {
   data: Array<{ label: string; value: number }>;
 }
 
-export interface MetricViewBigNumberRequest {
+export interface MetricViewTotalsRequest {
   measures: Array<string>;
   time: Pick<MetricViewRequestTimeRange, "start" | "end">;
   filter?: MetricViewRequestFilter;
 }
-export interface MetricViewBigNumberResponse {
+export interface MetricViewTotalsResponse {
   meta: Array<{ name: string; type: string }>;
   data: Record<string, number>;
 }
@@ -98,6 +98,7 @@ function mapDimensionIdToName(
   filters: MetricViewRequestFilter,
   dimensions: Array<DimensionDefinitionEntity>
 ): MetricViewRequestFilter {
+  if (!filters) return undefined;
   const dimensionsIdMap = getMapFromArray(dimensions, (d) => d.id);
   filters.include.forEach((value) => {
     value.name = dimensionsIdMap.get(value.name).dimensionColumn;
@@ -163,7 +164,14 @@ export class MetricViewActions extends RillDeveloperActions {
               .getMeasureDefinitionService()
               .getById(measureId),
           })),
-          filters: convertToActiveValues(request.filter),
+          filters: convertToActiveValues(
+            mapDimensionIdToName(
+              request.filter,
+              this.dataModelerStateService
+                .getDimensionDefinitionService()
+                .getManyByField("metricsDefId", metricsDefId)
+            )
+          ),
           timeRange: {
             ...request.time,
             interval: request.time.granularity,
@@ -222,10 +230,10 @@ export class MetricViewActions extends RillDeveloperActions {
   }
 
   @RillDeveloperActions.MetricsDefinitionAction()
-  public async getRuntimeBigNumber(
+  public async getMetricViewTotals(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
-    request: MetricViewBigNumberRequest
+    request: MetricViewTotalsRequest
   ) {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
@@ -244,12 +252,17 @@ export class MetricViewActions extends RillDeveloperActions {
               .getMeasureDefinitionService()
               .getById(measureId)
           ),
-          convertToActiveValues(request.filter),
+          mapDimensionIdToName(
+            request.filter,
+            this.dataModelerStateService
+              .getDimensionDefinitionService()
+              .getManyByField("metricsDefId", metricsDefId)
+          ),
           rillRequestContext.record.timeDimension,
           request.time,
         ]
       );
-    const response: MetricViewBigNumberResponse = {
+    const response: MetricViewTotalsResponse = {
       meta: [], // TODO
       data: bigNumberResponse.bigNumbers,
     };
