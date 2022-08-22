@@ -72,8 +72,6 @@ export class MetricsService
       build_id: this.config.local.version ?? "",
       version: this.config.local.version ?? "",
       project_id: applicationState.projectId,
-      entity_type: applicationState.activeEntity?.type ?? "",
-      entity_id: applicationState.activeEntity?.id ?? "",
     };
   }
 }
