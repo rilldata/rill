@@ -3,18 +3,18 @@
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { SelectMenu } from "$lib/components/menu";
-  import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQuery } from "@sveltestack/svelte-query";
-  import type { Readable } from "svelte/store";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
+  import {
+    MetricsExplorerStore,
+    setMetricsExplorerLeaderboardMeasureId,
+  } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
@@ -30,15 +30,11 @@
   let measures: MeasureDefinitionEntity[];
   $: measures = $queryResult.data.measures;
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    setMeasureIdAndUpdateLeaderboard(
-      store.dispatch,
-      metricsDefId,
-      event.detail.key
-    );
+    setMetricsExplorerLeaderboardMeasureId(metricsDefId, event.detail.key);
   }
 
   function formatForSelector(measure: MeasureDefinitionEntity) {
@@ -56,10 +52,10 @@
   let activeLeaderboardMeasure;
   $: activeLeaderboardMeasure =
     measures?.length &&
-    $metricsExplorer?.leaderboardMeasureId &&
+    metricsExplorer?.leaderboardMeasureId &&
     formatForSelector(
       measures.find(
-        (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
+        (measure) => measure.id === metricsExplorer?.leaderboardMeasureId
       ) ?? undefined
     );
 

@@ -136,30 +136,6 @@ export const toggleExploreMeasureAndUpdate = (
 };
 
 /**
- * Sets the measure id used in leaderboard for ranking and other calculations.
- * It then updates Leaderboard values based on selected filters and measure
- */
-export const setMeasureIdAndUpdateLeaderboard = (
-  dispatch,
-  metricsDefId: string,
-  measureId: string
-) => {
-  dispatch(setLeaderboardMeasureId(metricsDefId, measureId));
-};
-
-/**
- * Clears all selected values in the leaderboard.
- * It then calls {@link updateExploreWrapper} to update explore.
- */
-export const clearSelectedLeaderboardValuesAndUpdate = (
-  dispatch,
-  metricsDefId: string
-) => {
-  dispatch(clearSelectedLeaderboardValues(metricsDefId));
-  updateExploreWrapper(dispatch, metricsDefId);
-};
-
-/**
  * Sets user selected time range.
  * It then calls {@link updateExploreWrapper} to update explore.
  */

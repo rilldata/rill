@@ -32,9 +32,9 @@
     MetricViewTopListResponse,
   } from "$common/rill-developer-service/MetricViewActions";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import Spinner from "$lib/components/Spinner.svelte";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let dimensionId: string;
@@ -61,27 +61,27 @@
     ? $dimension?.labelSingle
     : $dimension?.dimensionColumn;
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    $metricsExplorer?.filters.include.find((d) => d.name === $dimension.id)
+    metricsExplorer?.filters.include.find((d) => d.name === $dimension.id)
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
   // Svelte-Query for getting top list start
   function getTopListRequest(): MetricViewTopListRequest {
     return {
-      measures: [$metricsExplorer.leaderboardMeasureId],
+      measures: [metricsExplorer.leaderboardMeasureId],
       limit: 10,
       offset: 0,
       sort: [],
       time: {
-        start: $metricsExplorer.selectedTimeRange?.start,
-        end: $metricsExplorer.selectedTimeRange?.end,
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
       },
-      filter: $metricsExplorer.filters,
+      filter: metricsExplorer.filters,
     };
   }
   let topListKey = getMetricViewTopListQueryKey(metricsDefId, dimensionId);

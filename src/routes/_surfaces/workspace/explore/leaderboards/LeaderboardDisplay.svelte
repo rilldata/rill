@@ -6,7 +6,6 @@
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
   import { store } from "$lib/redux-store/store-root";
@@ -24,14 +23,15 @@
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import Leaderboard from "./Leaderboard.svelte";
+  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
 
   const queryClient = useQueryClient();
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -52,7 +52,7 @@
   $: activeMeasure =
     measures &&
     measures.find(
-      (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
+      (measure) => measure.id === metricsExplorer?.leaderboardMeasureId
     );
 
   $: formatPreset =
@@ -72,8 +72,8 @@
   /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
   // Q: We're doing this on the backend now, right? We can delete this?
   $: validLeaderboards =
-    dimensions && $metricsExplorer?.leaderboards
-      ? $metricsExplorer?.leaderboards.filter((leaderboard) => {
+    dimensions && metricsExplorer?.leaderboards
+      ? metricsExplorer?.leaderboards.filter((leaderboard) => {
           const dimensionConfiguration = dimensions?.find(
             (dimension) => dimension.id === leaderboard.dimensionId
           );
@@ -137,7 +137,7 @@
   >
     <LeaderboardMeasureSelector {metricsDefId} />
   </div>
-  {#if $metricsExplorer}
+  {#if metricsExplorer}
     <VirtualizedGrid {columns} height="100%" items={dimensions ?? []} let:item>
       <!-- the single virtual element -->
       <Leaderboard

@@ -4,28 +4,43 @@
   import Button from "$lib/components/Button.svelte";
   import Close from "$lib/components/icons/Close.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
-  import { clearSelectedLeaderboardValuesAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "$lib/redux-store/store-root";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
-  import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import TimeControls from "./time-controls/TimeControls.svelte";
-  import { invalidateMetricViewTopList } from "$lib/svelte-query/queries/metric-view";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
+    invalidateMetricViewTopList,
+  } from "$lib/svelte-query/queries/metric-view";
+  import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
+  import {
+    MetricsExplorerStore,
+    syncMetricsExplorer,
+  } from "$lib/application-state-stores/explorer-stores";
+  import { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
 
   export let metricsDefId: string;
 
   const queryClient = useQueryClient();
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
 
-  $: anythingSelected = isAnythingSelected($metricsExplorer?.filters);
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
+  $: syncMetricsExplorer(metricsDefId, $queryResult.data);
+  $: console.log($queryResult?.data);
+
+  $: anythingSelected = isAnythingSelected(metricsExplorer?.filters);
   function clearAllFilters() {
-    clearSelectedLeaderboardValuesAndUpdate(store.dispatch, metricsDefId);
     invalidateMetricViewTopList(queryClient, metricsDefId);
   }
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);

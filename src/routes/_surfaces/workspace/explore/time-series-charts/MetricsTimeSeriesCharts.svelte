@@ -11,7 +11,6 @@
   import Spinner from "$lib/components/Spinner.svelte";
   import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
@@ -31,11 +30,13 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: console.log(metricsExplorer);
 
   // query the `/meta` endpoint to get the measures and the default time grain
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -48,7 +49,7 @@
   }
 
   $: interval =
-    $metricsExplorer?.selectedTimeRange?.interval ||
+    metricsExplorer?.selectedTimeRange?.interval ||
     $queryResult.data?.timeDimension?.timeRange?.interval;
 
   let bigNumbers: Readable<BigNumberEntity>;
@@ -58,11 +59,11 @@
   let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
   let timeSeriesQueryFn = () =>
     getMetricViewTimeSeries(metricsDefId, {
-      measures: $metricsExplorer.measureIds,
+      measures: $queryResult.data.measures.map((measure) => measure.id),
       time: {
-        start: $metricsExplorer?.selectedTimeRange?.start,
-        end: $metricsExplorer?.selectedTimeRange?.end,
-        granularity: $metricsExplorer?.selectedTimeRange?.interval,
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+        granularity: metricsExplorer?.selectedTimeRange?.interval,
       },
     });
   const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(

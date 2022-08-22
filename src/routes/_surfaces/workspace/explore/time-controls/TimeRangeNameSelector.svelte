@@ -7,7 +7,6 @@
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import {
     getMetricViewMetadata,
@@ -16,12 +15,12 @@
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { useQuery } from "@sveltestack/svelte-query";
   import { createEventDispatcher, tick } from "svelte";
-  import type { Readable } from "svelte/store";
   import {
     getSelectableTimeRangeNames,
     makeTimeRanges,
     prettyFormatTimeRange,
   } from "./time-range-utils";
+  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let selectedTimeRangeName: TimeRangeName;
@@ -29,8 +28,8 @@
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-range-name";
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
@@ -102,7 +101,7 @@
       {selectedTimeRangeName ?? "Select a time range"}
     </span>
     <span>
-      {prettyFormatTimeRange($metricsExplorer?.selectedTimeRange)}
+      {prettyFormatTimeRange(metricsExplorer?.selectedTimeRange)}
     </span>
   </div>
   <span class="transition-transform" class:-rotate-180={timeRangeNameMenuOpen}>

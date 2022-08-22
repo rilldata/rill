@@ -12,10 +12,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
-  import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
@@ -24,7 +21,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "$lib/svelte-query/queries/metric-view";
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
-  import type { Readable } from "svelte/store";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -32,11 +28,15 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
+  import {
+    MetricsExplorerStore,
+    setMetricsExplorerSelectedTimeRange,
+  } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
 
   let selectedTimeRangeName;
   const setSelectedTimeRangeName = (evt) => {
@@ -88,17 +88,13 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     );
 
     if (
-      newTimeRange.start === $metricsExplorer?.selectedTimeRange?.start &&
-      newTimeRange.end === $metricsExplorer?.selectedTimeRange?.end &&
-      newTimeRange.interval === $metricsExplorer?.selectedTimeRange?.interval
+      newTimeRange.start === metricsExplorer?.selectedTimeRange?.start &&
+      newTimeRange.end === metricsExplorer?.selectedTimeRange?.end &&
+      newTimeRange.interval === metricsExplorer?.selectedTimeRange?.interval
     )
       return;
 
-    setExploreSelectedTimeRangeAndUpdate(
-      store.dispatch,
-      metricsDefId,
-      newTimeRange
-    );
+    setMetricsExplorerSelectedTimeRange(metricsDefId, newTimeRange);
 
     queryClient.invalidateQueries(timeSeriesQueryKey);
     invalidateMetricViewTopList(queryClient, metricsDefId);
