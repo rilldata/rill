@@ -8,8 +8,6 @@
   } from "$common/rill-developer-service/MetricViewActions";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
-  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
@@ -19,7 +17,7 @@
     getMetricViewMetaQueryKey,
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
-    invalidateMetricView,
+    invalidateMetricViewData,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
@@ -64,8 +62,6 @@
   $: formatPreset =
     activeMeasure?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
 
-  let bigNumberEntity: Readable<BigNumberEntity>;
-  $: bigNumberEntity = getBigNumberById(metricsDefId);
   let referenceValue: number;
 
   function getTotalsRequest(noFilters = false): MetricViewTotalsRequest {
@@ -134,7 +130,7 @@
     store.dispatch(
       toggleLeaderboardActiveValue(metricsDefId, item.id, event.detail.label)
     );
-    invalidateMetricView(queryClient, metricsDefId);
+    invalidateMetricViewData(queryClient, metricsDefId);
   }
 
   /** Functionality for resizing the virtual leaderboard */

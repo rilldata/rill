@@ -61,8 +61,9 @@ export const getMetricViewTimeSeries = async (
   return json;
 };
 
+const TimeSeriesId = `v1/metric-view/timeseries`;
 export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
-  return [`v1/metric-view/timeseries`, metricViewId];
+  return [TimeSeriesId, metricViewId];
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
@@ -132,10 +133,11 @@ export const getMetricViewTotalsQueryKey = (
   return [TotalsId, metricsDefId, isReferenceValue];
 };
 
-export const invalidateMetricView = (
+export const invalidateMetricViewData = (
   queryClient: QueryClient,
   metricsDefId: string
 ) => {
   queryClient.invalidateQueries([TopListId, metricsDefId]);
   queryClient.invalidateQueries([TotalsId, metricsDefId]);
+  queryClient.invalidateQueries([TimeSeriesId, metricsDefId]);
 };

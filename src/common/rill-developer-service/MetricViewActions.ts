@@ -164,7 +164,14 @@ export class MetricViewActions extends RillDeveloperActions {
               .getMeasureDefinitionService()
               .getById(measureId),
           })),
-          filters: convertToActiveValues(request.filter),
+          filters: convertToActiveValues(
+            mapDimensionIdToName(
+              request.filter,
+              this.dataModelerStateService
+                .getDimensionDefinitionService()
+                .getManyByField("metricsDefId", metricsDefId)
+            )
+          ),
           timeRange: {
             ...request.time,
             interval: request.time.granularity,

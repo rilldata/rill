@@ -9,8 +9,6 @@
   import { Axis } from "$lib/components/data-graphic/guides";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
@@ -83,6 +81,7 @@
   let timeSeriesQueryFn = () =>
     getMetricViewTimeSeries(metricsDefId, {
       measures: $metricsExplorer.measureIds,
+      filter: $metricsExplorer.filters,
       time: {
         start: $metricsExplorer?.selectedTimeRange?.start,
         end: $metricsExplorer?.selectedTimeRange?.end,
