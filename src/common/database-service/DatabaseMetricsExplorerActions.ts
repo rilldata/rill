@@ -88,7 +88,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     expression: string
   ): Promise<string> {
     try {
-      await this.databaseClient.execute(`select ${expression} from ${table}`);
+      await this.databaseClient.prepare(`select ${expression} from ${table}`);
     } catch (err) {
       return err.message;
     }
