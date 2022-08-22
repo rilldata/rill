@@ -102,7 +102,11 @@ The main feature-set component for dashboard filters
             typeLabel="dimension"
             {name}
             {selectedValues}
-          />
+          >
+            <svelte:fragment slot="tooltip-content">
+              click to edit the the filters in this dimension
+            </svelte:fragment>
+          </RemovableListChip>
         </div>
       {/each}
     </ChipContainer>

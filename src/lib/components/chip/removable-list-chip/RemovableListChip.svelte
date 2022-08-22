@@ -72,7 +72,9 @@ are details left to the consumer of the component; this component should remain 
           <svelte:fragment slot="description">{typeLabel || ""}</svelte:fragment
           >
         </TooltipTitle>
-        click to edit the filters in this dimension
+        {#if $$slots["tooltip-content"]}
+          <slot name="tooltip-content">click to edit the values</slot>
+        {/if}
       </TooltipContent>
     </div>
   </Tooltip>

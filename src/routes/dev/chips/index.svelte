@@ -87,7 +87,7 @@
 </div>
 
 <ChipContainer>
-  {#each activeChips as { name, typeLabel } (name)}
+  {#each activeChips as { name, typeLabel, tooltipContent } (name)}
     <div animate:flip={{ duration: 200 }}>
       <RemovableListChip
         {name}
@@ -99,7 +99,11 @@
         on:select={(event) => {
           toggleActiveValue(name, event.detail);
         }}
-      />
+      >
+        <svelte:fragment slot="tooltip-content"
+          >click to change the values in this list</svelte:fragment
+        >
+      </RemovableListChip>
     </div>
   {/each}
 </ChipContainer>
