@@ -9,6 +9,8 @@ import type {
   MetricViewTimeSeriesResponse,
   MetricViewTopListRequest,
   MetricViewTopListResponse,
+  MetricViewTotalsRequest,
+  MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 import type { QueryClient } from "@sveltestack/svelte-query";
@@ -59,8 +61,9 @@ export const getMetricViewTimeSeries = async (
   return json;
 };
 
+const TimeSeriesId = `v1/metric-view/timeseries`;
 export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
-  return [`v1/metric-view/timeseries`, metricViewId];
+  return [TimeSeriesId, metricViewId];
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
@@ -100,13 +103,41 @@ export const getMetricViewTopListQueryKey = (
   return [TopListId, metricsDefId, dimensionId];
 };
 
-export const invalidateMetricViewTopList = (
+// POST /api/v1/metric-views/{view-name}/totals
+
+export const getMetricViewTotals = async (
+  metricViewId: string,
+  request: MetricViewTotalsRequest
+): Promise<MetricViewTotalsResponse> => {
+  const resp = await fetch(
+    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/totals`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }
+  );
+  const json = await resp.json();
+  if (!resp.ok) {
+    const err = new Error(json);
+    return Promise.reject(err);
+  }
+  return json;
+};
+
+const TotalsId = `v1/metric-view/totals`;
+export const getMetricViewTotalsQueryKey = (
+  metricsDefId: string,
+  isReferenceValue = false
+) => {
+  return [TotalsId, metricsDefId, isReferenceValue];
+};
+
+export const invalidateMetricViewData = (
   queryClient: QueryClient,
   metricsDefId: string
 ) => {
-  return queryClient.invalidateQueries([TopListId, metricsDefId]);
+  queryClient.invalidateQueries([TopListId, metricsDefId]);
+  queryClient.invalidateQueries([TotalsId, metricsDefId]);
+  queryClient.invalidateQueries([TimeSeriesId, metricsDefId]);
 };
-
-// POST /api/v1/metric-views/{view-name}/totals
-
-// TODO...

@@ -31,7 +31,6 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     delete isolatedFilters[column];
 
     const whereClause = getWhereClauseFromFilters(
-      undefined,
       filters,
       timestampColumn,
       timeRange,
@@ -45,8 +44,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       GROUP BY "${column}"
       ORDER BY value desc NULLS LAST
       LIMIT 15
-    `,
-      true
+    `
     );
   }
 
@@ -54,7 +52,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     table: string,
     measures: Array<BasicMeasureDefinition>,
-    filters: ActiveValues,
+    filters: MetricViewRequestFilter,
     timestampColumn: string,
     timeRange?: TimeSeriesTimeRange
   ): Promise<BigNumberResponse> {
@@ -62,7 +60,6 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
 
     const whereClause = getWhereClauseFromFilters(
       filters,
-      undefined,
       timestampColumn,
       timeRange,
       "WHERE"

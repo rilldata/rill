@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type {
+    MetricViewMetaResponse,
+    MetricViewTotalsRequest,
+    MetricViewTotalsResponse,
+  } from "$common/rill-developer-service/MetricViewActions";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
-  import { getBigNumberById } from "$lib/redux-store/big-number/big-number-readables";
-  import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
@@ -13,7 +15,9 @@
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
-    invalidateMetricViewTopList,
+    getMetricViewTotals,
+    getMetricViewTotalsQueryKey,
+    invalidateMetricViewData,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
@@ -58,15 +62,44 @@
   $: formatPreset =
     activeMeasure?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
 
-  let bigNumberEntity: Readable<BigNumberEntity>;
-  $: bigNumberEntity = getBigNumberById(metricsDefId);
   let referenceValue: number;
 
-  $: if ($bigNumberEntity && activeMeasure?.sqlName) {
+  function getTotalsRequest(noFilters = false): MetricViewTotalsRequest {
+    return {
+      measures: [$metricsExplorer.leaderboardMeasureId],
+      filter: noFilters ? undefined : $metricsExplorer.filters,
+      time: {
+        start: $metricsExplorer.selectedTimeRange?.start,
+        end: $metricsExplorer.selectedTimeRange?.end,
+      },
+    };
+  }
+  let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
+  const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
+    getMetricViewTotals(metricsDefId, getTotalsRequest())
+  );
+  // TODO: find a way to have a single request when there are no filters
+  let referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
+  const referenceValueQuery = useQuery<MetricViewTotalsResponse>(
+    referenceValueKey,
+    () => getMetricViewTotals(metricsDefId, getTotalsRequest(true))
+  );
+  $: {
+    totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
+    totalsQuery.setOptions(totalsQueryKey, () =>
+      getMetricViewTotals(metricsDefId, getTotalsRequest())
+    );
+    referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
+    referenceValueQuery.setOptions(referenceValueKey, () =>
+      getMetricViewTotals(metricsDefId, getTotalsRequest(true))
+    );
+  }
+
+  $: if ($totalsQuery && $referenceValueQuery && activeMeasure?.sqlName) {
     referenceValue =
       whichReferenceValue === "filtered"
-        ? $bigNumberEntity.bigNumbers?.[activeMeasure.sqlName]
-        : $bigNumberEntity.referenceValues?.[activeMeasure.sqlName];
+        ? $totalsQuery.data.data?.[activeMeasure.sqlName]
+        : $referenceValueQuery.data.data?.[activeMeasure.sqlName];
   }
 
   /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
@@ -97,7 +130,7 @@
     store.dispatch(
       toggleLeaderboardActiveValue(metricsDefId, item.id, event.detail.label)
     );
-    invalidateMetricViewTopList(queryClient, metricsDefId);
+    invalidateMetricViewData(queryClient, metricsDefId);
   }
 
   /** Functionality for resizing the virtual leaderboard */
