@@ -1,6 +1,6 @@
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
 import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
 import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
@@ -12,35 +12,13 @@ import {
   MetricsExplorerEntity,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
-  setExploreAllTimeRange,
   setExplorerIsStale,
-  setExplorerSelectableTimeGrains,
-  setExplorerSelectableTimeRanges,
-  setExplorerSelectedTimeGrain,
   setExploreSelectedTimeRange,
   setLeaderboardMeasureId,
   toggleExploreMeasure,
 } from "$lib/redux-store/explore/explore-slice";
 import { selectValidMeasures } from "$lib/redux-store/measure-definition/measure-definition-selectors";
-import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
-import type { RillReduxState } from "$lib/redux-store/store-root";
 import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
-import { fetchWrapper } from "$lib/util/fetchWrapper";
-import {
-  getSelectableTimeGrains,
-  getSelectableTimeRanges,
-  makeTimeRange,
-} from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
-import type {
-  TimeGrain,
-  TimeRangeName,
-} from "$common/database-service/DatabaseTimeSeriesActions";
-import { store } from "$lib/redux-store/store-root";
-import {
-  selectMetricsExplorerById,
-  selectMetricsExplorerSelectedTimeGrain,
-  selectMetricsExploreSelectedTimeRangeName,
-} from "$lib/redux-store/explore/explore-selectors";
 
 /**
  * A wrapper to dispatch updates to explore.
@@ -58,7 +36,6 @@ const updateExploreWrapper = (dispatch, metricsDefId: string) => {
  * Syncs explore with updated measures and dimensions.
  * If a MetricsExplorer entity is not present then a new one is created.
  * It then calls {@link updateExploreWrapper} to update explore.
- * It also dispatches {@link fetchTimestampColumnRangeApi} to update time range.
  */
 export const syncExplore = async (
   dispatch,
@@ -83,7 +60,6 @@ export const syncExplore = async (
   // To avoid infinite loop only update if something changed.
   if (shouldUpdate || metricsExplorer.isStale) {
     dispatch(setExplorerIsStale(metricsDefId, false));
-    await dispatch(fetchTimestampColumnRangeApi(metricsDefId));
   }
 };
 /**
@@ -190,118 +166,9 @@ export const clearSelectedLeaderboardValuesAndUpdate = (
 export const setExploreSelectedTimeRangeAndUpdate = (
   dispatch,
   metricsDefId: string,
-  timeRangeName: TimeRangeName,
-  timeGrain: TimeGrain
+  timeRange: TimeSeriesTimeRange
 ) => {
-  const metricsExplorer = selectMetricsExplorerById(
-    store.getState(),
-    metricsDefId
-  );
-  if (!timeRangeName || !timeGrain || !metricsExplorer?.allTimeRange) return;
-
-  const newTimeRange = makeTimeRange(
-    timeRangeName,
-    timeGrain,
-    metricsExplorer.allTimeRange
-  );
   dispatch(setReferenceValues(metricsDefId, undefined));
-  dispatch(setExploreSelectedTimeRange(metricsDefId, newTimeRange));
+  dispatch(setExploreSelectedTimeRange(metricsDefId, timeRange));
   updateExploreWrapper(dispatch, metricsDefId);
 };
-
-/**
- * Fetches time range for the selected timestamp column.
- * Store the response in MetricsExplorer slice by calling {@link setExploreAllTimeRange}
- */
-export const fetchTimestampColumnRangeApi = createAsyncThunk(
-  `${EntityType.MetricsExplorer}/getTimestampColumnRange`,
-  async (metricsDefId: string, thunkAPI) => {
-    const timeRange = await fetchWrapper(
-      `metrics/${metricsDefId}/all-time-range`,
-      "GET"
-    );
-    thunkAPI.dispatch(setExploreAllTimeRange(metricsDefId, timeRange));
-
-    // TODO: replace these with a call to the `/meta` endpoint, once available.
-    thunkAPI.dispatch(
-      setExplorerSelectableTimeRanges(
-        metricsDefId,
-        getSelectableTimeRanges(timeRange)
-      )
-    );
-    const timeRangeName = selectMetricsExploreSelectedTimeRangeName(
-      thunkAPI.getState() as RillReduxState,
-      metricsDefId
-    );
-
-    return thunkAPI.dispatch(
-      updateSelectedTimeRangeNameApi({ metricsDefId, timeRangeName })
-    );
-  }
-);
-
-export const updateSelectedTimeRangeNameApi = createAsyncThunk(
-  `${EntityType.MetricsExplorer}/selectTimeRangeName`,
-  async (
-    {
-      metricsDefId,
-      timeRangeName,
-    }: {
-      metricsDefId: string;
-      timeRangeName: TimeRangeName;
-    },
-    thunkAPI
-  ) => {
-    const metricsExplore = selectMetricsExplorerById(
-      thunkAPI.getState() as RillReduxState,
-      metricsDefId
-    );
-
-    const selectableTimeGrains = getSelectableTimeGrains(
-      timeRangeName,
-      metricsExplore.allTimeRange
-    );
-    await thunkAPI.dispatch(
-      setExplorerSelectableTimeGrains(metricsDefId, selectableTimeGrains)
-    );
-    // When the selected time grain is not in the list of selectable time grains (which can
-    // happen when the time range name is changed), set the default time grain
-    const timeGrain = selectMetricsExplorerSelectedTimeGrain(
-      thunkAPI.getState() as RillReduxState,
-      metricsDefId,
-      timeRangeName
-    );
-    thunkAPI.dispatch(setExplorerSelectedTimeGrain(metricsDefId, timeGrain));
-
-    setExploreSelectedTimeRangeAndUpdate(
-      thunkAPI.dispatch,
-      metricsDefId,
-      timeRangeName,
-      timeGrain
-    );
-  }
-);
-
-export const updateSelectedTimeGrainApi = createAsyncThunk(
-  `${EntityType.MetricsExplorer}/selectTimeGrain`,
-  async (
-    {
-      metricsDefId,
-      timeGrain,
-    }: {
-      metricsDefId: string;
-      timeGrain: TimeGrain;
-    },
-    thunkAPI
-  ) => {
-    const state = thunkAPI.getState() as RillReduxState;
-    const metricsExplore = selectMetricsExplorerById(state, metricsDefId);
-    thunkAPI.dispatch(setExplorerSelectedTimeGrain(metricsDefId, timeGrain));
-    setExploreSelectedTimeRangeAndUpdate(
-      thunkAPI.dispatch,
-      metricsDefId,
-      metricsExplore.selectedTimeRange.name,
-      timeGrain
-    );
-  }
-);

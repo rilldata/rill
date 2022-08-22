@@ -7,10 +7,8 @@
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
-  import { updateSelectedTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
@@ -26,18 +24,17 @@
   } from "./time-range-utils";
 
   export let metricsDefId: string;
+  export let selectedTimeRangeName: TimeRangeName;
 
   const dispatch = createEventDispatcher();
+  const EVENT_NAME = "select-time-range-name";
 
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  let selectedTimeRangeName: TimeRangeName;
-  $: selectedTimeRangeName = $metricsExplorer?.selectedTimeRange?.name;
-
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
-  // query the `/meta` endpoint to get the full time range of the dataset
+  // query the `/meta` endpoint to get the all time range of the dataset
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
   const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
     getMetricViewMetadata(metricsDefId)
@@ -46,6 +43,8 @@
     queryKey = getMetricViewMetaQueryKey(metricsDefId);
     queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
   }
+  let allTimeRange: TimeSeriesTimeRange;
+  $: allTimeRange = $queryResult.data?.timeDimension?.timeRange;
 
   // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
   const getSelectableTimeRanges = (
@@ -60,10 +59,8 @@
     );
     return selectableTimeRanges;
   };
-  $: if ($queryResult.data?.timeDimension?.timeRange) {
-    selectableTimeRanges = getSelectableTimeRanges(
-      $queryResult.data.timeDimension.timeRange
-    );
+  $: if (allTimeRange) {
+    selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
   }
 
   /// Start boilerplate for DIY Dropdown menu ///
@@ -90,15 +87,7 @@
 
   const onTimeRangeSelect = (timeRangeName: TimeRangeName) => {
     timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
-    store.dispatch(
-      updateSelectedTimeRangeNameApi({
-        metricsDefId,
-        timeRangeName,
-      })
-    );
-    dispatch("select-time-range-name", {
-      timeRangeName,
-    });
+    dispatch(EVENT_NAME, { timeRangeName });
   };
 </script>
 

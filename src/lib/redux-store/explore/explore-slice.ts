@@ -2,6 +2,8 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import { removeIfExists } from "$common/utils/arrayUtils";
 import {
   createEntityAdapter,
   createSlice,
@@ -11,10 +13,6 @@ import {
   setFieldReducer,
 } from "$lib/redux-store/utils/slice-utils";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
-import { removeIfExists } from "$common/utils/arrayUtils";
-import type { TimeGrain } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { TimeGrainOption } from "../../../routes/_surfaces/workspace/explore/time-controls/time-range-utils";
 
 export interface LeaderboardValue {
   value: number;
@@ -40,16 +38,8 @@ export interface MetricsExplorerEntity {
   leaderboards: Array<LeaderboardValues>;
   filters: MetricViewRequestFilter;
   selectedCount: number;
-  // time range of the selected timestamp column
-  allTimeRange?: TimeSeriesTimeRange;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
-  // all possible time ranges
-  selectableTimeRanges?: TimeSeriesTimeRange[];
-  // user selected time grain
-  selectedTimeGrain?: TimeGrain;
-  // all possible time grains
-  selectableTimeGrains?: TimeGrainOption[];
   // this marks whether anything related to this explore is stale
   // this is set to true when any measure or dimension changes.
   // this also is set to true when related model and its dependant source updates (TODO)
@@ -328,21 +318,6 @@ export const exploreSlice = createSlice({
       prepare: (id: string) => ({ payload: id }),
     },
 
-    setExploreAllTimeRange: {
-      reducer: (
-        state,
-        {
-          payload: { id, timeRange },
-        }: PayloadAction<{ id: string; timeRange: TimeSeriesTimeRange }>
-      ) => {
-        if (!state.entities[id]) return;
-        state.entities[id].allTimeRange = timeRange;
-      },
-      prepare: (id: string, timeRange: TimeSeriesTimeRange) => ({
-        payload: { id, timeRange },
-      }),
-    },
-
     setExploreSelectedTimeRange: {
       reducer: (
         state,
@@ -368,27 +343,6 @@ export const exploreSlice = createSlice({
       }),
     },
 
-    setExplorerSelectableTimeRanges: {
-      reducer: setFieldReducer("selectableTimeRanges"),
-      prepare: setFieldPrepare<MetricsExplorerEntity, "selectableTimeRanges">(
-        "selectableTimeRanges"
-      ),
-    },
-
-    setExplorerSelectedTimeGrain: {
-      reducer: setFieldReducer("selectedTimeGrain"),
-      prepare: setFieldPrepare<MetricsExplorerEntity, "selectedTimeGrain">(
-        "selectedTimeGrain"
-      ),
-    },
-
-    setExplorerSelectableTimeGrains: {
-      reducer: setFieldReducer("selectableTimeGrains"),
-      prepare: setFieldPrepare<MetricsExplorerEntity, "selectableTimeGrains">(
-        "selectableTimeGrains"
-      ),
-    },
-
     setExplorerIsStale: {
       reducer: setFieldReducer("isStale"),
       prepare: setFieldPrepare<MetricsExplorerEntity, "isStale">("isStale"),
@@ -406,11 +360,7 @@ export const {
   removeDimensionFromExplore,
   toggleLeaderboardActiveValue,
   clearSelectedLeaderboardValues,
-  setExploreAllTimeRange,
   setExploreSelectedTimeRange,
-  setExplorerSelectableTimeRanges,
-  setExplorerSelectedTimeGrain,
-  setExplorerSelectableTimeGrains,
   setExplorerIsStale,
 } = exploreSlice.actions;
 export const MetricsExplorerSliceActions = exploreSlice.actions;

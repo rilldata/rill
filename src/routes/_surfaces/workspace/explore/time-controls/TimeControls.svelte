@@ -6,14 +6,30 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
+  import type {
+    TimeGrain,
+    TimeRangeName,
+    TimeSeriesTimeRange,
+  } from "$common/database-service/DatabaseTimeSeriesActions";
+  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { setExploreSelectedTimeRangeAndUpdate } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import { store } from "$lib/redux-store/store-root";
   import {
+    getMetricViewMetadata,
+    getMetricViewMetaQueryKey,
     getMetricViewTimeSeriesQueryKey,
     invalidateMetricViewTopList,
   } from "$lib/svelte-query/queries/metric-view";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
+  import { onMount } from "svelte";
   import type { Readable } from "svelte/store";
+  import {
+    getDefaultTimeGrain,
+    getDefaultTimeRangeName,
+    makeTimeRange,
+  } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
 
@@ -22,16 +38,90 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   let metricsExplorer: Readable<MetricsExplorerEntity>;
   $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
-  // invalidate the timeseries query when the selected time range changes
+  let selectedTimeRangeName;
+  const setSelectedTimeRangeName = (evt) => {
+    selectedTimeRangeName = evt.detail.timeRangeName;
+  };
+
+  let selectedTimeGrain;
+  const setSelectedTimeGrain = (evt) => {
+    selectedTimeGrain = evt.detail.timeGrain;
+  };
+
+  // query the `/meta` endpoint to get the all time range of the dataset
+  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
+  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
+    getMetricViewMetadata(metricsDefId)
+  );
+  $: {
+    queryKey = getMetricViewMetaQueryKey(metricsDefId);
+    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
+  }
+  let allTimeRange: TimeSeriesTimeRange;
+  $: allTimeRange = $queryResult.data?.timeDimension?.timeRange;
+
   const queryClient = useQueryClient();
   const timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
-  $: if ($metricsExplorer?.selectedTimeRange) {
+
+  // initialize the component with the default options
+  onMount(() => {
+    const defaultTimeRangeName = getDefaultTimeRangeName();
+    selectedTimeRangeName = defaultTimeRangeName;
+    const defaultTimeGrain = getDefaultTimeGrain(
+      selectedTimeRangeName,
+      allTimeRange
+    );
+    selectedTimeGrain = defaultTimeGrain;
+  });
+
+  const makeTimeRangeAndUpdateStore = (
+    timeRangeName: TimeRangeName,
+    timeGrain: TimeGrain,
+    allTimeRangeInDataset: TimeSeriesTimeRange
+  ) => {
+    if (!timeRangeName || !timeGrain || !allTimeRangeInDataset) return;
+
+    const newTimeRange = makeTimeRange(
+      selectedTimeRangeName,
+      selectedTimeGrain,
+      allTimeRange
+    );
+
+    if (
+      newTimeRange.start === $metricsExplorer?.selectedTimeRange?.start &&
+      newTimeRange.end === $metricsExplorer?.selectedTimeRange?.end &&
+      newTimeRange.interval === $metricsExplorer?.selectedTimeRange?.interval
+    )
+      return;
+
+    setExploreSelectedTimeRangeAndUpdate(
+      store.dispatch,
+      metricsDefId,
+      newTimeRange
+    );
+
     queryClient.invalidateQueries(timeSeriesQueryKey);
     invalidateMetricViewTopList(queryClient, metricsDefId);
-  }
+  };
+
+  // reactive statement that makes a new time range whenever the selected options change
+  $: makeTimeRangeAndUpdateStore(
+    selectedTimeRangeName,
+    selectedTimeGrain,
+    allTimeRange
+  );
 </script>
 
 <div class="flex flex-row">
-  <TimeRangeNameSelector {metricsDefId} />
-  <TimeGrainSelector {metricsDefId} />
+  <TimeRangeNameSelector
+    {metricsDefId}
+    {selectedTimeRangeName}
+    on:select-time-range-name={setSelectedTimeRangeName}
+  />
+  <TimeGrainSelector
+    {metricsDefId}
+    {selectedTimeRangeName}
+    {selectedTimeGrain}
+    on:select-time-grain={setSelectedTimeGrain}
+  />
 </div>

@@ -8,23 +8,22 @@
   import type { BigNumberEntity } from "$lib/redux-store/big-number/big-number-slice";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
   import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
+    invalidateMetricViewTopList,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { useQuery } from "@sveltestack/svelte-query";
+  import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import Leaderboard from "./Leaderboard.svelte";
-  import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { invalidateMetricViewTopList } from "$lib/svelte-query/queries/metric-view";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
@@ -63,7 +62,7 @@
   $: bigNumberEntity = getBigNumberById(metricsDefId);
   let referenceValue: number;
 
-  $: if ($bigNumberEntity && activeMeasure.sqlName) {
+  $: if ($bigNumberEntity && activeMeasure?.sqlName) {
     referenceValue =
       whichReferenceValue === "filtered"
         ? $bigNumberEntity.bigNumbers?.[activeMeasure.sqlName]
