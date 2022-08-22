@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   export let label: string;
-  export let values: string;
+  export let values: string[];
   export let show = 1;
   export let labelMaxWidth = "160px";
   export let valueMaxWidth = "320px";

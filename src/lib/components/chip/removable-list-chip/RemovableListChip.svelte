@@ -52,11 +52,12 @@ are details left to the consumer of the component; this component should remain 
       {active}
     >
       <!-- remove button tooltip -->
-      <svelte:fragment slot="remove-tooltip"
-        >remove {selectedValues.length}
-        {name}
-        dimension filter{#if selectedValues.length !== 1}s{/if}</svelte:fragment
-      >
+      <svelte:fragment slot="remove-tooltip">
+        <slot name="remove-tooltip">
+          remove {selectedValues.length}
+          value{#if selectedValues.length !== 1}s{/if} for {name}</slot
+        >
+      </svelte:fragment>
       <!-- body -->
       <RemovableListBody
         slot="body"
