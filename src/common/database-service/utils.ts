@@ -79,23 +79,18 @@ export function getCoalesceStatementsMeasures(
 
 // TODO: remove ActiveValues once all uses have been moved
 export function getWhereClauseFromFilters(
-  filters: ActiveValues,
   metricViewFilters: MetricViewRequestFilter,
   timestampColumn: string,
   timeRange: TimeSeriesTimeRange,
   prefix: string
 ) {
   const whereClauses = [];
-  if (filters && Object.keys(filters).length) {
-    whereClauses.push(getFilterFromFilters(filters));
-  }
   if (
     metricViewFilters?.include?.length ||
     metricViewFilters?.exclude?.length
   ) {
     whereClauses.push(getFilterFromMetricViewFilters(metricViewFilters));
   }
-  console.log(timeRange);
   if (timeRange?.start || timeRange?.end) {
     whereClauses.push(getFilterFromTimeRange(timestampColumn, timeRange));
   }

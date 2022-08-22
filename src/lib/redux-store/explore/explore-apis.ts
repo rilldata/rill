@@ -2,7 +2,6 @@ import type { DimensionDefinitionEntity } from "$common/data-modeler-state-servi
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
-import { generateBigNumbersApi } from "$lib/redux-store/big-number/big-number-apis";
 import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
 import {
   addDimensionToExplore,
@@ -15,27 +14,12 @@ import {
   setExplorerIsStale,
   setExploreSelectedTimeRange,
   setLeaderboardMeasureId,
-  toggleExploreMeasure,
 } from "$lib/redux-store/explore/explore-slice";
 import { selectValidMeasures } from "$lib/redux-store/measure-definition/measure-definition-selectors";
-import { generateTimeSeriesApi } from "$lib/redux-store/timeseries/timeseries-apis";
-
-/**
- * A wrapper to dispatch updates to explore.
- * Currently, it updates these sections
- * 1. Leaderboard values based on selected filters and measure
- * 2. Time series for all selected measures
- * 3. Big numbers for all selected measures
- */
-const updateExploreWrapper = (dispatch, metricsDefId: string) => {
-  dispatch(generateTimeSeriesApi({ id: metricsDefId }));
-  dispatch(generateBigNumbersApi({ id: metricsDefId }));
-};
 
 /**
  * Syncs explore with updated measures and dimensions.
  * If a MetricsExplorer entity is not present then a new one is created.
- * It then calls {@link updateExploreWrapper} to update explore.
  */
 export const syncExplore = async (
   dispatch,
@@ -120,22 +104,6 @@ const syncMeasures = (
 };
 
 /**
- * Toggles selection of a measures to be displayed.
- * It then updates,
- * 1. Time series for all selected measures
- * 2. Big numbers for all selected measures
- */
-export const toggleExploreMeasureAndUpdate = (
-  dispatch,
-  metricsDefId: string,
-  selectedMeasureId: string
-) => {
-  dispatch(toggleExploreMeasure(metricsDefId, selectedMeasureId));
-  dispatch(generateTimeSeriesApi({ id: metricsDefId }));
-  dispatch(generateBigNumbersApi({ id: metricsDefId }));
-};
-
-/**
  * Sets the measure id used in leaderboard for ranking and other calculations.
  * It then updates Leaderboard values based on selected filters and measure
  */
@@ -149,19 +117,16 @@ export const setMeasureIdAndUpdateLeaderboard = (
 
 /**
  * Clears all selected values in the leaderboard.
- * It then calls {@link updateExploreWrapper} to update explore.
  */
 export const clearSelectedLeaderboardValuesAndUpdate = (
   dispatch,
   metricsDefId: string
 ) => {
   dispatch(clearSelectedLeaderboardValues(metricsDefId));
-  updateExploreWrapper(dispatch, metricsDefId);
 };
 
 /**
  * Sets user selected time range.
- * It then calls {@link updateExploreWrapper} to update explore.
  */
 export const setExploreSelectedTimeRangeAndUpdate = (
   dispatch,
@@ -170,5 +135,4 @@ export const setExploreSelectedTimeRangeAndUpdate = (
 ) => {
   dispatch(setReferenceValues(metricsDefId, undefined));
   dispatch(setExploreSelectedTimeRange(metricsDefId, timeRange));
-  updateExploreWrapper(dispatch, metricsDefId);
 };

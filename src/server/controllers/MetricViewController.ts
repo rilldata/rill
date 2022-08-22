@@ -19,9 +19,8 @@ export class MetricViewController extends RillDeveloperController {
       "/v1/metric-views/:id/toplist/:dimension",
       (req: Request, res: Response) => this.handleGetLeaderboards(req, res)
     );
-    router.post(
-      "/v1/metric-views/:id/big-number",
-      (req: Request, res: Response) => this.bigNumber(req, res)
+    router.post("/v1/metric-views/:id/totals", (req: Request, res: Response) =>
+      this.bigNumber(req, res)
     );
   }
 
@@ -54,7 +53,7 @@ export class MetricViewController extends RillDeveloperController {
 
   private async bigNumber(req: Request, res: Response) {
     return EntityController.wrapAction(res, (context) =>
-      this.rillDeveloperService.dispatch(context, "getRuntimeBigNumber", [
+      this.rillDeveloperService.dispatch(context, "getMetricViewTotals", [
         req.params.id,
         req.body,
       ])

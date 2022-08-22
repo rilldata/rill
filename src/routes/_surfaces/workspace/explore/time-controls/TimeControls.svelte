@@ -20,7 +20,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
     getMetricViewTimeSeriesQueryKey,
-    invalidateMetricViewTopList,
+    invalidateMetricView,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
@@ -101,7 +101,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     );
 
     queryClient.invalidateQueries(timeSeriesQueryKey);
-    invalidateMetricViewTopList(queryClient, metricsDefId);
+    invalidateMetricView(queryClient, metricsDefId);
   };
 
   // reactive statement that makes a new time range whenever the selected options change

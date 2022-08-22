@@ -19,6 +19,8 @@
     getMetricViewMetaQueryKey,
     getMetricViewTimeSeries,
     getMetricViewTimeSeriesQueryKey,
+    getMetricViewTotals,
+    getMetricViewTotalsQueryKey,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
@@ -31,6 +33,10 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import {
+    MetricViewTotalsRequest,
+    MetricViewTotalsResponse,
+  } from "$common/rill-developer-service/MetricViewActions";
 
   export let metricsDefId;
 
@@ -51,8 +57,26 @@
     $metricsExplorer?.selectedTimeRange?.interval ||
     $queryResult.data?.timeDimension?.timeRange?.interval;
 
-  let bigNumbers: Readable<BigNumberEntity>;
-  $: bigNumbers = getBigNumberById(metricsDefId);
+  function getTotalsRequest(noFilters = false): MetricViewTotalsRequest {
+    return {
+      measures: [$metricsExplorer.leaderboardMeasureId],
+      filter: noFilters ? undefined : $metricsExplorer.filters,
+      time: {
+        start: $metricsExplorer.selectedTimeRange?.start,
+        end: $metricsExplorer.selectedTimeRange?.end,
+      },
+    };
+  }
+  let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
+  const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
+    getMetricViewTotals(metricsDefId, getTotalsRequest())
+  );
+  $: {
+    totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
+    totalsQuery.setOptions(totalsQueryKey, () =>
+      getMetricViewTotals(metricsDefId, getTotalsRequest())
+    );
+  }
 
   // query the `/timeseries` endpoint
   let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
@@ -127,7 +151,7 @@
     {#if $queryResult.isSuccess}
       {#each $queryResult.data.measures as measure, index (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
+        {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}
 
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
@@ -136,7 +160,9 @@
             measure?.label ||
             measure?.expression}
           formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
-          status={$bigNumbers?.status}
+          status={$totalsQuery.isFetching
+            ? EntityStatus.Running
+            : EntityStatus.Idle}
         >
           <svelte:fragment slot="name">
             {measure?.label || measure?.expression}
