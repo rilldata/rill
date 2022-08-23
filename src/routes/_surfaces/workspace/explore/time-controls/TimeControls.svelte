@@ -24,7 +24,9 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
+    getSelectableTimeGrains,
     makeTimeRange,
+    TimeGrainOption,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
@@ -56,8 +58,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   let allTimeRange: TimeSeriesTimeRange;
   $: allTimeRange = $queryResult.data?.timeDimension?.timeRange;
 
-  const queryClient = useQueryClient();
-
   // initialize the component with the default options
   onMount(() => {
     const defaultTimeRangeName = getDefaultTimeRangeName();
@@ -69,12 +69,39 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     selectedTimeGrain = defaultTimeGrain;
   });
 
-  const makeTimeRangeAndUpdateStore = (
+  // we get the selectableTimeGrains so that we can assess whether or not the
+  // existing selectedTimeGrain is valid whenever the selectedTimeRangeName changes
+  let selectableTimeGrains: TimeGrainOption[];
+  $: selectableTimeGrains = getSelectableTimeGrains(
+    selectedTimeRangeName,
+    allTimeRange
+  );
+
+  const checkValidTimeGrain = (timeGrain: TimeGrain) => {
+    const timeGrainOption = selectableTimeGrains.find(
+      (timeGrainOption) => timeGrainOption.timeGrain === timeGrain
+    );
+    return timeGrainOption?.enabled;
+  };
+
+  const queryClient = useQueryClient();
+
+  const makeValidTimeRangeAndUpdateAppState = (
     timeRangeName: TimeRangeName,
     timeGrain: TimeGrain,
     allTimeRangeInDataset: TimeSeriesTimeRange
   ) => {
     if (!timeRangeName || !timeGrain || !allTimeRangeInDataset) return;
+
+    // validate time range name + time grain combination
+    // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
+    const isValidTimeGrain = checkValidTimeGrain(timeGrain);
+    if (!isValidTimeGrain) {
+      selectedTimeGrain = getDefaultTimeGrain(
+        timeRangeName,
+        allTimeRangeInDataset
+      );
+    }
 
     const newTimeRange = makeTimeRange(
       selectedTimeRangeName,
@@ -82,6 +109,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       allTimeRange
     );
 
+    // don't update if time range hasn't changed
     if (
       newTimeRange.start === metricsExplorer?.selectedTimeRange?.start &&
       newTimeRange.end === metricsExplorer?.selectedTimeRange?.end &&
@@ -90,12 +118,11 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       return;
 
     metricsExplorerStore.setSelectedTimeRange(metricsDefId, newTimeRange);
-
     invalidateMetricViewData(queryClient, metricsDefId);
   };
 
-  // reactive statement that makes a new time range whenever the selected options change
-  $: makeTimeRangeAndUpdateStore(
+  // reactive statement that makes a new valid time range whenever the selected options change
+  $: makeValidTimeRangeAndUpdateAppState(
     selectedTimeRangeName,
     selectedTimeGrain,
     allTimeRange
@@ -109,9 +136,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     on:select-time-range-name={setSelectedTimeRangeName}
   />
   <TimeGrainSelector
-    {metricsDefId}
-    {selectedTimeRangeName}
     {selectedTimeGrain}
+    {selectableTimeGrains}
     on:select-time-grain={setSelectedTimeGrain}
   />
 </div>
