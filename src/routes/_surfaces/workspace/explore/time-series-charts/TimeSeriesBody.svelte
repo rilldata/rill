@@ -28,7 +28,12 @@
   // workaround for formatting dates etc.
   //const xFormatter = interval.includes('day') ?
 
-  $: longTimeSeries = data?.length > 1000;
+  // bug: currently `data` continuously refreshes for no apparent reason
+  // hack: we use `dataCopy` so that continuous `data` updates don't lead to unneccessary rerenders
+  let dataCopy;
+  $: if (data !== dataCopy) dataCopy = data;
+
+  $: longTimeSeries = dataCopy?.length > 1000;
   let longTimeSeriesKey;
   /**
    * Artificially generate a value for the key block.
@@ -38,7 +43,7 @@
    * making it look like it is sinking into the ocean.
    * It's a nice effect.
    */
-  $: if (data?.length > 1000) {
+  $: if (dataCopy?.length > 1000) {
     longTimeSeriesKey = guidGenerator();
   } else {
     longTimeSeriesKey = undefined;
@@ -46,11 +51,11 @@
 
   let hideCurrent = false;
 
-  $: allZeros = data.every((di) => di[accessor] === 0);
-  $: dataInDomain = data.some((di) => di.ts >= start && di.ts <= end);
+  $: allZeros = dataCopy.every((di) => di[accessor] === 0);
+  $: dataInDomain = dataCopy.some((di) => di.ts >= start && di.ts <= end);
 </script>
 
-{#if key && data?.length}
+{#if key && dataCopy?.length}
   <div transition:fly|local={{ duration: 500, y: 10 }}>
     <SimpleDataGraphic
       shareYScale={false}
@@ -77,7 +82,7 @@
             }}
           >
             <WithTween
-              value={data}
+              value={dataCopy}
               let:output={tweenedData}
               tweenProps={{
                 duration: longTimeSeries
