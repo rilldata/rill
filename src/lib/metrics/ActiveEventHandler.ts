@@ -29,7 +29,6 @@ export class ActiveEventHandler {
 
     // this is to ensure the event is triggered at the top of the minute
     setTimeout(() => {
-      console.log("SETUP");
       setInterval(() => {
         this.fireEvent();
       }, this.config.metrics.activeEventInterval * 1000);
