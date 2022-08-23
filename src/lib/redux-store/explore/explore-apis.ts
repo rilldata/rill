@@ -1,19 +1,14 @@
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { getArrayDiff } from "$common/utils/getArrayDiff";
-import { setReferenceValues } from "$lib/redux-store/big-number/big-number-slice";
 import {
   addDimensionToExplore,
   addMeasureToExplore,
-  clearSelectedLeaderboardValues,
   initMetricsExplorer,
   MetricsExplorerEntity,
   removeDimensionFromExplore,
   removeMeasureFromExplore,
   setExplorerIsStale,
-  setExploreSelectedTimeRange,
-  setLeaderboardMeasureId,
 } from "$lib/redux-store/explore/explore-slice";
 import { selectValidMeasures } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 
@@ -101,38 +96,4 @@ const syncMeasures = (
   );
 
   return addMeasures.length > 0 || removeMeasures.length > 0;
-};
-
-/**
- * Sets the measure id used in leaderboard for ranking and other calculations.
- * It then updates Leaderboard values based on selected filters and measure
- */
-export const setMeasureIdAndUpdateLeaderboard = (
-  dispatch,
-  metricsDefId: string,
-  measureId: string
-) => {
-  dispatch(setLeaderboardMeasureId(metricsDefId, measureId));
-};
-
-/**
- * Clears all selected values in the leaderboard.
- */
-export const clearSelectedLeaderboardValuesAndUpdate = (
-  dispatch,
-  metricsDefId: string
-) => {
-  dispatch(clearSelectedLeaderboardValues(metricsDefId));
-};
-
-/**
- * Sets user selected time range.
- */
-export const setExploreSelectedTimeRangeAndUpdate = (
-  dispatch,
-  metricsDefId: string,
-  timeRange: TimeSeriesTimeRange
-) => {
-  dispatch(setReferenceValues(metricsDefId, undefined));
-  dispatch(setExploreSelectedTimeRange(metricsDefId, timeRange));
 };

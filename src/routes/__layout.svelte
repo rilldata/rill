@@ -46,7 +46,7 @@
     defaultOptions: {
       queries: {
         refetchOnWindowFocus: false,
-        placeholderData: [],
+        placeholderData: {},
       },
     },
   });

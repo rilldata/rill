@@ -30,20 +30,20 @@ export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 export interface MetricsExplorerEntity {
   id: string;
   // full list of measure IDs available to explore
-  measureIds: Array<string>;
+  measureIds?: Array<string>;
   // selected measure IDs to be shown
   selectedMeasureIds: Array<string>;
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
-  leaderboards: Array<LeaderboardValues>;
+  leaderboards?: Array<LeaderboardValues>;
   filters: MetricViewRequestFilter;
-  selectedCount: number;
+  selectedCount?: number;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
   // this marks whether anything related to this explore is stale
   // this is set to true when any measure or dimension changes.
   // this also is set to true when related model and its dependant source updates (TODO)
-  isStale: boolean;
+  isStale?: boolean;
 }
 
 const metricsExplorerAdapter = createEntityAdapter<MetricsExplorerEntity>();
@@ -243,81 +243,6 @@ export const exploreSlice = createSlice({
       }),
     },
 
-    // TODO: create a separate reducer for exclude value
-    toggleLeaderboardActiveValue: {
-      reducer: (
-        state,
-        {
-          payload: { id, dimensionId, dimensionValue },
-        }: PayloadAction<{
-          id: string;
-          dimensionId: string;
-          dimensionValue: unknown;
-        }>
-      ) => {
-        if (!state.entities[id]) return;
-        const metricsExplorer = state.entities[id];
-        const existingDimensionIndex =
-          metricsExplorer.filters.include.findIndex(
-            (dimensionValues) => dimensionValues.name === dimensionId
-          );
-
-        // if entry for dimension doesnt exist, add it
-        if (existingDimensionIndex === -1) {
-          metricsExplorer.filters.include.push({
-            name: dimensionId,
-            values: [dimensionValue],
-          });
-          return;
-        }
-
-        const existingIncludeIndex =
-          metricsExplorer.filters.include[
-            existingDimensionIndex
-          ].values.indexOf(dimensionValue) ?? -1;
-
-        // add the value if it doesn't exist, remove the value if it does exist
-        if (existingIncludeIndex === -1) {
-          metricsExplorer.filters.include[existingDimensionIndex].values.push(
-            dimensionValue
-          );
-        } else {
-          metricsExplorer.filters.include[existingDimensionIndex].values.splice(
-            existingIncludeIndex,
-            1
-          );
-          // remove the entry for dimension if no values are selected.
-          if (
-            metricsExplorer.filters.include[existingDimensionIndex].values
-              .length === 0
-          ) {
-            metricsExplorer.filters.include.splice(existingDimensionIndex, 1);
-          }
-        }
-      },
-      prepare: (id: string, dimensionId: string, dimensionValue: unknown) => ({
-        payload: { id, dimensionId, dimensionValue },
-      }),
-    },
-
-    clearSelectedLeaderboardValues: {
-      reducer: (state, { payload: id }: PayloadAction<string>) => {
-        if (!state.entities[id]) return;
-        state.entities[id].filters = {
-          include: [],
-          exclude: [],
-        };
-        state.entities[id].leaderboards = state.entities[id].leaderboards.map(
-          (leaderboard) => ({
-            dimensionId: leaderboard.dimensionId,
-            values: [],
-            status: EntityStatus.Idle,
-          })
-        );
-      },
-      prepare: (id: string) => ({ payload: id }),
-    },
-
     setExploreSelectedTimeRange: {
       reducer: (
         state,
@@ -358,8 +283,6 @@ export const {
   setLeaderboardMeasureId,
   addDimensionToExplore,
   removeDimensionFromExplore,
-  toggleLeaderboardActiveValue,
-  clearSelectedLeaderboardValues,
   setExploreSelectedTimeRange,
   setExplorerIsStale,
 } = exploreSlice.actions;

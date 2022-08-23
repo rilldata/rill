@@ -9,7 +9,6 @@
   import { Axis } from "$lib/components/data-graphic/guides";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
@@ -17,29 +16,28 @@
     getMetricViewMetaQueryKey,
     getMetricViewTimeSeries,
     getMetricViewTimeSeriesQueryKey,
+    getMetricViewTimeSeriesRequest,
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
+    getTotalsRequest,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
   import { useQuery } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
-  import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import {
-    MetricViewTotalsRequest,
-    MetricViewTotalsResponse,
-  } from "$common/rill-developer-service/MetricViewActions";
+  import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the measures and the default time grain
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -52,42 +50,30 @@
   }
 
   $: interval =
-    $metricsExplorer?.selectedTimeRange?.interval ||
+    metricsExplorer?.selectedTimeRange?.interval ||
     $queryResult.data?.timeDimension?.timeRange?.interval;
 
-  function getTotalsRequest(noFilters = false): MetricViewTotalsRequest {
-    return {
-      measures: [$metricsExplorer.leaderboardMeasureId],
-      filter: noFilters ? undefined : $metricsExplorer.filters,
-      time: {
-        start: $metricsExplorer.selectedTimeRange?.start,
-        end: $metricsExplorer.selectedTimeRange?.end,
-      },
-    };
-  }
   let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
   const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
-    getMetricViewTotals(metricsDefId, getTotalsRequest())
+    getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
   );
   $: {
     totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
     totalsQuery.setOptions(totalsQueryKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest())
+      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
     );
   }
 
   // query the `/timeseries` endpoint
   let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
   let timeSeriesQueryFn = () =>
-    getMetricViewTimeSeries(metricsDefId, {
-      measures: $metricsExplorer.measureIds,
-      filter: $metricsExplorer.filters,
-      time: {
-        start: $metricsExplorer?.selectedTimeRange?.start,
-        end: $metricsExplorer?.selectedTimeRange?.end,
-        granularity: $metricsExplorer?.selectedTimeRange?.interval,
-      },
-    });
+    getMetricViewTimeSeries(
+      metricsDefId,
+      getMetricViewTimeSeriesRequest(
+        metricsExplorer,
+        $queryResult.data.measures
+      )
+    );
   const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(
     timeSeriesQueryKey,
     timeSeriesQueryFn
