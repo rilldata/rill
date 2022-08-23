@@ -14,7 +14,7 @@
     getMetricViewMetaQueryKey,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { invalidateMetricViewData } from "$lib/svelte-query/queries/metric-view";
 
@@ -23,7 +23,7 @@
   const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
   const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
@@ -33,11 +33,11 @@
     queryKey = getMetricViewMetaQueryKey(metricsDefId);
     queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
   }
-  $: MetricsExplorerStore.sync(metricsDefId, $queryResult.data);
+  $: metricsExplorerStore.sync(metricsDefId, $queryResult.data);
 
   $: filtered = isFiltered(metricsExplorer?.filters);
   function clearAllFilters() {
-    MetricsExplorerStore.clearFilters(metricsDefId);
+    metricsExplorerStore.clearFilters(metricsDefId);
     invalidateMetricViewData(queryClient, metricsDefId);
   }
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);

@@ -11,7 +11,7 @@
   import { useQuery } from "@sveltestack/svelte-query";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
@@ -28,10 +28,10 @@
   $: measures = $queryResult.data.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    MetricsExplorerStore.setLeaderboardMeasureId(
+    metricsExplorerStore.setLeaderboardMeasureId(
       metricsDefId,
       event.detail.key
     );

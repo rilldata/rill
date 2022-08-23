@@ -32,7 +32,7 @@
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import Spinner from "$lib/components/Spinner.svelte";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let dimensionId: string;
@@ -60,7 +60,7 @@
     : $dimension?.dimensionColumn;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let activeValues: Array<unknown>;
   $: activeValues =

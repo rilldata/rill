@@ -24,7 +24,7 @@
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
@@ -32,7 +32,7 @@
   const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -115,7 +115,7 @@
   let leaderboardExpanded;
 
   function onSelectItem(event, item: DimensionDefinitionEntity) {
-    MetricsExplorerStore.toggleFilter(
+    metricsExplorerStore.toggleFilter(
       metricsDefId,
       item.id,
       event.detail.label

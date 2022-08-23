@@ -10,7 +10,7 @@ const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
 
-const UpdateMetricsExplorer = (
+const updateMetricsExplorerById = (
   id: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
   absenceCallback?: () => MetricsExplorerEntity
@@ -27,10 +27,10 @@ const UpdateMetricsExplorer = (
   });
 };
 
-const Methods = {
+const metricViewReducers = {
   sync(id: string, meta: MetricViewMetaResponse) {
     if (!id || !meta || !meta.measures) return;
-    UpdateMetricsExplorer(
+    updateMetricsExplorerById(
       id,
       (metricsExplorer) => {
         // sync measures with selected leaderboard measure.
@@ -56,19 +56,19 @@ const Methods = {
   },
 
   setLeaderboardMeasureId(id: string, measureId: string) {
-    UpdateMetricsExplorer(id, (metricsExplorer) => {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureId = measureId;
     });
   },
 
   setSelectedTimeRange(id: string, timeRange: TimeSeriesTimeRange) {
-    UpdateMetricsExplorer(id, (metricsExplorer) => {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
     });
   },
 
   toggleFilter(id: string, dimensionId: string, dimensionValue: string) {
-    UpdateMetricsExplorer(id, (metricsExplorer) => {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
       const existingDimensionIndex = metricsExplorer.filters.include.findIndex(
         (dimensionValues) => dimensionValues.name === dimensionId
       );
@@ -109,7 +109,7 @@ const Methods = {
   },
 
   clearFilters(id: string) {
-    UpdateMetricsExplorer(id, (metricsExplorer) => {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.filters = {
         include: [],
         exclude: [],
@@ -117,9 +117,9 @@ const Methods = {
     });
   },
 };
-export const MetricsExplorerStore: Readable<MetricsExplorerStoreType> &
-  typeof Methods = {
+export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
+  typeof metricViewReducers = {
   subscribe,
 
-  ...Methods,
+  ...metricViewReducers,
 };

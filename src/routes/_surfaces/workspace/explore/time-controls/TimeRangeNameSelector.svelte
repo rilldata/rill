@@ -20,7 +20,7 @@
     makeTimeRanges,
     prettyFormatTimeRange,
   } from "./time-range-utils";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let selectedTimeRangeName: TimeRangeName;
@@ -29,7 +29,7 @@
   const EVENT_NAME = "select-time-range-name";
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
