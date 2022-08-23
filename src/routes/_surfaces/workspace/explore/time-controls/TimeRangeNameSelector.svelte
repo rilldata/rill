@@ -4,6 +4,7 @@
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
@@ -20,7 +21,6 @@
     makeTimeRanges,
     prettyFormatTimeRange,
   } from "./time-range-utils";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let selectedTimeRangeName: TimeRangeName;
@@ -29,7 +29,7 @@
   const EVENT_NAME = "select-time-range-name";
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
 

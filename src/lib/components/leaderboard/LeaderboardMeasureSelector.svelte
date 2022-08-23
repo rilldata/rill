@@ -2,6 +2,7 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { SelectMenu } from "$lib/components/menu";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import {
@@ -11,10 +12,6 @@
   import { useQuery } from "@sveltestack/svelte-query";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
-  import {
-    MetricsExplorerStore,
-    setMetricsExplorerLeaderboardMeasureId,
-  } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
@@ -31,10 +28,13 @@
   $: measures = $queryResult.data.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    setMetricsExplorerLeaderboardMeasureId(metricsDefId, event.detail.key);
+    metricsExplorerStore.setLeaderboardMeasureId(
+      metricsDefId,
+      event.detail.key
+    );
   }
 
   function formatForSelector(measure: MeasureDefinitionEntity) {

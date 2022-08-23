@@ -4,6 +4,8 @@
     MetricViewMetaResponse,
     MetricViewTimeSeriesResponse,
   } from "$common/rill-developer-service/MetricViewActions";
+  import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
@@ -16,8 +18,10 @@
     getMetricViewMetaQueryKey,
     getMetricViewTimeSeries,
     getMetricViewTimeSeriesQueryKey,
+    getMetricViewTimeSeriesRequest,
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
+    getTotalsRequest,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
@@ -29,16 +33,11 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import {
-    MetricViewTotalsRequest,
-    MetricViewTotalsResponse,
-  } from "$common/rill-developer-service/MetricViewActions";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the measures and the default time grain
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -54,39 +53,27 @@
     metricsExplorer?.selectedTimeRange?.interval ||
     $queryResult.data?.timeDimension?.timeRange?.interval;
 
-  function getTotalsRequest(noFilters = false): MetricViewTotalsRequest {
-    return {
-      measures: [metricsExplorer.leaderboardMeasureId],
-      filter: noFilters ? undefined : metricsExplorer.filters,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-      },
-    };
-  }
   let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
   const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
-    getMetricViewTotals(metricsDefId, getTotalsRequest())
+    getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
   );
   $: {
     totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
     totalsQuery.setOptions(totalsQueryKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest())
+      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
     );
   }
 
   // query the `/timeseries` endpoint
   let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
   let timeSeriesQueryFn = () =>
-    getMetricViewTimeSeries(metricsDefId, {
-      measures: $queryResult.data.measures.map((measure) => measure.id),
-      filter: metricsExplorer.filters,
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-        granularity: metricsExplorer?.selectedTimeRange?.interval,
-      },
-    });
+    getMetricViewTimeSeries(
+      metricsDefId,
+      getMetricViewTimeSeriesRequest(
+        metricsExplorer,
+        $queryResult.data.measures
+      )
+    );
   const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(
     timeSeriesQueryKey,
     timeSeriesQueryFn

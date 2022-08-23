@@ -13,8 +13,7 @@
 
 <style>
   section {
-    --header: 120px;
-    grid-template-rows: var(--header) 1fr;
+    grid-template-rows: auto 1fr;
     grid-template-columns: 560px minmax(355px, auto);
     height: 100vh;
     overflow-x: auto;

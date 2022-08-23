@@ -3,19 +3,18 @@
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import type {
     MetricViewMetaResponse,
-    MetricViewTotalsRequest,
     MetricViewTotalsResponse,
   } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
-  import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
+    getTotalsRequest,
     invalidateMetricViewData,
   } from "$lib/svelte-query/queries/metric-view";
   import {
@@ -26,7 +25,6 @@
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
-  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
@@ -34,7 +32,7 @@
   const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   let queryKey = getMetricViewMetaQueryKey(metricsDefId);
@@ -63,34 +61,25 @@
 
   let referenceValue: number;
 
-  function getTotalsRequest(noFilters = false): MetricViewTotalsRequest {
-    return {
-      measures: [metricsExplorer.leaderboardMeasureId],
-      filter: noFilters ? undefined : metricsExplorer.filters,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-      },
-    };
-  }
   let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
   const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
-    getMetricViewTotals(metricsDefId, getTotalsRequest())
+    getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
   );
   // TODO: find a way to have a single request when there are no filters
   let referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
   const referenceValueQuery = useQuery<MetricViewTotalsResponse>(
     referenceValueKey,
-    () => getMetricViewTotals(metricsDefId, getTotalsRequest(true))
+    () =>
+      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer, true))
   );
   $: {
     totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
     totalsQuery.setOptions(totalsQueryKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest())
+      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
     );
     referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
     referenceValueQuery.setOptions(referenceValueKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(true))
+      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer, true))
     );
   }
 
@@ -126,8 +115,10 @@
   let leaderboardExpanded;
 
   function onSelectItem(event, item: DimensionDefinitionEntity) {
-    store.dispatch(
-      toggleLeaderboardActiveValue(metricsDefId, item.id, event.detail.label)
+    metricsExplorerStore.toggleFilter(
+      metricsDefId,
+      item.id,
+      event.detail.label
     );
     invalidateMetricViewData(queryClient, metricsDefId);
   }

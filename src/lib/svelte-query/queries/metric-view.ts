@@ -14,6 +14,8 @@ import type {
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 import type { QueryClient } from "@sveltestack/svelte-query";
+import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 // GET /api/v1/metric-views/{view-name}/meta
 
@@ -41,6 +43,24 @@ export const getMetricViewMetaQueryKey = (metricViewId: string) => {
 
 // POST /api/v1/metric-views/{view-name}/timeseries
 
+export const getMetricViewTimeSeriesRequest = (
+  metricsExplorer: MetricsExplorerEntity,
+  measures: Array<MeasureDefinitionEntity>
+) => {
+  const selectedMeasureIdSet = new Set(metricsExplorer.selectedMeasureIds);
+  return {
+    measures: measures
+      .map((measure) => measure.id)
+      .filter((measureId) => selectedMeasureIdSet.has(measureId)),
+    filter: metricsExplorer.filters,
+    time: {
+      start: metricsExplorer?.selectedTimeRange?.start,
+      end: metricsExplorer?.selectedTimeRange?.end,
+      granularity: metricsExplorer?.selectedTimeRange?.interval,
+    },
+  };
+};
+
 export const getMetricViewTimeSeries = async (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest
@@ -67,6 +87,21 @@ export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
+export const getTopListRequest = (
+  metricsExplorer: MetricsExplorerEntity
+): MetricViewTopListRequest => {
+  return {
+    measures: [metricsExplorer.leaderboardMeasureId],
+    limit: 10,
+    offset: 0,
+    sort: [],
+    time: {
+      start: metricsExplorer.selectedTimeRange?.start,
+      end: metricsExplorer.selectedTimeRange?.end,
+    },
+    filter: metricsExplorer.filters,
+  };
+};
 
 export const getMetricViewTopList = async (
   metricViewId: string,
@@ -104,6 +139,19 @@ export const getMetricViewTopListQueryKey = (
 };
 
 // POST /api/v1/metric-views/{view-name}/totals
+export const getTotalsRequest = (
+  metricsExplorer: MetricsExplorerEntity,
+  noFilters = false
+): MetricViewTotalsRequest => {
+  return {
+    measures: metricsExplorer.selectedMeasureIds,
+    filter: noFilters ? undefined : metricsExplorer.filters,
+    time: {
+      start: metricsExplorer.selectedTimeRange?.start,
+      end: metricsExplorer.selectedTimeRange?.end,
+    },
+  };
+};
 
 export const getMetricViewTotals = async (
   metricViewId: string,

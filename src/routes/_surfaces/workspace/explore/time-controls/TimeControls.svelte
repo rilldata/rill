@@ -12,6 +12,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import {
     getMetricViewMetadata,
@@ -27,15 +28,11 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
-  import {
-    MetricsExplorerStore,
-    setMetricsExplorerSelectedTimeRange,
-  } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let selectedTimeRangeName;
   const setSelectedTimeRangeName = (evt) => {
@@ -92,7 +89,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     )
       return;
 
-    setMetricsExplorerSelectedTimeRange(metricsDefId, newTimeRange);
+    metricsExplorerStore.setSelectedTimeRange(metricsDefId, newTimeRange);
 
     invalidateMetricViewData(queryClient, metricsDefId);
   };
