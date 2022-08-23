@@ -39,7 +39,9 @@ const Methods = {
         } else if (!meta.measures.length) {
           metricsExplorer.leaderboardMeasureId = undefined;
         }
-        // TODO: update selected measure id. This is not being used right now
+        metricsExplorer.selectedMeasureIds = meta.measures.map(
+          (measure) => measure.id
+        );
       },
       () => ({
         id,

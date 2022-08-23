@@ -247,11 +247,11 @@ export class MetricViewActions extends RillDeveloperActions {
         "getBigNumber",
         [
           model.tableName,
-          request.measures.map((measureId) =>
-            this.dataModelerStateService
+          request.measures.map((measureId) => ({
+            ...this.dataModelerStateService
               .getMeasureDefinitionService()
-              .getById(measureId)
-          ),
+              .getById(measureId),
+          })),
           mapDimensionIdToName(
             request.filter,
             this.dataModelerStateService

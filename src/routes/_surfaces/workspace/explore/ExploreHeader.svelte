@@ -6,7 +6,7 @@
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { isAnythingSelected } from "$lib/util/isAnythingSelected";
+  import { isFiltered } from "$lib/util/isFiltered";
   import { fly } from "svelte/transition";
   import TimeControls from "./time-controls/TimeControls.svelte";
   import {
@@ -35,7 +35,7 @@
   }
   $: MetricsExplorerStore.sync(metricsDefId, $queryResult.data);
 
-  $: anythingSelected = isAnythingSelected(metricsExplorer?.filters);
+  $: filtered = isFiltered(metricsExplorer?.filters);
   function clearAllFilters() {
     MetricsExplorerStore.clearFilters(metricsDefId);
     invalidateMetricViewData(queryClient, metricsDefId);
@@ -83,7 +83,7 @@
 
     <div class="justify-self-end self-start h-max">
       <div class="pt-3">
-        {#if anythingSelected}
+        {#if filtered}
           <button
             transition:fly={{ duration: 200, y: 5 }}
             on:click={clearAllFilters}
