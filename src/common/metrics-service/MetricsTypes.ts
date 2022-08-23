@@ -20,6 +20,19 @@ export interface MetricsEvent extends CommonFields, CommonUserFields {
   event_type: string;
 }
 
+export enum MetricsEventSpace {
+  RightPanel = "right-panel",
+  Workspace = "workspace",
+  LeftPanel = "left-panel",
+}
+
+export enum MetricsEventScreenName {
+  Source = "source",
+  Model = "model",
+  Dashboard = "dashboard",
+  MetricsDefinition = "metrics-definition",
+}
+
 export interface ActiveEvent extends MetricsEvent {
   event_type: "active";
   duration_sec: number;
