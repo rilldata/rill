@@ -9,8 +9,6 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { toggleLeaderboardActiveValue } from "$lib/redux-store/explore/explore-slice";
-  import { store } from "$lib/redux-store/store-root";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,
@@ -126,8 +124,10 @@
   let leaderboardExpanded;
 
   function onSelectItem(event, item: DimensionDefinitionEntity) {
-    store.dispatch(
-      toggleLeaderboardActiveValue(metricsDefId, item.id, event.detail.label)
+    MetricsExplorerStore.toggleFilter(
+      metricsDefId,
+      item.id,
+      event.detail.label
     );
     invalidateMetricViewData(queryClient, metricsDefId);
   }

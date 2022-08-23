@@ -11,10 +11,7 @@
   import { useQuery } from "@sveltestack/svelte-query";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
-  import {
-    MetricsExplorerStore,
-    setMetricsExplorerLeaderboardMeasureId,
-  } from "$lib/application-state-stores/explorer-stores";
+  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 
@@ -34,7 +31,10 @@
   $: metricsExplorer = $MetricsExplorerStore.entities[metricsDefId];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    setMetricsExplorerLeaderboardMeasureId(metricsDefId, event.detail.key);
+    MetricsExplorerStore.setLeaderboardMeasureId(
+      metricsDefId,
+      event.detail.key
+    );
   }
 
   function formatForSelector(measure: MeasureDefinitionEntity) {

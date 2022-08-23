@@ -14,10 +14,7 @@
     getMetricViewMetaQueryKey,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
-  import {
-    MetricsExplorerStore,
-    syncMetricsExplorer,
-  } from "$lib/application-state-stores/explorer-stores";
+  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { invalidateMetricViewData } from "$lib/svelte-query/queries/metric-view";
 
@@ -36,13 +33,12 @@
     queryKey = getMetricViewMetaQueryKey(metricsDefId);
     queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
   }
-  $: syncMetricsExplorer(metricsDefId, $queryResult.data);
-  $: console.log($queryResult?.data);
+  $: MetricsExplorerStore.sync(metricsDefId, $queryResult.data);
 
   $: anythingSelected = isAnythingSelected(metricsExplorer?.filters);
   function clearAllFilters() {
+    MetricsExplorerStore.clearFilters(metricsDefId);
     invalidateMetricViewData(queryClient, metricsDefId);
-    // TODO: clear filters
   }
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>

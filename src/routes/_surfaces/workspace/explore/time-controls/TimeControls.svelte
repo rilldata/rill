@@ -27,10 +27,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
-  import {
-    MetricsExplorerStore,
-    setMetricsExplorerSelectedTimeRange,
-  } from "$lib/application-state-stores/explorer-stores";
+  import { MetricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
 
@@ -92,7 +89,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     )
       return;
 
-    setMetricsExplorerSelectedTimeRange(metricsDefId, newTimeRange);
+    MetricsExplorerStore.setSelectedTimeRange(metricsDefId, newTimeRange);
 
     invalidateMetricViewData(queryClient, metricsDefId);
   };
