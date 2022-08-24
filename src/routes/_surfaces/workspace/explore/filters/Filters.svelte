@@ -51,7 +51,7 @@ The main feature-set component for dashboard filters
 
   /** prune the values and prepare for for templating */
   let currentDimensionFilters = [];
-  $: if (values && values.length)
+  $: if (values && Object.keys(values).length)
     currentDimensionFilters = pruneValues(values).map(
       ([dimensionId, selectedValues]) => {
         const dimension = $dimensions.find((dim) => dim.id === dimensionId);
