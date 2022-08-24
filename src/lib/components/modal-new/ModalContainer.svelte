@@ -40,9 +40,23 @@
     // `focus({ preventScroll: true })` ourselves, and add the attribute back afterwards.
     //
     autoFocusTarget = document.querySelector("[autofocus]");
+    console.log(autoFocusTarget);
     if (autoFocusTarget) {
       autoFocusTarget.removeAttribute("autofocus");
     }
+    requestAnimationFrame(() => {
+      // Set focus to the autofocus target and restore the attribute
+      if (autoFocusTarget) {
+        (autoFocusTarget as HTMLInputElement).focus({ preventScroll: true });
+      } else {
+        container.focus({ preventScroll: true });
+      }
+
+      // Restore the autofocus attribute
+      if (autoFocusTarget) {
+        autoFocusTarget.setAttribute("autofocus", "");
+      }
+    });
   }
 
   $: if (Modal && !containerMountedInPortal && container)

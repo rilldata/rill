@@ -2,7 +2,7 @@
   import IconButton from "$lib/components/button/IconButton.svelte";
 
   import Close from "$lib/components/icons/Close.svelte";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import ModalContainer from "../ModalContainer.svelte";
   import DialogFooter from "./DialogFooter.svelte";
   import DialogHeader from "./DialogHeader.svelte";
@@ -14,12 +14,6 @@
   $: containerClasses = dark
     ? "text-white bg-gray-800"
     : "text-gray-800 bg-white";
-
-  $: cancelButtonClasses = dark ? "hover:bg-gray-400" : "hover:bg-gray-200";
-  let mounted = false;
-  onMount(() => {
-    mounted = true;
-  });
 </script>
 
 <ModalContainer on:cancel>

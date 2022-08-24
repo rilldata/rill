@@ -1,12 +1,22 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   export let id = "";
   export let label = "";
   export let error: string;
   export let value: string;
+  export let claimFocusOnMount = false;
+  let inputElement;
+  if (claimFocusOnMount) {
+    onMount(() => {
+      inputElement.focus();
+    });
+  }
 </script>
 
 <label for={id} class="text-xs">{label}</label>
 <input
+  bind:this={inputElement}
   autocomplete="off"
   type="text"
   {id}

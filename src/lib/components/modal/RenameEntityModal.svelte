@@ -2,17 +2,12 @@
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import Input from "$lib/components/Input.svelte";
-  import {
-    Modal,
-    ModalAction,
-    ModalActions,
-    ModalContent,
-    ModalTitle,
-  } from "$lib/components/modal";
   import notifications from "$lib/components/notifications/";
   import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
+  import { Button } from "../button";
+  import Input from "../Input.svelte";
+  import { Dialog } from "../modal-new";
 
   export let entityType:
     | EntityType.Table
@@ -81,6 +76,33 @@
   };
 </script>
 
+{#if openModal}
+  <Dialog on:cancel={resetVariablesAndCloseModal}>
+    <svelte:fragment slot="title">Rename</svelte:fragment>
+    <svelte:fragment slot="body">
+      <form
+        on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
+      >
+        <Input
+          claimFocusOnMount
+          id="{entityLabel}-name"
+          label="{entityLabel} name"
+          bind:value={newAssetName}
+          {error}
+        />
+      </form>
+    </svelte:fragment>
+    <svelte:fragment slot="footer">
+      <Button type="text" on:click={resetVariablesAndCloseModal}>cancel</Button>
+      <Button
+        type="primary"
+        on:click={() => submitHandler(entityId, newAssetName)}
+        >Change name</Button
+      >
+    </svelte:fragment>
+  </Dialog>
+{/if}
+<!-- 
 <Modal open={openModal} onBackdropClick={() => resetVariablesAndCloseModal()}>
   <ModalTitle>
     rename <span class="text-gray-500 italic">{currentEntityName}</span>
@@ -105,4 +127,4 @@
       submit
     </ModalAction>
   </ModalActions>
-</Modal>
+</Modal> -->

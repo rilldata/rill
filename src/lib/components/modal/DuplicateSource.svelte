@@ -4,13 +4,37 @@
     duplicateSourceAction,
     duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import ModalAction from "$lib/components/modal/ModalAction.svelte";
-  import ModalActions from "$lib/components/modal/ModalActions.svelte";
-  import ModalContent from "$lib/components/modal/ModalContent.svelte";
-  import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
+  import { createEventDispatcher } from "svelte";
+  import { Button } from "../button";
+  import { Dialog } from "../modal-new";
+
+  const dispatch = createEventDispatcher();
+
+  function onCancel() {
+    $duplicateSourceName = null;
+    $duplicateSourceAction = DuplicateActions.Cancel;
+    dispatch("cancel");
+  }
 </script>
 
+<Dialog showCancel on:cancel={onCancel}>
+  <svelte:fragment slot="title">< Duplicate source name</svelte:fragment>
+  <svelte:fragment slot="body">
+    A source with the name <b>{$duplicateSourceName}</b> already exists.
+  </svelte:fragment>
+  <svelte:fragment slot="footer">
+    <Button on:click={onCancel} type="text">Cancel</Button>
+    <Button
+      on:click={() => {
+        $duplicateSourceName = null;
+        $duplicateSourceAction = DuplicateActions.Overwrite;
+      }}
+      status="error"
+      type="primary">Replace existing source</Button
+    >
+  </svelte:fragment>
+</Dialog>
+<!-- 
 <Modal open={$duplicateSourceName !== null} onBackdropClick={() => undefined}>
   <ModalTitle>Duplicate Source Found</ModalTitle>
   <ModalContent
@@ -42,4 +66,4 @@
       cancel
     </ModalAction>
   </ModalActions>
-</Modal>
+</Modal> -->
