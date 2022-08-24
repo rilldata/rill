@@ -4,6 +4,7 @@
   import Close from "$lib/components/icons/Close.svelte";
   import { createEventDispatcher, onMount } from "svelte";
   import ModalContainer from "../ModalContainer.svelte";
+  import DialogFooter from "./DialogFooter.svelte";
   import DialogHeader from "./DialogHeader.svelte";
   export let dark = false;
   export let showCancel = true;
@@ -48,9 +49,9 @@
       <div class="px-7 pt-8 pb-16">
         <slot name="body" />
       </div>
-      <footer class="p-2">
+      <DialogFooter>
         <slot name="footer" />
-      </footer>
+      </DialogFooter>
     </div>
   </div>
 </ModalContainer>
