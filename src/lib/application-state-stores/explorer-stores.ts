@@ -1,7 +1,7 @@
-import { Readable, writable } from "svelte/store";
-import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
+import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+import { Readable, writable } from "svelte/store";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;

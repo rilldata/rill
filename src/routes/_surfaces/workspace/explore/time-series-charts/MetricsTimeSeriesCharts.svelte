@@ -4,6 +4,8 @@
     MetricViewMetaResponse,
     MetricViewTimeSeriesResponse,
   } from "$common/rill-developer-service/MetricViewActions";
+  import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
@@ -31,8 +33,6 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId;
 

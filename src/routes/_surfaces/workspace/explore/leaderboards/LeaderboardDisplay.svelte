@@ -5,6 +5,7 @@
     MetricViewMetaResponse,
     MetricViewTotalsResponse,
   } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
@@ -24,7 +25,6 @@
   import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;

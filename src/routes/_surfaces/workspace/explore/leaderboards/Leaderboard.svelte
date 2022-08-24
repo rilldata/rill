@@ -6,33 +6,33 @@
    * in the application itself.
    */
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MetricViewTopListResponse } from "$common/rill-developer-service/MetricViewActions";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import LeaderboardContainer from "$lib/components/leaderboard/LeaderboardContainer.svelte";
   import LeaderboardHeader from "$lib/components/leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import {
-    humanizeGroupValues,
-    NicelyFormattedTypes,
-    ShortHandSymbols,
-  } from "$lib/util/humanize-numbers";
-  import type { Readable } from "svelte/store";
-  import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import {
     getMetricViewTopList,
     getMetricViewTopListQueryKey,
     getTopListRequest,
   } from "$lib/svelte-query/queries/metric-view";
+  import {
+    humanizeGroupValues,
+    NicelyFormattedTypes,
+    ShortHandSymbols,
+  } from "$lib/util/humanize-numbers";
   import { useQuery } from "@sveltestack/svelte-query";
-  import type { MetricViewTopListResponse } from "$common/rill-developer-service/MetricViewActions";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import Spinner from "$lib/components/Spinner.svelte";
-  import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import type { Readable } from "svelte/store";
+  import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
