@@ -5,14 +5,9 @@ The main feature-set component for dashboard filters
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
 
-  import { IconButton } from "$lib/components/button";
-  import { ChipContainer, RemovableListChip } from "$lib/components/chip";
+  import { Chip, ChipContainer, RemovableListChip } from "$lib/components/chip";
   import Filter from "$lib/components/icons/Filter.svelte";
-  import ShiftKey from "$lib/components/tooltip/ShiftKey.svelte";
-  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
+  import FilterRemove from "$lib/components/icons/FilterRemove.svelte";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
     clearSelectedDimensionLeaderboardAndUpdate,
@@ -74,23 +69,9 @@ The main feature-set component for dashboard filters
   style:grid-template-columns="max-content auto"
   style:min-height="44px"
 >
-  <Tooltip
-    location="right"
-    alignment="middle"
-    distance={8}
-    suppress={!hasFilters}
-  >
-    <IconButton disabled={!hasFilters} on:click={clearAllFilters}>
-      <Filter />
-    </IconButton>
-
-    <TooltipContent slot="tooltip-content">
-      <TooltipShortcutContainer padTop>
-        <div>clear all filters</div>
-        <Shortcut><ShiftKey /> + Click</Shortcut>
-      </TooltipShortcutContainer>
-    </TooltipContent>
-  </Tooltip>
+  <div style:width="24px" style:height="24px" class="grid place-items-center">
+    <Filter size="18px" />
+  </div>
   {#if prunedValues?.length && $dimensions?.length}
     <ChipContainer>
       {#each prunedValues as [dimensionId, selectedValues] (dimensionId)}
@@ -112,6 +93,23 @@ The main feature-set component for dashboard filters
           </RemovableListChip>
         </div>
       {/each}
+      {#if hasFilters}
+        <div class="ml-auto">
+          <Chip
+            bgBaseColor="bg-white"
+            bgHoverColor="bg-gray-100"
+            textColor="text-gray-500"
+            bgActiveColor="bg-gray-200"
+            ringOffsetColor="ring-offset-gray-400"
+            on:click={clearAllFilters}
+          >
+            <svelte:fragment slot="icon"
+              ><FilterRemove size="16px" /></svelte:fragment
+            >
+            <svelte:fragment slot="body">clear filters</svelte:fragment>
+          </Chip>
+        </div>
+      {/if}
     </ChipContainer>
   {:else if prunedValues?.length === 0}
     <div
