@@ -14,7 +14,7 @@ export function buttonClasses({
 }) {
   return `
   ${
-    compact ? "px-2 py-[1.5px]" : "px-4 py-2"
+    compact ? "px-2 py-1" : "px-4 py-2"
   } rounded flex flex-row gap-x-2 items-center transition-transform duration-100
   ${customClasses ? customClasses : levels[type]}
   disabled:cursor-not-allowed disabled:text-gray-700 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50
