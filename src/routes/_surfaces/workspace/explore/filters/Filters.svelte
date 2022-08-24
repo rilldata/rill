@@ -1,9 +1,10 @@
 <script lang="ts">
+  import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import Close from "$lib/components/icons/Close.svelte";
   import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { invalidateMetricViewData } from "$lib/svelte-query/queries/metric-view";
-  import { isFiltered } from "$lib/util/isFiltered";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fly } from "svelte/transition";
   export let metricsDefId;
@@ -16,6 +17,11 @@
   function clearAllFilters() {
     metricsExplorerStore.clearFilters(metricsDefId);
     invalidateMetricViewData(queryClient, metricsDefId);
+  }
+
+  function isFiltered(filters: MetricViewRequestFilter): boolean {
+    if (!filters) return false;
+    return filters.include.length > 0 || filters.exclude.length > 0;
   }
 
   $: hasFilters = isFiltered(metricsExplorer?.filters);
