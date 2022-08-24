@@ -18,7 +18,7 @@
 </script>
 
 <Dialog showCancel on:cancel={onCancel}>
-  <svelte:fragment slot="title">< Duplicate source name</svelte:fragment>
+  <svelte:fragment slot="title">Duplicate source name</svelte:fragment>
   <svelte:fragment slot="body">
     A source with the name <b>{$duplicateSourceName}</b> already exists.
   </svelte:fragment>

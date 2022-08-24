@@ -14,7 +14,7 @@
   }
 </script>
 
-<label for={id} class="text-xs">{label}</label>
+<label for={id} class="text-gray-600 pl-1 pb-1 block">{label}</label>
 <input
   bind:this={inputElement}
   autocomplete="off"

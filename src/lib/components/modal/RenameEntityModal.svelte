@@ -18,7 +18,7 @@
   export let entityId = null;
   export let currentEntityName = null;
 
-  let newAssetName = null;
+  let newAssetName = currentEntityName?.replace(".sql", "");
   let error = null;
   let renameAction;
   let entityLabel: string;
@@ -76,32 +76,29 @@
   };
 </script>
 
-{#if openModal}
-  <Dialog on:cancel={resetVariablesAndCloseModal}>
-    <svelte:fragment slot="title">Rename</svelte:fragment>
-    <svelte:fragment slot="body">
-      <form
-        on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
-      >
-        <Input
-          claimFocusOnMount
-          id="{entityLabel}-name"
-          label="{entityLabel} name"
-          bind:value={newAssetName}
-          {error}
-        />
-      </form>
-    </svelte:fragment>
-    <svelte:fragment slot="footer">
-      <Button type="text" on:click={resetVariablesAndCloseModal}>cancel</Button>
-      <Button
-        type="primary"
-        on:click={() => submitHandler(entityId, newAssetName)}
-        >Change name</Button
-      >
-    </svelte:fragment>
-  </Dialog>
-{/if}
+<Dialog on:cancel={resetVariablesAndCloseModal}>
+  <svelte:fragment slot="title">Rename</svelte:fragment>
+  <svelte:fragment slot="body">
+    <form
+      on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
+    >
+      <Input
+        claimFocusOnMount
+        id="{entityLabel}-name"
+        label="{entityLabel} name"
+        bind:value={newAssetName}
+        {error}
+      />
+    </form>
+  </svelte:fragment>
+  <svelte:fragment slot="footer">
+    <Button type="text" on:click={resetVariablesAndCloseModal}>cancel</Button>
+    <Button
+      type="primary"
+      on:click={() => submitHandler(entityId, newAssetName)}>Change name</Button
+    >
+  </svelte:fragment>
+</Dialog>
 <!-- 
 <Modal open={openModal} onBackdropClick={() => resetVariablesAndCloseModal()}>
   <ModalTitle>
