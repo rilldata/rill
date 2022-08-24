@@ -29,7 +29,7 @@ const CommonUserMetricsData = {
 // TODO
 // @TestBase.Suite
 @TestBase.TestLibrary(JestTestLibrary)
-export class ActiveEventHandlerSpec extends TestBase {
+export class ActiveEventHandlerDisabled extends TestBase {
   private windowListenerStub: SinonStub;
   private rillIntakeStub: SinonStub;
   private config: RootConfig;
