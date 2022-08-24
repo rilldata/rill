@@ -144,42 +144,6 @@ export const exploreSlice = createSlice({
       }),
     },
 
-    toggleExploreMeasure: {
-      reducer: (
-        state,
-        {
-          payload: { id, selectedMeasureId },
-        }: PayloadAction<{ id: string; selectedMeasureId: string }>
-      ) => {
-        if (!state.entities[id]) return;
-        const metricsExplorer = state.entities[id];
-        const existingIndex =
-          metricsExplorer.selectedMeasureIds.indexOf(selectedMeasureId);
-
-        if (existingIndex >= 0) {
-          metricsExplorer.selectedMeasureIds =
-            metricsExplorer.selectedMeasureIds.filter(
-              (selectedMeasureId) => selectedMeasureId === selectedMeasureId
-            );
-        } else {
-          metricsExplorer.selectedMeasureIds = [
-            ...metricsExplorer.selectedMeasureIds,
-            selectedMeasureId,
-          ];
-        }
-      },
-      prepare: (id: string, selectedMeasureId: string) => ({
-        payload: { id, selectedMeasureId },
-      }),
-    },
-
-    setLeaderboardMeasureId: {
-      reducer: setFieldReducer("leaderboardMeasureId"),
-      prepare: setFieldPrepare<MetricsExplorerEntity, "leaderboardMeasureId">(
-        "leaderboardMeasureId"
-      ),
-    },
-
     addDimensionToExplore: {
       reducer: (
         state,
@@ -243,31 +207,6 @@ export const exploreSlice = createSlice({
       }),
     },
 
-    setExploreSelectedTimeRange: {
-      reducer: (
-        state,
-        {
-          payload: { id, selectedTimeRange },
-        }: PayloadAction<{
-          id: string;
-          selectedTimeRange: Partial<TimeSeriesTimeRange>;
-        }>
-      ) => {
-        if (!state.entities[id]) return;
-        // overrides only the ones passed
-        state.entities[id].selectedTimeRange = {
-          ...(state.entities[id].selectedTimeRange ?? {}),
-          ...selectedTimeRange,
-        };
-      },
-      prepare: (
-        id: string,
-        selectedTimeRange: Partial<TimeSeriesTimeRange>
-      ) => ({
-        payload: { id, selectedTimeRange },
-      }),
-    },
-
     setExplorerIsStale: {
       reducer: setFieldReducer("isStale"),
       prepare: setFieldPrepare<MetricsExplorerEntity, "isStale">("isStale"),
@@ -279,11 +218,8 @@ export const {
   initMetricsExplorer,
   addMeasureToExplore,
   removeMeasureFromExplore,
-  toggleExploreMeasure,
-  setLeaderboardMeasureId,
   addDimensionToExplore,
   removeDimensionFromExplore,
-  setExploreSelectedTimeRange,
   setExplorerIsStale,
 } = exploreSlice.actions;
 export const MetricsExplorerSliceActions = exploreSlice.actions;
