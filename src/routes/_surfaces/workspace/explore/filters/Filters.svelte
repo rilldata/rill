@@ -56,13 +56,16 @@ The main feature-set component for dashboard filters
   $: prunedValues = pruneValues(values);
 
   function onSelectItem(event, item) {
-    toggleSelectedLeaderboardValueAndUpdate(
-      store.dispatch,
-      metricsDefId,
-      item.dimensionId,
-      event.detail,
-      true
-    );
+    event.detail.forEach((dimensionValue) => {
+      console.log(dimensionValue);
+      toggleSelectedLeaderboardValueAndUpdate(
+        store.dispatch,
+        metricsDefId,
+        item.dimensionId,
+        dimensionValue,
+        true
+      );
+    });
   }
 </script>
 
@@ -98,7 +101,7 @@ The main feature-set component for dashboard filters
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:remove={() => clearFilterForDimension(dimensionId)}
-            on:select={(event) => onSelectItem(event, { dimensionId })}
+            on:apply={(event) => onSelectItem(event, { dimensionId })}
             typeLabel="dimension"
             {name}
             {selectedValues}

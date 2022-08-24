@@ -84,7 +84,7 @@ are details left to the consumer of the component; this component should remain 
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     on:close={toggleFloatingElement}
-    on:select
+    on:apply
     {selectedValues}
   />
 </WithTogglableFloatingElement>

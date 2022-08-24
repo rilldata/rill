@@ -3,6 +3,7 @@
 
   export let type: "primary" | "secondary" | "text";
   export let disabled = false;
+  export let compact = false;
 
   const dispatch = createEventDispatcher();
 
@@ -15,7 +16,10 @@
 
 <button
   {disabled}
-  class="px-4 py-2 rounded flex flex-row gap-x-2 transition-transform duration-100
+  class="
+    {compact
+    ? 'px-2 py-[1.5px]'
+    : 'px-4 py-2'} rounded flex flex-row gap-x-2 items-center transition-transform duration-100
     {type === 'primary' &&
     'bg-gray-800 border border-gray-800 hover:bg-gray-900 hover:border-gray-900 text-gray-100 hover:text-white'}
     {type === 'secondary' &&
