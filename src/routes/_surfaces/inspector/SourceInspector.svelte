@@ -31,6 +31,7 @@
   import { slide } from "svelte/transition";
 
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+  import StickToHeaderDivider from "$lib/components/panel/StickToHeaderDivider.svelte";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -189,7 +190,7 @@
       </LeftRightGrid>
     </div>
 
-    <hr />
+    <StickToHeaderDivider />
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">

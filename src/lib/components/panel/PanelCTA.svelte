@@ -3,11 +3,12 @@
 </script>
 
 <div
-  class="px-4 flex flex-row items-center gap-x-2 justify-{side === 'left'
+  class="sticky top-0 bg-white z-10 px-4 flex flex-row items-center gap-x-2 justify-{side ===
+  'left'
     ? 'start'
     : 'end'}"
   style:height="var(--header-height)"
-  style="margin-{side === 'left' ? 'right' : 'left'}: 28px;"
+  style="padding-{side === 'left' ? 'right' : 'left'}: 40px;"
 >
   <slot />
 </div>
