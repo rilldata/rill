@@ -18,5 +18,5 @@ export const COLUMN_PROFILE_CONFIG = {
 };
 
 export function collapseInspectorCTAButton(width) {
-  return !(width === undefined || width < 398);
+  return !(width < 398);
 }

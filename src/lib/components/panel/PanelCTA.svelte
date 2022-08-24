@@ -5,6 +5,8 @@
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
+
+  $: width = $observedNode?.getBoundingClientRect()?.width;
 </script>
 
 <div
@@ -16,5 +18,7 @@
   style:height="var(--header-height)"
   style="padding-{side === 'left' ? 'right' : 'left'}: 40px;"
 >
-  <slot width={$observedNode?.getBoundingClientRect()?.width} />
+  {#if width}
+    <slot {width} />
+  {/if}
 </div>
