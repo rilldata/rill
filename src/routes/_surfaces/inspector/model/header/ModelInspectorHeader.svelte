@@ -30,7 +30,7 @@
     formatInteger,
   } from "$lib/util/formatters";
   import { getContext } from "svelte";
-  import ModelerToMetricsButton from "./ModelerToMetricsButton.svelte";
+  import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   import notification from "$lib/components/notifications";
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
@@ -210,7 +210,7 @@
       {/if}
     </TooltipContent>
   </Tooltip>
-  <ModelerToMetricsButton {width} hasError={modelHasError} {activeEntityID} />
+  <CreateDashboardButton {width} hasError={modelHasError} {activeEntityID} />
 </PanelCTA>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">

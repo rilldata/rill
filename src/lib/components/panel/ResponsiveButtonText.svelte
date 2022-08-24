@@ -7,10 +7,16 @@ horizontal slide animation
   import { collapseInspectorCTAButton } from "$lib/application-config";
   import { slideRight } from "$lib/transitions";
   export let width: number;
+
+  let mounted = false;
 </script>
 
-{#if collapseInspectorCTAButton(width)}<div
-    transition:slideRight|local={{ duration: 400, rightOffset: 8 }}
+{#if width === undefined || collapseInspectorCTAButton(width)}<div
+    transition:slideRight|local={{
+      duration: 400,
+      rightOffset: 8,
+    }}
   >
     <slot />
-  </div>{/if}
+  </div>
+{/if}
