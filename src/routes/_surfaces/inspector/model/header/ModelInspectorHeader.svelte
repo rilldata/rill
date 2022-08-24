@@ -23,7 +23,6 @@
   import Export from "$lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
 
-  import ModelerToMetricsButton from "$lib/components/modeler/ModelerToMetricsButton.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import {
@@ -31,6 +30,7 @@
     formatInteger,
   } from "$lib/util/formatters";
   import { getContext } from "svelte";
+  import ModelerToMetricsButton from "./ModelerToMetricsButton.svelte";
 
   import notification from "$lib/components/notifications";
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";

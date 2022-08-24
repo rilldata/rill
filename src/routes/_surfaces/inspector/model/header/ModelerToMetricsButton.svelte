@@ -5,13 +5,13 @@
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
   import { Button } from "$lib/components/button";
+  import Explore from "$lib/components/icons/Explore.svelte";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import { getContext } from "svelte";
-  import Explore from "../icons/Explore.svelte";
-  import ResponsiveButtonText from "../panel/ResponsiveButtonText.svelte";
 
   export let activeEntityID: string;
   export let hasError = false;
