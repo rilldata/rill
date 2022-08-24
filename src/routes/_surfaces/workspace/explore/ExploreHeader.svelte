@@ -51,6 +51,8 @@
   <!-- bottom row -->
   <div class="px-4">
     <TimeControls {metricsDefId} />
-    <Filters {metricsDefId} values={$metricsExplorer?.activeValues} />
+    {#key metricsDefId}
+      <Filters {metricsDefId} values={$metricsExplorer?.activeValues} />
+    {/key}
   </div>
 </section>

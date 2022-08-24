@@ -14,13 +14,19 @@ The main feature-set component for dashboard filters
     clearSelectedLeaderboardValuesAndUpdate,
     toggleSelectedLeaderboardValueAndUpdate,
   } from "$lib/redux-store/explore/explore-apis";
+  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { store } from "$lib/redux-store/store-root";
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import { getDisplayName } from "../utils";
   export let metricsDefId;
-  export let values;
+
+  let metricsExplorer: Readable<MetricsExplorerEntity>;
+  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+
+  $: values = $metricsExplorer?.activeValues;
 
   let dimensions: Readable<DimensionDefinitionEntity[]>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
