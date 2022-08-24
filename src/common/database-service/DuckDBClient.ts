@@ -53,14 +53,14 @@ export class DuckDBClient {
   public execute<Row = Record<string, unknown>>(
     query: string,
     log = false,
-    skipAppend = false
+    logProfile = true
   ): Promise<Array<Row>> {
     this.onCallback?.();
     if (log) console.log(query);
     return new Promise((resolve, reject) => {
       try {
         this.db.all(query, (err, res) => {
-          if (!skipAppend) this.appendToFile();
+          if (logProfile) this.appendProfileToFile();
           if (err !== null) {
             reject(err);
           } else {
@@ -84,7 +84,7 @@ export class DuckDBClient {
     });
   }
 
-  private appendToFile() {
+  private appendProfileToFile() {
     this.logFile?.write(`${readFileSync(DuckDBProfileFile).toString()}\n\n`);
   }
 }

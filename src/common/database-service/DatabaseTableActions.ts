@@ -35,7 +35,7 @@ export class DatabaseTableActions extends DatabaseActions {
     const [cardinality] = await this.databaseClient.execute<{ count: number }>(
       `select count(*) as count FROM '${tableName}';`,
       false,
-      true
+      false
     );
     return cardinality.count;
   }

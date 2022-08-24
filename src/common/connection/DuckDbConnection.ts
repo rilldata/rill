@@ -44,7 +44,7 @@ export class DuckDbConnection extends DataConnection {
       "SELECT table_name FROM information_schema.tables " +
         "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW';",
       false,
-      true
+      false
     );
     const persistentTables = this.dataModelerStateService
       .getEntityStateService(EntityType.Table, StateType.Persistent)
