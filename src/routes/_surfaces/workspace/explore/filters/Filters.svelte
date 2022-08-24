@@ -50,16 +50,18 @@ The main feature-set component for dashboard filters
   }
 
   /** prune the values and prepare for for templating */
-  $: currentDimensionFilters = pruneValues(values).map(
-    ([dimensionId, selectedValues]) => {
-      const dimension = $dimensions.find((dim) => dim.id === dimensionId);
-      return {
-        name: getDisplayName(dimension),
-        dimensionId,
-        selectedValues,
-      };
-    }
-  );
+  let currentDimensionFilters = [];
+  $: if (values && values.length)
+    currentDimensionFilters = pruneValues(values).map(
+      ([dimensionId, selectedValues]) => {
+        const dimension = $dimensions.find((dim) => dim.id === dimensionId);
+        return {
+          name: getDisplayName(dimension),
+          dimensionId,
+          selectedValues,
+        };
+      }
+    );
 
   function toggleDimensionValue(event, item) {
     event.detail.forEach((dimensionValue) => {
