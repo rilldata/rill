@@ -162,7 +162,7 @@
           disabled={!timestampColumns?.length}
           on:click={handleCreateMetric}
         >
-          <ResponsiveButtonText {width}>CreateDashboard</ResponsiveButtonText>
+          <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
           <Explore size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
