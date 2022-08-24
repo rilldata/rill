@@ -8,7 +8,10 @@
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { MetricViewTopListResponse } from "$common/rill-developer-service/MetricViewActions";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import LeaderboardContainer from "$lib/components/leaderboard/LeaderboardContainer.svelte";
   import LeaderboardHeader from "$lib/components/leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
@@ -19,7 +22,6 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import {
     getMetricViewTopList,
     getMetricViewTopListQueryKey,

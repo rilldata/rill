@@ -4,11 +4,13 @@
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,

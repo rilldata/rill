@@ -1,8 +1,8 @@
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { TimeSeriesMeasureRange } from "../utils/time-series-helpers";
 import { getTimeRange } from "../utils/time-series-helpers";
+import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
 
 export interface MetricsExplorerTestDataType {
   title: string;

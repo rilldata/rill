@@ -1,13 +1,13 @@
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
-import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
 import axios from "axios";
 import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
 import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
 import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
 import { assertBigNumber } from "../utils/time-series-helpers";
 import { useInlineTestServer } from "../utils/useInlineTestServer";
+import type { LeaderboardValues } from "$lib/application-state-stores/explorer-stores";
 
 describe("Metrics Explore", () => {
   const { config, inlineServer } = useInlineTestServer(8083);

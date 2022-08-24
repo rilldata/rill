@@ -10,7 +10,7 @@ import {
   normaliseMeasures,
 } from "$common/database-service/utils";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
+import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
 
 export type TimeSeriesValue = {
   ts: string;

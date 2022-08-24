@@ -1,7 +1,41 @@
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
-import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 import { Readable, writable } from "svelte/store";
+import type { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+
+export interface LeaderboardValue {
+  value: number;
+  label: string;
+}
+
+export interface LeaderboardValues {
+  values: Array<LeaderboardValue>;
+  dimensionId: string;
+  dimensionName?: string;
+  status: EntityStatus;
+}
+
+export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
+
+export interface MetricsExplorerEntity {
+  id: string;
+  // full list of measure IDs available to explore
+  measureIds?: Array<string>;
+  // selected measure IDs to be shown
+  selectedMeasureIds: Array<string>;
+  // this is used to show leaderboard values
+  leaderboardMeasureId: string;
+  leaderboards?: Array<LeaderboardValues>;
+  filters: MetricViewRequestFilter;
+  selectedCount?: number;
+  // user selected time range
+  selectedTimeRange?: TimeSeriesTimeRange;
+  // this marks whether anything related to this explore is stale
+  // this is set to true when any measure or dimension changes.
+  // this also is set to true when related model and its dependant source updates (TODO)
+  isStale?: boolean;
+}
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;

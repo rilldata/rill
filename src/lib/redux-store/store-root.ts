@@ -6,10 +6,6 @@ import { dimensionDefSliceReducer } from "$lib/redux-store/dimension-definition/
 import { measureDefSliceReducer } from "$lib/redux-store/measure-definition/measure-definition-slice";
 import { configureStore } from "$lib/redux-store/redux-toolkit-wrapper";
 import { readable } from "svelte/store";
-import {
-  MetricsExplorerEntity,
-  metricsExplorerReducer,
-} from "./explore/explore-slice";
 import { metricsDefinitionReducer } from "./metrics-definition/metrics-definition-slice";
 
 export const store = configureStore({
@@ -18,7 +14,6 @@ export const store = configureStore({
     metricsDefinition: metricsDefinitionReducer,
     measureDefinition: measureDefSliceReducer,
     dimensionDefinition: dimensionDefSliceReducer,
-    metricsExplorer: metricsExplorerReducer,
   },
 });
 
@@ -28,13 +23,11 @@ export type RillReduxStore = typeof store;
 export type RillReduxEntities =
   | MetricsDefinitionEntity
   | MeasureDefinitionEntity
-  | DimensionDefinitionEntity
-  | MetricsExplorerEntity;
+  | DimensionDefinitionEntity;
 export type RillReduxEntityKeys =
   | "metricsDefinition"
   | "measureDefinition"
-  | "dimensionDefinition"
-  | "metricsExplorer";
+  | "dimensionDefinition";
 
 export const reduxReadable = readable(store.getState(), (set) => {
   return store.subscribe(() => {

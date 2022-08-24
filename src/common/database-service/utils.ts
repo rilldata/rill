@@ -3,8 +3,8 @@ import {
   getFallbackMeasureName,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
 
 export function getFilterFromFilters(filters: ActiveValues): string {
   return Object.keys(filters)

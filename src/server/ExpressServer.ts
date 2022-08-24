@@ -7,7 +7,6 @@ import type { SocketNotificationService } from "$common/socket/SocketNotificatio
 import { FileActionsController } from "$server/controllers/FileActionsController";
 import { MetricsDefinitionController } from "$server/controllers/MetricsDefinitionController";
 import { MetricsDimensionController } from "$server/controllers/MetricsDimensionController";
-import { MetricsExplorerController } from "$server/controllers/MetricsExplorerController";
 import { MetricsMeasureController } from "$server/controllers/MetricsMeasureController";
 import { SocketServer } from "$server/SocketServer";
 import bodyParser from "body-parser";
@@ -94,7 +93,6 @@ export class ExpressServer {
       MetricsDefinitionController,
       MetricsDimensionController,
       MetricsMeasureController,
-      MetricsExplorerController,
       MetricViewController,
     ].forEach((MetricsControllerClass) =>
       new MetricsControllerClass(
