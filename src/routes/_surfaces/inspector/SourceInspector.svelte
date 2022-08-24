@@ -22,6 +22,7 @@
     createModelForSource,
   } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+  import { slideRight } from "$lib/transitions";
   import { TableSourceType } from "$lib/types";
   import {
     formatBigNumberPercentage,
@@ -145,16 +146,30 @@
 <div class="table-profile">
   {#if currentTable}
     <!-- CTAs -->
-    <PanelCTA side="right">
-      <Button type="secondary" on:click={handleCreateModelFromSource}
-        >Create Model <Model size="16px" /></Button
-      >
+    <PanelCTA side="right" let:width>
+      <Tooltip location="left" distance={16}>
+        <Button type="secondary" on:click={handleCreateModelFromSource}
+          >{#if width > 398}<div
+              transition:slideRight={{ duration: 400, rightOffset: 8 }}
+            >
+              Create Model
+            </div>{/if}
+          <Model size="16px" /></Button
+        >
+        <TooltipContent slot="tooltip-content">
+          Create a model with these source columns
+        </TooltipContent>
+      </Tooltip>
       <Tooltip location="bottom" alignment="right" distance={16}>
         <Button
           type="primary"
           disabled={!timestampColumns?.length}
           on:click={handleCreateMetric}
-          >Create Dashboard<Explore size="16px" /></Button
+          >{#if width > 398}<div
+              transition:slideRight={{ duration: 400, rightOffset: 8 }}
+            >
+              Create Dashboard
+            </div>{/if}<Explore size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
           {#if timestampColumns?.length}

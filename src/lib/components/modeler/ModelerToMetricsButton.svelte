@@ -9,11 +9,13 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+  import { slideRight } from "$lib/transitions";
   import { getContext } from "svelte";
   import Explore from "../icons/Explore.svelte";
 
   export let activeEntityID: string;
   export let hasError = false;
+  export let width = undefined;
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -51,7 +53,11 @@
     type="primary"
     disabled={!timestampColumns?.length}
     on:click={handleCreateMetric}
-    >Create Dashboard<Explore size="16px" /></Button
+    >{#if width !== undefined && width > 398}<div
+        transition:slideRight={{ duration: 400, rightOffset: 8 }}
+      >
+        Create Dashboard
+      </div>{/if}<Explore size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     {#if hasError}

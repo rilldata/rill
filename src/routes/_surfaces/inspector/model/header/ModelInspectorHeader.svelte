@@ -34,6 +34,7 @@
 
   import notification from "$lib/components/notifications";
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+  import { slideRight } from "$lib/transitions";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   export let containerWidth = 0;
 
@@ -155,7 +156,7 @@
   $: modelHasError = !!currentDerivedModel?.error;
 </script>
 
-<PanelCTA side="right">
+<PanelCTA side="right" let:width>
   <Tooltip
     location="left"
     alignment="middle"
@@ -175,7 +176,12 @@
         type="secondary"
         on:click={toggleFloatingElement}
       >
-        Export Results
+        {#if width > 398}<div
+            transition:slideRight={{ duration: 400, rightOffset: 8 }}
+          >
+            Export Results
+          </div>{/if}
+
         <Export size="16px" />
       </Button>
       <Menu
@@ -209,7 +215,7 @@
       {/if}
     </TooltipContent>
   </Tooltip>
-  <ModelerToMetricsButton hasError={modelHasError} {activeEntityID} />
+  <ModelerToMetricsButton {width} hasError={modelHasError} {activeEntityID} />
 </PanelCTA>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
