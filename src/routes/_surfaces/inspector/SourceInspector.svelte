@@ -30,6 +30,8 @@
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
 
+  import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
@@ -142,14 +144,10 @@
 <div class="table-profile">
   {#if currentTable}
     <!-- CTAs -->
-    <div
-      style:height="var(--header-height)"
-      class="px-4 flex flex-row items-center gap-x-2 justify-end"
-    >
+    <PanelCTA side="right">
       <Button type="secondary" on:click={handleCreateModelFromSource}
         >Create Model <Model size="16px" /></Button
       >
-
       <Tooltip location="bottom" alignment="right" distance={16}>
         <Button
           type="primary"
@@ -165,7 +163,7 @@
           {/if}
         </TooltipContent>
       </Tooltip>
-    </div>
+    </PanelCTA>
 
     <!-- summary info -->
     <div class=" p-4 pt-2">
