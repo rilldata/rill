@@ -1,4 +1,4 @@
-<!-- Chips have three areas:
+<!-- Chips have two areas:
   = left (icon) – used primarily for icons, action buttons, and small images
   - center (text) – used primarily for label information
 -->
