@@ -18,6 +18,7 @@ The main feature-set component for dashboard filters
   import { isAnythingSelected } from "$lib/util/isAnythingSelected";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
+  import { getDisplayName } from "../utils";
   export let metricsDefId;
   export let values;
 
@@ -48,11 +49,20 @@ The main feature-set component for dashboard filters
       });
   }
 
-  $: prunedValues = pruneValues(values);
+  /** prune the values and prepare for for templating */
+  $: currentDimensionFilters = pruneValues(values).map(
+    ([dimensionId, selectedValues]) => {
+      const dimension = $dimensions.find((dim) => dim.id === dimensionId);
+      return {
+        name: getDisplayName(dimension),
+        dimensionId,
+        selectedValues,
+      };
+    }
+  );
 
-  function onSelectItem(event, item) {
+  function toggleDimensionValue(event, item) {
     event.detail.forEach((dimensionValue) => {
-      console.log(dimensionValue);
       toggleSelectedLeaderboardValueAndUpdate(
         store.dispatch,
         metricsDefId,
@@ -69,20 +79,22 @@ The main feature-set component for dashboard filters
   style:grid-template-columns="max-content auto"
   style:min-height="44px"
 >
-  <div style:width="24px" style:height="24px" class="grid place-items-center">
+  <div
+    style:width="24px"
+    style:height="24px"
+    class="grid place-items-center"
+    class:text-gray-400={!hasFilters}
+    class:text-gray-800={hasFilters}
+  >
     <Filter size="18px" />
   </div>
-  {#if prunedValues?.length && $dimensions?.length}
+  {#if currentDimensionFilters?.length}
     <ChipContainer>
-      {#each prunedValues as [dimensionId, selectedValues] (dimensionId)}
-        {@const dimension = $dimensions.find((dim) => dim.id === dimensionId)}
-        {@const name = dimension?.labelSingle?.length
-          ? dimension?.labelSingle
-          : dimension?.dimensionColumn}
+      {#each currentDimensionFilters as { name, dimensionId, selectedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:remove={() => clearFilterForDimension(dimensionId)}
-            on:apply={(event) => onSelectItem(event, { dimensionId })}
+            on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
             typeLabel="dimension"
             {name}
             {selectedValues}
@@ -93,6 +105,8 @@ The main feature-set component for dashboard filters
           </RemovableListChip>
         </div>
       {/each}
+      <!-- if filters are present, place a chip at the end of the flex container 
+      that enables clearing all filters -->
       {#if hasFilters}
         <div class="ml-auto">
           <Chip
@@ -111,7 +125,7 @@ The main feature-set component for dashboard filters
         </div>
       {/if}
     </ChipContainer>
-  {:else if prunedValues?.length === 0}
+  {:else if currentDimensionFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
       class="italic text-gray-400 ml-1 grid items-center"
