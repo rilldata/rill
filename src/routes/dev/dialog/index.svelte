@@ -1,29 +1,28 @@
 <script lang="ts">
-  import { browser } from "$app/env";
   import { Button } from "$lib/components/button";
   import { Dialog } from "$lib/components/modal-new";
-  import { onMount } from "svelte";
-  let active = false;
-  let mounted = false;
-
-  onMount(() => {
-    mounted = true;
-    // setTimeout(() => (active = true));
-  });
+  let replaceSource = false;
+  let changeThing = false;
+  let changeThingValue = "original change thing";
 </script>
 
 <div style:height="200vh">
   <button
     on:click={() => {
-      active = !active;
-    }}>activate</button
+      replaceSource = !replaceSource;
+    }}>Replace Source</button
+  >
+  <button
+    on:click={() => {
+      changeThing = !changeThing;
+    }}>Change thing</button
   >
 
-  {#if active && mounted && browser}
+  {#if replaceSource}
     <Dialog
       showCancel
-      on:cancel={() => (active = false)}
-      on:submit={() => (active = !active)}
+      on:cancel={() => (replaceSource = false)}
+      on:submit={() => (replaceSource = !replaceSource)}
     >
       <svelte:fragment slot="title">Replace existing source?</svelte:fragment>
       <svelte:fragment slot="body"
@@ -31,8 +30,40 @@
       >
       <svelte:fragment slot="footer">
         <div class="flex flex-row gap-x-3 justify-items-end justify-end">
-          <Button on:click={() => (active = false)} type="text">cancel</Button>
+          <Button on:click={() => (replaceSource = false)} type="text"
+            >cancel</Button
+          >
           <Button type="primary">Update source</Button>
+        </div>
+      </svelte:fragment>
+    </Dialog>
+  {/if}
+
+  {#if changeThing}
+    <Dialog
+      showCancel
+      on:cancel={() => {
+        changeThing = false;
+      }}
+    >
+      <svelte:fragment slot="title"
+        >Change the name of this thing</svelte:fragment
+      >
+      <svelte:fragment slot="body">
+        <input
+          value={changeThingValue}
+          on:change={(event) => {
+            changeThingValue = event.target.value;
+          }}
+        />
+        {changeThingValue}
+      </svelte:fragment>
+      <svelte:fragment slot="footer">
+        <div class="flex flex-row gap-x-3 justify-items-end justify-end">
+          <Button on:click={() => (changeThing = false)} type="text"
+            >cancel</Button
+          >
+          <Button type="primary">Update name</Button>
         </div>
       </svelte:fragment>
     </Dialog>

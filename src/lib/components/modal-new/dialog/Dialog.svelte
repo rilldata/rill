@@ -1,4 +1,6 @@
 <script>
+  import IconButton from "$lib/components/button/IconButton.svelte";
+
   import Close from "$lib/components/icons/Close.svelte";
   import { createEventDispatcher, onMount } from "svelte";
   import ModalContainer from "../ModalContainer.svelte";
@@ -27,47 +29,21 @@
     >
       <DialogHeader>
         <svelte:fragment slot="title"><slot name="title" /></svelte:fragment>
-        <div>
+        <div slot="right">
           {#if showCancel}
             <!-- FIXME: this should be replaced with the IconButton in an open PR -->
-            <button
-              style:width="24px"
-              style:height="24px"
-              class="grid place-items-center {cancelButtonClasses}"
+            <IconButton
               on:click={() => {
                 dispatch("cancel");
               }}
             >
               <Close size="16px" />
-            </button>
+            </IconButton>
           {:else}
             <slot name="right" />
           {/if}
         </div>
       </DialogHeader>
-      <!-- <header
-        style:height="56px"
-        class="grid items-center text-md pl-8 pr-4"
-        style:grid-template-columns="auto max-content"
-      >
-        <h1><slot name="title" /></h1>
-        <div>
-          {#if showCancel}
-            <button
-              style:width="24px"
-              style:height="24px"
-              class="grid place-items-center {cancelButtonClasses}"
-              on:click={() => {
-                dispatch("cancel");
-              }}
-            >
-              <Close size="16px" />
-            </button>
-          {:else}
-            <slot name="right" />
-          {/if}
-        </div>
-      </header> -->
       <hr />
       <div class="px-7 pt-8 pb-16">
         <slot name="body" />
