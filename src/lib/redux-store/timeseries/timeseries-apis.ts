@@ -8,7 +8,6 @@ import type {
   TimeSeriesTimeRange,
 } from "$common/database-service/DatabaseTimeSeriesActions";
 import { selectMetricsExplorerParams } from "$lib/redux-store/explore/explore-selectors";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import {

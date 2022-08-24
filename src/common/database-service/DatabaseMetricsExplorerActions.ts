@@ -2,13 +2,12 @@ import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 import {
   getExpressionColumnsFromMeasures,
   getWhereClauseFromFilters,
   normaliseMeasures,
 } from "./utils";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 
 export interface BigNumberResponse {
   id?: string;
