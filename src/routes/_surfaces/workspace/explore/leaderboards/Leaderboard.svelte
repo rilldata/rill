@@ -21,6 +21,7 @@
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
   import type { Readable } from "svelte/store";
+  import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
   export let dimensionId: string;
@@ -46,9 +47,7 @@
   $: dimension = getDimensionById(dimensionId);
   let displayName: string;
   // TODO: select based on label?
-  $: displayName = $dimension?.labelSingle?.length
-    ? $dimension?.labelSingle
-    : $dimension?.dimensionColumn;
+  $: displayName = getDisplayName($dimension);
 
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
