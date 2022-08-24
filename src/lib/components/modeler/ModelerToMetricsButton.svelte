@@ -9,9 +9,9 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
-  import { slideRight } from "$lib/transitions";
   import { getContext } from "svelte";
   import Explore from "../icons/Explore.svelte";
+  import ResponsiveButtonText from "../panel/ResponsiveButtonText.svelte";
 
   export let activeEntityID: string;
   export let hasError = false;
@@ -53,11 +53,9 @@
     type="primary"
     disabled={!timestampColumns?.length}
     on:click={handleCreateMetric}
-    >{#if width !== undefined && width > 398}<div
-        transition:slideRight={{ duration: 400, rightOffset: 8 }}
-      >
-        Create Dashboard
-      </div>{/if}<Explore size="16px" /></Button
+  >
+    <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
+    <Explore size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     {#if hasError}

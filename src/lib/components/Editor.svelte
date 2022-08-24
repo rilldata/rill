@@ -65,7 +65,7 @@
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
-  const { observedNode, action: nodeSizeChange } =
+  const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
   $: editorHeight = $observedNode?.offsetHeight || 0;
@@ -329,7 +329,7 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div use:nodeSizeChange class="h-full">
+<div use:listenToNodeResize class="h-full">
   <div class="editor-container border h-full" bind:this={editorContainer}>
     <div bind:this={editorContainerComponent} />
   </div>

@@ -8,7 +8,7 @@ export function createResizeListenerActionFactory() {
   const { set, subscribe } = writable(undefined);
   return {
     observedNode: { subscribe },
-    action(node) {
+    listenToNodeResize(node) {
       const observer = new ResizeObserver(() => {
         set(node);
       });

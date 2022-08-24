@@ -3,11 +3,12 @@
 
   export let side: "left" | "right";
 
-  const { observedNode, action } = createResizeListenerActionFactory();
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
 </script>
 
 <div
-  use:action
+  use:listenToNodeResize
   class="sticky top-0 bg-white z-10 px-4 flex flex-row items-center gap-x-2 justify-{side ===
   'left'
     ? 'start'

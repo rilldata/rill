@@ -22,7 +22,6 @@
     createModelForSource,
   } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
-  import { slideRight } from "$lib/transitions";
   import { TableSourceType } from "$lib/types";
   import {
     formatBigNumberPercentage,
@@ -32,6 +31,7 @@
   import { slide } from "svelte/transition";
 
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
   import StickToHeaderDivider from "$lib/components/panel/StickToHeaderDivider.svelte";
 
   const persistentModelStore = getContext(
@@ -148,12 +148,8 @@
     <!-- CTAs -->
     <PanelCTA side="right" let:width>
       <Tooltip location="left" distance={16}>
-        <Button type="secondary" on:click={handleCreateModelFromSource}
-          >{#if width > 398}<div
-              transition:slideRight={{ duration: 400, rightOffset: 8 }}
-            >
-              Create Model
-            </div>{/if}
+        <Button type="secondary" on:click={handleCreateModelFromSource}>
+          <ResponsiveButtonText {width}>Create Model</ResponsiveButtonText>
           <Model size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
@@ -165,11 +161,9 @@
           type="primary"
           disabled={!timestampColumns?.length}
           on:click={handleCreateMetric}
-          >{#if width > 398}<div
-              transition:slideRight={{ duration: 400, rightOffset: 8 }}
-            >
-              Create Dashboard
-            </div>{/if}<Explore size="16px" /></Button
+        >
+          <ResponsiveButtonText {width}>CreateDashboard</ResponsiveButtonText>
+          <Explore size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
           {#if timestampColumns?.length}

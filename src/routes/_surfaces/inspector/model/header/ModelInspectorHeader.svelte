@@ -34,7 +34,7 @@
 
   import notification from "$lib/components/notifications";
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
-  import { slideRight } from "$lib/transitions";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   export let containerWidth = 0;
 
@@ -176,12 +176,7 @@
         type="secondary"
         on:click={toggleFloatingElement}
       >
-        {#if width > 398}<div
-            transition:slideRight={{ duration: 400, rightOffset: 8 }}
-          >
-            Export Results
-          </div>{/if}
-
+        <ResponsiveButtonText {width}>Export Results</ResponsiveButtonText>
         <Export size="16px" />
       </Button>
       <Menu
