@@ -12,6 +12,7 @@
   export let valueMaxWidth = "320px";
 
   $: visibleValues = values.slice(0, show);
+  $: whatsLeft = values.length - show;
 </script>
 
 <div class="flex gap-x-2">
@@ -22,7 +23,7 @@
     {label}
   </div>
   <div class="flex flex-wrap gap-x-2 gap-y-1">
-    {#each visibleValues as value, i (i)}
+    {#each visibleValues as value}
       <div
         class="text-ellipsis overflow-hidden whitespace-nowrap"
         style:max-width={valueMaxWidth}
@@ -31,7 +32,6 @@
       </div>
     {/each}
     {#if values.length > 1}
-      {@const whatsLeft = values.length - 1}
       <div class="italic">
         + {whatsLeft} other{#if whatsLeft !== 1}s{/if}
       </div>
