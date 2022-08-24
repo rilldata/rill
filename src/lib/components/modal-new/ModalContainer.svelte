@@ -20,7 +20,9 @@
     );
     lockBodyScrolling = scroll.lockBodyScrolling;
     unlockBodyScrolling = scroll.unlockBodyScrolling;
-    Modal = await import("@shoelace-style/shoelace/dist/internal/modal");
+    Modal = (await import("@shoelace-style/shoelace/dist/internal/modal"))
+      .default;
+    console.log(Modal, lockBodyScrolling, unlockBodyScrolling);
   });
 
   /** post-mount, and post-portal (which is to say, as soon as container is actually mounted)
@@ -43,7 +45,8 @@
     }
   }
 
-  $: if (!containerMountedInPortal && container) initiateOnMount(container);
+  $: if (Modal && !containerMountedInPortal && container)
+    initiateOnMount(container);
 
   onDestroy(() => {
     modal.deactivate();
