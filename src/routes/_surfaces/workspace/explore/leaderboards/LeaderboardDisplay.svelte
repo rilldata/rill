@@ -64,7 +64,11 @@
       end: metricsExplorer?.selectedTimeRange?.end,
     },
   };
-  let referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
+  let referenceValueKey = getMetricViewTotalsQueryKey(
+    metricsDefId,
+    referenceValueQueryRequest,
+    true
+  );
   $: referenceValueQueryOptions = {
     enabled: !!(
       metricsDefId &&
@@ -79,7 +83,11 @@
     referenceValueQueryOptions
   );
   $: {
-    referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
+    referenceValueKey = getMetricViewTotalsQueryKey(
+      metricsDefId,
+      referenceValueQueryRequest,
+      true
+    );
     referenceValueQuery.setOptions(
       referenceValueKey,
       () => getMetricViewTotals(metricsDefId, referenceValueQueryRequest),

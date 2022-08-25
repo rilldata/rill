@@ -84,8 +84,11 @@ export const getMetricViewTimeSeries = async (
 };
 
 const TimeSeriesId = `v1/metric-view/timeseries`;
-export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
-  return [TimeSeriesId, metricViewId];
+export const getMetricViewTimeSeriesQueryKey = (
+  metricViewId: string,
+  request: MetricViewTimeSeriesRequest
+) => {
+  return [TimeSeriesId, metricViewId, request];
 };
 
 export const useGetMetricViewTimeSeries = (
@@ -94,7 +97,8 @@ export const useGetMetricViewTimeSeries = (
   queryOptions?: UseQueryOptions<MetricViewTimeSeriesResponse, Error>
 ) => {
   const queryKey =
-    queryOptions?.queryKey ?? getMetricViewTimeSeriesQueryKey(metricViewId);
+    queryOptions?.queryKey ??
+    getMetricViewTimeSeriesQueryKey(metricViewId, request);
   const queryFn = () => getMetricViewTimeSeries(metricViewId, request);
   const query = useQuery<MetricViewTimeSeriesResponse, Error>(
     queryKey,
@@ -142,9 +146,10 @@ export const getMetricViewTopList = async (
 const TopListId = `v1/metric-view/toplist`;
 export const getMetricViewTopListQueryKey = (
   metricViewId: string,
-  dimensionId: string
+  dimensionId: string,
+  request: MetricViewTopListRequest
 ) => {
-  return [TopListId, metricViewId, dimensionId];
+  return [TopListId, metricViewId, dimensionId, request];
 };
 
 export const useGetMetricViewTopList = (
@@ -155,7 +160,7 @@ export const useGetMetricViewTopList = (
 ) => {
   const queryKey =
     queryOptions?.queryKey ??
-    getMetricViewTopListQueryKey(metricViewId, dimensionId);
+    getMetricViewTopListQueryKey(metricViewId, dimensionId, request);
   const queryFn = () =>
     getMetricViewTopList(metricViewId, dimensionId, request);
   const query = useQuery<MetricViewTopListResponse, Error>(queryKey, queryFn, {
@@ -201,9 +206,10 @@ export const getMetricViewTotals = async (
 const TotalsId = `v1/metric-view/totals`;
 export const getMetricViewTotalsQueryKey = (
   metricViewId: string,
+  request: MetricViewTotalsRequest,
   isReferenceValue = false
 ) => {
-  return [TotalsId, metricViewId, isReferenceValue];
+  return [TotalsId, metricViewId, request, isReferenceValue];
 };
 
 export const useGetMetricViewTotals = (
@@ -212,7 +218,8 @@ export const useGetMetricViewTotals = (
   queryOptions?: UseQueryOptions<MetricViewTotalsResponse, Error>
 ) => {
   const queryKey =
-    queryOptions?.queryKey ?? getMetricViewTotalsQueryKey(metricViewId);
+    queryOptions?.queryKey ??
+    getMetricViewTotalsQueryKey(metricViewId, request);
   const queryFn = () => getMetricViewTotals(metricViewId, request);
   const query = useQuery<MetricViewTotalsResponse, Error>(queryKey, queryFn, {
     enabled: !!(metricViewId && request.measures && request.time),
