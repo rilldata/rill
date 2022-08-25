@@ -19,7 +19,8 @@ import type { MetricsDefinitionContext } from "$common/rill-developer-service/Me
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
 import { getMapFromArray } from "$common/utils/getMapFromArray";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
+import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
+import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export interface MetricViewMetaResponse {
   name: string;
@@ -119,21 +120,14 @@ export class MetricViewActions extends RillDeveloperActions {
   @RillDeveloperActions.MetricsDefinitionAction()
   public async getMetricViewMeta(
     rillRequestContext: MetricsDefinitionContext,
-    metricsDefId: string
+    _: string
   ) {
     // TODO: validation
-    const timeRange: TimeSeriesTimeRange = (
-      await this.rillDeveloperService.dispatch(
-        rillRequestContext,
-        "getTimeRange",
-        [metricsDefId]
-      )
-    ).data;
     const meta: MetricViewMetaResponse = {
       name: rillRequestContext.record.metricDefLabel,
       timeDimension: {
         name: rillRequestContext.record.timeDimension,
-        timeRange,
+        timeRange: await this.getTimeRange(rillRequestContext.record),
       },
       measures: await this.getValidMeasures(rillRequestContext.record),
       dimensions: this.getValidDimensions(rillRequestContext.record),
@@ -269,6 +263,28 @@ export class MetricViewActions extends RillDeveloperActions {
       data: bigNumberResponse.bigNumbers,
     };
     return ActionResponseFactory.getRawResponse(response);
+  }
+
+  private async getTimeRange(
+    metricsDef: MetricsDefinitionEntity
+  ): Promise<TimeSeriesTimeRange> {
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(metricsDef.sourceModelId);
+    const rollupInterval: RollupInterval =
+      await this.databaseActionQueue.enqueue(
+        {
+          id: metricsDef.id,
+          priority: DatabaseActionQueuePriority.ActiveModel,
+        },
+        "estimateIdealRollupInterval",
+        [model.tableName, metricsDef.timeDimension]
+      );
+    return {
+      interval: rollupInterval.rollupInterval,
+      start: rollupInterval.minValue,
+      end: rollupInterval.maxValue,
+    } as TimeSeriesTimeRange;
   }
 
   private getValidDimensions(metricsDef: MetricsDefinitionEntity) {

@@ -5,13 +5,15 @@
     MetricViewTimeSeriesResponse,
   } from "$common/rill-developer-service/MetricViewActions";
   import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import SimpleDataGraphic from "$lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithBisector } from "$lib/components/data-graphic/functional-components";
   import { Axis } from "$lib/components/data-graphic/guides";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
     getMetricViewMetadata,

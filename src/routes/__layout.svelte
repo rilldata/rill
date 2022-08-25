@@ -14,8 +14,12 @@
   import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
   import { initMetrics } from "$lib/metrics/initMetrics";
   import { syncApplicationState } from "$lib/redux-store/application/application-apis";
+  import {
+    createQueryClient,
+    queryClient,
+  } from "$lib/svelte-query/globalQueryClient";
   import type { ApplicationMetadata } from "$lib/types";
-  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
+  import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { onMount, setContext } from "svelte";
   import "../app.css";
   import "../fonts.css";
@@ -42,14 +46,7 @@
     syncApplicationState(store);
   }
 
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnWindowFocus: false,
-        placeholderData: {},
-      },
-    },
-  });
+  createQueryClient();
 
   onMount(() => {
     initMetrics();

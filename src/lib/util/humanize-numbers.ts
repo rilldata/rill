@@ -2,7 +2,7 @@
 // Current dash persion has `prefix` key in JSON to add currecny etc.
 // We can provide a dropdown option in the table?? or regex??
 
-import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
+import type { LeaderboardValues } from "$lib/application-state-stores/explorer-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
 export type ShortHandSymbols = typeof shortHandSymbols[number];

@@ -11,7 +11,6 @@ import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
 import type { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import type { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import type { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
-import type { MetricsExplorerActions } from "$common/rill-developer-service/MetricsExplorerActions";
 import type { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
 import type {
@@ -26,7 +25,6 @@ type RillDeveloperActionsClasses = PickActionFunctions<
   MetricsDefinitionActions &
     DimensionsActions &
     MeasuresActions &
-    MetricsExplorerActions &
     MetricViewActions
 >;
 export type RillDeveloperActionsDefinition = ExtractActionTypeDefinitions<

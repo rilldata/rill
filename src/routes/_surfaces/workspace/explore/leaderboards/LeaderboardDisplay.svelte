@@ -5,10 +5,12 @@
     MetricViewMetaResponse,
     MetricViewTotalsResponse,
   } from "$common/rill-developer-service/MetricViewActions";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,

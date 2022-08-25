@@ -14,8 +14,8 @@ import type {
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 import type { QueryClient } from "@sveltestack/svelte-query";
-import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MetricsExplorerEntity } from "$lib/application-state-stores/explorer-stores";
 
 // GET /api/v1/metric-views/{view-name}/meta
 
@@ -37,8 +37,9 @@ export const getMetricViewMetadata = async (
   return json;
 };
 
+const MetaId = `v1/metric-view/meta`;
 export const getMetricViewMetaQueryKey = (metricViewId: string) => {
-  return [`v1/metric-view/meta`, metricViewId];
+  return [MetaId, metricViewId];
 };
 
 // POST /api/v1/metric-views/{view-name}/timeseries
@@ -179,6 +180,15 @@ export const getMetricViewTotalsQueryKey = (
   isReferenceValue = false
 ) => {
   return [TotalsId, metricsDefId, isReferenceValue];
+};
+
+export const invalidateMetricView = async (
+  queryClient: QueryClient,
+  metricsDefId: string
+) => {
+  // wait for meta to be invalidated
+  await queryClient.invalidateQueries([MetaId, metricsDefId]);
+  invalidateMetricViewData(queryClient, metricsDefId);
 };
 
 export const invalidateMetricViewData = (

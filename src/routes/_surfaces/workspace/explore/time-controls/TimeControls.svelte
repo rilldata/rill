@@ -12,8 +12,10 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
-  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import {
     getMetricViewMetadata,
     getMetricViewMetaQueryKey,

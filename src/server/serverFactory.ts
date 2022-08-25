@@ -32,7 +32,6 @@ import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
-import { MetricsExplorerActions } from "$common/rill-developer-service/MetricsExplorerActions";
 import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
 import { SocketNotificationService } from "$common/socket/SocketNotificationService";
 import { ExpressServer } from "$server/ExpressServer";
@@ -154,7 +153,6 @@ export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
       MetricsDefinitionActions,
       DimensionsActions,
       MeasuresActions,
-      MetricsExplorerActions,
       MetricViewActions,
     ].map(
       (RillDeveloperActionsClass) =>
