@@ -1,9 +1,6 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type {
-    MetricViewMetaResponse,
-    MetricViewTimeSeriesResponse,
-  } from "$common/rill-developer-service/MetricViewActions";
+  import type { MetricViewTimeSeriesResponse } from "$common/rill-developer-service/MetricViewActions";
   import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
@@ -16,14 +13,13 @@
   import Spinner from "$lib/components/Spinner.svelte";
   import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
     getMetricViewTimeSeries,
     getMetricViewTimeSeriesQueryKey,
     getMetricViewTimeSeriesRequest,
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
     getTotalsRequest,
+    useGetMetricViewMeta,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
@@ -42,18 +38,11 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
 
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
-    $queryResult.data?.timeDimension?.timeRange?.interval;
+    $metaQuery.data?.timeDimension?.timeRange?.interval;
 
   let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
   const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
@@ -71,10 +60,7 @@
   let timeSeriesQueryFn = () =>
     getMetricViewTimeSeries(
       metricsDefId,
-      getMetricViewTimeSeriesRequest(
-        metricsExplorer,
-        $queryResult.data.measures
-      )
+      getMetricViewTimeSeriesRequest(metricsExplorer, $metaQuery.data.measures)
     );
   const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(
     timeSeriesQueryKey,
@@ -135,8 +121,8 @@
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
-    {#if $queryResult.isSuccess}
-      {#each $queryResult.data.measures as measure, index (measure.id)}
+    {#if $metaQuery.isSuccess}
+      {#each $metaQuery.data.measures as measure, index (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}
 

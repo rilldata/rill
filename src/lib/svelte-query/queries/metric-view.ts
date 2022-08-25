@@ -15,7 +15,11 @@ import type {
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 import type { MetricsExplorerEntity } from "$lib/application-state-stores/explorer-stores";
-import type { QueryClient } from "@sveltestack/svelte-query";
+import {
+  QueryClient,
+  useQuery,
+  UseQueryOptions,
+} from "@sveltestack/svelte-query";
 
 // GET /api/v1/metric-views/{view-name}/meta
 
@@ -40,6 +44,24 @@ export const getMetricViewMetadata = async (
 const MetaId = `v1/metric-view/meta`;
 export const getMetricViewMetaQueryKey = (metricViewId: string) => {
   return [MetaId, metricViewId];
+};
+
+export const useGetMetricViewMeta = (
+  metricViewId: string,
+  queryOptions?: UseQueryOptions<MetricViewMetaResponse, Error>
+) => {
+  const queryKey =
+    queryOptions?.queryKey ?? getMetricViewMetaQueryKey(metricViewId);
+  const queryFn = () => getMetricViewMetadata(metricViewId);
+  const query = useQuery<MetricViewMetaResponse, Error>(
+    queryKey,
+    queryFn,
+    queryOptions
+  );
+  return {
+    queryKey,
+    ...query,
+  };
 };
 
 // POST /api/v1/metric-views/{view-name}/timeseries

@@ -1,10 +1,6 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import type {
-    MetricViewMetaResponse,
-    MetricViewTotalsResponse,
-  } from "$common/rill-developer-service/MetricViewActions";
+  import type { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -12,12 +8,11 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
     getTotalsRequest,
     invalidateMetricViewData,
+    useGetMetricViewMeta,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
@@ -37,20 +32,9 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
-
-  let dimensions: DimensionDefinitionEntity[];
-  $: dimensions = $queryResult.data.dimensions;
-
-  let measures: MeasureDefinitionEntity[];
-  $: measures = $queryResult.data.measures;
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: dimensions = $metaQuery.data.dimensions;
+  $: measures = $metaQuery.data.measures;
 
   $: activeMeasure =
     measures &&
