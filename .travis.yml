@@ -26,7 +26,7 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-
+      if: tag IS present
 
 
       # in order to achieve npm ci (clean install) delete the travis cache.
@@ -91,12 +91,12 @@ jobs:
       install: *npm-install
 
       script:
+        - echo "Install browser for UI tests"
+        - npx playwright install
         - npm test
-#        - echo "Install browser for UI tests"
-#        - npx playwright install
-#
-#        - echo "Build the entire application"
-#        - npm run build
+
+        - echo "Build the entire application"
+        - npm run build
 
       deploy:
         provider: npm
