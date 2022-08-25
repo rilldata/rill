@@ -26,11 +26,13 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     timeRange?: TimeSeriesTimeRange
   ) {
     // remove filters for this specific dimension.
-    const isolatedFilters = { ...filters };
-    delete isolatedFilters[column];
+    const isolatedFilters: MetricViewRequestFilter = {
+      include: filters?.include.filter((filter) => filter.name !== column),
+      exclude: filters?.exclude.filter((filter) => filter.name !== column),
+    };
 
     const whereClause = getWhereClauseFromFilters(
-      filters,
+      isolatedFilters,
       timestampColumn,
       timeRange,
       "WHERE"

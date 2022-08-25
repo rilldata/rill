@@ -141,7 +141,7 @@ export function humanizeDataType(
     return formatNicely(value, type, options);
   }
 
-  if (options?.excludeDecimalZeros) {
+  if (formattedValue && options?.excludeDecimalZeros) {
     return formattedValue.replace(".0", "");
   } else {
     return formattedValue;
