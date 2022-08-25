@@ -104,10 +104,10 @@ function mapDimensionIdToName(
   if (!filters) return undefined;
   const dimensionsIdMap = getMapFromArray(dimensions, (d) => d.id);
   filters.include.forEach((value) => {
-    value.name = dimensionsIdMap.get(value.name).dimensionColumn;
+    value.name = dimensionsIdMap.get(value.name)?.dimensionColumn ?? value.name;
   });
   filters.exclude.forEach((value) => {
-    value.name = dimensionsIdMap.get(value.name).dimensionColumn;
+    value.name = dimensionsIdMap.get(value.name)?.dimensionColumn ?? value.name;
   });
   return filters;
 }
