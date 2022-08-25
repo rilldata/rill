@@ -99,6 +99,7 @@ jobs:
 
       deploy:
         provider: npm
+        edge: true
         email: ops@rilldata.com
         api_token: ${NPMJS_TOKEN}
         cleanup: false
@@ -127,7 +128,7 @@ jobs:
 
       deploy: &deploy-vercel-pkg
         provider: releases
-        api_token: ${GITHUB_TOKEN}
+        api_key: ${GITHUB_TOKEN}
         # explicitly mention all types of binaries
         # travis doesnt support folder upload as of now
         file:
