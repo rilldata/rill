@@ -31,6 +31,8 @@
   import { slide } from "svelte/transition";
 
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
+  import StickToHeaderDivider from "$lib/components/panel/StickToHeaderDivider.svelte";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -144,16 +146,24 @@
 <div class="table-profile">
   {#if currentTable}
     <!-- CTAs -->
-    <PanelCTA side="right">
-      <Button type="secondary" on:click={handleCreateModelFromSource}
-        >Create Model <Model size="16px" /></Button
-      >
+    <PanelCTA side="right" let:width>
+      <Tooltip location="left" distance={16}>
+        <Button type="secondary" on:click={handleCreateModelFromSource}>
+          <ResponsiveButtonText {width}>Create Model</ResponsiveButtonText>
+          <Model size="16px" /></Button
+        >
+        <TooltipContent slot="tooltip-content">
+          Create a model with these source columns
+        </TooltipContent>
+      </Tooltip>
       <Tooltip location="bottom" alignment="right" distance={16}>
         <Button
           type="primary"
           disabled={!timestampColumns?.length}
           on:click={handleCreateMetric}
-          >Create Dashboard<Explore size="16px" /></Button
+        >
+          <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
+          <Explore size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
           {#if timestampColumns?.length}
@@ -189,7 +199,7 @@
       </LeftRightGrid>
     </div>
 
-    <hr />
+    <StickToHeaderDivider />
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">

@@ -23,7 +23,6 @@
   import Export from "$lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
 
-  import ModelerToMetricsButton from "$lib/components/modeler/ModelerToMetricsButton.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import {
@@ -31,9 +30,11 @@
     formatInteger,
   } from "$lib/util/formatters";
   import { getContext } from "svelte";
+  import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   import notification from "$lib/components/notifications";
   import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   export let containerWidth = 0;
 
@@ -155,7 +156,7 @@
   $: modelHasError = !!currentDerivedModel?.error;
 </script>
 
-<PanelCTA side="right">
+<PanelCTA side="right" let:width>
   <Tooltip
     location="left"
     alignment="middle"
@@ -175,7 +176,7 @@
         type="secondary"
         on:click={toggleFloatingElement}
       >
-        Export Results
+        <ResponsiveButtonText {width}>Export Results</ResponsiveButtonText>
         <Export size="16px" />
       </Button>
       <Menu
@@ -209,7 +210,7 @@
       {/if}
     </TooltipContent>
   </Tooltip>
-  <ModelerToMetricsButton hasError={modelHasError} {activeEntityID} />
+  <CreateDashboardButton {width} hasError={modelHasError} {activeEntityID} />
 </PanelCTA>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">

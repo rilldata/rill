@@ -2,7 +2,9 @@
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
-  import { getContext, onMount } from "svelte";
+  import { createResizeListenerActionFactory } from "$lib/components/actions/create-resize-listener-factory";
+  import StickToHeaderDivider from "$lib/components/panel/StickToHeaderDivider.svelte";
+  import { getContext } from "svelte";
   import ModelInspectorHeader from "./header/ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 
@@ -21,22 +23,14 @@
       ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
 
-  let containerWidth = 0;
-  let container;
-
-  onMount(() => {
-    const observer = new ResizeObserver(() => {
-      containerWidth = container.clientWidth;
-    });
-    observer.observe(container);
-    return () => observer.unobserve(container);
-  });
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
 </script>
 
 {#key currentModel?.id}
-  <div bind:this={container}>
-    <ModelInspectorHeader {containerWidth} />
-    <hr />
+  <div use:listenToNodeResize>
+    <ModelInspectorHeader containerWidth={$observedNode?.clientWidth} />
+    <StickToHeaderDivider />
     <ModelInspectorModelProfile />
   </div>
 {/key}
