@@ -33,7 +33,6 @@ export function getFilterFromFilters(filters: ActiveValues): string {
 export function getFilterFromMetricViewFilters(
   filters: MetricViewRequestFilter
 ): string {
-  // TODO: exclude filters
   return [
     ...filters.include.map((dimensionValues) =>
       dimensionValues.values
