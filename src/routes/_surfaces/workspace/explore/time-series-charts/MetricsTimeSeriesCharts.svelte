@@ -1,6 +1,6 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -10,18 +10,14 @@
   import { Axis } from "$lib/components/data-graphic/guides";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
-    getMetricViewTotals,
-    getMetricViewTotalsQueryKey,
-    getTotalsRequest,
     useGetMetricViewMeta,
     useGetMetricViewTimeSeries,
+    useGetMetricViewTotals,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
-  import { useQuery } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
@@ -41,16 +37,14 @@
     metricsExplorer?.selectedTimeRange?.interval ||
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
-  let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-  const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
-    getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
-  );
-  $: {
-    totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-    totalsQuery.setOptions(totalsQueryKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
-    );
-  }
+  $: totalsQuery = useGetMetricViewTotals(metricsDefId, {
+    measures: metricsExplorer?.selectedMeasureIds,
+    filter: metricsExplorer?.filters,
+    time: {
+      start: metricsExplorer?.selectedTimeRange?.start,
+      end: metricsExplorer?.selectedTimeRange?.end,
+    },
+  });
 
   // query the `/timeseries` endpoint
   $: timeSeriesQuery = useGetMetricViewTimeSeries(metricsDefId, {

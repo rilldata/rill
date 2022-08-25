@@ -13,7 +13,6 @@ import type {
   MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
-import type { MetricsExplorerEntity } from "$lib/application-state-stores/explorer-stores";
 import {
   QueryClient,
   useQuery,
@@ -169,19 +168,6 @@ export const useGetMetricViewTopList = (
 };
 
 // POST /api/v1/metric-views/{view-name}/totals
-export const getTotalsRequest = (
-  metricsExplorer: MetricsExplorerEntity,
-  noFilters = false
-): MetricViewTotalsRequest => {
-  return {
-    measures: metricsExplorer.selectedMeasureIds,
-    filter: noFilters ? undefined : metricsExplorer.filters,
-    time: {
-      start: metricsExplorer.selectedTimeRange?.start,
-      end: metricsExplorer.selectedTimeRange?.end,
-    },
-  };
-};
 
 export const getMetricViewTotals = async (
   metricViewId: string,
@@ -210,6 +196,27 @@ export const getMetricViewTotalsQueryKey = (
 ) => {
   return [TotalsId, metricViewId, isReferenceValue];
 };
+
+export const useGetMetricViewTotals = (
+  metricViewId: string,
+  request: MetricViewTotalsRequest,
+  queryOptions?: UseQueryOptions<MetricViewTotalsResponse, Error>
+) => {
+  const queryKey =
+    queryOptions?.queryKey ?? getMetricViewTotalsQueryKey(metricViewId);
+  const queryFn = () => getMetricViewTotals(metricViewId, request);
+  const query = useQuery<MetricViewTotalsResponse, Error>(
+    queryKey,
+    queryFn,
+    queryOptions
+  );
+  return {
+    queryKey,
+    ...query,
+  };
+};
+
+// invalidation helpers
 
 export const invalidateMetricView = async (
   queryClient: QueryClient,

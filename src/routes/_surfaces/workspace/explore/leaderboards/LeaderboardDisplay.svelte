@@ -10,9 +10,9 @@
   import {
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
-    getTotalsRequest,
     invalidateMetricViewData,
     useGetMetricViewMeta,
+    useGetMetricViewTotals,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
@@ -47,25 +47,39 @@
 
   let referenceValue: number;
 
-  let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-  const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
-    getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
-  );
+  $: totalsQuery = useGetMetricViewTotals(metricsDefId, {
+    measures: metricsExplorer?.selectedMeasureIds,
+    filter: metricsExplorer?.filters,
+    time: {
+      start: metricsExplorer?.selectedTimeRange?.start,
+      end: metricsExplorer?.selectedTimeRange?.end,
+    },
+  });
   // TODO: find a way to have a single request when there are no filters
   let referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
   const referenceValueQuery = useQuery<MetricViewTotalsResponse>(
     referenceValueKey,
     () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer, true))
+      getMetricViewTotals(metricsDefId, {
+        measures: metricsExplorer?.selectedMeasureIds,
+        filter: undefined,
+        time: {
+          start: metricsExplorer?.selectedTimeRange?.start,
+          end: metricsExplorer?.selectedTimeRange?.end,
+        },
+      })
   );
   $: {
-    totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-    totalsQuery.setOptions(totalsQueryKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
-    );
     referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
     referenceValueQuery.setOptions(referenceValueKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer, true))
+      getMetricViewTotals(metricsDefId, {
+        measures: metricsExplorer.selectedMeasureIds,
+        filter: undefined,
+        time: {
+          start: metricsExplorer.selectedTimeRange?.start,
+          end: metricsExplorer.selectedTimeRange?.end,
+        },
+      })
     );
   }
 
