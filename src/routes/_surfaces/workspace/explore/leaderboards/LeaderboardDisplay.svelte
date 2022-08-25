@@ -56,48 +56,34 @@
     },
   });
   // TODO: find a way to have a single request when there are no filters
+  $: referenceValueQueryRequest = {
+    measures: metricsExplorer?.selectedMeasureIds,
+    filter: undefined,
+    time: {
+      start: metricsExplorer?.selectedTimeRange?.start,
+      end: metricsExplorer?.selectedTimeRange?.end,
+    },
+  };
   let referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
+  $: referenceValueQueryOptions = {
+    enabled: !!(
+      metricsDefId &&
+      metricsExplorer?.selectedMeasureIds &&
+      metricsExplorer?.selectedTimeRange?.start &&
+      metricsExplorer?.selectedTimeRange?.end
+    ),
+  };
   const referenceValueQuery = useQuery<MetricViewTotalsResponse>(
     referenceValueKey,
-    () =>
-      getMetricViewTotals(metricsDefId, {
-        measures: metricsExplorer?.selectedMeasureIds,
-        filter: undefined,
-        time: {
-          start: metricsExplorer?.selectedTimeRange?.start,
-          end: metricsExplorer?.selectedTimeRange?.end,
-        },
-      }),
-    {
-      enabled: !!(
-        metricsDefId &&
-        metricsExplorer?.selectedMeasureIds &&
-        metricsExplorer?.selectedTimeRange?.start &&
-        metricsExplorer?.selectedTimeRange?.end
-      ),
-    }
+    () => getMetricViewTotals(metricsDefId, referenceValueQueryRequest),
+    referenceValueQueryOptions
   );
   $: {
     referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
     referenceValueQuery.setOptions(
       referenceValueKey,
-      () =>
-        getMetricViewTotals(metricsDefId, {
-          measures: metricsExplorer.selectedMeasureIds,
-          filter: undefined,
-          time: {
-            start: metricsExplorer.selectedTimeRange?.start,
-            end: metricsExplorer.selectedTimeRange?.end,
-          },
-        }),
-      {
-        enabled: !!(
-          metricsDefId &&
-          metricsExplorer?.selectedMeasureIds &&
-          metricsExplorer?.selectedTimeRange?.start &&
-          metricsExplorer?.selectedTimeRange?.end
-        ),
-      }
+      () => getMetricViewTotals(metricsDefId, referenceValueQueryRequest),
+      referenceValueQueryOptions
     );
   }
 
