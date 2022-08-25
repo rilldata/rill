@@ -5,7 +5,6 @@
   import notifications from "$lib/components/notifications/";
   import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
-  import { Button } from "../button";
   import Input from "../Input.svelte";
   import { Dialog } from "../modal-new";
 
@@ -13,7 +12,6 @@
     | EntityType.Table
     | EntityType.Model
     | EntityType.MetricsDefinition;
-  export let openModal = false;
   export let closeModal: () => void;
   export let entityId = null;
   export let currentEntityName = null;
@@ -76,7 +74,11 @@
   };
 </script>
 
-<Dialog on:cancel={resetVariablesAndCloseModal}>
+<Dialog
+  showCancel
+  on:cancel={resetVariablesAndCloseModal}
+  on:submit={() => submitHandler(entityId, newAssetName)}
+>
   <svelte:fragment slot="title">Rename</svelte:fragment>
   <svelte:fragment slot="body">
     <form
@@ -92,11 +94,5 @@
       />
     </form>
   </svelte:fragment>
-  <svelte:fragment slot="footer">
-    <Button type="text" on:click={resetVariablesAndCloseModal}>cancel</Button>
-    <Button
-      type="primary"
-      on:click={() => submitHandler(entityId, newAssetName)}>Change name</Button
-    >
-  </svelte:fragment>
+  <svelte:fragment slot="submit-body">Change Name</svelte:fragment>
 </Dialog>

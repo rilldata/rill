@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
   import IconButton from "$lib/components/button/IconButton.svelte";
 
   import Close from "$lib/components/icons/Close.svelte";
   import { createEventDispatcher } from "svelte";
   import ModalContainer from "../ModalContainer.svelte";
+  import DialogCTA from "./DialogCTA.svelte";
   import DialogFooter from "./DialogFooter.svelte";
   import DialogHeader from "./DialogHeader.svelte";
   export let dark = false;
@@ -43,9 +44,19 @@
       <div class="px-7 pt-8 pb-16">
         <slot name="body" />
       </div>
-      <DialogFooter>
-        <slot name="footer" />
-      </DialogFooter>
+      {#if $$slots.footer}
+        <DialogFooter>
+          <slot name="footer" />
+        </DialogFooter>
+      {:else if $$slots["submit-body"]}
+        <DialogFooter>
+          <DialogCTA on:cancel on:submit>
+            <svelte:fragment slot="submit-body"
+              ><slot name="submit-body" /></svelte:fragment
+            >
+          </DialogCTA>
+        </DialogFooter>
+      {/if}
     </div>
   </div>
 </ModalContainer>

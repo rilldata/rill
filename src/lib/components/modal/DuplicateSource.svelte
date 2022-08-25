@@ -5,7 +5,6 @@
     duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
   import { createEventDispatcher } from "svelte";
-  import { Button } from "../button";
   import { Dialog } from "../modal-new";
 
   const dispatch = createEventDispatcher();
@@ -17,20 +16,17 @@
   }
 </script>
 
-<Dialog showCancel on:cancel={onCancel}>
+<Dialog
+  showCancel
+  on:cancel={onCancel}
+  on:submit={() => {
+    $duplicateSourceName = null;
+    $duplicateSourceAction = DuplicateActions.Overwrite;
+  }}
+>
   <svelte:fragment slot="title">Duplicate source name</svelte:fragment>
   <svelte:fragment slot="body">
     A source with the name <b>{$duplicateSourceName}</b> already exists.
   </svelte:fragment>
-  <svelte:fragment slot="footer">
-    <Button on:click={onCancel} type="text">Cancel</Button>
-    <Button
-      on:click={() => {
-        $duplicateSourceName = null;
-        $duplicateSourceAction = DuplicateActions.Overwrite;
-      }}
-      status="error"
-      type="primary">Replace existing source</Button
-    >
-  </svelte:fragment>
+  <svelte:fragment slot="submit-body">Replace existing source</svelte:fragment>
 </Dialog>
