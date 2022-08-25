@@ -33,7 +33,7 @@ export const getMetricViewMetadata = async (
   );
   const json = await resp.json();
   if (!resp.ok) {
-    const err = new Error(json);
+    const err = new Error(json.messages[0].message);
     return Promise.reject(err);
   }
   return json;
@@ -77,7 +77,7 @@ export const getMetricViewTimeSeries = async (
   );
   const json = await resp.json();
   if (!resp.ok) {
-    const err = new Error(json);
+    const err = new Error(json.messages[0].message);
     return Promise.reject(err);
   }
   return json;
@@ -137,7 +137,7 @@ export const getMetricViewTopList = async (
   );
   const json = await resp.json();
   if (!resp.ok) {
-    const err = new Error(json);
+    const err = new Error(json.messages[0].message);
     return Promise.reject(err);
   }
   return json;
@@ -197,7 +197,7 @@ export const getMetricViewTotals = async (
   );
   const json = await resp.json();
   if (!resp.ok) {
-    const err = new Error(json);
+    const err = new Error(json.messages[0].message);
     return Promise.reject(err);
   }
   return json;
