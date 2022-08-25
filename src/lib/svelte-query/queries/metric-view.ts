@@ -3,6 +3,7 @@
  * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
  */
 
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type {
   MetricViewMetaResponse,
   MetricViewTimeSeriesRequest,
@@ -13,9 +14,8 @@ import type {
   MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
-import type { QueryClient } from "@sveltestack/svelte-query";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { MetricsExplorerEntity } from "$lib/application-state-stores/explorer-stores";
+import type { QueryClient } from "@sveltestack/svelte-query";
 
 // GET /api/v1/metric-views/{view-name}/meta
 
@@ -133,10 +133,10 @@ export const getMetricViewTopList = async (
 
 const TopListId = `v1/metric-view/toplist`;
 export const getMetricViewTopListQueryKey = (
-  metricsDefId: string,
+  metricViewId: string,
   dimensionId: string
 ) => {
-  return [TopListId, metricsDefId, dimensionId];
+  return [TopListId, metricViewId, dimensionId];
 };
 
 // POST /api/v1/metric-views/{view-name}/totals
@@ -176,26 +176,26 @@ export const getMetricViewTotals = async (
 
 const TotalsId = `v1/metric-view/totals`;
 export const getMetricViewTotalsQueryKey = (
-  metricsDefId: string,
+  metricViewId: string,
   isReferenceValue = false
 ) => {
-  return [TotalsId, metricsDefId, isReferenceValue];
+  return [TotalsId, metricViewId, isReferenceValue];
 };
 
 export const invalidateMetricView = async (
   queryClient: QueryClient,
-  metricsDefId: string
+  metricViewId: string
 ) => {
   // wait for meta to be invalidated
-  await queryClient.invalidateQueries([MetaId, metricsDefId]);
-  invalidateMetricViewData(queryClient, metricsDefId);
+  await queryClient.invalidateQueries([MetaId, metricViewId]);
+  invalidateMetricViewData(queryClient, metricViewId);
 };
 
 export const invalidateMetricViewData = (
   queryClient: QueryClient,
-  metricsDefId: string
+  metricViewId: string
 ) => {
-  queryClient.invalidateQueries([TopListId, metricsDefId]);
-  queryClient.invalidateQueries([TotalsId, metricsDefId]);
-  queryClient.invalidateQueries([TimeSeriesId, metricsDefId]);
+  queryClient.invalidateQueries([TopListId, metricViewId]);
+  queryClient.invalidateQueries([TotalsId, metricViewId]);
+  queryClient.invalidateQueries([TimeSeriesId, metricViewId]);
 };
