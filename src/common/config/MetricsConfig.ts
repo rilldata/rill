@@ -1,7 +1,7 @@
 import { Config } from "$common/utils/Config";
 
 export class MetricsConfig extends Config<MetricsConfig> {
-  @Config.ConfigField("data-modeler")
+  @Config.ConfigField("rill-developer")
   public appName: string;
 
   @Config.ConfigField(60)

@@ -159,8 +159,6 @@ export class ActiveEventHandlerSpec extends TestBase {
       build_id: "",
       version: "",
       project_id: applicationState.projectId,
-      entity_type: model_id ? "Model" : "",
-      entity_id: model_id,
       event_type: "active",
       duration_sec,
       total_in_focus,
