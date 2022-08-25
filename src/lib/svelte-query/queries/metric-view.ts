@@ -110,21 +110,6 @@ export const useGetMetricViewTimeSeries = (
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
-export const getTopListRequest = (
-  metricsExplorer: MetricsExplorerEntity
-): MetricViewTopListRequest => {
-  return {
-    measures: [metricsExplorer.leaderboardMeasureId],
-    limit: 10,
-    offset: 0,
-    sort: [],
-    time: {
-      start: metricsExplorer.selectedTimeRange?.start,
-      end: metricsExplorer.selectedTimeRange?.end,
-    },
-    filter: metricsExplorer.filters,
-  };
-};
 
 export const getMetricViewTopList = async (
   metricViewId: string,
@@ -159,6 +144,28 @@ export const getMetricViewTopListQueryKey = (
   dimensionId: string
 ) => {
   return [TopListId, metricViewId, dimensionId];
+};
+
+export const useGetMetricViewTopList = (
+  metricViewId: string,
+  dimensionId: string,
+  request: MetricViewTopListRequest,
+  queryOptions?: UseQueryOptions<MetricViewTopListResponse, Error>
+) => {
+  const queryKey =
+    queryOptions?.queryKey ??
+    getMetricViewTopListQueryKey(metricViewId, dimensionId);
+  const queryFn = () =>
+    getMetricViewTopList(metricViewId, dimensionId, request);
+  const query = useQuery<MetricViewTopListResponse, Error>(
+    queryKey,
+    queryFn,
+    queryOptions
+  );
+  return {
+    queryKey,
+    ...query,
+  };
 };
 
 // POST /api/v1/metric-views/{view-name}/totals

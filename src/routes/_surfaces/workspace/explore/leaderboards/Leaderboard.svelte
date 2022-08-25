@@ -7,7 +7,6 @@
    */
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MetricViewTopListResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -22,17 +21,12 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import {
-    getMetricViewTopList,
-    getMetricViewTopListQueryKey,
-    getTopListRequest,
-  } from "$lib/svelte-query/queries/metric-view";
+  import { useGetMetricViewTopList } from "$lib/svelte-query/queries/metric-view";
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { useQuery } from "@sveltestack/svelte-query";
   import type { Readable } from "svelte/store";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
@@ -71,17 +65,18 @@
   $: atLeastOneActive = !!activeValues?.length;
 
   // Svelte-Query for getting top list start
-  let topListKey = getMetricViewTopListQueryKey(metricsDefId, dimensionId);
-  const topListQuery = useQuery<MetricViewTopListResponse>(topListKey, () =>
-    getMetricViewTopList(
-      metricsDefId,
-      dimensionId,
-      getTopListRequest(metricsExplorer)
-    )
-  );
-  let values: Array<unknown>;
-  $: if ($topListQuery.data) values = $topListQuery.data.data;
-  // Svelte-Query for getting top list end
+  $: topListQuery = useGetMetricViewTopList(metricsDefId, dimensionId, {
+    measures: [metricsExplorer.leaderboardMeasureId],
+    limit: 10,
+    offset: 0,
+    sort: [],
+    time: {
+      start: metricsExplorer.selectedTimeRange?.start,
+      end: metricsExplorer.selectedTimeRange?.end,
+    },
+    filter: metricsExplorer.filters,
+  });
+  $: values = $topListQuery.data?.data;
 
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
