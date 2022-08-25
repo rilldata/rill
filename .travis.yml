@@ -89,6 +89,13 @@ jobs:
 
       install: *npm-install
 
+      script:
+        - echo "Install browser for UI tests"
+        - npx playwright install
+
+        - echo "Build the entire application"
+        - npm run build
+
       deploy:
         provider: npm
         email: ops@rilldata.com
