@@ -84,18 +84,19 @@ jobs:
         - docker-compose push
 
     # Publish binaries and npm on the release
-    - stage: Release
+    - stage: Test
       name: "Build & Publish npm module"
       #if: tag IS present
 
       install: *npm-install
 
       script:
-        - echo "Install browser for UI tests"
-        - npx playwright install
-
-        - echo "Build the entire application"
-        - npm run build
+        - npm test
+#        - echo "Install browser for UI tests"
+#        - npx playwright install
+#
+#        - echo "Build the entire application"
+#        - npm run build
 
       deploy:
         provider: npm
