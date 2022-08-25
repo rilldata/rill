@@ -1,4 +1,6 @@
-import { DatabaseActions } from "./DatabaseActions";
+import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
+import { sanitizeColumn } from "$common/utils/queryUtils";
+import { TIMESTAMPS } from "$lib/duckdb-data-types";
 import type {
   CategoricalSummary,
   NumericHistogramBin,
@@ -7,9 +9,7 @@ import type {
   NumericSummary,
   TimeRangeSummary,
 } from "$lib/types";
-import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
-import { sanitizeColumn } from "$common/utils/queryUtils";
-import { TIMESTAMPS } from "$lib/duckdb-data-types";
+import { DatabaseActions } from "./DatabaseActions";
 
 const TOP_K_COUNT = 50;
 
@@ -232,16 +232,23 @@ export class DatabaseColumnActions extends DatabaseActions {
               (range + 1) * (select range FROM S) / ${bucketSize} + (select minVal from S) as high
             FROM range(0, ${bucketSize}, 1)
           ),
+          -- bin the values
+          binned_data AS (
+            SELECT 
+              FLOOR((value - (select minVal from S)) / (select range from S) * ${bucketSize}) as bucket
+            from values
+          ),
+          -- join the bucket set with the binned values to generate the histogram
           histogram_stage AS (
           SELECT
-              bucket,
+              buckets.bucket,
               low,
               high,
-              count(values.value) as count
+              SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
             FROM buckets
-            LEFT JOIN values ON (values.value >= low and values.value < high)
-            GROUP BY bucket, low, high
-            ORDER BY BUCKET
+            LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
+            GROUP BY buckets.bucket, low, high
+            ORDER BY buckets.bucket
           ),
           -- calculate the right edge, sine in histogram_stage we don't look at the values that
           -- might be the largest.
@@ -286,23 +293,31 @@ export class DatabaseColumnActions extends DatabaseActions {
           ), values AS (
             SELECT ${sanitizedColumnName} as value from data_table
             WHERE ${sanitizedColumnName} IS NOT NULL
-          ), buckets AS (
+          ), 
+          buckets AS (
             SELECT
               range as bucket,
               (range) * (select range FROM S) / ${outlierPseudoBucketSize} + (select minVal from S) as low,
               (range + 1) * (select range FROM S) / ${outlierPseudoBucketSize} + (select minVal from S) as high
             FROM range(0, ${outlierPseudoBucketSize}, 1)
           ),
+          -- bin the values
+          binned_data AS (
+            SELECT 
+              FLOOR((value - (select minVal from S)) / (select range from S) * ${outlierPseudoBucketSize}) as bucket
+            from values
+          ),
+          -- join the bucket set with the binned values to generate the histogram
           histogram_stage AS (
           SELECT
-              bucket,
+              buckets.bucket,
               low,
               high,
-              count(values.value) as count
+              SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
             FROM buckets
-            LEFT JOIN values ON (values.value >= low and values.value < high)
-            GROUP BY bucket, low, high
-            ORDER BY BUCKET
+            LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
+            GROUP BY buckets.bucket, low, high
+            ORDER BY buckets.bucket
           ),
           -- calculate the right edge, sine in histogram_stage we don't look at the values that
           -- might be the largest.
