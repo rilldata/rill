@@ -1,6 +1,5 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MetricViewTimeSeriesResponse } from "$common/rill-developer-service/MetricViewActions";
   import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
@@ -13,13 +12,11 @@
   import Spinner from "$lib/components/Spinner.svelte";
   import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
-    getMetricViewTimeSeries,
-    getMetricViewTimeSeriesQueryKey,
-    getMetricViewTimeSeriesRequest,
     getMetricViewTotals,
     getMetricViewTotalsQueryKey,
     getTotalsRequest,
     useGetMetricViewMeta,
+    useGetMetricViewTimeSeries,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
@@ -56,23 +53,18 @@
   }
 
   // query the `/timeseries` endpoint
-  let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
-  let timeSeriesQueryFn = () =>
-    getMetricViewTimeSeries(
-      metricsDefId,
-      getMetricViewTimeSeriesRequest(metricsExplorer, $metaQuery.data.measures)
-    );
-  const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(
-    timeSeriesQueryKey,
-    timeSeriesQueryFn
-  );
-  $: {
-    timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
-    timeSeriesQueryResult.setOptions(timeSeriesQueryKey, timeSeriesQueryFn);
-  }
+  $: timeSeriesQuery = useGetMetricViewTimeSeries(metricsDefId, {
+    measures: metricsExplorer?.selectedMeasureIds,
+    filter: metricsExplorer?.filters,
+    time: {
+      start: metricsExplorer?.selectedTimeRange?.start,
+      end: metricsExplorer?.selectedTimeRange?.end,
+      granularity: metricsExplorer?.selectedTimeRange?.interval,
+    },
+  });
 
-  $: formattedData = $timeSeriesQueryResult.data.data
-    ? convertTimestampPreview($timeSeriesQueryResult.data.data, true)
+  $: formattedData = $timeSeriesQuery.data?.data
+    ? convertTimestampPreview($timeSeriesQuery.data.data, true)
     : undefined;
 
   let mouseoverValue = undefined;
@@ -80,7 +72,7 @@
   $: key = `${startValue}` + `${endValue}`;
 
   $: [minVal, maxVal] = extent(
-    $timeSeriesQueryResult.data.data ?? [],
+    $timeSeriesQuery.data?.data ?? [],
     (d: TimeSeriesValue) => d.ts
   );
   $: startValue = removeTimezoneOffset(new Date(minVal));
@@ -142,7 +134,7 @@
           </svelte:fragment>
         </MeasureBigNumber>
         <div class="time-series-body" style:height="125px">
-          {#if $timeSeriesQueryResult.isError}
+          {#if $timeSeriesQuery.isError}
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData}
             <TimeSeriesBody

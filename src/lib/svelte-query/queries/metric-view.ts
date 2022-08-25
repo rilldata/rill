@@ -3,7 +3,6 @@
  * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
  */
 
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type {
   MetricViewMetaResponse,
   MetricViewTimeSeriesRequest,
@@ -66,24 +65,6 @@ export const useGetMetricViewMeta = (
 
 // POST /api/v1/metric-views/{view-name}/timeseries
 
-export const getMetricViewTimeSeriesRequest = (
-  metricsExplorer: MetricsExplorerEntity,
-  measures: Array<MeasureDefinitionEntity>
-) => {
-  const selectedMeasureIdSet = new Set(metricsExplorer.selectedMeasureIds);
-  return {
-    measures: measures
-      .map((measure) => measure.id)
-      .filter((measureId) => selectedMeasureIdSet.has(measureId)),
-    filter: metricsExplorer.filters,
-    time: {
-      start: metricsExplorer?.selectedTimeRange?.start,
-      end: metricsExplorer?.selectedTimeRange?.end,
-      granularity: metricsExplorer?.selectedTimeRange?.interval,
-    },
-  };
-};
-
 export const getMetricViewTimeSeries = async (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest
@@ -107,6 +88,25 @@ export const getMetricViewTimeSeries = async (
 const TimeSeriesId = `v1/metric-view/timeseries`;
 export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
   return [TimeSeriesId, metricViewId];
+};
+
+export const useGetMetricViewTimeSeries = (
+  metricViewId: string,
+  request: MetricViewTimeSeriesRequest,
+  queryOptions?: UseQueryOptions<MetricViewTimeSeriesResponse, Error>
+) => {
+  const queryKey =
+    queryOptions?.queryKey ?? getMetricViewTimeSeriesQueryKey(metricViewId);
+  const queryFn = () => getMetricViewTimeSeries(metricViewId, request);
+  const query = useQuery<MetricViewTimeSeriesResponse, Error>(
+    queryKey,
+    queryFn,
+    queryOptions
+  );
+  return {
+    queryKey,
+    ...query,
+  };
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
