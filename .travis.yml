@@ -26,7 +26,7 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-      if: tag IS present
+      if: tag IS NOT present
 
 
       # in order to achieve npm ci (clean install) delete the travis cache.
@@ -57,6 +57,7 @@ jobs:
 
     - stage: Test
       name: "Verify docker build"
+      if: tag IS NOT present
 
       install: docker --version
       script:
@@ -86,7 +87,7 @@ jobs:
     # Publish binaries and npm on the release
     - stage: Test
       name: "Build & Publish npm module"
-      #if: tag IS present
+      if: tag IS present
 
       install: *npm-install
 
@@ -97,8 +98,7 @@ jobs:
         - echo "Build the entire application"
         - npm run build
 
-        - npm test
-
+      # Deploy will run npm test
       deploy:
         provider: npm
         edge: true
