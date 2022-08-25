@@ -93,10 +93,11 @@ jobs:
       script:
         - echo "Install browser for UI tests"
         - npx playwright install
-        - npm test
 
         - echo "Build the entire application"
         - npm run build
+
+        - npm test
 
       deploy:
         provider: npm
