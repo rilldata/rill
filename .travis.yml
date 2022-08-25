@@ -24,16 +24,6 @@ jobs:
 
     # Run tests always
     - stage: Test
-      name: "Verify gcp"
-      install: skip
-      script:
-        - echo ${GCP_TOKEN} > gcp.json
-        - gcloud auth activate-service-account --key-file gcp.json
-        - gcloud config set project rilldata
-        - gsutil ls gs://prod-cdn.rilldata.com
-
-    # Run tests always
-    - stage: Test
       name: "Verify build"
 
       # in order to achieve npm ci (clean install) delete the travis cache.
@@ -124,10 +114,17 @@ jobs:
         - echo "Building vercel/pkg binary"
         - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
 
+        - echo "version=${TRAVIS_TAG}" > metadata.txt
+        - echo "build_url=${TRAVIS_BUILD_WEB_URL} >> metadata.txt
+        - echo "sha=$(git rev-parse) >> metadata.txt
+
         - echo ${GCP_TOKEN} > gcp.json
         - gcloud auth activate-service-account --key-file gcp.json
         - gcloud config set project rilldata
-        - gsutil ls gs://prod-cdn.rilldata.com
+        - gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos/rill
+        - gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux/rill
+        - gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win/rill
+        - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
 
       deploy: &deploy-vercel-pkg
         provider: releases
