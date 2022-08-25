@@ -80,6 +80,7 @@
   <svelte:fragment slot="title">Rename</svelte:fragment>
   <svelte:fragment slot="body">
     <form
+      autocomplete="off"
       on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
     >
       <Input
@@ -99,29 +100,3 @@
     >
   </svelte:fragment>
 </Dialog>
-<!-- 
-<Modal open={openModal} onBackdropClick={() => resetVariablesAndCloseModal()}>
-  <ModalTitle>
-    rename <span class="text-gray-500 italic">{currentEntityName}</span>
-  </ModalTitle>
-  <ModalContent>
-    <form
-      on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
-    >
-      <Input
-        id="{entityLabel}-name"
-        label="{entityLabel} name"
-        bind:value={newAssetName}
-        {error}
-      />
-    </form>
-  </ModalContent>
-  <ModalActions>
-    <ModalAction on:click={() => resetVariablesAndCloseModal()}>
-      cancel
-    </ModalAction>
-    <ModalAction primary on:click={() => submitHandler(entityId, newAssetName)}>
-      submit
-    </ModalAction>
-  </ModalActions>
-</Modal> -->

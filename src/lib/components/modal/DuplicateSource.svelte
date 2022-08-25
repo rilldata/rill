@@ -34,36 +34,3 @@
     >
   </svelte:fragment>
 </Dialog>
-<!-- 
-<Modal open={$duplicateSourceName !== null} onBackdropClick={() => undefined}>
-  <ModalTitle>Duplicate Source Found</ModalTitle>
-  <ModalContent
-    >A source with the name <b>{$duplicateSourceName}</b> already exists</ModalContent
-  >
-  <ModalActions>
-    <ModalAction
-      on:click={() => {
-        $duplicateSourceName = null;
-        $duplicateSourceAction = DuplicateActions.Overwrite;
-      }}
-    >
-      replace
-    </ModalAction>
-    <ModalAction
-      on:click={() => {
-        $duplicateSourceName = null;
-        $duplicateSourceAction = DuplicateActions.KeepBoth;
-      }}
-    >
-      keep both
-    </ModalAction>
-    <ModalAction
-      on:click={() => {
-        $duplicateSourceName = null;
-        $duplicateSourceAction = DuplicateActions.Cancel;
-      }}
-    >
-      cancel
-    </ModalAction>
-  </ModalActions>
-</Modal> -->

@@ -24,5 +24,5 @@
   bind:value
 />
 {#if error}
-  <div class="text-red-500 text-xs">{error}</div>
+  <div class="text-red-500 text-xs pt-1">{error}</div>
 {/if}
