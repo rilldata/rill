@@ -1,6 +1,7 @@
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import type { CommonUserFields } from "$common/metrics-service/MetricsTypes";
 import type { RootConfig } from "$common/config/RootConfig";
+import { sendTelemetryEvent } from "$lib/metrics/sendTelemetryEvent";
 
 export class ActiveEventHandler {
   private isInFocus = true;
@@ -40,11 +41,12 @@ export class ActiveEventHandler {
     }
 
     if (this.focusCount > 0) {
-      this.metricsService.dispatch("activeEvent", [
+      sendTelemetryEvent(
+        "activeEvent",
         this.commonUserMetrics,
         this.focusDuration,
-        this.focusCount,
-      ]);
+        this.focusCount
+      );
     }
 
     this.focusCount = 0;
