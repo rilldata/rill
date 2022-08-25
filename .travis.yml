@@ -85,7 +85,7 @@ jobs:
         - docker-compose push
 
     # Publish binaries and npm on the release
-    - stage: Test
+    - stage: Release
       name: "Build & Publish npm module"
       if: tag IS present
 
