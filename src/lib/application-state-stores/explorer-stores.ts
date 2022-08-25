@@ -20,21 +20,15 @@ export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 
 export interface MetricsExplorerEntity {
   id: string;
-  // full list of measure IDs available to explore
-  measureIds?: Array<string>;
   // selected measure IDs to be shown
   selectedMeasureIds: Array<string>;
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
+  // we might need this to calculate humanise format
   leaderboards?: Array<LeaderboardValues>;
   filters: MetricViewRequestFilter;
-  selectedCount?: number;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
-  // this marks whether anything related to this explore is stale
-  // this is set to true when any measure or dimension changes.
-  // this also is set to true when related model and its dependant source updates (TODO)
-  isStale?: boolean;
 }
 
 export interface MetricsExplorerStoreType {
