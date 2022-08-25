@@ -17,15 +17,16 @@ export class InitCommand extends DataModelerCliCommand {
         "Used with --db. Copy the duckDB database instead of directly modifying it. "
       )
       .action((opts, command) => {
-        const { project } = command.optsWithGlobals();
+        const { project, dev } = command.optsWithGlobals();
 
         const projectPath = project ?? process.cwd();
+        const isDev = dev ?? false;
 
-        return this.createProjectAndRun(opts, projectPath);
+        return this.createProjectAndRun(opts, projectPath, isDev);
       });
   }
 
-  public createProjectAndRun(opts, projectPath: string) {
+  public createProjectAndRun(opts, projectPath: string, isDev: boolean) {
     InitCommand.makeDirectoryIfNotExists(projectPath);
     this.alreadyInitialised = existsSync(`${projectPath}/state`);
 
@@ -39,6 +40,7 @@ export class InitCommand extends DataModelerCliCommand {
 
     return this.run({
       projectPath,
+      isDev,
       duckDbPath: opts.copy ? undefined : opts.db,
     });
   }

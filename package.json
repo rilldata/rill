@@ -25,7 +25,7 @@
     "test:ui": "jest --detectOpenHandles test/ui",
     "test:watch": "npm run test -- --watch",
     "generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
-    "cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts",
+    "cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts --dev",
     "bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
     "manual-publish": "./build-tools/npm_publish.sh",
     "build-vercel-pkg": "node dist/cli/build-vercel-pkg.js"

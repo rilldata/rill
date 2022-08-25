@@ -14,8 +14,9 @@ export class StartCommand extends DataModelerCliCommand {
       new Command("start"),
       "Start the Rill Developer application. "
     ).action((opts, command: Command) => {
-      const { project } = command.optsWithGlobals();
+      const { project, dev } = command.optsWithGlobals();
       return this.run({
+        isDev: dev ?? false,
         projectPath: project,
         shouldInitState: false,
         shouldSkipDatabase: false,

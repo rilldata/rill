@@ -10,12 +10,14 @@ import { isPortOpen } from "$common/utils/isPortOpen";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { RillDeveloper } from "$server/RillDeveloper";
 import { ProjectConfig } from "$common/config/ProjectConfig";
+import { LocalConfig } from "$common/config/LocalConfig";
 
 const DATABASE_NAME = "stage.db";
 
 export interface CliRunArgs {
   projectPath: string;
   duckDbPath?: string;
+  isDev?: boolean;
   shouldInitState?: boolean;
   shouldSkipDatabase?: boolean;
   profileWithUpdate?: boolean;
@@ -34,6 +36,7 @@ export abstract class DataModelerCliCommand {
 
   private async init(cliRunArgs: CliRunArgs): Promise<void> {
     this.projectPath = cliRunArgs.projectPath ?? process.cwd();
+    cliRunArgs.isDev ??= false;
     cliRunArgs.shouldInitState ??= true;
     cliRunArgs.shouldSkipDatabase ??= true;
     cliRunArgs.profileWithUpdate ??= false;
@@ -47,6 +50,7 @@ export abstract class DataModelerCliCommand {
         serverPort: Number(process.env.RILL_SERVER_PORT ?? 8080),
         serveStaticFile: true,
       }),
+      local: new LocalConfig({ isDev: cliRunArgs.isDev }),
       project: new ProjectConfig({ duckDbPath: cliRunArgs.duckDbPath }),
       projectFolder: this.projectPath,
       profileWithUpdate: cliRunArgs.profileWithUpdate,
@@ -119,6 +123,10 @@ export abstract class DataModelerCliCommand {
         .option(
           "--project <projectPath>",
           "Optionally indicate the path to your project. This path defaults to the current directory."
+        )
+        .option(
+          "-d, --dev",
+          "Optionally indicate if the cli is used for development purposes"
         )
     );
   }
