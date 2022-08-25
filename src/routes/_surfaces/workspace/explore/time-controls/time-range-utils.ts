@@ -49,7 +49,7 @@ export const getSelectableTimeGrains = (
   timeRangeName: TimeRangeName,
   allTimeRange: TimeSeriesTimeRange
 ): TimeGrainOption[] => {
-  if (!allTimeRange) return [];
+  if (!timeRangeName || !allTimeRange) return [];
   const timeRangeDuration = getTimeRangeDuration(timeRangeName, allTimeRange);
 
   const timeGrains: TimeGrainOption[] = [];
