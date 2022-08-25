@@ -16,6 +16,7 @@ import express from "express";
 import fileUpload from "express-fileupload";
 import { existsSync, mkdirSync } from "fs";
 import http from "http";
+import { TelemetryController } from "$server/controllers/TelemetryController";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -94,6 +95,7 @@ export class ExpressServer {
       MetricsDimensionController,
       MetricsMeasureController,
       MetricsExplorerController,
+      TelemetryController,
     ].forEach((MetricsControllerClass) =>
       new MetricsControllerClass(
         this.config,

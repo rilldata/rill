@@ -92,15 +92,15 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
     });
 
     console.log("Cleaning up the project...");
-    if (!existsSync(`mkdir ${project}/data`)) {
-      execSync(`mkdir ${project}/data`, {
+    if (!existsSync(`${project}/data`)) {
+      execSync(`mkdir -p ${project}/data`, {
+        stdio: "inherit",
+      });
+      execSync(`mv -v ${project}/example-assets-0.6/data ${project}`, {
         stdio: "inherit",
       });
     }
 
-    execSync(`mv -v ${project}/example-assets-0.6/data ${project}`, {
-      stdio: "inherit",
-    });
     execSync(`rm -rf ${project}/example-assets-0.6`, {
       stdio: "inherit",
     });

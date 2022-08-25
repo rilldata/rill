@@ -4,8 +4,6 @@ export interface CommonFields {
   build_id: string;
   version: string;
   project_id: string;
-  entity_type: string;
-  entity_id: string;
 }
 
 export interface CommonUserFields {
@@ -18,6 +16,19 @@ export interface CommonUserFields {
 export interface MetricsEvent extends CommonFields, CommonUserFields {
   event_datetime: number;
   event_type: string;
+}
+
+export enum MetricsEventSpace {
+  RightPanel = "right-panel",
+  Workspace = "workspace",
+  LeftPanel = "left-panel",
+}
+
+export enum MetricsEventScreenName {
+  Source = "source",
+  Model = "model",
+  Dashboard = "dashboard",
+  MetricsDefinition = "metrics-definition",
 }
 
 export interface ActiveEvent extends MetricsEvent {
