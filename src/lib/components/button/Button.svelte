@@ -16,6 +16,7 @@
 </script>
 
 <button
+  style:height={compact ? "auto" : "36px"}
   {disabled}
   class={buttonClasses({ type, compact })}
   on:click={handleClick}

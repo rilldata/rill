@@ -10,7 +10,7 @@ export const SURFACE_DRAG_DURATION = 50;
 export const layout = tweened(
   {
     assetsWidth: 401,
-    inspectorWidth: 400,
+    inspectorWidth: 401,
     modelPreviewHeight: 400,
   },
   { duration: SURFACE_DRAG_DURATION }

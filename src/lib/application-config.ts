@@ -16,3 +16,7 @@ export const COLUMN_PROFILE_CONFIG = {
   summaryVizWidth: { medium: 84, small: 60 },
   exampleWidth: { medium: 204, small: 132 },
 };
+
+export function collapseInspectorCTAButton(width) {
+  return !(width < 398);
+}
