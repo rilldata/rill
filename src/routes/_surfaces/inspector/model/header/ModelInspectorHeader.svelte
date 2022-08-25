@@ -18,7 +18,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import WithTogglableFloatingElement from "$lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "$lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
@@ -33,8 +33,8 @@
   import { getContext } from "svelte";
 
   import notification from "$lib/components/notifications";
+  import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
-
   export let containerWidth = 0;
 
   const persistentTableStore = getContext(
@@ -155,11 +155,7 @@
   $: modelHasError = !!currentDerivedModel?.error;
 </script>
 
-<div
-  style:height="var(--header-height)"
-  class:text-gray-300={modelHasError}
-  class="px-4 flex flex-row items-center gap-x-2 justify-end"
->
+<PanelCTA side="right">
   <Tooltip
     location="left"
     alignment="middle"
@@ -214,7 +210,8 @@
     </TooltipContent>
   </Tooltip>
   <ModelerToMetricsButton hasError={modelHasError} {activeEntityID} />
-</div>
+</PanelCTA>
+
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
   <!-- top row: row analysis -->
   <div
