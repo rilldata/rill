@@ -2,6 +2,7 @@ language: node_js
 dist: focal
 node_js:
   - 16
+os: linux
 
 branches:
   only:
@@ -25,7 +26,7 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-
+      if: tag IS NOT present
 
 
       # in order to achieve npm ci (clean install) delete the travis cache.
@@ -56,6 +57,7 @@ jobs:
 
     - stage: Test
       name: "Verify docker build"
+      if: tag IS NOT present
 
       install: docker --version
       script:
@@ -89,11 +91,19 @@ jobs:
 
       install: *npm-install
 
+      script:
+        - echo "Install browser for UI tests"
+        - npx playwright install
+
+        - echo "Build the entire application"
+        - npm run build
+
+      # Deploy will run npm test
       deploy:
         provider: npm
         email: ops@rilldata.com
-        api_key: ${NPMJS_TOKEN}
-        skip_cleanup: true
+        api_token: ${NPMJS_TOKEN}
+        cleanup: false
         on:
           tags: true
 
@@ -125,7 +135,7 @@ jobs:
           - rilldata/rill-macos-x64
           - rilldata/rill-linux-x64
           - rilldata/rill-win-x64.exe
-        skip_cleanup: true
+        cleanup: false
         on:
           tags: true
 
