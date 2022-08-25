@@ -2,6 +2,7 @@ language: node_js
 dist: focal
 node_js:
   - 16
+os: linux
 
 branches:
   only:
@@ -85,7 +86,7 @@ jobs:
     # Publish binaries and npm on the release
     - stage: Release
       name: "Build & Publish npm module"
-      if: tag IS present
+      #if: tag IS present
 
       install: *npm-install
 
@@ -99,8 +100,9 @@ jobs:
       deploy:
         provider: npm
         email: ops@rilldata.com
-        api_key: ${NPMJS_TOKEN}
-        skip_cleanup: true
+        api_token: ${NPMJS_TOKEN}
+        cleanup: false
+        dry_run: true
         on:
           tags: true
 
@@ -125,14 +127,14 @@ jobs:
 
       deploy: &deploy-vercel-pkg
         provider: releases
-        api_key: ${GITHUB_TOKEN}
+        api_token: ${GITHUB_TOKEN}
         # explicitly mention all types of binaries
         # travis doesnt support folder upload as of now
         file:
           - rilldata/rill-macos-x64
           - rilldata/rill-linux-x64
           - rilldata/rill-win-x64.exe
-        skip_cleanup: true
+        cleanup: false
         on:
           tags: true
 
