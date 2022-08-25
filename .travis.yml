@@ -101,11 +101,9 @@ jobs:
       # Deploy will run npm test
       deploy:
         provider: npm
-        edge: true
         email: ops@rilldata.com
         api_token: ${NPMJS_TOKEN}
         cleanup: false
-        dry_run: true
         on:
           tags: true
 
