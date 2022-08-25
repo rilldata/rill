@@ -67,19 +67,37 @@
           start: metricsExplorer?.selectedTimeRange?.start,
           end: metricsExplorer?.selectedTimeRange?.end,
         },
-      })
+      }),
+    {
+      enabled: !!(
+        metricsDefId &&
+        metricsExplorer?.selectedMeasureIds &&
+        metricsExplorer?.selectedTimeRange?.start &&
+        metricsExplorer?.selectedTimeRange?.end
+      ),
+    }
   );
   $: {
     referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
-    referenceValueQuery.setOptions(referenceValueKey, () =>
-      getMetricViewTotals(metricsDefId, {
-        measures: metricsExplorer.selectedMeasureIds,
-        filter: undefined,
-        time: {
-          start: metricsExplorer.selectedTimeRange?.start,
-          end: metricsExplorer.selectedTimeRange?.end,
-        },
-      })
+    referenceValueQuery.setOptions(
+      referenceValueKey,
+      () =>
+        getMetricViewTotals(metricsDefId, {
+          measures: metricsExplorer.selectedMeasureIds,
+          filter: undefined,
+          time: {
+            start: metricsExplorer.selectedTimeRange?.start,
+            end: metricsExplorer.selectedTimeRange?.end,
+          },
+        }),
+      {
+        enabled: !!(
+          metricsDefId &&
+          metricsExplorer?.selectedMeasureIds &&
+          metricsExplorer?.selectedTimeRange?.start &&
+          metricsExplorer?.selectedTimeRange?.end
+        ),
+      }
     );
   }
 
