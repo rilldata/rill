@@ -35,7 +35,7 @@
     navigationEvent.fireEvent(
       metricsDefId,
       BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
+      MetricsEventSpace.Workspace,
       MetricsEventScreenName.Dashboard
     );
   };
