@@ -110,7 +110,7 @@
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
-    {#if $metaQuery.isSuccess}
+    {#if $metaQuery.data?.measures && $totalsQuery.isSuccess}
       {#each $metaQuery.data.measures as measure, index (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}

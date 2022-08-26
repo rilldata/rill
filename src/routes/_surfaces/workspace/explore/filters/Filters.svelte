@@ -9,6 +9,7 @@
   import { invalidateMetricViewData } from "$lib/svelte-query/queries/metric-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fly } from "svelte/transition";
+  import { asyncWait } from "$common/utils/waitUtils";
   export let metricsDefId;
 
   const queryClient = useQueryClient();
@@ -16,7 +17,7 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  function clearAllFilters() {
+  async function clearAllFilters() {
     metricsExplorerStore.clearFilters(metricsDefId);
     invalidateMetricViewData(queryClient, metricsDefId);
   }

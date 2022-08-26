@@ -25,7 +25,8 @@
     queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
   }
   // TODO: move this "sync" to a more relevant component
-  $: metricsExplorerStore.sync(metricsDefId, $queryResult.data);
+  $: if (metricsDefId && $queryResult && metricsDefId === $queryResult.data.id)
+    metricsExplorerStore.sync(metricsDefId, $queryResult.data);
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>

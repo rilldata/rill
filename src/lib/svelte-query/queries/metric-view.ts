@@ -13,29 +13,31 @@ import type {
   MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
-import {
-  QueryClient,
-  useQuery,
-  UseQueryOptions,
-} from "@sveltestack/svelte-query";
+import type { QueryClient, UseQueryOptions } from "@sveltestack/svelte-query";
+import { queriesRepository } from "$lib/svelte-query/queries/QueriesRepository";
+import { useQuery } from "@sveltestack/svelte-query";
+
+async function fetchUrl(path: string, method: string, body?) {
+  const resp = await fetch(`${config.server.serverUrl}/api/v1/${path}`, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const json = await resp.json();
+  if (!resp.ok) {
+    const err = new Error(json.messages[0].message);
+    return Promise.reject(err);
+  }
+  return json;
+}
 
 // GET /api/v1/metric-views/{view-name}/meta
 
 export const getMetricViewMetadata = async (
   metricViewId: string
 ): Promise<MetricViewMetaResponse> => {
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/meta`,
-    {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    }
-  );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json.messages[0].message);
-    return Promise.reject(err);
-  }
+  const json = await fetchUrl(`metric-views/${metricViewId}/meta`, "GET");
+  json.id = metricViewId;
   return json;
 };
 
@@ -67,20 +69,7 @@ export const getMetricViewTimeSeries = async (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest
 ): Promise<MetricViewTimeSeriesResponse> => {
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/timeseries`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    }
-  );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json.messages[0].message);
-    return Promise.reject(err);
-  }
-  return json;
+  return fetchUrl(`metric-views/${metricViewId}/timeseries`, "POST", request);
 };
 
 const TimeSeriesId = `v1/metric-view/timeseries`;
@@ -127,20 +116,11 @@ export const getMetricViewTopList = async (
       data: [],
     };
 
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/toplist/${dimensionId}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    }
+  return fetchUrl(
+    `metric-views/${metricViewId}/toplist/${dimensionId}`,
+    "POST",
+    request
   );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json.messages[0].message);
-    return Promise.reject(err);
-  }
-  return json;
 };
 
 const TopListId = `v1/metric-view/toplist`;
@@ -187,39 +167,27 @@ export const getMetricViewTotals = async (
   metricViewId: string,
   request: MetricViewTotalsRequest
 ): Promise<MetricViewTotalsResponse> => {
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/totals`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    }
-  );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json.messages[0].message);
-    return Promise.reject(err);
-  }
-  return json;
+  return fetchUrl(`metric-views/${metricViewId}/totals`, "POST", request);
 };
 
 const TotalsId = `v1/metric-view/totals`;
 export const getMetricViewTotalsQueryKey = (
   metricViewId: string,
-  request: MetricViewTotalsRequest,
-  isReferenceValue = false
+  isReferenceValue: boolean,
+  request: MetricViewTotalsRequest
 ) => {
-  return [TotalsId, metricViewId, request, isReferenceValue];
+  return [TotalsId, metricViewId, isReferenceValue, request];
 };
 
 export const useGetMetricViewTotals = (
   metricViewId: string,
   request: MetricViewTotalsRequest,
+  isReferenceValue = false,
   queryOptions?: UseQueryOptions<MetricViewTotalsResponse, Error>
 ) => {
   const queryKey =
     queryOptions?.queryKey ??
-    getMetricViewTotalsQueryKey(metricViewId, request);
+    getMetricViewTotalsQueryKey(metricViewId, isReferenceValue, request);
   const queryFn = () => getMetricViewTotals(metricViewId, request);
   const query = useQuery<MetricViewTotalsResponse, Error>(queryKey, queryFn, {
     enabled: !!(metricViewId && request.measures && request.time),

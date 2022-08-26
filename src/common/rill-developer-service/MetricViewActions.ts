@@ -23,6 +23,7 @@ import type { ActiveValues } from "$lib/application-state-stores/explorer-stores
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 
 export interface MetricViewMetaResponse {
+  id?: string;
   name: string;
   timeDimension: {
     name: string;

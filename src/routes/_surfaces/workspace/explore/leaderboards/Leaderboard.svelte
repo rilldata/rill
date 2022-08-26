@@ -75,7 +75,7 @@
     },
     filter: metricsExplorer?.filters,
   });
-  $: values = $topListQuery.data?.data;
+  $: values = $topListQuery.data?.data ?? [];
 
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {

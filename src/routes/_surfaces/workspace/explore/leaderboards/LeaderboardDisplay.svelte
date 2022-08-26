@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import type { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -8,8 +7,6 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import {
-    getMetricViewTotals,
-    getMetricViewTotalsQueryKey,
     invalidateMetricViewData,
     useGetMetricViewMeta,
     useGetMetricViewTotals,
@@ -19,7 +16,7 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
 
@@ -56,44 +53,18 @@
     },
   });
   // TODO: find a way to have a single request when there are no filters
-  $: referenceValueQueryRequest = {
-    measures: metricsExplorer?.selectedMeasureIds,
-    filter: undefined,
-    time: {
-      start: metricsExplorer?.selectedTimeRange?.start,
-      end: metricsExplorer?.selectedTimeRange?.end,
-    },
-  };
-  let referenceValueKey = getMetricViewTotalsQueryKey(
+  const referenceValueQuery = useGetMetricViewTotals(
     metricsDefId,
-    referenceValueQueryRequest,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: undefined,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+    },
     true
   );
-  $: referenceValueQueryOptions = {
-    enabled: !!(
-      metricsDefId &&
-      metricsExplorer?.selectedMeasureIds &&
-      metricsExplorer?.selectedTimeRange?.start &&
-      metricsExplorer?.selectedTimeRange?.end
-    ),
-  };
-  const referenceValueQuery = useQuery<MetricViewTotalsResponse>(
-    referenceValueKey,
-    () => getMetricViewTotals(metricsDefId, referenceValueQueryRequest),
-    referenceValueQueryOptions
-  );
-  $: {
-    referenceValueKey = getMetricViewTotalsQueryKey(
-      metricsDefId,
-      referenceValueQueryRequest,
-      true
-    );
-    referenceValueQuery.setOptions(
-      referenceValueKey,
-      () => getMetricViewTotals(metricsDefId, referenceValueQueryRequest),
-      referenceValueQueryOptions
-    );
-  }
 
   $: if ($totalsQuery && $referenceValueQuery && activeMeasure?.sqlName) {
     referenceValue =
