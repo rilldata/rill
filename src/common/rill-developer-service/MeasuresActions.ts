@@ -105,7 +105,7 @@ export class MeasuresActions extends RillDeveloperActions {
       (columnName) =>
         columnName !== "*" &&
         derivedModel.profile.findIndex(
-          (column) => column.name === columnName
+          (column) => column.name.toLowerCase() === columnName.toLowerCase()
         ) === -1
     );
 
