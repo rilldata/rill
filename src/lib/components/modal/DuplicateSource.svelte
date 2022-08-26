@@ -19,7 +19,13 @@
 <Dialog
   showCancel
   on:cancel={onCancel}
-  on:submit={() => {
+  on:primary-action={() => {
+    () => {
+      $duplicateSourceName = null;
+      $duplicateSourceAction = DuplicateActions.KeepBoth;
+    };
+  }}
+  on:secondary-action={() => {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.Overwrite;
   }}
@@ -28,5 +34,9 @@
   <svelte:fragment slot="body">
     A source with the name <b>{$duplicateSourceName}</b> already exists.
   </svelte:fragment>
-  <svelte:fragment slot="submit-body">Replace existing source</svelte:fragment>
+
+  <svelte:fragment slot="secondary-action-body"
+    >Replace existing source</svelte:fragment
+  >
+  <svelte:fragment slot="primary-action-body">keep both</svelte:fragment>
 </Dialog>

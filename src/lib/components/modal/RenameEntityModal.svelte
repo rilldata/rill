@@ -79,7 +79,7 @@
   showCancel
   disabled={newAssetName === null || currentEntityName === newAssetName}
   on:cancel={resetVariablesAndCloseModal}
-  on:submit={() => submitHandler(entityId, newAssetName)}
+  on:primary-action={() => submitHandler(entityId, newAssetName)}
 >
   <svelte:fragment slot="title">Rename</svelte:fragment>
   <svelte:fragment slot="body">
@@ -96,5 +96,5 @@
       />
     </form>
   </svelte:fragment>
-  <svelte:fragment slot="submit-body">Change Name</svelte:fragment>
+  <svelte:fragment slot="primary-action-body">Change Name</svelte:fragment>
 </Dialog>

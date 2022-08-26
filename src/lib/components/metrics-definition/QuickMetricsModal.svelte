@@ -5,10 +5,14 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<Dialog showCancel on:cancel on:submit={() => dispatch("replace-metrics")}>
+<Dialog
+  showCancel
+  on:cancel
+  on:primary-action={() => dispatch("replace-metrics")}
+>
   <svelte:fragment slot="title">Replace current metrics?</svelte:fragment>
   <svelte:fragment slot="body"
     >Continuing will replace all existing measures and dimensions.
   </svelte:fragment>
-  <svelte:fragment slot="submit-body">Replace metrics</svelte:fragment>
+  <svelte:fragment slot="primary-body">Replace metrics</svelte:fragment>
 </Dialog>

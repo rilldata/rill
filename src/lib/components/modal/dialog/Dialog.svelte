@@ -22,7 +22,7 @@
 <ModalContainer on:cancel>
   <div class="grid place-items-center  w-screen h-screen">
     <div
-      class="w-96 {containerClasses} rounded"
+      class="w-min-96 {containerClasses} rounded"
       style:transform="translateY(-120px)"
     >
       <DialogHeader {compact}>
@@ -50,11 +50,20 @@
         <DialogFooter>
           <slot name="footer" />
         </DialogFooter>
-      {:else if $$slots["submit-body"]}
+      {:else if $$slots["primary-action-body"]}
         <DialogFooter>
-          <DialogCTA {disabled} on:cancel on:submit>
-            <svelte:fragment slot="submit-body"
-              ><slot name="submit-body" /></svelte:fragment
+          <DialogCTA
+            {disabled}
+            on:cancel
+            on:primary-action
+            on:secondary-action
+            showSecondary={$$slots["secondary-action-body"]}
+          >
+            <svelte:fragment slot="secondary-action-body"
+              ><slot name="secondary-action-body" /></svelte:fragment
+            >
+            <svelte:fragment slot="primary-action-body"
+              ><slot name="primary-action-body" /></svelte:fragment
             >
           </DialogCTA>
         </DialogFooter>
