@@ -22,7 +22,6 @@
     unlockBodyScrolling = scroll.unlockBodyScrolling;
     Modal = (await import("@shoelace-style/shoelace/dist/internal/modal"))
       .default;
-    console.log(Modal, lockBodyScrolling, unlockBodyScrolling);
   });
 
   /** post-mount, and post-portal (which is to say, as soon as container is actually mounted)
