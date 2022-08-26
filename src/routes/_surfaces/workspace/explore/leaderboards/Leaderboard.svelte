@@ -64,17 +64,16 @@
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  // Svelte-Query for getting top list start
   $: topListQuery = useGetMetricViewTopList(metricsDefId, dimensionId, {
-    measures: [metricsExplorer.leaderboardMeasureId],
+    measures: [metricsExplorer?.leaderboardMeasureId],
     limit: 10,
     offset: 0,
     sort: [],
     time: {
-      start: metricsExplorer.selectedTimeRange?.start,
-      end: metricsExplorer.selectedTimeRange?.end,
+      start: metricsExplorer?.selectedTimeRange?.start,
+      end: metricsExplorer?.selectedTimeRange?.end,
     },
-    filter: metricsExplorer.filters,
+    filter: metricsExplorer?.filters,
   });
   $: values = $topListQuery.data?.data;
 
