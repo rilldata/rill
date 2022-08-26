@@ -1,0 +1,682 @@
+[
+{
+  "name":"[Ljava.lang.Object;"
+},
+{
+  "name":"[Ljava.lang.String;"
+},
+{
+  "name":"[Lorg.hsqldb.Constraint;"
+},
+{
+  "name":"[Lorg.hsqldb.Expression;"
+},
+{
+  "name":"[Lorg.hsqldb.RangeGroup;"
+},
+{
+  "name":"[Lorg.hsqldb.Routine;"
+},
+{
+  "name":"[Lorg.hsqldb.index.Index;"
+},
+{
+  "name":"com.fasterxml.jackson.databind.ext.Java7HandlersImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.google.common.util.concurrent.AbstractFuture",
+  "fields":[
+    {"name":"listeners"}, 
+    {"name":"value"}, 
+    {"name":"waiters"}
+  ]
+},
+{
+  "name":"com.google.common.util.concurrent.AbstractFuture$Waiter",
+  "fields":[
+    {"name":"next"}, 
+    {"name":"thread"}
+  ]
+},
+{
+  "name":"com.rilldata.calcite.JsonColumn",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.rilldata.calcite.JsonSchema",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.rilldata.calcite.JsonTable",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.Comparable",
+  "queriedMethods":[{"name":"compareTo","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"java.lang.Iterable",
+  "queriedMethods":[{"name":"forEach","parameterTypes":["java.util.function.Consumer"] }]
+},
+{
+  "name":"java.lang.Math",
+  "queriedMethods":[
+    {"name":"max","parameterTypes":["int","int"] }, 
+    {"name":"min","parameterTypes":["int","int"] }
+  ]
+},
+{
+  "name":"java.lang.Number",
+  "queriedMethods":[{"name":"longValue","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.Object",
+  "queriedMethods":[{"name":"toString","parameterTypes":[] }]
+},
+{
+  "name":"java.math.BigDecimal",
+  "queriedMethods":[
+    {"name":"add","parameterTypes":["java.math.BigDecimal"] }, 
+    {"name":"negate","parameterTypes":[] }
+  ]
+},
+{
+  "name":"java.sql.ResultSet",
+  "queriedMethods":[
+    {"name":"getDate","parameterTypes":["int","java.util.Calendar"] }, 
+    {"name":"getTime","parameterTypes":["int","java.util.Calendar"] }, 
+    {"name":"getTimestamp","parameterTypes":["int","java.util.Calendar"] }
+  ]
+},
+{
+  "name":"java.util.Arrays",
+  "queriedMethods":[{"name":"asList","parameterTypes":["java.lang.Object[]"] }]
+},
+{
+  "name":"java.util.Collection",
+  "queriedMethods":[
+    {"name":"add","parameterTypes":["java.lang.Object"] }, 
+    {"name":"addAll","parameterTypes":["java.util.Collection"] }, 
+    {"name":"isEmpty","parameterTypes":[] }, 
+    {"name":"retainAll","parameterTypes":["java.util.Collection"] }, 
+    {"name":"size","parameterTypes":[] }
+  ]
+},
+{
+  "name":"java.util.Collections",
+  "queriedMethods":[
+    {"name":"emptyList","parameterTypes":[] }, 
+    {"name":"reverseOrder","parameterTypes":[] }, 
+    {"name":"singletonList","parameterTypes":["java.lang.Object"] }
+  ]
+},
+{
+  "name":"java.util.Comparator",
+  "queriedMethods":[{"name":"compare","parameterTypes":["java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.util.Iterator",
+  "queriedMethods":[
+    {"name":"hasNext","parameterTypes":[] }, 
+    {"name":"next","parameterTypes":[] }
+  ]
+},
+{
+  "name":"java.util.List",
+  "queriedMethods":[{"name":"get","parameterTypes":["int"] }]
+},
+{
+  "name":"java.util.Map",
+  "queriedMethods":[
+    {"name":"clear","parameterTypes":[] }, 
+    {"name":"get","parameterTypes":["java.lang.Object"] }, 
+    {"name":"getOrDefault","parameterTypes":["java.lang.Object","java.lang.Object"] }, 
+    {"name":"put","parameterTypes":["java.lang.Object","java.lang.Object"] }
+  ]
+},
+{
+  "name":"java.util.Objects",
+  "queriedMethods":[{"name":"equals","parameterTypes":["java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.util.ResourceBundle",
+  "queriedMethods":[{"name":"getBundle","parameterTypes":["java.lang.String","java.util.Locale","java.lang.ClassLoader"] }]
+},
+{
+  "name":"java.util.TimeZone",
+  "queriedMethods":[{"name":"getOffset","parameterTypes":["long"] }]
+},
+{
+  "name":"java.util.function.BiPredicate",
+  "queriedMethods":[{"name":"test","parameterTypes":["java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.util.function.Consumer",
+  "queriedMethods":[{"name":"accept","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"java.util.function.Function",
+  "queriedMethods":[{"name":"apply","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"java.util.function.Predicate",
+  "queriedMethods":[{"name":"test","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"org.apache.calcite.DataContext",
+  "queriedMethods":[
+    {"name":"get","parameterTypes":["java.lang.String"] }, 
+    {"name":"getQueryProvider","parameterTypes":[] }, 
+    {"name":"getRootSchema","parameterTypes":[] }
+  ]
+},
+{
+  "name":"org.apache.calcite.adapter.enumerable.AggregateLambdaFactory",
+  "queriedMethods":[
+    {"name":"accumulatorAdder","parameterTypes":[] }, 
+    {"name":"accumulatorInitializer","parameterTypes":[] }, 
+    {"name":"resultSelector","parameterTypes":["org.apache.calcite.linq4j.function.Function2"] }, 
+    {"name":"singleGroupResultSelector","parameterTypes":["org.apache.calcite.linq4j.function.Function1"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.adapter.enumerable.BasicAggregateLambdaFactory",
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.apache.calcite.adapter.enumerable.BasicLazyAccumulator",
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.apache.calcite.adapter.enumerable.EnumUtils",
+  "queriedMethods":[
+    {"name":"hopping","parameterTypes":["org.apache.calcite.linq4j.Enumerator","int","long","long","long"] }, 
+    {"name":"sessionize","parameterTypes":["org.apache.calcite.linq4j.Enumerator","int","int","long"] }, 
+    {"name":"tumbling","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.adapter.enumerable.LazyAggregateLambdaFactory",
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.apache.calcite.adapter.enumerable.MatchUtils",
+  "queriedMethods":[{"name":"lastWithSymbol","parameterTypes":["java.lang.String","java.util.List","java.util.List","int"] }]
+},
+{
+  "name":"org.apache.calcite.adapter.enumerable.SourceSorter",
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.apache.calcite.adapter.java.ReflectiveSchema",
+  "queriedMethods":[{"name":"getTarget","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.adapter.jdbc.JdbcSchema",
+  "queriedMethods":[{"name":"getDataSource","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.avatica.util.DateTimeUtils",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.apache.calcite.interpreter.Context",
+  "fields":[
+    {"name":"root"}, 
+    {"name":"values"}
+  ]
+},
+{
+  "name":"org.apache.calcite.interpreter.Row",
+  "queriedMethods":[
+    {"name":"asCopy","parameterTypes":["java.lang.Object[]"] }, 
+    {"name":"getObject","parameterTypes":["int"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.interpreter.Scalar",
+  "queriedMethods":[
+    {"name":"execute","parameterTypes":["org.apache.calcite.interpreter.Context"] }, 
+    {"name":"execute","parameterTypes":["org.apache.calcite.interpreter.Context","java.lang.Object[]"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.linq4j.AbstractEnumerable",
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.apache.calcite.linq4j.Enumerable",
+  "queriedMethods":[{"name":"asQueryable","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.linq4j.EnumerableDefaults",
+  "queriedMethods":[
+    {"name":"antiJoin","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.EqualityComparer","org.apache.calcite.linq4j.function.Predicate2"] }, 
+    {"name":"correlateBatchJoin","parameterTypes":["org.apache.calcite.linq4j.JoinType","org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.function.Predicate2","int"] }, 
+    {"name":"groupByMultiple","parameterTypes":["org.apache.calcite.linq4j.Enumerable","java.util.List","org.apache.calcite.linq4j.function.Function0","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.function.Function2"] }, 
+    {"name":"lazyCollectionSpool","parameterTypes":["java.util.Collection","org.apache.calcite.linq4j.Enumerable"] }, 
+    {"name":"mergeJoin","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Predicate2","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.JoinType","java.util.Comparator"] }, 
+    {"name":"mergeUnion","parameterTypes":["java.util.List","org.apache.calcite.linq4j.function.Function1","java.util.Comparator","boolean","org.apache.calcite.linq4j.function.EqualityComparer"] }, 
+    {"name":"nestedLoopJoin","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Predicate2","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.JoinType"] }, 
+    {"name":"orderBy","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1","java.util.Comparator","int","int"] }, 
+    {"name":"repeatUnion","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.Enumerable","int","boolean","org.apache.calcite.linq4j.function.EqualityComparer","org.apache.calcite.linq4j.function.Function0"] }, 
+    {"name":"semiJoin","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.EqualityComparer","org.apache.calcite.linq4j.function.Predicate2"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.linq4j.Enumerator",
+  "queriedMethods":[
+    {"name":"close","parameterTypes":[] }, 
+    {"name":"current","parameterTypes":[] }, 
+    {"name":"moveNext","parameterTypes":[] }, 
+    {"name":"reset","parameterTypes":[] }
+  ]
+},
+{
+  "name":"org.apache.calcite.linq4j.ExtendedEnumerable",
+  "queriedMethods":[
+    {"name":"aggregate","parameterTypes":["java.lang.Object","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.function.Function1"] }, 
+    {"name":"asEnumerable","parameterTypes":[] }, 
+    {"name":"concat","parameterTypes":["org.apache.calcite.linq4j.Enumerable"] }, 
+    {"name":"correlateJoin","parameterTypes":["org.apache.calcite.linq4j.JoinType","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function2"] }, 
+    {"name":"distinct","parameterTypes":[] }, 
+    {"name":"distinct","parameterTypes":["org.apache.calcite.linq4j.function.EqualityComparer"] }, 
+    {"name":"except","parameterTypes":["org.apache.calcite.linq4j.Enumerable","boolean"] }, 
+    {"name":"foreach","parameterTypes":["org.apache.calcite.linq4j.function.Function1"] }, 
+    {"name":"groupBy","parameterTypes":["org.apache.calcite.linq4j.function.Function1"] }, 
+    {"name":"groupBy","parameterTypes":["org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function0","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.function.Function2"] }, 
+    {"name":"hashJoin","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.function.EqualityComparer","boolean","boolean","org.apache.calcite.linq4j.function.Predicate2"] }, 
+    {"name":"intersect","parameterTypes":["org.apache.calcite.linq4j.Enumerable","boolean"] }, 
+    {"name":"into","parameterTypes":["java.util.Collection"] }, 
+    {"name":"orderBy","parameterTypes":["org.apache.calcite.linq4j.function.Function1","java.util.Comparator"] }, 
+    {"name":"removeAll","parameterTypes":["java.util.Collection"] }, 
+    {"name":"select","parameterTypes":["org.apache.calcite.linq4j.function.Function1"] }, 
+    {"name":"select","parameterTypes":["org.apache.calcite.linq4j.function.Function2"] }, 
+    {"name":"selectMany","parameterTypes":["org.apache.calcite.linq4j.function.Function1"] }, 
+    {"name":"skip","parameterTypes":["int"] }, 
+    {"name":"sortedGroupBy","parameterTypes":["org.apache.calcite.linq4j.function.Function1","org.apache.calcite.linq4j.function.Function0","org.apache.calcite.linq4j.function.Function2","org.apache.calcite.linq4j.function.Function2","java.util.Comparator"] }, 
+    {"name":"take","parameterTypes":["int"] }, 
+    {"name":"toList","parameterTypes":[] }, 
+    {"name":"union","parameterTypes":["org.apache.calcite.linq4j.Enumerable"] }, 
+    {"name":"where","parameterTypes":["org.apache.calcite.linq4j.function.Predicate1"] }, 
+    {"name":"where","parameterTypes":["org.apache.calcite.linq4j.function.Predicate2"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.linq4j.ExtendedQueryable",
+  "queriedMethods":[{"name":"select","parameterTypes":["org.apache.calcite.linq4j.tree.FunctionExpression"] }]
+},
+{
+  "name":"org.apache.calcite.linq4j.Linq4j",
+  "queriedMethods":[
+    {"name":"asEnumerable","parameterTypes":["java.lang.Iterable"] }, 
+    {"name":"asEnumerable","parameterTypes":["java.lang.Object[]"] }, 
+    {"name":"emptyEnumerable","parameterTypes":[] }, 
+    {"name":"singletonEnumerable","parameterTypes":["java.lang.Object"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.linq4j.MemoryFactory$Memory",
+  "queriedMethods":[
+    {"name":"get","parameterTypes":[] }, 
+    {"name":"get","parameterTypes":["int"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.linq4j.Queryable"
+},
+{
+  "name":"org.apache.calcite.linq4j.RawEnumerable",
+  "queriedMethods":[{"name":"enumerator","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.linq4j.function.Function0",
+  "queriedMethods":[{"name":"apply","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.linq4j.function.Function1",
+  "queriedMethods":[{"name":"apply","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"org.apache.calcite.linq4j.function.Functions",
+  "queriedMethods":[
+    {"name":"arrayComparer","parameterTypes":[] }, 
+    {"name":"identityComparer","parameterTypes":[] }, 
+    {"name":"identitySelector","parameterTypes":[] }, 
+    {"name":"nullsComparator","parameterTypes":["boolean","boolean"] }, 
+    {"name":"nullsComparator","parameterTypes":["boolean","boolean","java.util.Comparator"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.linq4j.tree.Primitive",
+  "queriedMethods":[{"name":"asList","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$AllPredicates",
+  "queriedMethods":[{"name":"getAllPredicates","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$Collation",
+  "queriedMethods":[{"name":"collations","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$ColumnOrigin",
+  "queriedMethods":[{"name":"getColumnOrigins","parameterTypes":["int"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$ColumnUniqueness",
+  "queriedMethods":[{"name":"areColumnsUnique","parameterTypes":["org.apache.calcite.util.ImmutableBitSet","boolean"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$CumulativeCost",
+  "queriedMethods":[{"name":"getCumulativeCost","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$DistinctRowCount",
+  "queriedMethods":[{"name":"getDistinctRowCount","parameterTypes":["org.apache.calcite.util.ImmutableBitSet","org.apache.calcite.rex.RexNode"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$Distribution",
+  "queriedMethods":[{"name":"distribution","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$ExplainVisibility",
+  "queriedMethods":[{"name":"isVisibleInExplain","parameterTypes":["org.apache.calcite.sql.SqlExplainLevel"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$ExpressionLineage",
+  "queriedMethods":[{"name":"getExpressionLineage","parameterTypes":["org.apache.calcite.rex.RexNode"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$LowerBoundCost",
+  "queriedMethods":[{"name":"getLowerBoundCost","parameterTypes":["org.apache.calcite.plan.volcano.VolcanoPlanner"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$MaxRowCount",
+  "queriedMethods":[{"name":"getMaxRowCount","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$Memory",
+  "queriedMethods":[
+    {"name":"cumulativeMemoryWithinPhase","parameterTypes":[] }, 
+    {"name":"cumulativeMemoryWithinPhaseSplit","parameterTypes":[] }, 
+    {"name":"memory","parameterTypes":[] }
+  ]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$MinRowCount",
+  "queriedMethods":[{"name":"getMinRowCount","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$NodeTypes",
+  "queriedMethods":[{"name":"getNodeTypes","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$NonCumulativeCost",
+  "queriedMethods":[{"name":"getNonCumulativeCost","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$Parallelism",
+  "queriedMethods":[
+    {"name":"isPhaseTransition","parameterTypes":[] }, 
+    {"name":"splitCount","parameterTypes":[] }
+  ]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$PercentageOriginalRows",
+  "queriedMethods":[{"name":"getPercentageOriginalRows","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$PopulationSize",
+  "queriedMethods":[{"name":"getPopulationSize","parameterTypes":["org.apache.calcite.util.ImmutableBitSet"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$Predicates",
+  "queriedMethods":[{"name":"getPredicates","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$RowCount",
+  "queriedMethods":[{"name":"getRowCount","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$Selectivity",
+  "queriedMethods":[{"name":"getSelectivity","parameterTypes":["org.apache.calcite.rex.RexNode"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$Size",
+  "queriedMethods":[
+    {"name":"averageColumnSizes","parameterTypes":[] }, 
+    {"name":"averageRowSize","parameterTypes":[] }
+  ]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$TableReferences",
+  "queriedMethods":[{"name":"getTableReferences","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.BuiltInMetadata$UniqueKeys",
+  "queriedMethods":[{"name":"getUniqueKeys","parameterTypes":["boolean"] }]
+},
+{
+  "name":"org.apache.calcite.rel.metadata.Metadata",
+  "queriedMethods":[{"name":"rel","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.runtime.ArrayBindable",
+  "queriedMethods":[{"name":"getElementType","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.runtime.BinarySearch",
+  "queriedMethods":[
+    {"name":"lowerBound","parameterTypes":["java.lang.Object[]","java.lang.Object","int","int","java.util.Comparator"] }, 
+    {"name":"lowerBound","parameterTypes":["java.lang.Object[]","java.lang.Object","int","int","org.apache.calcite.linq4j.function.Function1","java.util.Comparator"] }, 
+    {"name":"upperBound","parameterTypes":["java.lang.Object[]","java.lang.Object","int","int","java.util.Comparator"] }, 
+    {"name":"upperBound","parameterTypes":["java.lang.Object[]","java.lang.Object","int","int","org.apache.calcite.linq4j.function.Function1","java.util.Comparator"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.Bindable",
+  "queriedMethods":[{"name":"bind","parameterTypes":["org.apache.calcite.DataContext"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.CalciteContextException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.Throwable"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.CalciteException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.Throwable"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.CompressionFunctions",
+  "queriedMethods":[{"name":"compress","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.Enumerables",
+  "queriedMethods":[
+    {"name":"match","parameterTypes":["org.apache.calcite.linq4j.Enumerable","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.runtime.Matcher","org.apache.calcite.runtime.Enumerables$Emitter","int","int"] }, 
+    {"name":"slice0","parameterTypes":["org.apache.calcite.linq4j.Enumerable"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.Enumerables$Emitter",
+  "queriedMethods":[{"name":"emit","parameterTypes":["java.util.List","java.util.List","java.util.List","int","java.util.function.Consumer"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.FlatLists",
+  "fields":[{"name":"COMPARABLE_EMPTY_LIST"}],
+  "queriedMethods":[
+    {"name":"copyOf","parameterTypes":["java.lang.Comparable[]"] }, 
+    {"name":"of","parameterTypes":["java.lang.Object","java.lang.Object"] }, 
+    {"name":"of","parameterTypes":["java.lang.Object","java.lang.Object","java.lang.Object"] }, 
+    {"name":"of","parameterTypes":["java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object"] }, 
+    {"name":"of","parameterTypes":["java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object"] }, 
+    {"name":"of","parameterTypes":["java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.FunctionContexts",
+  "queriedMethods":[{"name":"of","parameterTypes":["org.apache.calcite.DataContext","java.lang.Object[]"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.GeoFunctions",
+  "queriedMethods":[{"name":"ST_GeomFromText","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.JsonFunctions",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.apache.calcite.runtime.Matcher",
+  "queriedMethods":[{"name":"builder","parameterTypes":["org.apache.calcite.runtime.Automaton"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.Matcher$Builder",
+  "queriedMethods":[
+    {"name":"add","parameterTypes":["java.lang.String","java.util.function.Predicate"] }, 
+    {"name":"build","parameterTypes":[] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.Pattern$PatternBuilder",
+  "queriedMethods":[
+    {"name":"automaton","parameterTypes":[] }, 
+    {"name":"build","parameterTypes":[] }, 
+    {"name":"seq","parameterTypes":[] }, 
+    {"name":"symbol","parameterTypes":["java.lang.String"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.RandomFunction",
+  "queriedMethods":[
+    {"name":"rand","parameterTypes":[] }, 
+    {"name":"randInteger","parameterTypes":["int"] }, 
+    {"name":"randIntegerSeed","parameterTypes":["int","int"] }, 
+    {"name":"randSeed","parameterTypes":["int"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.Resources$ExInst",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.util.Locale","java.lang.reflect.Method","java.lang.Object[]"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.Resources$ExInstWithCause",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.util.Locale","java.lang.reflect.Method","java.lang.Object[]"] }]
+},
+{
+  "name":"org.apache.calcite.runtime.ResultSetEnumerable",
+  "queriedMethods":[
+    {"name":"createEnricher","parameterTypes":["java.lang.Integer[]","org.apache.calcite.DataContext"] }, 
+    {"name":"of","parameterTypes":["javax.sql.DataSource","java.lang.String","org.apache.calcite.linq4j.function.Function1"] }, 
+    {"name":"of","parameterTypes":["javax.sql.DataSource","java.lang.String","org.apache.calcite.linq4j.function.Function1","org.apache.calcite.runtime.ResultSetEnumerable$PreparedStatementEnricher"] }, 
+    {"name":"setTimeout","parameterTypes":["org.apache.calcite.DataContext"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.SortedMultiMap",
+  "queriedMethods":[
+    {"name":"arrays","parameterTypes":["java.util.Comparator"] }, 
+    {"name":"putMulti","parameterTypes":["java.lang.Object","java.lang.Object"] }, 
+    {"name":"singletonArrayIterator","parameterTypes":["java.util.Comparator","java.util.List"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.SqlFunctions",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.apache.calcite.runtime.Utilities",
+  "queriedMethods":[
+    {"name":"compare","parameterTypes":["java.lang.Comparable","java.lang.Comparable"] }, 
+    {"name":"compare","parameterTypes":["java.lang.Comparable","java.lang.Comparable","java.util.Comparator"] }, 
+    {"name":"compareNullsFirst","parameterTypes":["java.lang.Comparable","java.lang.Comparable"] }, 
+    {"name":"compareNullsFirst","parameterTypes":["java.lang.Comparable","java.lang.Comparable","java.util.Comparator"] }, 
+    {"name":"compareNullsLast","parameterTypes":["java.lang.Comparable","java.lang.Comparable"] }, 
+    {"name":"compareNullsLast","parameterTypes":["java.lang.Comparable","java.lang.Comparable","java.util.Comparator"] }, 
+    {"name":"hash","parameterTypes":["int","java.lang.Object"] }, 
+    {"name":"patternBuilder","parameterTypes":[] }
+  ]
+},
+{
+  "name":"org.apache.calcite.runtime.XmlFunctions",
+  "queriedMethods":[
+    {"name":"existsNode","parameterTypes":["java.lang.String","java.lang.String","java.lang.String"] }, 
+    {"name":"extractValue","parameterTypes":["java.lang.String","java.lang.String"] }, 
+    {"name":"extractXml","parameterTypes":["java.lang.String","java.lang.String","java.lang.String"] }, 
+    {"name":"xmlTransform","parameterTypes":["java.lang.String","java.lang.String"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.schema.ModifiableTable",
+  "queriedMethods":[{"name":"getModifiableCollection","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.calcite.schema.QueryableTable",
+  "queriedMethods":[{"name":"asQueryable","parameterTypes":["org.apache.calcite.linq4j.QueryProvider","org.apache.calcite.schema.SchemaPlus","java.lang.String"] }]
+},
+{
+  "name":"org.apache.calcite.schema.ScannableTable",
+  "queriedMethods":[{"name":"scan","parameterTypes":["org.apache.calcite.DataContext"] }]
+},
+{
+  "name":"org.apache.calcite.schema.Schema",
+  "queriedMethods":[
+    {"name":"getSubSchema","parameterTypes":["java.lang.String"] }, 
+    {"name":"getTable","parameterTypes":["java.lang.String"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.schema.SchemaPlus",
+  "queriedMethods":[
+    {"name":"add","parameterTypes":["java.lang.String","org.apache.calcite.schema.Table"] }, 
+    {"name":"removeTable","parameterTypes":["java.lang.String"] }, 
+    {"name":"unwrap","parameterTypes":["java.lang.Class"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.schema.Schemas",
+  "queriedMethods":[
+    {"name":"enumerable","parameterTypes":["org.apache.calcite.schema.FilterableTable","org.apache.calcite.DataContext"] }, 
+    {"name":"enumerable","parameterTypes":["org.apache.calcite.schema.ProjectableFilterableTable","org.apache.calcite.DataContext"] }, 
+    {"name":"enumerable","parameterTypes":["org.apache.calcite.schema.ScannableTable","org.apache.calcite.DataContext"] }, 
+    {"name":"queryable","parameterTypes":["org.apache.calcite.DataContext","org.apache.calcite.schema.SchemaPlus","java.lang.Class","java.lang.String"] }
+  ]
+},
+{
+  "name":"org.apache.calcite.sql.fun.SqlStdOperatorTable",
+  "allPublicFields":true
+},
+{
+  "name":"org.apache.calcite.sql.pretty.SqlPrettyWriter",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.apache.calcite.sql2rel.StandardConvertletTable",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.hsqldb.dbinfo.DatabaseInformationFull",
+  "methods":[{"name":"<init>","parameterTypes":["org.hsqldb.Database"] }]
+},
+{
+  "name":"sun.misc.Unsafe",
+  "allDeclaredFields":true
+},
+{
+  "name":"sun.security.provider.MD5",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+}
+]
