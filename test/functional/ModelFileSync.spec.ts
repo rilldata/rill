@@ -13,7 +13,6 @@ import {
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
 import { FunctionalTestBase } from "./FunctionalTestBase";
-import { asyncWait } from "$common/utils/waitUtils";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 const SYNC_TEST_FOLDER = "temp/model-sync-test";
