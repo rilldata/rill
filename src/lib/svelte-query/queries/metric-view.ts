@@ -169,7 +169,7 @@ export const useGetMetricViewTopList = (
       dimensionId &&
       request.limit &&
       request.measures &&
-      request.offset &&
+      request.offset !== undefined &&
       request.sort &&
       request.time
     ),
