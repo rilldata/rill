@@ -50,5 +50,5 @@ jobs:
           make release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
           mv release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} release/runtime${{ matrix.ext }}
           zip -j release/runtime-${{ matrix.name }}.zip release/runtime${{ matrix.ext }}
-          RUNTIME_VERSION=$(cat runtime/version.txt | tr -d "[:space:]")
-          gsutil cp runtime/release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/rillsql/runtime/releases/v$RUNTIME_VERSION/
+          RUNTIME_VERSION=$(cat version.txt | tr -d "[:space:]")
+          gsutil cp release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/rillsql/runtime/releases/v$RUNTIME_VERSION/
