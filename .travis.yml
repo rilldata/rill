@@ -20,6 +20,11 @@ env:
   global:
     - DOCKER_IMAGE=rilldata/rill-developer
 
+addons:
+  apt:
+    packages:
+      - maven
+
 jobs:
   include:
 
@@ -62,6 +67,16 @@ jobs:
       script:
         - echo "Building docker image"
         - docker build -t ${DOCKER_IMAGE} .
+
+    # Run SQL lib tests
+    - stage: Test
+      language: java
+      jdk: openjdk17
+      name: "Run SQL lib tests"
+      if: tag IS NOT present
+      script:
+        - echo "Testing SQL library"
+        - mvn -f sql/ clean test
 
     # Publish docker image on the merge to main branch
     - stage: Publish
