@@ -46,7 +46,6 @@
     },
   });
 
-  // query the `/timeseries` endpoint
   $: timeSeriesQuery = useGetMetricViewTimeSeries(metricsDefId, {
     measures: metricsExplorer?.selectedMeasureIds,
     filter: metricsExplorer?.filters,
@@ -57,18 +56,22 @@
     },
   });
 
-  $: formattedData = $timeSeriesQuery.data?.data
-    ? convertTimestampPreview($timeSeriesQuery.data.data, true)
-    : undefined;
+  // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
+  // temporarily undefined as results are fetched.
+  // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
+  // we make a copy of the data that avoids `undefined` transition states.
+  let dataCopy;
+  $: if ($timeSeriesQuery.data?.data) dataCopy = $timeSeriesQuery.data.data;
+
+  // formattedData adjusts the data to account for Javascript's handling of timezones
+  let formattedData;
+  $: if (dataCopy) formattedData = convertTimestampPreview(dataCopy, true);
 
   let mouseoverValue = undefined;
 
   $: key = `${startValue}` + `${endValue}`;
 
-  $: [minVal, maxVal] = extent(
-    $timeSeriesQuery.data?.data ?? [],
-    (d: TimeSeriesValue) => d.ts
-  );
+  $: [minVal, maxVal] = extent(dataCopy ?? [], (d: TimeSeriesValue) => d.ts);
   $: startValue = removeTimezoneOffset(new Date(minVal));
   $: endValue = removeTimezoneOffset(new Date(maxVal));
 </script>
