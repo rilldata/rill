@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/button";
-  import { Dialog } from "$lib/components/modal-new";
+  import { Dialog } from "$lib/components/modal";
   let replaceSource = false;
   let changeThing = false;
   let changeThingValue = "original change thing";

@@ -6,7 +6,7 @@
   import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
   import Input from "../Input.svelte";
-  import { Dialog } from "../modal-new";
+  import { Dialog } from "../modal";
 
   export let entityType:
     | EntityType.Table
@@ -75,7 +75,9 @@
 </script>
 
 <Dialog
+  compact
   showCancel
+  disabled={newAssetName === null || currentEntityName === newAssetName}
   on:cancel={resetVariablesAndCloseModal}
   on:submit={() => submitHandler(entityId, newAssetName)}
 >

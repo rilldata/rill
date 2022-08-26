@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { Dialog } from "../modal-new";
+  import { Dialog } from "../modal";
 
   const dispatch = createEventDispatcher();
 </script>

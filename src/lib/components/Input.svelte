@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { slide } from "svelte/transition";
 
   export let id = "";
   export let label = "";
@@ -24,5 +25,10 @@
   bind:value
 />
 {#if error}
-  <div class="text-red-500 text-xs pt-1">{error}</div>
+  <div
+    in:slide|local={{ duration: 200 }}
+    class="pl-1 text-red-500 text-xs pt-1"
+  >
+    {error}
+  </div>
 {/if}

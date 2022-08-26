@@ -8,7 +8,9 @@
   import DialogFooter from "./DialogFooter.svelte";
   import DialogHeader from "./DialogHeader.svelte";
   export let dark = false;
+  export let compact = false;
   export let showCancel = true;
+  export let disabled = false;
 
   const dispatch = createEventDispatcher();
 
@@ -23,7 +25,7 @@
       class="w-96 {containerClasses} rounded"
       style:transform="translateY(-120px)"
     >
-      <DialogHeader>
+      <DialogHeader {compact}>
         <svelte:fragment slot="title"><slot name="title" /></svelte:fragment>
         <div slot="right">
           {#if showCancel}
@@ -41,7 +43,7 @@
         </div>
       </DialogHeader>
       <hr />
-      <div class="px-7 pt-8 pb-16">
+      <div class={compact ? "px-4 py-8" : "px-7 pt-8 pb-16"}>
         <slot name="body" />
       </div>
       {#if $$slots.footer}
@@ -50,7 +52,7 @@
         </DialogFooter>
       {:else if $$slots["submit-body"]}
         <DialogFooter>
-          <DialogCTA on:cancel on:submit>
+          <DialogCTA {disabled} on:cancel on:submit>
             <svelte:fragment slot="submit-body"
               ><slot name="submit-body" /></svelte:fragment
             >
