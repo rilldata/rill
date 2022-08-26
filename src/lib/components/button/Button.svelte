@@ -41,7 +41,7 @@
   }) {
     return `
   ${
-    compact ? "px-2 py-[1.5px]" : "px-4 py-2"
+    compact ? "px-2 py-1" : "px-4 py-2"
   } rounded flex flex-row gap-x-2 items-center transition-transform duration-100
   focus:outline-none focus:ring-2
   ${customClasses ? customClasses : levels[status][type]}
@@ -51,6 +51,7 @@
 </script>
 
 <button
+  style:height={compact ? "auto" : "36px"}
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}

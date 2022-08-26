@@ -2,6 +2,7 @@ language: node_js
 dist: focal
 node_js:
   - 16
+os: linux
 
 branches:
   only:
@@ -25,8 +26,7 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-
-
+      if: tag IS NOT present
 
       # in order to achieve npm ci (clean install) delete the travis cache.
       install: &npm-install
@@ -56,6 +56,7 @@ jobs:
 
     - stage: Test
       name: "Verify docker build"
+      if: tag IS NOT present
 
       install: docker --version
       script:
@@ -89,11 +90,19 @@ jobs:
 
       install: *npm-install
 
+      script:
+        - echo "Install browser for UI tests"
+        - npx playwright install
+
+        - echo "Build the entire application"
+        - npm run build
+
+      # Deploy will run npm test
       deploy:
         provider: npm
         email: ops@rilldata.com
-        api_key: ${NPMJS_TOKEN}
-        skip_cleanup: true
+        api_token: ${NPMJS_TOKEN}
+        cleanup: false
         on:
           tags: true
 
@@ -116,6 +125,18 @@ jobs:
         - echo "Building vercel/pkg binary"
         - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
 
+        - echo "version=${TRAVIS_TAG}" > metadata.txt
+        - echo "build_url=${TRAVIS_BUILD_WEB_URL} >> metadata.txt
+        - echo "sha=$(git rev-parse) >> metadata.txt
+
+        - echo ${GCP_TOKEN} > gcp.json
+        - gcloud auth activate-service-account --key-file gcp.json
+        - gcloud config set project rilldata
+        - gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill
+        - gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill
+        - gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill
+        - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
+
       deploy: &deploy-vercel-pkg
         provider: releases
         api_key: ${GITHUB_TOKEN}
@@ -125,7 +146,7 @@ jobs:
           - rilldata/rill-macos-x64
           - rilldata/rill-linux-x64
           - rilldata/rill-win-x64.exe
-        skip_cleanup: true
+        cleanup: false
         on:
           tags: true
 
