@@ -37,24 +37,37 @@
     metricsExplorer?.selectedTimeRange?.interval ||
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
-  $: totalsQuery = useGetMetricViewTotals(metricsDefId, {
-    measures: metricsExplorer?.selectedMeasureIds,
-    filter: metricsExplorer?.filters,
-    time: {
-      start: metricsExplorer?.selectedTimeRange?.start,
-      end: metricsExplorer?.selectedTimeRange?.end,
+  $: totalsQuery = useGetMetricViewTotals(
+    metricsDefId,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: metricsExplorer?.filters,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
     },
-  });
+    false,
+    {
+      enabled: $metaQuery?.isFetched,
+    }
+  );
 
-  $: timeSeriesQuery = useGetMetricViewTimeSeries(metricsDefId, {
-    measures: metricsExplorer?.selectedMeasureIds,
-    filter: metricsExplorer?.filters,
-    time: {
-      start: metricsExplorer?.selectedTimeRange?.start,
-      end: metricsExplorer?.selectedTimeRange?.end,
-      granularity: metricsExplorer?.selectedTimeRange?.interval,
+  $: timeSeriesQuery = useGetMetricViewTimeSeries(
+    metricsDefId,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: metricsExplorer?.filters,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+        granularity: metricsExplorer?.selectedTimeRange?.interval,
+      },
     },
-  });
+    {
+      enabled: $metaQuery?.isFetched,
+    }
+  );
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -139,7 +152,7 @@
               formatPreset={measure?.formatPreset ||
                 NicelyFormattedTypes.HUMANIZE}
               data={formattedData}
-              accessor={`measure_${index}`}
+              accessor={measure.sqlName}
               mouseover={point}
               {key}
               start={startValue}

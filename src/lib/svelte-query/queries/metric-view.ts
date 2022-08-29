@@ -15,7 +15,6 @@ import type {
 import { config } from "$lib/application-state-stores/application-store";
 import type { QueryClient, UseQueryOptions } from "@sveltestack/svelte-query";
 import { queriesRepository } from "$lib/svelte-query/queries/QueriesRepository";
-import { useQuery } from "@sveltestack/svelte-query";
 
 async function fetchUrl(path: string, method: string, body?) {
   const resp = await fetch(`${config.server.serverUrl}/api/v1/${path}`, {
@@ -48,15 +47,20 @@ export const getMetricViewMetaQueryKey = (metricViewId: string) => {
 
 export const useGetMetricViewMeta = (
   metricViewId: string,
-  queryOptions?: UseQueryOptions<MetricViewMetaResponse, Error>
+  queryOptions: UseQueryOptions<MetricViewMetaResponse, Error> = {}
 ) => {
   const queryKey =
     queryOptions?.queryKey ?? getMetricViewMetaQueryKey(metricViewId);
   const queryFn = () => getMetricViewMetadata(metricViewId);
-  const query = useQuery<MetricViewMetaResponse, Error>(queryKey, queryFn, {
-    enabled: !!metricViewId,
-    ...queryOptions,
-  });
+  const query = queriesRepository.useQuery<MetricViewMetaResponse, Error>(
+    queryKey,
+    queryFn,
+    {
+      ...queryOptions,
+      enabled: !!metricViewId,
+      refetchOnMount: true,
+    }
+  );
   return {
     queryKey,
     ...query,
@@ -83,18 +87,20 @@ export const getMetricViewTimeSeriesQueryKey = (
 export const useGetMetricViewTimeSeries = (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest,
-  queryOptions?: UseQueryOptions<MetricViewTimeSeriesResponse, Error>
+  queryOptions: UseQueryOptions<MetricViewTimeSeriesResponse, Error> = {}
 ) => {
   const queryKey =
     queryOptions?.queryKey ??
     getMetricViewTimeSeriesQueryKey(metricViewId, request);
   const queryFn = () => getMetricViewTimeSeries(metricViewId, request);
-  const query = useQuery<MetricViewTimeSeriesResponse, Error>(
+  const query = queriesRepository.useQuery<MetricViewTimeSeriesResponse, Error>(
     queryKey,
     queryFn,
     {
-      enabled: !!(metricViewId && request.measures && request.time),
       ...queryOptions,
+      enabled:
+        !!(metricViewId && request.measures && request.time) &&
+        (!("enabled" in queryOptions) || queryOptions.enabled),
     }
   );
   return {
@@ -136,25 +142,31 @@ export const useGetMetricViewTopList = (
   metricViewId: string,
   dimensionId: string,
   request: MetricViewTopListRequest,
-  queryOptions?: UseQueryOptions<MetricViewTopListResponse, Error>
+  queryOptions: UseQueryOptions<MetricViewTopListResponse, Error> = {}
 ) => {
   const queryKey =
     queryOptions?.queryKey ??
     getMetricViewTopListQueryKey(metricViewId, dimensionId, request);
   const queryFn = () =>
     getMetricViewTopList(metricViewId, dimensionId, request);
-  const query = useQuery<MetricViewTopListResponse, Error>(queryKey, queryFn, {
-    enabled: !!(
-      metricViewId &&
-      dimensionId &&
-      request.limit &&
-      request.measures &&
-      request.offset !== undefined &&
-      request.sort &&
-      request.time
-    ),
-    ...queryOptions,
-  });
+  const query = queriesRepository.useQuery<MetricViewTopListResponse, Error>(
+    queryKey,
+    queryFn,
+    {
+      ...queryOptions,
+      enabled:
+        !!(
+          metricViewId &&
+          dimensionId &&
+          request.limit &&
+          request.measures &&
+          request.offset !== undefined &&
+          request.sort &&
+          request.time
+        ) &&
+        (!("enabled" in queryOptions) || queryOptions.enabled),
+    }
+  );
   return {
     queryKey,
     ...query,
@@ -183,16 +195,22 @@ export const useGetMetricViewTotals = (
   metricViewId: string,
   request: MetricViewTotalsRequest,
   isReferenceValue = false,
-  queryOptions?: UseQueryOptions<MetricViewTotalsResponse, Error>
+  queryOptions: UseQueryOptions<MetricViewTotalsResponse, Error> = {}
 ) => {
   const queryKey =
     queryOptions?.queryKey ??
     getMetricViewTotalsQueryKey(metricViewId, isReferenceValue, request);
   const queryFn = () => getMetricViewTotals(metricViewId, request);
-  const query = useQuery<MetricViewTotalsResponse, Error>(queryKey, queryFn, {
-    enabled: !!(metricViewId && request.measures && request.time),
-    ...queryOptions,
-  });
+  const query = queriesRepository.useQuery<MetricViewTotalsResponse, Error>(
+    queryKey,
+    queryFn,
+    {
+      ...queryOptions,
+      enabled:
+        !!(metricViewId && request.measures && request.time) &&
+        (!("enabled" in queryOptions) || queryOptions.enabled),
+    }
+  );
   return {
     queryKey,
     ...query,
@@ -206,8 +224,9 @@ export const invalidateMetricView = async (
   metricViewId: string
 ) => {
   // wait for meta to be invalidated
+  console.log("invalidateMetricView", metricViewId);
   await queryClient.invalidateQueries([MetaId, metricViewId]);
-  invalidateMetricViewData(queryClient, metricViewId);
+  // invalidateMetricViewData(queryClient, metricViewId);
 };
 
 export const invalidateMetricViewData = (

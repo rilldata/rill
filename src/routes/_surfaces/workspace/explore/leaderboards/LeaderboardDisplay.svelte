@@ -44,14 +44,21 @@
 
   let referenceValue: number;
 
-  $: totalsQuery = useGetMetricViewTotals(metricsDefId, {
-    measures: metricsExplorer?.selectedMeasureIds,
-    filter: metricsExplorer?.filters,
-    time: {
-      start: metricsExplorer?.selectedTimeRange?.start,
-      end: metricsExplorer?.selectedTimeRange?.end,
+  $: totalsQuery = useGetMetricViewTotals(
+    metricsDefId,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: metricsExplorer?.filters,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
     },
-  });
+    false,
+    {
+      enabled: $metaQuery?.isFetched,
+    }
+  );
   // TODO: find a way to have a single request when there are no filters
   const referenceValueQuery = useGetMetricViewTotals(
     metricsDefId,
@@ -63,7 +70,10 @@
         end: metricsExplorer?.selectedTimeRange?.end,
       },
     },
-    true
+    true,
+    {
+      enabled: $metaQuery?.isFetched,
+    }
   );
 
   $: if ($totalsQuery && $referenceValueQuery && activeMeasure?.sqlName) {
@@ -73,26 +83,16 @@
         : $referenceValueQuery.data.data?.[activeMeasure.sqlName];
   }
 
-  /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
-  // Q: We're doing this on the backend now, right? We can delete this?
-  $: validLeaderboards =
-    dimensions && metricsExplorer?.leaderboards
-      ? metricsExplorer?.leaderboards.filter((leaderboard) => {
-          const dimensionConfiguration = dimensions?.find(
-            (dimension) => dimension.id === leaderboard.dimensionId
-          );
-          return dimensionConfiguration;
-        })
-      : [];
-
   /** create a scale for the valid leaderboards */
   let leaderboardFormatScale: ShortHandSymbols = "none";
   $: if (
-    validLeaderboards &&
+    metricsExplorer?.leaderboards &&
     (formatPreset === NicelyFormattedTypes.HUMANIZE ||
       formatPreset === NicelyFormattedTypes.CURRENCY)
   ) {
-    leaderboardFormatScale = getScaleForLeaderboard(validLeaderboards);
+    leaderboardFormatScale = getScaleForLeaderboard(
+      metricsExplorer?.leaderboards
+    );
   }
 
   let leaderboardExpanded;

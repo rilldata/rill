@@ -1,4 +1,3 @@
-import type { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type {
   MetricViewMetaResponse,
@@ -15,7 +14,6 @@ export interface LeaderboardValues {
   values: Array<LeaderboardValue>;
   dimensionId: string;
   dimensionName?: string;
-  status: EntityStatus;
 }
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
@@ -26,8 +24,7 @@ export interface MetricsExplorerEntity {
   selectedMeasureIds: Array<string>;
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
-  // we might need this to calculate humanise format
-  leaderboards?: Array<LeaderboardValues>;
+  leaderboards: Array<LeaderboardValues>;
   filters: MetricViewRequestFilter;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
@@ -64,7 +61,13 @@ const metricViewReducers = {
       id,
       (metricsExplorer) => {
         // sync measures with selected leaderboard measure.
-        if (!metricsExplorer.leaderboardMeasureId && meta.measures.length) {
+        if (
+          meta.measures.length &&
+          (!metricsExplorer.leaderboardMeasureId ||
+            !meta.measures.find(
+              (measure) => measure.id === metricsExplorer.leaderboardMeasureId
+            ))
+        ) {
           metricsExplorer.leaderboardMeasureId = meta.measures[0].id;
         } else if (!meta.measures.length) {
           metricsExplorer.leaderboardMeasureId = undefined;
@@ -72,11 +75,23 @@ const metricViewReducers = {
         metricsExplorer.selectedMeasureIds = meta.measures.map(
           (measure) => measure.id
         );
+
+        metricsExplorer.leaderboards = meta.dimensions.map((dimension) => ({
+          dimensionId: dimension.id,
+          values:
+            metricsExplorer.leaderboards.find(
+              (dimensionValues) => dimensionValues.dimensionId === dimension.id
+            )?.values ?? [],
+        }));
       },
       () => ({
         id,
         selectedMeasureIds: meta.measures.map((measure) => measure.id),
         leaderboardMeasureId: meta.measures[0]?.id,
+        leaderboards: meta.dimensions.map((dimension) => ({
+          dimensionId: dimension.id,
+          values: [],
+        })),
         filters: {
           include: [],
           exclude: [],
@@ -146,6 +161,8 @@ const metricViewReducers = {
       };
     });
   },
+
+  setLeaderboardValues() {},
 };
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   typeof metricViewReducers = {

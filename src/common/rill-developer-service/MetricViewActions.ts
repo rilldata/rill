@@ -21,6 +21,7 @@ import { RillRequestContext } from "$common/rill-developer-service/RillRequestCo
 import { getMapFromArray } from "$common/utils/getMapFromArray";
 import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
+import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
 
 export interface MetricViewMetaResponse {
   id?: string;
@@ -123,7 +124,17 @@ export class MetricViewActions extends RillDeveloperActions {
     rillRequestContext: MetricsDefinitionContext,
     _: string
   ) {
-    // TODO: validation
+    if (!rillRequestContext.record?.sourceModelId) return;
+
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     const meta: MetricViewMetaResponse = {
       name: rillRequestContext.record.metricDefLabel,
       timeDimension: {
@@ -142,10 +153,16 @@ export class MetricViewActions extends RillDeveloperActions {
     metricsDefId: string,
     request: MetricViewTimeSeriesRequest
   ) {
-    // TODO: validation
+    if (!rillRequestContext.record?.sourceModelId) return;
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     const timeSeries: TimeSeriesRollup = await this.databaseActionQueue.enqueue(
       {
         id: metricsDefId,
@@ -190,15 +207,22 @@ export class MetricViewActions extends RillDeveloperActions {
     dimensionId: string,
     request: MetricViewTopListRequest
   ) {
+    if (!rillRequestContext.record?.sourceModelId) return;
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
     const measure = this.dataModelerStateService
       .getMeasureDefinitionService()
       .getById(request.measures[0]);
     const dimension = this.dataModelerStateService
       .getDimensionDefinitionService()
       .getById(dimensionId);
+
     const data = await this.databaseActionQueue.enqueue(
       {
         id: rillRequestContext.id,
@@ -232,9 +256,16 @@ export class MetricViewActions extends RillDeveloperActions {
     metricsDefId: string,
     request: MetricViewTotalsRequest
   ) {
+    if (!rillRequestContext.record?.sourceModelId) return;
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
     const bigNumberResponse: BigNumberResponse =
       await this.databaseActionQueue.enqueue(
         {
@@ -311,9 +342,9 @@ export class MetricViewActions extends RillDeveloperActions {
     const measures = this.dataModelerStateService
       .getMeasureDefinitionService()
       .getManyByField("metricsDefId", metricsDef.id);
-    return (
+    const validMeasures = (
       await Promise.all(
-        measures.map(async (measure, index) => {
+        measures.map(async (measure) => {
           const measureValidation = await this.rillDeveloperService.dispatch(
             RillRequestContext.getNewContext(),
             "validateMeasureExpression",
@@ -322,10 +353,13 @@ export class MetricViewActions extends RillDeveloperActions {
           return {
             ...measure,
             ...(measureValidation.data as MeasureDefinitionEntity),
-            sqlName: getFallbackMeasureName(index, measure.sqlName),
           };
         })
       )
     ).filter((measure) => measure.expressionIsValid === ValidationState.OK);
+    validMeasures.forEach((measure, index) => {
+      measure.sqlName = getFallbackMeasureName(index, measure.sqlName);
+    });
+    return validMeasures;
   }
 }

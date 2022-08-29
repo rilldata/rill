@@ -61,7 +61,7 @@
       };
     }) || [];
 
-  /** set the selection only if $measures is not undefined */
+  /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 </script>
 

@@ -21,7 +21,10 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import { useGetMetricViewTopList } from "$lib/svelte-query/queries/metric-view";
+  import {
+    useGetMetricViewMeta,
+    useGetMetricViewTopList,
+  } from "$lib/svelte-query/queries/metric-view";
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
@@ -46,6 +49,8 @@
   export let seeMoreSlice = 50;
   let seeMore = false;
 
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+
   let dimension: Readable<DimensionDefinitionEntity>;
 
   $: dimension = getDimensionById(dimensionId);
@@ -64,17 +69,24 @@
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  $: topListQuery = useGetMetricViewTopList(metricsDefId, dimensionId, {
-    measures: [metricsExplorer?.leaderboardMeasureId],
-    limit: 10,
-    offset: 0,
-    sort: [],
-    time: {
-      start: metricsExplorer?.selectedTimeRange?.start,
-      end: metricsExplorer?.selectedTimeRange?.end,
+  $: topListQuery = useGetMetricViewTopList(
+    metricsDefId,
+    dimensionId,
+    {
+      measures: [metricsExplorer?.leaderboardMeasureId],
+      limit: 10,
+      offset: 0,
+      sort: [],
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+      filter: metricsExplorer?.filters,
     },
-    filter: metricsExplorer?.filters,
-  });
+    {
+      enabled: $metaQuery?.isFetched,
+    }
+  );
   $: values = $topListQuery.data?.data ?? [];
 
   /** figure out how many selected values are currently hidden */

@@ -1,32 +1,38 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import Button from "$lib/components/Button.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
+    invalidateMetricViewData,
+    useGetMetricViewMeta,
   } from "$lib/svelte-query/queries/metric-view";
-  import { useQuery } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
 
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
+  const queryClient = useQueryClient();
+
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
   // TODO: move this "sync" to a more relevant component
-  $: if (metricsDefId && $queryResult && metricsDefId === $queryResult.data.id)
-    metricsExplorerStore.sync(metricsDefId, $queryResult.data);
+  $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data.id) {
+    if (
+      !$metaQuery.data.measures?.length ||
+      !$metaQuery.data.dimensions?.length
+    ) {
+      dataModelerService.dispatch("setActiveAsset", [
+        EntityType.MetricsDefinition,
+        metricsDefId,
+      ]);
+    } else {
+      invalidateMetricViewData(queryClient, metricsDefId);
+    }
+    metricsExplorerStore.sync(metricsDefId, $metaQuery.data);
+  }
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>
