@@ -33,7 +33,7 @@
   </svelte:fragment>
 
   <svelte:fragment slot="secondary-action-body"
-    >Replace existing source</svelte:fragment
+    >Replace Existing Source</svelte:fragment
   >
-  <svelte:fragment slot="primary-action-body">keep both</svelte:fragment>
+  <svelte:fragment slot="primary-action-body">Keep Both</svelte:fragment>
 </Dialog>
