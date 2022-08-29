@@ -5,10 +5,9 @@
     duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
   import { createEventDispatcher } from "svelte";
-  import { Dialog } from "../modal";
+  import { Dialog } from ".";
 
   const dispatch = createEventDispatcher();
-
   function onCancel() {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.Cancel;
@@ -20,10 +19,8 @@
   showCancel
   on:cancel={onCancel}
   on:primary-action={() => {
-    () => {
-      $duplicateSourceName = null;
-      $duplicateSourceAction = DuplicateActions.KeepBoth;
-    };
+    $duplicateSourceName = null;
+    $duplicateSourceAction = DuplicateActions.KeepBoth;
   }}
   on:secondary-action={() => {
     $duplicateSourceName = null;

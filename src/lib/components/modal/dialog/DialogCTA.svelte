@@ -28,6 +28,7 @@
   status={destructiveAction ? "error" : "info"}
   {compact}
   {disabled}
-  on:click={() => dispatch("primary-action")}
-  ><slot name="primary-action-body">Submit</slot></Button
+  on:click={() => {
+    dispatch("primary-action");
+  }}><slot name="primary-action-body">Submit</slot></Button
 >
