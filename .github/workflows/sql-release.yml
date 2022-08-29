@@ -29,6 +29,8 @@ jobs:
           components: "native-image"
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
