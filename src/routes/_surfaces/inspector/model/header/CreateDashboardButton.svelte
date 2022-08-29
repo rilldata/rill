@@ -1,19 +1,21 @@
 <script lang="ts">
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import {
+  import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
+  import Explore from "$lib/components/icons/Explore.svelte";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import { getContext } from "svelte";
-  import Explore from "../icons/Explore.svelte";
 
   export let activeEntityID: string;
   export let hasError = false;
+  export let width = undefined;
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -51,7 +53,9 @@
     type="primary"
     disabled={!timestampColumns?.length}
     on:click={handleCreateMetric}
-    >Create Dashboard<Explore size="16px" /></Button
+  >
+    <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
+    <Explore size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     {#if hasError}

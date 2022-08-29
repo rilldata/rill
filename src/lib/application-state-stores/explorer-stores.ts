@@ -4,6 +4,7 @@ import type {
   MetricViewRequestFilter,
 } from "$common/rill-developer-service/MetricViewActions";
 import { Readable, writable } from "svelte/store";
+import { removeIfExists } from "$common/utils/arrayUtils";
 
 export interface LeaderboardValue {
   value: number;
@@ -162,6 +163,20 @@ const metricViewReducers = {
     });
   },
 
+  clearFilterForDimension(id: string, dimensionId: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      removeIfExists(
+        metricsExplorer.filters.include,
+        (dimensionValues) => dimensionValues.name === dimensionId
+      );
+      removeIfExists(
+        metricsExplorer.filters.exclude,
+        (dimensionValues) => dimensionValues.name === dimensionId
+      );
+    });
+  },
+
+  // TODO: set this to update humanize numbers
   setLeaderboardValues() {},
 };
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &

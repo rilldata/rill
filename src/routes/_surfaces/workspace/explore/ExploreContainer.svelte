@@ -2,7 +2,7 @@
   <div class="explore-header">
     <slot name="header" />
   </div>
-  <hr />
+  <hr class="pb-3 pt-1" />
   <div class="explore-metrics pl-8 pb-8">
     <slot name="metrics" />
   </div>
@@ -18,7 +18,6 @@
     height: 100vh;
     overflow-x: auto;
     overflow-y: hidden;
-    grid-row-gap: 1rem;
     grid-template-areas:
       "header header"
       "hr hr"

@@ -2,7 +2,6 @@
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
-  import Button from "$lib/components/Button.svelte";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import {
@@ -12,6 +11,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
+  import { Button } from "$lib/components/button";
 
   export let metricsDefId: string;
 
@@ -68,6 +68,8 @@
   <!-- bottom row -->
   <div class="px-4">
     <TimeControls {metricsDefId} />
-    <Filters {metricsDefId} />
+    {#key metricsDefId}
+      <Filters {metricsDefId} />
+    {/key}
   </div>
 </section>

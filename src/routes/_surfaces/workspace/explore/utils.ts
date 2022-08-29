@@ -14,3 +14,9 @@ export function prune(
   }
   return filters;
 }
+
+export function getDisplayName(dimension) {
+  return dimension?.labelSingle?.length
+    ? dimension?.labelSingle
+    : dimension?.dimensionColumn;
+}

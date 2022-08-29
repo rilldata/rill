@@ -40,6 +40,7 @@ import { SocketServer } from "$server/SocketServer";
 import { readFileSync } from "fs";
 import { initLocalConfig } from "$common/utils/initLocalConfig";
 import { MetricViewActions } from "$common/rill-developer-service/MetricViewActions";
+import { BehaviourEventFactory } from "$common/metrics-service/BehaviourEventFactory";
 
 let PACKAGE_JSON = "";
 try {
@@ -93,13 +94,11 @@ export function metricsServiceFactory(
   config: RootConfig,
   dataModelerStateService: DataModelerStateService
 ) {
-  const productHealthEventFactory = new ProductHealthEventFactory(config);
-
   return new MetricsService(
     config,
     dataModelerStateService,
     new RillIntakeClient(config),
-    [productHealthEventFactory]
+    [new ProductHealthEventFactory(config), new BehaviourEventFactory(config)]
   );
 }
 
