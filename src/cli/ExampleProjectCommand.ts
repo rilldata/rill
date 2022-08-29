@@ -18,11 +18,9 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
       "Initialize example project."
     ).action((opts, command: Command) => {
       let { project } = command.optsWithGlobals();
-      const { dev } = command.optsWithGlobals();
-      const isDev = dev ?? false;
       if (!project) project = process.cwd() + "/rill-developer-example";
 
-      return this.createExampleProject(project, isDev);
+      return this.createExampleProject(project);
     });
   }
 
@@ -30,12 +28,9 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
     // no-op
   }
 
-  public async createExampleProject(
-    project: string,
-    isDev: boolean
-  ): Promise<void> {
+  public async createExampleProject(project: string): Promise<void> {
     console.log(`Initializing the example project ${project} ...`);
-    await new InitCommand().createProjectAndRun({}, project, isDev);
+    await new InitCommand().createProjectAndRun({}, project);
 
     console.log("Downloading dataset for example project...");
     execSync(

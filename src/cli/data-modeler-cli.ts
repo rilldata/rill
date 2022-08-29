@@ -31,10 +31,6 @@ program
   .option(
     "--project <projectPath>",
     "Optionally indicate the path to your project. This path defaults to the current directory."
-  )
-  .option(
-    "-d, --dev",
-    "Optionally indicate if the cli is used for development purposes"
   );
 
 [
