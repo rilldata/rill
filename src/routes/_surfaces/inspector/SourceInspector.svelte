@@ -76,17 +76,17 @@
     selectTimestampColumnFromProfileEntity(currentDerivedTable);
 
   const handleCreateModelFromSource = async () => {
-    await createModelForSource(
+    createModelForSource(
       $persistentModelStore.entities,
       currentTable.tableName
-    );
-
-    navigationEvent.fireEvent(
-      activeEntityID,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.Model
-    );
+    ).then((createdModelId) => {
+      navigationEvent.fireEvent(
+        createdModelId,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Model
+      );
+    });
   };
 
   const handleCreateMetric = () => {
@@ -101,14 +101,14 @@
       $persistentTableStore.entities.find(
         (table) => table.id === activeEntityID
       ).tableName
-    );
-
-    navigationEvent.fireEvent(
-      activeEntityID,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.Dashboard
-    );
+    ).then((createdMetricsId) => {
+      navigationEvent.fireEvent(
+        createdMetricsId,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Dashboard
+      );
+    });
   };
 
   /** source summary information */

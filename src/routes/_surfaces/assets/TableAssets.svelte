@@ -69,7 +69,7 @@
   };
 
   const quickStartMetrics = async (id: string, tableName: string) => {
-    await autoCreateMetricsDefinitionForSource(
+    const createdMetricsId = await autoCreateMetricsDefinitionForSource(
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       id,
@@ -77,7 +77,7 @@
     );
 
     navigationEvent.fireEvent(
-      id,
+      createdMetricsId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       MetricsEventScreenName.Dashboard
@@ -98,13 +98,15 @@
   };
 
   const createModel = (tableName: string, id: string) => {
-    queryHandler(tableName);
-
-    navigationEvent.fireEvent(
-      id,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      MetricsEventScreenName.Model
+    createModelForSource($persistentModelStore.entities, tableName).then(
+      (createdModelId) => {
+        navigationEvent.fireEvent(
+          createdModelId,
+          BehaviourEventMedium.Menu,
+          MetricsEventSpace.LeftPanel,
+          MetricsEventScreenName.Model
+        );
+      }
     );
   };
 

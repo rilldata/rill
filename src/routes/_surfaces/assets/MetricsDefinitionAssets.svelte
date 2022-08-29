@@ -65,14 +65,14 @@
     store.dispatch(createMetricsDefsAndFocusApi());
   };
 
-  const editModel = (metricsId: string, sourceModelId: string) => {
+  const editModel = (sourceModelId: string) => {
     dataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
       sourceModelId,
     ]);
 
     navigationEvent.fireEvent(
-      metricsId,
+      sourceModelId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       MetricsEventScreenName.Model
@@ -174,7 +174,7 @@
             icon
             disabled={hasSourceError}
             on:select={() => {
-              editModel(metricsDef.id, metricsDef.sourceModelId);
+              editModel(metricsDef.sourceModelId);
             }}
           >
             <svelte:fragment slot="icon">

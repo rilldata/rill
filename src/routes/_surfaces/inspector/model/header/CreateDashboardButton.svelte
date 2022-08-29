@@ -50,14 +50,14 @@
       ).tableName,
       activeEntityID,
       timestampColumns[0].name
-    );
-
-    navigationEvent.fireEvent(
-      activeEntityID,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.Dashboard
-    );
+    ).then((createdMetricsId) => {
+      navigationEvent.fireEvent(
+        createdMetricsId,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Dashboard
+      );
+    });
   };
 </script>
 

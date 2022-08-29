@@ -64,21 +64,21 @@
     }
   };
 
-  const quickStartMetrics = (id: string, derivedModel: DerivedModelEntity) => {
+  const quickStartMetrics = (derivedModel: DerivedModelEntity) => {
     autoCreateMetricsDefinitionForModel(
       $persistentModelStore.entities.find(
         (model) => model.id === derivedModel.id
       ).tableName,
       derivedModel.id,
       selectTimestampColumnFromProfileEntity(derivedModel)[0].name
-    );
-
-    navigationEvent.fireEvent(
-      id,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      MetricsEventScreenName.Dashboard
-    );
+    ).then((createdMetricsId) => {
+      navigationEvent.fireEvent(
+        createdMetricsId,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        MetricsEventScreenName.Dashboard
+      );
+    });
   };
 
   const openRenameModelModal = (modelID: string, modelName: string) => {
@@ -181,7 +181,7 @@
             disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
             icon
             on:select={() => {
-              quickStartMetrics(id, derivedModel);
+              quickStartMetrics(derivedModel);
             }}
           >
             <svelte:fragment slot="icon"><Explore /></svelte:fragment>
