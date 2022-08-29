@@ -52,10 +52,21 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     );
   });
 
-  // when the active entity changes, get its latest state from the store
+  // when the active entity changes, get its latest or default state
   const initializeState = (metricsExplorer: MetricsExplorerEntity) => {
-    selectedTimeRangeName = metricsExplorer.selectedTimeRange.name;
-    selectedTimeGrain = metricsExplorer.selectedTimeRange.interval;
+    if (
+      metricsExplorer?.selectedTimeRange?.name &&
+      metricsExplorer?.selectedTimeRange?.interval
+    ) {
+      selectedTimeRangeName = metricsExplorer.selectedTimeRange.name;
+      selectedTimeGrain = metricsExplorer.selectedTimeRange.interval;
+    } else {
+      selectedTimeRangeName = getDefaultTimeRangeName();
+      selectedTimeGrain = getDefaultTimeGrain(
+        selectedTimeRangeName,
+        allTimeRange
+      );
+    }
   };
   $: initializeState(metricsExplorer);
 
