@@ -65,7 +65,7 @@
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === $dimension.id)
+    metricsExplorer?.filters.include.find((d) => d.name === $dimension?.id)
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
