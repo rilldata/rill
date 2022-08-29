@@ -1,7 +1,7 @@
 name: Release SQL shared library
 on:
   push:
-    branches: ["main", "sql-release"]
+    branches: ["main"]
     paths:
       - ".github/workflows/sql-release.yml"
       - "sql/**"
