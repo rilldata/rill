@@ -87,8 +87,9 @@
     }
   );
   let values = [];
-  $: if ($topListQuery.data?.data?.length)
-    values = $topListQuery.data?.data ?? [];
+
+  /** replace data after fetched. */
+  $: if (!$topListQuery.isFetching) values = $topListQuery.data?.data ?? [];
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
