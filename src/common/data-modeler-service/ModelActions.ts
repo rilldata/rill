@@ -412,7 +412,9 @@ export class ModelActions extends DataModelerActions {
     const existingModel = stateService
       .getCurrentState()
       .entities.find(
-        (model) => cleanModelName(model.name) === name && model.id !== modelId
+        (model) =>
+          cleanModelName(model.name).toLowerCase() === name.toLowerCase() &&
+          model.id !== modelId
       );
 
     if (existingModel) {
@@ -570,7 +572,9 @@ export class ModelActions extends DataModelerActions {
     const existing = stateService
       .getCurrentState()
       .entities.find(
-        (model) => cleanModelName(model.name) === name && model.id !== id
+        (model) =>
+          cleanModelName(model.name).toLowerCase() === name.toLowerCase() &&
+          model.id !== id
       );
     const existingTable = this.dataModelerStateService
       .getEntityStateService(EntityType.Table, StateType.Persistent)
