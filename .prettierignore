@@ -33,5 +33,8 @@ Duckdb-Dockerfile
 README.md
 docs
 
+# Java SQL lib
+sql/
+
 # FIXME: temporary
 test/data/HistogramSummary.data.ts
