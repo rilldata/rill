@@ -37,29 +37,34 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let selectedTimeRangeName;
-  const setSelectedTimeRangeName = (evt) => {
-    selectedTimeRangeName = evt.detail.timeRangeName;
-  };
-
   let selectedTimeGrain;
-  const setSelectedTimeGrain = (evt) => {
-    selectedTimeGrain = evt.detail.timeGrain;
-  };
 
   // query the `/meta` endpoint to get the all time range of the dataset
   $: metaQuery = useGetMetricViewMeta(metricsDefId);
   $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
-  // initialize the component with the default options
+  // use the default options when the first dashboard loads
   onMount(() => {
-    const defaultTimeRangeName = getDefaultTimeRangeName();
-    selectedTimeRangeName = defaultTimeRangeName;
-    const defaultTimeGrain = getDefaultTimeGrain(
+    selectedTimeRangeName = getDefaultTimeRangeName();
+    selectedTimeGrain = getDefaultTimeGrain(
       selectedTimeRangeName,
       allTimeRange
     );
-    selectedTimeGrain = defaultTimeGrain;
   });
+
+  // when the active entity changes, get its latest state from the store
+  const initializeState = (metricsExplorer: MetricsExplorerEntity) => {
+    selectedTimeRangeName = metricsExplorer.selectedTimeRange.name;
+    selectedTimeGrain = metricsExplorer.selectedTimeRange.interval;
+  };
+  $: initializeState(metricsExplorer);
+
+  const setSelectedTimeRangeName = (evt) => {
+    selectedTimeRangeName = evt.detail.timeRangeName;
+  };
+  const setSelectedTimeGrain = (evt) => {
+    selectedTimeGrain = evt.detail.timeGrain;
+  };
 
   // we get the selectableTimeGrains so that we can assess whether or not the
   // existing selectedTimeGrain is valid whenever the selectedTimeRangeName changes
