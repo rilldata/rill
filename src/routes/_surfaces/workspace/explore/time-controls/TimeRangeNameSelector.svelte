@@ -3,7 +3,6 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
-  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -11,12 +10,8 @@
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
-  import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
-  } from "$lib/svelte-query/queries/metric-view";
+  import { useGetMetricViewMeta } from "$lib/svelte-query/queries/metric-view";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { useQuery } from "@sveltestack/svelte-query";
   import { createEventDispatcher, tick } from "svelte";
   import {
     getSelectableTimeRangeNames,
@@ -36,16 +31,8 @@
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
-  let allTimeRange: TimeSeriesTimeRange;
-  $: allTimeRange = $queryResult.data?.timeDimension?.timeRange;
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
   const getSelectableTimeRanges = (

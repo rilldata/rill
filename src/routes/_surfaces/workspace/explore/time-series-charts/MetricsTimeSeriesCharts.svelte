@@ -1,10 +1,6 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type {
-    MetricViewMetaResponse,
-    MetricViewTimeSeriesResponse,
-  } from "$common/rill-developer-service/MetricViewActions";
-  import { MetricViewTotalsResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -14,21 +10,14 @@
   import { Axis } from "$lib/components/data-graphic/guides";
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
   import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
-    getMetricViewTimeSeries,
-    getMetricViewTimeSeriesQueryKey,
-    getMetricViewTimeSeriesRequest,
-    getMetricViewTotals,
-    getMetricViewTotalsQueryKey,
-    getTotalsRequest,
+    useGetMetricViewMeta,
+    useGetMetricViewTimeSeries,
+    useGetMetricViewTotals,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
-  import { useQuery } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
@@ -42,61 +31,60 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
 
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
-    $queryResult.data?.timeDimension?.timeRange?.interval;
+    $metaQuery.data?.timeDimension?.timeRange?.interval;
 
-  let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-  const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
-    getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
+  $: totalsQuery = useGetMetricViewTotals(
+    metricsDefId,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: metricsExplorer?.filters,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+    },
+    false,
+    {
+      enabled: $metaQuery?.isFetched,
+    }
   );
-  $: {
-    totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-    totalsQuery.setOptions(totalsQueryKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
-    );
-  }
 
-  // query the `/timeseries` endpoint
-  let timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
-  let timeSeriesQueryFn = () =>
-    getMetricViewTimeSeries(
-      metricsDefId,
-      getMetricViewTimeSeriesRequest(
-        metricsExplorer,
-        $queryResult.data.measures
-      )
-    );
-  const timeSeriesQueryResult = useQuery<MetricViewTimeSeriesResponse, Error>(
-    timeSeriesQueryKey,
-    timeSeriesQueryFn
+  $: timeSeriesQuery = useGetMetricViewTimeSeries(
+    metricsDefId,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: metricsExplorer?.filters,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+        granularity: metricsExplorer?.selectedTimeRange?.interval,
+      },
+    },
+    {
+      enabled: $metaQuery?.isFetched,
+    }
   );
-  $: {
-    timeSeriesQueryKey = getMetricViewTimeSeriesQueryKey(metricsDefId);
-    timeSeriesQueryResult.setOptions(timeSeriesQueryKey, timeSeriesQueryFn);
-  }
 
-  $: formattedData = $timeSeriesQueryResult.data.data
-    ? convertTimestampPreview($timeSeriesQueryResult.data.data, true)
-    : undefined;
+  // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
+  // temporarily undefined as results are fetched.
+  // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
+  // we make a copy of the data that avoids `undefined` transition states.
+  let dataCopy;
+  $: if ($timeSeriesQuery.data?.data) dataCopy = $timeSeriesQuery.data.data;
+
+  // formattedData adjusts the data to account for Javascript's handling of timezones
+  let formattedData;
+  $: if (dataCopy) formattedData = convertTimestampPreview(dataCopy, true);
 
   let mouseoverValue = undefined;
 
   $: key = `${startValue}` + `${endValue}`;
 
-  $: [minVal, maxVal] = extent(
-    $timeSeriesQueryResult.data.data ?? [],
-    (d: TimeSeriesValue) => d.ts
-  );
+  $: [minVal, maxVal] = extent(dataCopy ?? [], (d: TimeSeriesValue) => d.ts);
   $: startValue = removeTimezoneOffset(new Date(minVal));
   $: endValue = removeTimezoneOffset(new Date(maxVal));
 </script>
@@ -135,8 +123,8 @@
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
-    {#if $queryResult.isSuccess}
-      {#each $queryResult.data.measures as measure, index (measure.id)}
+    {#if $metaQuery.data?.measures && $totalsQuery.isSuccess}
+      {#each $metaQuery.data.measures as measure, index (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}
 
@@ -156,7 +144,7 @@
           </svelte:fragment>
         </MeasureBigNumber>
         <div class="time-series-body" style:height="125px">
-          {#if $timeSeriesQueryResult.isError}
+          {#if $timeSeriesQuery.isError}
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData}
             <TimeSeriesBody
@@ -164,7 +152,7 @@
               formatPreset={measure?.formatPreset ||
                 NicelyFormattedTypes.HUMANIZE}
               data={formattedData}
-              accessor={`measure_${index}`}
+              accessor={measure.sqlName}
               mouseover={point}
               {key}
               start={startValue}

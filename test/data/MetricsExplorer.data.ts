@@ -1,8 +1,8 @@
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import type { TimeSeriesMeasureRange } from "../utils/time-series-helpers";
 import { getTimeRange } from "../utils/time-series-helpers";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 
 export interface MetricsExplorerTestDataType {
   title: string;

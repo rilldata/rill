@@ -13,27 +13,30 @@ import type {
   MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
-import type { QueryClient } from "@sveltestack/svelte-query";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { MetricsExplorerEntity } from "$lib/application-state-stores/explorer-stores";
+import type { QueryClient, UseQueryOptions } from "@sveltestack/svelte-query";
+import { queriesRepository } from "$lib/svelte-query/queries/QueriesRepository";
+
+async function fetchUrl(path: string, method: string, body?) {
+  const resp = await fetch(`${config.server.serverUrl}/api/v1/${path}`, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const json = await resp.json();
+  if (!resp.ok) {
+    const err = new Error(json.messages[0].message);
+    return Promise.reject(err);
+  }
+  return json;
+}
 
 // GET /api/v1/metric-views/{view-name}/meta
 
 export const getMetricViewMetadata = async (
   metricViewId: string
 ): Promise<MetricViewMetaResponse> => {
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/meta`,
-    {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    }
-  );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json);
-    return Promise.reject(err);
-  }
+  const json = await fetchUrl(`metric-views/${metricViewId}/meta`, "GET");
+  json.id = metricViewId;
   return json;
 };
 
@@ -42,67 +45,71 @@ export const getMetricViewMetaQueryKey = (metricViewId: string) => {
   return [MetaId, metricViewId];
 };
 
-// POST /api/v1/metric-views/{view-name}/timeseries
-
-export const getMetricViewTimeSeriesRequest = (
-  metricsExplorer: MetricsExplorerEntity,
-  measures: Array<MeasureDefinitionEntity>
+export const useGetMetricViewMeta = (
+  metricViewId: string,
+  queryOptions: UseQueryOptions<MetricViewMetaResponse, Error> = {}
 ) => {
-  const selectedMeasureIdSet = new Set(metricsExplorer.selectedMeasureIds);
+  const queryKey =
+    queryOptions?.queryKey ?? getMetricViewMetaQueryKey(metricViewId);
+  const queryFn = () => getMetricViewMetadata(metricViewId);
+  const query = queriesRepository.useQuery<MetricViewMetaResponse, Error>(
+    queryKey,
+    queryFn,
+    {
+      ...queryOptions,
+      enabled: !!metricViewId,
+      refetchOnMount: true,
+    }
+  );
   return {
-    measures: measures
-      .map((measure) => measure.id)
-      .filter((measureId) => selectedMeasureIdSet.has(measureId)),
-    filter: metricsExplorer.filters,
-    time: {
-      start: metricsExplorer?.selectedTimeRange?.start,
-      end: metricsExplorer?.selectedTimeRange?.end,
-      granularity: metricsExplorer?.selectedTimeRange?.interval,
-    },
+    queryKey,
+    ...query,
   };
 };
+
+// POST /api/v1/metric-views/{view-name}/timeseries
 
 export const getMetricViewTimeSeries = async (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest
 ): Promise<MetricViewTimeSeriesResponse> => {
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/timeseries`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    }
-  );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json);
-    return Promise.reject(err);
-  }
-  return json;
+  return fetchUrl(`metric-views/${metricViewId}/timeseries`, "POST", request);
 };
 
 const TimeSeriesId = `v1/metric-view/timeseries`;
-export const getMetricViewTimeSeriesQueryKey = (metricViewId: string) => {
-  return [TimeSeriesId, metricViewId];
+export const getMetricViewTimeSeriesQueryKey = (
+  metricViewId: string,
+  request: MetricViewTimeSeriesRequest
+) => {
+  return [TimeSeriesId, metricViewId, request];
+};
+
+export const useGetMetricViewTimeSeries = (
+  metricViewId: string,
+  request: MetricViewTimeSeriesRequest,
+  queryOptions: UseQueryOptions<MetricViewTimeSeriesResponse, Error> = {}
+) => {
+  const queryKey =
+    queryOptions?.queryKey ??
+    getMetricViewTimeSeriesQueryKey(metricViewId, request);
+  const queryFn = () => getMetricViewTimeSeries(metricViewId, request);
+  const query = queriesRepository.useQuery<MetricViewTimeSeriesResponse, Error>(
+    queryKey,
+    queryFn,
+    {
+      ...queryOptions,
+      enabled:
+        !!(metricViewId && request.measures && request.time) &&
+        (!("enabled" in queryOptions) || queryOptions.enabled),
+    }
+  );
+  return {
+    queryKey,
+    ...query,
+  };
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
-export const getTopListRequest = (
-  metricsExplorer: MetricsExplorerEntity
-): MetricViewTopListRequest => {
-  return {
-    measures: [metricsExplorer.leaderboardMeasureId],
-    limit: 10,
-    offset: 0,
-    sort: [],
-    time: {
-      start: metricsExplorer.selectedTimeRange?.start,
-      end: metricsExplorer.selectedTimeRange?.end,
-    },
-    filter: metricsExplorer.filters,
-  };
-};
 
 export const getMetricViewTopList = async (
   metricViewId: string,
@@ -115,87 +122,118 @@ export const getMetricViewTopList = async (
       data: [],
     };
 
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/toplist/${dimensionId}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    }
+  return fetchUrl(
+    `metric-views/${metricViewId}/toplist/${dimensionId}`,
+    "POST",
+    request
   );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json);
-    return Promise.reject(err);
-  }
-  return json;
 };
 
 const TopListId = `v1/metric-view/toplist`;
 export const getMetricViewTopListQueryKey = (
-  metricsDefId: string,
-  dimensionId: string
+  metricViewId: string,
+  dimensionId: string,
+  request: MetricViewTopListRequest
 ) => {
-  return [TopListId, metricsDefId, dimensionId];
+  return [TopListId, metricViewId, dimensionId, request];
+};
+
+export const useGetMetricViewTopList = (
+  metricViewId: string,
+  dimensionId: string,
+  request: MetricViewTopListRequest,
+  queryOptions: UseQueryOptions<MetricViewTopListResponse, Error> = {}
+) => {
+  const queryKey =
+    queryOptions?.queryKey ??
+    getMetricViewTopListQueryKey(metricViewId, dimensionId, request);
+  const queryFn = () =>
+    getMetricViewTopList(metricViewId, dimensionId, request);
+  const query = queriesRepository.useQuery<MetricViewTopListResponse, Error>(
+    queryKey,
+    queryFn,
+    {
+      ...queryOptions,
+      enabled:
+        !!(
+          metricViewId &&
+          dimensionId &&
+          request.limit &&
+          request.measures &&
+          request.offset !== undefined &&
+          request.sort &&
+          request.time
+        ) &&
+        (!("enabled" in queryOptions) || queryOptions.enabled),
+    }
+  );
+  return {
+    queryKey,
+    ...query,
+  };
 };
 
 // POST /api/v1/metric-views/{view-name}/totals
-export const getTotalsRequest = (
-  metricsExplorer: MetricsExplorerEntity,
-  noFilters = false
-): MetricViewTotalsRequest => {
-  return {
-    measures: metricsExplorer.selectedMeasureIds,
-    filter: noFilters ? undefined : metricsExplorer.filters,
-    time: {
-      start: metricsExplorer.selectedTimeRange?.start,
-      end: metricsExplorer.selectedTimeRange?.end,
-    },
-  };
-};
 
 export const getMetricViewTotals = async (
   metricViewId: string,
   request: MetricViewTotalsRequest
 ): Promise<MetricViewTotalsResponse> => {
-  const resp = await fetch(
-    `${config.server.serverUrl}/api/v1/metric-views/${metricViewId}/totals`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    }
-  );
-  const json = await resp.json();
-  if (!resp.ok) {
-    const err = new Error(json);
-    return Promise.reject(err);
-  }
-  return json;
+  return fetchUrl(`metric-views/${metricViewId}/totals`, "POST", request);
 };
 
 const TotalsId = `v1/metric-view/totals`;
 export const getMetricViewTotalsQueryKey = (
-  metricsDefId: string,
-  isReferenceValue = false
+  metricViewId: string,
+  isReferenceValue: boolean,
+  request: MetricViewTotalsRequest
 ) => {
-  return [TotalsId, metricsDefId, isReferenceValue];
+  return [TotalsId, metricViewId, isReferenceValue, request];
 };
+
+export const useGetMetricViewTotals = (
+  metricViewId: string,
+  request: MetricViewTotalsRequest,
+  isReferenceValue = false,
+  queryOptions: UseQueryOptions<MetricViewTotalsResponse, Error> = {}
+) => {
+  const queryKey =
+    queryOptions?.queryKey ??
+    getMetricViewTotalsQueryKey(metricViewId, isReferenceValue, request);
+  const queryFn = () => getMetricViewTotals(metricViewId, request);
+  const query = queriesRepository.useQuery<MetricViewTotalsResponse, Error>(
+    queryKey,
+    queryFn,
+    {
+      ...queryOptions,
+      enabled:
+        !!(metricViewId && request.measures && request.time) &&
+        (!("enabled" in queryOptions) || queryOptions.enabled),
+    }
+  );
+  return {
+    queryKey,
+    ...query,
+  };
+};
+
+// invalidation helpers
 
 export const invalidateMetricView = async (
   queryClient: QueryClient,
-  metricsDefId: string
+  metricViewId: string
 ) => {
   // wait for meta to be invalidated
-  await queryClient.invalidateQueries([MetaId, metricsDefId]);
-  invalidateMetricViewData(queryClient, metricsDefId);
+  console.log("invalidateMetricView", metricViewId);
+  await queryClient.invalidateQueries([MetaId, metricViewId]);
+  // invalidateMetricViewData(queryClient, metricViewId);
 };
 
 export const invalidateMetricViewData = (
   queryClient: QueryClient,
-  metricsDefId: string
+  metricViewId: string
 ) => {
-  queryClient.invalidateQueries([TopListId, metricsDefId]);
-  queryClient.invalidateQueries([TotalsId, metricsDefId]);
-  queryClient.invalidateQueries([TimeSeriesId, metricsDefId]);
+  queryClient.invalidateQueries([TopListId, metricViewId]);
+  queryClient.invalidateQueries([TotalsId, metricViewId]);
+  queryClient.invalidateQueries([TimeSeriesId, metricViewId]);
 };

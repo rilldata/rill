@@ -9,6 +9,7 @@ export function createQueryClient() {
     defaultOptions: {
       queries: {
         refetchOnWindowFocus: false,
+        refetchOnMount: false,
         placeholderData: {},
       },
     },

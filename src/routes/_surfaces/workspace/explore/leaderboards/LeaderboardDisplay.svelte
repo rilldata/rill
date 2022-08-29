@@ -1,10 +1,5 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import type {
-    MetricViewMetaResponse,
-    MetricViewTotalsResponse,
-  } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -12,19 +7,16 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
-    getMetricViewTotals,
-    getMetricViewTotalsQueryKey,
-    getTotalsRequest,
     invalidateMetricViewData,
+    useGetMetricViewMeta,
+    useGetMetricViewTotals,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
 
@@ -37,20 +29,9 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
-
-  let dimensions: DimensionDefinitionEntity[];
-  $: dimensions = $queryResult.data.dimensions;
-
-  let measures: MeasureDefinitionEntity[];
-  $: measures = $queryResult.data.measures;
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: dimensions = $metaQuery.data.dimensions;
+  $: measures = $metaQuery.data.measures;
 
   $: activeMeasure =
     measures &&
@@ -63,27 +44,37 @@
 
   let referenceValue: number;
 
-  let totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-  const totalsQuery = useQuery<MetricViewTotalsResponse>(totalsQueryKey, () =>
-    getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
+  $: totalsQuery = useGetMetricViewTotals(
+    metricsDefId,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: metricsExplorer?.filters,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+    },
+    false,
+    {
+      enabled: $metaQuery?.isFetched,
+    }
   );
   // TODO: find a way to have a single request when there are no filters
-  let referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
-  const referenceValueQuery = useQuery<MetricViewTotalsResponse>(
-    referenceValueKey,
-    () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer, true))
+  const referenceValueQuery = useGetMetricViewTotals(
+    metricsDefId,
+    {
+      measures: metricsExplorer?.selectedMeasureIds,
+      filter: undefined,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+    },
+    true,
+    {
+      enabled: $metaQuery?.isFetched,
+    }
   );
-  $: {
-    totalsQueryKey = getMetricViewTotalsQueryKey(metricsDefId);
-    totalsQuery.setOptions(totalsQueryKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer))
-    );
-    referenceValueKey = getMetricViewTotalsQueryKey(metricsDefId, true);
-    referenceValueQuery.setOptions(referenceValueKey, () =>
-      getMetricViewTotals(metricsDefId, getTotalsRequest(metricsExplorer, true))
-    );
-  }
 
   $: if ($totalsQuery && $referenceValueQuery && activeMeasure?.sqlName) {
     referenceValue =
@@ -92,26 +83,16 @@
         : $referenceValueQuery.data.data?.[activeMeasure.sqlName];
   }
 
-  /** Filter out the leaderboards whose underlying dimensions do not pass the validation step. */
-  // Q: We're doing this on the backend now, right? We can delete this?
-  $: validLeaderboards =
-    dimensions && metricsExplorer?.leaderboards
-      ? metricsExplorer?.leaderboards.filter((leaderboard) => {
-          const dimensionConfiguration = dimensions?.find(
-            (dimension) => dimension.id === leaderboard.dimensionId
-          );
-          return dimensionConfiguration;
-        })
-      : [];
-
   /** create a scale for the valid leaderboards */
   let leaderboardFormatScale: ShortHandSymbols = "none";
   $: if (
-    validLeaderboards &&
+    metricsExplorer?.leaderboards &&
     (formatPreset === NicelyFormattedTypes.HUMANIZE ||
       formatPreset === NicelyFormattedTypes.CURRENCY)
   ) {
-    leaderboardFormatScale = getScaleForLeaderboard(validLeaderboards);
+    leaderboardFormatScale = getScaleForLeaderboard(
+      metricsExplorer?.leaderboards
+    );
   }
 
   let leaderboardExpanded;

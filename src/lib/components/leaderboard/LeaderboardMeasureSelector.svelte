@@ -1,33 +1,20 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { SelectMenu } from "$lib/components/menu";
-  import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
-  } from "$lib/svelte-query/queries/metric-view";
-  import { useQuery } from "@sveltestack/svelte-query";
+  import { useGetMetricViewMeta } from "$lib/svelte-query/queries/metric-view";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
 
   export let metricsDefId;
 
   // query the `/meta` endpoint to get the valid measures
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
-  let measures: MeasureDefinitionEntity[];
-  $: measures = $queryResult.data.measures;
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: measures = $metaQuery.data.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
@@ -74,7 +61,7 @@
       };
     }) || [];
 
-  /** set the selection only if $measures is not undefined */
+  /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 </script>
 

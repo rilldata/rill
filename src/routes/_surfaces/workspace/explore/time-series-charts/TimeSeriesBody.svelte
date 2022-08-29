@@ -12,16 +12,15 @@
   import { interpolateArray } from "d3-interpolate";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
+
   export let start;
   export let end;
   export let formatPreset: NicelyFormattedTypes;
   export let data;
   export let accessor: string;
-
   // the recycled mouseover event, in case anyone else has one set
   export let mouseover = undefined;
   export let key: string;
-
   // bind and send up to parent to create global mouseover
   export let mouseoverValue = undefined;
 

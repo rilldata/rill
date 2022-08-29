@@ -7,7 +7,6 @@
    */
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MetricViewTopListResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -23,16 +22,14 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
-    getMetricViewTopList,
-    getMetricViewTopListQueryKey,
-    getTopListRequest,
+    useGetMetricViewMeta,
+    useGetMetricViewTopList,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { useQuery } from "@sveltestack/svelte-query";
   import type { Readable } from "svelte/store";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
@@ -52,6 +49,8 @@
   export let seeMoreSlice = 50;
   let seeMore = false;
 
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+
   let dimension: Readable<DimensionDefinitionEntity>;
 
   $: dimension = getDimensionById(dimensionId);
@@ -66,22 +65,29 @@
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === $dimension.id)
+    metricsExplorer?.filters.include.find((d) => d.name === $dimension?.id)
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  // Svelte-Query for getting top list start
-  let topListKey = getMetricViewTopListQueryKey(metricsDefId, dimensionId);
-  const topListQuery = useQuery<MetricViewTopListResponse>(topListKey, () =>
-    getMetricViewTopList(
-      metricsDefId,
-      dimensionId,
-      getTopListRequest(metricsExplorer)
-    )
+  $: topListQuery = useGetMetricViewTopList(
+    metricsDefId,
+    dimensionId,
+    {
+      measures: [metricsExplorer?.leaderboardMeasureId],
+      limit: 10,
+      offset: 0,
+      sort: [],
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+      filter: metricsExplorer?.filters,
+    },
+    {
+      enabled: $metaQuery?.isFetched,
+    }
   );
-  let values: Array<unknown>;
-  $: if ($topListQuery.data) values = $topListQuery.data.data;
-  // Svelte-Query for getting top list end
+  $: values = $topListQuery.data?.data ?? [];
 
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {

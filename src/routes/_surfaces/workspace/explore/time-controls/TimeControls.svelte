@@ -11,17 +11,15 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
-  import type { MetricViewMetaResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import {
-    getMetricViewMetadata,
-    getMetricViewMetaQueryKey,
     invalidateMetricViewData,
+    useGetMetricViewMeta,
   } from "$lib/svelte-query/queries/metric-view";
-  import { useQuery, useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
   import {
     getDefaultTimeGrain,
@@ -49,16 +47,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   };
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  let queryKey = getMetricViewMetaQueryKey(metricsDefId);
-  const queryResult = useQuery<MetricViewMetaResponse, Error>(queryKey, () =>
-    getMetricViewMetadata(metricsDefId)
-  );
-  $: {
-    queryKey = getMetricViewMetaQueryKey(metricsDefId);
-    queryResult.setOptions(queryKey, () => getMetricViewMetadata(metricsDefId));
-  }
-  let allTimeRange: TimeSeriesTimeRange;
-  $: allTimeRange = $queryResult.data?.timeDimension?.timeRange;
+  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   // initialize the component with the default options
   onMount(() => {
