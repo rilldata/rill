@@ -1,24 +1,21 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-
   import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import Input from "$lib/components/Input.svelte";
   import notifications from "$lib/components/notifications/";
   import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
-  import Input from "../Input.svelte";
-  import { Dialog } from "../modal";
-
-  export let entityType:
-    | EntityType.Table
-    | EntityType.Model
-    | EntityType.MetricsDefinition;
-  export let closeModal: () => void;
+  import { Dialog } from ".";
   export let entityId = null;
-  export let currentEntityName = null;
 
-  let newAssetName = currentEntityName?.replace(".sql", "");
-  let error = null;
+  export let closeModal;
+  export let entityType: EntityType;
+  export let currentEntityName: string;
+
+  let error: string;
+  let newAssetName = currentEntityName;
   let renameAction;
+
   let entityLabel: string;
   if (entityType === EntityType.Table) {
     renameAction = "updateTableName";

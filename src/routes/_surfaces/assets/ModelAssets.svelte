@@ -183,7 +183,7 @@
       entityType={EntityType.Model}
       closeModal={() => (showRenameModelModal = false)}
       entityId={renameModelID}
-      currentEntityName={renameModelName}
+      currentEntityName={renameModelName.replace(".sql", "")}
     />
   {/if}
 {/if}

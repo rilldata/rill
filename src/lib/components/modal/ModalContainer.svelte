@@ -22,7 +22,6 @@
     unlockBodyScrolling = scroll.unlockBodyScrolling;
     Modal = (await import("@shoelace-style/shoelace/dist/internal/modal"))
       .default;
-    console.log(Modal, lockBodyScrolling, unlockBodyScrolling);
   });
 
   /** post-mount, and post-portal (which is to say, as soon as container is actually mounted)
@@ -40,7 +39,6 @@
     // `focus({ preventScroll: true })` ourselves, and add the attribute back afterwards.
     //
     autoFocusTarget = document.querySelector("[autofocus]");
-    console.log(autoFocusTarget);
     if (autoFocusTarget) {
       autoFocusTarget.removeAttribute("autofocus");
     }
@@ -49,7 +47,7 @@
       if (autoFocusTarget) {
         (autoFocusTarget as HTMLInputElement).focus({ preventScroll: true });
       } else {
-        container.focus({ preventScroll: true });
+        container?.focus({ preventScroll: true });
       }
 
       // Restore the autofocus attribute
@@ -72,7 +70,6 @@
 
   function handleKeydown(event) {
     const key = event.key;
-    console.log(modal);
     if (key === "Escape") {
       dispatch("cancel");
     }

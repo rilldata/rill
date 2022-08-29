@@ -14,15 +14,18 @@
 
   const dispatch = createEventDispatcher();
 
+  export let minWidth: string = undefined;
+
   $: containerClasses = dark
     ? "text-white bg-gray-800"
     : "text-gray-800 bg-white";
 </script>
 
 <ModalContainer on:cancel>
-  <div class="grid place-items-center  w-screen h-screen">
+  <div class="grid place-items-center w-screen h-screen">
     <div
-      class="w-min-96 {containerClasses} rounded"
+      class:min-width={minWidth}
+      class="{minWidth ? '' : 'min-w-[400px]'} {containerClasses} rounded"
       style:transform="translateY(-120px)"
     >
       <DialogHeader {compact}>
