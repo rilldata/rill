@@ -79,11 +79,14 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <Portal>
-  <Overlay on:click={() => dispatch("cancel")} />
+  <Overlay />
   <div
     class="fixed top-0 left-0 right-0 bottom-0"
     transition:fly={{ duration: 125, y: 4 }}
     bind:this={container}
+    on:click={() => {
+      dispatch("cancel");
+    }}
   >
     <slot />
   </div>
