@@ -290,7 +290,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <executable>/bin/bash</executable>
+              <executable>bash</executable>
               <arguments>
                 <argument>${project.basedir}/scripts/protoc-java.sh</argument>
                 <argument>SqlNodeProto.proto</argument> <!-- proto file name -->
