@@ -16,6 +16,7 @@ see more button
   export let isSummableMeasure: boolean;
   export let referenceValue;
   export let atLeastOneActive;
+  export let loading = false;
 
   const dispatch = createEventDispatcher();
 </script>
@@ -25,6 +26,7 @@ see more button
   <div>
     <DimensionLeaderboardEntry
       measureValue={value}
+      {loading}
       {isSummableMeasure}
       {referenceValue}
       {atLeastOneActive}
