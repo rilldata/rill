@@ -97,7 +97,7 @@
     }
   };
 
-  const createModel = (tableName: string, id: string) => {
+  const createModel = (tableName: string) => {
     createModelForSource($persistentModelStore.entities, tableName).then(
       (createdModelId) => {
         navigationEvent.fireEvent(
@@ -164,7 +164,7 @@
               />
             </svelte:fragment>
             <svelte:fragment slot="menu-items" let:toggleMenu>
-              <MenuItem icon on:select={() => createModel(tableName, id)}>
+              <MenuItem icon on:select={() => createModel(tableName)}>
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>
