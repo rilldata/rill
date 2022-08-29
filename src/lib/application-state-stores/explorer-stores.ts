@@ -3,8 +3,8 @@ import type {
   MetricViewMetaResponse,
   MetricViewRequestFilter,
 } from "$common/rill-developer-service/MetricViewActions";
-import { Readable, writable } from "svelte/store";
 import { removeIfExists } from "$common/utils/arrayUtils";
+import { Readable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
   value: number;
@@ -177,7 +177,7 @@ const metricViewReducers = {
   },
 
   // TODO: set this to update humanize numbers
-  setLeaderboardValues() {},
+  // setLeaderboardValues() {},
 };
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   typeof metricViewReducers = {

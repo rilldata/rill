@@ -1,19 +1,18 @@
+import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
-import axios from "axios";
-import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
-import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
-import { assertBigNumber } from "../utils/time-series-helpers";
-import { useInlineTestServer } from "../utils/useInlineTestServer";
-import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type {
   MetricViewTopListRequest,
   MetricViewTotalsRequest,
   MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
-import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
 import type { LeaderboardValues } from "$lib/application-state-stores/explorer-stores";
+import axios from "axios";
+import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
+import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
+import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
+import { assertBigNumber } from "../utils/time-series-helpers";
+import { useInlineTestServer } from "../utils/useInlineTestServer";
 
 describe("Metric View", () => {
   const { config, inlineServer } = useInlineTestServer(8083);
