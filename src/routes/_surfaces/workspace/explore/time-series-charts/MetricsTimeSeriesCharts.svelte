@@ -73,6 +73,7 @@
   // temporarily undefined as results are fetched.
   // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
   // we make a copy of the data that avoids `undefined` transition states.
+  // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
   let dataCopy;
   $: if ($timeSeriesQuery.data?.data) dataCopy = $timeSeriesQuery.data.data;
 
