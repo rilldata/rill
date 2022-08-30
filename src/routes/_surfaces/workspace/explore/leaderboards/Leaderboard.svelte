@@ -23,7 +23,7 @@
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
     useGetMetricViewMeta,
-    useGetMetricViewTopList,
+    useTopListQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import { slideRight } from "$lib/transitions";
   import {
@@ -85,7 +85,7 @@
     metaQuery &&
     $metaQuery.isSuccess
   ) {
-    topListQuery = useGetMetricViewTopList(metricsDefId, dimensionId, {
+    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
       measures: [metricsExplorer?.leaderboardMeasureId],
       limit: 10,
       offset: 0,
