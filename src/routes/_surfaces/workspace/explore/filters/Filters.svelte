@@ -92,7 +92,7 @@ The main feature-set component for dashboard filters
     style:height="24px"
     class="grid place-items-center"
     class:text-gray-400={!hasFilters}
-    class:text-gray-800={hasFilters}
+    class:text-gray-600={hasFilters}
   >
     <Filter size="18px" />
   </div>
