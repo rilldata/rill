@@ -22,7 +22,7 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
-    useGetMetricViewMeta,
+    useMetaQuery,
     useTopListQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import { slideRight } from "$lib/transitions";
@@ -53,7 +53,7 @@
 
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
 
   let dimension: Readable<DimensionDefinitionEntity>;
 

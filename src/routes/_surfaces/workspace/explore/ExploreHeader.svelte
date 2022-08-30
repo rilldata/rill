@@ -2,22 +2,22 @@
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+  import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import {
     invalidateMetricViewData,
-    useGetMetricViewMeta,
+    useMetaQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
-  import { Button } from "$lib/components/button";
 
   export let metricsDefId: string;
 
   const queryClient = useQueryClient();
 
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
   // TODO: move this "sync" to a more relevant component
   $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data.id) {
     if (

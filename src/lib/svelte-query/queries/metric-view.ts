@@ -37,7 +37,7 @@ async function fetchUrl(path: string, method: string, body?) {
 
 // GET /api/v1/metric-views/{view-name}/meta
 
-export const getMetricViewMetadata = async (
+export const getMetricsViewMetadata = async (
   metricViewId: string
 ): Promise<MetricViewMetaResponse> => {
   const json = await fetchUrl(`metric-views/${metricViewId}/meta`, "GET");
@@ -46,17 +46,16 @@ export const getMetricViewMetadata = async (
 };
 
 const MetaId = `v1/metric-view/meta`;
-export const getMetricViewMetaQueryKey = (metricViewId: string) => {
+export const getMetaQueryKey = (metricViewId: string) => {
   return [MetaId, metricViewId];
 };
 
-export const useGetMetricViewMeta = (
+export const useMetaQuery = (
   metricViewId: string,
   queryOptions: UseQueryOptions<MetricViewMetaResponse, Error> = {}
 ) => {
-  const queryKey =
-    queryOptions?.queryKey ?? getMetricViewMetaQueryKey(metricViewId);
-  const queryFn = () => getMetricViewMetadata(metricViewId);
+  const queryKey = queryOptions?.queryKey ?? getMetaQueryKey(metricViewId);
+  const queryFn = () => getMetricsViewMetadata(metricViewId);
   const query = queriesRepository.useQuery<MetricViewMetaResponse, Error>(
     queryKey,
     queryFn,
@@ -73,7 +72,7 @@ export const useGetMetricViewMeta = (
 
 // POST /api/v1/metric-views/{view-name}/timeseries
 
-export const getMetricViewTimeSeries = async (
+export const getMetricsViewTimeSeries = async (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest
 ): Promise<MetricViewTimeSeriesResponse> => {
@@ -81,22 +80,21 @@ export const getMetricViewTimeSeries = async (
 };
 
 const TimeSeriesId = `v1/metric-view/timeseries`;
-export const getMetricViewTimeSeriesQueryKey = (
+export const getTimeSeriesQueryKey = (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest
 ) => {
   return [TimeSeriesId, metricViewId, request];
 };
 
-export const useGetMetricViewTimeSeries = (
+export const useTimeSeriesQuery = (
   metricViewId: string,
   request: MetricViewTimeSeriesRequest,
   queryOptions: UseQueryOptions<MetricViewTimeSeriesResponse, Error> = {}
 ) => {
   const queryKey =
-    queryOptions?.queryKey ??
-    getMetricViewTimeSeriesQueryKey(metricViewId, request);
-  const queryFn = () => getMetricViewTimeSeries(metricViewId, request);
+    queryOptions?.queryKey ?? getTimeSeriesQueryKey(metricViewId, request);
+  const queryFn = () => getMetricsViewTimeSeries(metricViewId, request);
   const query = queriesRepository.useQuery<MetricViewTimeSeriesResponse, Error>(
     queryKey,
     queryFn,
@@ -115,7 +113,7 @@ export const useGetMetricViewTimeSeries = (
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}
 
-export const getMetricViewTopList = async (
+export const getMetricsViewTopList = async (
   metricViewId: string,
   dimensionId: string,
   request: MetricViewTopListRequest
@@ -134,7 +132,7 @@ export const getMetricViewTopList = async (
 };
 
 const TopListId = `v1/metric-view/toplist`;
-export const getMetricViewTopListQueryKey = (
+export const getTopListQueryKey = (
   metricViewId: string,
   dimensionId: string,
   request: MetricViewTopListRequest
@@ -167,14 +165,14 @@ function getTopListQueryOptions(
  * The request parameter matches the API signature needed for the toplist request.
  */
 export function useTopListQuery(metricsDefId, dimensionId, requestParameter) {
-  const topListQueryFn = () => {
-    return getMetricViewTopList(metricsDefId, dimensionId, requestParameter);
-  };
-  const topListQueryKey = getMetricViewTopListQueryKey(
+  const topListQueryKey = getTopListQueryKey(
     metricsDefId,
     dimensionId,
     requestParameter
   );
+  const topListQueryFn = () => {
+    return getMetricsViewTopList(metricsDefId, dimensionId, requestParameter);
+  };
   const topListQueryOptions = getTopListQueryOptions(
     metricsDefId,
     dimensionId,
@@ -185,7 +183,7 @@ export function useTopListQuery(metricsDefId, dimensionId, requestParameter) {
 
 // POST /api/v1/metric-views/{view-name}/totals
 
-export const getMetricViewTotals = async (
+export const getMetricsViewTotals = async (
   metricViewId: string,
   request: MetricViewTotalsRequest
 ): Promise<MetricViewTotalsResponse> => {
@@ -193,7 +191,7 @@ export const getMetricViewTotals = async (
 };
 
 const TotalsId = `v1/metric-view/totals`;
-export const getMetricViewTotalsQueryKey = (
+export const getTotalsQueryKey = (
   metricViewId: string,
   isReferenceValue: boolean,
   request: MetricViewTotalsRequest
@@ -201,7 +199,7 @@ export const getMetricViewTotalsQueryKey = (
   return [TotalsId, metricViewId, isReferenceValue, request];
 };
 
-export const useGetMetricViewTotals = (
+export const useTotalsQuery = (
   metricViewId: string,
   request: MetricViewTotalsRequest,
   isReferenceValue = false,
@@ -209,8 +207,8 @@ export const useGetMetricViewTotals = (
 ) => {
   const queryKey =
     queryOptions?.queryKey ??
-    getMetricViewTotalsQueryKey(metricViewId, isReferenceValue, request);
-  const queryFn = () => getMetricViewTotals(metricViewId, request);
+    getTotalsQueryKey(metricViewId, isReferenceValue, request);
+  const queryFn = () => getMetricsViewTotals(metricViewId, request);
   const query = queriesRepository.useQuery<MetricViewTotalsResponse, Error>(
     queryKey,
     queryFn,

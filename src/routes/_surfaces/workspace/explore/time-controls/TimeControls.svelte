@@ -17,7 +17,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "$lib/application-state-stores/explorer-stores";
   import {
     invalidateMetricViewData,
-    useGetMetricViewMeta,
+    useMetaQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
@@ -40,7 +40,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   let selectedTimeGrain;
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
   $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   // use the default options when the first dashboard loads

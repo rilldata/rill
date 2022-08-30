@@ -11,9 +11,9 @@
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import {
-    useGetMetricViewMeta,
-    useGetMetricViewTimeSeries,
-    useGetMetricViewTotals,
+    useMetaQuery,
+    useTimeSeriesQuery,
+    useTotalsQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
@@ -31,13 +31,13 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
 
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
-  $: totalsQuery = useGetMetricViewTotals(
+  $: totalsQuery = useTotalsQuery(
     metricsDefId,
     {
       measures: metricsExplorer?.selectedMeasureIds,
@@ -53,7 +53,7 @@
     }
   );
 
-  $: timeSeriesQuery = useGetMetricViewTimeSeries(
+  $: timeSeriesQuery = useTimeSeriesQuery(
     metricsDefId,
     {
       measures: metricsExplorer?.selectedMeasureIds,

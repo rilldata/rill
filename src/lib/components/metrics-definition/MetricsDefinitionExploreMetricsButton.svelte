@@ -6,12 +6,12 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { useGetMetricViewMeta } from "$lib/svelte-query/queries/metric-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
 
   export let metricsDefId: string;
 
   // query the `/meta` endpoint to get the valid measures and dimensions
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
   $: measures = $metaQuery.data.measures;
   $: dimensions = $metaQuery.data.dimensions;
 

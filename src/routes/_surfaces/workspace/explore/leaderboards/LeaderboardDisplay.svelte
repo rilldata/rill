@@ -10,8 +10,8 @@
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import {
     invalidateMetricViewData,
-    useGetMetricViewMeta,
-    useGetMetricViewTotals,
+    useMetaQuery,
+    useTotalsQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import {
     getScaleForLeaderboard,
@@ -31,7 +31,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
   $: dimensions = $metaQuery.data.dimensions;
   $: measures = $metaQuery.data.measures;
 
@@ -46,7 +46,7 @@
 
   let referenceValue: number;
 
-  $: totalsQuery = useGetMetricViewTotals(
+  $: totalsQuery = useTotalsQuery(
     metricsDefId,
     {
       measures: metricsExplorer?.selectedMeasureIds,
@@ -62,7 +62,7 @@
     }
   );
   // TODO: find a way to have a single request when there are no filters
-  $: referenceValueQuery = useGetMetricViewTotals(
+  $: referenceValueQuery = useTotalsQuery(
     metricsDefId,
     {
       measures: metricsExplorer?.selectedMeasureIds,

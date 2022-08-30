@@ -10,7 +10,7 @@
   import { FloatingElement } from "$lib/components/floating-element";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
-  import { useGetMetricViewMeta } from "$lib/svelte-query/queries/metric-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { createEventDispatcher, tick } from "svelte";
   import {
@@ -31,7 +31,7 @@
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
   $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
