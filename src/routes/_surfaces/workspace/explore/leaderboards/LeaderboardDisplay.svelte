@@ -78,12 +78,17 @@
     }
   );
 
-  $: if ($totalsQuery && $referenceValueQuery && activeMeasure?.sqlName) {
+  $: if (
+    activeMeasure?.sqlName &&
+    $totalsQuery?.data?.data &&
+    $referenceValueQuery?.data?.data
+  ) {
     referenceValue =
       whichReferenceValue === "filtered"
         ? $totalsQuery.data.data?.[activeMeasure.sqlName]
         : $referenceValueQuery.data.data?.[activeMeasure.sqlName];
   }
+  $: console.log(referenceValue);
 
   const leaderboards = new Map<string, Array<LeaderboardValue>>();
   $: if (dimensions) {
