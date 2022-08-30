@@ -21,7 +21,8 @@
     <antrun-plugin.version>1.8</antrun-plugin.version>
     <javacc-maven-plugin.version>2.6</javacc-maven-plugin.version>
     <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
-    <graalvm.version>21.1.0</graalvm.version>
+    <!-- Note: Also change GraalVM version in .github/workflows/sql-release.yml -->
+    <graalvm.version>22.1.0</graalvm.version> 
     <junit.version>5.8.1</junit.version>
     <reflections.version>0.10.2</reflections.version>
     <hsqldb.version>2.3.4</hsqldb.version>
