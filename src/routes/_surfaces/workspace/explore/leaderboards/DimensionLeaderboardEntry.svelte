@@ -63,7 +63,8 @@
     <div class="leaderboard-list-item-right" slot="right">
       <!-- {#if !(atLeastOneActive && !active)} -->
       <div
-        class={!active && atLeastOneActive ? "text-gray-500 italic" : ""}
+        class:text-gray-500={(!active && atLeastOneActive) || loading}
+        class:italic={!active && atLeastOneActive}
         in:fly={{ duration: 200, y: 4 }}
       >
         <slot name="right" />
