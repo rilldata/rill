@@ -11,6 +11,15 @@ export class DatabaseConfig extends Config<DatabaseConfig> {
 
   @Config.ConfigField(false)
   public skipDatabase: boolean;
+  
+  @Config.ConfigField()
+  public runtimeUrl: string;
+
+  @Config.ConfigField(true)
+  public spawnRuntime: boolean;
+
+  @Config.ConfigField(8081)
+  public spawnRuntimePort: number;
 
   public prependProjectFolder(projectFolder: string) {
     this.exportFolder = `${projectFolder}/${this.exportFolder}`;

@@ -14,7 +14,7 @@ import {
 import { useInlineTestServer } from "../utils/useInlineTestServer";
 
 describe("TimeSeries", () => {
-  const { inlineServer } = useInlineTestServer(8082);
+  const { inlineServer } = useInlineTestServer(8082, 8083);
 
   let metricsDef: MetricsDefinitionEntity;
   let measures: Array<MeasureDefinitionEntity>;

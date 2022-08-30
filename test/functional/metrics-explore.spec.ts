@@ -10,7 +10,7 @@ import { assertBigNumber } from "../utils/time-series-helpers";
 import { useInlineTestServer } from "../utils/useInlineTestServer";
 
 describe("Metrics Explore", () => {
-  const { config, inlineServer } = useInlineTestServer(8083);
+  const { config, inlineServer } = useInlineTestServer(8083, 8084);
   let metricsDef: MetricsDefinitionEntity;
   let measures: Array<MeasureDefinitionEntity>;
   useBasicMetricsDefinition(inlineServer, (selMetricsDef, selMeasures) => {

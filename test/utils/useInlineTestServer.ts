@@ -15,9 +15,9 @@ import type { TestServer } from "./TestServer";
  *
  * TODO: auto assign port
  */
-export function useInlineTestServer(port: number) {
+export function useInlineTestServer(port: number, runtimePort: number) {
   const config = new RootConfig({
-    database: new DatabaseConfig({ databaseName: ":memory:" }),
+    database: new DatabaseConfig({ databaseName: ":memory:", spawnRuntimePort: runtimePort }),
     state: new StateConfig({ autoSync: false }),
     server: new ServerConfig({ serverPort: port }),
     projectFolder: "temp/test",

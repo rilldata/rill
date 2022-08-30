@@ -1,21 +1,21 @@
-import duckdb from "duckdb";
+import fetch from "isomorphic-unfetch";
+import type { ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
+import { URL } from "url";
 import type { DatabaseConfig } from "$common/config/DatabaseConfig";
-
-interface DuckDB {
-  // TODO: define concrete styles
-  all: (...args: Array<unknown>) => unknown;
-  exec: (...args: Array<unknown>) => unknown;
-  prepare: (...args: Array<unknown>) => unknown;
-}
+import { isPortOpen } from "$common/utils/isPortOpen";
+import { asyncWaitUntil } from "$common/utils/waitUtils";
 
 /**
- * Runs a duckdb instance. Database name can be configured {@link DatabaseConfig}
+ * Spawns or connects to a runtime and uses it to proxy DuckDB queries.
+ * Runtime and database details can be configured {@link DatabaseConfig}
  *
- * There is only one db right now.
+ * There is only one runtime connection right now.
  * But in the future we can easily add an interface to this and have different implementations.
  */
 export class DuckDBClient {
-  protected db: DuckDB;
+  protected runtimeProcess: ChildProcess;
+  protected instanceID: string;
 
   protected onCallback: () => void;
   protected offCallback: () => void;
@@ -31,41 +31,123 @@ export class DuckDBClient {
   }
 
   public async init(): Promise<void> {
-    if (this.databaseConfig.skipDatabase || this.db) return;
-    // we can later on swap this over to WASM and update data loader
-    this.db = new duckdb.Database(this.databaseConfig.databaseName);
-    this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
+    if (this.databaseConfig.skipDatabase) return;
+    await this.spawnRuntime();
+    await this.connectRuntime();
+  }
+
+  protected async spawnRuntime() {
+    if (!this.databaseConfig.spawnRuntime) {
+      return;
+    }
+
+    if (this.runtimeProcess) {
+      throw Error("Already spawned runtime")
+    }
+
+    const httpPort = this.databaseConfig.spawnRuntimePort;
+    const grpcPort = httpPort + 1000; // Hack to prevent port collision when spawning many runtimes
+
+    this.runtimeProcess = spawn(
+      "./dist/runtime/runtime",
+      [],
+      {
+        env: {
+          ...process.env,
+          RILL_RUNTIME_ENV: "production",
+          RILL_RUNTIME_LOG_LEVEL: "warn",
+          RILL_RUNTIME_HTTP_PORT: httpPort.toString(),
+          RILL_RUNTIME_GRPC_PORT: grpcPort.toString(),
+        },
+        stdio: "inherit",
+        shell: true,
+      }
+    );
+
+    this.runtimeProcess.on("exit", (code) => {
+      process.exit(code);
+    })
+
+    await asyncWaitUntil(() => isPortOpen(this.databaseConfig.spawnRuntimePort));
+  }
+
+  protected async connectRuntime() {
+    if (this.instanceID) {
+      throw Error("Already connected to runtime")
+    }
+
+    let databaseName = this.databaseConfig.databaseName;
+    if (databaseName === ":memory:") {
+      databaseName = "";
+    }
+
+    const res = await this.request("v1/instances", {
+      "driver": "duckdb",
+      "dsn": databaseName,
+    });
+
+    this.instanceID = res["instanceId"];
+
+    await this.execute(`
+      INSTALL 'json';
+      INSTALL 'parquet';
+      LOAD 'json';
+      LOAD 'parquet';
+    `);
+
+    await this.execute("PRAGMA threads=32;PRAGMA log_query_path='./log';", false);
   }
 
   public execute<Row = Record<string, unknown>>(
     query: string,
-    log = false
+    log = false,
+    dry_run = false
   ): Promise<Array<Row>> {
     this.onCallback?.();
     if (log) console.log(query);
     return new Promise((resolve, reject) => {
-      try {
-        this.db.all(query, (err, res) => {
-          if (err !== null) {
-            reject(err);
-          } else {
-            this.offCallback?.();
-            resolve(res);
-          }
-        });
-      } catch (err) {
+      this.request(`/v1/instances/${this.instanceID}/query/direct`, {
+        sql: query,
+        priority: 0,
+        dry_run: dry_run,
+      }).then((data) => {
+        this.offCallback?.();
+        resolve(data["data"]);
+      }).catch((err) => {
         if (log) console.error(err);
         reject(err);
-      }
-    });
-  }
-
-  public prepare(query: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db.prepare(query, (err, stmt) => {
-        if (err !== null) reject(err);
-        else resolve(stmt);
       });
     });
   }
+
+  public async prepare(query: string): Promise<void> {
+    await this.execute(query, false, true);
+  }
+
+  private async request(path: string, data: any): Promise<any> {
+    let base = this.databaseConfig.runtimeUrl;
+    if (!base && this.databaseConfig.spawnRuntime) {
+      base = `http://localhost:${this.databaseConfig.spawnRuntimePort}`;
+    }
+
+    const url = new URL(path, base).toString();
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const json = await res.json()
+    if (!res.ok) {
+      const msg = json["message"];
+      const err = new Error(msg);
+      throw err;
+    }
+
+    return json;
+  }
+
 }
