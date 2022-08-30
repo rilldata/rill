@@ -22,7 +22,7 @@ see more button
 </script>
 
 {#each values as { label, value, formattedValue } (label)}
-  {@const active = activeValues.find((value) => value === label)}
+  {@const active = activeValues.findIndex((value) => value === label) >= 0}
   <div>
     <DimensionLeaderboardEntry
       measureValue={value}
