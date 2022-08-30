@@ -1,7 +1,7 @@
 name: Release SQL shared library
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "sql-release"]
     paths:
       - ".github/workflows/sql-release.yml"
       - "sql/**"
@@ -53,8 +53,7 @@ jobs:
       - name: Create archive
         shell: bash
         run: |
-          rm sql/target/*.txt
-          zip -j librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip sql/target/librillsql.* sql/target/graal_isolate.*
+          zip -j librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip sql/target/graal_isolate.h sql/target/librillsql.{h,dll,dylib,lib,so}(N)
       - name: Upload archive
         uses: google-github-actions/upload-cloud-storage@v0
         with:
