@@ -60,7 +60,7 @@
     }
   );
   // TODO: find a way to have a single request when there are no filters
-  const referenceValueQuery = useGetMetricViewTotals(
+  $: referenceValueQuery = useGetMetricViewTotals(
     metricsDefId,
     {
       measures: metricsExplorer?.selectedMeasureIds,
