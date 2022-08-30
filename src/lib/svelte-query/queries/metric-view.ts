@@ -13,8 +13,12 @@ import type {
   MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
-import type { QueryClient, UseQueryOptions } from "@sveltestack/svelte-query";
 import { queriesRepository } from "$lib/svelte-query/queries/QueriesRepository";
+import type {
+  QueryClient,
+  UseQueryOptions,
+  UseQueryStoreResult,
+} from "@sveltestack/svelte-query";
 
 async function fetchUrl(path: string, method: string, body?) {
   const resp = await fetch(`${config.server.serverUrl}/api/v1/${path}`, {
@@ -60,7 +64,7 @@ export const useGetMetricViewMeta = (
       enabled: !!metricViewId,
       refetchOnMount: true,
     }
-  );
+  ) as UseQueryStoreResult<MetricViewMetaResponse, Error>;
   return {
     queryKey,
     ...query,
@@ -102,7 +106,7 @@ export const useGetMetricViewTimeSeries = (
         !!(metricViewId && request.measures && request.time) &&
         (!("enabled" in queryOptions) || queryOptions.enabled),
     }
-  );
+  ) as UseQueryStoreResult<MetricViewTimeSeriesResponse, Error>;
   return {
     queryKey,
     ...query,
@@ -166,7 +170,7 @@ export const useGetMetricViewTopList = (
         ) &&
         (!("enabled" in queryOptions) || queryOptions.enabled),
     }
-  );
+  ) as UseQueryStoreResult<MetricViewTopListResponse, Error>;
   return {
     queryKey,
     ...query,
@@ -210,7 +214,7 @@ export const useGetMetricViewTotals = (
         !!(metricViewId && request.measures && request.time) &&
         (!("enabled" in queryOptions) || queryOptions.enabled),
     }
-  );
+  ) as UseQueryStoreResult<MetricViewTotalsResponse, Error>;
   return {
     queryKey,
     ...query,
