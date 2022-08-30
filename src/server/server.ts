@@ -13,7 +13,7 @@ const config = new RootConfig({
   // this can be helpful when testing fresh projects without needing to delete existing one.
   projectFolder: process.env.RILL_PROJECT ?? ".",
   server: new ServerConfig({ serveStaticFile: true }),
-  local: new LocalConfig({ isDev: Boolean(process.env.RILL_IS_DEV ?? false) }),
+  local: new LocalConfig({ isDev: true }),
 });
 const rillDeveloper = RillDeveloper.getRillDeveloper(config);
 const expressServer = expressServerFactory(
