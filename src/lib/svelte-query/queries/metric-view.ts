@@ -193,36 +193,25 @@ export const getMetricsViewTotals = async (
 const TotalsId = `v1/metric-view/totals`;
 export const getTotalsQueryKey = (
   metricViewId: string,
-  isReferenceValue: boolean,
   request: MetricViewTotalsRequest
 ) => {
-  return [TotalsId, metricViewId, isReferenceValue, request];
+  return [TotalsId, metricViewId, request];
 };
 
 export const useTotalsQuery = (
   metricViewId: string,
-  request: MetricViewTotalsRequest,
-  isReferenceValue = false,
-  queryOptions: UseQueryOptions<MetricViewTotalsResponse, Error> = {}
+  request: MetricViewTotalsRequest
 ) => {
-  const queryKey =
-    queryOptions?.queryKey ??
-    getTotalsQueryKey(metricViewId, isReferenceValue, request);
-  const queryFn = () => getMetricsViewTotals(metricViewId, request);
-  const query = queriesRepository.useQuery<MetricViewTotalsResponse, Error>(
-    queryKey,
-    queryFn,
+  const totalsQueryKey = getTotalsQueryKey(metricViewId, request);
+  const totalsQueryFn = () => getMetricsViewTotals(metricViewId, request);
+  return useQuery<MetricViewTotalsResponse, Error>(
+    totalsQueryKey,
+    totalsQueryFn,
     {
-      ...queryOptions,
-      enabled:
-        !!(metricViewId && request.measures && request.time) &&
-        (!("enabled" in queryOptions) || queryOptions.enabled),
+      staleTime: 30 * 1000,
+      enabled: !!(metricViewId && request.measures && request.time),
     }
-  ) as UseQueryStoreResult<MetricViewTotalsResponse, Error>;
-  return {
-    queryKey,
-    ...query,
-  };
+  );
 };
 
 // invalidation helpers

@@ -23,7 +23,6 @@
   import Leaderboard from "./Leaderboard.svelte";
 
   export let metricsDefId: string;
-  export let whichReferenceValue: string;
 
   const queryClient = useQueryClient();
 
@@ -44,51 +43,25 @@
   $: formatPreset =
     activeMeasure?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
 
-  let referenceValue: number;
-
-  $: totalsQuery = useTotalsQuery(
-    metricsDefId,
-    {
+  let totalsQuery;
+  $: if (metaQuery && $metaQuery.isSuccess) {
+    totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
-      filter: metricsExplorer?.filters,
+      filter: {
+        include: metricsExplorer?.filters?.include,
+        exclude: metricsExplorer?.filters?.exclude,
+      },
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-    },
-    false,
-    {
-      enabled: $metaQuery?.isFetched,
-    }
-  );
-  // TODO: find a way to have a single request when there are no filters
-  $: referenceValueQuery = useTotalsQuery(
-    metricsDefId,
-    {
-      measures: metricsExplorer?.selectedMeasureIds,
-      filter: undefined,
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-    },
-    true,
-    {
-      enabled: $metaQuery?.isFetched,
-    }
-  );
-
-  $: if (
-    activeMeasure?.sqlName &&
-    $totalsQuery?.data?.data &&
-    $referenceValueQuery?.data?.data
-  ) {
-    referenceValue =
-      whichReferenceValue === "filtered"
-        ? $totalsQuery.data.data?.[activeMeasure.sqlName]
-        : $referenceValueQuery.data.data?.[activeMeasure.sqlName];
+    });
   }
-  $: console.log(referenceValue);
+
+  let referenceValue: number;
+  $: if (activeMeasure?.sqlName && $totalsQuery?.data?.data) {
+    referenceValue = $totalsQuery.data.data?.[activeMeasure.sqlName];
+  }
 
   const leaderboards = new Map<string, Array<LeaderboardValue>>();
   $: if (dimensions) {

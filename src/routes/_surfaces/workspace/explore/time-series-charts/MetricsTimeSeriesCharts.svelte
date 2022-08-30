@@ -37,21 +37,21 @@
     metricsExplorer?.selectedTimeRange?.interval ||
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
-  $: totalsQuery = useTotalsQuery(
-    metricsDefId,
-    {
+  let totalsQuery;
+  $: console.log("CHANGING FILTERS", metricsExplorer?.filters);
+  $: if (metaQuery && $metaQuery.isSuccess) {
+    totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
-      filter: metricsExplorer?.filters,
+      filter: {
+        include: metricsExplorer?.filters?.include,
+        exclude: metricsExplorer?.filters?.exclude,
+      },
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-    },
-    false,
-    {
-      enabled: $metaQuery?.isFetched,
-    }
-  );
+    });
+  }
 
   $: timeSeriesQuery = useTimeSeriesQuery(
     metricsDefId,
