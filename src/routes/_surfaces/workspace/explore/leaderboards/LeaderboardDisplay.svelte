@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import { getMapFromArray } from "$common/utils/arrayUtils";
   import {
     LeaderboardValue,
     MetricsExplorerEntity,
@@ -20,7 +21,6 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
-  import { getMapFromArray } from "$common/utils/arrayUtils";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;

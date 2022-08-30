@@ -14,8 +14,9 @@ import type {
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 import { queriesRepository } from "$lib/svelte-query/queries/QueriesRepository";
-import type {
+import {
   QueryClient,
+  useQuery,
   UseQueryOptions,
   UseQueryStoreResult,
 } from "@sveltestack/svelte-query";
@@ -141,40 +142,50 @@ export const getMetricViewTopListQueryKey = (
   return [TopListId, metricViewId, dimensionId, request];
 };
 
-export const useGetMetricViewTopList = (
-  metricViewId: string,
-  dimensionId: string,
-  request: MetricViewTopListRequest,
-  queryOptions: UseQueryOptions<MetricViewTopListResponse, Error> = {}
-) => {
-  const queryKey =
-    queryOptions?.queryKey ??
-    getMetricViewTopListQueryKey(metricViewId, dimensionId, request);
-  const queryFn = () =>
-    getMetricViewTopList(metricViewId, dimensionId, request);
-  const query = queriesRepository.useQuery<MetricViewTopListResponse, Error>(
-    queryKey,
-    queryFn,
-    {
-      ...queryOptions,
-      enabled:
-        !!(
-          metricViewId &&
-          dimensionId &&
-          request.limit &&
-          request.measures &&
-          request.offset !== undefined &&
-          request.sort &&
-          request.time
-        ) &&
-        (!("enabled" in queryOptions) || queryOptions.enabled),
-    }
-  ) as UseQueryStoreResult<MetricViewTopListResponse, Error>;
+function getTopListQueryOptions(
+  metricsDefId,
+  dimensionId,
+  topListQueryRequest
+) {
   return {
-    queryKey,
-    ...query,
+    staleTime: 30 * 1000,
+    enabled: !!(
+      metricsDefId &&
+      dimensionId &&
+      topListQueryRequest.limit &&
+      topListQueryRequest.measures.length >= 1 &&
+      topListQueryRequest.offset !== undefined &&
+      topListQueryRequest.sort &&
+      topListQueryRequest.time
+    ),
   };
-};
+}
+
+/** custom hook to fetch a toplist result set, given a metricsDefId,
+ * dimensionId,
+ * and a request parameter.
+ * The request parameter matches the API signature needed for the toplist request.
+ */
+export function useGetMetricViewTopList(
+  metricsDefId,
+  dimensionId,
+  requestParameter
+) {
+  const topListQueryFn = () => {
+    return getMetricViewTopList(metricsDefId, dimensionId, requestParameter);
+  };
+  const topListQueryKey = getMetricViewTopListQueryKey(
+    metricsDefId,
+    dimensionId,
+    requestParameter
+  );
+  const topListQueryOptions = getTopListQueryOptions(
+    metricsDefId,
+    dimensionId,
+    requestParameter
+  );
+  return useQuery(topListQueryKey, topListQueryFn, topListQueryOptions);
+}
 
 // POST /api/v1/metric-views/{view-name}/totals
 
