@@ -22,8 +22,9 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
+    getMetricViewTopList,
+    getMetricViewTopListQueryKey,
     useGetMetricViewMeta,
-    useGetMetricViewTopList,
   } from "$lib/svelte-query/queries/metric-view";
   import { slideRight } from "$lib/transitions";
   import {
@@ -31,10 +32,11 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
+  import { useQuery } from "@sveltestack/svelte-query";
+  import { createEventDispatcher } from "svelte";
   import type { Readable } from "svelte/store";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
-  import { createEventDispatcher } from "svelte";
   export let metricsDefId: string;
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -78,24 +80,88 @@
     });
   }
 
-  $: topListQuery = useGetMetricViewTopList(
-    metricsDefId,
-    dimensionId,
-    {
-      measures: [metricsExplorer?.leaderboardMeasureId],
+  function getTopListQueryRequest(leaderboardMeasure, start, end, filters) {
+    return {
+      measures: [leaderboardMeasure],
       limit: 10,
       offset: 0,
       sort: [],
       time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
+        start: start,
+        end: end,
       },
-      filter: metricsExplorer?.filters,
-    },
-    {
-      enabled: $metaQuery?.isFetched,
-    }
+      filter: filters,
+    };
+  }
+  let topListQueryRequest = getTopListQueryRequest(
+    metricsExplorer?.leaderboardMeasureId,
+    metricsExplorer?.selectedTimeRange?.start,
+    metricsExplorer?.selectedTimeRange?.end,
+    metricsExplorer?.filters
   );
+  let topListQueryKey = getMetricViewTopListQueryKey(
+    metricsDefId,
+    dimensionId,
+    topListQueryRequest
+  );
+  let topListQueryFn = () =>
+    getMetricViewTopList(metricsDefId, dimensionId, topListQueryRequest);
+
+  function getTopListQueryOptions(
+    metaQuery,
+    metricsDefId,
+    dimensionId,
+    topListQueryRequest
+  ) {
+    return {
+      staleTime: 60 * 1000,
+      enabled: !!(
+        metaQuery?.isFetched &&
+        metricsDefId &&
+        dimensionId &&
+        topListQueryRequest.limit &&
+        topListQueryRequest.measures.length >= 1 &&
+        topListQueryRequest.offset !== undefined &&
+        topListQueryRequest.sort &&
+        topListQueryRequest.time
+      ),
+    };
+  }
+  let topListQueryOptions = getTopListQueryOptions(
+    $metaQuery,
+    metricsDefId,
+    dimensionId,
+    topListQueryRequest
+  );
+  const topListQuery = useQuery(
+    topListQueryKey,
+    topListQueryFn,
+    topListQueryOptions
+  );
+  $: {
+    topListQueryRequest = getTopListQueryRequest(
+      metricsExplorer?.leaderboardMeasureId,
+      metricsExplorer?.selectedTimeRange?.start,
+      metricsExplorer?.selectedTimeRange?.end,
+      metricsExplorer?.filters
+    );
+    topListQueryKey = getMetricViewTopListQueryKey(
+      metricsDefId,
+      dimensionId,
+      topListQueryRequest
+    );
+    topListQueryOptions = getTopListQueryOptions(
+      $metaQuery,
+      metricsDefId,
+      dimensionId,
+      topListQueryRequest
+    );
+    topListQuery.setOptions(
+      topListQueryKey,
+      topListQueryFn,
+      topListQueryOptions
+    );
+  }
 
   let values = [];
 
@@ -203,7 +269,11 @@
         />
         <hr />
       {/if}
-      {#if values.length === 0}
+      {#if $topListQuery.isError}
+        <div class="text-red-500">
+          {$topListQuery.error}
+        </div>
+      {:else if values.length === 0}
         <div class="p-1 italic text-gray-500">no available values</div>
       {/if}
 
