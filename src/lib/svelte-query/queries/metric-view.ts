@@ -62,7 +62,6 @@ export const useGetMetricViewMeta = (
     {
       ...queryOptions,
       enabled: !!metricViewId,
-      refetchOnMount: true,
     }
   ) as UseQueryStoreResult<MetricViewMetaResponse, Error>;
   return {
@@ -169,7 +168,6 @@ export const useGetMetricViewTopList = (
           request.time
         ) &&
         (!("enabled" in queryOptions) || queryOptions.enabled),
-      refetchOnMount: true,
     }
   ) as UseQueryStoreResult<MetricViewTopListResponse, Error>;
   return {
