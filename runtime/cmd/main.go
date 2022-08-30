@@ -20,6 +20,7 @@ import (
 
 type Config struct {
 	Env            string `default:"development"`
+	LogLevel       string `default:"info" split_words:"true"`
 	DatabaseDriver string `default:"sqlite"`
 	DatabaseURL    string `default:":memory:" split_words:"true"`
 	GRPCPort       int    `default:"9090" split_words:"true"`
@@ -36,11 +37,16 @@ func main() {
 	}
 
 	// Init logger
+	level, err := zerolog.ParseLevel(conf.LogLevel)
+	if err != nil {
+		fmt.Printf("Error parsing log level: %s", err.Error())
+		os.Exit(1)
+	}
 	var logger zerolog.Logger
 	if conf.Env == "production" {
-		logger = zerolog.New(os.Stderr)
+		logger = zerolog.New(os.Stderr).Level(level)
 	} else {
-		logger = zerolog.New(zerolog.NewConsoleWriter())
+		logger = zerolog.New(zerolog.NewConsoleWriter()).Level(level)
 	}
 
 	// Init db
