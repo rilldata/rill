@@ -10,6 +10,7 @@ export function createQueryClient() {
       queries: {
         refetchOnWindowFocus: false,
         refetchOnMount: false,
+        refetchOnReconnect: false,
         placeholderData: {},
       },
     },

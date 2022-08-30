@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import {
+    LeaderboardValue,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
@@ -18,7 +19,8 @@
   } from "$lib/util/humanize-numbers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
-  import Leaderboard from "./Leaderboard.svelte";
+  import Leaderboard, { dimensionId } from "./Leaderboard.svelte";
+  import { getMapFromArray } from "$common/utils/arrayUtils";
 
   export let metricsDefId: string;
   export let whichReferenceValue: string;
@@ -83,17 +85,19 @@
         : $referenceValueQuery.data.data?.[activeMeasure.sqlName];
   }
 
+  const leaderboards = new Map<string, Array<LeaderboardValue>>();
+  $: if (dimensions) {
+    const dimensionIdMap = getMapFromArray(
+      dimensions,
+      (dimension) => dimension.id
+    );
+    [...leaderboards.keys()]
+      .filter((dimensionId) => !dimensionIdMap.has(dimensionId))
+      .forEach((dimensionId) => leaderboards.delete(dimensionId));
+  }
+
   /** create a scale for the valid leaderboards */
   let leaderboardFormatScale: ShortHandSymbols = "none";
-  $: if (
-    metricsExplorer?.leaderboards &&
-    (formatPreset === NicelyFormattedTypes.HUMANIZE ||
-      formatPreset === NicelyFormattedTypes.CURRENCY)
-  ) {
-    leaderboardFormatScale = getScaleForLeaderboard(
-      metricsExplorer?.leaderboards
-    );
-  }
 
   let leaderboardExpanded;
 
@@ -104,6 +108,16 @@
       event.detail.label
     );
     invalidateMetricViewData(queryClient, metricsDefId);
+  }
+
+  function onLeaderboardValues(event) {
+    leaderboards.set(event.detail.dimensionId, event.detail.values);
+    if (
+      formatPreset === NicelyFormattedTypes.HUMANIZE ||
+      formatPreset === NicelyFormattedTypes.CURRENCY
+    ) {
+      leaderboardFormatScale = getScaleForLeaderboard(leaderboards);
+    }
   }
 
   /** Functionality for resizing the virtual leaderboard */
@@ -164,6 +178,7 @@
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
+        on:leaderboard-value={onLeaderboardValues}
         referenceValue={referenceValue || 0}
       />
     </VirtualizedGrid>

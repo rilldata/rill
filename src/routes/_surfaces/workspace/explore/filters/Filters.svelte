@@ -15,12 +15,12 @@ The main feature-set component for dashboard filters
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
-  import { getMapFromArray } from "$common/utils/getMapFromArray";
   import type {
     MetricViewDimensionValues,
     MetricViewRequestFilter,
   } from "$common/rill-developer-service/MetricViewActions";
   import { getDisplayName } from "../utils";
+  import { getMapFromArray } from "$common/utils/arrayUtils";
   export let metricsDefId;
 
   let metricsExplorer: MetricsExplorerEntity;
