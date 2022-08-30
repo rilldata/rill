@@ -25,6 +25,7 @@
     useGetMetricViewMeta,
     useGetMetricViewTopList,
   } from "$lib/svelte-query/queries/metric-view";
+  import { slideRight } from "$lib/transitions";
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
@@ -33,7 +34,6 @@
   import type { Readable } from "svelte/store";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
-
   export let metricsDefId: string;
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -86,8 +86,10 @@
       enabled: $metaQuery?.isFetched,
     }
   );
-  $: values = $topListQuery.data?.data ?? [];
+  let values = [];
 
+  /** replace data after fetched. */
+  $: if (!$topListQuery.isFetching) values = $topListQuery.data?.data ?? [];
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
@@ -131,9 +133,14 @@
       class:italic={atLeastOneActive}
     >
       <Tooltip location="top" distance={16}>
-        <span>
+        <div class="flex flex-row gap-x-2 items-center">
+          {#if $topListQuery.isFetching}
+            <div transition:slideRight|local={{ leftOffset: 8 }}>
+              <Spinner size="16px" status={EntityStatus.Running} />
+            </div>
+          {/if}
           {displayName}
-        </span>
+        </div>
         <TooltipContent slot="tooltip-content">
           <TooltipTitle>
             <svelte:fragment slot="name">
@@ -154,12 +161,12 @@
       </Tooltip>
     </div>
   </LeaderboardHeader>
-  {#if $topListQuery.isFetching}
-    <Spinner size="20px" status={EntityStatus.Running} />
-  {:else if values}
+
+  {#if values}
     <LeaderboardList>
       <!-- place the leaderboard entries that are above the fold here -->
       <LeaderboardEntrySet
+        loading={$topListQuery.isFetching}
         values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
         {activeValues}
         {atLeastOneActive}
@@ -171,6 +178,7 @@
       {#if selectedValuesThatAreBelowTheFold?.length}
         <hr />
         <LeaderboardEntrySet
+          loading={$topListQuery.isFetching}
           values={selectedValuesThatAreBelowTheFold}
           {activeValues}
           {atLeastOneActive}
