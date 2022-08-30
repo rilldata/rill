@@ -74,6 +74,16 @@ export function getExpressionColumnsFromMeasures(
     .join(", ");
 }
 
+export function getCoalesceExpressionForMeasures(
+  measures: Array<BasicMeasureDefinition>
+): string {
+  return measures
+    .map(
+      (measure) => `COALESCE(${measure.expression}, 0) as ${measure.sqlName}`
+    )
+    .join(", ");
+}
+
 export function getCoalesceStatementsMeasures(
   measures: Array<BasicMeasureDefinition>
 ): string {

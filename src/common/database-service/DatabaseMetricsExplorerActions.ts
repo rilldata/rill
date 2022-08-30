@@ -4,7 +4,7 @@ import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 import {
-  getExpressionColumnsFromMeasures,
+  getCoalesceExpressionForMeasures,
   getWhereClauseFromFilters,
   normaliseMeasures,
 } from "./utils";
@@ -71,7 +71,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
         Record<string, number>
       >(
         `
-        SELECT ${getExpressionColumnsFromMeasures(measures)} from "${table}"
+        SELECT ${getCoalesceExpressionForMeasures(measures)} from "${table}"
         ${whereClause}
       `
       );
