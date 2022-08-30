@@ -19,7 +19,7 @@
   } from "$lib/util/humanize-numbers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
-  import Leaderboard, { dimensionId } from "./Leaderboard.svelte";
+  import Leaderboard from "./Leaderboard.svelte";
   import { getMapFromArray } from "$common/utils/arrayUtils";
 
   export let metricsDefId: string;
