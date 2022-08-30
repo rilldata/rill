@@ -9,7 +9,6 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import {
-    invalidateMetricViewData,
     useMetaQuery,
     useTotalsQuery,
   } from "$lib/svelte-query/queries/metric-view";
@@ -85,7 +84,6 @@
       item.id,
       event.detail.label
     );
-    invalidateMetricViewData(queryClient, metricsDefId);
   }
 
   function onLeaderboardValues(event) {

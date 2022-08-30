@@ -47,7 +47,7 @@
           </div>
         {:else if status === EntityStatus.Error}
           <CrossIcon />
-        {:else}
+        {:else if status === EntityStatus.Running}
           <div
             class="absolute p-2"
             in:receive|local={{ key: "spinner" }}

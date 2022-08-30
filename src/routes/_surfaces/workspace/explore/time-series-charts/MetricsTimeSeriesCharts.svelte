@@ -38,14 +38,11 @@
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
   let totalsQuery;
-  $: console.log("CHANGING FILTERS", metricsExplorer?.filters);
+
   $: if (metaQuery && $metaQuery.isSuccess) {
     totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
-      filter: {
-        include: metricsExplorer?.filters?.include,
-        exclude: metricsExplorer?.filters?.exclude,
-      },
+      filter: metricsExplorer?.filters,
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
@@ -125,10 +122,9 @@
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery.isSuccess}
-      {#each $metaQuery.data.measures as measure, index (measure.id)}
+      {#each $metaQuery.data.measures as measure (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}
-
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
           value={bigNum}

@@ -15,10 +15,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
-  import {
-    invalidateMetricViewData,
-    useMetaQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
   import {
@@ -126,7 +123,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       return;
 
     metricsExplorerStore.setSelectedTimeRange(metricsDefId, newTimeRange);
-    invalidateMetricViewData(queryClient, metricsDefId);
   };
 
   // reactive statement that makes a new valid time range whenever the selected options change

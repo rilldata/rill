@@ -5,22 +5,22 @@ The main feature-set component for dashboard filters
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
 
+  import type {
+    MetricViewDimensionValues,
+    MetricViewRequestFilter,
+  } from "$common/rill-developer-service/MetricViewActions";
+  import { getMapFromArray } from "$common/utils/arrayUtils";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import { Chip, ChipContainer, RemovableListChip } from "$lib/components/chip";
   import Filter from "$lib/components/icons/Filter.svelte";
   import FilterRemove from "$lib/components/icons/FilterRemove.svelte";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "$lib/application-state-stores/explorer-stores";
-  import type {
-    MetricViewDimensionValues,
-    MetricViewRequestFilter,
-  } from "$common/rill-developer-service/MetricViewActions";
   import { getDisplayName } from "../utils";
-  import { getMapFromArray } from "$common/utils/arrayUtils";
   export let metricsDefId;
 
   let metricsExplorer: MetricsExplorerEntity;
@@ -45,7 +45,9 @@ The main feature-set component for dashboard filters
   $: hasFilters = isFiltered(metricsExplorer?.filters);
 
   function clearAllFilters() {
-    if (hasFilters) metricsExplorerStore.clearFilters(metricsDefId);
+    if (hasFilters) {
+      metricsExplorerStore.clearFilters(metricsDefId);
+    }
   }
 
   /** prune the values and prepare for for templating */

@@ -204,6 +204,7 @@ export const useTotalsQuery = (
 ) => {
   const totalsQueryKey = getTotalsQueryKey(metricViewId, request);
   const totalsQueryFn = () => getMetricsViewTotals(metricViewId, request);
+
   return useQuery<MetricViewTotalsResponse, Error>(
     totalsQueryKey,
     totalsQueryFn,
@@ -221,7 +222,6 @@ export const invalidateMetricView = async (
   metricViewId: string
 ) => {
   // wait for meta to be invalidated
-  console.log("invalidateMetricView", metricViewId);
   await queryClient.invalidateQueries([MetaId, metricViewId]);
   // invalidateMetricViewData(queryClient, metricViewId);
 };

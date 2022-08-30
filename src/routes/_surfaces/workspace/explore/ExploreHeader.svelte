@@ -29,6 +29,7 @@
         metricsDefId,
       ]);
     } else {
+      // FIXME: understand this logic before removing invalidateMetricViewData
       invalidateMetricViewData(queryClient, metricsDefId);
     }
     metricsExplorerStore.sync(metricsDefId, $metaQuery.data);

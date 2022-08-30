@@ -143,10 +143,8 @@ const metricViewReducers = {
 
   clearFilters(id: string) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      metricsExplorer.filters = {
-        include: [],
-        exclude: [],
-      };
+      metricsExplorer.filters.include = [];
+      metricsExplorer.filters.exclude = [];
     });
   },
 
