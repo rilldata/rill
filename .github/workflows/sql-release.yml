@@ -53,7 +53,8 @@ jobs:
       - name: Create archive
         shell: bash
         run: |
-          zip -j librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip sql/target/graal_isolate.h sql/target/librillsql.(h|dll|dylib|lib|so)
+          rm sql/target/*.txt
+          zip -j librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip sql/target/librillsql.* sql/target/graal_isolate.*
       - name: Upload archive
         uses: google-github-actions/upload-cloud-storage@v0
         with:
