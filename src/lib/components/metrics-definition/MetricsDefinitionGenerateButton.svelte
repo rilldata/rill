@@ -1,20 +1,20 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
+  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
+  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import {
     generateMeasuresAndDimensionsApi,
     updateMetricsDefsWrapperApi,
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
-  import { store } from "$lib/redux-store/store-root";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import MetricsDefinitionGenerateButtonModal from "./MetricsDefinitionGenerateButtomModal.svelte";
-  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
-  import type { ProfileColumn } from "$lib/types";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+  import { store } from "$lib/redux-store/store-root";
+  import type { ProfileColumn } from "$lib/types";
+  import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
   $: selectedDimensions = getDimensionsByMetricsId(metricsDefId);
@@ -85,11 +85,6 @@
   };
 </script>
 
-<MetricsDefinitionGenerateButtonModal
-  open={modalIsOpen}
-  {closeModal}
-  generateCallback={handleGenerateClick}
-/>
 <Tooltip location="right" alignment="middle" distance={5}>
   <button
     disabled={buttonDisabled}
@@ -125,3 +120,10 @@
     </div>
   </TooltipContent>
 </Tooltip>
+
+{#if modalIsOpen}
+  <QuickMetricsModal
+    on:cancel={closeModal}
+    on:replace-metrics={handleGenerateClick}
+  />
+{/if}

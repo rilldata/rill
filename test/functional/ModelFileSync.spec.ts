@@ -13,6 +13,7 @@ import {
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
 import { FunctionalTestBase } from "./FunctionalTestBase";
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 
 const SYNC_TEST_FOLDER = "temp/model-sync-test";
 const MODEL_FOLDER = `${SYNC_TEST_FOLDER}/models`;
@@ -95,7 +96,7 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
   }
 
   @FunctionalTestBase.Test()
-  public async shouldRenameModelOnFileRename() {
+  public async shouldRenameModelOnFileCaseRename() {
     await this.clientDataModelerService.dispatch("addModel", [
       { name: "model_0", query: SingleTableQuery },
     ]);
@@ -194,5 +195,52 @@ export class ModelFileSyncSpec extends FunctionalTestBase {
     expect(model.tableName).toBe("model_0");
     expect(readFileSync(MODEL_0_FILE).toString()).toBe(SingleTableQuery);
     expect(existsSync(INVALID_FILE)).toBe(false);
+  }
+
+  @FunctionalTestBase.Test()
+  public async shouldSuccessfullyRenameUpdatingCase() {
+    const MODEL_UPPER_0_FILE = `${MODEL_FOLDER}/MODEL_0.sql`;
+
+    await this.clientDataModelerService.dispatch("addModel", [
+      { name: "model_0", query: SingleTableQuery },
+    ]);
+    await this.waitForModels();
+    const [model] = this.getModels("tableName", "model_0");
+
+    await this.clientDataModelerService.dispatch("updateModelName", [
+      model.id,
+      "MODEL_0",
+    ]);
+    await this.waitForModels();
+    // this will be true on a case insensitive file system
+    // expect(existsSync(MODEL_0_FILE)).toBe(false);
+    expect(existsSync(MODEL_UPPER_0_FILE)).toBe(true);
+    expect(readFileSync(MODEL_UPPER_0_FILE).toString()).toBe(SingleTableQuery);
+  }
+
+  @FunctionalTestBase.Test()
+  public async shouldNotRenameOtherModelWithSameCase() {
+    await this.clientDataModelerService.dispatch("addModel", [
+      { name: "model_0", query: SingleTableQuery },
+    ]);
+    await this.clientDataModelerService.dispatch("addModel", [
+      { name: "model_1", query: TwoTableJoinQuery },
+    ]);
+    await this.waitForModels();
+
+    const [model] = this.getModels("tableName", "model_1");
+
+    // try to rename to another model but with a different case
+    const resp = await this.clientDataModelerService.dispatch(
+      "updateModelName",
+      [model.id, "MODEL_0"]
+    );
+    expect(resp.status).toBe(ActionStatus.Failure);
+    await this.waitForModels();
+
+    expect(existsSync(MODEL_0_FILE)).toBe(true);
+    expect(readFileSync(MODEL_0_FILE).toString()).toBe(SingleTableQuery);
+    expect(existsSync(MODEL_1_FILE)).toBe(true);
+    expect(readFileSync(MODEL_1_FILE).toString()).toBe(TwoTableJoinQuery);
   }
 }

@@ -1,6 +1,9 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    duplicateSourceName,
+  } from "$lib/application-state-stores/application-store";
   import {
     assetsVisible,
     assetVisibilityTween,
@@ -117,7 +120,9 @@
   <FileDrop bind:showDropOverlay />
 {/if}
 
-<DuplicateSource />
+{#if $duplicateSourceName !== null}
+  <DuplicateSource />
+{/if}
 
 <div
   class="index-body absolute w-screen h-screen bg-gray-100"
