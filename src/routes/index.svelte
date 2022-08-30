@@ -3,6 +3,7 @@
   import {
     ApplicationStore,
     config,
+    duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
   import {
     assetsVisible,
@@ -124,7 +125,9 @@
   <FileDrop bind:showDropOverlay />
 {/if}
 
-<DuplicateSource />
+{#if $duplicateSourceName !== null}
+  <DuplicateSource />
+{/if}
 
 <div
   class="index-body absolute w-screen h-screen bg-gray-100"

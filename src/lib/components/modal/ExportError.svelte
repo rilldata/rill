@@ -1,23 +1,14 @@
 <script lang="ts">
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import ModalAction from "$lib/components/modal/ModalAction.svelte";
-  import ModalActions from "$lib/components/modal/ModalActions.svelte";
-  import ModalContent from "$lib/components/modal/ModalContent.svelte";
-  import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
+  import Button from "../button/Button.svelte";
+  import { Dialog } from "../modal";
 
-  export let showExportErrorModal = false;
   export let exportErrorMessage = "";
 </script>
 
-<Modal
-  open={showExportErrorModal}
-  onBackdropClick={() => (showExportErrorModal = false)}
->
-  <ModalTitle>export error</ModalTitle>
-  <ModalContent>{exportErrorMessage}</ModalContent>
-  <ModalActions>
-    <ModalAction on:click={() => (showExportErrorModal = false)}>
-      close
-    </ModalAction>
-  </ModalActions>
-</Modal>
+<Dialog>
+  <svelte:fragment slot="title">Export error</svelte:fragment>
+  <svelte:fragment slot="body">{exportErrorMessage}</svelte:fragment>
+  <svelte:fragment slot="footer">
+    <Button type="text">close</Button>
+  </svelte:fragment>
+</Dialog>
