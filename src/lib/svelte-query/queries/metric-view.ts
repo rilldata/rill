@@ -169,6 +169,7 @@ export const useGetMetricViewTopList = (
           request.time
         ) &&
         (!("enabled" in queryOptions) || queryOptions.enabled),
+      refetchOnMount: true,
     }
   ) as UseQueryStoreResult<MetricViewTopListResponse, Error>;
   return {

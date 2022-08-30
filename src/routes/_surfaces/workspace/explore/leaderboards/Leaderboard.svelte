@@ -34,6 +34,7 @@
   import type { Readable } from "svelte/store";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+  import { createEventDispatcher } from "svelte";
   export let metricsDefId: string;
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -49,6 +50,8 @@
   export let slice = 7;
   export let seeMoreSlice = 50;
   let seeMore = false;
+
+  const dispatch = createEventDispatcher();
 
   $: metaQuery = useGetMetricViewMeta(metricsDefId);
 
@@ -68,6 +71,13 @@
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
+  function setLeaderboardValues(values) {
+    dispatch("leaderboard-value", {
+      dimensionId,
+      values,
+    });
+  }
+
   $: topListQuery = useGetMetricViewTopList(
     metricsDefId,
     dimensionId,
@@ -86,16 +96,20 @@
       enabled: $metaQuery?.isFetched,
     }
   );
+
   let values = [];
 
   /** replace data after fetched. */
-  $: if (!$topListQuery.isFetching) values = $topListQuery.data?.data ?? [];
+  $: if (!$topListQuery.isFetching) {
+    values = $topListQuery.data?.data ?? [];
+    setLeaderboardValues(values);
+  }
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
   // });
 
-  $: if (values)
+  $: if (values) {
     values = formatPreset
       ? humanizeGroupValues(values, formatPreset, {
           scale: leaderboardFormatScale,
@@ -103,6 +117,7 @@
       : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE, {
           scale: leaderboardFormatScale,
         });
+  }
 
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.

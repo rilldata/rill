@@ -18,10 +18,10 @@ import { DatabaseActionQueuePriority } from "$common/priority-action-queue/Datab
 import type { MetricsDefinitionContext } from "$common/rill-developer-service/MetricsDefinitionActions";
 import { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
-import { getMapFromArray } from "$common/utils/getMapFromArray";
 import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
 import type { RollupInterval } from "$common/database-service/DatabaseColumnActions";
 import { ExplorerSourceModelDoesntExist } from "$common/errors/ErrorMessages";
+import { getMapFromArray } from "$common/utils/arrayUtils";
 
 export interface MetricViewMetaResponse {
   id?: string;

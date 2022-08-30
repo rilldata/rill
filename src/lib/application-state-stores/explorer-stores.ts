@@ -25,7 +25,6 @@ export interface MetricsExplorerEntity {
   selectedMeasureIds: Array<string>;
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
-  leaderboards: Array<LeaderboardValues>;
   filters: MetricViewRequestFilter;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
@@ -76,23 +75,11 @@ const metricViewReducers = {
         metricsExplorer.selectedMeasureIds = meta.measures.map(
           (measure) => measure.id
         );
-
-        metricsExplorer.leaderboards = meta.dimensions.map((dimension) => ({
-          dimensionId: dimension.id,
-          values:
-            metricsExplorer.leaderboards.find(
-              (dimensionValues) => dimensionValues.dimensionId === dimension.id
-            )?.values ?? [],
-        }));
       },
       () => ({
         id,
         selectedMeasureIds: meta.measures.map((measure) => measure.id),
         leaderboardMeasureId: meta.measures[0]?.id,
-        leaderboards: meta.dimensions.map((dimension) => ({
-          dimensionId: dimension.id,
-          values: [],
-        })),
         filters: {
           include: [],
           exclude: [],
@@ -175,9 +162,6 @@ const metricViewReducers = {
       );
     });
   },
-
-  // TODO: set this to update humanize numbers
-  // setLeaderboardValues() {},
 };
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   typeof metricViewReducers = {
