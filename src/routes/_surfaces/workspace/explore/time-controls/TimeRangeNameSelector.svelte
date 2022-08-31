@@ -4,16 +4,17 @@
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
   import { FloatingElement } from "$lib/components/floating-element";
+  import Calendar from "$lib/components/icons/Calendar.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
+  import { updateSelectedTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis";
   import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
+  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
+  import { store } from "$lib/redux-store/store-root";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { createEventDispatcher, tick } from "svelte";
-  import { prettyFormatTimeRange } from "./time-range-utils";
   import type { Readable } from "svelte/store";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { updateSelectedTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis";
-  import { store } from "$lib/redux-store/store-root";
+  import { prettyFormatTimeRange } from "./time-range-utils";
 
   export let metricsDefId: string;
 
@@ -66,15 +67,18 @@
 
 <button
   bind:this={target}
-  class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
+  class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
   on:click={buttonClickHandler}
 >
   <div class="flex flew-row gap-x-3">
-    <span class="font-bold">
+    <div class="font-bold flex flex-row items-center gap-x-3">
       <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-      {selectedTimeRangeName ?? "Select a time range"}
-    </span>
-    <span>
+      <span class="text-gray-600"><Calendar size="16px" /></span>
+      <span style:transform="translateY(1px)">
+        {selectedTimeRangeName ?? "Select a time range"}
+      </span>
+    </div>
+    <span style:transform="translateY(1px)">
       {prettyFormatTimeRange($metricsExplorer?.selectedTimeRange)}
     </span>
   </div>
