@@ -9,8 +9,8 @@ export function createQueryClient() {
     defaultOptions: {
       queries: {
         refetchOnMount: false,
-        refetchOnReconnect: true,
-        refetchOnWindowFocus: true, // though `false` is handy for development
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
         placeholderData: {},
       },
     },
