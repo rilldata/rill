@@ -13,13 +13,7 @@ import type {
   MetricViewTotalsResponse,
 } from "$common/rill-developer-service/MetricViewActions";
 import { config } from "$lib/application-state-stores/application-store";
-import { queriesRepository } from "$lib/svelte-query/queries/QueriesRepository";
-import {
-  QueryClient,
-  useQuery,
-  UseQueryOptions,
-  UseQueryStoreResult,
-} from "@sveltestack/svelte-query";
+import { QueryClient, useQuery } from "@sveltestack/svelte-query";
 
 async function fetchUrl(path: string, method: string, body?) {
   const resp = await fetch(`${config.server.serverUrl}/api/v1/${path}`, {
@@ -82,26 +76,20 @@ export const getTimeSeriesQueryKey = (
 
 export const useTimeSeriesQuery = (
   metricViewId: string,
-  request: MetricViewTimeSeriesRequest,
-  queryOptions: UseQueryOptions<MetricViewTimeSeriesResponse, Error> = {}
+  request: MetricViewTimeSeriesRequest
 ) => {
-  const queryKey =
-    queryOptions?.queryKey ?? getTimeSeriesQueryKey(metricViewId, request);
-  const queryFn = () => getMetricsViewTimeSeries(metricViewId, request);
-  const query = queriesRepository.useQuery<MetricViewTimeSeriesResponse, Error>(
-    queryKey,
-    queryFn,
-    {
-      ...queryOptions,
-      enabled:
-        !!(metricViewId && request.measures && request.time) &&
-        (!("enabled" in queryOptions) || queryOptions.enabled),
-    }
-  ) as UseQueryStoreResult<MetricViewTimeSeriesResponse, Error>;
-  return {
-    queryKey,
-    ...query,
+  const timeSeriesQueryKey = getTimeSeriesQueryKey(metricViewId, request);
+  const timeSeriesQueryFn = () =>
+    getMetricsViewTimeSeries(metricViewId, request);
+  const timeSeriesQueryOptions = {
+    staleTime: 1000 * 30,
+    enabled: !!(metricViewId && request.measures && request.time),
   };
+  return useQuery<MetricViewTimeSeriesResponse, Error>(
+    timeSeriesQueryKey,
+    timeSeriesQueryFn,
+    timeSeriesQueryOptions
+  );
 };
 
 // POST /api/v1/metric-views/{view-name}/toplist/{dimension}

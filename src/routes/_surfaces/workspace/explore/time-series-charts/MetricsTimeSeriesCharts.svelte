@@ -1,6 +1,7 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
+  import type { MetricViewTimeSeriesResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -18,6 +19,7 @@
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
@@ -38,7 +40,6 @@
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
   let totalsQuery;
-
   $: if (metaQuery && $metaQuery.isSuccess) {
     totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
@@ -50,9 +51,9 @@
     });
   }
 
-  $: timeSeriesQuery = useTimeSeriesQuery(
-    metricsDefId,
-    {
+  let timeSeriesQuery: UseQueryStoreResult<MetricViewTimeSeriesResponse, Error>;
+  $: if (metaQuery && $metaQuery.isSuccess) {
+    timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: metricsExplorer?.filters,
       time: {
@@ -60,11 +61,8 @@
         end: metricsExplorer?.selectedTimeRange?.end,
         granularity: metricsExplorer?.selectedTimeRange?.interval,
       },
-    },
-    {
-      enabled: $metaQuery?.isFetched,
-    }
-  );
+    });
+  }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
