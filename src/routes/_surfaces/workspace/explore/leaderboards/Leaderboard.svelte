@@ -22,8 +22,8 @@
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
-    useGetMetricViewMeta,
-    useGetMetricViewTopList,
+    useMetaQuery,
+    useTopListQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import { slideRight } from "$lib/transitions";
   import {
@@ -31,10 +31,10 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
+  import { createEventDispatcher } from "svelte";
   import type { Readable } from "svelte/store";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
-  import { createEventDispatcher } from "svelte";
   export let metricsDefId: string;
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -53,7 +53,7 @@
 
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
 
   let dimension: Readable<DimensionDefinitionEntity>;
 
@@ -78,10 +78,15 @@
     });
   }
 
-  $: topListQuery = useGetMetricViewTopList(
-    metricsDefId,
-    dimensionId,
-    {
+  let topListQuery;
+
+  $: if (
+    metricsExplorer?.leaderboardMeasureId &&
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
+  ) {
+    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
       measures: [metricsExplorer?.leaderboardMeasureId],
       limit: 10,
       offset: 0,
@@ -91,17 +96,14 @@
         end: metricsExplorer?.selectedTimeRange?.end,
       },
       filter: metricsExplorer?.filters,
-    },
-    {
-      enabled: $metaQuery?.isFetched,
-    }
-  );
+    });
+  }
 
   let values = [];
 
   /** replace data after fetched. */
-  $: if (!$topListQuery.isFetching) {
-    values = $topListQuery.data?.data ?? [];
+  $: if (!$topListQuery?.isFetching) {
+    values = $topListQuery?.data?.data ?? [];
     setLeaderboardValues(values);
   }
   /** figure out how many selected values are currently hidden */
@@ -140,89 +142,97 @@
     });
 </script>
 
-<LeaderboardContainer focused={atLeastOneActive}>
-  <LeaderboardHeader isActive={atLeastOneActive}>
-    <div
-      slot="title"
-      class:text-gray-500={atLeastOneActive}
-      class:italic={atLeastOneActive}
-    >
-      <Tooltip location="top" distance={16}>
-        <div class="flex flex-row gap-x-2 items-center">
-          {#if $topListQuery.isFetching}
-            <div transition:slideRight|local={{ leftOffset: 8 }}>
-              <Spinner size="16px" status={EntityStatus.Running} />
-            </div>
-          {/if}
-          {displayName}
-        </div>
-        <TooltipContent slot="tooltip-content">
-          <TooltipTitle>
-            <svelte:fragment slot="name">
-              {displayName}
-            </svelte:fragment>
-            <svelte:fragment slot="description">dimension</svelte:fragment>
-          </TooltipTitle>
-          <TooltipShortcutContainer>
-            <div>
-              {#if $dimension?.description}
-                {$dimension.description}
-              {:else}
-                the leaderboard metrics for {displayName}
-              {/if}
-            </div>
-          </TooltipShortcutContainer>
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  </LeaderboardHeader>
+{#if topListQuery}
+  <LeaderboardContainer focused={atLeastOneActive}>
+    <LeaderboardHeader isActive={atLeastOneActive}>
+      <div
+        slot="title"
+        class:text-gray-500={atLeastOneActive}
+        class:italic={atLeastOneActive}
+      >
+        <Tooltip location="top" distance={16}>
+          <div class="flex flex-row gap-x-2 items-center">
+            {#if $topListQuery?.isFetching}
+              <div transition:slideRight|local={{ leftOffset: 8 }}>
+                <Spinner size="16px" status={EntityStatus.Running} />
+              </div>
+            {/if}
+            {displayName}
+          </div>
+          <TooltipContent slot="tooltip-content">
+            <TooltipTitle>
+              <svelte:fragment slot="name">
+                {displayName}
+              </svelte:fragment>
+              <svelte:fragment slot="description">dimension</svelte:fragment>
+            </TooltipTitle>
+            <TooltipShortcutContainer>
+              <div>
+                {#if $dimension?.description}
+                  {$dimension.description}
+                {:else}
+                  the leaderboard metrics for {displayName}
+                {/if}
+              </div>
+            </TooltipShortcutContainer>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </LeaderboardHeader>
 
-  {#if values}
-    <LeaderboardList>
-      <!-- place the leaderboard entries that are above the fold here -->
-      <LeaderboardEntrySet
-        loading={$topListQuery.isFetching}
-        values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
-        {activeValues}
-        {atLeastOneActive}
-        {referenceValue}
-        {isSummableMeasure}
-        on:select-item
-      />
-      <!-- place the selected values that are not above the fold here -->
-      {#if selectedValuesThatAreBelowTheFold?.length}
-        <hr />
+    {#if values}
+      <LeaderboardList>
+        <!-- place the leaderboard entries that are above the fold here -->
         <LeaderboardEntrySet
-          loading={$topListQuery.isFetching}
-          values={selectedValuesThatAreBelowTheFold}
+          loading={$topListQuery?.isFetching}
+          values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
           {activeValues}
           {atLeastOneActive}
           {referenceValue}
           {isSummableMeasure}
           on:select-item
         />
-        <hr />
-      {/if}
-      {#if values.length === 0}
-        <div class="p-1 italic text-gray-500">no available values</div>
-      {/if}
+        <!-- place the selected values that are not above the fold here -->
+        {#if selectedValuesThatAreBelowTheFold?.length}
+          <hr />
+          <LeaderboardEntrySet
+            loading={$topListQuery?.isFetching}
+            values={selectedValuesThatAreBelowTheFold}
+            {activeValues}
+            {atLeastOneActive}
+            {referenceValue}
+            {isSummableMeasure}
+            on:select-item
+          />
+          <hr />
+        {/if}
+        {#if $topListQuery?.isError}
+          <div class="text-red-500">
+            {$topListQuery?.error}
+          </div>
+        {:else if values.length === 0}
+          <div class="p-1 italic text-gray-500">no available values</div>
+        {/if}
 
-      {#if values.length > slice}
-        <Tooltip location="right">
-          <LeaderboardListItem
-            value={0}
-            color="bg-gray-100"
-            on:click={() => {
-              seeMore = !seeMore;
-            }}
-          >
-            <div class="italic text-gray-500" slot="title">
-              See {#if seeMore}Less{:else}More{/if}
-            </div>
-          </LeaderboardListItem>
-          <TooltipContent slot="tooltip-content">See More Items</TooltipContent>
-        </Tooltip>
-      {/if}
-    </LeaderboardList>
-  {/if}
-</LeaderboardContainer>
+        {#if values.length > slice}
+          <Tooltip location="right">
+            <LeaderboardListItem
+              value={0}
+              color="bg-gray-100"
+              on:click={() => {
+                seeMore = !seeMore;
+              }}
+            >
+              <div class="italic text-gray-500" slot="title">
+                See {#if seeMore}Less{:else}More{/if}
+              </div>
+            </LeaderboardListItem>
+            <TooltipContent slot="tooltip-content"
+              >See More Items</TooltipContent
+            >
+          </Tooltip>
+        {/if}
+      </LeaderboardList>
+    {/if}
+  </LeaderboardContainer>
+{/if}

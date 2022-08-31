@@ -6,15 +6,15 @@
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { SelectMenu } from "$lib/components/menu";
-  import { useGetMetricViewMeta } from "$lib/svelte-query/queries/metric-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
 
   export let metricsDefId;
 
   // query the `/meta` endpoint to get the valid measures
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
-  $: measures = $metaQuery.data.measures;
+  $: metaQuery = useMetaQuery(metricsDefId);
+  $: measures = $metaQuery.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];

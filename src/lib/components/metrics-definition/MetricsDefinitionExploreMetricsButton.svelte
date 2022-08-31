@@ -6,14 +6,14 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { useGetMetricViewMeta } from "$lib/svelte-query/queries/metric-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
 
   export let metricsDefId: string;
 
   // query the `/meta` endpoint to get the valid measures and dimensions
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
-  $: measures = $metaQuery.data.measures;
-  $: dimensions = $metaQuery.data.dimensions;
+  $: metaQuery = useMetaQuery(metricsDefId);
+  $: measures = $metaQuery.data?.measures;
+  $: dimensions = $metaQuery.data?.dimensions;
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
 
@@ -25,7 +25,7 @@
   ) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
-  } else if (measures.length === 0 || dimensions.length === 0) {
+  } else if (measures?.length === 0 || dimensions?.length === 0) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
   } else {

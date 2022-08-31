@@ -1,6 +1,7 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
+  import type { MetricViewTimeSeriesResponse } from "$common/rill-developer-service/MetricViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -11,13 +12,14 @@
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import {
-    useGetMetricViewMeta,
-    useGetMetricViewTimeSeries,
-    useGetMetricViewTotals,
+    useMetaQuery,
+    useTimeSeriesQuery,
+    useTotalsQuery,
   } from "$lib/svelte-query/queries/metric-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
@@ -31,31 +33,37 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useGetMetricViewMeta(metricsDefId);
+  $: metaQuery = useMetaQuery(metricsDefId);
 
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
-  $: totalsQuery = useGetMetricViewTotals(
-    metricsDefId,
-    {
+  let totalsQuery;
+  $: if (
+    metricsExplorer &&
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
+  ) {
+    totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: metricsExplorer?.filters,
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-    },
-    false,
-    {
-      enabled: $metaQuery?.isFetched,
-    }
-  );
+    });
+  }
 
-  $: timeSeriesQuery = useGetMetricViewTimeSeries(
-    metricsDefId,
-    {
+  let timeSeriesQuery: UseQueryStoreResult<MetricViewTimeSeriesResponse, Error>;
+  $: if (
+    metricsExplorer &&
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
+  ) {
+    timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: metricsExplorer?.filters,
       time: {
@@ -63,11 +71,8 @@
         end: metricsExplorer?.selectedTimeRange?.end,
         granularity: metricsExplorer?.selectedTimeRange?.interval,
       },
-    },
-    {
-      enabled: $metaQuery?.isFetched,
-    }
-  );
+    });
+  }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -75,7 +80,7 @@
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
   let dataCopy;
-  $: if ($timeSeriesQuery.data?.data) dataCopy = $timeSeriesQuery.data.data;
+  $: if ($timeSeriesQuery?.data?.data) dataCopy = $timeSeriesQuery.data.data;
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
@@ -124,11 +129,10 @@
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
-    {#if $metaQuery.data?.measures && $totalsQuery.isSuccess}
-      {#each $metaQuery.data.measures as measure, index (measure.id)}
+    {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
+      {#each $metaQuery.data?.measures as measure (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}
-
+        {@const bigNum = $totalsQuery?.data.data?.[measure.sqlName]}
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
           value={bigNum}
@@ -136,7 +140,7 @@
             measure?.label ||
             measure?.expression}
           formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
-          status={$totalsQuery.isFetching
+          status={$totalsQuery?.isFetching
             ? EntityStatus.Running
             : EntityStatus.Idle}
         >

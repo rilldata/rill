@@ -8,9 +8,10 @@ export function createQueryClient() {
   queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        refetchOnWindowFocus: false,
-        refetchOnMount: true,
+        refetchOnMount: false,
         refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+        retry: false,
         placeholderData: {},
       },
     },

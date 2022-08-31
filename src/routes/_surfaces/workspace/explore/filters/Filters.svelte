@@ -5,22 +5,22 @@ The main feature-set component for dashboard filters
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
 
+  import type {
+    MetricViewDimensionValues,
+    MetricViewRequestFilter,
+  } from "$common/rill-developer-service/MetricViewActions";
+  import { getMapFromArray } from "$common/utils/arrayUtils";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import { Chip, ChipContainer, RemovableListChip } from "$lib/components/chip";
   import Filter from "$lib/components/icons/Filter.svelte";
   import FilterRemove from "$lib/components/icons/FilterRemove.svelte";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "$lib/application-state-stores/explorer-stores";
-  import type {
-    MetricViewDimensionValues,
-    MetricViewRequestFilter,
-  } from "$common/rill-developer-service/MetricViewActions";
   import { getDisplayName } from "../utils";
-  import { getMapFromArray } from "$common/utils/arrayUtils";
   export let metricsDefId;
 
   let metricsExplorer: MetricsExplorerEntity;
@@ -45,7 +45,9 @@ The main feature-set component for dashboard filters
   $: hasFilters = isFiltered(metricsExplorer?.filters);
 
   function clearAllFilters() {
-    if (hasFilters) metricsExplorerStore.clearFilters(metricsDefId);
+    if (hasFilters) {
+      metricsExplorerStore.clearFilters(metricsDefId);
+    }
   }
 
   /** prune the values and prepare for for templating */
@@ -74,7 +76,7 @@ The main feature-set component for dashboard filters
 </script>
 
 <section
-  class="pt-3 pb-3 grid gap-x-2"
+  class="pl-2 pt-2 pb-3 grid gap-x-2"
   style:grid-template-columns="max-content auto"
   style:min-height="44px"
 >
@@ -85,7 +87,7 @@ The main feature-set component for dashboard filters
     class:text-gray-400={!hasFilters}
     class:text-gray-800={hasFilters}
   >
-    <Filter size="18px" />
+    <Filter size="16px" />
   </div>
   {#if currentDimensionFilters?.length}
     <ChipContainer>
@@ -127,7 +129,7 @@ The main feature-set component for dashboard filters
   {:else if currentDimensionFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
-      class="italic text-gray-400 ml-1 grid items-center"
+      class="italic text-gray-400  grid items-center"
       style:min-height="26px"
     >
       no filters selected
