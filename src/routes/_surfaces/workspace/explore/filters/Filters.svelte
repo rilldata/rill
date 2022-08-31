@@ -83,7 +83,7 @@ The main feature-set component for dashboard filters
 </script>
 
 <section
-  class="pt-3 pb-3 grid gap-x-2"
+  class="pl-2 pt-2 pb-3 grid gap-x-2"
   style:grid-template-columns="max-content auto"
   style:min-height="44px"
 >
@@ -94,7 +94,7 @@ The main feature-set component for dashboard filters
     class:text-gray-400={!hasFilters}
     class:text-gray-800={hasFilters}
   >
-    <Filter size="18px" />
+    <Filter size="16px" />
   </div>
   {#if currentDimensionFilters?.length}
     <ChipContainer>
@@ -136,7 +136,7 @@ The main feature-set component for dashboard filters
   {:else if currentDimensionFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
-      class="italic text-gray-400 ml-1 grid items-center"
+      class="italic text-gray-400  grid items-center"
       style:min-height="26px"
     >
       no filters selected
