@@ -12,7 +12,7 @@ public class StaticTable extends AbstractTable
 {
   private final List<JsonColumn> columns;
 
-  public StaticTable(JsonTable table)
+  public StaticTable(JsonDbEntity table)
   {
     columns = table.columns;
   }

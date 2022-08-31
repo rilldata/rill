@@ -11,7 +11,7 @@ public class StaticSchema extends AbstractSchema
   Map<String, Table> tables = new HashMap<>();
 
   public StaticSchema(JsonSchema schema) {
-    for (JsonTable table : schema.tables) {
+    for (JsonDbEntity table : schema.entities) {
       tables.put(table.name, new StaticTable(table));
     }
   }

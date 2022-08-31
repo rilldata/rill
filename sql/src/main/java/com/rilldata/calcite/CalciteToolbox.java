@@ -199,6 +199,8 @@ public class CalciteToolbox
     Set<String> seen = new HashSet<>();
     List<MigrationStep> steps = existing.values().stream().filter(s -> s.getType() != null).map(s -> new MigrationStep(s.getName(), s.getType())).collect(
         Collectors.toList());
+    steps.addAll(ast.values().stream().filter(s -> s.ddl != null).map(s -> new MigrationStep(s.ddl)).collect(
+        Collectors.toList()));
 
     for (Statement create : ast.values()) {
       if (existing.keySet().contains(create.getName())) {
@@ -286,26 +288,24 @@ public class CalciteToolbox
     SqlNodeList list = (SqlNodeList) node;
     return list.stream().map(n -> {
       Statement statement = new Statement();
-      if (n instanceof SqlCreateTable) {
-        SqlCreateTable t = (SqlCreateTable) n;
+      if (n instanceof SqlCreateTable t) {
         statement.name = t.name.toString();
-        statement.ddl = node.toSqlString(sqlDialect).toString();
-      } else if (n instanceof SqlCreateView) {
-        SqlCreateView v = (SqlCreateView) n;
+        statement.ddl = n.toSqlString(sqlDialect).toString();
+      } else if (n instanceof SqlCreateView v) {
         statement.name = v.name.toString();
-        statement.ddl = node.toSqlString(sqlDialect).toString();
+        statement.ddl = n.toSqlString(sqlDialect).toString();
       }
       return statement;
-    }).collect(Collectors.toMap(Statement::getName, Function.identity()));
+    }).collect(Collectors.toMap(Statement::getName, Function.identity(), (x, y) -> y, LinkedHashMap::new));
   }
 
   private static Map<String, Statement> toStatementsMap(String str, SqlDialect dialect) throws JsonProcessingException
   {
     JsonSchema schema = getObjectMapper().readValue(str, JsonSchema.class);
-    return schema.tables.stream().map(table -> {
+    return schema.entities.stream().map(entity -> {
       Statement statement = new Statement();
-      statement.name = table.name;
-      statement.ddl = table.ddl;
+      statement.name = entity.name;
+      statement.ddl = entity.ddl;
       try {
         statement.node = parseStmt(statement.ddl);
         if (statement.node instanceof SqlCreateView view) {

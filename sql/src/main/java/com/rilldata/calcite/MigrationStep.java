@@ -8,4 +8,9 @@ public class MigrationStep
   {
     ddl = "DROP " + type + " " + name;
   }
+
+  public MigrationStep(String ddl)
+  {
+    this.ddl = ddl;
+  }
 }

@@ -4,6 +4,6 @@ import java.util.List;
 
 public class JsonSchema
 {
-  public List<JsonTable> tables;
+  public List<JsonDbEntity> entities;
   public List<String> artifacts;
 }
