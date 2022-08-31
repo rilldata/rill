@@ -46,6 +46,7 @@
     $timeSeries?.values ?? [],
     (d: TimeSeriesValue) => d.ts
   );
+
   $: startValue = removeTimezoneOffset(new Date(minVal));
   $: endValue = removeTimezoneOffset(new Date(maxVal));
 </script>
@@ -88,6 +89,10 @@
     {#each $allMeasures as measure, index (measure.id)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $bigNumbers?.bigNumbers?.[`measure_${index}`]}
+      {@const yExtents = extent(
+        $timeSeries?.values ?? [],
+        (d) => d[`measure_${index}`]
+      )}
 
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
@@ -114,6 +119,7 @@
             accessor={`measure_${index}`}
             mouseover={point}
             {key}
+            yMin={yExtents[0] < 0 ? yExtents[0] : 0}
             start={startValue}
             end={endValue}
           />
