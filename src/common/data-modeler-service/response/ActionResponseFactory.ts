@@ -25,6 +25,13 @@ export class ActionResponseFactory {
       ...(data !== undefined ? { data } : {}),
     };
   }
+  public static getRawResponse(data?: Record<any, any>): ActionResponse {
+    return {
+      messages: [],
+      status: ActionStatus.Success,
+      ...data,
+    };
+  }
 
   public static getErrorResponse(error: Error & TypedError): ActionResponse {
     return {

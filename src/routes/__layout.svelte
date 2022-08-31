@@ -14,7 +14,12 @@
   import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
   import { initMetrics } from "$lib/metrics/initMetrics";
   import { syncApplicationState } from "$lib/redux-store/application/application-apis";
+  import {
+    createQueryClient,
+    queryClient,
+  } from "$lib/svelte-query/globalQueryClient";
   import type { ApplicationMetadata } from "$lib/types";
+  import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { onMount, setContext } from "svelte";
   import "../app.css";
   import "../fonts.css";
@@ -41,6 +46,8 @@
     syncApplicationState(store);
   }
 
+  createQueryClient();
+
   onMount(() => {
     initMetrics();
   });
@@ -58,8 +65,10 @@
   $: debounceRunstate($store?.status || "disconnected");
 </script>
 
-<div class="body">
-  <slot />
-</div>
+<QueryClientProvider client={queryClient}>
+  <div class="body">
+    <slot />
+  </div>
+</QueryClientProvider>
 
 <NotificationCenter />

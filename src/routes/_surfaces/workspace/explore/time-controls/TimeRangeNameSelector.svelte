@@ -3,31 +3,54 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "$common/database-service/DatabaseTimeSeriesActions";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import { FloatingElement } from "$lib/components/floating-element";
   import Calendar from "$lib/components/icons/Calendar.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
-  import { updateSelectedTimeRangeNameApi } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { store } from "$lib/redux-store/store-root";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { createEventDispatcher, tick } from "svelte";
-  import type { Readable } from "svelte/store";
-  import { prettyFormatTimeRange } from "./time-range-utils";
+  import {
+    getSelectableTimeRangeNames,
+    makeTimeRanges,
+    prettyFormatTimeRange,
+  } from "./time-range-utils";
 
   export let metricsDefId: string;
+  export let selectedTimeRangeName: TimeRangeName;
 
   const dispatch = createEventDispatcher();
+  const EVENT_NAME = "select-time-range-name";
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-  $: selectableTimeRanges = $metricsExplorer?.selectableTimeRanges ?? [];
 
-  let selectedTimeRangeName: TimeRangeName;
-  $: selectedTimeRangeName = $metricsExplorer?.selectedTimeRange?.name;
+  // query the `/meta` endpoint to get the all time range of the dataset
+  $: metaQuery = useMetaQuery(metricsDefId);
+  $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
+
+  // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
+  const getSelectableTimeRanges = (
+    allTimeRangeInDataset: TimeSeriesTimeRange
+  ) => {
+    const selectableTimeRangeNames = getSelectableTimeRangeNames(
+      allTimeRangeInDataset
+    );
+    const selectableTimeRanges = makeTimeRanges(
+      selectableTimeRangeNames,
+      allTimeRangeInDataset
+    );
+    return selectableTimeRanges;
+  };
+  $: if (allTimeRange) {
+    selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
+  }
 
   /// Start boilerplate for DIY Dropdown menu ///
   let timeRangeNameMenu;
@@ -53,15 +76,7 @@
 
   const onTimeRangeSelect = (timeRangeName: TimeRangeName) => {
     timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
-    store.dispatch(
-      updateSelectedTimeRangeNameApi({
-        metricsDefId,
-        timeRangeName,
-      })
-    );
-    dispatch("select-time-range-name", {
-      timeRangeName,
-    });
+    dispatch(EVENT_NAME, { timeRangeName });
   };
 </script>
 
@@ -79,7 +94,7 @@
       </span>
     </div>
     <span style:transform="translateY(1px)">
-      {prettyFormatTimeRange($metricsExplorer?.selectedTimeRange)}
+      {prettyFormatTimeRange(metricsExplorer?.selectedTimeRange)}
     </span>
   </div>
   <span class="transition-transform" class:-rotate-180={timeRangeNameMenuOpen}>

@@ -11,7 +11,6 @@ import { ActionDefinitionError } from "$common/errors/ActionDefinitionError";
 import type { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import type { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import type { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
-import type { MetricsExplorerActions } from "$common/rill-developer-service/MetricsExplorerActions";
 import type { RillDeveloperActions } from "$common/rill-developer-service/RillDeveloperActions";
 import { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
 import type {
@@ -19,13 +18,14 @@ import type {
   PickActionFunctions,
 } from "$common/ServiceBase";
 import { getActionMethods } from "$common/ServiceBase";
+import type { MetricViewActions } from "$common/rill-developer-service/MetricViewActions";
 
 type RillDeveloperActionsClasses = PickActionFunctions<
   RillRequestContext<EntityType, StateType>,
   MetricsDefinitionActions &
     DimensionsActions &
     MeasuresActions &
-    MetricsExplorerActions
+    MetricViewActions
 >;
 export type RillDeveloperActionsDefinition = ExtractActionTypeDefinitions<
   RillRequestContext<EntityType, StateType>,
@@ -94,6 +94,7 @@ export class RillDeveloperService {
       if (!returnResponse)
         returnResponse = ActionResponseFactory.getSuccessResponse();
     } catch (err) {
+      console.error(err);
       returnResponse = ActionResponseFactory.getErrorResponse(err);
     }
 
