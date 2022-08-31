@@ -130,9 +130,11 @@
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-      {#each $metaQuery.data?.measures as measure (measure.id)}
+      {#each $metaQuery.data?.measures as measure, index (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.sqlName]}
+        {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
+
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
           value={bigNum}
@@ -160,6 +162,7 @@
               accessor={measure.sqlName}
               mouseover={point}
               {key}
+              yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}
             />
