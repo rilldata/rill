@@ -4,42 +4,36 @@
     duplicateSourceAction,
     duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import ModalAction from "$lib/components/modal/ModalAction.svelte";
-  import ModalActions from "$lib/components/modal/ModalActions.svelte";
-  import ModalContent from "$lib/components/modal/ModalContent.svelte";
-  import ModalTitle from "$lib/components/modal/ModalTitle.svelte";
+  import { createEventDispatcher } from "svelte";
+  import { Dialog } from ".";
+
+  const dispatch = createEventDispatcher();
+  function onCancel() {
+    $duplicateSourceName = null;
+    $duplicateSourceAction = DuplicateActions.Cancel;
+    dispatch("cancel");
+  }
 </script>
 
-<Modal open={$duplicateSourceName !== null} onBackdropClick={() => undefined}>
-  <ModalTitle>Duplicate Source Found</ModalTitle>
-  <ModalContent
-    >A source with the name <b>{$duplicateSourceName}</b> already exists</ModalContent
+<Dialog
+  showCancel
+  on:cancel={onCancel}
+  on:primary-action={() => {
+    $duplicateSourceName = null;
+    $duplicateSourceAction = DuplicateActions.KeepBoth;
+  }}
+  on:secondary-action={() => {
+    $duplicateSourceName = null;
+    $duplicateSourceAction = DuplicateActions.Overwrite;
+  }}
+>
+  <svelte:fragment slot="title">Duplicate source name</svelte:fragment>
+  <svelte:fragment slot="body">
+    A source with the name <b>{$duplicateSourceName}</b> already exists.
+  </svelte:fragment>
+
+  <svelte:fragment slot="secondary-action-body"
+    >Replace Existing Source</svelte:fragment
   >
-  <ModalActions>
-    <ModalAction
-      on:click={() => {
-        $duplicateSourceName = null;
-        $duplicateSourceAction = DuplicateActions.Overwrite;
-      }}
-    >
-      replace
-    </ModalAction>
-    <ModalAction
-      on:click={() => {
-        $duplicateSourceName = null;
-        $duplicateSourceAction = DuplicateActions.KeepBoth;
-      }}
-    >
-      keep both
-    </ModalAction>
-    <ModalAction
-      on:click={() => {
-        $duplicateSourceName = null;
-        $duplicateSourceAction = DuplicateActions.Cancel;
-      }}
-    >
-      cancel
-    </ModalAction>
-  </ModalActions>
-</Modal>
+  <svelte:fragment slot="primary-action-body">Keep Both</svelte:fragment>
+</Dialog>

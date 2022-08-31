@@ -1,0 +1,4620 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package com.rilldata.protobuf.generated;
+
+// Java Class: org.apache.calcite.rel.type.RelDataType
+message RelDataTypeProto {
+	oneof relDataTypeProto {
+		RelDataTypeImplProto relDataTypeImplProto = 1;
+		AbstractSqlTypeProto abstractSqlTypeProto = 2;
+		RelCrossTypeProto relCrossTypeProto = 3;
+		RelRecordTypeProto relRecordTypeProto = 4;
+		DynamicRecordTypeProto dynamicRecordTypeProto = 5;
+		MultisetSqlTypeProto multisetSqlTypeProto = 6;
+		ArraySqlTypeProto arraySqlTypeProto = 7;
+		MapSqlTypeProto mapSqlTypeProto = 8;
+		BasicSqlTypeProto basicSqlTypeProto = 9;
+		IntervalSqlTypeProto intervalSqlTypeProto = 10;
+		ObjectSqlTypeProto objectSqlTypeProto = 11;
+		JavaRecordTypeProto javaRecordTypeProto = 12;
+		DynamicRecordTypeImplProto dynamicRecordTypeImplProto = 13;
+	}
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeImpl
+message RelDataTypeImplProto {
+	oneof relDataTypeImplProto {
+		AbstractSqlTypeProto abstractSqlTypeProto = 1;
+		RelCrossTypeProto relCrossTypeProto = 2;
+		RelRecordTypeProto relRecordTypeProto = 3;
+		DynamicRecordTypeProto dynamicRecordTypeProto = 4;
+		MultisetSqlTypeProto multisetSqlTypeProto = 5;
+		ArraySqlTypeProto arraySqlTypeProto = 6;
+		MapSqlTypeProto mapSqlTypeProto = 7;
+		BasicSqlTypeProto basicSqlTypeProto = 8;
+		IntervalSqlTypeProto intervalSqlTypeProto = 9;
+		ObjectSqlTypeProto objectSqlTypeProto = 10;
+		JavaRecordTypeProto javaRecordTypeProto = 11;
+		DynamicRecordTypeImplProto dynamicRecordTypeImplProto = 12;
+	}
+	repeated RelDataTypeFieldProto fieldList = 13;
+	string digest = 14;
+}
+
+// Java Class: org.apache.calcite.sql.type.AbstractSqlType
+message AbstractSqlTypeProto {
+	oneof abstractSqlTypeProto {
+		MultisetSqlTypeProto multisetSqlTypeProto = 1;
+		ArraySqlTypeProto arraySqlTypeProto = 2;
+		MapSqlTypeProto mapSqlTypeProto = 3;
+		BasicSqlTypeProto basicSqlTypeProto = 4;
+		IntervalSqlTypeProto intervalSqlTypeProto = 5;
+		ObjectSqlTypeProto objectSqlTypeProto = 6;
+	}
+	SqlTypeNameProto typeName = 7;
+	bool isNullable = 8;
+	repeated RelDataTypeFieldProto fieldList = 9;
+	string digest = 10;
+}
+
+// Java Class: org.apache.calcite.sql.type.MultisetSqlType
+message MultisetSqlTypeProto {
+	RelDataTypeProto elementType = 1;
+	SqlTypeNameProto typeName = 2;
+	bool isNullable = 3;
+	repeated RelDataTypeFieldProto fieldList = 4;
+	string digest = 5;
+}
+
+enum SqlTypeNameProto { 
+	SqlTypeNameProto_BOOLEAN_ = 0;
+	SqlTypeNameProto_TINYINT_ = 1;
+	SqlTypeNameProto_SMALLINT_ = 2;
+	SqlTypeNameProto_INTEGER_ = 3;
+	SqlTypeNameProto_BIGINT_ = 4;
+	SqlTypeNameProto_DECIMAL_ = 5;
+	SqlTypeNameProto_FLOAT_ = 6;
+	SqlTypeNameProto_REAL_ = 7;
+	SqlTypeNameProto_DOUBLE_ = 8;
+	SqlTypeNameProto_DATE_ = 9;
+	SqlTypeNameProto_TIME_ = 10;
+	SqlTypeNameProto_TIME_WITH_LOCAL_TIME_ZONE_ = 11;
+	SqlTypeNameProto_TIMESTAMP_ = 12;
+	SqlTypeNameProto_TIMESTAMP_WITH_LOCAL_TIME_ZONE_ = 13;
+	SqlTypeNameProto_INTERVAL_YEAR_ = 14;
+	SqlTypeNameProto_INTERVAL_YEAR_MONTH_ = 15;
+	SqlTypeNameProto_INTERVAL_MONTH_ = 16;
+	SqlTypeNameProto_INTERVAL_DAY_ = 17;
+	SqlTypeNameProto_INTERVAL_DAY_HOUR_ = 18;
+	SqlTypeNameProto_INTERVAL_DAY_MINUTE_ = 19;
+	SqlTypeNameProto_INTERVAL_DAY_SECOND_ = 20;
+	SqlTypeNameProto_INTERVAL_HOUR_ = 21;
+	SqlTypeNameProto_INTERVAL_HOUR_MINUTE_ = 22;
+	SqlTypeNameProto_INTERVAL_HOUR_SECOND_ = 23;
+	SqlTypeNameProto_INTERVAL_MINUTE_ = 24;
+	SqlTypeNameProto_INTERVAL_MINUTE_SECOND_ = 25;
+	SqlTypeNameProto_INTERVAL_SECOND_ = 26;
+	SqlTypeNameProto_CHAR_ = 27;
+	SqlTypeNameProto_VARCHAR_ = 28;
+	SqlTypeNameProto_BINARY_ = 29;
+	SqlTypeNameProto_VARBINARY_ = 30;
+	SqlTypeNameProto_NULL_ = 31;
+	SqlTypeNameProto_UNKNOWN_ = 32;
+	SqlTypeNameProto_ANY_ = 33;
+	SqlTypeNameProto_SYMBOL_ = 34;
+	SqlTypeNameProto_MULTISET_ = 35;
+	SqlTypeNameProto_ARRAY_ = 36;
+	SqlTypeNameProto_MAP_ = 37;
+	SqlTypeNameProto_DISTINCT_ = 38;
+	SqlTypeNameProto_STRUCTURED_ = 39;
+	SqlTypeNameProto_ROW_ = 40;
+	SqlTypeNameProto_OTHER_ = 41;
+	SqlTypeNameProto_CURSOR_ = 42;
+	SqlTypeNameProto_COLUMN_LIST_ = 43;
+	SqlTypeNameProto_DYNAMIC_STAR_ = 44;
+	SqlTypeNameProto_GEOMETRY_ = 45;
+	SqlTypeNameProto_SARG_ = 46;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeField
+message RelDataTypeFieldProto {
+	oneof relDataTypeFieldProto {
+		RelDataTypeFieldImplProto relDataTypeFieldImplProto = 1;
+	}
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeFieldImpl
+message RelDataTypeFieldImplProto {
+	RelDataTypeProto type = 1;
+	string name = 2;
+	sint32 index = 3;
+}
+
+// Java Class: org.apache.calcite.sql.type.ArraySqlType
+message ArraySqlTypeProto {
+	RelDataTypeProto elementType = 1;
+	SqlTypeNameProto typeName = 2;
+	bool isNullable = 3;
+	repeated RelDataTypeFieldProto fieldList = 4;
+	string digest = 5;
+}
+
+// Java Class: org.apache.calcite.sql.type.MapSqlType
+message MapSqlTypeProto {
+	RelDataTypeProto keyType = 1;
+	RelDataTypeProto valueType = 2;
+	SqlTypeNameProto typeName = 3;
+	bool isNullable = 4;
+	repeated RelDataTypeFieldProto fieldList = 5;
+	string digest = 6;
+}
+
+// Java Class: org.apache.calcite.sql.type.BasicSqlType
+message BasicSqlTypeProto {
+	sint32 precision = 1;
+	sint32 scale = 2;
+	RelDataTypeSystemProto typeSystem = 3;
+	SqlCollationProto collation = 4;
+	SerializableCharsetProto wrappedCharset = 5;
+	SqlTypeNameProto typeName = 6;
+	bool isNullable = 7;
+	repeated RelDataTypeFieldProto fieldList = 8;
+	string digest = 9;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeSystem
+message RelDataTypeSystemProto {
+	oneof relDataTypeSystemProto {
+		RelDataTypeSystemImplProto relDataTypeSystemImplProto = 1;
+		DelegatingTypeSystemProto delegatingTypeSystemProto = 2;
+	}
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeSystemImpl
+message RelDataTypeSystemImplProto {
+}
+
+// Java Class: org.apache.calcite.rel.type.DelegatingTypeSystem
+message DelegatingTypeSystemProto {
+	RelDataTypeSystemProto typeSystem = 1;
+}
+
+// Java Class: org.apache.calcite.sql.SqlCollation
+message SqlCollationProto {
+	oneof sqlCollationProto {
+		JavaCollationProto javaCollationProto = 1;
+	}
+	string collationName = 2;
+	SerializableCharsetProto wrappedCharset = 3;
+	LocaleProto locale = 4;
+	string strength = 5;
+	CoercibilityProto coercibility = 6;
+}
+
+// Java Class: org.apache.calcite.jdbc.JavaCollation
+message JavaCollationProto {
+	CollatorProto collator = 1;
+	string collationName = 2;
+	SerializableCharsetProto wrappedCharset = 3;
+	LocaleProto locale = 4;
+	string strength = 5;
+	CoercibilityProto coercibility = 6;
+}
+
+// Java Class: java.text.Collator
+message CollatorProto {
+}
+
+// Java Class: org.apache.calcite.util.SerializableCharset
+message SerializableCharsetProto {
+	CharsetProto charset = 1;
+	string charsetName = 2;
+}
+
+// Java Class: java.nio.charset.Charset
+message CharsetProto {
+}
+
+// Java Class: java.util.Locale
+message LocaleProto {
+}
+
+enum CoercibilityProto { 
+	CoercibilityProto_EXPLICIT_ = 0;
+	CoercibilityProto_IMPLICIT_ = 1;
+	CoercibilityProto_COERCIBLE_ = 2;
+	CoercibilityProto_NONE_ = 3;
+}
+
+// Java Class: org.apache.calcite.sql.type.IntervalSqlType
+message IntervalSqlTypeProto {
+	RelDataTypeSystemProto typeSystem = 1;
+	SqlIntervalQualifierProto intervalQualifier = 2;
+	SqlTypeNameProto typeName = 3;
+	bool isNullable = 4;
+	repeated RelDataTypeFieldProto fieldList = 5;
+	string digest = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlIntervalQualifier
+message SqlIntervalQualifierProto {
+	sint32 startPrecision = 1;
+	TimeUnitRangeProto timeUnitRange = 2;
+	sint32 fractionalSecondPrecision = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+enum TimeUnitRangeProto { 
+	TimeUnitRangeProto_YEAR_ = 0;
+	TimeUnitRangeProto_YEAR_TO_MONTH_ = 1;
+	TimeUnitRangeProto_MONTH_ = 2;
+	TimeUnitRangeProto_DAY_ = 3;
+	TimeUnitRangeProto_DAY_TO_HOUR_ = 4;
+	TimeUnitRangeProto_DAY_TO_MINUTE_ = 5;
+	TimeUnitRangeProto_DAY_TO_SECOND_ = 6;
+	TimeUnitRangeProto_HOUR_ = 7;
+	TimeUnitRangeProto_HOUR_TO_MINUTE_ = 8;
+	TimeUnitRangeProto_HOUR_TO_SECOND_ = 9;
+	TimeUnitRangeProto_MINUTE_ = 10;
+	TimeUnitRangeProto_MINUTE_TO_SECOND_ = 11;
+	TimeUnitRangeProto_SECOND_ = 12;
+	TimeUnitRangeProto_ISOYEAR_ = 13;
+	TimeUnitRangeProto_QUARTER_ = 14;
+	TimeUnitRangeProto_WEEK_ = 15;
+	TimeUnitRangeProto_MILLISECOND_ = 16;
+	TimeUnitRangeProto_MICROSECOND_ = 17;
+	TimeUnitRangeProto_NANOSECOND_ = 18;
+	TimeUnitRangeProto_DOW_ = 19;
+	TimeUnitRangeProto_ISODOW_ = 20;
+	TimeUnitRangeProto_DOY_ = 21;
+	TimeUnitRangeProto_EPOCH_ = 22;
+	TimeUnitRangeProto_DECADE_ = 23;
+	TimeUnitRangeProto_CENTURY_ = 24;
+	TimeUnitRangeProto_MILLENNIUM_ = 25;
+}
+
+// Java Class: org.apache.calcite.sql.parser.SqlParserPos
+message SqlParserPosProto {
+	sint32 lineNumber = 1;
+	sint32 columnNumber = 2;
+	sint32 endLineNumber = 3;
+	sint32 endColumnNumber = 4;
+}
+
+// Java Class: org.apache.calcite.sql.type.ObjectSqlType
+message ObjectSqlTypeProto {
+	SqlIdentifierProto sqlIdentifier = 1;
+	RelDataTypeComparabilityProto comparability = 2;
+	RelDataTypeFamilyProto family = 3;
+	SqlTypeNameProto typeName = 4;
+	bool isNullable = 5;
+	repeated RelDataTypeFieldProto fieldList = 6;
+	string digest = 7;
+}
+
+// Java Class: org.apache.calcite.sql.SqlIdentifier
+message SqlIdentifierProto {
+	repeated string names = 1;
+	SqlCollationProto collation = 2;
+	repeated SqlParserPosProto componentPositions = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+enum RelDataTypeComparabilityProto { 
+	RelDataTypeComparabilityProto_NONE_ = 0;
+	RelDataTypeComparabilityProto_UNORDERED_ = 1;
+	RelDataTypeComparabilityProto_ALL_ = 2;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeFamily
+message RelDataTypeFamilyProto {
+	oneof relDataTypeFamilyProto {
+		RelDataTypeImplProto relDataTypeImplProto = 1;
+		SqlTypeFamilyProto sqlTypeFamilyProto = 2;
+		AbstractSqlTypeProto abstractSqlTypeProto = 3;
+		RelCrossTypeProto relCrossTypeProto = 4;
+		RelRecordTypeProto relRecordTypeProto = 5;
+		DynamicRecordTypeProto dynamicRecordTypeProto = 6;
+		MultisetSqlTypeProto multisetSqlTypeProto = 7;
+		ArraySqlTypeProto arraySqlTypeProto = 8;
+		MapSqlTypeProto mapSqlTypeProto = 9;
+		BasicSqlTypeProto basicSqlTypeProto = 10;
+		IntervalSqlTypeProto intervalSqlTypeProto = 11;
+		ObjectSqlTypeProto objectSqlTypeProto = 12;
+		JavaRecordTypeProto javaRecordTypeProto = 13;
+		DynamicRecordTypeImplProto dynamicRecordTypeImplProto = 14;
+	}
+}
+
+enum SqlTypeFamilyProto { 
+	SqlTypeFamilyProto_CHARACTER_ = 0;
+	SqlTypeFamilyProto_BINARY_ = 1;
+	SqlTypeFamilyProto_NUMERIC_ = 2;
+	SqlTypeFamilyProto_DATE_ = 3;
+	SqlTypeFamilyProto_TIME_ = 4;
+	SqlTypeFamilyProto_TIMESTAMP_ = 5;
+	SqlTypeFamilyProto_BOOLEAN_ = 6;
+	SqlTypeFamilyProto_INTERVAL_YEAR_MONTH_ = 7;
+	SqlTypeFamilyProto_INTERVAL_DAY_TIME_ = 8;
+	SqlTypeFamilyProto_STRING_ = 9;
+	SqlTypeFamilyProto_APPROXIMATE_NUMERIC_ = 10;
+	SqlTypeFamilyProto_EXACT_NUMERIC_ = 11;
+	SqlTypeFamilyProto_DECIMAL_ = 12;
+	SqlTypeFamilyProto_INTEGER_ = 13;
+	SqlTypeFamilyProto_DATETIME_ = 14;
+	SqlTypeFamilyProto_DATETIME_INTERVAL_ = 15;
+	SqlTypeFamilyProto_MULTISET_ = 16;
+	SqlTypeFamilyProto_ARRAY_ = 17;
+	SqlTypeFamilyProto_MAP_ = 18;
+	SqlTypeFamilyProto_NULL_ = 19;
+	SqlTypeFamilyProto_ANY_ = 20;
+	SqlTypeFamilyProto_CURSOR_ = 21;
+	SqlTypeFamilyProto_COLUMN_LIST_ = 22;
+	SqlTypeFamilyProto_GEO_ = 23;
+	SqlTypeFamilyProto_IGNORE_ = 24;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelCrossType
+message RelCrossTypeProto {
+	repeated RelDataTypeProto types = 1;
+	repeated RelDataTypeFieldProto fieldList = 2;
+	string digest = 3;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelRecordType
+message RelRecordTypeProto {
+	oneof relRecordTypeProto {
+		JavaRecordTypeProto javaRecordTypeProto = 1;
+	}
+	StructKindProto kind = 2;
+	bool nullable = 3;
+	map<string, RelDataTypeFieldProto> fieldNameMap = 4;
+	repeated RelDataTypeFieldProto fieldList = 5;
+	string digest = 6;
+}
+
+// Java Class: org.apache.calcite.jdbc.JavaRecordType
+message JavaRecordTypeProto {
+	ClassProto clazz = 1;
+	StructKindProto kind = 2;
+	bool nullable = 3;
+	map<string, RelDataTypeFieldProto> fieldNameMap = 4;
+	repeated RelDataTypeFieldProto fieldList = 5;
+	string digest = 6;
+}
+
+// Java Class: java.lang.Class
+message ClassProto {
+}
+
+enum StructKindProto { 
+	StructKindProto_NONE_ = 0;
+	StructKindProto_FULLY_QUALIFIED_ = 1;
+	StructKindProto_PEEK_FIELDS_DEFAULT_ = 2;
+	StructKindProto_PEEK_FIELDS_ = 3;
+	StructKindProto_PEEK_FIELDS_NO_EXPAND_ = 4;
+}
+
+// Java Class: org.apache.calcite.rel.type.DynamicRecordType
+message DynamicRecordTypeProto {
+	oneof dynamicRecordTypeProto {
+		DynamicRecordTypeImplProto dynamicRecordTypeImplProto = 1;
+	}
+	repeated RelDataTypeFieldProto fieldList = 2;
+	string digest = 3;
+}
+
+// Java Class: org.apache.calcite.rel.type.DynamicRecordTypeImpl
+message DynamicRecordTypeImplProto {
+	RelDataTypeHolderProto holder = 1;
+	repeated RelDataTypeFieldProto fieldList = 2;
+	string digest = 3;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeHolder
+message RelDataTypeHolderProto {
+	repeated RelDataTypeFieldProto fields = 1;
+	RelDataTypeFactoryProto typeFactory = 2;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeFactory
+message RelDataTypeFactoryProto {
+	oneof relDataTypeFactoryProto {
+		JavaTypeFactoryProto javaTypeFactoryProto = 1;
+		RelDataTypeFactoryImplProto relDataTypeFactoryImplProto = 2;
+		JavaTypeFactoryImplProto javaTypeFactoryImplProto = 3;
+		SqlTypeFactoryImplProto sqlTypeFactoryImplProto = 4;
+	}
+}
+
+// Java Class: org.apache.calcite.adapter.java.JavaTypeFactory
+message JavaTypeFactoryProto {
+	oneof javaTypeFactoryProto {
+		JavaTypeFactoryImplProto javaTypeFactoryImplProto = 1;
+	}
+}
+
+// Java Class: org.apache.calcite.jdbc.JavaTypeFactoryImpl
+message JavaTypeFactoryImplProto {
+	RelDataTypeSystemProto typeSystem = 1;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelDataTypeFactoryImpl
+message RelDataTypeFactoryImplProto {
+	oneof relDataTypeFactoryImplProto {
+		SqlTypeFactoryImplProto sqlTypeFactoryImplProto = 1;
+		JavaTypeFactoryImplProto javaTypeFactoryImplProto = 2;
+	}
+	RelDataTypeSystemProto typeSystem = 3;
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlTypeFactoryImpl
+message SqlTypeFactoryImplProto {
+	oneof sqlTypeFactoryImplProto {
+		JavaTypeFactoryImplProto javaTypeFactoryImplProto = 1;
+	}
+	RelDataTypeSystemProto typeSystem = 2;
+}
+
+// Java Class: org.apache.calcite.sql.SqlNode
+message SqlNodeProto {
+	oneof sqlNodeProto {
+		SqlCallProto sqlCallProto = 1;
+		SqlIntervalQualifierProto sqlIntervalQualifierProto = 2;
+		SqlLiteralProto sqlLiteralProto = 3;
+		SqlDynamicParamProto sqlDynamicParamProto = 4;
+		SqlIdentifierProto sqlIdentifierProto = 5;
+		SqlNodeListProto sqlNodeListProto = 6;
+		SqlDataTypeSpecProto sqlDataTypeSpecProto = 7;
+		SqlUpdateProto sqlUpdateProto = 8;
+		SqlInsertProto sqlInsertProto = 9;
+		SqlCaseProto sqlCaseProto = 10;
+		SqlDeleteProto sqlDeleteProto = 11;
+		SqlCheckConstraintProto sqlCheckConstraintProto = 12;
+		SqlPivotProto sqlPivotProto = 13;
+		SqlTableRefProto sqlTableRefProto = 14;
+		SqlKeyConstraintProto sqlKeyConstraintProto = 15;
+		SqlWithProto sqlWithProto = 16;
+		SqlSnapshotProto sqlSnapshotProto = 17;
+		SqlOrderByProto sqlOrderByProto = 18;
+		SqlWindowProto sqlWindowProto = 19;
+		SqlSelectProto sqlSelectProto = 20;
+		SqlAttributeDefinitionProto sqlAttributeDefinitionProto = 21;
+		SqlExplainProto sqlExplainProto = 22;
+		SqlWithItemProto sqlWithItemProto = 23;
+		SqlUnpivotProto sqlUnpivotProto = 24;
+		SqlMergeProto sqlMergeProto = 25;
+		SqlHintProto sqlHintProto = 26;
+		SqlBasicCallProto sqlBasicCallProto = 27;
+		SqlMatchRecognizeProto sqlMatchRecognizeProto = 28;
+		SqlAlterProto sqlAlterProto = 29;
+		SqlDdlProto sqlDdlProto = 30;
+		SqlDescribeSchemaProto sqlDescribeSchemaProto = 31;
+		SqlJoinProto sqlJoinProto = 32;
+		SqlDescribeTableProto sqlDescribeTableProto = 33;
+		SqlColumnDeclarationProto sqlColumnDeclarationProto = 34;
+		SqlNumericLiteralProto sqlNumericLiteralProto = 35;
+		SqlAbstractStringLiteralProto sqlAbstractStringLiteralProto = 36;
+		SqlAbstractDateTimeLiteralProto sqlAbstractDateTimeLiteralProto = 37;
+		SqlIntervalLiteralProto sqlIntervalLiteralProto = 38;
+		SqlSetOptionProto sqlSetOptionProto = 39;
+		SqlDropProto sqlDropProto = 40;
+		SqlCreateProto sqlCreateProto = 41;
+		SqlBinaryStringLiteralProto sqlBinaryStringLiteralProto = 42;
+		SqlCharStringLiteralProto sqlCharStringLiteralProto = 43;
+		SqlDateLiteralProto sqlDateLiteralProto = 44;
+		SqlTimestampLiteralProto sqlTimestampLiteralProto = 45;
+		SqlTimeLiteralProto sqlTimeLiteralProto = 46;
+		SqlDropSchemaProto sqlDropSchemaProto = 47;
+		SqlDropObjectProto sqlDropObjectProto = 48;
+		SqlCreateTypeProto sqlCreateTypeProto = 49;
+		SqlCreateTableProto sqlCreateTableProto = 50;
+		SqlCreateViewProto sqlCreateViewProto = 51;
+		SqlCreateFunctionProto sqlCreateFunctionProto = 52;
+		SqlCreateForeignSchemaProto sqlCreateForeignSchemaProto = 53;
+		SqlCreateSchemaProto sqlCreateSchemaProto = 54;
+		SqlCreateMaterializedViewProto sqlCreateMaterializedViewProto = 55;
+		SqlDropTableProto sqlDropTableProto = 56;
+		SqlDropMaterializedViewProto sqlDropMaterializedViewProto = 57;
+		SqlDropViewProto sqlDropViewProto = 58;
+		SqlDropFunctionProto sqlDropFunctionProto = 59;
+		SqlDropTypeProto sqlDropTypeProto = 60;
+	}
+	SqlParserPosProto pos = 61;
+}
+
+// Java Class: org.apache.calcite.sql.SqlCall
+message SqlCallProto {
+	oneof sqlCallProto {
+		SqlUpdateProto sqlUpdateProto = 1;
+		SqlInsertProto sqlInsertProto = 2;
+		SqlCaseProto sqlCaseProto = 3;
+		SqlDeleteProto sqlDeleteProto = 4;
+		SqlCheckConstraintProto sqlCheckConstraintProto = 5;
+		SqlPivotProto sqlPivotProto = 6;
+		SqlTableRefProto sqlTableRefProto = 7;
+		SqlKeyConstraintProto sqlKeyConstraintProto = 8;
+		SqlWithProto sqlWithProto = 9;
+		SqlSnapshotProto sqlSnapshotProto = 10;
+		SqlOrderByProto sqlOrderByProto = 11;
+		SqlWindowProto sqlWindowProto = 12;
+		SqlSelectProto sqlSelectProto = 13;
+		SqlAttributeDefinitionProto sqlAttributeDefinitionProto = 14;
+		SqlExplainProto sqlExplainProto = 15;
+		SqlWithItemProto sqlWithItemProto = 16;
+		SqlUnpivotProto sqlUnpivotProto = 17;
+		SqlMergeProto sqlMergeProto = 18;
+		SqlHintProto sqlHintProto = 19;
+		SqlBasicCallProto sqlBasicCallProto = 20;
+		SqlMatchRecognizeProto sqlMatchRecognizeProto = 21;
+		SqlAlterProto sqlAlterProto = 22;
+		SqlDdlProto sqlDdlProto = 23;
+		SqlDescribeSchemaProto sqlDescribeSchemaProto = 24;
+		SqlJoinProto sqlJoinProto = 25;
+		SqlDescribeTableProto sqlDescribeTableProto = 26;
+		SqlColumnDeclarationProto sqlColumnDeclarationProto = 27;
+		SqlSetOptionProto sqlSetOptionProto = 28;
+		SqlDropProto sqlDropProto = 29;
+		SqlCreateProto sqlCreateProto = 30;
+		SqlDropSchemaProto sqlDropSchemaProto = 31;
+		SqlDropObjectProto sqlDropObjectProto = 32;
+		SqlCreateTypeProto sqlCreateTypeProto = 33;
+		SqlCreateTableProto sqlCreateTableProto = 34;
+		SqlCreateViewProto sqlCreateViewProto = 35;
+		SqlCreateFunctionProto sqlCreateFunctionProto = 36;
+		SqlCreateForeignSchemaProto sqlCreateForeignSchemaProto = 37;
+		SqlCreateSchemaProto sqlCreateSchemaProto = 38;
+		SqlCreateMaterializedViewProto sqlCreateMaterializedViewProto = 39;
+		SqlDropTableProto sqlDropTableProto = 40;
+		SqlDropMaterializedViewProto sqlDropMaterializedViewProto = 41;
+		SqlDropViewProto sqlDropViewProto = 42;
+		SqlDropFunctionProto sqlDropFunctionProto = 43;
+		SqlDropTypeProto sqlDropTypeProto = 44;
+	}
+	SqlParserPosProto pos = 45;
+	RelDataTypeProto typeInformation = 46;
+}
+
+// Java Class: org.apache.calcite.sql.SqlUpdate
+message SqlUpdateProto {
+	SqlNodeProto targetTable = 1;
+	repeated SqlNodeListProto targetColumnList = 2;
+	SqlNodeListProto sourceExpressionList = 3;
+	SqlNodeProto condition = 4;
+	SqlSelectProto sourceSelect = 5;
+	SqlIdentifierProto alias = 6;
+	SqlParserPosProto pos = 7;
+	RelDataTypeProto typeInformation = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlNodeList
+message SqlNodeListProto {
+	repeated SqlNodeProto list = 1;
+	SqlParserPosProto pos = 2;
+	RelDataTypeProto typeInformation = 3;
+}
+
+// Java Class: org.apache.calcite.sql.SqlSelect
+message SqlSelectProto {
+	SqlNodeListProto keywordList = 1;
+	SqlNodeListProto selectList = 2;
+	SqlNodeProto from = 3;
+	SqlNodeProto where = 4;
+	SqlNodeListProto groupBy = 5;
+	SqlNodeProto having = 6;
+	SqlNodeListProto windowDecls = 7;
+	SqlNodeListProto orderBy = 8;
+	SqlNodeProto offset = 9;
+	SqlNodeProto fetch = 10;
+	SqlNodeListProto hints = 11;
+	SqlParserPosProto pos = 12;
+	RelDataTypeProto typeInformation = 13;
+}
+
+// Java Class: org.apache.calcite.sql.SqlInsert
+message SqlInsertProto {
+	SqlNodeListProto keywords = 1;
+	SqlNodeProto targetTable = 2;
+	SqlNodeProto source = 3;
+	SqlNodeListProto columnList = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCase
+message SqlCaseProto {
+	SqlNodeProto value = 1;
+	SqlNodeListProto whenList = 2;
+	SqlNodeListProto thenList = 3;
+	SqlNodeProto elseExpr = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDelete
+message SqlDeleteProto {
+	SqlNodeProto targetTable = 1;
+	SqlNodeProto condition = 2;
+	SqlSelectProto sourceSelect = 3;
+	SqlIdentifierProto alias = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCheckConstraint
+message SqlCheckConstraintProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeProto expression = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlPivot
+message SqlPivotProto {
+	SqlNodeProto query = 1;
+	SqlNodeListProto aggList = 2;
+	SqlNodeListProto axisList = 3;
+	SqlNodeListProto inList = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlTableRef
+message SqlTableRefProto {
+	SqlIdentifierProto tableName = 1;
+	SqlNodeListProto hints = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlKeyConstraint
+message SqlKeyConstraintProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto columnList = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlWith
+message SqlWithProto {
+	SqlNodeListProto withList = 1;
+	SqlNodeProto body = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlSnapshot
+message SqlSnapshotProto {
+	SqlNodeProto tableRef = 1;
+	SqlNodeProto period = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlOrderBy
+message SqlOrderByProto {
+	SqlNodeProto query = 1;
+	SqlNodeListProto orderList = 2;
+	SqlNodeProto offset = 3;
+	SqlNodeProto fetch = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlWindow
+message SqlWindowProto {
+	SqlIdentifierProto declName = 1;
+	SqlIdentifierProto refName = 2;
+	SqlNodeListProto partitionList = 3;
+	SqlNodeListProto orderList = 4;
+	SqlLiteralProto isRows = 5;
+	SqlNodeProto lowerBound = 6;
+	SqlNodeProto upperBound = 7;
+	SqlLiteralProto allowPartial = 8;
+	SqlCallProto windowCall = 9;
+	SqlParserPosProto pos = 10;
+	RelDataTypeProto typeInformation = 11;
+}
+
+// Java Class: org.apache.calcite.sql.SqlLiteral
+message SqlLiteralProto {
+	oneof sqlLiteralProto {
+		SqlNumericLiteralProto sqlNumericLiteralProto = 1;
+		SqlAbstractStringLiteralProto sqlAbstractStringLiteralProto = 2;
+		SqlAbstractDateTimeLiteralProto sqlAbstractDateTimeLiteralProto = 3;
+		SqlIntervalLiteralProto sqlIntervalLiteralProto = 4;
+		SqlBinaryStringLiteralProto sqlBinaryStringLiteralProto = 5;
+		SqlCharStringLiteralProto sqlCharStringLiteralProto = 6;
+		SqlDateLiteralProto sqlDateLiteralProto = 7;
+		SqlTimestampLiteralProto sqlTimestampLiteralProto = 8;
+		SqlTimeLiteralProto sqlTimeLiteralProto = 9;
+	}
+	SqlTypeNameProto typeName = 10;
+	string value = 11;
+	SqlParserPosProto pos = 12;
+	RelDataTypeProto typeInformation = 13;
+}
+
+// Java Class: org.apache.calcite.sql.SqlNumericLiteral
+message SqlNumericLiteralProto {
+	sint32 prec = 1;
+	sint32 scale = 2;
+	bool isExact = 3;
+	SqlTypeNameProto typeName = 4;
+	string value = 5;
+	SqlParserPosProto pos = 6;
+	RelDataTypeProto typeInformation = 7;
+}
+
+// Java Class: org.apache.calcite.sql.SqlAbstractStringLiteral
+message SqlAbstractStringLiteralProto {
+	oneof sqlAbstractStringLiteralProto {
+		SqlBinaryStringLiteralProto sqlBinaryStringLiteralProto = 1;
+		SqlCharStringLiteralProto sqlCharStringLiteralProto = 2;
+	}
+	SqlTypeNameProto typeName = 3;
+	string value = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlBinaryStringLiteral
+message SqlBinaryStringLiteralProto {
+	SqlTypeNameProto typeName = 1;
+	string value = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlCharStringLiteral
+message SqlCharStringLiteralProto {
+	SqlTypeNameProto typeName = 1;
+	string value = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlAbstractDateTimeLiteral
+message SqlAbstractDateTimeLiteralProto {
+	oneof sqlAbstractDateTimeLiteralProto {
+		SqlDateLiteralProto sqlDateLiteralProto = 1;
+		SqlTimestampLiteralProto sqlTimestampLiteralProto = 2;
+		SqlTimeLiteralProto sqlTimeLiteralProto = 3;
+	}
+	bool hasTimeZone = 4;
+	sint32 precision = 5;
+	SqlTypeNameProto typeName = 6;
+	string value = 7;
+	SqlParserPosProto pos = 8;
+	RelDataTypeProto typeInformation = 9;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDateLiteral
+message SqlDateLiteralProto {
+	bool hasTimeZone = 1;
+	sint32 precision = 2;
+	SqlTypeNameProto typeName = 3;
+	string value = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlTimestampLiteral
+message SqlTimestampLiteralProto {
+	bool hasTimeZone = 1;
+	sint32 precision = 2;
+	SqlTypeNameProto typeName = 3;
+	string value = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlTimeLiteral
+message SqlTimeLiteralProto {
+	bool hasTimeZone = 1;
+	sint32 precision = 2;
+	SqlTypeNameProto typeName = 3;
+	string value = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlIntervalLiteral
+message SqlIntervalLiteralProto {
+	SqlTypeNameProto typeName = 1;
+	string value = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlAttributeDefinition
+message SqlAttributeDefinitionProto {
+	SqlIdentifierProto name = 1;
+	SqlDataTypeSpecProto dataType = 2;
+	SqlNodeProto expression = 3;
+	SqlCollationProto collation = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDataTypeSpec
+message SqlDataTypeSpecProto {
+	SqlTypeNameSpecProto typeNameSpec = 1;
+	TimeZoneProto timeZone = 2;
+	bool nullable = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.SqlTypeNameSpec
+message SqlTypeNameSpecProto {
+	oneof sqlTypeNameSpecProto {
+		SqlUserDefinedTypeNameSpecProto sqlUserDefinedTypeNameSpecProto = 1;
+		SqlRowTypeNameSpecProto sqlRowTypeNameSpecProto = 2;
+		SqlBasicTypeNameSpecProto sqlBasicTypeNameSpecProto = 3;
+		SqlCollectionTypeNameSpecProto sqlCollectionTypeNameSpecProto = 4;
+		SqlAlienSystemTypeNameSpecProto sqlAlienSystemTypeNameSpecProto = 5;
+	}
+	SqlIdentifierProto typeName = 6;
+	SqlParserPosProto pos = 7;
+}
+
+// Java Class: org.apache.calcite.sql.SqlUserDefinedTypeNameSpec
+message SqlUserDefinedTypeNameSpecProto {
+	SqlIdentifierProto typeName = 1;
+	SqlParserPosProto pos = 2;
+}
+
+// Java Class: org.apache.calcite.sql.SqlRowTypeNameSpec
+message SqlRowTypeNameSpecProto {
+	repeated SqlIdentifierProto fieldNames = 1;
+	repeated SqlDataTypeSpecProto fieldTypes = 2;
+	SqlIdentifierProto typeName = 3;
+	SqlParserPosProto pos = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlBasicTypeNameSpec
+message SqlBasicTypeNameSpecProto {
+	oneof sqlBasicTypeNameSpecProto {
+		SqlAlienSystemTypeNameSpecProto sqlAlienSystemTypeNameSpecProto = 1;
+	}
+	SqlTypeNameProto sqlTypeName = 2;
+	sint32 precision = 3;
+	sint32 scale = 4;
+	string charSetName = 5;
+	SqlIdentifierProto typeName = 6;
+	SqlParserPosProto pos = 7;
+}
+
+// Java Class: org.apache.calcite.sql.SqlAlienSystemTypeNameSpec
+message SqlAlienSystemTypeNameSpecProto {
+	string typeAlias = 1;
+	SqlTypeNameProto sqlTypeName = 2;
+	sint32 precision = 3;
+	sint32 scale = 4;
+	string charSetName = 5;
+	SqlIdentifierProto typeName = 6;
+	SqlParserPosProto pos = 7;
+}
+
+// Java Class: org.apache.calcite.sql.SqlCollectionTypeNameSpec
+message SqlCollectionTypeNameSpecProto {
+	SqlTypeNameSpecProto elementTypeName = 1;
+	SqlTypeNameProto collectionTypeName = 2;
+	SqlIdentifierProto typeName = 3;
+	SqlParserPosProto pos = 4;
+}
+
+// Java Class: java.util.TimeZone
+message TimeZoneProto {
+}
+
+// Java Class: org.apache.calcite.sql.SqlExplain
+message SqlExplainProto {
+	SqlNodeProto explicandum = 1;
+	SqlLiteralProto detailLevel = 2;
+	SqlLiteralProto depth = 3;
+	SqlLiteralProto format = 4;
+	sint32 dynamicParameterCount = 5;
+	SqlParserPosProto pos = 6;
+	RelDataTypeProto typeInformation = 7;
+}
+
+// Java Class: org.apache.calcite.sql.SqlWithItem
+message SqlWithItemProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto columnList = 2;
+	SqlNodeProto query = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.SqlUnpivot
+message SqlUnpivotProto {
+	SqlNodeProto query = 1;
+	bool includeNulls = 2;
+	SqlNodeListProto measureList = 3;
+	SqlNodeListProto axisList = 4;
+	SqlNodeListProto inList = 5;
+	SqlParserPosProto pos = 6;
+	RelDataTypeProto typeInformation = 7;
+}
+
+// Java Class: org.apache.calcite.sql.SqlMerge
+message SqlMergeProto {
+	SqlNodeProto targetTable = 1;
+	SqlNodeProto condition = 2;
+	SqlNodeProto source = 3;
+	SqlUpdateProto updateCall = 4;
+	SqlInsertProto insertCall = 5;
+	SqlSelectProto sourceSelect = 6;
+	SqlIdentifierProto alias = 7;
+	SqlParserPosProto pos = 8;
+	RelDataTypeProto typeInformation = 9;
+}
+
+// Java Class: org.apache.calcite.sql.SqlHint
+message SqlHintProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto options = 2;
+	HintOptionFormatProto optionFormat = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+enum HintOptionFormatProto { 
+	HintOptionFormatProto_EMPTY_ = 0;
+	HintOptionFormatProto_LITERAL_LIST_ = 1;
+	HintOptionFormatProto_ID_LIST_ = 2;
+	HintOptionFormatProto_KV_LIST_ = 3;
+}
+
+// Java Class: org.apache.calcite.sql.SqlBasicCall
+message SqlBasicCallProto {
+	SqlOperatorProto operator = 1;
+	repeated SqlNodeProto operandList = 2;
+	SqlLiteralProto functionQuantifier = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.SqlOperator
+message SqlOperatorProto {
+	oneof sqlOperatorProto {
+		SqlPrefixOperatorProto sqlPrefixOperatorProto = 1;
+		SqlDescriptorOperatorProto sqlDescriptorOperatorProto = 2;
+		SqlPostfixOperatorProto sqlPostfixOperatorProto = 3;
+		SqlFunctionProto sqlFunctionProto = 4;
+		SqlCaseOperatorProto sqlCaseOperatorProto = 5;
+		SqlBinaryOperatorProto sqlBinaryOperatorProto = 6;
+		SqlSelectOperatorProto sqlSelectOperatorProto = 7;
+		SqlSpecialOperatorProto sqlSpecialOperatorProto = 8;
+		SqlNewOperatorProto sqlNewOperatorProto = 9;
+		SqlProcedureCallOperatorProto sqlProcedureCallOperatorProto = 10;
+		SqlJsonValueExpressionOperatorProto sqlJsonValueExpressionOperatorProto = 11;
+		SqlUnresolvedFunctionProto sqlUnresolvedFunctionProto = 12;
+		SqlJdbcFunctionCallProto sqlJdbcFunctionCallProto = 13;
+		SqlUserDefinedTableMacroProto sqlUserDefinedTableMacroProto = 14;
+		SqlUserDefinedFunctionProto sqlUserDefinedFunctionProto = 15;
+		SqlExtractFunctionProto sqlExtractFunctionProto = 16;
+		SqlTranslate3FunctionProto sqlTranslate3FunctionProto = 17;
+		SqlTrimFunctionProto sqlTrimFunctionProto = 18;
+		SqlSubstringFunctionProto sqlSubstringFunctionProto = 19;
+		SqlJsonDepthFunctionProto sqlJsonDepthFunctionProto = 20;
+		SqlAbstractTimeFunctionProto sqlAbstractTimeFunctionProto = 21;
+		SqlRandFunctionProto sqlRandFunctionProto = 22;
+		SqlCoalesceFunctionProto sqlCoalesceFunctionProto = 23;
+		SqlJsonTypeFunctionProto sqlJsonTypeFunctionProto = 24;
+		SqlJsonValueFunctionProto sqlJsonValueFunctionProto = 25;
+		SqlDatePartFunctionProto sqlDatePartFunctionProto = 26;
+		SqlJsonObjectFunctionProto sqlJsonObjectFunctionProto = 27;
+		SqlNullifFunctionProto sqlNullifFunctionProto = 28;
+		SqlTimestampAddFunctionProto sqlTimestampAddFunctionProto = 29;
+		SqlJsonPrettyFunctionProto sqlJsonPrettyFunctionProto = 30;
+		SqlBaseContextVariableProto sqlBaseContextVariableProto = 31;
+		SqlConvertFunctionProto sqlConvertFunctionProto = 32;
+		SqlGroupedWindowFunctionProto sqlGroupedWindowFunctionProto = 33;
+		SqlTypeConstructorFunctionProto sqlTypeConstructorFunctionProto = 34;
+		SqlTimestampDiffFunctionProto sqlTimestampDiffFunctionProto = 35;
+		SqlJsonKeysFunctionProto sqlJsonKeysFunctionProto = 36;
+		SqlJsonLengthFunctionProto sqlJsonLengthFunctionProto = 37;
+		SqlCastFunctionProto sqlCastFunctionProto = 38;
+		SqlPositionFunctionProto sqlPositionFunctionProto = 39;
+		SqlJsonRemoveFunctionProto sqlJsonRemoveFunctionProto = 40;
+		SqlMatchFunctionProto sqlMatchFunctionProto = 41;
+		SqlOverlayFunctionProto sqlOverlayFunctionProto = 42;
+		SqlJsonArrayFunctionProto sqlJsonArrayFunctionProto = 43;
+		SqlRandIntegerFunctionProto sqlRandIntegerFunctionProto = 44;
+		SqlCurrentDateFunctionProto sqlCurrentDateFunctionProto = 45;
+		SqlAggFunctionProto sqlAggFunctionProto = 46;
+		SqlWindowTableFunctionProto sqlWindowTableFunctionProto = 47;
+		SqlRegexpReplaceFunctionProto sqlRegexpReplaceFunctionProto = 48;
+		SqlMonotonicUnaryFunctionProto sqlMonotonicUnaryFunctionProto = 49;
+		SqlJsonStorageSizeFunctionProto sqlJsonStorageSizeFunctionProto = 50;
+		SqlJsonQueryFunctionProto sqlJsonQueryFunctionProto = 51;
+		SqlJsonExistsFunctionProto sqlJsonExistsFunctionProto = 52;
+		SqlSetOperatorProto sqlSetOperatorProto = 53;
+		SqlOverlapsOperatorProto sqlOverlapsOperatorProto = 54;
+		SqlCastOperatorProto sqlCastOperatorProto = 55;
+		SqlMonotonicBinaryOperatorProto sqlMonotonicBinaryOperatorProto = 56;
+		SqlMultisetMemberOfOperatorProto sqlMultisetMemberOfOperatorProto = 57;
+		SqlMultisetSetOperatorProto sqlMultisetSetOperatorProto = 58;
+		SqlWithinGroupOperatorProto sqlWithinGroupOperatorProto = 59;
+		SqlFilterOperatorProto sqlFilterOperatorProto = 60;
+		SqlOverOperatorProto sqlOverOperatorProto = 61;
+		SqlInOperatorProto sqlInOperatorProto = 62;
+		SqlPosixRegexOperatorProto sqlPosixRegexOperatorProto = 63;
+		SqlWithinDistinctOperatorProto sqlWithinDistinctOperatorProto = 64;
+		SqlLateralOperatorProto sqlLateralOperatorProto = 65;
+		SqlMultisetValueConstructorProto sqlMultisetValueConstructorProto = 66;
+		SqlDefaultOperatorProto sqlDefaultOperatorProto = 67;
+		SqlLiteralChainOperatorProto sqlLiteralChainOperatorProto = 68;
+		SqlDatetimePlusOperatorProto sqlDatetimePlusOperatorProto = 69;
+		SqlSequenceValueOperatorProto sqlSequenceValueOperatorProto = 70;
+		SqlFunctionalOperatorProto sqlFunctionalOperatorProto = 71;
+		SqlLikeOperatorProto sqlLikeOperatorProto = 72;
+		SqlInternalOperatorProto sqlInternalOperatorProto = 73;
+		SqlDotOperatorProto sqlDotOperatorProto = 74;
+		SqlThrowOperatorProto sqlThrowOperatorProto = 75;
+		SqlItemOperatorProto sqlItemOperatorProto = 76;
+		SqlInfixOperatorProto sqlInfixOperatorProto = 77;
+		SqlAsOperatorProto sqlAsOperatorProto = 78;
+		SqlValuesOperatorProto sqlValuesOperatorProto = 79;
+		SqlColumnListConstructorProto sqlColumnListConstructorProto = 80;
+		SqlMultisetQueryConstructorProto sqlMultisetQueryConstructorProto = 81;
+		SqlCursorConstructorProto sqlCursorConstructorProto = 82;
+		SqlRowOperatorProto sqlRowOperatorProto = 83;
+		SqlDatetimeSubtractionOperatorProto sqlDatetimeSubtractionOperatorProto = 84;
+		SqlNullTreatmentOperatorProto sqlNullTreatmentOperatorProto = 85;
+		SqlUserDefinedTableFunctionProto sqlUserDefinedTableFunctionProto = 86;
+		SqlStringContextVariableProto sqlStringContextVariableProto = 87;
+		SqlUserDefinedAggFunctionProto sqlUserDefinedAggFunctionProto = 88;
+		SqlCovarAggFunctionProto sqlCovarAggFunctionProto = 89;
+		SqlJsonArrayAggAggFunctionProto sqlJsonArrayAggAggFunctionProto = 90;
+		SqlSumAggFunctionProto sqlSumAggFunctionProto = 91;
+		SqlMinMaxAggFunctionProto sqlMinMaxAggFunctionProto = 92;
+		SqlCountAggFunctionProto sqlCountAggFunctionProto = 93;
+		SqlAnyValueAggFunctionProto sqlAnyValueAggFunctionProto = 94;
+		SqlAvgAggFunctionProto sqlAvgAggFunctionProto = 95;
+		SqlNthValueAggFunctionProto sqlNthValueAggFunctionProto = 96;
+		SqlBasicAggFunctionProto sqlBasicAggFunctionProto = 97;
+		SqlSingleValueAggFunctionProto sqlSingleValueAggFunctionProto = 98;
+		SqlSumEmptyIsZeroAggFunctionProto sqlSumEmptyIsZeroAggFunctionProto = 99;
+		SqlListaggAggFunctionProto sqlListaggAggFunctionProto = 100;
+		SqlNtileAggFunctionProto sqlNtileAggFunctionProto = 101;
+		SqlJsonObjectAggAggFunctionProto sqlJsonObjectAggAggFunctionProto = 102;
+		SqlFirstLastValueAggFunctionProto sqlFirstLastValueAggFunctionProto = 103;
+		SqlAbstractGroupFunctionProto sqlAbstractGroupFunctionProto = 104;
+		SqlHistogramAggFunctionProto sqlHistogramAggFunctionProto = 105;
+		SqlRankFunctionProto sqlRankFunctionProto = 106;
+		SqlLeadLagAggFunctionProto sqlLeadLagAggFunctionProto = 107;
+		SqlBitOpAggFunctionProto sqlBitOpAggFunctionProto = 108;
+		SqlTumbleTableFunctionProto sqlTumbleTableFunctionProto = 109;
+		SqlSessionTableFunctionProto sqlSessionTableFunctionProto = 110;
+		SqlHopTableFunctionProto sqlHopTableFunctionProto = 111;
+		SqlFloorFunctionProto sqlFloorFunctionProto = 112;
+		SqlQuantifyOperatorProto sqlQuantifyOperatorProto = 113;
+		SqlArrayValueConstructorProto sqlArrayValueConstructorProto = 114;
+		SqlMapValueConstructorProto sqlMapValueConstructorProto = 115;
+		SqlCollectionTableOperatorProto sqlCollectionTableOperatorProto = 116;
+		SqlUnnestOperatorProto sqlUnnestOperatorProto = 117;
+		SqlExtendOperatorProto sqlExtendOperatorProto = 118;
+		SqlRollupOperatorProto sqlRollupOperatorProto = 119;
+		SqlIntervalOperatorProto sqlIntervalOperatorProto = 120;
+		SqlSearchOperatorProto sqlSearchOperatorProto = 121;
+		SqlBetweenOperatorProto sqlBetweenOperatorProto = 122;
+		SqlArgumentAssignmentOperatorProto sqlArgumentAssignmentOperatorProto = 123;
+		SqlArrayQueryConstructorProto sqlArrayQueryConstructorProto = 124;
+		SqlMapQueryConstructorProto sqlMapQueryConstructorProto = 125;
+		SqlRegrCountAggFunctionProto sqlRegrCountAggFunctionProto = 126;
+		SqlGroupIdFunctionProto sqlGroupIdFunctionProto = 127;
+		SqlGroupingIdFunctionProto sqlGroupingIdFunctionProto = 128;
+		SqlGroupingFunctionProto sqlGroupingFunctionProto = 129;
+	}
+	string name = 130;
+	SqlKindProto kind = 131;
+	sint32 leftPrec = 132;
+	sint32 rightPrec = 133;
+	SqlReturnTypeInferenceProto returnTypeInference = 134;
+	SqlOperandTypeInferenceProto operandTypeInference = 135;
+	SqlOperandTypeCheckerProto operandTypeChecker = 136;
+	string allowedSignatures = 137;
+}
+
+// Java Class: org.apache.calcite.sql.SqlPrefixOperator
+message SqlPrefixOperatorProto {
+	oneof sqlPrefixOperatorProto {
+		SqlNewOperatorProto sqlNewOperatorProto = 1;
+		SqlProcedureCallOperatorProto sqlProcedureCallOperatorProto = 2;
+	}
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlNewOperator
+message SqlNewOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+enum SqlKindProto { 
+	SqlKindProto_OTHER_ = 0;
+	SqlKindProto_SELECT_ = 1;
+	SqlKindProto_HINT_ = 2;
+	SqlKindProto_TABLE_REF_ = 3;
+	SqlKindProto_JOIN_ = 4;
+	SqlKindProto_IDENTIFIER_ = 5;
+	SqlKindProto_LITERAL_ = 6;
+	SqlKindProto_INTERVAL_QUALIFIER_ = 7;
+	SqlKindProto_OTHER_FUNCTION_ = 8;
+	SqlKindProto_POSITION_ = 9;
+	SqlKindProto_EXPLAIN_ = 10;
+	SqlKindProto_DESCRIBE_SCHEMA_ = 11;
+	SqlKindProto_DESCRIBE_TABLE_ = 12;
+	SqlKindProto_INSERT_ = 13;
+	SqlKindProto_DELETE_ = 14;
+	SqlKindProto_UPDATE_ = 15;
+	SqlKindProto_SET_OPTION_ = 16;
+	SqlKindProto_DYNAMIC_PARAM_ = 17;
+	SqlKindProto_ORDER_BY_ = 18;
+	SqlKindProto_WITH_ = 19;
+	SqlKindProto_WITH_ITEM_ = 20;
+	SqlKindProto_ITEM_ = 21;
+	SqlKindProto_UNION_ = 22;
+	SqlKindProto_EXCEPT_ = 23;
+	SqlKindProto_INTERSECT_ = 24;
+	SqlKindProto_AS_ = 25;
+	SqlKindProto_ARGUMENT_ASSIGNMENT_ = 26;
+	SqlKindProto_DEFAULT_ = 27;
+	SqlKindProto_OVER_ = 28;
+	SqlKindProto_RESPECT_NULLS_ = 29;
+	SqlKindProto_IGNORE_NULLS_ = 30;
+	SqlKindProto_FILTER_ = 31;
+	SqlKindProto_WITHIN_GROUP_ = 32;
+	SqlKindProto_WITHIN_DISTINCT_ = 33;
+	SqlKindProto_WINDOW_ = 34;
+	SqlKindProto_MERGE_ = 35;
+	SqlKindProto_TABLESAMPLE_ = 36;
+	SqlKindProto_PIVOT_ = 37;
+	SqlKindProto_UNPIVOT_ = 38;
+	SqlKindProto_MATCH_RECOGNIZE_ = 39;
+	SqlKindProto_SNAPSHOT_ = 40;
+	SqlKindProto_TIMES_ = 41;
+	SqlKindProto_DIVIDE_ = 42;
+	SqlKindProto_MOD_ = 43;
+	SqlKindProto_PLUS_ = 44;
+	SqlKindProto_MINUS_ = 45;
+	SqlKindProto_PATTERN_ALTER_ = 46;
+	SqlKindProto_PATTERN_CONCAT_ = 47;
+	SqlKindProto_IN_ = 48;
+	SqlKindProto_NOT_IN_ = 49;
+	SqlKindProto_DRUID_IN_ = 50;
+	SqlKindProto_DRUID_NOT_IN_ = 51;
+	SqlKindProto_LESS_THAN_ = 52;
+	SqlKindProto_GREATER_THAN_ = 53;
+	SqlKindProto_LESS_THAN_OR_EQUAL_ = 54;
+	SqlKindProto_GREATER_THAN_OR_EQUAL_ = 55;
+	SqlKindProto_EQUALS_ = 56;
+	SqlKindProto_NOT_EQUALS_ = 57;
+	SqlKindProto_IS_DISTINCT_FROM_ = 58;
+	SqlKindProto_IS_NOT_DISTINCT_FROM_ = 59;
+	SqlKindProto_SEARCH_ = 60;
+	SqlKindProto_OR_ = 61;
+	SqlKindProto_AND_ = 62;
+	SqlKindProto_DOT_ = 63;
+	SqlKindProto_OVERLAPS_ = 64;
+	SqlKindProto_CONTAINS_ = 65;
+	SqlKindProto_PRECEDES_ = 66;
+	SqlKindProto_IMMEDIATELY_PRECEDES_ = 67;
+	SqlKindProto_SUCCEEDS_ = 68;
+	SqlKindProto_IMMEDIATELY_SUCCEEDS_ = 69;
+	SqlKindProto_PERIOD_EQUALS_ = 70;
+	SqlKindProto_LIKE_ = 71;
+	SqlKindProto_RLIKE_ = 72;
+	SqlKindProto_SIMILAR_ = 73;
+	SqlKindProto_POSIX_REGEX_CASE_SENSITIVE_ = 74;
+	SqlKindProto_POSIX_REGEX_CASE_INSENSITIVE_ = 75;
+	SqlKindProto_BETWEEN_ = 76;
+	SqlKindProto_DRUID_BETWEEN_ = 77;
+	SqlKindProto_CASE_ = 78;
+	SqlKindProto_INTERVAL_ = 79;
+	SqlKindProto_SEPARATOR_ = 80;
+	SqlKindProto_NULLIF_ = 81;
+	SqlKindProto_COALESCE_ = 82;
+	SqlKindProto_DECODE_ = 83;
+	SqlKindProto_NVL_ = 84;
+	SqlKindProto_GREATEST_ = 85;
+	SqlKindProto_CONCAT2_ = 86;
+	SqlKindProto_IF_ = 87;
+	SqlKindProto_LEAST_ = 88;
+	SqlKindProto_TIMESTAMP_ADD_ = 89;
+	SqlKindProto_TIMESTAMP_DIFF_ = 90;
+	SqlKindProto_NOT_ = 91;
+	SqlKindProto_PLUS_PREFIX_ = 92;
+	SqlKindProto_MINUS_PREFIX_ = 93;
+	SqlKindProto_EXISTS_ = 94;
+	SqlKindProto_SOME_ = 95;
+	SqlKindProto_ALL_ = 96;
+	SqlKindProto_VALUES_ = 97;
+	SqlKindProto_EXPLICIT_TABLE_ = 98;
+	SqlKindProto_SCALAR_QUERY_ = 99;
+	SqlKindProto_PROCEDURE_CALL_ = 100;
+	SqlKindProto_NEW_SPECIFICATION_ = 101;
+	SqlKindProto_FINAL_ = 102;
+	SqlKindProto_RUNNING_ = 103;
+	SqlKindProto_PREV_ = 104;
+	SqlKindProto_NEXT_ = 105;
+	SqlKindProto_FIRST_ = 106;
+	SqlKindProto_LAST_ = 107;
+	SqlKindProto_CLASSIFIER_ = 108;
+	SqlKindProto_MATCH_NUMBER_ = 109;
+	SqlKindProto_SKIP_TO_FIRST_ = 110;
+	SqlKindProto_SKIP_TO_LAST_ = 111;
+	SqlKindProto_DESCENDING_ = 112;
+	SqlKindProto_NULLS_FIRST_ = 113;
+	SqlKindProto_NULLS_LAST_ = 114;
+	SqlKindProto_IS_TRUE_ = 115;
+	SqlKindProto_IS_FALSE_ = 116;
+	SqlKindProto_IS_NOT_TRUE_ = 117;
+	SqlKindProto_IS_NOT_FALSE_ = 118;
+	SqlKindProto_IS_UNKNOWN_ = 119;
+	SqlKindProto_IS_NULL_ = 120;
+	SqlKindProto_IS_NOT_NULL_ = 121;
+	SqlKindProto_PRECEDING_ = 122;
+	SqlKindProto_FOLLOWING_ = 123;
+	SqlKindProto_FIELD_ACCESS_ = 124;
+	SqlKindProto_INPUT_REF_ = 125;
+	SqlKindProto_TABLE_INPUT_REF_ = 126;
+	SqlKindProto_PATTERN_INPUT_REF_ = 127;
+	SqlKindProto_LOCAL_REF_ = 128;
+	SqlKindProto_CORREL_VARIABLE_ = 129;
+	SqlKindProto_PATTERN_QUANTIFIER_ = 130;
+	SqlKindProto_ROW_ = 131;
+	SqlKindProto_COLUMN_LIST_ = 132;
+	SqlKindProto_CAST_ = 133;
+	SqlKindProto_NEXT_VALUE_ = 134;
+	SqlKindProto_CURRENT_VALUE_ = 135;
+	SqlKindProto_FLOOR_ = 136;
+	SqlKindProto_CEIL_ = 137;
+	SqlKindProto_TRIM_ = 138;
+	SqlKindProto_LTRIM_ = 139;
+	SqlKindProto_RTRIM_ = 140;
+	SqlKindProto_EXTRACT_ = 141;
+	SqlKindProto_ARRAY_CONCAT_ = 142;
+	SqlKindProto_ARRAY_REVERSE_ = 143;
+	SqlKindProto_REVERSE_ = 144;
+	SqlKindProto_SUBSTR_BIG_QUERY_ = 145;
+	SqlKindProto_SUBSTR_MYSQL_ = 146;
+	SqlKindProto_SUBSTR_ORACLE_ = 147;
+	SqlKindProto_SUBSTR_POSTGRESQL_ = 148;
+	SqlKindProto_JDBC_FN_ = 149;
+	SqlKindProto_MULTISET_VALUE_CONSTRUCTOR_ = 150;
+	SqlKindProto_MULTISET_QUERY_CONSTRUCTOR_ = 151;
+	SqlKindProto_JSON_VALUE_EXPRESSION_ = 152;
+	SqlKindProto_JSON_ARRAYAGG_ = 153;
+	SqlKindProto_JSON_OBJECTAGG_ = 154;
+	SqlKindProto_UNNEST_ = 155;
+	SqlKindProto_LATERAL_ = 156;
+	SqlKindProto_COLLECTION_TABLE_ = 157;
+	SqlKindProto_ARRAY_VALUE_CONSTRUCTOR_ = 158;
+	SqlKindProto_ARRAY_QUERY_CONSTRUCTOR_ = 159;
+	SqlKindProto_MAP_VALUE_CONSTRUCTOR_ = 160;
+	SqlKindProto_MAP_QUERY_CONSTRUCTOR_ = 161;
+	SqlKindProto_CURSOR_ = 162;
+	SqlKindProto_LITERAL_CHAIN_ = 163;
+	SqlKindProto_ESCAPE_ = 164;
+	SqlKindProto_REINTERPRET_ = 165;
+	SqlKindProto_EXTEND_ = 166;
+	SqlKindProto_CUBE_ = 167;
+	SqlKindProto_ROLLUP_ = 168;
+	SqlKindProto_GROUPING_SETS_ = 169;
+	SqlKindProto_GROUPING_ = 170;
+	SqlKindProto_GROUPING_ID_ = 171;
+	SqlKindProto_GROUP_ID_ = 172;
+	SqlKindProto_PATTERN_PERMUTE_ = 173;
+	SqlKindProto_PATTERN_EXCLUDED_ = 174;
+	SqlKindProto_COUNT_ = 175;
+	SqlKindProto_SUM_ = 176;
+	SqlKindProto_SUM0_ = 177;
+	SqlKindProto_MIN_ = 178;
+	SqlKindProto_MAX_ = 179;
+	SqlKindProto_LEAD_ = 180;
+	SqlKindProto_LAG_ = 181;
+	SqlKindProto_FIRST_VALUE_ = 182;
+	SqlKindProto_LAST_VALUE_ = 183;
+	SqlKindProto_ANY_VALUE_ = 184;
+	SqlKindProto_COVAR_POP_ = 185;
+	SqlKindProto_COVAR_SAMP_ = 186;
+	SqlKindProto_REGR_COUNT_ = 187;
+	SqlKindProto_REGR_SXX_ = 188;
+	SqlKindProto_REGR_SYY_ = 189;
+	SqlKindProto_AVG_ = 190;
+	SqlKindProto_STDDEV_POP_ = 191;
+	SqlKindProto_STDDEV_SAMP_ = 192;
+	SqlKindProto_VAR_POP_ = 193;
+	SqlKindProto_VAR_SAMP_ = 194;
+	SqlKindProto_NTILE_ = 195;
+	SqlKindProto_NTH_VALUE_ = 196;
+	SqlKindProto_LISTAGG_ = 197;
+	SqlKindProto_STRING_AGG_ = 198;
+	SqlKindProto_COUNTIF_ = 199;
+	SqlKindProto_ARRAY_AGG_ = 200;
+	SqlKindProto_ARRAY_CONCAT_AGG_ = 201;
+	SqlKindProto_GROUP_CONCAT_ = 202;
+	SqlKindProto_COLLECT_ = 203;
+	SqlKindProto_MODE_ = 204;
+	SqlKindProto_PERCENTILE_CONT_ = 205;
+	SqlKindProto_PERCENTILE_DISC_ = 206;
+	SqlKindProto_FUSION_ = 207;
+	SqlKindProto_INTERSECTION_ = 208;
+	SqlKindProto_SINGLE_VALUE_ = 209;
+	SqlKindProto_BIT_AND_ = 210;
+	SqlKindProto_BIT_OR_ = 211;
+	SqlKindProto_BIT_XOR_ = 212;
+	SqlKindProto_ROW_NUMBER_ = 213;
+	SqlKindProto_RANK_ = 214;
+	SqlKindProto_PERCENT_RANK_ = 215;
+	SqlKindProto_DENSE_RANK_ = 216;
+	SqlKindProto_CUME_DIST_ = 217;
+	SqlKindProto_DESCRIPTOR_ = 218;
+	SqlKindProto_TUMBLE_ = 219;
+	SqlKindProto_TUMBLE_START_ = 220;
+	SqlKindProto_TUMBLE_END_ = 221;
+	SqlKindProto_HOP_ = 222;
+	SqlKindProto_HOP_START_ = 223;
+	SqlKindProto_HOP_END_ = 224;
+	SqlKindProto_SESSION_ = 225;
+	SqlKindProto_SESSION_START_ = 226;
+	SqlKindProto_SESSION_END_ = 227;
+	SqlKindProto_COLUMN_DECL_ = 228;
+	SqlKindProto_ATTRIBUTE_DEF_ = 229;
+	SqlKindProto_CHECK_ = 230;
+	SqlKindProto_UNIQUE_ = 231;
+	SqlKindProto_PRIMARY_KEY_ = 232;
+	SqlKindProto_FOREIGN_KEY_ = 233;
+	SqlKindProto_ST_DWITHIN_ = 234;
+	SqlKindProto_ST_POINT_ = 235;
+	SqlKindProto_ST_POINT3_ = 236;
+	SqlKindProto_ST_MAKE_LINE_ = 237;
+	SqlKindProto_ST_CONTAINS_ = 238;
+	SqlKindProto_HILBERT_ = 239;
+	SqlKindProto_COMMIT_ = 240;
+	SqlKindProto_ROLLBACK_ = 241;
+	SqlKindProto_ALTER_SESSION_ = 242;
+	SqlKindProto_CREATE_SCHEMA_ = 243;
+	SqlKindProto_CREATE_FOREIGN_SCHEMA_ = 244;
+	SqlKindProto_DROP_SCHEMA_ = 245;
+	SqlKindProto_CREATE_TABLE_ = 246;
+	SqlKindProto_ALTER_TABLE_ = 247;
+	SqlKindProto_DROP_TABLE_ = 248;
+	SqlKindProto_CREATE_VIEW_ = 249;
+	SqlKindProto_ALTER_VIEW_ = 250;
+	SqlKindProto_DROP_VIEW_ = 251;
+	SqlKindProto_CREATE_MATERIALIZED_VIEW_ = 252;
+	SqlKindProto_ALTER_MATERIALIZED_VIEW_ = 253;
+	SqlKindProto_DROP_MATERIALIZED_VIEW_ = 254;
+	SqlKindProto_CREATE_SEQUENCE_ = 255;
+	SqlKindProto_ALTER_SEQUENCE_ = 256;
+	SqlKindProto_DROP_SEQUENCE_ = 257;
+	SqlKindProto_CREATE_INDEX_ = 258;
+	SqlKindProto_ALTER_INDEX_ = 259;
+	SqlKindProto_DROP_INDEX_ = 260;
+	SqlKindProto_CREATE_TYPE_ = 261;
+	SqlKindProto_DROP_TYPE_ = 262;
+	SqlKindProto_CREATE_FUNCTION_ = 263;
+	SqlKindProto_DROP_FUNCTION_ = 264;
+	SqlKindProto_OTHER_DDL_ = 265;
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlReturnTypeInference
+message SqlReturnTypeInferenceProto {
+	oneof sqlReturnTypeInferenceProto {
+		SqlReturnTypeInferenceChainProto sqlReturnTypeInferenceChainProto = 1;
+		OrdinalReturnTypeInferenceProto ordinalReturnTypeInferenceProto = 2;
+		ExplicitReturnTypeInferenceProto explicitReturnTypeInferenceProto = 3;
+		CursorReturnTypeInferenceProto cursorReturnTypeInferenceProto = 4;
+		SqlTypeTransformCascadeProto sqlTypeTransformCascadeProto = 5;
+		MatchReturnTypeInferenceProto matchReturnTypeInferenceProto = 6;
+		TableFunctionReturnTypeInferenceProto tableFunctionReturnTypeInferenceProto = 7;
+	}
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlReturnTypeInferenceChain
+message SqlReturnTypeInferenceChainProto {
+	repeated SqlReturnTypeInferenceProto rules = 1;
+}
+
+// Java Class: org.apache.calcite.sql.type.OrdinalReturnTypeInference
+message OrdinalReturnTypeInferenceProto {
+	sint32 ordinal = 1;
+}
+
+// Java Class: org.apache.calcite.sql.type.ExplicitReturnTypeInference
+message ExplicitReturnTypeInferenceProto {
+	oneof explicitReturnTypeInferenceProto {
+		TableFunctionReturnTypeInferenceProto tableFunctionReturnTypeInferenceProto = 1;
+	}
+	RelProtoDataTypeProto protoType = 2;
+}
+
+// Java Class: org.apache.calcite.sql.type.TableFunctionReturnTypeInference
+message TableFunctionReturnTypeInferenceProto {
+	repeated string paramNames = 1;
+	repeated RelColumnMappingProto columnMappings = 2;
+	bool isPassthrough = 3;
+	RelProtoDataTypeProto protoType = 4;
+}
+
+// Java Class: org.apache.calcite.rel.metadata.RelColumnMapping
+message RelColumnMappingProto {
+	sint32 iOutputColumn = 1;
+	sint32 iInputRel = 2;
+	sint32 iInputColumn = 3;
+	bool derived = 4;
+}
+
+// Java Class: org.apache.calcite.rel.type.RelProtoDataType
+message RelProtoDataTypeProto {
+}
+
+// Java Class: org.apache.calcite.sql.type.CursorReturnTypeInference
+message CursorReturnTypeInferenceProto {
+	sint32 ordinal = 1;
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlTypeTransformCascade
+message SqlTypeTransformCascadeProto {
+	SqlReturnTypeInferenceProto rule = 1;
+	repeated SqlTypeTransformProto transforms = 2;
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlTypeTransform
+message SqlTypeTransformProto {
+}
+
+// Java Class: org.apache.calcite.sql.type.MatchReturnTypeInference
+message MatchReturnTypeInferenceProto {
+	sint32 start = 1;
+	repeated SqlTypeNameProto typeNames = 2;
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlOperandTypeInference
+message SqlOperandTypeInferenceProto {
+	oneof sqlOperandTypeInferenceProto {
+		ExplicitOperandTypeInferenceProto explicitOperandTypeInferenceProto = 1;
+	}
+}
+
+// Java Class: org.apache.calcite.sql.type.ExplicitOperandTypeInference
+message ExplicitOperandTypeInferenceProto {
+	repeated RelDataTypeProto paramTypes = 1;
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlOperandTypeChecker
+message SqlOperandTypeCheckerProto {
+	oneof sqlOperandTypeCheckerProto {
+		SqlOperandMetadataProto sqlOperandMetadataProto = 1;
+		SetopOperandTypeCheckerProto setopOperandTypeCheckerProto = 2;
+		ExplicitOperandTypeCheckerProto explicitOperandTypeCheckerProto = 3;
+		SqlSingleOperandTypeCheckerProto sqlSingleOperandTypeCheckerProto = 4;
+		AssignableOperandTypeCheckerProto assignableOperandTypeCheckerProto = 5;
+		MultisetOperandTypeCheckerProto multisetOperandTypeCheckerProto = 6;
+		CompositeOperandTypeCheckerProto compositeOperandTypeCheckerProto = 7;
+		OperandMetadataImplProto operandMetadataImplProto = 8;
+		LiteralOperandTypeCheckerProto literalOperandTypeCheckerProto = 9;
+		SameOperandTypeCheckerProto sameOperandTypeCheckerProto = 10;
+		FamilyOperandTypeCheckerProto familyOperandTypeCheckerProto = 11;
+		CompositeSingleOperandTypeCheckerProto compositeSingleOperandTypeCheckerProto = 12;
+		SameOperandTypeExceptLastOperandCheckerProto sameOperandTypeExceptLastOperandCheckerProto = 13;
+		ComparableOperandTypeCheckerProto comparableOperandTypeCheckerProto = 14;
+	}
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlOperandMetadata
+message SqlOperandMetadataProto {
+	oneof sqlOperandMetadataProto {
+		OperandMetadataImplProto operandMetadataImplProto = 1;
+	}
+}
+
+// Java Class: org.apache.calcite.sql.type.OperandMetadataImpl
+message OperandMetadataImplProto {
+	FunctionProto paramTypesFactory = 1;
+	IntFunctionProto paramNameFn = 2;
+	repeated SqlTypeFamilyProto families = 3;
+	PredicateProto optional = 4;
+}
+
+// Java Class: java.util.function.Function
+message FunctionProto {
+}
+
+// Java Class: java.util.function.IntFunction
+message IntFunctionProto {
+}
+
+// Java Class: java.util.function.Predicate
+message PredicateProto {
+}
+
+// Java Class: org.apache.calcite.sql.type.SetopOperandTypeChecker
+message SetopOperandTypeCheckerProto {
+}
+
+// Java Class: org.apache.calcite.sql.type.ExplicitOperandTypeChecker
+message ExplicitOperandTypeCheckerProto {
+	RelDataTypeProto type = 1;
+}
+
+// Java Class: org.apache.calcite.sql.type.SqlSingleOperandTypeChecker
+message SqlSingleOperandTypeCheckerProto {
+	oneof sqlSingleOperandTypeCheckerProto {
+		LiteralOperandTypeCheckerProto literalOperandTypeCheckerProto = 1;
+		SameOperandTypeCheckerProto sameOperandTypeCheckerProto = 2;
+		FamilyOperandTypeCheckerProto familyOperandTypeCheckerProto = 3;
+		CompositeSingleOperandTypeCheckerProto compositeSingleOperandTypeCheckerProto = 4;
+		SameOperandTypeExceptLastOperandCheckerProto sameOperandTypeExceptLastOperandCheckerProto = 5;
+		ComparableOperandTypeCheckerProto comparableOperandTypeCheckerProto = 6;
+		OperandMetadataImplProto operandMetadataImplProto = 7;
+	}
+}
+
+// Java Class: org.apache.calcite.sql.type.LiteralOperandTypeChecker
+message LiteralOperandTypeCheckerProto {
+	bool allowNull = 1;
+}
+
+// Java Class: org.apache.calcite.sql.type.SameOperandTypeChecker
+message SameOperandTypeCheckerProto {
+	oneof sameOperandTypeCheckerProto {
+		SameOperandTypeExceptLastOperandCheckerProto sameOperandTypeExceptLastOperandCheckerProto = 1;
+		ComparableOperandTypeCheckerProto comparableOperandTypeCheckerProto = 2;
+	}
+	sint32 nOperands = 3;
+}
+
+// Java Class: org.apache.calcite.sql.type.SameOperandTypeExceptLastOperandChecker
+message SameOperandTypeExceptLastOperandCheckerProto {
+	string lastOperandTypeName = 1;
+	sint32 nOperands = 2;
+}
+
+// Java Class: org.apache.calcite.sql.type.ComparableOperandTypeChecker
+message ComparableOperandTypeCheckerProto {
+	RelDataTypeComparabilityProto requiredComparability = 1;
+	ConsistencyProto consistency = 2;
+	sint32 nOperands = 3;
+}
+
+enum ConsistencyProto { 
+	ConsistencyProto_NONE_ = 0;
+	ConsistencyProto_COMPARE_ = 1;
+	ConsistencyProto_LEAST_RESTRICTIVE_ = 2;
+}
+
+// Java Class: org.apache.calcite.sql.type.FamilyOperandTypeChecker
+message FamilyOperandTypeCheckerProto {
+	oneof familyOperandTypeCheckerProto {
+		OperandMetadataImplProto operandMetadataImplProto = 1;
+	}
+	repeated SqlTypeFamilyProto families = 2;
+	PredicateProto optional = 3;
+}
+
+// Java Class: org.apache.calcite.sql.type.CompositeSingleOperandTypeChecker
+message CompositeSingleOperandTypeCheckerProto {
+	SqlOperandCountRangeProto range = 1;
+	CompositionProto composition = 2;
+	string allowedSignatures = 3;
+}
+
+// Java Class: org.apache.calcite.sql.SqlOperandCountRange
+message SqlOperandCountRangeProto {
+}
+
+enum CompositionProto { 
+	CompositionProto_AND_ = 0;
+	CompositionProto_OR_ = 1;
+	CompositionProto_SEQUENCE_ = 2;
+	CompositionProto_REPEAT_ = 3;
+}
+
+// Java Class: org.apache.calcite.sql.type.AssignableOperandTypeChecker
+message AssignableOperandTypeCheckerProto {
+	repeated RelDataTypeProto paramTypes = 1;
+	repeated string paramNames = 2;
+}
+
+// Java Class: org.apache.calcite.sql.type.MultisetOperandTypeChecker
+message MultisetOperandTypeCheckerProto {
+}
+
+// Java Class: org.apache.calcite.sql.type.CompositeOperandTypeChecker
+message CompositeOperandTypeCheckerProto {
+	oneof compositeOperandTypeCheckerProto {
+		CompositeSingleOperandTypeCheckerProto compositeSingleOperandTypeCheckerProto = 1;
+	}
+	SqlOperandCountRangeProto range = 2;
+	CompositionProto composition = 3;
+	string allowedSignatures = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlProcedureCallOperator
+message SqlProcedureCallOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDescriptorOperator
+message SqlDescriptorOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlPostfixOperator
+message SqlPostfixOperatorProto {
+	oneof sqlPostfixOperatorProto {
+		SqlJsonValueExpressionOperatorProto sqlJsonValueExpressionOperatorProto = 1;
+	}
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonValueExpressionOperator
+message SqlJsonValueExpressionOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlFunction
+message SqlFunctionProto {
+	oneof sqlFunctionProto {
+		SqlUnresolvedFunctionProto sqlUnresolvedFunctionProto = 1;
+		SqlJdbcFunctionCallProto sqlJdbcFunctionCallProto = 2;
+		SqlUserDefinedTableMacroProto sqlUserDefinedTableMacroProto = 3;
+		SqlUserDefinedFunctionProto sqlUserDefinedFunctionProto = 4;
+		SqlExtractFunctionProto sqlExtractFunctionProto = 5;
+		SqlTranslate3FunctionProto sqlTranslate3FunctionProto = 6;
+		SqlTrimFunctionProto sqlTrimFunctionProto = 7;
+		SqlSubstringFunctionProto sqlSubstringFunctionProto = 8;
+		SqlJsonDepthFunctionProto sqlJsonDepthFunctionProto = 9;
+		SqlAbstractTimeFunctionProto sqlAbstractTimeFunctionProto = 10;
+		SqlRandFunctionProto sqlRandFunctionProto = 11;
+		SqlCoalesceFunctionProto sqlCoalesceFunctionProto = 12;
+		SqlJsonTypeFunctionProto sqlJsonTypeFunctionProto = 13;
+		SqlJsonValueFunctionProto sqlJsonValueFunctionProto = 14;
+		SqlDatePartFunctionProto sqlDatePartFunctionProto = 15;
+		SqlJsonObjectFunctionProto sqlJsonObjectFunctionProto = 16;
+		SqlNullifFunctionProto sqlNullifFunctionProto = 17;
+		SqlTimestampAddFunctionProto sqlTimestampAddFunctionProto = 18;
+		SqlJsonPrettyFunctionProto sqlJsonPrettyFunctionProto = 19;
+		SqlBaseContextVariableProto sqlBaseContextVariableProto = 20;
+		SqlConvertFunctionProto sqlConvertFunctionProto = 21;
+		SqlGroupedWindowFunctionProto sqlGroupedWindowFunctionProto = 22;
+		SqlTypeConstructorFunctionProto sqlTypeConstructorFunctionProto = 23;
+		SqlTimestampDiffFunctionProto sqlTimestampDiffFunctionProto = 24;
+		SqlJsonKeysFunctionProto sqlJsonKeysFunctionProto = 25;
+		SqlJsonLengthFunctionProto sqlJsonLengthFunctionProto = 26;
+		SqlCastFunctionProto sqlCastFunctionProto = 27;
+		SqlPositionFunctionProto sqlPositionFunctionProto = 28;
+		SqlJsonRemoveFunctionProto sqlJsonRemoveFunctionProto = 29;
+		SqlMatchFunctionProto sqlMatchFunctionProto = 30;
+		SqlOverlayFunctionProto sqlOverlayFunctionProto = 31;
+		SqlJsonArrayFunctionProto sqlJsonArrayFunctionProto = 32;
+		SqlRandIntegerFunctionProto sqlRandIntegerFunctionProto = 33;
+		SqlCurrentDateFunctionProto sqlCurrentDateFunctionProto = 34;
+		SqlAggFunctionProto sqlAggFunctionProto = 35;
+		SqlWindowTableFunctionProto sqlWindowTableFunctionProto = 36;
+		SqlRegexpReplaceFunctionProto sqlRegexpReplaceFunctionProto = 37;
+		SqlMonotonicUnaryFunctionProto sqlMonotonicUnaryFunctionProto = 38;
+		SqlJsonStorageSizeFunctionProto sqlJsonStorageSizeFunctionProto = 39;
+		SqlJsonQueryFunctionProto sqlJsonQueryFunctionProto = 40;
+		SqlJsonExistsFunctionProto sqlJsonExistsFunctionProto = 41;
+		SqlUserDefinedTableFunctionProto sqlUserDefinedTableFunctionProto = 42;
+		SqlStringContextVariableProto sqlStringContextVariableProto = 43;
+		SqlUserDefinedAggFunctionProto sqlUserDefinedAggFunctionProto = 44;
+		SqlCovarAggFunctionProto sqlCovarAggFunctionProto = 45;
+		SqlJsonArrayAggAggFunctionProto sqlJsonArrayAggAggFunctionProto = 46;
+		SqlSumAggFunctionProto sqlSumAggFunctionProto = 47;
+		SqlMinMaxAggFunctionProto sqlMinMaxAggFunctionProto = 48;
+		SqlCountAggFunctionProto sqlCountAggFunctionProto = 49;
+		SqlAnyValueAggFunctionProto sqlAnyValueAggFunctionProto = 50;
+		SqlAvgAggFunctionProto sqlAvgAggFunctionProto = 51;
+		SqlNthValueAggFunctionProto sqlNthValueAggFunctionProto = 52;
+		SqlBasicAggFunctionProto sqlBasicAggFunctionProto = 53;
+		SqlSingleValueAggFunctionProto sqlSingleValueAggFunctionProto = 54;
+		SqlSumEmptyIsZeroAggFunctionProto sqlSumEmptyIsZeroAggFunctionProto = 55;
+		SqlListaggAggFunctionProto sqlListaggAggFunctionProto = 56;
+		SqlNtileAggFunctionProto sqlNtileAggFunctionProto = 57;
+		SqlJsonObjectAggAggFunctionProto sqlJsonObjectAggAggFunctionProto = 58;
+		SqlFirstLastValueAggFunctionProto sqlFirstLastValueAggFunctionProto = 59;
+		SqlAbstractGroupFunctionProto sqlAbstractGroupFunctionProto = 60;
+		SqlHistogramAggFunctionProto sqlHistogramAggFunctionProto = 61;
+		SqlRankFunctionProto sqlRankFunctionProto = 62;
+		SqlLeadLagAggFunctionProto sqlLeadLagAggFunctionProto = 63;
+		SqlBitOpAggFunctionProto sqlBitOpAggFunctionProto = 64;
+		SqlTumbleTableFunctionProto sqlTumbleTableFunctionProto = 65;
+		SqlSessionTableFunctionProto sqlSessionTableFunctionProto = 66;
+		SqlHopTableFunctionProto sqlHopTableFunctionProto = 67;
+		SqlFloorFunctionProto sqlFloorFunctionProto = 68;
+		SqlRegrCountAggFunctionProto sqlRegrCountAggFunctionProto = 69;
+		SqlGroupIdFunctionProto sqlGroupIdFunctionProto = 70;
+		SqlGroupingIdFunctionProto sqlGroupingIdFunctionProto = 71;
+		SqlGroupingFunctionProto sqlGroupingFunctionProto = 72;
+	}
+	SqlFunctionCategoryProto category = 73;
+	SqlIdentifierProto sqlIdentifier = 74;
+	string name = 75;
+	SqlKindProto kind = 76;
+	sint32 leftPrec = 77;
+	sint32 rightPrec = 78;
+	SqlReturnTypeInferenceProto returnTypeInference = 79;
+	SqlOperandTypeInferenceProto operandTypeInference = 80;
+	SqlOperandTypeCheckerProto operandTypeChecker = 81;
+	string allowedSignatures = 82;
+}
+
+// Java Class: org.apache.calcite.sql.SqlUnresolvedFunction
+message SqlUnresolvedFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+enum SqlFunctionCategoryProto { 
+	SqlFunctionCategoryProto_STRING_ = 0;
+	SqlFunctionCategoryProto_NUMERIC_ = 1;
+	SqlFunctionCategoryProto_TIMEDATE_ = 2;
+	SqlFunctionCategoryProto_SYSTEM_ = 3;
+	SqlFunctionCategoryProto_USER_DEFINED_FUNCTION_ = 4;
+	SqlFunctionCategoryProto_USER_DEFINED_PROCEDURE_ = 5;
+	SqlFunctionCategoryProto_USER_DEFINED_CONSTRUCTOR_ = 6;
+	SqlFunctionCategoryProto_USER_DEFINED_SPECIFIC_FUNCTION_ = 7;
+	SqlFunctionCategoryProto_USER_DEFINED_TABLE_FUNCTION_ = 8;
+	SqlFunctionCategoryProto_USER_DEFINED_TABLE_SPECIFIC_FUNCTION_ = 9;
+	SqlFunctionCategoryProto_MATCH_RECOGNIZE_ = 10;
+}
+
+// Java Class: org.apache.calcite.sql.SqlJdbcFunctionCall
+message SqlJdbcFunctionCallProto {
+	string jdbcName = 1;
+	SqlCallProto lookupCall = 2;
+	repeated SqlNodeProto thisOperands = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.validate.SqlUserDefinedTableMacro
+message SqlUserDefinedTableMacroProto {
+	TableMacroProto tableMacro = 1;
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.schema.TableMacro
+message TableMacroProto {
+	oneof tableMacroProto {
+		TableMacroImplProto tableMacroImplProto = 1;
+		ViewTableMacroProto viewTableMacroProto = 2;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.impl.TableMacroImpl
+message TableMacroImplProto {
+	MethodProto method = 1;
+	repeated FunctionParameterProto parameters = 2;
+}
+
+// Java Class: java.lang.reflect.Method
+message MethodProto {
+}
+
+// Java Class: org.apache.calcite.schema.FunctionParameter
+message FunctionParameterProto {
+}
+
+// Java Class: org.apache.calcite.schema.impl.ViewTableMacro
+message ViewTableMacroProto {
+	string viewSql = 1;
+	CalciteSchemaProto schema = 2;
+	bool modifiable = 3;
+	repeated string schemaPath = 4;
+	repeated string viewPath = 5;
+}
+
+// Java Class: org.apache.calcite.jdbc.CalciteSchema
+message CalciteSchemaProto {
+	oneof calciteSchemaProto {
+		SimpleCalciteSchemaProto simpleCalciteSchemaProto = 1;
+		CachingCalciteSchemaProto cachingCalciteSchemaProto = 2;
+		CalciteRootSchemaProto calciteRootSchemaProto = 3;
+	}
+	CalciteSchemaProto parent = 4;
+	SchemaProto schema = 5;
+	string name = 6;
+	NameMapProto tableMap = 7;
+	NameMultimapProto functionMap = 8;
+	NameMapProto typeMap = 9;
+	NameMapProto latticeMap = 10;
+	NameSetProto functionNames = 11;
+	NameMapProto nullaryFunctionMap = 12;
+	NameMapProto subSchemaMap = 13;
+}
+
+// Java Class: org.apache.calcite.jdbc.SimpleCalciteSchema
+message SimpleCalciteSchemaProto {
+	CalciteSchemaProto parent = 1;
+	SchemaProto schema = 2;
+	string name = 3;
+	NameMapProto tableMap = 4;
+	NameMultimapProto functionMap = 5;
+	NameMapProto typeMap = 6;
+	NameMapProto latticeMap = 7;
+	NameSetProto functionNames = 8;
+	NameMapProto nullaryFunctionMap = 9;
+	NameMapProto subSchemaMap = 10;
+}
+
+// Java Class: org.apache.calcite.schema.Schema
+message SchemaProto {
+	oneof schemaProto {
+		SchemaPlusProto schemaPlusProto = 1;
+		DelegatingSchemaProto delegatingSchemaProto = 2;
+		AbstractSchemaProto abstractSchemaProto = 3;
+		SemiMutableSchemaProto semiMutableSchemaProto = 4;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.SchemaPlus
+message SchemaPlusProto {
+}
+
+// Java Class: org.apache.calcite.schema.impl.DelegatingSchema
+message DelegatingSchemaProto {
+	SchemaProto schema = 1;
+}
+
+// Java Class: org.apache.calcite.schema.impl.AbstractSchema
+message AbstractSchemaProto {
+}
+
+// Java Class: org.apache.calcite.schema.SemiMutableSchema
+message SemiMutableSchemaProto {
+}
+
+// Java Class: org.apache.calcite.util.NameMap
+message NameMapProto {
+}
+
+// Java Class: org.apache.calcite.util.NameMultimap
+message NameMultimapProto {
+	NameMapProto map = 1;
+}
+
+// Java Class: org.apache.calcite.util.NameSet
+message NameSetProto {
+	NameMapProto names = 1;
+}
+
+// Java Class: org.apache.calcite.jdbc.CachingCalciteSchema
+message CachingCalciteSchemaProto {
+	oneof cachingCalciteSchemaProto {
+		CalciteRootSchemaProto calciteRootSchemaProto = 1;
+	}
+	bool cache = 2;
+	CalciteSchemaProto parent = 3;
+	SchemaProto schema = 4;
+	string name = 5;
+	NameMapProto tableMap = 6;
+	NameMultimapProto functionMap = 7;
+	NameMapProto typeMap = 8;
+	NameMapProto latticeMap = 9;
+	NameSetProto functionNames = 10;
+	NameMapProto nullaryFunctionMap = 11;
+	NameMapProto subSchemaMap = 12;
+}
+
+// Java Class: org.apache.calcite.jdbc.CalciteRootSchema
+message CalciteRootSchemaProto {
+	bool cache = 1;
+	CalciteSchemaProto parent = 2;
+	SchemaProto schema = 3;
+	string name = 4;
+	NameMapProto tableMap = 5;
+	NameMultimapProto functionMap = 6;
+	NameMapProto typeMap = 7;
+	NameMapProto latticeMap = 8;
+	NameSetProto functionNames = 9;
+	NameMapProto nullaryFunctionMap = 10;
+	NameMapProto subSchemaMap = 11;
+}
+
+// Java Class: org.apache.calcite.sql.validate.SqlUserDefinedFunction
+message SqlUserDefinedFunctionProto {
+	oneof sqlUserDefinedFunctionProto {
+		SqlUserDefinedTableFunctionProto sqlUserDefinedTableFunctionProto = 1;
+	}
+	org_apache_calcite_schema_FunctionProto function = 2;
+	SqlFunctionCategoryProto category = 3;
+	SqlIdentifierProto sqlIdentifier = 4;
+	string name = 5;
+	SqlKindProto kind = 6;
+	sint32 leftPrec = 7;
+	sint32 rightPrec = 8;
+	SqlReturnTypeInferenceProto returnTypeInference = 9;
+	SqlOperandTypeInferenceProto operandTypeInference = 10;
+	SqlOperandTypeCheckerProto operandTypeChecker = 11;
+	string allowedSignatures = 12;
+}
+
+// Java Class: org.apache.calcite.sql.validate.SqlUserDefinedTableFunction
+message SqlUserDefinedTableFunctionProto {
+	org_apache_calcite_schema_FunctionProto function = 1;
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.schema.Function
+message org_apache_calcite_schema_FunctionProto {
+	oneof org_apache_calcite_schema_FunctionProto {
+		TableFunctionProto tableFunctionProto = 1;
+		ReflectiveFunctionBaseProto reflectiveFunctionBaseProto = 2;
+		ImplementableFunctionProto implementableFunctionProto = 3;
+		TableMacroProto tableMacroProto = 4;
+		ScalarFunctionProto scalarFunctionProto = 5;
+		AggregateFunctionProto aggregateFunctionProto = 6;
+		TableFunctionImplProto tableFunctionImplProto = 7;
+		TableMacroImplProto tableMacroImplProto = 8;
+		ScalarFunctionImplProto scalarFunctionImplProto = 9;
+		ViewTableMacroProto viewTableMacroProto = 10;
+		ImplementableAggFunctionProto implementableAggFunctionProto = 11;
+		AggregateFunctionImplProto aggregateFunctionImplProto = 12;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.TableFunction
+message TableFunctionProto {
+	oneof tableFunctionProto {
+		TableFunctionImplProto tableFunctionImplProto = 1;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.impl.TableFunctionImpl
+message TableFunctionImplProto {
+	CallImplementorProto implementor = 1;
+	MethodProto method = 2;
+	repeated FunctionParameterProto parameters = 3;
+}
+
+// Java Class: org.apache.calcite.adapter.enumerable.CallImplementor
+message CallImplementorProto {
+}
+
+// Java Class: org.apache.calcite.schema.impl.ReflectiveFunctionBase
+message ReflectiveFunctionBaseProto {
+	oneof reflectiveFunctionBaseProto {
+		TableFunctionImplProto tableFunctionImplProto = 1;
+		TableMacroImplProto tableMacroImplProto = 2;
+		ScalarFunctionImplProto scalarFunctionImplProto = 3;
+	}
+	MethodProto method = 4;
+	repeated FunctionParameterProto parameters = 5;
+}
+
+// Java Class: org.apache.calcite.schema.impl.ScalarFunctionImpl
+message ScalarFunctionImplProto {
+	CallImplementorProto implementor = 1;
+	MethodProto method = 2;
+	repeated FunctionParameterProto parameters = 3;
+}
+
+// Java Class: org.apache.calcite.schema.ImplementableFunction
+message ImplementableFunctionProto {
+	oneof implementableFunctionProto {
+		TableFunctionImplProto tableFunctionImplProto = 1;
+		ScalarFunctionImplProto scalarFunctionImplProto = 2;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.ScalarFunction
+message ScalarFunctionProto {
+	oneof scalarFunctionProto {
+		ScalarFunctionImplProto scalarFunctionImplProto = 1;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.AggregateFunction
+message AggregateFunctionProto {
+	oneof aggregateFunctionProto {
+		ImplementableAggFunctionProto implementableAggFunctionProto = 1;
+		AggregateFunctionImplProto aggregateFunctionImplProto = 2;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.ImplementableAggFunction
+message ImplementableAggFunctionProto {
+	oneof implementableAggFunctionProto {
+		AggregateFunctionImplProto aggregateFunctionImplProto = 1;
+	}
+}
+
+// Java Class: org.apache.calcite.schema.impl.AggregateFunctionImpl
+message AggregateFunctionImplProto {
+	bool isStatic = 1;
+	MethodProto initMethod = 2;
+	MethodProto addMethod = 3;
+	MethodProto mergeMethod = 4;
+	MethodProto resultMethod = 5;
+	repeated FunctionParameterProto parameters = 6;
+	ClassProto accumulatorType = 7;
+	ClassProto resultType = 8;
+	ClassProto declaringClass = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlExtractFunction
+message SqlExtractFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlTranslate3Function
+message SqlTranslate3FunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlTrimFunction
+message SqlTrimFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlSubstringFunction
+message SqlSubstringFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonDepthFunction
+message SqlJsonDepthFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlAbstractTimeFunction
+message SqlAbstractTimeFunctionProto {
+	SqlTypeNameProto typeName = 1;
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlRandFunction
+message SqlRandFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCoalesceFunction
+message SqlCoalesceFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonTypeFunction
+message SqlJsonTypeFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonValueFunction
+message SqlJsonValueFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlDatePartFunction
+message SqlDatePartFunctionProto {
+	TimeUnitProto timeUnit = 1;
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+enum TimeUnitProto { 
+	TimeUnitProto_YEAR_ = 0;
+	TimeUnitProto_MONTH_ = 1;
+	TimeUnitProto_DAY_ = 2;
+	TimeUnitProto_HOUR_ = 3;
+	TimeUnitProto_MINUTE_ = 4;
+	TimeUnitProto_SECOND_ = 5;
+	TimeUnitProto_QUARTER_ = 6;
+	TimeUnitProto_ISOYEAR_ = 7;
+	TimeUnitProto_WEEK_ = 8;
+	TimeUnitProto_MILLISECOND_ = 9;
+	TimeUnitProto_MICROSECOND_ = 10;
+	TimeUnitProto_NANOSECOND_ = 11;
+	TimeUnitProto_DOW_ = 12;
+	TimeUnitProto_ISODOW_ = 13;
+	TimeUnitProto_DOY_ = 14;
+	TimeUnitProto_EPOCH_ = 15;
+	TimeUnitProto_DECADE_ = 16;
+	TimeUnitProto_CENTURY_ = 17;
+	TimeUnitProto_MILLENNIUM_ = 18;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonObjectFunction
+message SqlJsonObjectFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlNullifFunction
+message SqlNullifFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlTimestampAddFunction
+message SqlTimestampAddFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonPrettyFunction
+message SqlJsonPrettyFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlBaseContextVariable
+message SqlBaseContextVariableProto {
+	oneof sqlBaseContextVariableProto {
+		SqlStringContextVariableProto sqlStringContextVariableProto = 1;
+	}
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlStringContextVariable
+message SqlStringContextVariableProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlConvertFunction
+message SqlConvertFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.SqlGroupedWindowFunction
+message SqlGroupedWindowFunctionProto {
+	SqlGroupedWindowFunctionProto groupFunction = 1;
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.sql.SqlTypeConstructorFunction
+message SqlTypeConstructorFunctionProto {
+	RelDataTypeProto type = 1;
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlTimestampDiffFunction
+message SqlTimestampDiffFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonKeysFunction
+message SqlJsonKeysFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonLengthFunction
+message SqlJsonLengthFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCastFunction
+message SqlCastFunctionProto {
+	SetMultimapProto nonMonotonicCasts = 1;
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: com.google.common.collect.SetMultimap
+message SetMultimapProto {
+	oneof setMultimapProto {
+		AbstractSetMultimapProto abstractSetMultimapProto = 1;
+		SortedSetMultimapProto sortedSetMultimapProto = 2;
+		ForwardingSetMultimapProto forwardingSetMultimapProto = 3;
+		FilteredSetMultimapProto filteredSetMultimapProto = 4;
+		ImmutableSetMultimapProto immutableSetMultimapProto = 5;
+		LinkedHashMultimapGwtSerializationDependenciesProto linkedHashMultimapGwtSerializationDependenciesProto = 6;
+		HashMultimapGwtSerializationDependenciesProto hashMultimapGwtSerializationDependenciesProto = 7;
+		AbstractSortedSetMultimapProto abstractSortedSetMultimapProto = 8;
+		ForwardingSortedSetMultimapProto forwardingSortedSetMultimapProto = 9;
+		FilteredEntrySetMultimapProto filteredEntrySetMultimapProto = 10;
+		FilteredKeySetMultimapProto filteredKeySetMultimapProto = 11;
+		EmptyImmutableSetMultimapProto emptyImmutableSetMultimapProto = 12;
+		LinkedHashMultimapProto linkedHashMultimapProto = 13;
+		HashMultimapProto hashMultimapProto = 14;
+		AbstractSortedKeySortedSetMultimapProto abstractSortedKeySortedSetMultimapProto = 15;
+		TreeMultimapProto treeMultimapProto = 16;
+	}
+}
+
+// Java Class: com.google.common.collect.AbstractSetMultimap
+message AbstractSetMultimapProto {
+	oneof abstractSetMultimapProto {
+		LinkedHashMultimapGwtSerializationDependenciesProto linkedHashMultimapGwtSerializationDependenciesProto = 1;
+		HashMultimapGwtSerializationDependenciesProto hashMultimapGwtSerializationDependenciesProto = 2;
+		AbstractSortedSetMultimapProto abstractSortedSetMultimapProto = 3;
+		LinkedHashMultimapProto linkedHashMultimapProto = 4;
+		HashMultimapProto hashMultimapProto = 5;
+		AbstractSortedKeySortedSetMultimapProto abstractSortedKeySortedSetMultimapProto = 6;
+		TreeMultimapProto treeMultimapProto = 7;
+	}
+}
+
+// Java Class: com.google.common.collect.LinkedHashMultimapGwtSerializationDependencies
+message LinkedHashMultimapGwtSerializationDependenciesProto {
+	oneof linkedHashMultimapGwtSerializationDependenciesProto {
+		LinkedHashMultimapProto linkedHashMultimapProto = 1;
+	}
+}
+
+// Java Class: com.google.common.collect.LinkedHashMultimap
+message LinkedHashMultimapProto {
+}
+
+// Java Class: com.google.common.collect.HashMultimapGwtSerializationDependencies
+message HashMultimapGwtSerializationDependenciesProto {
+	oneof hashMultimapGwtSerializationDependenciesProto {
+		HashMultimapProto hashMultimapProto = 1;
+	}
+}
+
+// Java Class: com.google.common.collect.HashMultimap
+message HashMultimapProto {
+}
+
+// Java Class: com.google.common.collect.AbstractSortedSetMultimap
+message AbstractSortedSetMultimapProto {
+	oneof abstractSortedSetMultimapProto {
+		AbstractSortedKeySortedSetMultimapProto abstractSortedKeySortedSetMultimapProto = 1;
+		TreeMultimapProto treeMultimapProto = 2;
+	}
+}
+
+// Java Class: com.google.common.collect.AbstractSortedKeySortedSetMultimap
+message AbstractSortedKeySortedSetMultimapProto {
+	oneof abstractSortedKeySortedSetMultimapProto {
+		TreeMultimapProto treeMultimapProto = 1;
+	}
+}
+
+// Java Class: com.google.common.collect.TreeMultimap
+message TreeMultimapProto {
+}
+
+// Java Class: com.google.common.collect.SortedSetMultimap
+message SortedSetMultimapProto {
+	oneof sortedSetMultimapProto {
+		ForwardingSortedSetMultimapProto forwardingSortedSetMultimapProto = 1;
+		AbstractSortedSetMultimapProto abstractSortedSetMultimapProto = 2;
+		AbstractSortedKeySortedSetMultimapProto abstractSortedKeySortedSetMultimapProto = 3;
+		TreeMultimapProto treeMultimapProto = 4;
+	}
+}
+
+// Java Class: com.google.common.collect.ForwardingSortedSetMultimap
+message ForwardingSortedSetMultimapProto {
+}
+
+// Java Class: com.google.common.collect.ForwardingSetMultimap
+message ForwardingSetMultimapProto {
+	oneof forwardingSetMultimapProto {
+		ForwardingSortedSetMultimapProto forwardingSortedSetMultimapProto = 1;
+	}
+}
+
+// Java Class: com.google.common.collect.FilteredSetMultimap
+message FilteredSetMultimapProto {
+	oneof filteredSetMultimapProto {
+		FilteredEntrySetMultimapProto filteredEntrySetMultimapProto = 1;
+		FilteredKeySetMultimapProto filteredKeySetMultimapProto = 2;
+	}
+}
+
+// Java Class: com.google.common.collect.FilteredEntrySetMultimap
+message FilteredEntrySetMultimapProto {
+	MultimapProto unfiltered = 1;
+	com_google_common_base_PredicateProto predicate = 2;
+}
+
+// Java Class: com.google.common.collect.Multimap
+message MultimapProto {
+	oneof multimapProto {
+		ForwardingMultimapProto forwardingMultimapProto = 1;
+		ListMultimapProto listMultimapProto = 2;
+		AbstractMultimapProto abstractMultimapProto = 3;
+		FilteredMultimapProto filteredMultimapProto = 4;
+		SetMultimapProto setMultimapProto = 5;
+		ForwardingListMultimapProto forwardingListMultimapProto = 6;
+		ForwardingSetMultimapProto forwardingSetMultimapProto = 7;
+		LinkedListMultimapProto linkedListMultimapProto = 8;
+		AbstractListMultimapProto abstractListMultimapProto = 9;
+		FilteredKeyListMultimapProto filteredKeyListMultimapProto = 10;
+		ImmutableListMultimapProto immutableListMultimapProto = 11;
+		AbstractMapBasedMultimapProto abstractMapBasedMultimapProto = 12;
+		FilteredEntryMultimapProto filteredEntryMultimapProto = 13;
+		BaseImmutableMultimapProto baseImmutableMultimapProto = 14;
+		FilteredKeyMultimapProto filteredKeyMultimapProto = 15;
+		FilteredSetMultimapProto filteredSetMultimapProto = 16;
+		AbstractSetMultimapProto abstractSetMultimapProto = 17;
+		SortedSetMultimapProto sortedSetMultimapProto = 18;
+		ImmutableSetMultimapProto immutableSetMultimapProto = 19;
+		ForwardingSortedSetMultimapProto forwardingSortedSetMultimapProto = 20;
+		ArrayListMultimapGwtSerializationDependenciesProto arrayListMultimapGwtSerializationDependenciesProto = 21;
+		EmptyImmutableListMultimapProto emptyImmutableListMultimapProto = 22;
+		FilteredEntrySetMultimapProto filteredEntrySetMultimapProto = 23;
+		ImmutableMultimapProto immutableMultimapProto = 24;
+		FilteredKeySetMultimapProto filteredKeySetMultimapProto = 25;
+		LinkedHashMultimapGwtSerializationDependenciesProto linkedHashMultimapGwtSerializationDependenciesProto = 26;
+		HashMultimapGwtSerializationDependenciesProto hashMultimapGwtSerializationDependenciesProto = 27;
+		AbstractSortedSetMultimapProto abstractSortedSetMultimapProto = 28;
+		EmptyImmutableSetMultimapProto emptyImmutableSetMultimapProto = 29;
+		ArrayListMultimapProto arrayListMultimapProto = 30;
+		LinkedHashMultimapProto linkedHashMultimapProto = 31;
+		HashMultimapProto hashMultimapProto = 32;
+		AbstractSortedKeySortedSetMultimapProto abstractSortedKeySortedSetMultimapProto = 33;
+		TreeMultimapProto treeMultimapProto = 34;
+	}
+}
+
+// Java Class: com.google.common.collect.ForwardingMultimap
+message ForwardingMultimapProto {
+	oneof forwardingMultimapProto {
+		ForwardingListMultimapProto forwardingListMultimapProto = 1;
+		ForwardingSetMultimapProto forwardingSetMultimapProto = 2;
+		ForwardingSortedSetMultimapProto forwardingSortedSetMultimapProto = 3;
+	}
+}
+
+// Java Class: com.google.common.collect.ForwardingListMultimap
+message ForwardingListMultimapProto {
+}
+
+// Java Class: com.google.common.collect.ListMultimap
+message ListMultimapProto {
+	oneof listMultimapProto {
+		LinkedListMultimapProto linkedListMultimapProto = 1;
+		AbstractListMultimapProto abstractListMultimapProto = 2;
+		FilteredKeyListMultimapProto filteredKeyListMultimapProto = 3;
+		ForwardingListMultimapProto forwardingListMultimapProto = 4;
+		ImmutableListMultimapProto immutableListMultimapProto = 5;
+		ArrayListMultimapGwtSerializationDependenciesProto arrayListMultimapGwtSerializationDependenciesProto = 6;
+		EmptyImmutableListMultimapProto emptyImmutableListMultimapProto = 7;
+		ArrayListMultimapProto arrayListMultimapProto = 8;
+	}
+}
+
+// Java Class: com.google.common.collect.LinkedListMultimap
+message LinkedListMultimapProto {
+}
+
+// Java Class: com.google.common.collect.AbstractListMultimap
+message AbstractListMultimapProto {
+	oneof abstractListMultimapProto {
+		ArrayListMultimapGwtSerializationDependenciesProto arrayListMultimapGwtSerializationDependenciesProto = 1;
+		ArrayListMultimapProto arrayListMultimapProto = 2;
+	}
+}
+
+// Java Class: com.google.common.collect.ArrayListMultimapGwtSerializationDependencies
+message ArrayListMultimapGwtSerializationDependenciesProto {
+	oneof arrayListMultimapGwtSerializationDependenciesProto {
+		ArrayListMultimapProto arrayListMultimapProto = 1;
+	}
+}
+
+// Java Class: com.google.common.collect.ArrayListMultimap
+message ArrayListMultimapProto {
+}
+
+// Java Class: com.google.common.collect.FilteredKeyListMultimap
+message FilteredKeyListMultimapProto {
+	MultimapProto unfiltered = 1;
+	com_google_common_base_PredicateProto keyPredicate = 2;
+}
+
+// Java Class: com.google.common.base.Predicate
+message com_google_common_base_PredicateProto {
+	oneof com_google_common_base_PredicateProto {
+		ObjectPredicateProto objectPredicateProto = 1;
+		CharMatcherProto charMatcherProto = 2;
+		SmallCharMatcherProto smallCharMatcherProto = 3;
+	}
+}
+
+enum ObjectPredicateProto { 
+	ObjectPredicateProto_ALWAYS_TRUE_ = 0;
+	ObjectPredicateProto_ALWAYS_FALSE_ = 1;
+	ObjectPredicateProto_IS_NULL_ = 2;
+	ObjectPredicateProto_NOT_NULL_ = 3;
+}
+
+// Java Class: com.google.common.base.CharMatcher
+message CharMatcherProto {
+	oneof charMatcherProto {
+		SmallCharMatcherProto smallCharMatcherProto = 1;
+	}
+}
+
+// Java Class: com.google.common.base.SmallCharMatcher
+message SmallCharMatcherProto {
+	repeated sint32 table = 1;
+	bool containsZero = 2;
+	sint64 filter = 3;
+	string description = 4;
+}
+
+// Java Class: com.google.common.collect.ImmutableListMultimap
+message ImmutableListMultimapProto {
+	oneof immutableListMultimapProto {
+		EmptyImmutableListMultimapProto emptyImmutableListMultimapProto = 1;
+	}
+}
+
+// Java Class: com.google.common.collect.EmptyImmutableListMultimap
+message EmptyImmutableListMultimapProto {
+}
+
+// Java Class: com.google.common.collect.AbstractMultimap
+message AbstractMultimapProto {
+	oneof abstractMultimapProto {
+		LinkedListMultimapProto linkedListMultimapProto = 1;
+		AbstractMapBasedMultimapProto abstractMapBasedMultimapProto = 2;
+		FilteredEntryMultimapProto filteredEntryMultimapProto = 3;
+		BaseImmutableMultimapProto baseImmutableMultimapProto = 4;
+		FilteredKeyMultimapProto filteredKeyMultimapProto = 5;
+		AbstractListMultimapProto abstractListMultimapProto = 6;
+		AbstractSetMultimapProto abstractSetMultimapProto = 7;
+		FilteredEntrySetMultimapProto filteredEntrySetMultimapProto = 8;
+		ImmutableMultimapProto immutableMultimapProto = 9;
+		FilteredKeyListMultimapProto filteredKeyListMultimapProto = 10;
+		FilteredKeySetMultimapProto filteredKeySetMultimapProto = 11;
+		ArrayListMultimapGwtSerializationDependenciesProto arrayListMultimapGwtSerializationDependenciesProto = 12;
+		LinkedHashMultimapGwtSerializationDependenciesProto linkedHashMultimapGwtSerializationDependenciesProto = 13;
+		HashMultimapGwtSerializationDependenciesProto hashMultimapGwtSerializationDependenciesProto = 14;
+		AbstractSortedSetMultimapProto abstractSortedSetMultimapProto = 15;
+		ImmutableListMultimapProto immutableListMultimapProto = 16;
+		ImmutableSetMultimapProto immutableSetMultimapProto = 17;
+		ArrayListMultimapProto arrayListMultimapProto = 18;
+		LinkedHashMultimapProto linkedHashMultimapProto = 19;
+		HashMultimapProto hashMultimapProto = 20;
+		AbstractSortedKeySortedSetMultimapProto abstractSortedKeySortedSetMultimapProto = 21;
+		EmptyImmutableListMultimapProto emptyImmutableListMultimapProto = 22;
+		EmptyImmutableSetMultimapProto emptyImmutableSetMultimapProto = 23;
+		TreeMultimapProto treeMultimapProto = 24;
+	}
+}
+
+// Java Class: com.google.common.collect.AbstractMapBasedMultimap
+message AbstractMapBasedMultimapProto {
+	oneof abstractMapBasedMultimapProto {
+		AbstractListMultimapProto abstractListMultimapProto = 1;
+		AbstractSetMultimapProto abstractSetMultimapProto = 2;
+		ArrayListMultimapGwtSerializationDependenciesProto arrayListMultimapGwtSerializationDependenciesProto = 3;
+		LinkedHashMultimapGwtSerializationDependenciesProto linkedHashMultimapGwtSerializationDependenciesProto = 4;
+		HashMultimapGwtSerializationDependenciesProto hashMultimapGwtSerializationDependenciesProto = 5;
+		AbstractSortedSetMultimapProto abstractSortedSetMultimapProto = 6;
+		ArrayListMultimapProto arrayListMultimapProto = 7;
+		LinkedHashMultimapProto linkedHashMultimapProto = 8;
+		HashMultimapProto hashMultimapProto = 9;
+		AbstractSortedKeySortedSetMultimapProto abstractSortedKeySortedSetMultimapProto = 10;
+		TreeMultimapProto treeMultimapProto = 11;
+	}
+}
+
+// Java Class: com.google.common.collect.FilteredEntryMultimap
+message FilteredEntryMultimapProto {
+	oneof filteredEntryMultimapProto {
+		FilteredEntrySetMultimapProto filteredEntrySetMultimapProto = 1;
+	}
+	MultimapProto unfiltered = 2;
+	com_google_common_base_PredicateProto predicate = 3;
+}
+
+// Java Class: com.google.common.collect.BaseImmutableMultimap
+message BaseImmutableMultimapProto {
+	oneof baseImmutableMultimapProto {
+		ImmutableMultimapProto immutableMultimapProto = 1;
+		ImmutableListMultimapProto immutableListMultimapProto = 2;
+		ImmutableSetMultimapProto immutableSetMultimapProto = 3;
+		EmptyImmutableListMultimapProto emptyImmutableListMultimapProto = 4;
+		EmptyImmutableSetMultimapProto emptyImmutableSetMultimapProto = 5;
+	}
+}
+
+// Java Class: com.google.common.collect.ImmutableMultimap
+message ImmutableMultimapProto {
+	oneof immutableMultimapProto {
+		ImmutableListMultimapProto immutableListMultimapProto = 1;
+		ImmutableSetMultimapProto immutableSetMultimapProto = 2;
+		EmptyImmutableListMultimapProto emptyImmutableListMultimapProto = 3;
+		EmptyImmutableSetMultimapProto emptyImmutableSetMultimapProto = 4;
+	}
+}
+
+// Java Class: com.google.common.collect.ImmutableSetMultimap
+message ImmutableSetMultimapProto {
+	oneof immutableSetMultimapProto {
+		EmptyImmutableSetMultimapProto emptyImmutableSetMultimapProto = 1;
+	}
+}
+
+// Java Class: com.google.common.collect.EmptyImmutableSetMultimap
+message EmptyImmutableSetMultimapProto {
+}
+
+// Java Class: com.google.common.collect.FilteredKeyMultimap
+message FilteredKeyMultimapProto {
+	oneof filteredKeyMultimapProto {
+		FilteredKeyListMultimapProto filteredKeyListMultimapProto = 1;
+		FilteredKeySetMultimapProto filteredKeySetMultimapProto = 2;
+	}
+	MultimapProto unfiltered = 3;
+	com_google_common_base_PredicateProto keyPredicate = 4;
+}
+
+// Java Class: com.google.common.collect.FilteredKeySetMultimap
+message FilteredKeySetMultimapProto {
+	MultimapProto unfiltered = 1;
+	com_google_common_base_PredicateProto keyPredicate = 2;
+}
+
+// Java Class: com.google.common.collect.FilteredMultimap
+message FilteredMultimapProto {
+	oneof filteredMultimapProto {
+		FilteredEntryMultimapProto filteredEntryMultimapProto = 1;
+		FilteredKeyMultimapProto filteredKeyMultimapProto = 2;
+		FilteredSetMultimapProto filteredSetMultimapProto = 3;
+		FilteredEntrySetMultimapProto filteredEntrySetMultimapProto = 4;
+		FilteredKeyListMultimapProto filteredKeyListMultimapProto = 5;
+		FilteredKeySetMultimapProto filteredKeySetMultimapProto = 6;
+	}
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlPositionFunction
+message SqlPositionFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonRemoveFunction
+message SqlJsonRemoveFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.SqlMatchFunction
+message SqlMatchFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlOverlayFunction
+message SqlOverlayFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonArrayFunction
+message SqlJsonArrayFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlRandIntegerFunction
+message SqlRandIntegerFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCurrentDateFunction
+message SqlCurrentDateFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.SqlAggFunction
+message SqlAggFunctionProto {
+	oneof sqlAggFunctionProto {
+		SqlUserDefinedAggFunctionProto sqlUserDefinedAggFunctionProto = 1;
+		SqlCovarAggFunctionProto sqlCovarAggFunctionProto = 2;
+		SqlJsonArrayAggAggFunctionProto sqlJsonArrayAggAggFunctionProto = 3;
+		SqlSumAggFunctionProto sqlSumAggFunctionProto = 4;
+		SqlMinMaxAggFunctionProto sqlMinMaxAggFunctionProto = 5;
+		SqlCountAggFunctionProto sqlCountAggFunctionProto = 6;
+		SqlAnyValueAggFunctionProto sqlAnyValueAggFunctionProto = 7;
+		SqlAvgAggFunctionProto sqlAvgAggFunctionProto = 8;
+		SqlNthValueAggFunctionProto sqlNthValueAggFunctionProto = 9;
+		SqlBasicAggFunctionProto sqlBasicAggFunctionProto = 10;
+		SqlSingleValueAggFunctionProto sqlSingleValueAggFunctionProto = 11;
+		SqlSumEmptyIsZeroAggFunctionProto sqlSumEmptyIsZeroAggFunctionProto = 12;
+		SqlListaggAggFunctionProto sqlListaggAggFunctionProto = 13;
+		SqlNtileAggFunctionProto sqlNtileAggFunctionProto = 14;
+		SqlJsonObjectAggAggFunctionProto sqlJsonObjectAggAggFunctionProto = 15;
+		SqlFirstLastValueAggFunctionProto sqlFirstLastValueAggFunctionProto = 16;
+		SqlAbstractGroupFunctionProto sqlAbstractGroupFunctionProto = 17;
+		SqlHistogramAggFunctionProto sqlHistogramAggFunctionProto = 18;
+		SqlRankFunctionProto sqlRankFunctionProto = 19;
+		SqlLeadLagAggFunctionProto sqlLeadLagAggFunctionProto = 20;
+		SqlBitOpAggFunctionProto sqlBitOpAggFunctionProto = 21;
+		SqlRegrCountAggFunctionProto sqlRegrCountAggFunctionProto = 22;
+		SqlGroupIdFunctionProto sqlGroupIdFunctionProto = 23;
+		SqlGroupingIdFunctionProto sqlGroupingIdFunctionProto = 24;
+		SqlGroupingFunctionProto sqlGroupingFunctionProto = 25;
+	}
+	bool requiresOrder = 26;
+	bool requiresOver = 27;
+	OptionalityProto requiresGroupOrder = 28;
+	SqlFunctionCategoryProto category = 29;
+	SqlIdentifierProto sqlIdentifier = 30;
+	string name = 31;
+	SqlKindProto kind = 32;
+	sint32 leftPrec = 33;
+	sint32 rightPrec = 34;
+	SqlReturnTypeInferenceProto returnTypeInference = 35;
+	SqlOperandTypeInferenceProto operandTypeInference = 36;
+	SqlOperandTypeCheckerProto operandTypeChecker = 37;
+	string allowedSignatures = 38;
+}
+
+// Java Class: org.apache.calcite.sql.validate.SqlUserDefinedAggFunction
+message SqlUserDefinedAggFunctionProto {
+	AggregateFunctionProto function = 1;
+	bool requiresOrder = 2;
+	bool requiresOver = 3;
+	OptionalityProto requiresGroupOrder = 4;
+	SqlFunctionCategoryProto category = 5;
+	SqlIdentifierProto sqlIdentifier = 6;
+	string name = 7;
+	SqlKindProto kind = 8;
+	sint32 leftPrec = 9;
+	sint32 rightPrec = 10;
+	SqlReturnTypeInferenceProto returnTypeInference = 11;
+	SqlOperandTypeInferenceProto operandTypeInference = 12;
+	SqlOperandTypeCheckerProto operandTypeChecker = 13;
+	string allowedSignatures = 14;
+}
+
+enum OptionalityProto { 
+	OptionalityProto_MANDATORY_ = 0;
+	OptionalityProto_OPTIONAL_ = 1;
+	OptionalityProto_IGNORED_ = 2;
+	OptionalityProto_FORBIDDEN_ = 3;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCovarAggFunction
+message SqlCovarAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonArrayAggAggFunction
+message SqlJsonArrayAggAggFunctionProto {
+	SqlJsonConstructorNullClauseProto nullClause = 1;
+	bool requiresOrder = 2;
+	bool requiresOver = 3;
+	OptionalityProto requiresGroupOrder = 4;
+	SqlFunctionCategoryProto category = 5;
+	SqlIdentifierProto sqlIdentifier = 6;
+	string name = 7;
+	SqlKindProto kind = 8;
+	sint32 leftPrec = 9;
+	sint32 rightPrec = 10;
+	SqlReturnTypeInferenceProto returnTypeInference = 11;
+	SqlOperandTypeInferenceProto operandTypeInference = 12;
+	SqlOperandTypeCheckerProto operandTypeChecker = 13;
+	string allowedSignatures = 14;
+}
+
+enum SqlJsonConstructorNullClauseProto { 
+	SqlJsonConstructorNullClauseProto_NULL_ON_NULL_ = 0;
+	SqlJsonConstructorNullClauseProto_ABSENT_ON_NULL_ = 1;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlSumAggFunction
+message SqlSumAggFunctionProto {
+	RelDataTypeProto type = 1;
+	bool requiresOrder = 2;
+	bool requiresOver = 3;
+	OptionalityProto requiresGroupOrder = 4;
+	SqlFunctionCategoryProto category = 5;
+	SqlIdentifierProto sqlIdentifier = 6;
+	string name = 7;
+	SqlKindProto kind = 8;
+	sint32 leftPrec = 9;
+	sint32 rightPrec = 10;
+	SqlReturnTypeInferenceProto returnTypeInference = 11;
+	SqlOperandTypeInferenceProto operandTypeInference = 12;
+	SqlOperandTypeCheckerProto operandTypeChecker = 13;
+	string allowedSignatures = 14;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMinMaxAggFunction
+message SqlMinMaxAggFunctionProto {
+	repeated RelDataTypeProto argTypes = 1;
+	sint32 minMaxKind = 2;
+	bool requiresOrder = 3;
+	bool requiresOver = 4;
+	OptionalityProto requiresGroupOrder = 5;
+	SqlFunctionCategoryProto category = 6;
+	SqlIdentifierProto sqlIdentifier = 7;
+	string name = 8;
+	SqlKindProto kind = 9;
+	sint32 leftPrec = 10;
+	sint32 rightPrec = 11;
+	SqlReturnTypeInferenceProto returnTypeInference = 12;
+	SqlOperandTypeInferenceProto operandTypeInference = 13;
+	SqlOperandTypeCheckerProto operandTypeChecker = 14;
+	string allowedSignatures = 15;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCountAggFunction
+message SqlCountAggFunctionProto {
+	oneof sqlCountAggFunctionProto {
+		SqlRegrCountAggFunctionProto sqlRegrCountAggFunctionProto = 1;
+	}
+	bool requiresOrder = 2;
+	bool requiresOver = 3;
+	OptionalityProto requiresGroupOrder = 4;
+	SqlFunctionCategoryProto category = 5;
+	SqlIdentifierProto sqlIdentifier = 6;
+	string name = 7;
+	SqlKindProto kind = 8;
+	sint32 leftPrec = 9;
+	sint32 rightPrec = 10;
+	SqlReturnTypeInferenceProto returnTypeInference = 11;
+	SqlOperandTypeInferenceProto operandTypeInference = 12;
+	SqlOperandTypeCheckerProto operandTypeChecker = 13;
+	string allowedSignatures = 14;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlRegrCountAggFunction
+message SqlRegrCountAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlAnyValueAggFunction
+message SqlAnyValueAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlAvgAggFunction
+message SqlAvgAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlNthValueAggFunction
+message SqlNthValueAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlBasicAggFunction
+message SqlBasicAggFunctionProto {
+	OptionalityProto distinctOptionality = 1;
+	SqlSyntaxProto syntax = 2;
+	bool allowsNullTreatment = 3;
+	bool allowsSeparator = 4;
+	bool percentile = 5;
+	bool requiresOrder = 6;
+	bool requiresOver = 7;
+	OptionalityProto requiresGroupOrder = 8;
+	SqlFunctionCategoryProto category = 9;
+	SqlIdentifierProto sqlIdentifier = 10;
+	string name = 11;
+	SqlKindProto kind = 12;
+	sint32 leftPrec = 13;
+	sint32 rightPrec = 14;
+	SqlReturnTypeInferenceProto returnTypeInference = 15;
+	SqlOperandTypeInferenceProto operandTypeInference = 16;
+	SqlOperandTypeCheckerProto operandTypeChecker = 17;
+	string allowedSignatures = 18;
+}
+
+enum SqlSyntaxProto { 
+	SqlSyntaxProto_FUNCTION_ = 0;
+	SqlSyntaxProto_FUNCTION_STAR_ = 1;
+	SqlSyntaxProto_ORDERED_FUNCTION_ = 2;
+	SqlSyntaxProto_BINARY_ = 3;
+	SqlSyntaxProto_PREFIX_ = 4;
+	SqlSyntaxProto_POSTFIX_ = 5;
+	SqlSyntaxProto_SPECIAL_ = 6;
+	SqlSyntaxProto_FUNCTION_ID_ = 7;
+	SqlSyntaxProto_INTERNAL_ = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlSingleValueAggFunction
+message SqlSingleValueAggFunctionProto {
+	RelDataTypeProto type = 1;
+	bool requiresOrder = 2;
+	bool requiresOver = 3;
+	OptionalityProto requiresGroupOrder = 4;
+	SqlFunctionCategoryProto category = 5;
+	SqlIdentifierProto sqlIdentifier = 6;
+	string name = 7;
+	SqlKindProto kind = 8;
+	sint32 leftPrec = 9;
+	sint32 rightPrec = 10;
+	SqlReturnTypeInferenceProto returnTypeInference = 11;
+	SqlOperandTypeInferenceProto operandTypeInference = 12;
+	SqlOperandTypeCheckerProto operandTypeChecker = 13;
+	string allowedSignatures = 14;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlSumEmptyIsZeroAggFunction
+message SqlSumEmptyIsZeroAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlListaggAggFunction
+message SqlListaggAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlNtileAggFunction
+message SqlNtileAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonObjectAggAggFunction
+message SqlJsonObjectAggAggFunctionProto {
+	SqlJsonConstructorNullClauseProto nullClause = 1;
+	bool requiresOrder = 2;
+	bool requiresOver = 3;
+	OptionalityProto requiresGroupOrder = 4;
+	SqlFunctionCategoryProto category = 5;
+	SqlIdentifierProto sqlIdentifier = 6;
+	string name = 7;
+	SqlKindProto kind = 8;
+	sint32 leftPrec = 9;
+	sint32 rightPrec = 10;
+	SqlReturnTypeInferenceProto returnTypeInference = 11;
+	SqlOperandTypeInferenceProto operandTypeInference = 12;
+	SqlOperandTypeCheckerProto operandTypeChecker = 13;
+	string allowedSignatures = 14;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlFirstLastValueAggFunction
+message SqlFirstLastValueAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlAbstractGroupFunction
+message SqlAbstractGroupFunctionProto {
+	oneof sqlAbstractGroupFunctionProto {
+		SqlGroupIdFunctionProto sqlGroupIdFunctionProto = 1;
+		SqlGroupingIdFunctionProto sqlGroupingIdFunctionProto = 2;
+		SqlGroupingFunctionProto sqlGroupingFunctionProto = 3;
+	}
+	bool requiresOrder = 4;
+	bool requiresOver = 5;
+	OptionalityProto requiresGroupOrder = 6;
+	SqlFunctionCategoryProto category = 7;
+	SqlIdentifierProto sqlIdentifier = 8;
+	string name = 9;
+	SqlKindProto kind = 10;
+	sint32 leftPrec = 11;
+	sint32 rightPrec = 12;
+	SqlReturnTypeInferenceProto returnTypeInference = 13;
+	SqlOperandTypeInferenceProto operandTypeInference = 14;
+	SqlOperandTypeCheckerProto operandTypeChecker = 15;
+	string allowedSignatures = 16;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlGroupIdFunction
+message SqlGroupIdFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlGroupingIdFunction
+message SqlGroupingIdFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlGroupingFunction
+message SqlGroupingFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlHistogramAggFunction
+message SqlHistogramAggFunctionProto {
+	RelDataTypeProto type = 1;
+	bool requiresOrder = 2;
+	bool requiresOver = 3;
+	OptionalityProto requiresGroupOrder = 4;
+	SqlFunctionCategoryProto category = 5;
+	SqlIdentifierProto sqlIdentifier = 6;
+	string name = 7;
+	SqlKindProto kind = 8;
+	sint32 leftPrec = 9;
+	sint32 rightPrec = 10;
+	SqlReturnTypeInferenceProto returnTypeInference = 11;
+	SqlOperandTypeInferenceProto operandTypeInference = 12;
+	SqlOperandTypeCheckerProto operandTypeChecker = 13;
+	string allowedSignatures = 14;
+}
+
+// Java Class: org.apache.calcite.sql.SqlRankFunction
+message SqlRankFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlLeadLagAggFunction
+message SqlLeadLagAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlBitOpAggFunction
+message SqlBitOpAggFunctionProto {
+	bool requiresOrder = 1;
+	bool requiresOver = 2;
+	OptionalityProto requiresGroupOrder = 3;
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.SqlWindowTableFunction
+message SqlWindowTableFunctionProto {
+	oneof sqlWindowTableFunctionProto {
+		SqlTumbleTableFunctionProto sqlTumbleTableFunctionProto = 1;
+		SqlSessionTableFunctionProto sqlSessionTableFunctionProto = 2;
+		SqlHopTableFunctionProto sqlHopTableFunctionProto = 3;
+	}
+	SqlFunctionCategoryProto category = 4;
+	SqlIdentifierProto sqlIdentifier = 5;
+	string name = 6;
+	SqlKindProto kind = 7;
+	sint32 leftPrec = 8;
+	sint32 rightPrec = 9;
+	SqlReturnTypeInferenceProto returnTypeInference = 10;
+	SqlOperandTypeInferenceProto operandTypeInference = 11;
+	SqlOperandTypeCheckerProto operandTypeChecker = 12;
+	string allowedSignatures = 13;
+}
+
+// Java Class: org.apache.calcite.sql.SqlTumbleTableFunction
+message SqlTumbleTableFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.SqlSessionTableFunction
+message SqlSessionTableFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.SqlHopTableFunction
+message SqlHopTableFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlRegexpReplaceFunction
+message SqlRegexpReplaceFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMonotonicUnaryFunction
+message SqlMonotonicUnaryFunctionProto {
+	oneof sqlMonotonicUnaryFunctionProto {
+		SqlFloorFunctionProto sqlFloorFunctionProto = 1;
+	}
+	SqlFunctionCategoryProto category = 2;
+	SqlIdentifierProto sqlIdentifier = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlFloorFunction
+message SqlFloorFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonStorageSizeFunction
+message SqlJsonStorageSizeFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonQueryFunction
+message SqlJsonQueryFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlJsonExistsFunction
+message SqlJsonExistsFunctionProto {
+	SqlFunctionCategoryProto category = 1;
+	SqlIdentifierProto sqlIdentifier = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCaseOperator
+message SqlCaseOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlBinaryOperator
+message SqlBinaryOperatorProto {
+	oneof sqlBinaryOperatorProto {
+		SqlSetOperatorProto sqlSetOperatorProto = 1;
+		SqlOverlapsOperatorProto sqlOverlapsOperatorProto = 2;
+		SqlCastOperatorProto sqlCastOperatorProto = 3;
+		SqlMonotonicBinaryOperatorProto sqlMonotonicBinaryOperatorProto = 4;
+		SqlMultisetMemberOfOperatorProto sqlMultisetMemberOfOperatorProto = 5;
+		SqlMultisetSetOperatorProto sqlMultisetSetOperatorProto = 6;
+		SqlWithinGroupOperatorProto sqlWithinGroupOperatorProto = 7;
+		SqlFilterOperatorProto sqlFilterOperatorProto = 8;
+		SqlOverOperatorProto sqlOverOperatorProto = 9;
+		SqlInOperatorProto sqlInOperatorProto = 10;
+		SqlPosixRegexOperatorProto sqlPosixRegexOperatorProto = 11;
+		SqlWithinDistinctOperatorProto sqlWithinDistinctOperatorProto = 12;
+		SqlQuantifyOperatorProto sqlQuantifyOperatorProto = 13;
+	}
+	string name = 14;
+	SqlKindProto kind = 15;
+	sint32 leftPrec = 16;
+	sint32 rightPrec = 17;
+	SqlReturnTypeInferenceProto returnTypeInference = 18;
+	SqlOperandTypeInferenceProto operandTypeInference = 19;
+	SqlOperandTypeCheckerProto operandTypeChecker = 20;
+	string allowedSignatures = 21;
+}
+
+// Java Class: org.apache.calcite.sql.SqlSetOperator
+message SqlSetOperatorProto {
+	bool all = 1;
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlOverlapsOperator
+message SqlOverlapsOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCastOperator
+message SqlCastOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMonotonicBinaryOperator
+message SqlMonotonicBinaryOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMultisetMemberOfOperator
+message SqlMultisetMemberOfOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMultisetSetOperator
+message SqlMultisetSetOperatorProto {
+	bool all = 1;
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.SqlWithinGroupOperator
+message SqlWithinGroupOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlFilterOperator
+message SqlFilterOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlOverOperator
+message SqlOverOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlInOperator
+message SqlInOperatorProto {
+	oneof sqlInOperatorProto {
+		SqlQuantifyOperatorProto sqlQuantifyOperatorProto = 1;
+	}
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlQuantifyOperator
+message SqlQuantifyOperatorProto {
+	SqlKindProto comparisonKind = 1;
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlPosixRegexOperator
+message SqlPosixRegexOperatorProto {
+	bool caseSensitive = 1;
+	bool negated = 2;
+	string operatorString = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.sql.SqlWithinDistinctOperator
+message SqlWithinDistinctOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlSelectOperator
+message SqlSelectOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlSpecialOperator
+message SqlSpecialOperatorProto {
+	oneof sqlSpecialOperatorProto {
+		SqlLateralOperatorProto sqlLateralOperatorProto = 1;
+		SqlMultisetValueConstructorProto sqlMultisetValueConstructorProto = 2;
+		SqlDefaultOperatorProto sqlDefaultOperatorProto = 3;
+		SqlLiteralChainOperatorProto sqlLiteralChainOperatorProto = 4;
+		SqlDatetimePlusOperatorProto sqlDatetimePlusOperatorProto = 5;
+		SqlSequenceValueOperatorProto sqlSequenceValueOperatorProto = 6;
+		SqlFunctionalOperatorProto sqlFunctionalOperatorProto = 7;
+		SqlLikeOperatorProto sqlLikeOperatorProto = 8;
+		SqlInternalOperatorProto sqlInternalOperatorProto = 9;
+		SqlDotOperatorProto sqlDotOperatorProto = 10;
+		SqlThrowOperatorProto sqlThrowOperatorProto = 11;
+		SqlItemOperatorProto sqlItemOperatorProto = 12;
+		SqlInfixOperatorProto sqlInfixOperatorProto = 13;
+		SqlAsOperatorProto sqlAsOperatorProto = 14;
+		SqlValuesOperatorProto sqlValuesOperatorProto = 15;
+		SqlColumnListConstructorProto sqlColumnListConstructorProto = 16;
+		SqlMultisetQueryConstructorProto sqlMultisetQueryConstructorProto = 17;
+		SqlCursorConstructorProto sqlCursorConstructorProto = 18;
+		SqlRowOperatorProto sqlRowOperatorProto = 19;
+		SqlDatetimeSubtractionOperatorProto sqlDatetimeSubtractionOperatorProto = 20;
+		SqlNullTreatmentOperatorProto sqlNullTreatmentOperatorProto = 21;
+		SqlArrayValueConstructorProto sqlArrayValueConstructorProto = 22;
+		SqlMapValueConstructorProto sqlMapValueConstructorProto = 23;
+		SqlCollectionTableOperatorProto sqlCollectionTableOperatorProto = 24;
+		SqlUnnestOperatorProto sqlUnnestOperatorProto = 25;
+		SqlExtendOperatorProto sqlExtendOperatorProto = 26;
+		SqlRollupOperatorProto sqlRollupOperatorProto = 27;
+		SqlIntervalOperatorProto sqlIntervalOperatorProto = 28;
+		SqlSearchOperatorProto sqlSearchOperatorProto = 29;
+		SqlBetweenOperatorProto sqlBetweenOperatorProto = 30;
+		SqlArgumentAssignmentOperatorProto sqlArgumentAssignmentOperatorProto = 31;
+		SqlArrayQueryConstructorProto sqlArrayQueryConstructorProto = 32;
+		SqlMapQueryConstructorProto sqlMapQueryConstructorProto = 33;
+	}
+	string name = 34;
+	SqlKindProto kind = 35;
+	sint32 leftPrec = 36;
+	sint32 rightPrec = 37;
+	SqlReturnTypeInferenceProto returnTypeInference = 38;
+	SqlOperandTypeInferenceProto operandTypeInference = 39;
+	SqlOperandTypeCheckerProto operandTypeChecker = 40;
+	string allowedSignatures = 41;
+}
+
+// Java Class: org.apache.calcite.sql.SqlLateralOperator
+message SqlLateralOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMultisetValueConstructor
+message SqlMultisetValueConstructorProto {
+	oneof sqlMultisetValueConstructorProto {
+		SqlArrayValueConstructorProto sqlArrayValueConstructorProto = 1;
+		SqlMapValueConstructorProto sqlMapValueConstructorProto = 2;
+	}
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlArrayValueConstructor
+message SqlArrayValueConstructorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMapValueConstructor
+message SqlMapValueConstructorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlDefaultOperator
+message SqlDefaultOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlLiteralChainOperator
+message SqlLiteralChainOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlDatetimePlusOperator
+message SqlDatetimePlusOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlSequenceValueOperator
+message SqlSequenceValueOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlFunctionalOperator
+message SqlFunctionalOperatorProto {
+	oneof sqlFunctionalOperatorProto {
+		SqlCollectionTableOperatorProto sqlCollectionTableOperatorProto = 1;
+		SqlUnnestOperatorProto sqlUnnestOperatorProto = 2;
+	}
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCollectionTableOperator
+message SqlCollectionTableOperatorProto {
+	SqlModalityProto modality = 1;
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+enum SqlModalityProto { 
+	SqlModalityProto_RELATION_ = 0;
+	SqlModalityProto_STREAM_ = 1;
+}
+
+// Java Class: org.apache.calcite.sql.SqlUnnestOperator
+message SqlUnnestOperatorProto {
+	bool withOrdinality = 1;
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlLikeOperator
+message SqlLikeOperatorProto {
+	bool negated = 1;
+	bool caseSensitive = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.SqlInternalOperator
+message SqlInternalOperatorProto {
+	oneof sqlInternalOperatorProto {
+		SqlExtendOperatorProto sqlExtendOperatorProto = 1;
+		SqlRollupOperatorProto sqlRollupOperatorProto = 2;
+		SqlIntervalOperatorProto sqlIntervalOperatorProto = 3;
+		SqlSearchOperatorProto sqlSearchOperatorProto = 4;
+	}
+	string name = 5;
+	SqlKindProto kind = 6;
+	sint32 leftPrec = 7;
+	sint32 rightPrec = 8;
+	SqlReturnTypeInferenceProto returnTypeInference = 9;
+	SqlOperandTypeInferenceProto operandTypeInference = 10;
+	SqlOperandTypeCheckerProto operandTypeChecker = 11;
+	string allowedSignatures = 12;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlExtendOperator
+message SqlExtendOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlRollupOperator
+message SqlRollupOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlIntervalOperator
+message SqlIntervalOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlSearchOperator
+message SqlSearchOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlDotOperator
+message SqlDotOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlThrowOperator
+message SqlThrowOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlItemOperator
+message SqlItemOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlInfixOperator
+message SqlInfixOperatorProto {
+	oneof sqlInfixOperatorProto {
+		SqlBetweenOperatorProto sqlBetweenOperatorProto = 1;
+	}
+	repeated string names = 2;
+	string name = 3;
+	SqlKindProto kind = 4;
+	sint32 leftPrec = 5;
+	sint32 rightPrec = 6;
+	SqlReturnTypeInferenceProto returnTypeInference = 7;
+	SqlOperandTypeInferenceProto operandTypeInference = 8;
+	SqlOperandTypeCheckerProto operandTypeChecker = 9;
+	string allowedSignatures = 10;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlBetweenOperator
+message SqlBetweenOperatorProto {
+	FlagProto flag = 1;
+	bool negated = 2;
+	repeated string names = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+enum FlagProto { 
+	FlagProto_ASYMMETRIC_ = 0;
+	FlagProto_SYMMETRIC_ = 1;
+}
+
+// Java Class: org.apache.calcite.sql.SqlAsOperator
+message SqlAsOperatorProto {
+	oneof sqlAsOperatorProto {
+		SqlArgumentAssignmentOperatorProto sqlArgumentAssignmentOperatorProto = 1;
+	}
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlArgumentAssignmentOperator
+message SqlArgumentAssignmentOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlValuesOperator
+message SqlValuesOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlColumnListConstructor
+message SqlColumnListConstructorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMultisetQueryConstructor
+message SqlMultisetQueryConstructorProto {
+	oneof sqlMultisetQueryConstructorProto {
+		SqlArrayQueryConstructorProto sqlArrayQueryConstructorProto = 1;
+		SqlMapQueryConstructorProto sqlMapQueryConstructorProto = 2;
+	}
+	SqlTypeTransformProto typeTransform = 3;
+	string name = 4;
+	SqlKindProto kind = 5;
+	sint32 leftPrec = 6;
+	sint32 rightPrec = 7;
+	SqlReturnTypeInferenceProto returnTypeInference = 8;
+	SqlOperandTypeInferenceProto operandTypeInference = 9;
+	SqlOperandTypeCheckerProto operandTypeChecker = 10;
+	string allowedSignatures = 11;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlArrayQueryConstructor
+message SqlArrayQueryConstructorProto {
+	SqlTypeTransformProto typeTransform = 1;
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlMapQueryConstructor
+message SqlMapQueryConstructorProto {
+	SqlTypeTransformProto typeTransform = 1;
+	string name = 2;
+	SqlKindProto kind = 3;
+	sint32 leftPrec = 4;
+	sint32 rightPrec = 5;
+	SqlReturnTypeInferenceProto returnTypeInference = 6;
+	SqlOperandTypeInferenceProto operandTypeInference = 7;
+	SqlOperandTypeCheckerProto operandTypeChecker = 8;
+	string allowedSignatures = 9;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlCursorConstructor
+message SqlCursorConstructorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlRowOperator
+message SqlRowOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.fun.SqlDatetimeSubtractionOperator
+message SqlDatetimeSubtractionOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlNullTreatmentOperator
+message SqlNullTreatmentOperatorProto {
+	string name = 1;
+	SqlKindProto kind = 2;
+	sint32 leftPrec = 3;
+	sint32 rightPrec = 4;
+	SqlReturnTypeInferenceProto returnTypeInference = 5;
+	SqlOperandTypeInferenceProto operandTypeInference = 6;
+	SqlOperandTypeCheckerProto operandTypeChecker = 7;
+	string allowedSignatures = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlMatchRecognize
+message SqlMatchRecognizeProto {
+	SqlNodeProto tableRef = 1;
+	SqlNodeProto pattern = 2;
+	SqlLiteralProto strictStart = 3;
+	SqlLiteralProto strictEnd = 4;
+	SqlNodeListProto patternDefList = 5;
+	SqlNodeListProto measureList = 6;
+	SqlNodeProto after = 7;
+	SqlNodeListProto subsetList = 8;
+	SqlLiteralProto rowsPerMatch = 9;
+	SqlNodeListProto partitionList = 10;
+	SqlNodeListProto orderList = 11;
+	SqlLiteralProto interval = 12;
+	SqlParserPosProto pos = 13;
+	RelDataTypeProto typeInformation = 14;
+}
+
+// Java Class: org.apache.calcite.sql.SqlAlter
+message SqlAlterProto {
+	oneof sqlAlterProto {
+		SqlSetOptionProto sqlSetOptionProto = 1;
+	}
+	string scope = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlSetOption
+message SqlSetOptionProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeProto value = 2;
+	string scope = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDdl
+message SqlDdlProto {
+	oneof sqlDdlProto {
+		SqlDropProto sqlDropProto = 1;
+		SqlCreateProto sqlCreateProto = 2;
+		SqlDropSchemaProto sqlDropSchemaProto = 3;
+		SqlDropObjectProto sqlDropObjectProto = 4;
+		SqlCreateTypeProto sqlCreateTypeProto = 5;
+		SqlCreateTableProto sqlCreateTableProto = 6;
+		SqlCreateViewProto sqlCreateViewProto = 7;
+		SqlCreateFunctionProto sqlCreateFunctionProto = 8;
+		SqlCreateForeignSchemaProto sqlCreateForeignSchemaProto = 9;
+		SqlCreateSchemaProto sqlCreateSchemaProto = 10;
+		SqlCreateMaterializedViewProto sqlCreateMaterializedViewProto = 11;
+		SqlDropTableProto sqlDropTableProto = 12;
+		SqlDropMaterializedViewProto sqlDropMaterializedViewProto = 13;
+		SqlDropViewProto sqlDropViewProto = 14;
+		SqlDropFunctionProto sqlDropFunctionProto = 15;
+		SqlDropTypeProto sqlDropTypeProto = 16;
+	}
+	SqlOperatorProto operator = 17;
+	SqlParserPosProto pos = 18;
+	RelDataTypeProto typeInformation = 19;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDrop
+message SqlDropProto {
+	oneof sqlDropProto {
+		SqlDropSchemaProto sqlDropSchemaProto = 1;
+		SqlDropObjectProto sqlDropObjectProto = 2;
+		SqlDropTableProto sqlDropTableProto = 3;
+		SqlDropMaterializedViewProto sqlDropMaterializedViewProto = 4;
+		SqlDropViewProto sqlDropViewProto = 5;
+		SqlDropFunctionProto sqlDropFunctionProto = 6;
+		SqlDropTypeProto sqlDropTypeProto = 7;
+	}
+	bool ifExists = 8;
+	SqlOperatorProto operator = 9;
+	SqlParserPosProto pos = 10;
+	RelDataTypeProto typeInformation = 11;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlDropSchema
+message SqlDropSchemaProto {
+	bool foreign = 1;
+	SqlIdentifierProto name = 2;
+	bool ifExists = 3;
+	SqlOperatorProto operator = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlDropObject
+message SqlDropObjectProto {
+	oneof sqlDropObjectProto {
+		SqlDropTableProto sqlDropTableProto = 1;
+		SqlDropMaterializedViewProto sqlDropMaterializedViewProto = 2;
+		SqlDropViewProto sqlDropViewProto = 3;
+		SqlDropFunctionProto sqlDropFunctionProto = 4;
+		SqlDropTypeProto sqlDropTypeProto = 5;
+	}
+	SqlIdentifierProto name = 6;
+	bool ifExists = 7;
+	SqlOperatorProto operator = 8;
+	SqlParserPosProto pos = 9;
+	RelDataTypeProto typeInformation = 10;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlDropTable
+message SqlDropTableProto {
+	SqlIdentifierProto name = 1;
+	bool ifExists = 2;
+	SqlOperatorProto operator = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlDropMaterializedView
+message SqlDropMaterializedViewProto {
+	SqlIdentifierProto name = 1;
+	bool ifExists = 2;
+	SqlOperatorProto operator = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlDropView
+message SqlDropViewProto {
+	SqlIdentifierProto name = 1;
+	bool ifExists = 2;
+	SqlOperatorProto operator = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlDropFunction
+message SqlDropFunctionProto {
+	SqlIdentifierProto name = 1;
+	bool ifExists = 2;
+	SqlOperatorProto operator = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlDropType
+message SqlDropTypeProto {
+	SqlIdentifierProto name = 1;
+	bool ifExists = 2;
+	SqlOperatorProto operator = 3;
+	SqlParserPosProto pos = 4;
+	RelDataTypeProto typeInformation = 5;
+}
+
+// Java Class: org.apache.calcite.sql.SqlCreate
+message SqlCreateProto {
+	oneof sqlCreateProto {
+		SqlCreateTypeProto sqlCreateTypeProto = 1;
+		SqlCreateTableProto sqlCreateTableProto = 2;
+		SqlCreateViewProto sqlCreateViewProto = 3;
+		SqlCreateFunctionProto sqlCreateFunctionProto = 4;
+		SqlCreateForeignSchemaProto sqlCreateForeignSchemaProto = 5;
+		SqlCreateSchemaProto sqlCreateSchemaProto = 6;
+		SqlCreateMaterializedViewProto sqlCreateMaterializedViewProto = 7;
+	}
+	bool replace = 8;
+	bool ifNotExists = 9;
+	SqlOperatorProto operator = 10;
+	SqlParserPosProto pos = 11;
+	RelDataTypeProto typeInformation = 12;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCreateType
+message SqlCreateTypeProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto attributeDefs = 2;
+	SqlDataTypeSpecProto dataType = 3;
+	bool replace = 4;
+	bool ifNotExists = 5;
+	SqlOperatorProto operator = 6;
+	SqlParserPosProto pos = 7;
+	RelDataTypeProto typeInformation = 8;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCreateTable
+message SqlCreateTableProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto columnList = 2;
+	SqlNodeProto query = 3;
+	bool replace = 4;
+	bool ifNotExists = 5;
+	SqlOperatorProto operator = 6;
+	SqlParserPosProto pos = 7;
+	RelDataTypeProto typeInformation = 8;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCreateView
+message SqlCreateViewProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto columnList = 2;
+	SqlNodeProto query = 3;
+	bool replace = 4;
+	bool ifNotExists = 5;
+	SqlOperatorProto operator = 6;
+	SqlParserPosProto pos = 7;
+	RelDataTypeProto typeInformation = 8;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCreateFunction
+message SqlCreateFunctionProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeProto className = 2;
+	SqlNodeListProto usingList = 3;
+	bool replace = 4;
+	bool ifNotExists = 5;
+	SqlOperatorProto operator = 6;
+	SqlParserPosProto pos = 7;
+	RelDataTypeProto typeInformation = 8;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCreateForeignSchema
+message SqlCreateForeignSchemaProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeProto type = 2;
+	SqlNodeProto library = 3;
+	SqlNodeListProto optionList = 4;
+	bool replace = 5;
+	bool ifNotExists = 6;
+	SqlOperatorProto operator = 7;
+	SqlParserPosProto pos = 8;
+	RelDataTypeProto typeInformation = 9;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCreateSchema
+message SqlCreateSchemaProto {
+	SqlIdentifierProto name = 1;
+	bool replace = 2;
+	bool ifNotExists = 3;
+	SqlOperatorProto operator = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlCreateMaterializedView
+message SqlCreateMaterializedViewProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto columnList = 2;
+	SqlNodeProto query = 3;
+	bool replace = 4;
+	bool ifNotExists = 5;
+	SqlOperatorProto operator = 6;
+	SqlParserPosProto pos = 7;
+	RelDataTypeProto typeInformation = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDescribeSchema
+message SqlDescribeSchemaProto {
+	SqlIdentifierProto schema = 1;
+	SqlParserPosProto pos = 2;
+	RelDataTypeProto typeInformation = 3;
+}
+
+// Java Class: org.apache.calcite.sql.SqlJoin
+message SqlJoinProto {
+	SqlNodeProto left = 1;
+	SqlLiteralProto natural = 2;
+	SqlLiteralProto joinType = 3;
+	SqlNodeProto right = 4;
+	SqlLiteralProto conditionType = 5;
+	SqlNodeProto condition = 6;
+	SqlParserPosProto pos = 7;
+	RelDataTypeProto typeInformation = 8;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDescribeTable
+message SqlDescribeTableProto {
+	SqlIdentifierProto table = 1;
+	SqlIdentifierProto column = 2;
+	SqlParserPosProto pos = 3;
+	RelDataTypeProto typeInformation = 4;
+}
+
+// Java Class: org.apache.calcite.sql.ddl.SqlColumnDeclaration
+message SqlColumnDeclarationProto {
+	SqlIdentifierProto name = 1;
+	SqlDataTypeSpecProto dataType = 2;
+	SqlNodeProto expression = 3;
+	ColumnStrategyProto strategy = 4;
+	SqlParserPosProto pos = 5;
+	RelDataTypeProto typeInformation = 6;
+}
+
+enum ColumnStrategyProto { 
+	ColumnStrategyProto_NULLABLE_ = 0;
+	ColumnStrategyProto_NOT_NULLABLE_ = 1;
+	ColumnStrategyProto_DEFAULT_ = 2;
+	ColumnStrategyProto_STORED_ = 3;
+	ColumnStrategyProto_VIRTUAL_ = 4;
+}
+
+// Java Class: org.apache.calcite.sql.SqlDynamicParam
+message SqlDynamicParamProto {
+	sint32 index = 1;
+	SqlParserPosProto pos = 2;
+	RelDataTypeProto typeInformation = 3;
+}
+

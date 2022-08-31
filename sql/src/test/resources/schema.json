@@ -1,0 +1,22 @@
+{
+  "tables": [
+    {
+      "name": "heroes",
+      "columns": [
+        {
+          "name": "id",
+          "type": "smallint"
+        },
+        {
+          "name": "power",
+          "type": "tinyint"
+        },
+        {
+          "name": "name",
+          "type": "varchar"
+        }
+      ]
+    }
+  ]
+
+}

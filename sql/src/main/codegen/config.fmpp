@@ -1,0 +1,51 @@
+data: {
+  # Data declarations for this parser.
+  #
+  # Default declarations are in default_config.fmpp; if you do not include a
+  # declaration ('imports' or 'nonReservedKeywords', for example) in this file,
+  # FMPP will use the declaration from default_config.fmpp.
+  parser: {
+    # Generated parser implementation class package and name
+    package: "com.rilldata.calcite.generated",
+    class: "RillSqlParserImpl",
+
+    # List of additional classes and packages to import.
+    # Example: "org.apache.calcite.sql.*", "java.util.List".
+    imports: [
+      "org.apache.calcite.sql.SqlCreate",
+      "com.rilldata.calcite.extensions.SqlCreateMetric"
+    ]
+
+    # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
+    # not a reserved keyword, add it to the 'nonReservedKeywords' section.
+    keywords: [
+      "METRICS"
+      "DIMENSIONS"
+    ]
+
+    # List of non-reserved keywords to add;
+    # items in this list become non-reserved
+    nonReservedKeywordsToAdd: [
+      "DIMENSIONS"
+    ]
+
+    # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
+    # Each must accept arguments "(SqlParserPos pos, boolean replace)".
+    # Example: "SqlCreateForeignSchema".
+    createStatementParserMethods: [
+      "SqlCreateMetric"
+    ]
+
+    # List of files in @includes directory that have parser method
+    # implementations for parsing custom SQL statements, literals or types
+    # given as part of "statementParserMethods", "literalParserMethods" or
+    # "dataTypeParserMethods".
+    implementationFiles: [
+      "create-metric.ftl"
+    ]
+  }
+}
+
+freemarkerLinks: {
+  includes: includes/
+}

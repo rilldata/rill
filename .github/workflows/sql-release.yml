@@ -1,0 +1,62 @@
+name: Release SQL shared library
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/sql-release.yml"
+      - "sql/**"
+jobs:
+  librillsql:
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            arch: amd64
+            runner: macos-latest
+          - os: linux
+            arch: amd64
+            runner: ubuntu-latest
+          - os: windows
+            arch: amd64
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: "22.1.0"
+          java-version: "17"
+          components: "native-image"
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Authenticate GCS
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: "${{ secrets.RILL_SQL_SA }}"
+      - name: Extract Maven project version
+        id: maven-version
+        shell: bash
+        run: |
+          cd sql
+          echo ::set-output name=version::$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+      - name: Build native library
+        shell: bash
+        run: |
+          cd sql
+          mvn package -Pnative-lib
+      - name: Install zip on Windows
+        if: matrix.os == 'windows'
+        shell: bash
+        run: choco install zip -y --force
+      - name: Create archive
+        shell: bash
+        run: |
+          rm sql/target/*.txt
+          zip -j librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip sql/target/librillsql.* sql/target/graal_isolate.*
+      - name: Upload archive
+        uses: google-github-actions/upload-cloud-storage@v0
+        with:
+          path: librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip
+          destination: pkg.rilldata.com/rillsql/releases/v${{ steps.maven-version.outputs.version }}
