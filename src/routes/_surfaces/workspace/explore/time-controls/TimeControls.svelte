@@ -16,7 +16,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
-  import { onMount } from "svelte";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -39,16 +38,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: metaQuery = useMetaQuery(metricsDefId);
   $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
-  // use the default options when the first dashboard loads
-  onMount(() => {
-    selectedTimeRangeName = getDefaultTimeRangeName();
-    selectedTimeGrain = getDefaultTimeGrain(
-      selectedTimeRangeName,
-      allTimeRange
-    );
-  });
-
-  // when the active entity changes, get its latest or default state
   const initializeState = (metricsExplorer: MetricsExplorerEntity) => {
     if (
       metricsExplorer?.selectedTimeRange?.name &&
