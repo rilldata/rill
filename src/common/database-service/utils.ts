@@ -33,8 +33,8 @@ export function getFilterFromFilters(filters: ActiveValues): string {
 export function getFilterFromMetricViewFilters(
   filters: MetricViewRequestFilter
 ): string {
-  return [
-    ...filters.include.map((dimensionValues) =>
+  const includeFilters = filters.include
+    .map((dimensionValues) =>
       dimensionValues.values
         .map((value) =>
           value === null
@@ -42,8 +42,12 @@ export function getFilterFromMetricViewFilters(
             : `"${dimensionValues.name}" = '${value}'`
         )
         .join(" OR ")
-    ),
-    ...filters.exclude.map((dimensionValues) =>
+    )
+    .map((filter) => `(${filter})`)
+    .join(" AND ");
+
+  const excludeFilters = filters.exclude
+    .map((dimensionValues) =>
       dimensionValues.values
         .map((value) =>
           value === null
@@ -51,8 +55,10 @@ export function getFilterFromMetricViewFilters(
             : `"${dimensionValues.name}" != '${value}'`
         )
         .join(" OR ")
-    ),
-  ].join(" AND ");
+    )
+    .map((filter) => `(${filter})`)
+    .join(" AND ");
+  return [includeFilters, excludeFilters].filter(Boolean).join(" AND ");
 }
 
 /** Sets the sqlName to a fallback measure name, if sqlName is not defined */
