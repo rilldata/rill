@@ -5,7 +5,7 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   export let show = false;
-  export let left;
+  export let left = undefined;
   export let right = undefined;
   export let top = "calc(var(--header-height) / 2 - 24px / 2)";
 </script>

@@ -10,13 +10,13 @@ export const SURFACE_DRAG_DURATION = 50;
 export const layout = tweened(
   {
     assetsWidth: 401,
-    inspectorWidth: 400,
+    inspectorWidth: 401,
     modelPreviewHeight: 400,
   },
   { duration: SURFACE_DRAG_DURATION }
 );
 
-export const SIDE_PAD = 48;
+export const SIDE_PAD = 32;
 
 export const assetVisibilityTween = tweened(0, {
   duration: SURFACE_SLIDE_DURATION,

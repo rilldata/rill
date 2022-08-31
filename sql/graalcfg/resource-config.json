@@ -1,0 +1,35 @@
+{
+  "resources":{
+  "includes":[
+    {
+      "pattern":"\\QMETA-INF/services/jdk.vm.ci.services.JVMCIServiceLocator\\E"
+    }, 
+    {
+      "pattern":"\\Qorg/hsqldb/resources/information-schema.sql\\E"
+    }, 
+    {
+      "pattern":"\\Qorg/hsqldb/resources/lob-schema.sql\\E"
+    }, 
+    {
+      "pattern":"\\Qschema.json\\E"
+    }
+  ]},
+  "bundles":[
+    {
+      "name":"org.apache.calcite.runtime.CalciteResource",
+      "locales":["und"]
+    }, 
+    {
+      "name":"org.hsqldb.resources.info-column-remarks",
+      "locales":["und"]
+    }, 
+    {
+      "name":"org.hsqldb.resources.info-table-remarks",
+      "locales":["und"]
+    }, 
+    {
+      "name":"org.hsqldb.resources.sql-state-messages",
+      "locales":["und"]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { StartCommand } from "$cli/StartCommand";
 import { Command } from "commander";
 import { execSync } from "node:child_process";
 import Os from "os";
+import { existsSync } from "fs";
 
 function isWindows() {
   return Os.platform() === "win32";
@@ -46,9 +47,12 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
         }
       );
     } else {
-      execSync(`unzip ${project}/example-assets-0.6.zip ` + `-d ${project}/`, {
-        stdio: "inherit",
-      });
+      execSync(
+        `unzip -o ${project}/example-assets-0.6.zip ` + `-d ${project}/`,
+        {
+          stdio: "inherit",
+        }
+      );
     }
 
     console.log("Importing example datasets into the project...");
@@ -59,7 +63,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
         profileWithUpdate: true,
       },
       `${project}/example-assets-0.6/data/ecomm-click-stream/e-shop-clothing.csv`,
-      {}
+      { force: true }
     );
 
     console.log("Global...");
@@ -69,7 +73,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
         profileWithUpdate: true,
       },
       `${project}/example-assets-0.6/data/global-landslide-catalog/global-landslide-catalog.csv`,
-      {}
+      { force: true }
     );
 
     console.log("Internet of Things...");
@@ -79,7 +83,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
         profileWithUpdate: true,
       },
       `${project}/example-assets-0.6/data/iot-env-sensor/iot-telemetry-data.csv`,
-      {}
+      { force: true }
     );
 
     console.log("Importing example SQL transformations into the project...");
@@ -88,13 +92,15 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
     });
 
     console.log("Cleaning up the project...");
-    execSync(`mkdir  ${project}/data`, {
-      stdio: "inherit",
-    });
+    if (!existsSync(`${project}/data`)) {
+      execSync(`mkdir -p ${project}/data`, {
+        stdio: "inherit",
+      });
+      execSync(`mv -v ${project}/example-assets-0.6/data ${project}`, {
+        stdio: "inherit",
+      });
+    }
 
-    execSync(`mv -v ${project}/example-assets-0.6/data ${project}`, {
-      stdio: "inherit",
-    });
     execSync(`rm -rf ${project}/example-assets-0.6`, {
       stdio: "inherit",
     });

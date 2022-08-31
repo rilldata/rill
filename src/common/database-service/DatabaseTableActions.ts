@@ -10,7 +10,7 @@ export class DatabaseTableActions extends DatabaseActions {
     query: string
   ): Promise<void> {
     await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
-            CREATE OR REPLACE TEMPORARY VIEW ${tableName} AS (${query});`);
+            CREATE OR REPLACE TEMPORARY VIEW "${tableName}" AS (${query});`);
   }
 
   public async getFirstNOfTable(

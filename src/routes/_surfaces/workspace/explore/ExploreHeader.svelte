@@ -1,19 +1,13 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import type { Readable } from "svelte/store";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
-
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>
@@ -51,6 +45,8 @@
   <!-- bottom row -->
   <div class="px-4">
     <TimeControls {metricsDefId} />
-    <Filters {metricsDefId} values={$metricsExplorer?.activeValues} />
+    {#key metricsDefId}
+      <Filters {metricsDefId} />
+    {/key}
   </div>
 </section>

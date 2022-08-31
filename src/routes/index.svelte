@@ -3,6 +3,7 @@
   import {
     ApplicationStore,
     config,
+    duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
   import {
     assetsVisible,
@@ -22,7 +23,9 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import HideSidebar from "$lib/components/icons/HideSidebar.svelte";
+  import HideLeftSidebar from "$lib/components/icons/HideLeftSidebar.svelte";
+  import HideRightSidebar from "$lib/components/icons/HideRightSidebar.svelte";
+  import MoreHorizontal from "$lib/components/icons/MoreHorizontal.svelte";
   import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
   import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
   import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
@@ -78,15 +81,19 @@
   const views = {
     Table: {
       hasInspector: true,
+      bg: "bg-gray-100",
     },
     Model: {
       hasInspector: true,
+      bg: "bg-gray-100",
     },
     MetricsDefinition: {
       hasInspector: false,
+      bg: "bg-gray-100",
     },
     MetricsExplorer: {
       hasInspector: false,
+      bg: "bg-white",
     },
   };
 
@@ -118,10 +125,12 @@
   <FileDrop bind:showDropOverlay />
 {/if}
 
-<DuplicateSource />
+{#if $duplicateSourceName !== null}
+  <DuplicateSource />
+{/if}
 
 <div
-  class="absolute w-screen h-screen bg-gray-100"
+  class="index-body absolute w-screen h-screen bg-gray-100"
   on:drop|preventDefault|stopPropagation
   on:drag|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
@@ -141,7 +150,7 @@
     }}
   >
     {#if $assetsVisible}
-      <HideSidebar size="20px" />
+      <HideLeftSidebar size="20px" />
     {:else}
       <SurfaceViewIcon size="16px" mode={"hamburger"} />
     {/if}
@@ -150,6 +159,27 @@
     </svelte:fragment>
   </SurfaceControlButton>
 
+  <!-- inspector pane hide -->
+  {#if hasInspector}
+    <SurfaceControlButton
+      show={true}
+      right="{($layout.inspectorWidth - 12 - 24) *
+        (1 - $inspectorVisibilityTween) +
+        12 * $inspectorVisibilityTween}px"
+      on:click={() => {
+        inspectorVisible.set(!$inspectorVisible);
+      }}
+    >
+      {#if $inspectorVisible}
+        <HideRightSidebar size="20px" />
+      {:else}
+        <MoreHorizontal size="16px" />
+      {/if}
+      <svelte:fragment slot="tooltip-content">
+        {#if $assetVisibilityTween === 0} close {:else} show {/if} sidebar
+      </svelte:fragment>
+    </SurfaceControlButton>
+  {/if}
   <!-- assets sidebar component -->
   <!-- this is where we handle navigation -->
   <div
@@ -162,9 +192,11 @@
 
   <!-- workspace component -->
   <div
-    class="box-border bg-gray-100 fixed"
+    class="box-border fixed {views[activeEntityType]?.bg || 'bg-gray-100'}"
     style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
-    style:padding-right="{$inspectorVisibilityTween * SIDE_PAD}px"
+    style:padding-right="{$inspectorVisibilityTween *
+      SIDE_PAD *
+      (hasInspector ? 1 : 0)}px"
     style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
     style:top="0px"
     style:right="{hasInspector

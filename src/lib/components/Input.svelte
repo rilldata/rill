@@ -1,12 +1,23 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { slide } from "svelte/transition";
+
   export let id = "";
   export let label = "";
   export let error: string;
   export let value: string;
+  export let claimFocusOnMount = false;
+  let inputElement;
+  if (claimFocusOnMount) {
+    onMount(() => {
+      inputElement.focus();
+    });
+  }
 </script>
 
-<label for={id} class="text-xs">{label}</label>
+<label for={id} class="text-gray-600 pl-1 pb-1 block">{label}</label>
 <input
+  bind:this={inputElement}
   autocomplete="off"
   type="text"
   {id}
@@ -14,5 +25,10 @@
   bind:value
 />
 {#if error}
-  <div class="text-red-500 text-xs">{error}</div>
+  <div
+    in:slide|local={{ duration: 200 }}
+    class="pl-1 text-red-500 text-xs pt-1"
+  >
+    {error}
+  </div>
 {/if}

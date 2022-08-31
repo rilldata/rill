@@ -18,12 +18,11 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import WithTogglableFloatingElement from "$lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "$lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
 
-  import ModelerToMetricsButton from "$lib/components/modeler/ModelerToMetricsButton.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import {
@@ -31,10 +30,12 @@
     formatInteger,
   } from "$lib/util/formatters";
   import { getContext } from "svelte";
+  import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   import notification from "$lib/components/notifications";
+  import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
-
   export let containerWidth = 0;
 
   const persistentTableStore = getContext(
@@ -155,11 +156,7 @@
   $: modelHasError = !!currentDerivedModel?.error;
 </script>
 
-<div
-  style:height="var(--header-height)"
-  class:text-gray-300={modelHasError}
-  class="px-4 flex flex-row items-center gap-x-2 justify-end"
->
+<PanelCTA side="right" let:width>
   <Tooltip
     location="left"
     alignment="middle"
@@ -179,7 +176,7 @@
         type="secondary"
         on:click={toggleFloatingElement}
       >
-        Export Results
+        <ResponsiveButtonText {width}>Export Results</ResponsiveButtonText>
         <Export size="16px" />
       </Button>
       <Menu
@@ -213,8 +210,9 @@
       {/if}
     </TooltipContent>
   </Tooltip>
-  <ModelerToMetricsButton hasError={modelHasError} {activeEntityID} />
-</div>
+  <CreateDashboardButton {width} hasError={modelHasError} {activeEntityID} />
+</PanelCTA>
+
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
   <!-- top row: row analysis -->
   <div

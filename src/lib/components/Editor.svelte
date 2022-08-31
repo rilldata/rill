@@ -55,6 +55,7 @@
     rectangularSelection,
   } from "@codemirror/view";
   import { createEventDispatcher, getContext, onMount } from "svelte";
+  import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
   const dispatch = createEventDispatcher();
   export let content: string;
@@ -64,9 +65,10 @@
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
-  let componentContainer;
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
 
-  $: editorHeight = componentContainer?.offsetHeight || 0;
+  $: editorHeight = $observedNode?.offsetHeight || 0;
 
   let latestContent = content;
   const debounce = new Debounce();
@@ -272,11 +274,6 @@
       }),
       parent: editorContainerComponent,
     });
-    const obs = new ResizeObserver(() => {
-      editorHeight = componentContainer?.offsetHeight;
-    });
-    obs.observe(componentContainer);
-    return () => obs.unobserve(componentContainer);
   });
 
   // REACTIVE FUNCTIONS
@@ -332,7 +329,7 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div bind:this={componentContainer} class="h-full">
+<div use:listenToNodeResize class="h-full">
   <div class="editor-container border h-full" bind:this={editorContainer}>
     <div bind:this={editorContainerComponent} />
   </div>

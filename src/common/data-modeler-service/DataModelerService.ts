@@ -73,7 +73,7 @@ export class DataModelerService {
     protected readonly dataModelerStateService: DataModelerStateService,
     private readonly databaseService: DatabaseService,
     private readonly notificationService: NotificationService,
-    protected readonly metricsService: MetricsService,
+    public readonly metricsService: MetricsService,
     private readonly dataModelerActions: Array<DataModelerActions>
   ) {
     this.databaseActionQueue =

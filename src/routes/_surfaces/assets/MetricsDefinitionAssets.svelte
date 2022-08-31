@@ -191,11 +191,12 @@
       </CollapsibleTableSummary>
     {/each}
   </div>
-  <RenameEntityModal
-    entityType={EntityType.MetricsDefinition}
-    openModal={showRenameMetricsDefinitionModal}
-    closeModal={() => (showRenameMetricsDefinitionModal = false)}
-    entityId={renameMetricsDefId}
-    currentEntityName={renameMetricsDefName}
-  />
+  {#if showRenameMetricsDefinitionModal}
+    <RenameEntityModal
+      entityType={EntityType.MetricsDefinition}
+      closeModal={() => (showRenameMetricsDefinitionModal = false)}
+      entityId={renameMetricsDefId}
+      currentEntityName={renameMetricsDefName}
+    />
+  {/if}
 {/if}
