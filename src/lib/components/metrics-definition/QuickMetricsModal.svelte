@@ -14,5 +14,5 @@
   <svelte:fragment slot="body"
     >Continuing will replace all existing measures and dimensions.
   </svelte:fragment>
-  <svelte:fragment slot="primary-body">Replace metrics</svelte:fragment>
+  <svelte:fragment slot="primary-action-body">Replace metrics</svelte:fragment>
 </Dialog>
