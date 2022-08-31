@@ -14,7 +14,7 @@
 
   // query the `/meta` endpoint to get the valid measures
   $: metaQuery = useMetaQuery(metricsDefId);
-  $: measures = $metaQuery.data.measures;
+  $: measures = $metaQuery.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];

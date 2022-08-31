@@ -19,16 +19,16 @@
 
   $: metaQuery = useMetaQuery(metricsDefId);
   // TODO: move this "sync" to a more relevant component
-  $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data.id) {
+  $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data?.id) {
     if (
-      !$metaQuery.data.measures?.length ||
-      !$metaQuery.data.dimensions?.length
+      !$metaQuery.data?.measures?.length ||
+      !$metaQuery.data?.dimensions?.length
     ) {
       dataModelerService.dispatch("setActiveAsset", [
         EntityType.MetricsDefinition,
         metricsDefId,
       ]);
-    } else {
+    } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
       // FIXME: understand this logic before removing invalidateMetricViewData
       invalidateMetricViewData(queryClient, metricsDefId);
     }

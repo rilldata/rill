@@ -203,7 +203,7 @@ export const invalidateMetricView = async (
   metricViewId: string
 ) => {
   // wait for meta to be invalidated
-  await queryClient.invalidateQueries([MetaId, metricViewId]);
+  await queryClient.refetchQueries([MetaId, metricViewId]);
   // invalidateMetricViewData(queryClient, metricViewId);
 };
 
@@ -211,7 +211,7 @@ export const invalidateMetricViewData = (
   queryClient: QueryClient,
   metricViewId: string
 ) => {
-  queryClient.invalidateQueries([TopListId, metricViewId]);
-  queryClient.invalidateQueries([TotalsId, metricViewId]);
-  queryClient.invalidateQueries([TimeSeriesId, metricViewId]);
+  queryClient.refetchQueries([TopListId, metricViewId]);
+  queryClient.refetchQueries([TotalsId, metricViewId]);
+  queryClient.refetchQueries([TimeSeriesId, metricViewId]);
 };

@@ -30,8 +30,8 @@
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   $: metaQuery = useMetaQuery(metricsDefId);
-  $: dimensions = $metaQuery.data.dimensions;
-  $: measures = $metaQuery.data.measures;
+  $: dimensions = $metaQuery.data?.dimensions;
+  $: measures = $metaQuery.data?.measures;
 
   $: activeMeasure =
     measures &&
@@ -43,7 +43,12 @@
     activeMeasure?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
 
   let totalsQuery;
-  $: if (metaQuery && $metaQuery.isSuccess) {
+  $: if (
+    metricsExplorer &&
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
+  ) {
     totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: {

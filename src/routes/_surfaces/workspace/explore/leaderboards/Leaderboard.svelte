@@ -83,7 +83,8 @@
   $: if (
     metricsExplorer?.leaderboardMeasureId &&
     metaQuery &&
-    $metaQuery.isSuccess
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
   ) {
     topListQuery = useTopListQuery(metricsDefId, dimensionId, {
       measures: [metricsExplorer?.leaderboardMeasureId],
@@ -102,7 +103,7 @@
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
-    values = $topListQuery.data?.data ?? [];
+    values = $topListQuery?.data?.data ?? [];
     setLeaderboardValues(values);
   }
   /** figure out how many selected values are currently hidden */
@@ -195,7 +196,7 @@
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
           <LeaderboardEntrySet
-            loading={$topListQuery.isFetching}
+            loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
             {activeValues}
             {atLeastOneActive}
@@ -205,9 +206,9 @@
           />
           <hr />
         {/if}
-        {#if $topListQuery.isError}
+        {#if $topListQuery?.isError}
           <div class="text-red-500">
-            {$topListQuery.error}
+            {$topListQuery?.error}
           </div>
         {:else if values.length === 0}
           <div class="p-1 italic text-gray-500">no available values</div>

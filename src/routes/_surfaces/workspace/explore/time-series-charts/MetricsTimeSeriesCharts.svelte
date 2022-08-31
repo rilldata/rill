@@ -40,7 +40,12 @@
     $metaQuery.data?.timeDimension?.timeRange?.interval;
 
   let totalsQuery;
-  $: if (metaQuery && $metaQuery.isSuccess) {
+  $: if (
+    metricsExplorer &&
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
+  ) {
     totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: metricsExplorer?.filters,
@@ -52,7 +57,12 @@
   }
 
   let timeSeriesQuery: UseQueryStoreResult<MetricViewTimeSeriesResponse, Error>;
-  $: if (metaQuery && $metaQuery.isSuccess) {
+  $: if (
+    metricsExplorer &&
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
+  ) {
     timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: metricsExplorer?.filters,
@@ -70,7 +80,7 @@
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
   let dataCopy;
-  $: if ($timeSeriesQuery.data?.data) dataCopy = $timeSeriesQuery.data.data;
+  $: if ($timeSeriesQuery?.data?.data) dataCopy = $timeSeriesQuery.data.data;
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
@@ -119,10 +129,10 @@
       <Axis superlabel side="top" />
     </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
-    {#if $metaQuery.data?.measures && $totalsQuery.isSuccess}
-      {#each $metaQuery.data.measures as measure (measure.id)}
+    {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
+      {#each $metaQuery.data?.measures as measure (measure.id)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery.data.data?.[measure.sqlName]}
+        {@const bigNum = $totalsQuery?.data.data?.[measure.sqlName]}
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
           value={bigNum}
@@ -130,7 +140,7 @@
             measure?.label ||
             measure?.expression}
           formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
-          status={$totalsQuery.isFetching
+          status={$totalsQuery?.isFetching
             ? EntityStatus.Running
             : EntityStatus.Idle}
         >

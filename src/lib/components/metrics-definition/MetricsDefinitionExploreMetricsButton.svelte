@@ -12,8 +12,8 @@
 
   // query the `/meta` endpoint to get the valid measures and dimensions
   $: metaQuery = useMetaQuery(metricsDefId);
-  $: measures = $metaQuery.data.measures;
-  $: dimensions = $metaQuery.data.dimensions;
+  $: measures = $metaQuery.data?.measures;
+  $: dimensions = $metaQuery.data?.dimensions;
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
 
@@ -25,7 +25,7 @@
   ) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
-  } else if (measures.length === 0 || dimensions.length === 0) {
+  } else if (measures?.length === 0 || dimensions?.length === 0) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
   } else {
