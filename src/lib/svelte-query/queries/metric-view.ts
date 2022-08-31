@@ -50,24 +50,17 @@ export const getMetaQueryKey = (metricViewId: string) => {
   return [MetaId, metricViewId];
 };
 
-export const useMetaQuery = (
-  metricViewId: string,
-  queryOptions: UseQueryOptions<MetricViewMetaResponse, Error> = {}
-) => {
-  const queryKey = queryOptions?.queryKey ?? getMetaQueryKey(metricViewId);
-  const queryFn = () => getMetricsViewMetadata(metricViewId);
-  const query = queriesRepository.useQuery<MetricViewMetaResponse, Error>(
-    queryKey,
-    queryFn,
-    {
-      ...queryOptions,
-      enabled: !!metricViewId,
-    }
-  ) as UseQueryStoreResult<MetricViewMetaResponse, Error>;
-  return {
-    queryKey,
-    ...query,
+export const useMetaQuery = (metricViewId: string) => {
+  const metaQueryKey = getMetaQueryKey(metricViewId);
+  const metaQueryFn = () => getMetricsViewMetadata(metricViewId);
+  const metaQueryOptions = {
+    enabled: !!metricViewId,
   };
+  return useQuery<MetricViewMetaResponse, Error>(
+    metaQueryKey,
+    metaQueryFn,
+    metaQueryOptions
+  );
 };
 
 // POST /api/v1/metric-views/{view-name}/timeseries
