@@ -147,7 +147,6 @@
           activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
         {metricsDefId}
         dimensionId={item.id}
-        seeMore={leaderboardExpanded === item.id}
         on:expand={() => {
           if (leaderboardExpanded === item.id) {
             leaderboardExpanded = undefined;
