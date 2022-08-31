@@ -5,18 +5,16 @@
   import MetricsTimeSeriesCharts from "./time-series-charts/MetricsTimeSeriesCharts.svelte";
 
   export let metricsDefId: string;
-
-  let whichReferenceValue: string;
 </script>
 
 <ExploreContainer let:columns>
   <svelte:fragment slot="header">
-    <ExploreHeader bind:whichReferenceValue {metricsDefId} />
+    <ExploreHeader {metricsDefId} />
   </svelte:fragment>
   <svelte:fragment slot="metrics">
     <MetricsTimeSeriesCharts {metricsDefId} />
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">
-    <LeaderboardDisplay {columns} {whichReferenceValue} {metricsDefId} />
+    <LeaderboardDisplay {metricsDefId} />
   </svelte:fragment>
 </ExploreContainer>
