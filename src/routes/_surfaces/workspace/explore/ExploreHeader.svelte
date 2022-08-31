@@ -12,13 +12,13 @@
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>
 
-<section id="header" class="w-full flex flex-col gap-y-3">
+<section id="header" class="w-full flex flex-col gap-y-1">
   <!-- top row
     title and call to action
   -->
-  <div class="flex justify-between w-full pt-3 pl-4 pr-4">
+  <div class="flex justify-between w-full pt-4 pl-3 pr-4">
     <!-- title element -->
-    <h1 style:line-height="1.1" class="pt-3">
+    <h1 style:line-height="1.1">
       <div class="pl-4 text-gray-600" style:font-size="24px">
         {#if $metricsDefinition}
           {$metricsDefinition?.metricDefLabel}
