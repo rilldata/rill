@@ -1,11 +1,10 @@
-import OS from '@site/src/components/OSGuess'
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 # Using a Rill binary
 Our binary is the fastest path to installing Rill Developer. Download the latest package that is relevant for your OS and architecture:
 
-<Tabs defaultValue={OS()}>
+<Tabs >
   <TabItem label="MacOS" value="mac">
 
 - [macos-arm64](https://cdn.rilldata.com/rill/latest/macos-arm64/rill) (~180mb)
