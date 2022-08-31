@@ -81,7 +81,7 @@ export class DuckDBClient {
       databaseName = "";
     }
 
-    const res = await this.request("v1/instances", {
+    const res = await this.request("/v1/instances", {
       "driver": "duckdb",
       "dsn": databaseName,
     });
