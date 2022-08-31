@@ -17,6 +17,7 @@
   export let formatPreset: NicelyFormattedTypes;
   export let data;
   export let accessor: string;
+  export let yMin = 0;
 
   // the recycled mouseover event, in case anyone else has one set
   export let mouseover = undefined;
@@ -55,7 +56,8 @@
     <SimpleDataGraphic
       shareYScale={false}
       bind:mouseoverValue
-      yMin={0}
+      {yMin}
+      yMinTweenProps={{ duration: longTimeSeries ? 0 : allZeros ? 100 : 300 }}
       yMaxTweenProps={{ duration: longTimeSeries ? 0 : allZeros ? 100 : 300 }}
       let:xScale
     >
