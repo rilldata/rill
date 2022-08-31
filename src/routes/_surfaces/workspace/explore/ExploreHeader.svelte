@@ -38,12 +38,14 @@
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>
 
-<section id="header" class="w-full flex flex-col gap-y-3">
-  <!-- top row -->
-  <div class="flex justify-between w-full pt-3 pl-4 pr-4">
+<section id="header" class="w-full flex flex-col">
+  <!-- top row
+    title and call to action
+  -->
+  <div class="flex justify-between w-full pt-3 pl-1 pr-4">
     <!-- title element -->
-    <h1 style:line-height="1.1" class="pt-3">
-      <div class="pl-4 text-gray-600" style:font-size="24px">
+    <h1 style:line-height="1.1">
+      <div class="pl-4 pt-1 text-gray-700" style:font-size="24px">
         {#if $metricsDefinition}
           {$metricsDefinition?.metricDefLabel}
         {/if}
@@ -67,7 +69,7 @@
     </div>
   </div>
   <!-- bottom row -->
-  <div class="px-4">
+  <div class="px-2">
     <TimeControls {metricsDefId} />
     {#key metricsDefId}
       <Filters {metricsDefId} />

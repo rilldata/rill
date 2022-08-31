@@ -8,6 +8,7 @@
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { FloatingElement } from "$lib/components/floating-element";
+  import Calendar from "$lib/components/icons/Calendar.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
   import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
@@ -81,16 +82,19 @@
 
 <button
   bind:this={target}
-  class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
+  class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
   on:click={buttonClickHandler}
 >
   <div class="flex flew-row gap-x-3">
-    <span class="font-bold">
+    <div class="font-bold flex flex-row items-center gap-x-3">
       <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-      {selectedTimeRangeName ?? "Select a time range"}
-    </span>
-    <span>
-      {prettyFormatTimeRange(metricsExplorer?.selectedTimeRange)}
+      <span class="text-gray-600"><Calendar size="16px" /></span>
+      <span style:transform="translateY(1px)">
+        {selectedTimeRangeName ?? "Select a time range"}
+      </span>
+    </div>
+    <span style:transform="translateY(1px)">
+      {prettyFormatTimeRange($metricsExplorer?.selectedTimeRange)}
     </span>
   </div>
   <span class="transition-transform" class:-rotate-180={timeRangeNameMenuOpen}>
