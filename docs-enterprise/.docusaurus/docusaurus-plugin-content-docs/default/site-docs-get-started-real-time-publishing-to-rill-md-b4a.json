@@ -1,0 +1,21 @@
+{
+  "unversionedId": "get-started/real-time-publishing-to-rill",
+  "id": "get-started/real-time-publishing-to-rill",
+  "title": "Connect Real-time Publishing to Rill",
+  "description": "[block:api-header]",
+  "source": "@site/docs/get-started/real-time-publishing-to-rill.md",
+  "sourceDirName": "get-started",
+  "slug": "/get-started/real-time-publishing-to-rill",
+  "permalink": "/get-started/real-time-publishing-to-rill",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/real-time-publishing-to-rill.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Connect Real-time Publishing to Rill",
+    "slug": "real-time-publishing-to-rill",
+    "hidden": true,
+    "createdAt": "2021-10-06T14:10:41.272Z",
+    "updatedAt": "2021-10-08T19:59:35.106Z"
+  }
+}

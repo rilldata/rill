@@ -1,0 +1,22 @@
+{
+  "unversionedId": "Analyze- Explore Dashboards/getting-started",
+  "id": "Analyze- Explore Dashboards/getting-started",
+  "title": "👋 Explore Quickstart",
+  "description": "[block:api-header]",
+  "source": "@site/docs/Analyze- Explore Dashboards/getting-started.md",
+  "sourceDirName": "Analyze- Explore Dashboards",
+  "slug": "/Analyze- Explore Dashboards/getting-started",
+  "permalink": "/Analyze- Explore Dashboards/getting-started",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Analyze- Explore Dashboards/getting-started.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "👋 Explore Quickstart",
+    "slug": "getting-started",
+    "excerpt": "Analysis basics and capabilities overview",
+    "hidden": false,
+    "createdAt": "2021-06-17T00:27:50.336Z",
+    "updatedAt": "2022-07-13T07:15:20.929Z"
+  }
+}

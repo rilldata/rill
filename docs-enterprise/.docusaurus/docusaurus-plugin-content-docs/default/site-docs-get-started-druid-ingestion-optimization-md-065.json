@@ -1,0 +1,22 @@
+{
+  "unversionedId": "get-started/druid-ingestion-optimization",
+  "id": "get-started/druid-ingestion-optimization",
+  "title": "Tutorial: Data Optimization",
+  "description": "One of the best ways to improve performance is to minimize the size of your data. During ingestion, Druid gives you the ability to perform aggregations on your data that can significantly reduce its size and improve performance. Your goal is to maintain your ability to answer all of the questions that you want to answer, while reducing the size of your data through aggregation and probabilistic approximation. You may need to iterate to find the tradeoffs that will give you the best speed with the least loss of information.",
+  "source": "@site/docs/get-started/druid-ingestion-optimization.md",
+  "sourceDirName": "get-started",
+  "slug": "/get-started/druid-ingestion-optimization",
+  "permalink": "/get-started/druid-ingestion-optimization",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/druid-ingestion-optimization.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Tutorial: Data Optimization",
+    "slug": "druid-ingestion-optimization",
+    "excerpt": "Optimizing performance by performing aggregation during ingestion",
+    "hidden": true,
+    "createdAt": "2020-10-23T22:01:14.525Z",
+    "updatedAt": "2022-06-02T22:48:10.813Z"
+  }
+}

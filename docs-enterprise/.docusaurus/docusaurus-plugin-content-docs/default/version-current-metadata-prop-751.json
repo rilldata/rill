@@ -1,0 +1,267 @@
+{
+  "pluginId": "default",
+  "version": "current",
+  "label": "Next",
+  "banner": null,
+  "badge": false,
+  "className": "docs-version-current",
+  "isLast": true,
+  "docsSidebars": {
+    "docsSidebar": [
+      {
+        "type": "link",
+        "label": "Introduction",
+        "href": "/overview/introduction",
+        "docId": "overview/introduction"
+      },
+      {
+        "type": "category",
+        "label": "Process Batch Data",
+        "items": [
+          {
+            "type": "link",
+            "label": "AWS S3 Bucket",
+            "href": "/get-started/processing-batch-data/aws-s3-bucket",
+            "docId": "get-started/processing-batch-data/aws-s3-bucket"
+          }
+        ],
+        "collapsed": true,
+        "collapsible": true
+      }
+    ]
+  },
+  "docs": {
+    "analyze/embedding-explore": {
+      "id": "analyze/embedding-explore",
+      "title": "⚙️ Embedding Explore",
+      "description": "The Explore dashboard can be embedded into you own web application using an iFrame, a standard HTML element, and authenticated using our built-in support for single-sign-on (SSO) login."
+    },
+    "analyze/explore-admin": {
+      "id": "analyze/explore-admin",
+      "title": "🔐 Explore Admin",
+      "description": "[block:api-header]"
+    },
+    "analyze/explore-admin/adding-users": {
+      "id": "analyze/explore-admin/adding-users",
+      "title": "Adding Users",
+      "description": "[block:api-header]"
+    },
+    "analyze/explore-admin/adjust-dashboard-layout": {
+      "id": "analyze/explore-admin/adjust-dashboard-layout",
+      "title": "Edit Dashboard Layout",
+      "description": ""
+    },
+    "analyze/explore-admin/admin-security": {
+      "id": "analyze/explore-admin/admin-security",
+      "title": "Permissions & Security Policies",
+      "description": "[block:api-header]"
+    },
+    "analyze/explore-admin/create-an-external-dashboard": {
+      "id": "analyze/explore-admin/create-an-external-dashboard",
+      "title": "Create External Dashboards",
+      "description": "To create dashboards for a set of stakeholders, external users or other partners, start by creating a Parent dashboard view that contains all of the dimensions and metrics you wish to display. That parent dashboard can then be filtered by a set of criteria that then limits the data available to each user you wish to grant access. Further, that child dashboard can be embedded to be a specific application view within your product/portal for that set of users."
+    },
+    "analyze/explore-admin/explore-json-examples": {
+      "id": "analyze/explore-admin/explore-json-examples",
+      "title": "Edit Dashboard Metrics",
+      "description": "[block:api-header]"
+    },
+    "analyze/getting-access-to-rill-dashboards": {
+      "id": "analyze/getting-access-to-rill-dashboards",
+      "title": "Welcome to Rill Explore",
+      "description": "When you are first granted access to Explore dashboards, you should receive an email with direct links to set up your account."
+    },
+    "analyze/getting-started": {
+      "id": "analyze/getting-started",
+      "title": "👋 Explore Quickstart",
+      "description": "}"
+    },
+    "analyze/getting-started/alerting": {
+      "id": "analyze/getting-started/alerting",
+      "title": "Alerting",
+      "description": "[block:api-header]"
+    },
+    "analyze/getting-started/bookmarking": {
+      "id": "analyze/getting-started/bookmarking",
+      "title": "Bookmarks: Saved Views",
+      "description": "[block:api-header]"
+    },
+    "analyze/getting-started/facet-pivot-table-splits": {
+      "id": "analyze/getting-started/facet-pivot-table-splits",
+      "title": "Facet: Pivot tables & Splits",
+      "description": "Overview"
+    },
+    "analyze/getting-started/scheduled-exports": {
+      "id": "analyze/getting-started/scheduled-exports",
+      "title": "Scheduled Exports",
+      "description": "[block:api-header]"
+    },
+    "core-concepts": {
+      "id": "core-concepts",
+      "title": "🧰 Core Concepts",
+      "description": "Rill enables you to leverage all the power of Druid with a serverless cloud service that is simple, secure, and elastic. Rill is designed to fit into your existing analytics ecosystem. You can read from a wide variety of streamed or batch data sources such as Kafka and Big Query, and you can perform analytics using industry standard tools such as Tableau and Looker."
+    },
+    "get-started/data-ingestion-best-practices-1": {
+      "id": "get-started/data-ingestion-best-practices-1",
+      "title": "Ingestion Best Practices",
+      "description": "[block:callout]"
+    },
+    "get-started/druid-ingestion-optimization": {
+      "id": "get-started/druid-ingestion-optimization",
+      "title": "Tutorial: Data Optimization",
+      "description": "One of the best ways to improve performance is to minimize the size of your data. During ingestion, Druid gives you the ability to perform aggregations on your data that can significantly reduce its size and improve performance. Your goal is to maintain your ability to answer all of the questions that you want to answer, while reducing the size of your data through aggregation and probabilistic approximation. You may need to iterate to find the tradeoffs that will give you the best speed with the least loss of information."
+    },
+    "get-started/metadata-lookups": {
+      "id": "get-started/metadata-lookups",
+      "title": "Metadata Lookups",
+      "description": "Lookup tables are useful to reduce the size of your overall data set and to make sure that id/name combinations are always available with the latest data. Lookup examples would include:"
+    },
+    "get-started/process-streaming-data": {
+      "id": "get-started/process-streaming-data",
+      "title": "Process Streaming Data",
+      "description": "For real-time use cases, Druid supports ingestion with multiple messaging services - though Apache Kafka is most frequent. The Kafka indexing service enables the configuration of supervisors, which facilitate ingestion from Kafka by managing the creation and lifetime of Kafka indexing tasks. These indexing tasks read events using Kafka's own partition and offset mechanism and are therefore able to provide guarantees of exactly-once ingestion. The supervisor oversees the state of the indexing tasks to coordinate handoffs, manage failures, and ensure that the scalability and replication requirements are maintained."
+    },
+    "get-started/process-streaming-data/connecting-with-kafka": {
+      "id": "get-started/process-streaming-data/connecting-with-kafka",
+      "title": "Confluent/Apache Kafka",
+      "description": "Follow the instructions below to grant Rill access to your Apache Kafka Cluster and the data on a given topic within the cluster. Proving access to a cloud provided service, such as Confluent Cloud, is easier due to all of the connection and security is already taken care of for you.  If you are using a self-manage cluster, ensure security and encryption are configured accordingly."
+    },
+    "get-started/process-streaming-data/real-time-publishing-to-rill": {
+      "id": "get-started/process-streaming-data/real-time-publishing-to-rill",
+      "title": "Connect Real-time Publishing to Rill",
+      "description": "[block:api-header]"
+    },
+    "get-started/process-streaming-data/tutorial-kafka-ingestion": {
+      "id": "get-started/process-streaming-data/tutorial-kafka-ingestion",
+      "title": "Tutorial: Kafka Ingestion",
+      "description": "To get comfortable with Druid and Streaming from Apache Kafka, we'll walk you through loading a sample data set. If you have yet configured an Apache Kafka instance that is accessible by RillData, please see the documentation on Connecting Sources for Kafka."
+    },
+    "get-started/processing-batch-data": {
+      "id": "get-started/processing-batch-data",
+      "title": "Process Batch Data",
+      "description": "Many customers start with Rill loading data from storage locations - s3, GCS, etc."
+    },
+    "get-started/processing-batch-data/aws-s3-bucket": {
+      "id": "get-started/processing-batch-data/aws-s3-bucket",
+      "title": "AWS S3 Bucket",
+      "description": "Setup S3 bucket",
+      "sidebar": "docsSidebar"
+    },
+    "get-started/processing-batch-data/azure-storage-container": {
+      "id": "get-started/processing-batch-data/azure-storage-container",
+      "title": "Azure Storage Container",
+      "description": "Rill would need access to the Azure Storage Container to fetch the data. For this Rill needs"
+    },
+    "get-started/processing-batch-data/gcs-bucket": {
+      "id": "get-started/processing-batch-data/gcs-bucket",
+      "title": "GCS Bucket",
+      "description": "Follow the instructions below to grant Rill access to your Google Cloud Storage Bucket."
+    },
+    "get-started/processing-batch-data/google-bigquery": {
+      "id": "get-started/processing-batch-data/google-bigquery",
+      "title": "Google BigQuery",
+      "description": "Follow the instructions below to grant Rill access to your Google BigQuery datasets."
+    },
+    "get-started/processing-batch-data/ingesting-from-big-query": {
+      "id": "get-started/processing-batch-data/ingesting-from-big-query",
+      "title": "Tutorial: BigQuery Ingestion",
+      "description": "To import data form BigQuery, you will first need to grant Rill access to your BigQuery data. Once that is complete, you'll ingest the data via the Druid console following the same steps shown in Druid Data Ingestion and Druid Optimization During Ingestion"
+    },
+    "get-started/processing-batch-data/tutorial-druid-ingestion": {
+      "id": "get-started/processing-batch-data/tutorial-druid-ingestion",
+      "title": "Tutorial: Manual Batch Ingestion",
+      "description": "To get comfortable with Druid, we'll walk you through loading a sample data set. Normally you will specify a path to your data (for example, a BigQuery table), but in this example, you won't have to provide a path since it is build into this example. Note that since you are creating a dataset, you will need Editor privilege to access the Load Data tab referenced in this tutorial."
+    },
+    "integrate/authenticating-integrated-applications": {
+      "id": "integrate/authenticating-integrated-applications",
+      "title": "🔓 Authenticate & Connect",
+      "description": "When you query Druid via an application, that application must provide authentication credentials to Druid. There are two ways to do this: a service account or an API password."
+    },
+    "integrate/authenticating-integrated-applications/api-access": {
+      "id": "integrate/authenticating-integrated-applications/api-access",
+      "title": "API Access",
+      "description": "With access to RCC, Admin users are able to access raw data via the Druid API."
+    },
+    "integrate/authenticating-integrated-applications/api-password": {
+      "id": "integrate/authenticating-integrated-applications/api-password",
+      "title": "API Password",
+      "description": "If you want to use an application that makes API calls to Druid, you can create an API password and authenticate the API call using your Rill login and the API password. This is an alternative to using a Service Account, which is an account that your admin can create to allow multiple users to access Druid through an application via a single authorized user."
+    },
+    "integrate/authenticating-integrated-applications/jdbc-connection": {
+      "id": "integrate/authenticating-integrated-applications/jdbc-connection",
+      "title": "JDBC Connection",
+      "description": "You can use a JDBC connection to query your Druid service."
+    },
+    "integrate/authenticating-integrated-applications/service-accounts": {
+      "id": "integrate/authenticating-integrated-applications/service-accounts",
+      "title": "Service Accounts",
+      "description": "A Service Account is an account that your admin will create and use to authenticate API calls made to Druid by another application. If multiple users in your workspace will be using this application to access Druid, your admin can create a single service account and embed the credentials in the application that the users are running. As a user of that application, once your Admin creates the service account and provides the credentials to the application, you will be able to interact with Druid through that application without additional Druid credentials."
+    },
+    "integrate/jupyter": {
+      "id": "integrate/jupyter",
+      "title": "Jupyter",
+      "description": "Using Jupyter with Druid is easy. Simply post an SQL query with your authentication credentials  an then parse the json output that is returned."
+    },
+    "integrate/looker": {
+      "id": "integrate/looker",
+      "title": "Looker",
+      "description": "Create credentials that allow Looker to connect to Rill"
+    },
+    "integrate/superset": {
+      "id": "integrate/superset",
+      "title": "Superset",
+      "description": "Connect to your database/Rill workspace"
+    },
+    "integrate/tableau": {
+      "id": "integrate/tableau",
+      "title": "Tableau",
+      "description": "Install the Avatica JDBC driver"
+    },
+    "introduction": {
+      "id": "introduction",
+      "title": "🔖 Introduction",
+      "description": "Rill Data provides a fully managed cloud data service that enables teams to deliver real time metrics dashboards to their business stakeholders."
+    },
+    "overview/core-concepts": {
+      "id": "overview/core-concepts",
+      "title": "🧰 Core Concepts",
+      "description": "Rill enables you to leverage all the power of Druid with a serverless cloud service that is simple, secure, and elastic. Rill is designed to fit into your existing analytics ecosystem. You can read from a wide variety of streamed or batch data sources such as Kafka and Big Query, and you can perform analytics using industry standard tools such as Tableau and Looker."
+    },
+    "overview/introduction": {
+      "id": "overview/introduction",
+      "title": "🔖 Introduction",
+      "description": "Rill Data provides a fully managed cloud data service that enables teams to deliver real time metrics dashboards to their business stakeholders.",
+      "sidebar": "docsSidebar"
+    },
+    "resources/contact-support": {
+      "id": "resources/contact-support",
+      "title": "🤓 Contact Support",
+      "description": "Contact support via support@rilldata.com"
+    },
+    "resources/faq": {
+      "id": "resources/faq",
+      "title": "❓ FAQ",
+      "description": "[block:api-header]"
+    },
+    "resources/service-status": {
+      "id": "resources/service-status",
+      "title": "🎛 Service Status",
+      "description": ""
+    },
+    "Security/aws-encryption": {
+      "id": "Security/aws-encryption",
+      "title": "AWS Encryption",
+      "description": "We can encrypt the data with Customer managed AWS KMS Key."
+    },
+    "Security/aws-private-link": {
+      "id": "Security/aws-private-link",
+      "title": "Private Link",
+      "description": "The choice between Transit Gateway, VPC peering, and AWS PrivateLink is dependent on connectivity."
+    },
+    "Security/security": {
+      "id": "Security/security",
+      "title": "Security",
+      "description": "We are securing the secrets required for internal communications as well as the database credentials are stored in Hashicorp's Vault."
+    }
+  }
+}

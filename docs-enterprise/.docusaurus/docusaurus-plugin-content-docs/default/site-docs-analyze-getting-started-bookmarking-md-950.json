@@ -1,0 +1,22 @@
+{
+  "unversionedId": "analyze/getting-started/bookmarking",
+  "id": "analyze/getting-started/bookmarking",
+  "title": "Bookmarks: Saved Views",
+  "description": "[block:api-header]",
+  "source": "@site/docs/analyze/getting-started/bookmarking.md",
+  "sourceDirName": "analyze/getting-started",
+  "slug": "/analyze/getting-started/bookmarking",
+  "permalink": "/analyze/getting-started/bookmarking",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started/bookmarking.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Bookmarks: Saved Views",
+    "slug": "bookmarking",
+    "excerpt": "Saved dashboard views with filter settings for recurring analyses",
+    "hidden": false,
+    "createdAt": "2021-08-11T19:18:36.997Z",
+    "updatedAt": "2022-06-22T17:54:56.819Z"
+  }
+}

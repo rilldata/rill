@@ -1,0 +1,21 @@
+{
+  "unversionedId": "analyze/alerting",
+  "id": "analyze/alerting",
+  "title": "Alerting",
+  "description": "[block:api-header]",
+  "source": "@site/docs/analyze/alerting.md",
+  "sourceDirName": "analyze",
+  "slug": "/analyze/alerting",
+  "permalink": "/analyze/alerting",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/alerting.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Alerting",
+    "slug": "alerting",
+    "hidden": false,
+    "createdAt": "2021-06-17T00:29:55.235Z",
+    "updatedAt": "2021-08-12T17:11:52.418Z"
+  }
+}

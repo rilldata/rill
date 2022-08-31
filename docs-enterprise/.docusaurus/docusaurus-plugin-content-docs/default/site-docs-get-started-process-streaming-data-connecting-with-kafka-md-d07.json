@@ -1,0 +1,22 @@
+{
+  "unversionedId": "get-started/process-streaming-data/connecting-with-kafka",
+  "id": "get-started/process-streaming-data/connecting-with-kafka",
+  "title": "Confluent/Apache Kafka",
+  "description": "Follow the instructions below to grant Rill access to your Apache Kafka Cluster and the data on a given topic within the cluster. Proving access to a cloud provided service, such as Confluent Cloud, is easier due to all of the connection and security is already taken care of for you.  If you are using a self-manage cluster, ensure security and encryption are configured accordingly.",
+  "source": "@site/docs/get-started/process-streaming-data/connecting-with-kafka.md",
+  "sourceDirName": "get-started/process-streaming-data",
+  "slug": "/get-started/process-streaming-data/connecting-with-kafka",
+  "permalink": "/get-started/process-streaming-data/connecting-with-kafka",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/process-streaming-data/connecting-with-kafka.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Confluent/Apache Kafka",
+    "slug": "connecting-with-kafka",
+    "excerpt": "Stream data directly from your Kafka instance into Rill",
+    "hidden": false,
+    "createdAt": "2020-05-27T20:22:27.954Z",
+    "updatedAt": "2021-10-06T16:22:28.020Z"
+  }
+}

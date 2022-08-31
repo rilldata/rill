@@ -1,0 +1,22 @@
+{
+  "unversionedId": "Integrate- 3rd Party Applications/looker",
+  "id": "Integrate- 3rd Party Applications/looker",
+  "title": "Looker",
+  "description": "Create credentials that allow Looker to connect to Rill",
+  "source": "@site/docs/Integrate- 3rd Party Applications/looker.md",
+  "sourceDirName": "Integrate- 3rd Party Applications",
+  "slug": "/Integrate- 3rd Party Applications/looker",
+  "permalink": "/Integrate- 3rd Party Applications/looker",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Integrate- 3rd Party Applications/looker.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Looker",
+    "slug": "looker",
+    "excerpt": "Integrating Rill with Looker",
+    "hidden": false,
+    "createdAt": "2021-06-01T23:41:43.608Z",
+    "updatedAt": "2021-08-12T17:04:18.196Z"
+  }
+}

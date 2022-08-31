@@ -1,0 +1,22 @@
+{
+  "unversionedId": "analyze/admin-security",
+  "id": "analyze/admin-security",
+  "title": "Permissions & Security Policies",
+  "description": "[block:api-header]",
+  "source": "@site/docs/analyze/admin-security.md",
+  "sourceDirName": "analyze",
+  "slug": "/analyze/admin-security",
+  "permalink": "/analyze/admin-security",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/admin-security.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Permissions & Security Policies",
+    "slug": "admin-security",
+    "excerpt": "How to manage access and log-in to Explore",
+    "hidden": false,
+    "createdAt": "2021-08-11T18:42:21.908Z",
+    "updatedAt": "2022-07-13T07:13:03.575Z"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "unversionedId": "Analyze- Explore Dashboards/explore-admin/create-an-external-dashboard",
+  "id": "Analyze- Explore Dashboards/explore-admin/create-an-external-dashboard",
+  "title": "Create External Dashboards",
+  "description": "To create dashboards for a set of stakeholders, external users or other partners, start by creating a Parent dashboard view that contains all of the dimensions and metrics you wish to display. That parent dashboard can then be filtered by a set of criteria that then limits the data available to each user you wish to grant access. Further, that child dashboard can be embedded to be a specific application view within your product/portal for that set of users.",
+  "source": "@site/docs/Analyze- Explore Dashboards/explore-admin/create-an-external-dashboard.md",
+  "sourceDirName": "Analyze- Explore Dashboards/explore-admin",
+  "slug": "/Analyze- Explore Dashboards/explore-admin/create-an-external-dashboard",
+  "permalink": "/Analyze- Explore Dashboards/explore-admin/create-an-external-dashboard",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Analyze- Explore Dashboards/explore-admin/create-an-external-dashboard.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Create External Dashboards",
+    "slug": "create-an-external-dashboard",
+    "excerpt": "Use a saved \"Parent\" Dashboard to create a \"Child\" based on predetermined filters",
+    "hidden": false,
+    "createdAt": "2021-08-11T20:06:30.979Z",
+    "updatedAt": "2022-07-13T07:13:26.466Z"
+  }
+}

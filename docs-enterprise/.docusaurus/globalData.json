@@ -1,0 +1,214 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/",
+          "mainDocId": "overview/introduction",
+          "docs": [
+            {
+              "id": "analyze/embedding-explore",
+              "path": "/analyze/embedding-explore"
+            },
+            {
+              "id": "analyze/explore-admin",
+              "path": "/analyze/explore-admin"
+            },
+            {
+              "id": "analyze/explore-admin/adding-users",
+              "path": "/analyze/explore-admin/adding-users"
+            },
+            {
+              "id": "analyze/explore-admin/adjust-dashboard-layout",
+              "path": "/analyze/explore-admin/adjust-dashboard-layout"
+            },
+            {
+              "id": "analyze/explore-admin/admin-security",
+              "path": "/analyze/explore-admin/admin-security"
+            },
+            {
+              "id": "analyze/explore-admin/create-an-external-dashboard",
+              "path": "/analyze/explore-admin/create-an-external-dashboard"
+            },
+            {
+              "id": "analyze/explore-admin/explore-json-examples",
+              "path": "/analyze/explore-admin/explore-json-examples"
+            },
+            {
+              "id": "analyze/getting-access-to-rill-dashboards",
+              "path": "/analyze/getting-access-to-rill-dashboards"
+            },
+            {
+              "id": "analyze/getting-started",
+              "path": "/analyze/getting-started"
+            },
+            {
+              "id": "analyze/getting-started/alerting",
+              "path": "/analyze/getting-started/alerting"
+            },
+            {
+              "id": "analyze/getting-started/bookmarking",
+              "path": "/analyze/getting-started/bookmarking"
+            },
+            {
+              "id": "analyze/getting-started/facet-pivot-table-splits",
+              "path": "/analyze/getting-started/facet-pivot-table-splits"
+            },
+            {
+              "id": "analyze/getting-started/scheduled-exports",
+              "path": "/analyze/getting-started/scheduled-exports"
+            },
+            {
+              "id": "core-concepts",
+              "path": "/core-concepts"
+            },
+            {
+              "id": "get-started/data-ingestion-best-practices-1",
+              "path": "/get-started/data-ingestion-best-practices-1"
+            },
+            {
+              "id": "get-started/druid-ingestion-optimization",
+              "path": "/get-started/druid-ingestion-optimization"
+            },
+            {
+              "id": "get-started/metadata-lookups",
+              "path": "/get-started/metadata-lookups"
+            },
+            {
+              "id": "get-started/process-streaming-data",
+              "path": "/get-started/process-streaming-data"
+            },
+            {
+              "id": "get-started/process-streaming-data/connecting-with-kafka",
+              "path": "/get-started/process-streaming-data/connecting-with-kafka"
+            },
+            {
+              "id": "get-started/process-streaming-data/real-time-publishing-to-rill",
+              "path": "/get-started/process-streaming-data/real-time-publishing-to-rill"
+            },
+            {
+              "id": "get-started/process-streaming-data/tutorial-kafka-ingestion",
+              "path": "/get-started/process-streaming-data/tutorial-kafka-ingestion"
+            },
+            {
+              "id": "get-started/processing-batch-data",
+              "path": "/get-started/processing-batch-data"
+            },
+            {
+              "id": "get-started/processing-batch-data/aws-s3-bucket",
+              "path": "/get-started/processing-batch-data/aws-s3-bucket",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "get-started/processing-batch-data/azure-storage-container",
+              "path": "/get-started/processing-batch-data/azure-storage-container"
+            },
+            {
+              "id": "get-started/processing-batch-data/gcs-bucket",
+              "path": "/get-started/processing-batch-data/gcs-bucket"
+            },
+            {
+              "id": "get-started/processing-batch-data/google-bigquery",
+              "path": "/get-started/processing-batch-data/google-bigquery"
+            },
+            {
+              "id": "get-started/processing-batch-data/ingesting-from-big-query",
+              "path": "/get-started/processing-batch-data/ingesting-from-big-query"
+            },
+            {
+              "id": "get-started/processing-batch-data/tutorial-druid-ingestion",
+              "path": "/get-started/processing-batch-data/tutorial-druid-ingestion"
+            },
+            {
+              "id": "integrate/authenticating-integrated-applications",
+              "path": "/integrate/authenticating-integrated-applications"
+            },
+            {
+              "id": "integrate/authenticating-integrated-applications/api-access",
+              "path": "/integrate/authenticating-integrated-applications/api-access"
+            },
+            {
+              "id": "integrate/authenticating-integrated-applications/api-password",
+              "path": "/integrate/authenticating-integrated-applications/api-password"
+            },
+            {
+              "id": "integrate/authenticating-integrated-applications/jdbc-connection",
+              "path": "/integrate/authenticating-integrated-applications/jdbc-connection"
+            },
+            {
+              "id": "integrate/authenticating-integrated-applications/service-accounts",
+              "path": "/integrate/authenticating-integrated-applications/service-accounts"
+            },
+            {
+              "id": "integrate/jupyter",
+              "path": "/integrate/jupyter"
+            },
+            {
+              "id": "integrate/looker",
+              "path": "/integrate/looker"
+            },
+            {
+              "id": "integrate/superset",
+              "path": "/integrate/superset"
+            },
+            {
+              "id": "integrate/tableau",
+              "path": "/integrate/tableau"
+            },
+            {
+              "id": "introduction",
+              "path": "/introduction"
+            },
+            {
+              "id": "overview/core-concepts",
+              "path": "/overview/core-concepts"
+            },
+            {
+              "id": "overview/introduction",
+              "path": "/overview/introduction",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "resources/contact-support",
+              "path": "/resources/contact-support"
+            },
+            {
+              "id": "resources/faq",
+              "path": "/resources/faq"
+            },
+            {
+              "id": "resources/service-status",
+              "path": "/resources/service-status"
+            },
+            {
+              "id": "Security/aws-encryption",
+              "path": "/Security/aws-encryption"
+            },
+            {
+              "id": "Security/aws-private-link",
+              "path": "/Security/aws-private-link"
+            },
+            {
+              "id": "Security/security",
+              "path": "/Security/security"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docsSidebar": {
+              "link": {
+                "path": "/overview/introduction",
+                "label": "Introduction"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

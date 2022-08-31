@@ -1,0 +1,22 @@
+{
+  "unversionedId": "analyze/getting-started",
+  "id": "analyze/getting-started",
+  "title": "👋 Explore Quickstart",
+  "description": "}",
+  "source": "@site/docs/analyze/getting-started.md",
+  "sourceDirName": "analyze",
+  "slug": "/analyze/getting-started",
+  "permalink": "/analyze/getting-started",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "👋 Explore Quickstart",
+    "slug": "getting-started",
+    "excerpt": "Analysis basics and capabilities overview",
+    "hidden": false,
+    "createdAt": "2021-06-17T00:27:50.336Z",
+    "updatedAt": "2022-07-13T07:15:20.929Z"
+  }
+}

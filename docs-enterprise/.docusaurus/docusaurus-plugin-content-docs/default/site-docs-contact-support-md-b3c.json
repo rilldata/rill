@@ -1,0 +1,26 @@
+{
+  "unversionedId": "contact-support",
+  "id": "contact-support",
+  "title": "🤓 Contact Support",
+  "description": "Contact support via support@rilldata.com",
+  "source": "@site/docs/contact-support.md",
+  "sourceDirName": ".",
+  "slug": "/contact-support",
+  "permalink": "/contact-support",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/contact-support.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "🤓 Contact Support",
+    "slug": "contact-support",
+    "hidden": false,
+    "createdAt": "2020-05-27T21:23:55.051Z",
+    "updatedAt": "2021-08-11T22:40:40.607Z"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "🎛 Service Status",
+    "permalink": "/service-status"
+  }
+}

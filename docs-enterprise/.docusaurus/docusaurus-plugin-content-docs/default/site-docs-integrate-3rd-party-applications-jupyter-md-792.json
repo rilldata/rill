@@ -1,0 +1,22 @@
+{
+  "unversionedId": "Integrate- 3rd Party Applications/jupyter",
+  "id": "Integrate- 3rd Party Applications/jupyter",
+  "title": "Jupyter",
+  "description": "Using Jupyter with Druid is easy. Simply post an SQL query with your authentication credentials  an then parse the json output that is returned.",
+  "source": "@site/docs/Integrate- 3rd Party Applications/jupyter.md",
+  "sourceDirName": "Integrate- 3rd Party Applications",
+  "slug": "/Integrate- 3rd Party Applications/jupyter",
+  "permalink": "/Integrate- 3rd Party Applications/jupyter",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Integrate- 3rd Party Applications/jupyter.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Jupyter",
+    "slug": "jupyter",
+    "excerpt": "Jupyter",
+    "hidden": false,
+    "createdAt": "2020-10-30T00:03:41.056Z",
+    "updatedAt": "2021-07-07T21:28:50.136Z"
+  }
+}

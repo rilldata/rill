@@ -1,0 +1,22 @@
+{
+  "unversionedId": "analyze/explore-json-examples",
+  "id": "analyze/explore-json-examples",
+  "title": "Edit Dashboard Metrics",
+  "description": "[block:api-header]",
+  "source": "@site/docs/analyze/explore-json-examples.md",
+  "sourceDirName": "analyze",
+  "slug": "/analyze/explore-json-examples",
+  "permalink": "/analyze/explore-json-examples",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/explore-json-examples.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Edit Dashboard Metrics",
+    "slug": "explore-json-examples",
+    "excerpt": "Illustrative snippets for updating your dashboards",
+    "hidden": false,
+    "createdAt": "2021-06-16T23:59:27.521Z",
+    "updatedAt": "2022-07-13T07:13:45.174Z"
+  }
+}

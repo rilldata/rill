@@ -1,0 +1,22 @@
+{
+  "unversionedId": "Integrate- 3rd Party Applications/authenticating-integrated-applications",
+  "id": "Integrate- 3rd Party Applications/authenticating-integrated-applications",
+  "title": "🔓 Authenticate & Connect",
+  "description": "When you query Druid via an application, that application must provide authentication credentials to Druid. There are two ways to do this: a service account or an API password.",
+  "source": "@site/docs/Integrate- 3rd Party Applications/authenticating-integrated-applications.md",
+  "sourceDirName": "Integrate- 3rd Party Applications",
+  "slug": "/Integrate- 3rd Party Applications/authenticating-integrated-applications",
+  "permalink": "/Integrate- 3rd Party Applications/authenticating-integrated-applications",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Integrate- 3rd Party Applications/authenticating-integrated-applications.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "🔓 Authenticate & Connect",
+    "slug": "authenticating-integrated-applications",
+    "excerpt": "Set up Service Accounts and Generic JDBC/API access",
+    "hidden": false,
+    "createdAt": "2020-10-29T23:32:54.851Z",
+    "updatedAt": "2022-06-14T19:21:27.949Z"
+  }
+}

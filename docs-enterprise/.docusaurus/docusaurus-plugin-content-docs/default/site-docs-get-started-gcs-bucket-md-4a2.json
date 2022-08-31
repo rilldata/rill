@@ -1,0 +1,31 @@
+{
+  "unversionedId": "get-started/gcs-bucket",
+  "id": "get-started/gcs-bucket",
+  "title": "GCS Bucket",
+  "description": "Follow the instructions below to grant Rill access to your Google Cloud Storage Bucket.",
+  "source": "@site/docs/get-started/gcs-bucket.md",
+  "sourceDirName": "get-started",
+  "slug": "/get-started/gcs-bucket",
+  "permalink": "/get-started/gcs-bucket",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/gcs-bucket.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "GCS Bucket",
+    "slug": "gcs-bucket",
+    "excerpt": "Batch ingestion: integrating Rill with Google Cloud Storage",
+    "hidden": false,
+    "createdAt": "2020-05-31T17:26:09.708Z",
+    "updatedAt": "2021-08-17T23:29:18.894Z"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "AWS S3 Bucket",
+    "permalink": "/get-started/aws-s3-bucket"
+  },
+  "next": {
+    "title": "Google BigQuery",
+    "permalink": "/get-started/google-bigquery"
+  }
+}

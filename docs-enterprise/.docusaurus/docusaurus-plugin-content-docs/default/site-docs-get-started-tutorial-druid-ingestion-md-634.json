@@ -1,0 +1,30 @@
+{
+  "unversionedId": "get-started/tutorial-druid-ingestion",
+  "id": "get-started/tutorial-druid-ingestion",
+  "title": "Tutorial: Manual Batch Ingestion",
+  "description": "To get comfortable with Druid, we'll walk you through loading a sample data set. Normally you will specify a path to your data (for example, a BigQuery table), but in this example, you won't have to provide a path since it is build into this example. Note that since you are creating a dataset, you will need Editor privilege to access the Load Data tab referenced in this tutorial.",
+  "source": "@site/docs/get-started/tutorial-druid-ingestion.md",
+  "sourceDirName": "get-started",
+  "slug": "/get-started/tutorial-druid-ingestion",
+  "permalink": "/get-started/tutorial-druid-ingestion",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/tutorial-druid-ingestion.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Tutorial: Manual Batch Ingestion",
+    "slug": "tutorial-druid-ingestion",
+    "hidden": false,
+    "createdAt": "2021-08-11T22:56:54.932Z",
+    "updatedAt": "2022-06-02T22:49:16.353Z"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Azure Storage Container",
+    "permalink": "/get-started/azure-storage-container"
+  },
+  "next": {
+    "title": "Tutorial: BigQuery Ingestion",
+    "permalink": "/get-started/ingesting-from-big-query"
+  }
+}

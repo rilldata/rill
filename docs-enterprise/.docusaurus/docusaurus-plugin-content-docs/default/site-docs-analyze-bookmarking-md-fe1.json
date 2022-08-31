@@ -1,0 +1,22 @@
+{
+  "unversionedId": "analyze/bookmarking",
+  "id": "analyze/bookmarking",
+  "title": "Bookmarks: Saved Views",
+  "description": "[block:api-header]",
+  "source": "@site/docs/analyze/bookmarking.md",
+  "sourceDirName": "analyze",
+  "slug": "/analyze/bookmarking",
+  "permalink": "/analyze/bookmarking",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/bookmarking.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Bookmarks: Saved Views",
+    "slug": "bookmarking",
+    "excerpt": "Saved dashboard views with filter settings for recurring analyses",
+    "hidden": false,
+    "createdAt": "2021-08-11T19:18:36.997Z",
+    "updatedAt": "2022-06-22T17:54:56.819Z"
+  }
+}

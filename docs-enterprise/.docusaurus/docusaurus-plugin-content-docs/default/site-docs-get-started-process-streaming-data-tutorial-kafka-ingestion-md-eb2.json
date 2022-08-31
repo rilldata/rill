@@ -1,0 +1,21 @@
+{
+  "unversionedId": "get-started/process-streaming-data/tutorial-kafka-ingestion",
+  "id": "get-started/process-streaming-data/tutorial-kafka-ingestion",
+  "title": "Tutorial: Kafka Ingestion",
+  "description": "To get comfortable with Druid and Streaming from Apache Kafka, we'll walk you through loading a sample data set. If you have yet configured an Apache Kafka instance that is accessible by RillData, please see the documentation on Connecting Sources for Kafka.",
+  "source": "@site/docs/get-started/process-streaming-data/tutorial-kafka-ingestion.md",
+  "sourceDirName": "get-started/process-streaming-data",
+  "slug": "/get-started/process-streaming-data/tutorial-kafka-ingestion",
+  "permalink": "/get-started/process-streaming-data/tutorial-kafka-ingestion",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/process-streaming-data/tutorial-kafka-ingestion.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Tutorial: Kafka Ingestion",
+    "slug": "tutorial-kafka-ingestion",
+    "hidden": false,
+    "createdAt": "2021-08-13T15:52:49.898Z",
+    "updatedAt": "2022-07-13T07:10:59.656Z"
+  }
+}

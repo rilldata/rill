@@ -1,0 +1,22 @@
+{
+  "unversionedId": "Security/aws-private-link",
+  "id": "Security/aws-private-link",
+  "title": "Private Link",
+  "description": "The choice between Transit Gateway, VPC peering, and AWS PrivateLink is dependent on connectivity.",
+  "source": "@site/docs/Security/aws-private-link.md",
+  "sourceDirName": "Security",
+  "slug": "/Security/aws-private-link",
+  "permalink": "/Security/aws-private-link",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Security/aws-private-link.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Private Link",
+    "slug": "aws-private-link",
+    "excerpt": "Share data privately",
+    "hidden": false,
+    "createdAt": "2020-09-20T06:09:07.835Z",
+    "updatedAt": "2021-08-11T22:46:57.964Z"
+  }
+}

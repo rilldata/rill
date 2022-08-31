@@ -1,0 +1,21 @@
+{
+  "unversionedId": "Integrate- 3rd Party Applications/superset",
+  "id": "Integrate- 3rd Party Applications/superset",
+  "title": "Superset",
+  "description": "Connect to your database/Rill workspace",
+  "source": "@site/docs/Integrate- 3rd Party Applications/superset.md",
+  "sourceDirName": "Integrate- 3rd Party Applications",
+  "slug": "/Integrate- 3rd Party Applications/superset",
+  "permalink": "/Integrate- 3rd Party Applications/superset",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Integrate- 3rd Party Applications/superset.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Superset",
+    "slug": "superset",
+    "hidden": false,
+    "createdAt": "2020-10-28T23:09:57.103Z",
+    "updatedAt": "2022-04-17T14:53:45.403Z"
+  }
+}

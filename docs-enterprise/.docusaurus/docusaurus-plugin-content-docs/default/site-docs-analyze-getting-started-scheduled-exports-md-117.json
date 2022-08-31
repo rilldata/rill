@@ -1,0 +1,21 @@
+{
+  "unversionedId": "analyze/getting-started/scheduled-exports",
+  "id": "analyze/getting-started/scheduled-exports",
+  "title": "Scheduled Exports",
+  "description": "[block:api-header]",
+  "source": "@site/docs/analyze/getting-started/scheduled-exports.md",
+  "sourceDirName": "analyze/getting-started",
+  "slug": "/analyze/getting-started/scheduled-exports",
+  "permalink": "/analyze/getting-started/scheduled-exports",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started/scheduled-exports.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Scheduled Exports",
+    "slug": "scheduled-exports",
+    "hidden": false,
+    "createdAt": "2021-08-11T19:08:42.213Z",
+    "updatedAt": "2021-08-12T16:46:27.061Z"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "unversionedId": "faq",
+  "id": "faq",
+  "title": "❓ FAQ",
+  "description": "[block:api-header]",
+  "source": "@site/docs/faq.md",
+  "sourceDirName": ".",
+  "slug": "/faq",
+  "permalink": "/faq",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/faq.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "❓ FAQ",
+    "slug": "faq",
+    "excerpt": "General queries and common asks",
+    "hidden": false,
+    "createdAt": "2021-06-17T03:23:37.531Z",
+    "updatedAt": "2022-07-13T20:15:51.316Z"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Tutorial: Kafka Ingestion",
+    "permalink": "/get-started/tutorial-kafka-ingestion"
+  },
+  "next": {
+    "title": "🎛 Service Status",
+    "permalink": "/service-status"
+  }
+}

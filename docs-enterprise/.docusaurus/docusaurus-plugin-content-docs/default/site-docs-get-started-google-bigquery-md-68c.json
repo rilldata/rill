@@ -1,0 +1,31 @@
+{
+  "unversionedId": "get-started/google-bigquery",
+  "id": "get-started/google-bigquery",
+  "title": "Google BigQuery",
+  "description": "Follow the instructions below to grant Rill access to your Google BigQuery datasets.",
+  "source": "@site/docs/get-started/google-bigquery.md",
+  "sourceDirName": "get-started",
+  "slug": "/get-started/google-bigquery",
+  "permalink": "/get-started/google-bigquery",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/google-bigquery.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Google BigQuery",
+    "slug": "google-bigquery",
+    "excerpt": "Direction integration via Rill's homegrown BigQuery connector",
+    "hidden": false,
+    "createdAt": "2020-10-21T01:49:25.004Z",
+    "updatedAt": "2021-08-17T23:29:01.547Z"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "GCS Bucket",
+    "permalink": "/get-started/gcs-bucket"
+  },
+  "next": {
+    "title": "Azure Storage Container",
+    "permalink": "/get-started/azure-storage-container"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "unversionedId": "Integrate- 3rd Party Applications/authenticating-integrated-applications/jdbc-connection",
+  "id": "Integrate- 3rd Party Applications/authenticating-integrated-applications/jdbc-connection",
+  "title": "JDBC Connection",
+  "description": "You can use a JDBC connection to query your Druid service.",
+  "source": "@site/docs/Integrate- 3rd Party Applications/authenticating-integrated-applications/jdbc-connection.md",
+  "sourceDirName": "Integrate- 3rd Party Applications/authenticating-integrated-applications",
+  "slug": "/Integrate- 3rd Party Applications/authenticating-integrated-applications/jdbc-connection",
+  "permalink": "/Integrate- 3rd Party Applications/authenticating-integrated-applications/jdbc-connection",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Integrate- 3rd Party Applications/authenticating-integrated-applications/jdbc-connection.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "JDBC Connection",
+    "slug": "jdbc-connection",
+    "hidden": false,
+    "createdAt": "2020-10-31T00:38:02.158Z",
+    "updatedAt": "2021-08-03T01:08:16.229Z"
+  }
+}

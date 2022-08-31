@@ -1,0 +1,22 @@
+{
+  "unversionedId": "core-concepts",
+  "id": "core-concepts",
+  "title": "🧰 Core Concepts",
+  "description": "Rill enables you to leverage all the power of Druid with a serverless cloud service that is simple, secure, and elastic. Rill is designed to fit into your existing analytics ecosystem. You can read from a wide variety of streamed or batch data sources such as Kafka and Big Query, and you can perform analytics using industry standard tools such as Tableau and Looker.",
+  "source": "@site/docs/core-concepts.md",
+  "sourceDirName": ".",
+  "slug": "/core-concepts",
+  "permalink": "/core-concepts",
+  "draft": false,
+  "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/core-concepts.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "🧰 Core Concepts",
+    "slug": "core-concepts",
+    "excerpt": "Rill Cloud Console to manage data; Rill Explore to analyze & share",
+    "hidden": false,
+    "createdAt": "2020-10-23T00:23:06.366Z",
+    "updatedAt": "2022-07-13T20:12:40.733Z"
+  }
+}
