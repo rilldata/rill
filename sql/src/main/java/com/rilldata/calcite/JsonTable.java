@@ -6,4 +6,5 @@ public class JsonTable
 {
   public String name;
   public List<JsonColumn> columns;
+  public String ddl;
 }

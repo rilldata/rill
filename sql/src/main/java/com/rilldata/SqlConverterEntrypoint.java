@@ -1,5 +1,9 @@
 package com.rilldata;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rilldata.calcite.CalciteToolbox;
+import com.rilldata.calcite.MigrationStep;
+import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -7,6 +11,8 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
+
+import java.util.List;
 
 /**
  * This class contains an entry point (a function callable from a native executable, ie C/Go executable).
@@ -33,6 +39,25 @@ public class SqlConverterEntrypoint
         return WordFactory.nullPointer();
       }
       return convertToCCharPointer(allocatorFn, runnableQuery);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return WordFactory.nullPointer();
+    }
+  }
+
+  @CEntryPoint(name="infer_migrations")
+  public static CCharPointer inferMigrationsSteps(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer json, CCharPointer catalog)
+  {
+    try {
+      String javaSchemaString = CTypeConversion.toJavaString(catalog);
+      String javaSqlString = CTypeConversion.toJavaString(json);
+      List<MigrationStep> migrationSteps = CalciteToolbox.inferMigrations(
+          javaSqlString,
+          javaSchemaString,
+          PostgresqlSqlDialect.DEFAULT
+      );
+      String stepsJson = new ObjectMapper().writeValueAsString(migrationSteps);
+      return convertToCCharPointer(allocatorFn, stepsJson);
     } catch (Exception e) {
       e.printStackTrace();
       return WordFactory.nullPointer();

@@ -1,5 +1,8 @@
 package com.rilldata.calcite;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rilldata.calcite.extensions.SqlCreateMetric;
 import com.rilldata.calcite.generated.RillSqlParserImpl;
 import com.rilldata.calcite.models.Artifact;
@@ -18,6 +21,8 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.ddl.SqlCreateTable;
+import org.apache.calcite.sql.ddl.SqlCreateView;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -28,12 +33,20 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.ValidationException;
+import org.apache.calcite.util.SourceStringReader;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Run `mvn package` to generate the custom SQL parser {@link com.rilldata.calcite.generated.RillSqlParserImpl}
@@ -41,7 +54,9 @@ import java.util.function.Supplier;
  * */
 public class CalciteToolbox
 {
-  static final SqlParser.Config PARSER_CONFIG = SqlParser.config().withCaseSensitive(false)
+  static final SqlParser.Config PARSER_CONFIG = SqlParser
+      .config()
+      .withCaseSensitive(false)
       .withParserFactory(RillSqlParserImpl::new);
 
   private final FrameworkConfig frameworkConfig;
@@ -64,7 +79,8 @@ public class CalciteToolbox
     properties.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(), SqlConformanceEnum.LENIENT.name());
     CalciteConnectionConfigImpl config = new CalciteConnectionConfigImpl(properties);
 
-    frameworkConfig = Frameworks.newConfigBuilder()
+    frameworkConfig = Frameworks
+        .newConfigBuilder()
         .defaultSchema(rootSchemaSupplier.get())
         .parserConfig(PARSER_CONFIG)
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT.withConformance(SqlConformanceEnum.LENIENT))
@@ -87,6 +103,24 @@ public class CalciteToolbox
   public Planner getPlanner()
   {
     return Frameworks.getPlanner(frameworkConfig);
+  }
+
+  private static SqlParser getParser(String sql) {
+    SqlParser.Config parserConfig = SqlParser
+        .config()
+        .withCaseSensitive(false)
+        .withConformance(SqlConformanceEnum.BABEL)
+        .withParserFactory(RillSqlParserImpl::new);
+
+    return SqlParser.create(new SourceStringReader(sql), parserConfig);
+  }
+
+  public static SqlNode parseStmt(String sql) throws SqlParseException {
+    return getParser(sql).parseStmt();
+  }
+
+  public static SqlNode parseStmts(String sql) throws SqlParseException {
+    return getParser(sql).parseStmtList();
   }
 
   public String getRunnableQuery(String sql) throws SqlParseException, ValidationException
@@ -129,6 +163,59 @@ public class CalciteToolbox
     Field validatorField = PlannerImpl.class.getDeclaredField("validator");
     validatorField.setAccessible(true);
     return (SqlValidator) validatorField.get(planner);
+  }
+
+  static class Statement
+  {
+    public List<Statement> dependencies;
+    SqlNode node;
+    String ddl;
+    String name;
+    boolean changed;
+
+    public String getName()
+    {
+      return name;
+    }
+
+    public String getType()
+    {
+      if (node instanceof SqlCreateTable) {
+        return "TABLE";
+      } else if (node instanceof SqlCreateView)
+        return "VIEW";
+      return null;
+    }
+  }
+
+  public static List<MigrationStep> inferMigrations(String newSql, String schema, SqlDialect sqlDialect)
+      throws SqlParseException, JsonProcessingException
+  {
+    SqlNode node = parseStmts(newSql);
+
+    Map<String, Statement> existing = toStatementsMap(schema, sqlDialect);
+    createGraph(existing);
+    Map<String, Statement> ast = toStatementsMap(node, sqlDialect);
+    Set<String> seen = new HashSet<>();
+    List<MigrationStep> steps = existing.values().stream().filter(s -> s.getType() != null).map(s -> new MigrationStep(s.getName(), s.getType())).collect(
+        Collectors.toList());
+
+    for (Statement create : ast.values()) {
+      if (existing.keySet().contains(create.getName())) {
+        Statement migrateFrom = existing.get(create.name);
+        create.changed = !create.ddl.equals(migrateFrom.ddl);
+        if (create.changed) {
+// todo         markDependentsChange(migrateFro);
+        }
+      }
+      seen.add(create.getName());
+    }
+    return steps;
+  }
+
+  private void markDependentsChange(String name)
+  {
+
   }
 
   public String saveModel(String sql) throws SqlParseException, ValidationException
@@ -184,5 +271,58 @@ public class CalciteToolbox
     }
     // dimensions, measures and table are validated, return sql string to be stored in db
     return sqlCreateMetric.toSqlString(sqlDialect).toString();
+  }
+
+  private static void createGraph(Map<String, Statement> existing)
+  {
+    for (Statement create : existing.values()) {
+      List<String> dependencies = create.node.accept(new DependencyFinder());
+      create.dependencies = dependencies.stream().map(existing::get).collect(Collectors.toList());
+    }
+  }
+
+  private static Map<String, Statement> toStatementsMap(SqlNode node, SqlDialect sqlDialect)
+  {
+    SqlNodeList list = (SqlNodeList) node;
+    return list.stream().map(n -> {
+      Statement statement = new Statement();
+      if (n instanceof SqlCreateTable) {
+        SqlCreateTable t = (SqlCreateTable) n;
+        statement.name = t.name.toString();
+        statement.ddl = node.toSqlString(sqlDialect).toString();
+      } else if (n instanceof SqlCreateView) {
+        SqlCreateView v = (SqlCreateView) n;
+        statement.name = v.name.toString();
+        statement.ddl = node.toSqlString(sqlDialect).toString();
+      }
+      return statement;
+    }).collect(Collectors.toMap(Statement::getName, Function.identity()));
+  }
+
+  private static Map<String, Statement> toStatementsMap(String str, SqlDialect dialect) throws JsonProcessingException
+  {
+    JsonSchema schema = getObjectMapper().readValue(str, JsonSchema.class);
+    return schema.tables.stream().map(table -> {
+      Statement statement = new Statement();
+      statement.name = table.name;
+      statement.ddl = table.ddl;
+      try {
+        statement.node = parseStmt(statement.ddl);
+        if (statement.node instanceof SqlCreateView view) {
+          statement.name = view.name.toSqlString(dialect).toString();
+        } else if (statement.node instanceof SqlCreateTable tableNode) {
+          statement.name = tableNode.name.toSqlString(dialect).toString();
+        }
+      }
+      catch (SqlParseException e) {
+        throw new RuntimeException(e);
+      }
+      return statement;
+    }).collect(Collectors.toMap(Statement::getName, Function.identity(), (a, b) -> b, LinkedHashMap::new));
+  }
+
+  private static ObjectMapper getObjectMapper()
+  {
+    return new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
 }

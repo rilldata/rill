@@ -14,6 +14,11 @@ data: {
     imports: [
       "org.apache.calcite.sql.SqlCreate",
       "com.rilldata.calcite.extensions.SqlCreateMetric"
+      "org.apache.calcite.schema.ColumnStrategy"
+      "org.apache.calcite.sql.SqlDrop"
+      "org.apache.calcite.sql.ddl.SqlDdlNodes"
+      "java.util.Map"
+      "java.util.HashMap"
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
@@ -21,12 +26,20 @@ data: {
     keywords: [
       "METRICS"
       "DIMENSIONS"
+      "IF"
+      "MATERIALIZED"
+      "STORED"
+      "VIRTUAL"
     ]
 
     # List of non-reserved keywords to add;
     # items in this list become non-reserved
     nonReservedKeywordsToAdd: [
       "DIMENSIONS"
+      "IF"
+      "MATERIALIZED"
+      "STORED"
+      "VIRTUAL"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
@@ -34,6 +47,15 @@ data: {
     # Example: "SqlCreateForeignSchema".
     createStatementParserMethods: [
       "SqlCreateMetric"
+      "SqlCreateMaterializedView"
+      "SqlCreateTable"
+      "SqlCreateView"
+    ]
+
+    dropStatementParserMethods: [
+      "SqlDropMaterializedView"
+      "SqlDropTable"
+      "SqlDropView"
     ]
 
     # List of files in @includes directory that have parser method

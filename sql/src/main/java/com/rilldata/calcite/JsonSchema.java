@@ -5,4 +5,5 @@ import java.util.List;
 public class JsonSchema
 {
   public List<JsonTable> tables;
+  public List<String> artifacts;
 }

@@ -29,7 +29,18 @@ public class SqlConverter
       return calciteToolbox.getRunnableQuery(sql);
     }
     catch (Exception e) {
-      e.printStackTrace(); // todo level-logging for native libraries?
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  public String inferMigrations(String json)
+  {
+    try {
+      return calciteToolbox.getRunnableQuery(json);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
       return null;
     }
   }

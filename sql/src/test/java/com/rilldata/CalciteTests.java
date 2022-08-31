@@ -3,6 +3,7 @@ package com.rilldata;
 import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.extensions.SqlCreateMetric;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.dialect.H2SqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.Planner;
@@ -10,6 +11,7 @@ import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Litmus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -98,6 +100,13 @@ public class CalciteTests
     } catch (RuntimeException | ValidationException e) {
       Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
     }
+  }
+
+  @Test
+  public void testCreateDrop() throws SqlParseException, ValidationException
+  {
+      SqlNodeList node = (SqlNodeList) calciteToolbox.parseStmts("create view a as select * from main.test ; drop view a");
+      Assertions.assertEquals(2, node.size());
   }
 
   // used to get AST for comparison instead of comparing Strings
