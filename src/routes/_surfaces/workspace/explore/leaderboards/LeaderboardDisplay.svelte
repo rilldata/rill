@@ -17,13 +17,10 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
 
   export let metricsDefId: string;
-
-  const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];

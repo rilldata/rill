@@ -16,7 +16,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
   import {
     getDefaultTimeGrain,
@@ -88,8 +87,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     );
     return timeGrainOption?.enabled;
   };
-
-  const queryClient = useQueryClient();
 
   const makeValidTimeRangeAndUpdateAppState = (
     timeRangeName: TimeRangeName,
