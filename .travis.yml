@@ -186,7 +186,8 @@ jobs:
         - pyenv global 3.7.0
       #before_install: *python-setup
       install: *npm-install
-      script: *build-vercel-pkg
+
+      script: &build-vercel-pkg
         - echo ${GCP_TOKEN} > gcp.json
         - gcloud auth activate-service-account --key-file gcp.json
         - gcloud config set project rilldata
@@ -206,7 +207,8 @@ jobs:
         - choco install python3 gcloudsdk
 
       install: *npm-install
-      script: *build-vercel-pkg
+
+      script: &build-vercel-pkg
         - echo ${GCP_TOKEN} > gcp.json
         - gcloud auth activate-service-account --key-file gcp.json
         - gcloud config set project rilldata
