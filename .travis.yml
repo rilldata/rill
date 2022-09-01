@@ -158,9 +158,9 @@ jobs:
         - echo ${GCP_TOKEN} > gcp.json
         - gcloud auth activate-service-account --key-file gcp.json
         - gcloud config set project rilldata
-        - if [ ${TRAVIS_OS_NAME} == "osx" ]; then gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill; fi
-        - if [ ${TRAVIS_OS_NAME} == "linux" ]; then gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill; fi
-        - if [ ${TRAVIS_OS_NAME} == "windows" ]; then gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill; fi      
+        - [ ${TRAVIS_OS_NAME} == "osx" ] && gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill
+        - [ ${TRAVIS_OS_NAME} == "linux" ] && gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill
+        - [ ${TRAVIS_OS_NAME} == "windows" ] && gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill
         - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
 
       deploy: &deploy-vercel-pkg
@@ -188,7 +188,7 @@ jobs:
         - pyenv global 3.7.0
       #before_install: *python-setup
       install: *npm-install
-      script: *build-vercel-pkg        
+      script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
 
     - stage: Release
