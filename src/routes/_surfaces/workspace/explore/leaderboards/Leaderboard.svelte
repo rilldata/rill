@@ -24,7 +24,7 @@
   import {
     useMetaQuery,
     useTopListQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  } from "$lib/svelte-query/queries/metrics-view";
   import { slideRight } from "$lib/transitions";
   import {
     humanizeGroupValues,
