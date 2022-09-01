@@ -2,18 +2,14 @@
 title: "🧰 Core Concepts"
 slug: "core-concepts"
 excerpt: "Rill Cloud Console to manage data; Rill Explore to analyze & share"
-hidden: false
-createdAt: "2020-10-23T00:23:06.366Z"
-updatedAt: "2022-07-13T20:12:40.733Z"
 ---
+
 Rill enables you to leverage all the power of Druid with a serverless cloud service that is simple, secure, and elastic. Rill is designed to fit into your existing analytics ecosystem. You can read from a wide variety of streamed or batch data sources such as Kafka and Big Query, and you can perform analytics using industry standard tools such as Tableau and Looker.
 
 As such, this section introduces the core concepts related to managing your datasources, querying your data and terminology around application integration.
-[block:api-header]
-{
-  "title": "Rill Developer"
-}
-[/block]
+
+## Rill Developer
+
 Rill Developer is our open source tool that makes it effortless to transform your datasets with SQL. Rill Developer follows a few guiding principles:
 
   * no more data analysis "side-quests" – helps you build intuition about your dataset through automatic profiling
@@ -22,11 +18,9 @@ Rill Developer is our open source tool that makes it effortless to transform you
   * feels good to use – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast 
 
 Learn more at [Rill Developer's Github page](https://github.com/rilldata/rill-developer).
-[block:api-header]
-{
-  "title": "Rill Cloud Console (RCC)"
-}
-[/block]
+
+## Rill Cloud Console (RCC)
+
 Rill Cloud Console, RCC, is Rill's console for your Apache Druid cloud database service. This console would be used by admins and technical teams to manage your dataset, ingest data, or query data directly. For existing users, login to RCC at [app.rilldata.com](https://app.rilldata.com). From the console, you'll be able to create and access your team workspaces and from a workspace, a user will see all of the datasets available in that workspace.  
 
 A quick overview of the main components of RCC will help you get started.
@@ -64,18 +58,15 @@ As a Viewer you'll have fast query access via the Druid SQL Console, command lin
 Once your dataset has been created you can query it through a variety of interfaces. 
 
 From within RCC, you can click on Druid Console to query the data from the interactive Druid SQL Console. You can find extensive details on [query concepts and best practices](https://druid.apache.org/docs/latest/querying/querying.html) via the Apache Druid docs.
-[block:api-header]
-{
-  "title": "Rill Explore"
-}
-[/block]
+
+## Rill Explore
 ### Dashboards
 
-Rill also provides access to Rill Explore - an easy-to-use interface designed specifically for operational analytics focused on ad hoc data exploration. For existing users, login to Explore at [dash.rilldata.com](https://dash.rilldata.com). For more details on Explore, [visit our Explore docs section](:docs/getting-started).
+Rill also provides access to Rill Explore - an easy-to-use interface designed specifically for operational analytics focused on ad hoc data exploration. For existing users, login to Explore at [dash.rilldata.com](https://dash.rilldata.com). For more details on Explore, [visit our Explore docs section](/getting-started).
 
 Dashboards may be defined on any combination of dimensions and metrics (including derived calculations between metrics) within your dataset. Layout is customizable and includes time series, topN, bar chart and heat map views.
 
-Dashboards can be shared internally, to external users or may be [embedded within your own application](https://enterprise.rilldata.com/docs/embedding-explore). Many customers take advantage of Parent/Child dashboard relationships for [external facing dashboards](https://enterprise.rilldata.com/docs/create-an-external-dashboard) - creating a single view of data that is inherited to each child dashboard which is then filtered by a specific subset of criteria.
+Dashboards can be shared internally, to external users or may be [embedded within your own application](/embedding-explore). Many customers take advantage of Parent/Child dashboard relationships for [external facing dashboards](/create-an-external-dashboard) - creating a single view of data that is inherited to each child dashboard which is then filtered by a specific subset of criteria.
 
 ### User Types
 
@@ -83,16 +74,13 @@ Within Explore, Users may have "Admin", "Member" or "Guest" privilege. Admins ha
 
 ### Security Policies
 
-Each user is tied to a dashboard (or set of dashboards) via a Security Policy. More information on setting up access can be found in [the permissions guide](https://enterprise.rilldata.com//docs/admin-security).
+Each user is tied to a dashboard (or set of dashboards) via a Security Policy. More information on setting up access can be found in [the permissions guide](/admin-security).
 
 ### Alerts, Scheduled Exports and Bookmarks
 
-Multiple capabilities exist in Explore to improve your workflow. You can set alerts on common metrics and filter sets for automated notifications, set regular exports of data to your inbox for reporting, or create bookmarks that are saved views of common analyses. More information on each area is available in the [Explore Getting Started guide](https://enterprise.rilldata.com//docs/getting-started).
-[block:api-header]
-{
-  "title": "External Applications"
-}
-[/block]
-Beyond native console querying, you can connect other BI tools and applications to your dataset to create fast and interactive dashboards and reports. More details can be found in our [application integration docs](https://docs.rilldata.com/docs/authenticating-integrated-applications). 
+Multiple capabilities exist in Explore to improve your workflow. You can set alerts on common metrics and filter sets for automated notifications, set regular exports of data to your inbox for reporting, or create bookmarks that are saved views of common analyses. More information on each area is available in the [Explore Getting Started guide](/getting-started).
+## External Applications
+
+Beyond native console querying, you can connect other BI tools and applications to your dataset to create fast and interactive dashboards and reports. More details can be found in our [application integration docs](/authenticating-integrated-applications). 
 
 You can also query your dataset through API access - this will allow you to connect your own internal tools directly to your Druid database. More details can be found in the [Apache Druid API documentation](https://druid.apache.org/docs/latest/operations/api-reference.html).

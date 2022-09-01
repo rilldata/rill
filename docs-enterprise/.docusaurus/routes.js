@@ -44,239 +44,256 @@ export default [
   },
   {
     path: '/',
-    component: ComponentCreator('/', '79a'),
+    component: ComponentCreator('/', 'd5b'),
     routes: [
       {
-        path: '/analyze/embedding-explore',
-        component: ComponentCreator('/analyze/embedding-explore', '6ed'),
-        exact: true
+        path: '/',
+        component: ComponentCreator('/', '70c'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/explore-admin',
-        component: ComponentCreator('/analyze/explore-admin', 'f23'),
-        exact: true
+        path: '/adding-users',
+        component: ComponentCreator('/adding-users', '703'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/explore-admin/adding-users',
-        component: ComponentCreator('/analyze/explore-admin/adding-users', 'fed'),
-        exact: true
+        path: '/admin-security',
+        component: ComponentCreator('/admin-security', 'a57'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/explore-admin/adjust-dashboard-layout',
-        component: ComponentCreator('/analyze/explore-admin/adjust-dashboard-layout', 'c08'),
-        exact: true
+        path: '/alerting',
+        component: ComponentCreator('/alerting', '2a1'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/explore-admin/admin-security',
-        component: ComponentCreator('/analyze/explore-admin/admin-security', 'a9a'),
-        exact: true
+        path: '/api-access',
+        component: ComponentCreator('/api-access', 'f93'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/explore-admin/create-an-external-dashboard',
-        component: ComponentCreator('/analyze/explore-admin/create-an-external-dashboard', 'd09'),
-        exact: true
+        path: '/api-password',
+        component: ComponentCreator('/api-password', 'e42'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/explore-admin/explore-json-examples',
-        component: ComponentCreator('/analyze/explore-admin/explore-json-examples', 'ebf'),
-        exact: true
+        path: '/authenticating-integrated-applications',
+        component: ComponentCreator('/authenticating-integrated-applications', 'ff1'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/getting-access-to-rill-dashboards',
-        component: ComponentCreator('/analyze/getting-access-to-rill-dashboards', 'eb2'),
-        exact: true
+        path: '/aws-encryption',
+        component: ComponentCreator('/aws-encryption', '083'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/getting-started',
-        component: ComponentCreator('/analyze/getting-started', 'dc6'),
-        exact: true
+        path: '/aws-private-link',
+        component: ComponentCreator('/aws-private-link', '2da'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/getting-started/alerting',
-        component: ComponentCreator('/analyze/getting-started/alerting', '261'),
-        exact: true
+        path: '/aws-s3-bucket',
+        component: ComponentCreator('/aws-s3-bucket', '353'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/getting-started/bookmarking',
-        component: ComponentCreator('/analyze/getting-started/bookmarking', '36c'),
-        exact: true
+        path: '/azure-storage-container',
+        component: ComponentCreator('/azure-storage-container', 'ce0'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/getting-started/facet-pivot-table-splits',
-        component: ComponentCreator('/analyze/getting-started/facet-pivot-table-splits', '1ba'),
-        exact: true
+        path: '/bookmarking',
+        component: ComponentCreator('/bookmarking', 'a01'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/analyze/getting-started/scheduled-exports',
-        component: ComponentCreator('/analyze/getting-started/scheduled-exports', '5e5'),
-        exact: true
+        path: '/connecting-with-kafka',
+        component: ComponentCreator('/connecting-with-kafka', '0cf'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/contact-support',
+        component: ComponentCreator('/contact-support', '11f'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
         path: '/core-concepts',
-        component: ComponentCreator('/core-concepts', '46c'),
-        exact: true
-      },
-      {
-        path: '/get-started/data-ingestion-best-practices-1',
-        component: ComponentCreator('/get-started/data-ingestion-best-practices-1', '2f5'),
-        exact: true
-      },
-      {
-        path: '/get-started/druid-ingestion-optimization',
-        component: ComponentCreator('/get-started/druid-ingestion-optimization', '44e'),
-        exact: true
-      },
-      {
-        path: '/get-started/metadata-lookups',
-        component: ComponentCreator('/get-started/metadata-lookups', '7ca'),
-        exact: true
-      },
-      {
-        path: '/get-started/process-streaming-data',
-        component: ComponentCreator('/get-started/process-streaming-data', 'dfa'),
-        exact: true
-      },
-      {
-        path: '/get-started/process-streaming-data/connecting-with-kafka',
-        component: ComponentCreator('/get-started/process-streaming-data/connecting-with-kafka', '622'),
-        exact: true
-      },
-      {
-        path: '/get-started/process-streaming-data/real-time-publishing-to-rill',
-        component: ComponentCreator('/get-started/process-streaming-data/real-time-publishing-to-rill', '93e'),
-        exact: true
-      },
-      {
-        path: '/get-started/process-streaming-data/tutorial-kafka-ingestion',
-        component: ComponentCreator('/get-started/process-streaming-data/tutorial-kafka-ingestion', 'e99'),
-        exact: true
-      },
-      {
-        path: '/get-started/processing-batch-data',
-        component: ComponentCreator('/get-started/processing-batch-data', 'a71'),
-        exact: true
-      },
-      {
-        path: '/get-started/processing-batch-data/aws-s3-bucket',
-        component: ComponentCreator('/get-started/processing-batch-data/aws-s3-bucket', 'da9'),
+        component: ComponentCreator('/core-concepts', 'fdb'),
         exact: true,
         sidebar: "docsSidebar"
       },
       {
-        path: '/get-started/processing-batch-data/azure-storage-container',
-        component: ComponentCreator('/get-started/processing-batch-data/azure-storage-container', 'a8d'),
-        exact: true
-      },
-      {
-        path: '/get-started/processing-batch-data/gcs-bucket',
-        component: ComponentCreator('/get-started/processing-batch-data/gcs-bucket', '56a'),
-        exact: true
-      },
-      {
-        path: '/get-started/processing-batch-data/google-bigquery',
-        component: ComponentCreator('/get-started/processing-batch-data/google-bigquery', 'fe9'),
-        exact: true
-      },
-      {
-        path: '/get-started/processing-batch-data/ingesting-from-big-query',
-        component: ComponentCreator('/get-started/processing-batch-data/ingesting-from-big-query', '9b1'),
-        exact: true
-      },
-      {
-        path: '/get-started/processing-batch-data/tutorial-druid-ingestion',
-        component: ComponentCreator('/get-started/processing-batch-data/tutorial-druid-ingestion', 'ae7'),
-        exact: true
-      },
-      {
-        path: '/integrate/authenticating-integrated-applications',
-        component: ComponentCreator('/integrate/authenticating-integrated-applications', '94f'),
-        exact: true
-      },
-      {
-        path: '/integrate/authenticating-integrated-applications/api-access',
-        component: ComponentCreator('/integrate/authenticating-integrated-applications/api-access', '06f'),
-        exact: true
-      },
-      {
-        path: '/integrate/authenticating-integrated-applications/api-password',
-        component: ComponentCreator('/integrate/authenticating-integrated-applications/api-password', 'fd3'),
-        exact: true
-      },
-      {
-        path: '/integrate/authenticating-integrated-applications/jdbc-connection',
-        component: ComponentCreator('/integrate/authenticating-integrated-applications/jdbc-connection', '055'),
-        exact: true
-      },
-      {
-        path: '/integrate/authenticating-integrated-applications/service-accounts',
-        component: ComponentCreator('/integrate/authenticating-integrated-applications/service-accounts', 'dfb'),
-        exact: true
-      },
-      {
-        path: '/integrate/jupyter',
-        component: ComponentCreator('/integrate/jupyter', 'c93'),
-        exact: true
-      },
-      {
-        path: '/integrate/looker',
-        component: ComponentCreator('/integrate/looker', '285'),
-        exact: true
-      },
-      {
-        path: '/integrate/superset',
-        component: ComponentCreator('/integrate/superset', 'd5f'),
-        exact: true
-      },
-      {
-        path: '/integrate/tableau',
-        component: ComponentCreator('/integrate/tableau', 'e50'),
-        exact: true
-      },
-      {
-        path: '/introduction',
-        component: ComponentCreator('/introduction', '251'),
-        exact: true
-      },
-      {
-        path: '/overview/core-concepts',
-        component: ComponentCreator('/overview/core-concepts', '326'),
-        exact: true
-      },
-      {
-        path: '/overview/introduction',
-        component: ComponentCreator('/overview/introduction', 'bd2'),
+        path: '/create-an-external-dashboard',
+        component: ComponentCreator('/create-an-external-dashboard', 'eba'),
         exact: true,
         sidebar: "docsSidebar"
       },
       {
-        path: '/resources/contact-support',
-        component: ComponentCreator('/resources/contact-support', 'ad7'),
+        path: '/data-ingestion-best-practices-1',
+        component: ComponentCreator('/data-ingestion-best-practices-1', '172'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/druid-ingestion-optimization',
+        component: ComponentCreator('/druid-ingestion-optimization', '222'),
         exact: true
       },
       {
-        path: '/resources/faq',
-        component: ComponentCreator('/resources/faq', 'b18'),
+        path: '/embedding-explore',
+        component: ComponentCreator('/embedding-explore', 'e6a'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/explore-admin',
+        component: ComponentCreator('/explore-admin', 'f02'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/explore-json-examples',
+        component: ComponentCreator('/explore-json-examples', '495'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/facet-pivot-table-splits',
+        component: ComponentCreator('/facet-pivot-table-splits', '023'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/faq',
+        component: ComponentCreator('/faq', 'c3a'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/gcs-bucket',
+        component: ComponentCreator('/gcs-bucket', '324'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/getting-access-to-rill-dashboards',
+        component: ComponentCreator('/getting-access-to-rill-dashboards', 'd5a'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/getting-started',
+        component: ComponentCreator('/getting-started', '85e'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/google-bigquery',
+        component: ComponentCreator('/google-bigquery', 'bfd'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/ingesting-from-big-query',
+        component: ComponentCreator('/ingesting-from-big-query', '5b0'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/jdbc-connection',
+        component: ComponentCreator('/jdbc-connection', 'e22'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/jupyter',
+        component: ComponentCreator('/jupyter', 'bd8'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/looker',
+        component: ComponentCreator('/looker', '9fc'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/metadata-lookups',
+        component: ComponentCreator('/metadata-lookups', '983'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/process-streaming-data',
+        component: ComponentCreator('/process-streaming-data', 'f8a'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/processing-batch-data',
+        component: ComponentCreator('/processing-batch-data', '324'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/real-time-publishing-to-rill',
+        component: ComponentCreator('/real-time-publishing-to-rill', 'fac'),
         exact: true
       },
       {
-        path: '/resources/service-status',
-        component: ComponentCreator('/resources/service-status', '1ce'),
+        path: '/scheduled-exports',
+        component: ComponentCreator('/scheduled-exports', '723'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/security',
+        component: ComponentCreator('/security', '2fb'),
         exact: true
       },
       {
-        path: '/Security/aws-encryption',
-        component: ComponentCreator('/Security/aws-encryption', '193'),
-        exact: true
+        path: '/service-accounts',
+        component: ComponentCreator('/service-accounts', '5a8'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/Security/aws-private-link',
-        component: ComponentCreator('/Security/aws-private-link', '1df'),
-        exact: true
+        path: '/superset',
+        component: ComponentCreator('/superset', 'bb4'),
+        exact: true,
+        sidebar: "docsSidebar"
       },
       {
-        path: '/Security/security',
-        component: ComponentCreator('/Security/security', 'f86'),
-        exact: true
+        path: '/tableau',
+        component: ComponentCreator('/tableau', 'dca'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/tutorial-druid-ingestion',
+        component: ComponentCreator('/tutorial-druid-ingestion', 'd56'),
+        exact: true,
+        sidebar: "docsSidebar"
+      },
+      {
+        path: '/tutorial-kafka-ingestion',
+        component: ComponentCreator('/tutorial-kafka-ingestion', '0d0'),
+        exact: true,
+        sidebar: "docsSidebar"
       }
     ]
   },

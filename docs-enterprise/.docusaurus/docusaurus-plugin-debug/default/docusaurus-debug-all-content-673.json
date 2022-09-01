@@ -19,286 +19,359 @@
           "contentPathLocalized": "/Users/godzig/Documents/git/rill-developer/docs-enterprise/i18n/en/docusaurus-plugin-content-docs/current",
           "docs": [
             {
-              "unversionedId": "analyze/embedding-explore",
-              "id": "analyze/embedding-explore",
-              "title": "⚙️ Embedding Explore",
-              "description": "The Explore dashboard can be embedded into you own web application using an iFrame, a standard HTML element, and authenticated using our built-in support for single-sign-on (SSO) login.",
-              "source": "@site/docs/analyze/embedding-explore.md",
-              "sourceDirName": "analyze",
-              "slug": "/analyze/embedding-explore",
-              "permalink": "/analyze/embedding-explore",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/embedding-explore.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "⚙️ Embedding Explore",
-                "slug": "embedding-explore",
-                "excerpt": "White-labeling your dashboards within existing applications",
-                "hidden": false,
-                "createdAt": "2021-06-16T23:56:32.115Z",
-                "updatedAt": "2021-08-11T19:54:24.714Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/explore-admin",
-              "id": "analyze/explore-admin",
-              "title": "🔐 Explore Admin",
-              "description": "[block:api-header]",
-              "source": "@site/docs/analyze/explore-admin.md",
-              "sourceDirName": "analyze",
-              "slug": "/analyze/explore-admin",
-              "permalink": "/analyze/explore-admin",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/explore-admin.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "🔐 Explore Admin",
-                "slug": "explore-admin",
-                "hidden": false,
-                "createdAt": "2021-06-17T00:30:23.274Z",
-                "updatedAt": "2022-07-13T07:12:13.101Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/explore-admin/adding-users",
-              "id": "analyze/explore-admin/adding-users",
+              "unversionedId": "adding-users",
+              "id": "adding-users",
               "title": "Adding Users",
-              "description": "[block:api-header]",
-              "source": "@site/docs/analyze/explore-admin/adding-users.md",
-              "sourceDirName": "analyze/explore-admin",
-              "slug": "/analyze/explore-admin/adding-users",
-              "permalink": "/analyze/explore-admin/adding-users",
+              "description": "Adding Users (for Admins)",
+              "source": "@site/docs/adding-users.md",
+              "sourceDirName": ".",
+              "slug": "/adding-users",
+              "permalink": "/adding-users",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/explore-admin/adding-users.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/adding-users.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Adding Users",
                 "slug": "adding-users",
-                "excerpt": "How to manage access to Explore",
-                "hidden": false,
-                "createdAt": "2021-08-11T19:34:58.909Z",
-                "updatedAt": "2022-08-22T19:16:27.752Z"
+                "excerpt": "How to manage access to Explore"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "🔐 Explore Admin",
+                "permalink": "/explore-admin"
+              },
+              "next": {
+                "title": "Permissions & Security Policies",
+                "permalink": "/admin-security"
               }
             },
             {
-              "unversionedId": "analyze/explore-admin/adjust-dashboard-layout",
-              "id": "analyze/explore-admin/adjust-dashboard-layout",
-              "title": "Edit Dashboard Layout",
-              "description": "",
-              "source": "@site/docs/analyze/explore-admin/adjust-dashboard-layout.md",
-              "sourceDirName": "analyze/explore-admin",
-              "slug": "/analyze/explore-admin/adjust-dashboard-layout",
-              "permalink": "/analyze/explore-admin/adjust-dashboard-layout",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/explore-admin/adjust-dashboard-layout.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Edit Dashboard Layout",
-                "slug": "adjust-dashboard-layout",
-                "excerpt": "Illustrative JSON for changes to your visualizations or dropdown options",
-                "hidden": true,
-                "createdAt": "2021-06-17T00:26:42.074Z",
-                "updatedAt": "2022-06-20T20:50:10.617Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/explore-admin/admin-security",
-              "id": "analyze/explore-admin/admin-security",
+              "unversionedId": "admin-security",
+              "id": "admin-security",
               "title": "Permissions & Security Policies",
-              "description": "[block:api-header]",
-              "source": "@site/docs/analyze/explore-admin/admin-security.md",
-              "sourceDirName": "analyze/explore-admin",
-              "slug": "/analyze/explore-admin/admin-security",
-              "permalink": "/analyze/explore-admin/admin-security",
+              "description": "Permissions & Security Policies: Assign dashboards to users (for Admins)",
+              "source": "@site/docs/admin-security.md",
+              "sourceDirName": ".",
+              "slug": "/admin-security",
+              "permalink": "/admin-security",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/explore-admin/admin-security.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/admin-security.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Permissions & Security Policies",
                 "slug": "admin-security",
-                "excerpt": "How to manage access and log-in to Explore",
-                "hidden": false,
-                "createdAt": "2021-08-11T18:42:21.908Z",
-                "updatedAt": "2022-07-13T07:13:03.575Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/explore-admin/create-an-external-dashboard",
-              "id": "analyze/explore-admin/create-an-external-dashboard",
-              "title": "Create External Dashboards",
-              "description": "To create dashboards for a set of stakeholders, external users or other partners, start by creating a Parent dashboard view that contains all of the dimensions and metrics you wish to display. That parent dashboard can then be filtered by a set of criteria that then limits the data available to each user you wish to grant access. Further, that child dashboard can be embedded to be a specific application view within your product/portal for that set of users.",
-              "source": "@site/docs/analyze/explore-admin/create-an-external-dashboard.md",
-              "sourceDirName": "analyze/explore-admin",
-              "slug": "/analyze/explore-admin/create-an-external-dashboard",
-              "permalink": "/analyze/explore-admin/create-an-external-dashboard",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/explore-admin/create-an-external-dashboard.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
+                "excerpt": "How to manage access and log-in to Explore"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Adding Users",
+                "permalink": "/adding-users"
+              },
+              "next": {
                 "title": "Create External Dashboards",
-                "slug": "create-an-external-dashboard",
-                "excerpt": "Use a saved \"Parent\" Dashboard to create a \"Child\" based on predetermined filters",
-                "hidden": false,
-                "createdAt": "2021-08-11T20:06:30.979Z",
-                "updatedAt": "2022-07-13T07:13:26.466Z"
+                "permalink": "/create-an-external-dashboard"
               }
             },
             {
-              "unversionedId": "analyze/explore-admin/explore-json-examples",
-              "id": "analyze/explore-admin/explore-json-examples",
-              "title": "Edit Dashboard Metrics",
-              "description": "[block:api-header]",
-              "source": "@site/docs/analyze/explore-admin/explore-json-examples.md",
-              "sourceDirName": "analyze/explore-admin",
-              "slug": "/analyze/explore-admin/explore-json-examples",
-              "permalink": "/analyze/explore-admin/explore-json-examples",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/explore-admin/explore-json-examples.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Edit Dashboard Metrics",
-                "slug": "explore-json-examples",
-                "excerpt": "Illustrative snippets for updating your dashboards",
-                "hidden": false,
-                "createdAt": "2021-06-16T23:59:27.521Z",
-                "updatedAt": "2022-07-13T07:13:45.174Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/getting-access-to-rill-dashboards",
-              "id": "analyze/getting-access-to-rill-dashboards",
-              "title": "Welcome to Rill Explore",
-              "description": "When you are first granted access to Explore dashboards, you should receive an email with direct links to set up your account.",
-              "source": "@site/docs/analyze/getting-access-to-rill-dashboards.md",
-              "sourceDirName": "analyze",
-              "slug": "/analyze/getting-access-to-rill-dashboards",
-              "permalink": "/analyze/getting-access-to-rill-dashboards",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-access-to-rill-dashboards.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Welcome to Rill Explore",
-                "slug": "getting-access-to-rill-dashboards",
-                "excerpt": "How to locate Rill dashboards or request access",
-                "hidden": false,
-                "createdAt": "2021-07-19T19:28:30.215Z",
-                "updatedAt": "2022-06-20T20:43:46.567Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/getting-started",
-              "id": "analyze/getting-started",
-              "title": "👋 Explore Quickstart",
-              "description": "}",
-              "source": "@site/docs/analyze/getting-started.md",
-              "sourceDirName": "analyze",
-              "slug": "/analyze/getting-started",
-              "permalink": "/analyze/getting-started",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "👋 Explore Quickstart",
-                "slug": "getting-started",
-                "excerpt": "Analysis basics and capabilities overview",
-                "hidden": false,
-                "createdAt": "2021-06-17T00:27:50.336Z",
-                "updatedAt": "2022-07-13T07:15:20.929Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/getting-started/alerting",
-              "id": "analyze/getting-started/alerting",
+              "unversionedId": "alerting",
+              "id": "alerting",
               "title": "Alerting",
-              "description": "[block:api-header]",
-              "source": "@site/docs/analyze/getting-started/alerting.md",
-              "sourceDirName": "analyze/getting-started",
-              "slug": "/analyze/getting-started/alerting",
-              "permalink": "/analyze/getting-started/alerting",
+              "description": "Alerting",
+              "source": "@site/docs/alerting.md",
+              "sourceDirName": ".",
+              "slug": "/alerting",
+              "permalink": "/alerting",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started/alerting.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/alerting.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Alerting",
-                "slug": "alerting",
-                "hidden": false,
-                "createdAt": "2021-06-17T00:29:55.235Z",
-                "updatedAt": "2021-08-12T17:11:52.418Z"
+                "slug": "alerting"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Explore Quickstart",
+                "permalink": "/getting-started"
+              },
+              "next": {
+                "title": "Scheduled Exports",
+                "permalink": "/scheduled-exports"
               }
             },
             {
-              "unversionedId": "analyze/getting-started/bookmarking",
-              "id": "analyze/getting-started/bookmarking",
-              "title": "Bookmarks: Saved Views",
-              "description": "[block:api-header]",
-              "source": "@site/docs/analyze/getting-started/bookmarking.md",
-              "sourceDirName": "analyze/getting-started",
-              "slug": "/analyze/getting-started/bookmarking",
-              "permalink": "/analyze/getting-started/bookmarking",
+              "unversionedId": "api-access",
+              "id": "api-access",
+              "title": "API Access",
+              "description": "With access to RCC, Admin users are able to access raw data via the Druid API.",
+              "source": "@site/docs/api-access.md",
+              "sourceDirName": ".",
+              "slug": "/api-access",
+              "permalink": "/api-access",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started/bookmarking.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/api-access.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "API Access",
+                "slug": "api-access"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Service Accounts",
+                "permalink": "/service-accounts"
+              },
+              "next": {
+                "title": "JDBC Connection",
+                "permalink": "/jdbc-connection"
+              }
+            },
+            {
+              "unversionedId": "api-password",
+              "id": "api-password",
+              "title": "API Password",
+              "description": "Overview",
+              "source": "@site/docs/api-password.md",
+              "sourceDirName": ".",
+              "slug": "/api-password",
+              "permalink": "/api-password",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/api-password.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "API Password",
+                "slug": "api-password"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "🔓 Authenticate & Connect",
+                "permalink": "/authenticating-integrated-applications"
+              },
+              "next": {
+                "title": "Service Accounts",
+                "permalink": "/service-accounts"
+              }
+            },
+            {
+              "unversionedId": "authenticating-integrated-applications",
+              "id": "authenticating-integrated-applications",
+              "title": "🔓 Authenticate & Connect",
+              "description": "Overview",
+              "source": "@site/docs/authenticating-integrated-applications.md",
+              "sourceDirName": ".",
+              "slug": "/authenticating-integrated-applications",
+              "permalink": "/authenticating-integrated-applications",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/authenticating-integrated-applications.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "🔓 Authenticate & Connect",
+                "slug": "authenticating-integrated-applications",
+                "excerpt": "Set up Service Accounts and Generic JDBC/API access"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "⚙️ Embedding Explore",
+                "permalink": "/embedding-explore"
+              },
+              "next": {
+                "title": "API Password",
+                "permalink": "/api-password"
+              }
+            },
+            {
+              "unversionedId": "aws-encryption",
+              "id": "aws-encryption",
+              "title": "AWS Encryption",
+              "description": "We can encrypt the data with Customer managed AWS KMS Key.",
+              "source": "@site/docs/aws-encryption.md",
+              "sourceDirName": ".",
+              "slug": "/aws-encryption",
+              "permalink": "/aws-encryption",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/aws-encryption.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "AWS Encryption",
+                "slug": "aws-encryption",
+                "excerpt": "with Customer Managed Keys"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Private Link",
+                "permalink": "/aws-private-link"
+              },
+              "next": {
+                "title": "❓ FAQ",
+                "permalink": "/faq"
+              }
+            },
+            {
+              "unversionedId": "aws-private-link",
+              "id": "aws-private-link",
+              "title": "Private Link",
+              "description": "The choice between Transit Gateway, VPC peering, and AWS PrivateLink is dependent on connectivity.",
+              "source": "@site/docs/aws-private-link.md",
+              "sourceDirName": ".",
+              "slug": "/aws-private-link",
+              "permalink": "/aws-private-link",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/aws-private-link.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Private Link",
+                "slug": "aws-private-link",
+                "excerpt": "Share data privately"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Tableau",
+                "permalink": "/tableau"
+              },
+              "next": {
+                "title": "AWS Encryption",
+                "permalink": "/aws-encryption"
+              }
+            },
+            {
+              "unversionedId": "aws-s3-bucket",
+              "id": "aws-s3-bucket",
+              "title": "AWS S3 Bucket",
+              "description": "Setup instructions",
+              "source": "@site/docs/aws-s3-bucket.md",
+              "sourceDirName": ".",
+              "slug": "/aws-s3-bucket",
+              "permalink": "/aws-s3-bucket",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/aws-s3-bucket.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "AWS S3 Bucket",
+                "slug": "aws-s3-bucket",
+                "excerpt": "Batch Ingestion: integrating Rill with S3 storage"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Process Batch Data",
+                "permalink": "/processing-batch-data"
+              },
+              "next": {
+                "title": "GCS Bucket",
+                "permalink": "/gcs-bucket"
+              }
+            },
+            {
+              "unversionedId": "azure-storage-container",
+              "id": "azure-storage-container",
+              "title": "Azure Storage Container",
+              "description": "Rill would need access to the Azure Storage Container to fetch the data. For this Rill needs",
+              "source": "@site/docs/azure-storage-container.md",
+              "sourceDirName": ".",
+              "slug": "/azure-storage-container",
+              "permalink": "/azure-storage-container",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/azure-storage-container.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Azure Storage Container",
+                "slug": "azure-storage-container",
+                "excerpt": "Integrating with Azure Cloud"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Google BigQuery",
+                "permalink": "/google-bigquery"
+              },
+              "next": {
+                "title": "Tutorial: Manual Batch Ingestion",
+                "permalink": "/tutorial-druid-ingestion"
+              }
+            },
+            {
+              "unversionedId": "bookmarking",
+              "id": "bookmarking",
+              "title": "Bookmarks: Saved Views",
+              "description": "Setting Bookmarks",
+              "source": "@site/docs/bookmarking.md",
+              "sourceDirName": ".",
+              "slug": "/bookmarking",
+              "permalink": "/bookmarking",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/bookmarking.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Bookmarks: Saved Views",
                 "slug": "bookmarking",
-                "excerpt": "Saved dashboard views with filter settings for recurring analyses",
-                "hidden": false,
-                "createdAt": "2021-08-11T19:18:36.997Z",
-                "updatedAt": "2022-06-22T17:54:56.819Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/getting-started/facet-pivot-table-splits",
-              "id": "analyze/getting-started/facet-pivot-table-splits",
-              "title": "Facet: Pivot tables & Splits",
-              "description": "Overview",
-              "source": "@site/docs/analyze/getting-started/facet-pivot-table-splits.md",
-              "sourceDirName": "analyze/getting-started",
-              "slug": "/analyze/getting-started/facet-pivot-table-splits",
-              "permalink": "/analyze/getting-started/facet-pivot-table-splits",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started/facet-pivot-table-splits.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Facet: Pivot tables & Splits",
-                "slug": "facet-pivot-table-splits",
-                "excerpt": "Visualize data intersections and create reports for export",
-                "hidden": false,
-                "createdAt": "2021-08-11T19:30:58.687Z",
-                "updatedAt": "2022-06-14T18:41:24.418Z"
-              }
-            },
-            {
-              "unversionedId": "analyze/getting-started/scheduled-exports",
-              "id": "analyze/getting-started/scheduled-exports",
-              "title": "Scheduled Exports",
-              "description": "[block:api-header]",
-              "source": "@site/docs/analyze/getting-started/scheduled-exports.md",
-              "sourceDirName": "analyze/getting-started",
-              "slug": "/analyze/getting-started/scheduled-exports",
-              "permalink": "/analyze/getting-started/scheduled-exports",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/analyze/getting-started/scheduled-exports.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
+                "excerpt": "Saved dashboard views with filter settings for recurring analyses"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
                 "title": "Scheduled Exports",
-                "slug": "scheduled-exports",
-                "hidden": false,
-                "createdAt": "2021-08-11T19:08:42.213Z",
-                "updatedAt": "2021-08-12T16:46:27.061Z"
+                "permalink": "/scheduled-exports"
+              },
+              "next": {
+                "title": "Facet: Pivot tables & Splits",
+                "permalink": "/facet-pivot-table-splits"
+              }
+            },
+            {
+              "unversionedId": "connecting-with-kafka",
+              "id": "connecting-with-kafka",
+              "title": "Confluent/Apache Kafka",
+              "description": "Setup Instructions",
+              "source": "@site/docs/connecting-with-kafka.md",
+              "sourceDirName": ".",
+              "slug": "/connecting-with-kafka",
+              "permalink": "/connecting-with-kafka",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/connecting-with-kafka.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Confluent/Apache Kafka",
+                "slug": "connecting-with-kafka",
+                "excerpt": "Stream data directly from your Kafka instance into Rill"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Process Streaming Data",
+                "permalink": "/process-streaming-data"
+              },
+              "next": {
+                "title": "Tutorial: Kafka Ingestion",
+                "permalink": "/tutorial-kafka-ingestion"
+              }
+            },
+            {
+              "unversionedId": "contact-support",
+              "id": "contact-support",
+              "title": "🤓 Contact Support",
+              "description": "Contact support via support@rilldata.com",
+              "source": "@site/docs/contact-support.md",
+              "sourceDirName": ".",
+              "slug": "/contact-support",
+              "permalink": "/contact-support",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/contact-support.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "🤓 Contact Support",
+                "slug": "contact-support"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "❓ FAQ",
+                "permalink": "/faq"
               }
             },
             {
@@ -317,713 +390,758 @@
               "frontMatter": {
                 "title": "🧰 Core Concepts",
                 "slug": "core-concepts",
-                "excerpt": "Rill Cloud Console to manage data; Rill Explore to analyze & share",
-                "hidden": false,
-                "createdAt": "2020-10-23T00:23:06.366Z",
-                "updatedAt": "2022-07-13T20:12:40.733Z"
+                "excerpt": "Rill Cloud Console to manage data; Rill Explore to analyze & share"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "🔖 Introduction",
+                "permalink": "/"
+              },
+              "next": {
+                "title": "Process Batch Data",
+                "permalink": "/processing-batch-data"
               }
             },
             {
-              "unversionedId": "get-started/data-ingestion-best-practices-1",
-              "id": "get-started/data-ingestion-best-practices-1",
-              "title": "Ingestion Best Practices",
-              "description": "[block:callout]",
-              "source": "@site/docs/get-started/data-ingestion-best-practices-1.md",
-              "sourceDirName": "get-started",
-              "slug": "/get-started/data-ingestion-best-practices-1",
-              "permalink": "/get-started/data-ingestion-best-practices-1",
+              "unversionedId": "create-an-external-dashboard",
+              "id": "create-an-external-dashboard",
+              "title": "Create External Dashboards",
+              "description": "To create dashboards for a set of stakeholders, external users or other partners, start by creating a Parent dashboard view that contains all of the dimensions and metrics you wish to display. That parent dashboard can then be filtered by a set of criteria that then limits the data available to each user you wish to grant access. Further, that child dashboard can be embedded to be a specific application view within your product/portal for that set of users.",
+              "source": "@site/docs/create-an-external-dashboard.md",
+              "sourceDirName": ".",
+              "slug": "/create-an-external-dashboard",
+              "permalink": "/create-an-external-dashboard",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/data-ingestion-best-practices-1.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/create-an-external-dashboard.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Create External Dashboards",
+                "slug": "create-an-external-dashboard",
+                "excerpt": "Use a saved \"Parent\" Dashboard to create a \"Child\" based on predetermined filters"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Permissions & Security Policies",
+                "permalink": "/admin-security"
+              },
+              "next": {
+                "title": "Edit Dashboard Metrics",
+                "permalink": "/explore-json-examples"
+              }
+            },
+            {
+              "unversionedId": "data-ingestion-best-practices-1",
+              "id": "data-ingestion-best-practices-1",
+              "title": "Ingestion Best Practices",
+              "description": "For a full list of ingestion best practices, visit the Apache Druid Ingestion guide.",
+              "source": "@site/docs/data-ingestion-best-practices-1.md",
+              "sourceDirName": ".",
+              "slug": "/data-ingestion-best-practices-1",
+              "permalink": "/data-ingestion-best-practices-1",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/data-ingestion-best-practices-1.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Ingestion Best Practices",
-                "slug": "data-ingestion-best-practices-1",
-                "hidden": false,
-                "createdAt": "2021-06-16T23:36:30.735Z",
-                "updatedAt": "2022-06-02T23:02:54.334Z"
+                "slug": "data-ingestion-best-practices-1"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Metadata Lookups",
+                "permalink": "/metadata-lookups"
+              },
+              "next": {
+                "title": "Welcome to Rill Explore",
+                "permalink": "/getting-access-to-rill-dashboards"
               }
             },
             {
-              "unversionedId": "get-started/druid-ingestion-optimization",
-              "id": "get-started/druid-ingestion-optimization",
+              "unversionedId": "druid-ingestion-optimization",
+              "id": "druid-ingestion-optimization",
               "title": "Tutorial: Data Optimization",
-              "description": "One of the best ways to improve performance is to minimize the size of your data. During ingestion, Druid gives you the ability to perform aggregations on your data that can significantly reduce its size and improve performance. Your goal is to maintain your ability to answer all of the questions that you want to answer, while reducing the size of your data through aggregation and probabilistic approximation. You may need to iterate to find the tradeoffs that will give you the best speed with the least loss of information.",
-              "source": "@site/docs/get-started/druid-ingestion-optimization.md",
-              "sourceDirName": "get-started",
-              "slug": "/get-started/druid-ingestion-optimization",
-              "permalink": "/get-started/druid-ingestion-optimization",
+              "description": "Overview",
+              "source": "@site/docs/druid-ingestion-optimization.md",
+              "sourceDirName": ".",
+              "slug": "/druid-ingestion-optimization",
+              "permalink": "/druid-ingestion-optimization",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/druid-ingestion-optimization.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/druid-ingestion-optimization.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Tutorial: Data Optimization",
                 "slug": "druid-ingestion-optimization",
-                "excerpt": "Optimizing performance by performing aggregation during ingestion",
-                "hidden": true,
-                "createdAt": "2020-10-23T22:01:14.525Z",
-                "updatedAt": "2022-06-02T22:48:10.813Z"
+                "excerpt": "Optimizing performance by performing aggregation during ingestion"
               }
             },
             {
-              "unversionedId": "get-started/metadata-lookups",
-              "id": "get-started/metadata-lookups",
-              "title": "Metadata Lookups",
-              "description": "Lookup tables are useful to reduce the size of your overall data set and to make sure that id/name combinations are always available with the latest data. Lookup examples would include:",
-              "source": "@site/docs/get-started/metadata-lookups.md",
-              "sourceDirName": "get-started",
-              "slug": "/get-started/metadata-lookups",
-              "permalink": "/get-started/metadata-lookups",
+              "unversionedId": "embedding-explore",
+              "id": "embedding-explore",
+              "title": "⚙️ Embedding Explore",
+              "description": "The Explore dashboard can be embedded into you own web application using an iFrame, a standard HTML element, and authenticated using our built-in support for single-sign-on (SSO) login.",
+              "source": "@site/docs/embedding-explore.md",
+              "sourceDirName": ".",
+              "slug": "/embedding-explore",
+              "permalink": "/embedding-explore",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/metadata-lookups.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/embedding-explore.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
-                "title": "Metadata Lookups",
-                "slug": "metadata-lookups",
-                "excerpt": "Adding lookup tables for data enrichment",
-                "hidden": false,
-                "createdAt": "2022-06-02T23:28:37.294Z",
-                "updatedAt": "2022-06-02T23:28:37.294Z"
-              }
-            },
-            {
-              "unversionedId": "get-started/process-streaming-data",
-              "id": "get-started/process-streaming-data",
-              "title": "Process Streaming Data",
-              "description": "For real-time use cases, Druid supports ingestion with multiple messaging services - though Apache Kafka is most frequent. The Kafka indexing service enables the configuration of supervisors, which facilitate ingestion from Kafka by managing the creation and lifetime of Kafka indexing tasks. These indexing tasks read events using Kafka's own partition and offset mechanism and are therefore able to provide guarantees of exactly-once ingestion. The supervisor oversees the state of the indexing tasks to coordinate handoffs, manage failures, and ensure that the scalability and replication requirements are maintained.",
-              "source": "@site/docs/get-started/process-streaming-data.md",
-              "sourceDirName": "get-started",
-              "slug": "/get-started/process-streaming-data",
-              "permalink": "/get-started/process-streaming-data",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/process-streaming-data.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Process Streaming Data",
-                "slug": "process-streaming-data",
-                "excerpt": "Load real-time data to Rill via streaming services",
-                "hidden": false,
-                "createdAt": "2022-06-02T19:51:38.148Z",
-                "updatedAt": "2022-07-13T07:10:23.466Z"
-              }
-            },
-            {
-              "unversionedId": "get-started/process-streaming-data/connecting-with-kafka",
-              "id": "get-started/process-streaming-data/connecting-with-kafka",
-              "title": "Confluent/Apache Kafka",
-              "description": "Follow the instructions below to grant Rill access to your Apache Kafka Cluster and the data on a given topic within the cluster. Proving access to a cloud provided service, such as Confluent Cloud, is easier due to all of the connection and security is already taken care of for you.  If you are using a self-manage cluster, ensure security and encryption are configured accordingly.",
-              "source": "@site/docs/get-started/process-streaming-data/connecting-with-kafka.md",
-              "sourceDirName": "get-started/process-streaming-data",
-              "slug": "/get-started/process-streaming-data/connecting-with-kafka",
-              "permalink": "/get-started/process-streaming-data/connecting-with-kafka",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/process-streaming-data/connecting-with-kafka.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Confluent/Apache Kafka",
-                "slug": "connecting-with-kafka",
-                "excerpt": "Stream data directly from your Kafka instance into Rill",
-                "hidden": false,
-                "createdAt": "2020-05-27T20:22:27.954Z",
-                "updatedAt": "2021-10-06T16:22:28.020Z"
-              }
-            },
-            {
-              "unversionedId": "get-started/process-streaming-data/real-time-publishing-to-rill",
-              "id": "get-started/process-streaming-data/real-time-publishing-to-rill",
-              "title": "Connect Real-time Publishing to Rill",
-              "description": "[block:api-header]",
-              "source": "@site/docs/get-started/process-streaming-data/real-time-publishing-to-rill.md",
-              "sourceDirName": "get-started/process-streaming-data",
-              "slug": "/get-started/process-streaming-data/real-time-publishing-to-rill",
-              "permalink": "/get-started/process-streaming-data/real-time-publishing-to-rill",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/process-streaming-data/real-time-publishing-to-rill.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Connect Real-time Publishing to Rill",
-                "slug": "real-time-publishing-to-rill",
-                "hidden": true,
-                "createdAt": "2021-10-06T14:10:41.272Z",
-                "updatedAt": "2021-10-08T19:59:35.106Z"
-              }
-            },
-            {
-              "unversionedId": "get-started/process-streaming-data/tutorial-kafka-ingestion",
-              "id": "get-started/process-streaming-data/tutorial-kafka-ingestion",
-              "title": "Tutorial: Kafka Ingestion",
-              "description": "To get comfortable with Druid and Streaming from Apache Kafka, we'll walk you through loading a sample data set. If you have yet configured an Apache Kafka instance that is accessible by RillData, please see the documentation on Connecting Sources for Kafka.",
-              "source": "@site/docs/get-started/process-streaming-data/tutorial-kafka-ingestion.md",
-              "sourceDirName": "get-started/process-streaming-data",
-              "slug": "/get-started/process-streaming-data/tutorial-kafka-ingestion",
-              "permalink": "/get-started/process-streaming-data/tutorial-kafka-ingestion",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/process-streaming-data/tutorial-kafka-ingestion.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Tutorial: Kafka Ingestion",
-                "slug": "tutorial-kafka-ingestion",
-                "hidden": false,
-                "createdAt": "2021-08-13T15:52:49.898Z",
-                "updatedAt": "2022-07-13T07:10:59.656Z"
-              }
-            },
-            {
-              "unversionedId": "get-started/processing-batch-data",
-              "id": "get-started/processing-batch-data",
-              "title": "Process Batch Data",
-              "description": "Many customers start with Rill loading data from storage locations - s3, GCS, etc.",
-              "source": "@site/docs/get-started/processing-batch-data.md",
-              "sourceDirName": "get-started",
-              "slug": "/get-started/processing-batch-data",
-              "permalink": "/get-started/processing-batch-data",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/processing-batch-data.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Process Batch Data",
-                "slug": "processing-batch-data",
-                "excerpt": "Load data into Rill's data store via storage locations",
-                "hidden": false,
-                "createdAt": "2022-06-02T19:48:37.780Z",
-                "updatedAt": "2022-07-13T07:07:29.774Z"
-              }
-            },
-            {
-              "unversionedId": "get-started/processing-batch-data/aws-s3-bucket",
-              "id": "get-started/processing-batch-data/aws-s3-bucket",
-              "title": "AWS S3 Bucket",
-              "description": "Setup S3 bucket",
-              "source": "@site/docs/get-started/processing-batch-data/aws-s3-bucket.md",
-              "sourceDirName": "get-started/processing-batch-data",
-              "slug": "/get-started/processing-batch-data/aws-s3-bucket",
-              "permalink": "/get-started/processing-batch-data/aws-s3-bucket",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/processing-batch-data/aws-s3-bucket.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "AWS S3 Bucket",
-                "slug": "aws-s3-bucket",
-                "excerpt": "Batch Ingestion: integrating Rill with S3 storage",
-                "hidden": false,
-                "createdAt": "2020-09-11T11:36:27.412Z",
-                "updatedAt": "2021-10-26T21:32:16.983Z"
+                "title": "⚙️ Embedding Explore",
+                "slug": "embedding-explore",
+                "excerpt": "White-labeling your dashboards within existing applications"
               },
               "sidebar": "docsSidebar",
               "previous": {
-                "title": "🔖 Introduction",
-                "permalink": "/overview/introduction"
+                "title": "Edit Dashboard Metrics",
+                "permalink": "/explore-json-examples"
+              },
+              "next": {
+                "title": "🔓 Authenticate & Connect",
+                "permalink": "/authenticating-integrated-applications"
               }
             },
             {
-              "unversionedId": "get-started/processing-batch-data/azure-storage-container",
-              "id": "get-started/processing-batch-data/azure-storage-container",
-              "title": "Azure Storage Container",
-              "description": "Rill would need access to the Azure Storage Container to fetch the data. For this Rill needs",
-              "source": "@site/docs/get-started/processing-batch-data/azure-storage-container.md",
-              "sourceDirName": "get-started/processing-batch-data",
-              "slug": "/get-started/processing-batch-data/azure-storage-container",
-              "permalink": "/get-started/processing-batch-data/azure-storage-container",
+              "unversionedId": "explore-admin",
+              "id": "explore-admin",
+              "title": "🔐 Explore Admin",
+              "description": "Explore Admin Functions",
+              "source": "@site/docs/explore-admin.md",
+              "sourceDirName": ".",
+              "slug": "/explore-admin",
+              "permalink": "/explore-admin",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/processing-batch-data/azure-storage-container.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/explore-admin.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
-                "title": "Azure Storage Container",
-                "slug": "azure-storage-container",
-                "excerpt": "Integrating with Azure Cloud",
-                "hidden": false,
-                "createdAt": "2020-10-02T04:00:09.169Z",
-                "updatedAt": "2020-10-02T04:00:51.236Z"
+                "title": "🔐 Explore Admin",
+                "slug": "explore-admin"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Facet: Pivot tables & Splits",
+                "permalink": "/facet-pivot-table-splits"
+              },
+              "next": {
+                "title": "Adding Users",
+                "permalink": "/adding-users"
               }
             },
             {
-              "unversionedId": "get-started/processing-batch-data/gcs-bucket",
-              "id": "get-started/processing-batch-data/gcs-bucket",
-              "title": "GCS Bucket",
-              "description": "Follow the instructions below to grant Rill access to your Google Cloud Storage Bucket.",
-              "source": "@site/docs/get-started/processing-batch-data/gcs-bucket.md",
-              "sourceDirName": "get-started/processing-batch-data",
-              "slug": "/get-started/processing-batch-data/gcs-bucket",
-              "permalink": "/get-started/processing-batch-data/gcs-bucket",
+              "unversionedId": "explore-json-examples",
+              "id": "explore-json-examples",
+              "title": "Edit Dashboard Metrics",
+              "description": "Adding a Dashboard in Explore",
+              "source": "@site/docs/explore-json-examples.md",
+              "sourceDirName": ".",
+              "slug": "/explore-json-examples",
+              "permalink": "/explore-json-examples",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/processing-batch-data/gcs-bucket.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/explore-json-examples.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Edit Dashboard Metrics",
+                "slug": "explore-json-examples",
+                "excerpt": "Illustrative snippets for updating your dashboards"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Create External Dashboards",
+                "permalink": "/create-an-external-dashboard"
+              },
+              "next": {
+                "title": "⚙️ Embedding Explore",
+                "permalink": "/embedding-explore"
+              }
+            },
+            {
+              "unversionedId": "facet-pivot-table-splits",
+              "id": "facet-pivot-table-splits",
+              "title": "Facet: Pivot tables & Splits",
+              "description": "Overview",
+              "source": "@site/docs/facet-pivot-table-splits.md",
+              "sourceDirName": ".",
+              "slug": "/facet-pivot-table-splits",
+              "permalink": "/facet-pivot-table-splits",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/facet-pivot-table-splits.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Facet: Pivot tables & Splits",
+                "slug": "facet-pivot-table-splits",
+                "excerpt": "Visualize data intersections and create reports for export"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Bookmarks: Saved Views",
+                "permalink": "/bookmarking"
+              },
+              "next": {
+                "title": "🔐 Explore Admin",
+                "permalink": "/explore-admin"
+              }
+            },
+            {
+              "unversionedId": "faq",
+              "id": "faq",
+              "title": "❓ FAQ",
+              "description": "Where do you see the biggest validation issues come from?",
+              "source": "@site/docs/faq.md",
+              "sourceDirName": ".",
+              "slug": "/faq",
+              "permalink": "/faq",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/faq.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "❓ FAQ",
+                "slug": "faq",
+                "excerpt": "General queries and common asks"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "AWS Encryption",
+                "permalink": "/aws-encryption"
+              },
+              "next": {
+                "title": "🤓 Contact Support",
+                "permalink": "/contact-support"
+              }
+            },
+            {
+              "unversionedId": "gcs-bucket",
+              "id": "gcs-bucket",
+              "title": "GCS Bucket",
+              "description": "Setup instructions",
+              "source": "@site/docs/gcs-bucket.md",
+              "sourceDirName": ".",
+              "slug": "/gcs-bucket",
+              "permalink": "/gcs-bucket",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/gcs-bucket.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "GCS Bucket",
                 "slug": "gcs-bucket",
-                "excerpt": "Batch ingestion: integrating Rill with Google Cloud Storage",
-                "hidden": false,
-                "createdAt": "2020-05-31T17:26:09.708Z",
-                "updatedAt": "2021-08-17T23:29:18.894Z"
+                "excerpt": "Batch ingestion: integrating Rill with Google Cloud Storage"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "AWS S3 Bucket",
+                "permalink": "/aws-s3-bucket"
+              },
+              "next": {
+                "title": "Google BigQuery",
+                "permalink": "/google-bigquery"
               }
             },
             {
-              "unversionedId": "get-started/processing-batch-data/google-bigquery",
-              "id": "get-started/processing-batch-data/google-bigquery",
-              "title": "Google BigQuery",
-              "description": "Follow the instructions below to grant Rill access to your Google BigQuery datasets.",
-              "source": "@site/docs/get-started/processing-batch-data/google-bigquery.md",
-              "sourceDirName": "get-started/processing-batch-data",
-              "slug": "/get-started/processing-batch-data/google-bigquery",
-              "permalink": "/get-started/processing-batch-data/google-bigquery",
+              "unversionedId": "getting-access-to-rill-dashboards",
+              "id": "getting-access-to-rill-dashboards",
+              "title": "Welcome to Rill Explore",
+              "description": "When you are first granted access to Explore dashboards, you should receive an email with direct links to set up your account.",
+              "source": "@site/docs/getting-access-to-rill-dashboards.md",
+              "sourceDirName": ".",
+              "slug": "/getting-access-to-rill-dashboards",
+              "permalink": "/getting-access-to-rill-dashboards",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/processing-batch-data/google-bigquery.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/getting-access-to-rill-dashboards.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Welcome to Rill Explore",
+                "slug": "getting-access-to-rill-dashboards",
+                "excerpt": "How to locate Rill dashboards or request access"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Ingestion Best Practices",
+                "permalink": "/data-ingestion-best-practices-1"
+              },
+              "next": {
+                "title": "Explore Quickstart",
+                "permalink": "/getting-started"
+              }
+            },
+            {
+              "unversionedId": "getting-started",
+              "id": "getting-started",
+              "title": "Explore Quickstart",
+              "description": "Explore Overview",
+              "source": "@site/docs/getting-started.md",
+              "sourceDirName": ".",
+              "slug": "/getting-started",
+              "permalink": "/getting-started",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/getting-started.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Explore Quickstart",
+                "slug": "getting-started",
+                "excerpt": "Analysis basics and capabilities overview"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Welcome to Rill Explore",
+                "permalink": "/getting-access-to-rill-dashboards"
+              },
+              "next": {
+                "title": "Alerting",
+                "permalink": "/alerting"
+              }
+            },
+            {
+              "unversionedId": "google-bigquery",
+              "id": "google-bigquery",
+              "title": "Google BigQuery",
+              "description": "Setup instructions",
+              "source": "@site/docs/google-bigquery.md",
+              "sourceDirName": ".",
+              "slug": "/google-bigquery",
+              "permalink": "/google-bigquery",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/google-bigquery.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Google BigQuery",
                 "slug": "google-bigquery",
-                "excerpt": "Direction integration via Rill's homegrown BigQuery connector",
-                "hidden": false,
-                "createdAt": "2020-10-21T01:49:25.004Z",
-                "updatedAt": "2021-08-17T23:29:01.547Z"
+                "excerpt": "Direction integration via Rill's homegrown BigQuery connector"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "GCS Bucket",
+                "permalink": "/gcs-bucket"
+              },
+              "next": {
+                "title": "Azure Storage Container",
+                "permalink": "/azure-storage-container"
               }
             },
             {
-              "unversionedId": "get-started/processing-batch-data/ingesting-from-big-query",
-              "id": "get-started/processing-batch-data/ingesting-from-big-query",
+              "unversionedId": "ingesting-from-big-query",
+              "id": "ingesting-from-big-query",
               "title": "Tutorial: BigQuery Ingestion",
-              "description": "To import data form BigQuery, you will first need to grant Rill access to your BigQuery data. Once that is complete, you'll ingest the data via the Druid console following the same steps shown in Druid Data Ingestion and Druid Optimization During Ingestion",
-              "source": "@site/docs/get-started/processing-batch-data/ingesting-from-big-query.md",
-              "sourceDirName": "get-started/processing-batch-data",
-              "slug": "/get-started/processing-batch-data/ingesting-from-big-query",
-              "permalink": "/get-started/processing-batch-data/ingesting-from-big-query",
+              "description": "Overview",
+              "source": "@site/docs/ingesting-from-big-query.md",
+              "sourceDirName": ".",
+              "slug": "/ingesting-from-big-query",
+              "permalink": "/ingesting-from-big-query",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/processing-batch-data/ingesting-from-big-query.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/ingesting-from-big-query.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Tutorial: BigQuery Ingestion",
                 "slug": "ingesting-from-big-query",
-                "excerpt": "Creating a dataset from a Google BigQuery table",
-                "hidden": false,
-                "createdAt": "2020-10-28T22:06:59.598Z",
-                "updatedAt": "2022-07-13T07:09:45.234Z"
-              }
-            },
-            {
-              "unversionedId": "get-started/processing-batch-data/tutorial-druid-ingestion",
-              "id": "get-started/processing-batch-data/tutorial-druid-ingestion",
-              "title": "Tutorial: Manual Batch Ingestion",
-              "description": "To get comfortable with Druid, we'll walk you through loading a sample data set. Normally you will specify a path to your data (for example, a BigQuery table), but in this example, you won't have to provide a path since it is build into this example. Note that since you are creating a dataset, you will need Editor privilege to access the Load Data tab referenced in this tutorial.",
-              "source": "@site/docs/get-started/processing-batch-data/tutorial-druid-ingestion.md",
-              "sourceDirName": "get-started/processing-batch-data",
-              "slug": "/get-started/processing-batch-data/tutorial-druid-ingestion",
-              "permalink": "/get-started/processing-batch-data/tutorial-druid-ingestion",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/get-started/processing-batch-data/tutorial-druid-ingestion.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
+                "excerpt": "Creating a dataset from a Google BigQuery table"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
                 "title": "Tutorial: Manual Batch Ingestion",
-                "slug": "tutorial-druid-ingestion",
-                "hidden": false,
-                "createdAt": "2021-08-11T22:56:54.932Z",
-                "updatedAt": "2022-06-02T22:49:16.353Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/authenticating-integrated-applications",
-              "id": "integrate/authenticating-integrated-applications",
-              "title": "🔓 Authenticate & Connect",
-              "description": "When you query Druid via an application, that application must provide authentication credentials to Druid. There are two ways to do this: a service account or an API password.",
-              "source": "@site/docs/integrate/authenticating-integrated-applications.md",
-              "sourceDirName": "integrate",
-              "slug": "/integrate/authenticating-integrated-applications",
-              "permalink": "/integrate/authenticating-integrated-applications",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/authenticating-integrated-applications.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "🔓 Authenticate & Connect",
-                "slug": "authenticating-integrated-applications",
-                "excerpt": "Set up Service Accounts and Generic JDBC/API access",
-                "hidden": false,
-                "createdAt": "2020-10-29T23:32:54.851Z",
-                "updatedAt": "2022-06-14T19:21:27.949Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/authenticating-integrated-applications/api-access",
-              "id": "integrate/authenticating-integrated-applications/api-access",
-              "title": "API Access",
-              "description": "With access to RCC, Admin users are able to access raw data via the Druid API.",
-              "source": "@site/docs/integrate/authenticating-integrated-applications/api-access.md",
-              "sourceDirName": "integrate/authenticating-integrated-applications",
-              "slug": "/integrate/authenticating-integrated-applications/api-access",
-              "permalink": "/integrate/authenticating-integrated-applications/api-access",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/authenticating-integrated-applications/api-access.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "API Access",
-                "slug": "api-access",
-                "hidden": false,
-                "createdAt": "2021-08-11T23:17:54.252Z",
-                "updatedAt": "2021-08-11T23:21:12.637Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/authenticating-integrated-applications/api-password",
-              "id": "integrate/authenticating-integrated-applications/api-password",
-              "title": "API Password",
-              "description": "If you want to use an application that makes API calls to Druid, you can create an API password and authenticate the API call using your Rill login and the API password. This is an alternative to using a Service Account, which is an account that your admin can create to allow multiple users to access Druid through an application via a single authorized user.",
-              "source": "@site/docs/integrate/authenticating-integrated-applications/api-password.md",
-              "sourceDirName": "integrate/authenticating-integrated-applications",
-              "slug": "/integrate/authenticating-integrated-applications/api-password",
-              "permalink": "/integrate/authenticating-integrated-applications/api-password",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/authenticating-integrated-applications/api-password.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "API Password",
-                "slug": "api-password",
-                "hidden": false,
-                "createdAt": "2021-02-19T17:10:32.537Z",
-                "updatedAt": "2022-07-13T07:15:57.284Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/authenticating-integrated-applications/jdbc-connection",
-              "id": "integrate/authenticating-integrated-applications/jdbc-connection",
-              "title": "JDBC Connection",
-              "description": "You can use a JDBC connection to query your Druid service.",
-              "source": "@site/docs/integrate/authenticating-integrated-applications/jdbc-connection.md",
-              "sourceDirName": "integrate/authenticating-integrated-applications",
-              "slug": "/integrate/authenticating-integrated-applications/jdbc-connection",
-              "permalink": "/integrate/authenticating-integrated-applications/jdbc-connection",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/authenticating-integrated-applications/jdbc-connection.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "JDBC Connection",
-                "slug": "jdbc-connection",
-                "hidden": false,
-                "createdAt": "2020-10-31T00:38:02.158Z",
-                "updatedAt": "2021-08-03T01:08:16.229Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/authenticating-integrated-applications/service-accounts",
-              "id": "integrate/authenticating-integrated-applications/service-accounts",
-              "title": "Service Accounts",
-              "description": "A Service Account is an account that your admin will create and use to authenticate API calls made to Druid by another application. If multiple users in your workspace will be using this application to access Druid, your admin can create a single service account and embed the credentials in the application that the users are running. As a user of that application, once your Admin creates the service account and provides the credentials to the application, you will be able to interact with Druid through that application without additional Druid credentials.",
-              "source": "@site/docs/integrate/authenticating-integrated-applications/service-accounts.md",
-              "sourceDirName": "integrate/authenticating-integrated-applications",
-              "slug": "/integrate/authenticating-integrated-applications/service-accounts",
-              "permalink": "/integrate/authenticating-integrated-applications/service-accounts",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/authenticating-integrated-applications/service-accounts.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Service Accounts",
-                "slug": "service-accounts",
-                "hidden": false,
-                "createdAt": "2020-10-29T23:33:12.214Z",
-                "updatedAt": "2021-06-17T16:49:04.527Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/jupyter",
-              "id": "integrate/jupyter",
-              "title": "Jupyter",
-              "description": "Using Jupyter with Druid is easy. Simply post an SQL query with your authentication credentials  an then parse the json output that is returned.",
-              "source": "@site/docs/integrate/jupyter.md",
-              "sourceDirName": "integrate",
-              "slug": "/integrate/jupyter",
-              "permalink": "/integrate/jupyter",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/jupyter.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Jupyter",
-                "slug": "jupyter",
-                "excerpt": "Jupyter",
-                "hidden": false,
-                "createdAt": "2020-10-30T00:03:41.056Z",
-                "updatedAt": "2021-07-07T21:28:50.136Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/looker",
-              "id": "integrate/looker",
-              "title": "Looker",
-              "description": "Create credentials that allow Looker to connect to Rill",
-              "source": "@site/docs/integrate/looker.md",
-              "sourceDirName": "integrate",
-              "slug": "/integrate/looker",
-              "permalink": "/integrate/looker",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/looker.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Looker",
-                "slug": "looker",
-                "excerpt": "Integrating Rill with Looker",
-                "hidden": false,
-                "createdAt": "2021-06-01T23:41:43.608Z",
-                "updatedAt": "2021-08-12T17:04:18.196Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/superset",
-              "id": "integrate/superset",
-              "title": "Superset",
-              "description": "Connect to your database/Rill workspace",
-              "source": "@site/docs/integrate/superset.md",
-              "sourceDirName": "integrate",
-              "slug": "/integrate/superset",
-              "permalink": "/integrate/superset",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/superset.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Superset",
-                "slug": "superset",
-                "hidden": false,
-                "createdAt": "2020-10-28T23:09:57.103Z",
-                "updatedAt": "2022-04-17T14:53:45.403Z"
-              }
-            },
-            {
-              "unversionedId": "integrate/tableau",
-              "id": "integrate/tableau",
-              "title": "Tableau",
-              "description": "Install the Avatica JDBC driver",
-              "source": "@site/docs/integrate/tableau.md",
-              "sourceDirName": "integrate",
-              "slug": "/integrate/tableau",
-              "permalink": "/integrate/tableau",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/integrate/tableau.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Tableau",
-                "slug": "tableau",
-                "excerpt": "Integrating Rill with Tableau",
-                "hidden": false,
-                "createdAt": "2020-09-29T23:44:04.538Z",
-                "updatedAt": "2021-09-21T18:51:45.545Z"
+                "permalink": "/tutorial-druid-ingestion"
+              },
+              "next": {
+                "title": "Process Streaming Data",
+                "permalink": "/process-streaming-data"
               }
             },
             {
               "unversionedId": "introduction",
               "id": "introduction",
               "title": "🔖 Introduction",
-              "description": "Rill Data provides a fully managed cloud data service that enables teams to deliver real time metrics dashboards to their business stakeholders.",
+              "description": "Welcome",
               "source": "@site/docs/introduction.md",
               "sourceDirName": ".",
-              "slug": "/introduction",
-              "permalink": "/introduction",
+              "slug": "/",
+              "permalink": "/",
               "draft": false,
               "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/introduction.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "🔖 Introduction",
-                "slug": "introduction",
-                "hidden": false,
-                "createdAt": "2020-10-21T01:14:07.906Z",
-                "updatedAt": "2022-07-13T20:10:20.067Z"
-              }
-            },
-            {
-              "unversionedId": "overview/core-concepts",
-              "id": "overview/core-concepts",
-              "title": "🧰 Core Concepts",
-              "description": "Rill enables you to leverage all the power of Druid with a serverless cloud service that is simple, secure, and elastic. Rill is designed to fit into your existing analytics ecosystem. You can read from a wide variety of streamed or batch data sources such as Kafka and Big Query, and you can perform analytics using industry standard tools such as Tableau and Looker.",
-              "source": "@site/docs/overview/core-concepts.md",
-              "sourceDirName": "overview",
-              "slug": "/overview/core-concepts",
-              "permalink": "/overview/core-concepts",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/overview/core-concepts.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "🧰 Core Concepts",
-                "slug": "core-concepts",
-                "excerpt": "Rill Cloud Console to manage data; Rill Explore to analyze & share",
-                "hidden": false,
-                "createdAt": "2020-10-23T00:23:06.366Z",
-                "updatedAt": "2022-07-13T20:12:40.733Z"
-              }
-            },
-            {
-              "unversionedId": "overview/introduction",
-              "id": "overview/introduction",
-              "title": "🔖 Introduction",
-              "description": "Rill Data provides a fully managed cloud data service that enables teams to deliver real time metrics dashboards to their business stakeholders.",
-              "source": "@site/docs/overview/introduction.md",
-              "sourceDirName": "overview",
-              "slug": "/overview/introduction",
-              "permalink": "/overview/introduction",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/overview/introduction.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "🔖 Introduction",
-                "slug": "introduction",
-                "hidden": false,
-                "createdAt": "2020-10-21T01:14:07.906Z",
-                "updatedAt": "2022-07-13T20:10:20.067Z"
+                "slug": "/"
               },
               "sidebar": "docsSidebar",
               "next": {
+                "title": "🧰 Core Concepts",
+                "permalink": "/core-concepts"
+              }
+            },
+            {
+              "unversionedId": "jdbc-connection",
+              "id": "jdbc-connection",
+              "title": "JDBC Connection",
+              "description": "Overview",
+              "source": "@site/docs/jdbc-connection.md",
+              "sourceDirName": ".",
+              "slug": "/jdbc-connection",
+              "permalink": "/jdbc-connection",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/jdbc-connection.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "JDBC Connection",
+                "slug": "jdbc-connection"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "API Access",
+                "permalink": "/api-access"
+              },
+              "next": {
+                "title": "Jupyter",
+                "permalink": "/jupyter"
+              }
+            },
+            {
+              "unversionedId": "jupyter",
+              "id": "jupyter",
+              "title": "Jupyter",
+              "description": "Overview",
+              "source": "@site/docs/jupyter.md",
+              "sourceDirName": ".",
+              "slug": "/jupyter",
+              "permalink": "/jupyter",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/jupyter.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Jupyter",
+                "slug": "jupyter",
+                "excerpt": "Jupyter"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "JDBC Connection",
+                "permalink": "/jdbc-connection"
+              },
+              "next": {
+                "title": "Looker",
+                "permalink": "/looker"
+              }
+            },
+            {
+              "unversionedId": "looker",
+              "id": "looker",
+              "title": "Looker",
+              "description": "Setup instructions",
+              "source": "@site/docs/looker.md",
+              "sourceDirName": ".",
+              "slug": "/looker",
+              "permalink": "/looker",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/looker.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Looker",
+                "slug": "looker",
+                "excerpt": "Integrating Rill with Looker"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Jupyter",
+                "permalink": "/jupyter"
+              },
+              "next": {
+                "title": "Superset",
+                "permalink": "/superset"
+              }
+            },
+            {
+              "unversionedId": "metadata-lookups",
+              "id": "metadata-lookups",
+              "title": "Metadata Lookups",
+              "description": "Overview",
+              "source": "@site/docs/metadata-lookups.md",
+              "sourceDirName": ".",
+              "slug": "/metadata-lookups",
+              "permalink": "/metadata-lookups",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/metadata-lookups.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Metadata Lookups",
+                "slug": "metadata-lookups",
+                "excerpt": "Adding lookup tables for data enrichment"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Tutorial: Kafka Ingestion",
+                "permalink": "/tutorial-kafka-ingestion"
+              },
+              "next": {
+                "title": "Ingestion Best Practices",
+                "permalink": "/data-ingestion-best-practices-1"
+              }
+            },
+            {
+              "unversionedId": "process-streaming-data",
+              "id": "process-streaming-data",
+              "title": "Process Streaming Data",
+              "description": "Getting Started",
+              "source": "@site/docs/process-streaming-data.md",
+              "sourceDirName": ".",
+              "slug": "/process-streaming-data",
+              "permalink": "/process-streaming-data",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/process-streaming-data.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Process Streaming Data",
+                "slug": "process-streaming-data",
+                "excerpt": "Load real-time data to Rill via streaming services"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Tutorial: BigQuery Ingestion",
+                "permalink": "/ingesting-from-big-query"
+              },
+              "next": {
+                "title": "Confluent/Apache Kafka",
+                "permalink": "/connecting-with-kafka"
+              }
+            },
+            {
+              "unversionedId": "processing-batch-data",
+              "id": "processing-batch-data",
+              "title": "Process Batch Data",
+              "description": "Getting Started",
+              "source": "@site/docs/processing-batch-data.md",
+              "sourceDirName": ".",
+              "slug": "/processing-batch-data",
+              "permalink": "/processing-batch-data",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/processing-batch-data.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Process Batch Data",
+                "slug": "processing-batch-data",
+                "excerpt": "Load data into Rill's data store via storage locations"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "🧰 Core Concepts",
+                "permalink": "/core-concepts"
+              },
+              "next": {
                 "title": "AWS S3 Bucket",
-                "permalink": "/get-started/processing-batch-data/aws-s3-bucket"
+                "permalink": "/aws-s3-bucket"
               }
             },
             {
-              "unversionedId": "resources/contact-support",
-              "id": "resources/contact-support",
-              "title": "🤓 Contact Support",
-              "description": "Contact support via support@rilldata.com",
-              "source": "@site/docs/resources/contact-support.md",
-              "sourceDirName": "resources",
-              "slug": "/resources/contact-support",
-              "permalink": "/resources/contact-support",
+              "unversionedId": "real-time-publishing-to-rill",
+              "id": "real-time-publishing-to-rill",
+              "title": "Connect Real-time Publishing to Rill",
+              "description": "Streaming Platform",
+              "source": "@site/docs/real-time-publishing-to-rill.md",
+              "sourceDirName": ".",
+              "slug": "/real-time-publishing-to-rill",
+              "permalink": "/real-time-publishing-to-rill",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/resources/contact-support.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/real-time-publishing-to-rill.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
-                "title": "🤓 Contact Support",
-                "slug": "contact-support",
-                "hidden": false,
-                "createdAt": "2020-05-27T21:23:55.051Z",
-                "updatedAt": "2021-08-11T22:40:40.607Z"
+                "title": "Connect Real-time Publishing to Rill",
+                "slug": "real-time-publishing-to-rill"
               }
             },
             {
-              "unversionedId": "resources/faq",
-              "id": "resources/faq",
-              "title": "❓ FAQ",
-              "description": "[block:api-header]",
-              "source": "@site/docs/resources/faq.md",
-              "sourceDirName": "resources",
-              "slug": "/resources/faq",
-              "permalink": "/resources/faq",
+              "unversionedId": "scheduled-exports",
+              "id": "scheduled-exports",
+              "title": "Scheduled Exports",
+              "description": "Scheduled Exports",
+              "source": "@site/docs/scheduled-exports.md",
+              "sourceDirName": ".",
+              "slug": "/scheduled-exports",
+              "permalink": "/scheduled-exports",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/resources/faq.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/scheduled-exports.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
-                "title": "❓ FAQ",
-                "slug": "faq",
-                "excerpt": "General queries and common asks",
-                "hidden": false,
-                "createdAt": "2021-06-17T03:23:37.531Z",
-                "updatedAt": "2022-07-13T20:15:51.316Z"
+                "title": "Scheduled Exports",
+                "slug": "scheduled-exports"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Alerting",
+                "permalink": "/alerting"
+              },
+              "next": {
+                "title": "Bookmarks: Saved Views",
+                "permalink": "/bookmarking"
               }
             },
             {
-              "unversionedId": "resources/service-status",
-              "id": "resources/service-status",
-              "title": "🎛 Service Status",
-              "description": "",
-              "source": "@site/docs/resources/service-status.md",
-              "sourceDirName": "resources",
-              "slug": "/resources/service-status",
-              "permalink": "/resources/service-status",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/resources/service-status.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "🎛 Service Status",
-                "slug": "service-status",
-                "hidden": false,
-                "createdAt": "2022-03-23T16:47:49.733Z",
-                "updatedAt": "2022-03-23T16:50:24.873Z",
-                "type": "link",
-                "link_url": "https://rilldata.statuspage.io/",
-                "link_external": true
-              }
-            },
-            {
-              "unversionedId": "Security/aws-encryption",
-              "id": "Security/aws-encryption",
-              "title": "AWS Encryption",
-              "description": "We can encrypt the data with Customer managed AWS KMS Key.",
-              "source": "@site/docs/Security/aws-encryption.md",
-              "sourceDirName": "Security",
-              "slug": "/Security/aws-encryption",
-              "permalink": "/Security/aws-encryption",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Security/aws-encryption.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "AWS Encryption",
-                "slug": "aws-encryption",
-                "excerpt": "with Customer Managed Keys",
-                "hidden": false,
-                "createdAt": "2020-10-14T18:13:35.244Z",
-                "updatedAt": "2020-10-14T18:30:42.190Z"
-              }
-            },
-            {
-              "unversionedId": "Security/aws-private-link",
-              "id": "Security/aws-private-link",
-              "title": "Private Link",
-              "description": "The choice between Transit Gateway, VPC peering, and AWS PrivateLink is dependent on connectivity.",
-              "source": "@site/docs/Security/aws-private-link.md",
-              "sourceDirName": "Security",
-              "slug": "/Security/aws-private-link",
-              "permalink": "/Security/aws-private-link",
-              "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Security/aws-private-link.md",
-              "tags": [],
-              "version": "current",
-              "frontMatter": {
-                "title": "Private Link",
-                "slug": "aws-private-link",
-                "excerpt": "Share data privately",
-                "hidden": false,
-                "createdAt": "2020-09-20T06:09:07.835Z",
-                "updatedAt": "2021-08-11T22:46:57.964Z"
-              }
-            },
-            {
-              "unversionedId": "Security/security",
-              "id": "Security/security",
+              "unversionedId": "security",
+              "id": "security",
               "title": "Security",
-              "description": "We are securing the secrets required for internal communications as well as the database credentials are stored in Hashicorp's Vault.",
-              "source": "@site/docs/Security/security.md",
-              "sourceDirName": "Security",
-              "slug": "/Security/security",
-              "permalink": "/Security/security",
+              "description": "Credentials Management",
+              "source": "@site/docs/security.md",
+              "sourceDirName": ".",
+              "slug": "/security",
+              "permalink": "/security",
               "draft": false,
-              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/Security/security.md",
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/security.md",
               "tags": [],
               "version": "current",
               "frontMatter": {
                 "title": "Security",
-                "slug": "security",
-                "hidden": true,
-                "createdAt": "2020-08-24T15:01:27.548Z",
-                "updatedAt": "2020-08-24T15:11:52.934Z"
+                "slug": "security"
+              }
+            },
+            {
+              "unversionedId": "service-accounts",
+              "id": "service-accounts",
+              "title": "Service Accounts",
+              "description": "Overview",
+              "source": "@site/docs/service-accounts.md",
+              "sourceDirName": ".",
+              "slug": "/service-accounts",
+              "permalink": "/service-accounts",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/service-accounts.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Service Accounts",
+                "slug": "service-accounts"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "API Password",
+                "permalink": "/api-password"
+              },
+              "next": {
+                "title": "API Access",
+                "permalink": "/api-access"
+              }
+            },
+            {
+              "unversionedId": "superset",
+              "id": "superset",
+              "title": "Superset",
+              "description": "Setup instructions",
+              "source": "@site/docs/superset.md",
+              "sourceDirName": ".",
+              "slug": "/superset",
+              "permalink": "/superset",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/superset.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Superset",
+                "slug": "superset"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Looker",
+                "permalink": "/looker"
+              },
+              "next": {
+                "title": "Tableau",
+                "permalink": "/tableau"
+              }
+            },
+            {
+              "unversionedId": "tableau",
+              "id": "tableau",
+              "title": "Tableau",
+              "description": "Setup instructions",
+              "source": "@site/docs/tableau.md",
+              "sourceDirName": ".",
+              "slug": "/tableau",
+              "permalink": "/tableau",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/tableau.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Tableau",
+                "slug": "tableau",
+                "excerpt": "Integrating Rill with Tableau"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Superset",
+                "permalink": "/superset"
+              },
+              "next": {
+                "title": "Private Link",
+                "permalink": "/aws-private-link"
+              }
+            },
+            {
+              "unversionedId": "tutorial-druid-ingestion",
+              "id": "tutorial-druid-ingestion",
+              "title": "Tutorial: Manual Batch Ingestion",
+              "description": "Tutorial: Load Sample Data into Druid",
+              "source": "@site/docs/tutorial-druid-ingestion.md",
+              "sourceDirName": ".",
+              "slug": "/tutorial-druid-ingestion",
+              "permalink": "/tutorial-druid-ingestion",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/tutorial-druid-ingestion.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Tutorial: Manual Batch Ingestion",
+                "slug": "tutorial-druid-ingestion"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Azure Storage Container",
+                "permalink": "/azure-storage-container"
+              },
+              "next": {
+                "title": "Tutorial: BigQuery Ingestion",
+                "permalink": "/ingesting-from-big-query"
+              }
+            },
+            {
+              "unversionedId": "tutorial-kafka-ingestion",
+              "id": "tutorial-kafka-ingestion",
+              "title": "Tutorial: Kafka Ingestion",
+              "description": "To get comfortable with Druid and Streaming from Apache Kafka, we'll walk you through loading a sample data set. If you have yet configured an Apache Kafka instance that is accessible by RillData, please see the documentation on Connecting Sources for Kafka.",
+              "source": "@site/docs/tutorial-kafka-ingestion.md",
+              "sourceDirName": ".",
+              "slug": "/tutorial-kafka-ingestion",
+              "permalink": "/tutorial-kafka-ingestion",
+              "draft": false,
+              "editUrl": "https://github.com/rilldata/rill-developer/blob/main/docs-enterprise/docs/tutorial-kafka-ingestion.md",
+              "tags": [],
+              "version": "current",
+              "frontMatter": {
+                "title": "Tutorial: Kafka Ingestion",
+                "slug": "tutorial-kafka-ingestion"
+              },
+              "sidebar": "docsSidebar",
+              "previous": {
+                "title": "Confluent/Apache Kafka",
+                "permalink": "/connecting-with-kafka"
+              },
+              "next": {
+                "title": "Metadata Lookups",
+                "permalink": "/metadata-lookups"
               }
             }
           ],
@@ -1032,21 +1150,257 @@
             "docsSidebar": [
               {
                 "type": "doc",
-                "id": "overview/introduction",
-                "label": "Introduction",
+                "id": "introduction",
+                "label": "🔖 Introduction",
                 "translatable": true
+              },
+              {
+                "type": "doc",
+                "id": "core-concepts",
+                "label": "🧰 Core Concepts",
+                "translatable": true
+              },
+              {
+                "type": "html",
+                "value": "Get Started: Connect Data",
+                "className": "sidebar-title"
               },
               {
                 "type": "category",
                 "label": "Process Batch Data",
+                "link": {
+                  "type": "doc",
+                  "id": "processing-batch-data"
+                },
                 "items": [
                   {
                     "type": "doc",
-                    "id": "get-started/processing-batch-data/aws-s3-bucket"
+                    "id": "aws-s3-bucket"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "gcs-bucket"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "google-bigquery"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "azure-storage-container"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "tutorial-druid-ingestion"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ingesting-from-big-query"
                   }
                 ],
                 "collapsed": true,
                 "collapsible": true
+              },
+              {
+                "type": "category",
+                "label": "Process Streaming Data",
+                "link": {
+                  "type": "doc",
+                  "id": "process-streaming-data"
+                },
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "connecting-with-kafka"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "tutorial-kafka-ingestion"
+                  }
+                ],
+                "collapsed": true,
+                "collapsible": true
+              },
+              {
+                "type": "doc",
+                "id": "metadata-lookups",
+                "label": "Metadata Lookups",
+                "translatable": true
+              },
+              {
+                "type": "doc",
+                "id": "data-ingestion-best-practices-1",
+                "label": "Ingestion Best Practices",
+                "translatable": true
+              },
+              {
+                "type": "html",
+                "value": "Analyze: Explore Dashboards",
+                "className": "sidebar-title"
+              },
+              {
+                "type": "doc",
+                "id": "getting-access-to-rill-dashboards",
+                "label": "Welcome to Rill Explore",
+                "translatable": true
+              },
+              {
+                "type": "category",
+                "label": "👋 Explore Quickstart",
+                "link": {
+                  "type": "doc",
+                  "id": "getting-started"
+                },
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "alerting"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "scheduled-exports"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "bookmarking"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "facet-pivot-table-splits"
+                  }
+                ],
+                "collapsed": true,
+                "collapsible": true
+              },
+              {
+                "type": "category",
+                "label": "🔐 Explore Admin",
+                "link": {
+                  "type": "doc",
+                  "id": "explore-admin"
+                },
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "adding-users"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "admin-security"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "create-an-external-dashboard"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "explore-json-examples"
+                  }
+                ],
+                "collapsed": true,
+                "collapsible": true
+              },
+              {
+                "type": "doc",
+                "id": "embedding-explore",
+                "label": "⚙️ Embedding Explore",
+                "translatable": true
+              },
+              {
+                "type": "html",
+                "value": "INTEGRATE: 3RD PARTY APPLICATIONS",
+                "className": "sidebar-title"
+              },
+              {
+                "type": "category",
+                "label": "🔓 Authenticate & Connect",
+                "link": {
+                  "type": "doc",
+                  "id": "authenticating-integrated-applications"
+                },
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "api-password"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "service-accounts"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "api-access"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "jdbc-connection"
+                  }
+                ],
+                "collapsed": true,
+                "collapsible": true
+              },
+              {
+                "type": "doc",
+                "id": "jupyter",
+                "label": "Jupyter",
+                "translatable": true
+              },
+              {
+                "type": "doc",
+                "id": "looker",
+                "label": "Looker",
+                "translatable": true
+              },
+              {
+                "type": "doc",
+                "id": "superset",
+                "label": "Superset",
+                "translatable": true
+              },
+              {
+                "type": "doc",
+                "id": "tableau",
+                "label": "Tableau",
+                "translatable": true
+              },
+              {
+                "type": "html",
+                "value": "Security",
+                "className": "sidebar-title"
+              },
+              {
+                "type": "doc",
+                "id": "aws-private-link",
+                "label": "Private Link",
+                "translatable": true
+              },
+              {
+                "type": "doc",
+                "id": "aws-encryption",
+                "label": "AWS Encryption",
+                "translatable": true
+              },
+              {
+                "type": "html",
+                "value": "Additional Resources",
+                "className": "sidebar-title"
+              },
+              {
+                "type": "doc",
+                "id": "faq",
+                "label": "❓ FAQ",
+                "translatable": true
+              },
+              {
+                "type": "link",
+                "label": "🎛 Service Status",
+                "href": "https://rilldata.statuspage.io/"
+              },
+              {
+                "type": "doc",
+                "id": "contact-support",
+                "label": "🤓 Contact Support",
+                "translatable": true
               }
             ]
           }

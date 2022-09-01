@@ -2,7 +2,7 @@
   "unversionedId": "faq",
   "id": "faq",
   "title": "❓ FAQ",
-  "description": "[block:api-header]",
+  "description": "Where do you see the biggest validation issues come from?",
   "source": "@site/docs/faq.md",
   "sourceDirName": ".",
   "slug": "/faq",
@@ -14,18 +14,15 @@
   "frontMatter": {
     "title": "❓ FAQ",
     "slug": "faq",
-    "excerpt": "General queries and common asks",
-    "hidden": false,
-    "createdAt": "2021-06-17T03:23:37.531Z",
-    "updatedAt": "2022-07-13T20:15:51.316Z"
+    "excerpt": "General queries and common asks"
   },
   "sidebar": "docsSidebar",
   "previous": {
-    "title": "Tutorial: Kafka Ingestion",
-    "permalink": "/get-started/tutorial-kafka-ingestion"
+    "title": "AWS Encryption",
+    "permalink": "/aws-encryption"
   },
   "next": {
-    "title": "🎛 Service Status",
-    "permalink": "/service-status"
+    "title": "🤓 Contact Support",
+    "permalink": "/contact-support"
   }
 }

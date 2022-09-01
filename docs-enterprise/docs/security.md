@@ -1,11 +1,8 @@
 ---
 title: "Security"
 slug: "security"
-hidden: true
-createdAt: "2020-08-24T15:01:27.548Z"
-updatedAt: "2020-08-24T15:11:52.934Z"
 ---
-# Credentials Management
+## Credentials Management
 
 We are securing the secrets required for internal communications as well as the database credentials are stored in Hashicorp's Vault. 
 

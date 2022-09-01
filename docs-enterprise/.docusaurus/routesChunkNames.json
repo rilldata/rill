@@ -49,195 +49,179 @@
     },
     "content": "content---readme-847-b9a"
   },
-  "/-79a": {
+  "/-d5b": {
     "__comp": "__comp---theme-doc-page-1-be-9be",
     "__context": {
       "plugin": "plugin---c-82-a20"
     },
     "versionMetadata": "versionMetadata---935-fcf"
   },
-  "/analyze/embedding-explore-6ed": {
+  "/-70c": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-embedding-explore-7-f-0-e23"
+    "content": "content---a-09-df0"
   },
-  "/analyze/explore-admin-f23": {
+  "/adding-users-703": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-explore-admindcd-f51"
+    "content": "content---adding-usersc-15-17a"
   },
-  "/analyze/explore-admin/adding-users-fed": {
+  "/admin-security-a57": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-explore-admin-adding-usersc-7-c-e81"
+    "content": "content---admin-security-6-f-7-aae"
   },
-  "/analyze/explore-admin/adjust-dashboard-layout-c08": {
+  "/alerting-2a1": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-explore-admin-adjust-dashboard-layout-9-ca-78e"
+    "content": "content---alerting-6-e-1-d13"
   },
-  "/analyze/explore-admin/admin-security-a9a": {
+  "/api-access-f93": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-explore-admin-admin-securitye-38-c3f"
+    "content": "content---api-access-626-988"
   },
-  "/analyze/explore-admin/create-an-external-dashboard-d09": {
+  "/api-password-e42": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-explore-admin-create-an-external-dashboard-69-f-03f"
+    "content": "content---api-password-897-48f"
   },
-  "/analyze/explore-admin/explore-json-examples-ebf": {
+  "/authenticating-integrated-applications-ff1": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-explore-admin-explore-json-examples-58-d-b2f"
+    "content": "content---authenticating-integrated-applications-7-af-bb7"
   },
-  "/analyze/getting-access-to-rill-dashboards-eb2": {
+  "/aws-encryption-083": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-getting-access-to-rill-dashboards-17-f-73c"
+    "content": "content---aws-encryptiond-39-243"
   },
-  "/analyze/getting-started-dc6": {
+  "/aws-private-link-2da": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-getting-started-99-d-568"
+    "content": "content---aws-private-linkdf-8-a4c"
   },
-  "/analyze/getting-started/alerting-261": {
+  "/aws-s3-bucket-353": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-getting-started-alerting-1-de-a1f"
+    "content": "content---aws-s-3-bucket-1-c-7-340"
   },
-  "/analyze/getting-started/bookmarking-36c": {
+  "/azure-storage-container-ce0": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-getting-started-bookmarking-950-09e"
+    "content": "content---azure-storage-container-170-b4b"
   },
-  "/analyze/getting-started/facet-pivot-table-splits-1ba": {
+  "/bookmarking-a01": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-getting-started-facet-pivot-table-splits-1-b-4-555"
+    "content": "content---bookmarking-16-a-363"
   },
-  "/analyze/getting-started/scheduled-exports-5e5": {
+  "/connecting-with-kafka-0cf": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---analyze-getting-started-scheduled-exports-117-13c"
+    "content": "content---connecting-with-kafka-7-d-8-b31"
   },
-  "/core-concepts-46c": {
+  "/contact-support-11f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---contact-supportb-3-c-3c7"
+  },
+  "/core-concepts-fdb": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---core-concepts-43-c-275"
   },
-  "/get-started/data-ingestion-best-practices-1-2f5": {
+  "/create-an-external-dashboard-eba": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-data-ingestion-best-practices-1435-97a"
+    "content": "content---create-an-external-dashboard-166-0d8"
   },
-  "/get-started/druid-ingestion-optimization-44e": {
+  "/data-ingestion-best-practices-1-172": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-druid-ingestion-optimization-065-ada"
+    "content": "content---data-ingestion-best-practices-15-e-3-2b0"
   },
-  "/get-started/metadata-lookups-7ca": {
+  "/druid-ingestion-optimization-222": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-metadata-lookupsceb-642"
+    "content": "content---druid-ingestion-optimization-014-19e"
   },
-  "/get-started/process-streaming-data-dfa": {
+  "/embedding-explore-e6a": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-process-streaming-dataf-4-e-7be"
+    "content": "content---embedding-explore-965-38a"
   },
-  "/get-started/process-streaming-data/connecting-with-kafka-622": {
+  "/explore-admin-f02": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-process-streaming-data-connecting-with-kafkad-07-bda"
+    "content": "content---explore-admin-6-f-9-543"
   },
-  "/get-started/process-streaming-data/real-time-publishing-to-rill-93e": {
+  "/explore-json-examples-495": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-process-streaming-data-real-time-publishing-to-rillfc-2-101"
+    "content": "content---explore-json-examples-890-ea4"
   },
-  "/get-started/process-streaming-data/tutorial-kafka-ingestion-e99": {
+  "/facet-pivot-table-splits-023": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-process-streaming-data-tutorial-kafka-ingestioneb-2-308"
+    "content": "content---facet-pivot-table-splits-3-e-7-c92"
   },
-  "/get-started/processing-batch-data-a71": {
+  "/faq-c3a": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-processing-batch-data-275-e78"
+    "content": "content---faq-048-9a2"
   },
-  "/get-started/processing-batch-data/aws-s3-bucket-da9": {
+  "/gcs-bucket-324": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-processing-batch-data-aws-s-3-bucketaa-9-565"
+    "content": "content---gcs-bucketae-0-c1d"
   },
-  "/get-started/processing-batch-data/azure-storage-container-a8d": {
+  "/getting-access-to-rill-dashboards-d5a": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-processing-batch-data-azure-storage-container-446-a45"
+    "content": "content---getting-access-to-rill-dashboardsb-48-b6c"
   },
-  "/get-started/processing-batch-data/gcs-bucket-56a": {
+  "/getting-started-85e": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-processing-batch-data-gcs-bucket-31-a-fd6"
+    "content": "content---getting-startedd-58-456"
   },
-  "/get-started/processing-batch-data/google-bigquery-fe9": {
+  "/google-bigquery-bfd": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-processing-batch-data-google-bigquerycc-7-e6d"
+    "content": "content---google-bigquery-216-055"
   },
-  "/get-started/processing-batch-data/ingesting-from-big-query-9b1": {
+  "/ingesting-from-big-query-5b0": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-processing-batch-data-ingesting-from-big-query-1-e-0-01a"
+    "content": "content---ingesting-from-big-query-969-768"
   },
-  "/get-started/processing-batch-data/tutorial-druid-ingestion-ae7": {
+  "/jdbc-connection-e22": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---get-started-processing-batch-data-tutorial-druid-ingestion-584-ad7"
+    "content": "content---jdbc-connectionbc-1-ab8"
   },
-  "/integrate/authenticating-integrated-applications-94f": {
+  "/jupyter-bd8": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-authenticating-integrated-applicationsc-58-c8e"
+    "content": "content---jupyterb-6-d-eb4"
   },
-  "/integrate/authenticating-integrated-applications/api-access-06f": {
+  "/looker-9fc": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-authenticating-integrated-applications-api-access-1-c-2-9d2"
+    "content": "content---lookerf-02-31c"
   },
-  "/integrate/authenticating-integrated-applications/api-password-fd3": {
+  "/metadata-lookups-983": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-authenticating-integrated-applications-api-passwordcb-7-b36"
+    "content": "content---metadata-lookupse-64-f13"
   },
-  "/integrate/authenticating-integrated-applications/jdbc-connection-055": {
+  "/process-streaming-data-f8a": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-authenticating-integrated-applications-jdbc-connection-349-4f5"
+    "content": "content---process-streaming-dataa-77-2d6"
   },
-  "/integrate/authenticating-integrated-applications/service-accounts-dfb": {
+  "/processing-batch-data-324": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-authenticating-integrated-applications-service-accounts-642-111"
+    "content": "content---processing-batch-dataedb-ad1"
   },
-  "/integrate/jupyter-c93": {
+  "/real-time-publishing-to-rill-fac": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-jupyter-080-4f9"
+    "content": "content---real-time-publishing-to-rillf-0-c-510"
   },
-  "/integrate/looker-285": {
+  "/scheduled-exports-723": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-looker-88-d-d1d"
+    "content": "content---scheduled-exports-3-fe-aa5"
   },
-  "/integrate/superset-d5f": {
+  "/security-2fb": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-supersete-95-8bf"
+    "content": "content---securitydb-3-af6"
   },
-  "/integrate/tableau-e50": {
+  "/service-accounts-5a8": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---integrate-tableauaf-4-ade"
+    "content": "content---service-accounts-617-826"
   },
-  "/introduction-251": {
+  "/superset-bb4": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---introductiona-09-926"
+    "content": "content---superset-6-f-9-fbc"
   },
-  "/overview/core-concepts-326": {
+  "/tableau-dca": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---overview-core-concepts-98-c-90e"
+    "content": "content---tableau-491-6bc"
   },
-  "/overview/introduction-bd2": {
+  "/tutorial-druid-ingestion-d56": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---overview-introduction-8-d-7-2f8"
+    "content": "content---tutorial-druid-ingestion-338-eec"
   },
-  "/resources/contact-support-ad7": {
+  "/tutorial-kafka-ingestion-0d0": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---resources-contact-support-281-84f"
-  },
-  "/resources/faq-b18": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---resources-faqb-66-50b"
-  },
-  "/resources/service-status-1ce": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---resources-service-status-705-75b"
-  },
-  "/Security/aws-encryption-193": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---security-aws-encryption-9-be-96e"
-  },
-  "/Security/aws-private-link-1df": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---security-aws-private-link-30-d-b97"
-  },
-  "/Security/security-f86": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---security-security-673-15f"
+    "content": "content---tutorial-kafka-ingestion-7-c-0-5dc"
   }
 }

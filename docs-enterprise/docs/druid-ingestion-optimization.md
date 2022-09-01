@@ -2,11 +2,8 @@
 title: "Tutorial: Data Optimization"
 slug: "druid-ingestion-optimization"
 excerpt: "Optimizing performance by performing aggregation during ingestion"
-hidden: true
-createdAt: "2020-10-23T22:01:14.525Z"
-updatedAt: "2022-06-02T22:48:10.813Z"
 ---
-# Overview
+## Overview
 One of the best ways to improve performance is to minimize the size of your data. During ingestion, Druid gives you the ability to perform aggregations on your data that can significantly reduce its size and improve performance. Your goal is to maintain your ability to answer all of the questions that you want to answer, while reducing the size of your data through aggregation and probabilistic approximation. You may need to iterate to find the tradeoffs that will give you the best speed with the least loss of information.
 
 The `Configure Schema` ingestion stage gives you the power to make these tradeoffs. During this stage you can:
@@ -16,7 +13,7 @@ The `Configure Schema` ingestion stage gives you the power to make these tradeof
 
 The remainder of this section will walk you through an example to show you the power of this functionality. 
 
-# Tutorial: Aggregate data during ingestion
+## Tutorial: Aggregate data during ingestion
 
 We'll load the same dataset that you loaded in the *Using Druid* section. To get started, please walk through the steps in that section, up through step 8, which brings you to the `Configure Schema` stage with the Sample data.
 
@@ -34,12 +31,7 @@ We'll load the same dataset that you loaded in the *Using Druid* section. To get
  1. Sometimes you need to know the count or a unique count of a dimension, but you don't need the detailed values for the dimension. Let's demonstrate this with an example. If you have modified your data, go back to `Start` and 'Next' your way through until you get to `Configure Schema`.  Next, remove all dimensions except for `countryName` and `user`. Looking at the display,and in particular the count column and the `countryName` column, we can see that there are 2 unique users that made wiki comments from  Argentina (users 181.230.118.178 and 181.110.165.189) and 13 unique users that made comments where the countryName was `null`. One user, `Kolega23567` made 5 comments where all of the attributes (comment string, etc) were the same, so that was rolled up to a single row.
 
     Let's add a new metric that represents the unique number of users. In the right panel. select `Add metric`. Set the `Name` to `unique_users`, set the `Type` to `hyperUnique` and set `Filed name` to `users`. Your display should look like this:
-[block:image]
-{
-  "images": [
-    {
-      "image": [
-        "https://files.readme.io/8960b83-Screen_Shot_2020-10-23_at_6.29.35_PM.png",
+![](https://files.readme.io/8960b83-Screen_Shot_2020-10-23_at_6.29.35_PM.png",
         "Screen Shot 2020-10-23 at 6.29.35 PM.png",
         1456,
         792,
@@ -51,12 +43,7 @@ We'll load the same dataset that you loaded in the *Using Druid* section. To get
 [/block]
  9. Click `Apply and you should now see your new `unique_users` field at the far right of the measures
 
-[block:image]
-{
-  "images": [
-    {
-      "image": [
-        "https://files.readme.io/6438a30-Screen_Shot_2020-10-23_at_6.31.07_PM.png",
+![](https://files.readme.io/6438a30-Screen_Shot_2020-10-23_at_6.31.07_PM.png",
         "Screen Shot 2020-10-23 at 6.31.07 PM.png",
         1401,
         757,

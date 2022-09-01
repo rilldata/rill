@@ -65,16 +65,16 @@ const config = {
           alt: "Rill Logo",
           src: "img/rill-logo-light.svg",
           srcDark: "img/rill-logo-dark.svg",
-          href: "https://www.rilldata.com",
+          href: "https://app.rilldata.com",
           target: "_self",
         },
         items: [
-          {
-            type: "doc",
-            docId: "introduction",
-            position: "left",
-            label: "Docs",
-          }
+          { to: "https://rilldata.com", position: "left", label: "Home" },
+          { to: "https://rilldata.com/product", position: "left", label: "Product" },
+          { to: "https://rilldata.com/apache-druid", position: "left", label: "Apache Druid" },
+          { to: "https://rilldata.com/team", position: "left", label: "Team" },
+          { to: "https://rilldata.com/blog", position: "left", label: "Blog" },
+          { to: "https://rilldata.com/try-free", position: "left", label: "Try for Free" }
         ],
       },
       footer: {
@@ -113,6 +113,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
+        additionalLanguages: ['java'],
       },
     }),
   

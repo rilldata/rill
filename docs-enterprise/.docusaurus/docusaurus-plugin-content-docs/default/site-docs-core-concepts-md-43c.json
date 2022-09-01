@@ -14,9 +14,15 @@
   "frontMatter": {
     "title": "🧰 Core Concepts",
     "slug": "core-concepts",
-    "excerpt": "Rill Cloud Console to manage data; Rill Explore to analyze & share",
-    "hidden": false,
-    "createdAt": "2020-10-23T00:23:06.366Z",
-    "updatedAt": "2022-07-13T20:12:40.733Z"
+    "excerpt": "Rill Cloud Console to manage data; Rill Explore to analyze & share"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "🔖 Introduction",
+    "permalink": "/"
+  },
+  "next": {
+    "title": "Process Batch Data",
+    "permalink": "/processing-batch-data"
   }
 }

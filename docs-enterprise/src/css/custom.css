@@ -26,6 +26,14 @@
   font-display: swap;
 }
 
+.sidebar-title {
+  color: var(--ifm-menu-color);
+  text-transform: uppercase;
+  padding: calc(3*var(--ifm-menu-link-padding-vertical)) var(--ifm-menu-link-padding-horizontal) 0 var(--ifm-menu-link-padding-horizontal);
+  font-weight: var(--ifm-font-weight-bold);
+  font-size: calc(var(--ifm-font-size-base)/1.15);
+}
+
 /* You can override the default Infima variables here. */
 :root {
   --ifm-color-primary: #1E78FA;
