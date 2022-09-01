@@ -199,8 +199,8 @@ jobs:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
       before_install:
-        - echo "Installing python 3 and gsutil"
-        - choco install python3 gsutil
+        - echo "Installing python 3 and gcloud/gsutil"
+        - choco install python3 gcloudsdk gsutil
 
       install: *npm-install
       script: *build-vercel-pkg
