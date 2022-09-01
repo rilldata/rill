@@ -70,7 +70,7 @@
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:send={{ key: "leaderboard-metric", y: 8 }}
+      in:send={{ key: "leaderboard-metric" }}
     >
       <div>Dimension Leaders by</div>
 
@@ -87,7 +87,7 @@
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:receive={{ key: "loading-leaderboard-metric", y: 8 }}
+      in:receive={{ key: "loading-leaderboard-metric" }}
     >
       pulling leaderboards <Spinner status={EntityStatus.Running} />
     </div>
