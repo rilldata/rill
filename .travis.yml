@@ -31,7 +31,7 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-      if: tag IS present
+      if: tag IS NOT present
 
       # in order to achieve npm ci (clean install) delete the travis cache.
       install: &npm-install
@@ -61,7 +61,7 @@ jobs:
 
     - stage: Test
       name: "Verify docker build"
-      if: tag IS present
+      if: tag IS NOT present
 
       install: docker --version
       script:
@@ -73,7 +73,7 @@ jobs:
       language: java
       jdk: openjdk17
       name: "Run SQL lib tests"
-      if: tag IS present
+      if: tag IS NOT present
       install:
         - PROTOC_ZIP=protoc-21.5-linux-x86_64.zip
         - curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v21.5/$PROTOC_ZIP
@@ -129,7 +129,7 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Mac os binary"
-      #if: tag IS present #for testing
+      if: tag IS present
       os: osx
       osx_image: xcode13.4
       addons:
@@ -160,7 +160,7 @@ jobs:
         - gcloud config set project rilldata
         - if [ ${TRAVIS_OS_NAME} == "osx" ]; then gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill; fi
         - if [ ${TRAVIS_OS_NAME} == "linux" ]; then gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill; fi
-        - if [ ${TRAVIS_OS_NAME} == "windows" ]; then gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill; fi    
+        - #if [ ${TRAVIS_OS_NAME} == "windows" ]; then gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill; fi    
         - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
 
       deploy: &deploy-vercel-pkg
@@ -178,7 +178,7 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Linux binary"
-      #if: tag IS present
+      if: tag IS present
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
@@ -193,7 +193,7 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Windows binary"
-      #if: tag IS present #testing
+      if: tag IS present #testing
       os: windows
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
