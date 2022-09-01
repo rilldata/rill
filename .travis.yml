@@ -193,7 +193,7 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Windows binary"
-      if: tag IS present #testing
+      if: tag IS present
       os: windows
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
