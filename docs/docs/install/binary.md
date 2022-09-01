@@ -1,5 +1,9 @@
 # Using a Rill binary
-Our binary is the fastest path to installing Rill Developer. Download the latest package that is relevant for your OS and architecture:
+Our binary is the fastest path to installing Rill Developer. The easiest way to install it is using our script:
+```
+curl -s https://cdn.rilldata.com/install.sh | bash
+```
+Alternatively you can manually download the latest binary that is relevant for your OS and architecture:
 
 - [macos-arm64](https://cdn.rilldata.com/rill/latest/macos-arm64/rill)
 - [macos-x64](https://cdn.rilldata.com/rill/latest/macos-x64/rill)
