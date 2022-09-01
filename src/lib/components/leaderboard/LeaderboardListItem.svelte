@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { slide, fly } from "svelte/transition";
   import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
+  import { fly, slide } from "svelte/transition";
   export let value: number; // should be between 0 and 1.
   export let color = "bg-blue-200";
   export let isActive = false;
