@@ -131,6 +131,11 @@ jobs:
       name: "Build & Publish Mac os binary"
       if: tag IS present
       os: osx
+      osx_image: xcode13.4
+      addons:
+        homebrew:
+          casks:
+          - google-cloud-sdk
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
@@ -147,16 +152,16 @@ jobs:
         - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
 
         - echo "version=${TRAVIS_TAG}" > metadata.txt
-        - echo "build_url=${TRAVIS_BUILD_WEB_URL} >> metadata.txt
-        - echo "sha=$(git rev-parse) >> metadata.txt
+        - echo "build_url=${TRAVIS_BUILD_WEB_URL}" >> metadata.txt
+        - echo "sha=$(git rev-parse)" >> metadata.txt
 
         - echo ${GCP_TOKEN} > gcp.json
         - gcloud auth activate-service-account --key-file gcp.json
         - gcloud config set project rilldata
-        - gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill
-        - gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill
-        - gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill
-        - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
+        - if [ ${TRAVIS_OS_NAME} == "osx" ]; then gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill; fi
+        - if [ ${TRAVIS_OS_NAME} == "linux" ]; then gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill; fi
+        - # if [ ${TRAVIS_OS_NAME} == "windows" ]; then gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill; fi    
+        - if [ ${TRAVIS_OS_NAME} != "windows" ]; then gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/; fi
 
       deploy: &deploy-vercel-pkg
         provider: releases
@@ -181,7 +186,7 @@ jobs:
         - echo "Installing python 3.7.0 needed during npm install"
         - pyenv install 3.7.0
         - pyenv global 3.7.0
-      #before_install: *python-setup
+      # before_install: *python-setup
       install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
@@ -194,8 +199,8 @@ jobs:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
       before_install:
-        - echo "Installing python 3"
-        - choco install python3
+        - echo "Installing python 3 and gcloud/gsutil"
+        - choco install python3 gcloudsdk gsutil
 
       install: *npm-install
       script: *build-vercel-pkg
