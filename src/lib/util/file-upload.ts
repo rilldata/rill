@@ -1,9 +1,4 @@
-import {
-  extractFileExtension,
-  getTableNameFromFile,
-} from "$lib/util/extract-table-name";
-import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
-import notifications from "$lib/components/notifications";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   dataModelerService,
   DuplicateActions,
@@ -11,9 +6,14 @@ import {
   duplicateSourceName,
 } from "$lib/application-state-stores/application-store";
 import { importOverlayVisible } from "$lib/application-state-stores/layout-store";
+import notifications from "$lib/components/notifications";
 import { sourceUpdated } from "$lib/redux-store/source/source-apis";
+import { FILE_EXTENSION_TO_TABLE_TYPE } from "$lib/types";
+import {
+  extractFileExtension,
+  getTableNameFromFile,
+} from "$lib/util/extract-table-name";
 import { fetchWrapper } from "$lib/util/fetchWrapper";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 /**
  * uploadTableFiles

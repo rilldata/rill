@@ -7,7 +7,6 @@ import type { SocketNotificationService } from "$common/socket/SocketNotificatio
 import { FileActionsController } from "$server/controllers/FileActionsController";
 import { MetricsDefinitionController } from "$server/controllers/MetricsDefinitionController";
 import { MetricsDimensionController } from "$server/controllers/MetricsDimensionController";
-import { MetricsExplorerController } from "$server/controllers/MetricsExplorerController";
 import { MetricsMeasureController } from "$server/controllers/MetricsMeasureController";
 import { SocketServer } from "$server/SocketServer";
 import bodyParser from "body-parser";
@@ -16,6 +15,7 @@ import express from "express";
 import fileUpload from "express-fileupload";
 import { existsSync, mkdirSync } from "fs";
 import http from "http";
+import { MetricViewController } from "$server/controllers/MetricViewController";
 import { TelemetryController } from "$server/controllers/TelemetryController";
 
 const STATIC_FILES = `${__dirname}/../../build`;
@@ -94,7 +94,7 @@ export class ExpressServer {
       MetricsDefinitionController,
       MetricsDimensionController,
       MetricsMeasureController,
-      MetricsExplorerController,
+      MetricViewController,
       TelemetryController,
     ].forEach((MetricsControllerClass) =>
       new MetricsControllerClass(

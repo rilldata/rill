@@ -174,11 +174,12 @@
       {/each}
     {/if}
   </div>
-  <RenameEntityModal
-    entityType={EntityType.Table}
-    openModal={showRenameTableModal}
-    closeModal={() => (showRenameTableModal = false)}
-    entityId={renameTableID}
-    currentEntityName={renameTableName}
-  />
+  {#if showRenameTableModal}
+    <RenameEntityModal
+      entityType={EntityType.Table}
+      closeModal={() => (showRenameTableModal = false)}
+      entityId={renameTableID}
+      currentEntityName={renameTableName}
+    />
+  {/if}
 {/if}

@@ -42,38 +42,36 @@ export class DuckDBClient {
     }
 
     if (this.runtimeProcess) {
-      throw Error("Already spawned runtime")
+      throw Error("Already spawned runtime");
     }
 
     const httpPort = this.databaseConfig.spawnRuntimePort;
     const grpcPort = httpPort + 1000; // Hack to prevent port collision when spawning many runtimes
 
-    this.runtimeProcess = spawn(
-      "./dist/runtime/runtime",
-      [],
-      {
-        env: {
-          ...process.env,
-          RILL_RUNTIME_ENV: "production",
-          RILL_RUNTIME_LOG_LEVEL: "warn",
-          RILL_RUNTIME_HTTP_PORT: httpPort.toString(),
-          RILL_RUNTIME_GRPC_PORT: grpcPort.toString(),
-        },
-        stdio: "inherit",
-        shell: true,
-      }
-    );
+    this.runtimeProcess = spawn("./dist/runtime/runtime", [], {
+      env: {
+        ...process.env,
+        RILL_RUNTIME_ENV: "production",
+        RILL_RUNTIME_LOG_LEVEL: "warn",
+        RILL_RUNTIME_HTTP_PORT: httpPort.toString(),
+        RILL_RUNTIME_GRPC_PORT: grpcPort.toString(),
+      },
+      stdio: "inherit",
+      shell: true,
+    });
 
     this.runtimeProcess.on("exit", (code) => {
       process.exit(code);
-    })
+    });
 
-    await asyncWaitUntil(() => isPortOpen(this.databaseConfig.spawnRuntimePort));
+    await asyncWaitUntil(() =>
+      isPortOpen(this.databaseConfig.spawnRuntimePort)
+    );
   }
 
   protected async connectRuntime() {
     if (this.instanceID) {
-      throw Error("Already connected to runtime")
+      throw Error("Already connected to runtime");
     }
 
     let databaseName = this.databaseConfig.databaseName;
@@ -82,8 +80,8 @@ export class DuckDBClient {
     }
 
     const res = await this.request("/v1/instances", {
-      "driver": "duckdb",
-      "dsn": databaseName,
+      driver: "duckdb",
+      dsn: databaseName,
     });
 
     this.instanceID = res["instanceId"];
@@ -95,7 +93,10 @@ export class DuckDBClient {
       LOAD 'parquet';
     `);
 
-    await this.execute("PRAGMA threads=32;PRAGMA log_query_path='./log';", false);
+    await this.execute(
+      "PRAGMA threads=32;PRAGMA log_query_path='./log';",
+      false
+    );
   }
 
   public execute<Row = Record<string, unknown>>(
@@ -110,13 +111,15 @@ export class DuckDBClient {
         sql: query,
         priority: 0,
         dry_run: dry_run,
-      }).then((data) => {
-        this.offCallback?.();
-        resolve(data["data"]);
-      }).catch((err) => {
-        if (log) console.error(err);
-        reject(err);
-      });
+      })
+        .then((data) => {
+          this.offCallback?.();
+          resolve(data["data"]);
+        })
+        .catch((err) => {
+          if (log) console.error(err);
+          reject(err);
+        });
     });
   }
 
@@ -140,7 +143,7 @@ export class DuckDBClient {
       body: JSON.stringify(data),
     });
 
-    const json = await res.json()
+    const json = await res.json();
     if (!res.ok) {
       const msg = json["message"];
       const err = new Error(msg);
@@ -149,5 +152,4 @@ export class DuckDBClient {
 
     return json;
   }
-
 }
