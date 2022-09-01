@@ -1,7 +1,3 @@
-<script context="module">
-  let activatedOverlays = 0;
-</script>
-
 <script>
   import Portal from "$lib/components/Portal.svelte";
   import { fade } from "svelte/transition";
