@@ -5,32 +5,30 @@
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-  $: measures = getMeasuresByMetricsId(metricsDefId);
-  $: dimensions = getDimensionsByMetricsId(metricsDefId);
+  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
 
   export let metricsDefId: string;
 
-  let tooltipText = "";
+  // query the `/meta` endpoint to get the valid measures and dimensions
+  $: metaQuery = useMetaQuery(metricsDefId);
+  $: measures = $metaQuery.data?.measures;
+  $: dimensions = $metaQuery.data?.dimensions;
+
+  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+
   let buttonDisabled = true;
   let buttonStatus = "OK";
   $: if (
     $selectedMetricsDef?.sourceModelId === undefined ||
     $selectedMetricsDef?.timeDimension === undefined
   ) {
-    tooltipText = "";
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
-  } else if ($measures.length === 0 || $dimensions.length === 0) {
-    tooltipText = "";
+  } else if (measures?.length === 0 || dimensions?.length === 0) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
   } else {
-    tooltipText = undefined;
     buttonDisabled = false;
   }
 </script>

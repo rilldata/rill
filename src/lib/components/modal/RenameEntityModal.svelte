@@ -1,31 +1,21 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import Input from "$lib/components/Input.svelte";
-  import {
-    Modal,
-    ModalAction,
-    ModalActions,
-    ModalContent,
-    ModalTitle,
-  } from "$lib/components/modal";
   import notifications from "$lib/components/notifications/";
   import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "$lib/redux-store/store-root";
-
-  export let entityType:
-    | EntityType.Table
-    | EntityType.Model
-    | EntityType.MetricsDefinition;
-  export let openModal = false;
-  export let closeModal: () => void;
+  import { Dialog } from ".";
   export let entityId = null;
-  export let currentEntityName = null;
 
-  let newAssetName = null;
-  let error = null;
+  export let closeModal;
+  export let entityType: EntityType;
+  export let currentEntityName: string;
+
+  let error: string;
+  let newAssetName = currentEntityName;
   let renameAction;
+
   let entityLabel: string;
   if (entityType === EntityType.Table) {
     renameAction = "updateTableName";
@@ -81,28 +71,27 @@
   };
 </script>
 
-<Modal open={openModal} onBackdropClick={() => resetVariablesAndCloseModal()}>
-  <ModalTitle>
-    rename <span class="text-gray-500 italic">{currentEntityName}</span>
-  </ModalTitle>
-  <ModalContent>
+<Dialog
+  compact
+  showCancel
+  disabled={newAssetName === null || currentEntityName === newAssetName}
+  on:cancel={resetVariablesAndCloseModal}
+  on:primary-action={() => submitHandler(entityId, newAssetName)}
+>
+  <svelte:fragment slot="title">Rename</svelte:fragment>
+  <svelte:fragment slot="body">
     <form
+      autocomplete="off"
       on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
     >
       <Input
+        claimFocusOnMount
         id="{entityLabel}-name"
         label="{entityLabel} name"
         bind:value={newAssetName}
         {error}
       />
     </form>
-  </ModalContent>
-  <ModalActions>
-    <ModalAction on:click={() => resetVariablesAndCloseModal()}>
-      cancel
-    </ModalAction>
-    <ModalAction primary on:click={() => submitHandler(entityId, newAssetName)}>
-      submit
-    </ModalAction>
-  </ModalActions>
-</Modal>
+  </svelte:fragment>
+  <svelte:fragment slot="primary-action-body">Change Name</svelte:fragment>
+</Dialog>

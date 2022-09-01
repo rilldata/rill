@@ -178,11 +178,12 @@
       </CollapsibleTableSummary>
     {/each}
   </div>
-  <RenameEntityModal
-    entityType={EntityType.Model}
-    openModal={showRenameModelModal}
-    closeModal={() => (showRenameModelModal = false)}
-    entityId={renameModelID}
-    currentEntityName={renameModelName}
-  />
+  {#if showRenameModelModal}
+    <RenameEntityModal
+      entityType={EntityType.Model}
+      closeModal={() => (showRenameModelModal = false)}
+      entityId={renameModelID}
+      currentEntityName={renameModelName.replace(".sql", "")}
+    />
+  {/if}
 {/if}

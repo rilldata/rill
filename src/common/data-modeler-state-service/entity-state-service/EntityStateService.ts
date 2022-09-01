@@ -119,6 +119,13 @@ export abstract class EntityStateService<
   ): Entity {
     return state.entities.find((entity) => entity[field] === value);
   }
+  public getManyByField<Field extends keyof Entity>(
+    field: Field,
+    value: Entity[Field],
+    state: State = this.getCurrentState()
+  ): Array<Entity> {
+    return state.entities.filter((entity) => entity[field] === value);
+  }
 
   public addEntity(
     draftState: State,

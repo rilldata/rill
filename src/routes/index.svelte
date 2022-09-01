@@ -2,7 +2,7 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     ApplicationStore,
-    config,
+    duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
   import {
     assetsVisible,
@@ -33,8 +33,6 @@
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
   import QuickStartDashboard from "$lib/components/overlay/QuickStartDashboard.svelte";
   import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
-  import { HttpStreamClient } from "$lib/http-client/HttpStreamClient";
-  import { store } from "$lib/redux-store/store-root";
   import { getContext } from "svelte";
   import AssetsSidebar from "./_surfaces/assets/index.svelte";
   import InspectorSidebar from "./_surfaces/inspector/index.svelte";
@@ -71,8 +69,6 @@
   $: persistentExportedModel = $persistentModelStore?.entities?.find(
     (model) => model.id === derivedExportedModel?.id
   );
-
-  HttpStreamClient.create(`${config.server.serverUrl}/api`, store.dispatch);
 
   /** Workaround for hiding inspector for now. Post July 19 2022 we will remove this
    * in favor of ironing out more modular routing and suface management.
@@ -124,7 +120,9 @@
   <FileDrop bind:showDropOverlay />
 {/if}
 
-<DuplicateSource />
+{#if $duplicateSourceName !== null}
+  <DuplicateSource />
+{/if}
 
 <div
   class="index-body absolute w-screen h-screen bg-gray-100"

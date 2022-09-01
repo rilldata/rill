@@ -12,7 +12,6 @@ src/server/scratch/
 server/venv/
 tsc-tmp/
 export/
-.idea
 .vscode
 /temp
 /tmp
@@ -36,8 +35,22 @@ export/
 
 # generated content
 log
+profile.log
 saved-state.json
 last-query-output.json
 staging-databases
 projects/
-rilldata
+/rilldata
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# IntelliJ
+.idea
+*.ipr
+*.iml
+*.iws

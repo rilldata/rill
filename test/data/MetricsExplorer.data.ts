@@ -1,6 +1,6 @@
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
 import type { TimeSeriesMeasureRange } from "../utils/time-series-helpers";
 import { getTimeRange } from "../utils/time-series-helpers";
 
@@ -9,7 +9,7 @@ export interface MetricsExplorerTestDataType {
 
   // request arguments
   measures?: Array<number>;
-  filters?: ActiveValues;
+  filters?: MetricViewRequestFilter;
   timeRange?: TimeSeriesTimeRange;
 
   // assert arguments
@@ -81,7 +81,13 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
     timeRange: getTimeRange(PreviewRollupInterval.month),
     previewRollupInterval: PreviewRollupInterval.month,
     filters: {
-      domain: [["sports.yahoo.com", true]],
+      include: [
+        {
+          name: "domain",
+          values: ["sports.yahoo.com"],
+        },
+      ],
+      exclude: [],
     },
     measureRanges: [
       { impressions: [3500, 4500], bid_price: [3, 4] },
@@ -101,7 +107,13 @@ export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [
     timeRange: getTimeRange(PreviewRollupInterval.month, "2022-02-01"),
     previewRollupInterval: PreviewRollupInterval.month,
     filters: {
-      publisher: [["Yahoo", false]],
+      include: [],
+      exclude: [
+        {
+          name: "publisher",
+          values: ["Yahoo"],
+        },
+      ],
     },
     measures: [1],
     measureRanges: [{ bid_price: [2.5, 3] }, { bid_price: [3, 3.5] }],

@@ -6,6 +6,7 @@ build/
 build-tools/
 dist/
 node_modules/
+runtime/
 scripts/
 state/
 static/
@@ -19,6 +20,9 @@ temp/
 *.parquet
 .travis.yml
 .DS_Store
+buf.lock
+go.mod
+go.sum
 
 log
 *.log
@@ -28,6 +32,9 @@ Dockerfile
 Duckdb-Dockerfile
 README.md
 docs
+
+# Java SQL lib
+sql/
 
 # FIXME: temporary
 test/data/HistogramSummary.data.ts
