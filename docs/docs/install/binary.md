@@ -35,7 +35,6 @@ If you see a warning "SmartScreen protected an unrecognized app from starting", 
 - Click the checkbox next to Unblock so that a checkmark appears.
 - Click Apply.
 
-
   </TabItem>
   <TabItem label="Linux" value="linux">
 
@@ -52,4 +51,3 @@ rill init
 rill import-source /path/to/data_1.parquet
 rill start
 ```
-
