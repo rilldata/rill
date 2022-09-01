@@ -17,7 +17,7 @@ It's best to show and not tell, so here's a little preview of Rill Developer:
 You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 ## Pick an install option:
-Our binary is the fastest way to install Rill Developer on Mac or Linux, you can install it using our script:
+Our binary script is the fastest way to install Rill Developer on Mac or Linux. You can install it using this command:
 
 - [script](https://docs.rilldata.com/install/binary) : run `curl -s https://cdn.rilldata.com/install.sh | bash` and you are ready to start using the Rill [CLI](https://docs.rilldata.com/cli).
 

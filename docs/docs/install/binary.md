@@ -1,5 +1,5 @@
 # Using a Rill binary
-Our binary is the fastest path to installing Rill Developer. The easiest way to install it is using our script:
+Our binary script is the fastest path to installing Rill Developer. Use this command to get started:
 ```
 curl -s https://cdn.rilldata.com/install.sh | bash
 ```
@@ -12,8 +12,8 @@ Alternatively you can manually download the latest binary that is relevant for y
 
 _Note: Rill is temporarily unavailable on Windows. We're working on bringing Rill back to Windows soon._
 
-## CLI commands
-To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands.
+## Nuance for manually download binaries
+Installing the Rill binary manually doesn't give you the ablity to use Rill globally. Instead, you should open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands as expected.
 ```
 cd downloads
 rill init
