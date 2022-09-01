@@ -131,6 +131,11 @@ jobs:
       name: "Build & Publish Mac os binary"
       if: tag IS present
       os: osx
+      addons:
+        homebrew:
+          packages:
+          - google-cloud-sdk
+          update: true
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
@@ -146,6 +151,18 @@ jobs:
         - echo "Building vercel/pkg binary"
         - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
 
+        - echo "version=${TRAVIS_TAG}" > metadata.txt
+        - echo "build_url=${TRAVIS_BUILD_WEB_URL}" >> metadata.txt
+        - echo "sha=$(git rev-parse)" >> metadata.txt
+
+        - echo ${GCP_TOKEN} > gcp.json
+        - gcloud auth activate-service-account --key-file gcp.json
+        - gcloud config set project rilldata
+        - gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill
+        - gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill
+        - gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill
+        - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
+        
       deploy: &deploy-vercel-pkg
         provider: releases
         api_key: ${GITHUB_TOKEN}
