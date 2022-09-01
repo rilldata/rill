@@ -161,7 +161,7 @@ jobs:
         - if [ ${TRAVIS_OS_NAME} == "osx" ]; then gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill; fi
         - if [ ${TRAVIS_OS_NAME} == "linux" ]; then gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill; fi
         - # if [ ${TRAVIS_OS_NAME} == "windows" ]; then gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill; fi    
-        - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
+        - if [ ${TRAVIS_OS_NAME} != "windows" ]; then gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/; fi
 
       deploy: &deploy-vercel-pkg
         provider: releases
