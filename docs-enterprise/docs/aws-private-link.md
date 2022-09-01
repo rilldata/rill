@@ -12,7 +12,7 @@ The choice between Transit Gateway, VPC peering, and AWS PrivateLink is dependen
 ## AWS Private Link
 
 We can create a AWS Network Load Balancer and configure it to serve various services such as Kafka or any other HTTP service.
-![](https://files.readme.io/aaf59da-VPC_Sharing.png)
+![](https://images.contentful.com/ve6smfzbifwz/45kXT87VvGxRUW5sDRMR33/9203c3ef094fdc0308cca904a5603088/aaf59da-VPC_Sharing.png)
 ### Using Cloudformation Console
 
 1. Open AWS Cloudformation to create a new Stack. 
@@ -20,17 +20,17 @@ https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/crea
 
 2. Use Amazon S3 URL: 
 `https://s3.amazonaws.com/cf-templates.rilldata.com/rilldata-private-link.yaml`
-![](https://files.readme.io/753e584-Screen_Shot_2020-09-22_at_1.01.07_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/8i5a5zwLQGShNLCwS2n0j/dd5853d08892263cab345434a32fd6d9/753e584-Screen_Shot_2020-09-22_at_1.01.07_AM.png)
 3. Specify stack details
   * **Stack Name**: `rilldata-privatelink`
   * **AccountId**: RillData AWS Account ID. 
   * **NlbArn**: Arn of Network Load Balancer (Internal) through which we can share the internal Endpoints
-![](https://files.readme.io/4f20089-Screen_Shot_2020-09-22_at_12.49.51_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/4IXumXaYyUTwajFe5OnRHM/12e94687d489971958c3a74210a6fe41/4f20089-Screen_Shot_2020-09-22_at_12.49.51_AM.png)
 4. Click Next, Again Next, Acknowledge the Capabilities and Create the Stack.
 5. You can check the events and it should create the resources for you.
-![](https://files.readme.io/09f200a-Screen_Shot_2020-09-22_at_12.53.03_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/3AxFqm09Q6tPh1dzb72W2k/a4623bf93afb285c61712d94d8b9f5a4/09f200a-Screen_Shot_2020-09-22_at_12.53.03_AM.png)
 6. Share the Outputs with Rill Data
-![](https://files.readme.io/3a1fb14-Screen_Shot_2020-09-22_at_1.05.25_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/2TJ6khfcxtMZCz6StFWW8q/14e16933c735731002975bcdabef30a5/3a1fb14-Screen_Shot_2020-09-22_at_1.05.25_AM.png)
 #### CloudFormation Template Reference
 
 We would be using the following Cloudformation Template.

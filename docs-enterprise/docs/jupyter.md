@@ -13,7 +13,7 @@ To authenticate via Jupyter, you will need to use either an [API Password](/api-
 You can post a request to Druid using `requests.post()`.
 
 Copy the Jupyter URL from the Integrations page in RCC. 
-![](https://files.readme.io/2b3b3b3-Screen_Shot_2021-07-01_at_11.17.47_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/79PBlzxgWErULHTBF5DXN7/3ca1b3e4917456644d875737ac74dbe4/2b3b3b3-Screen_Shot_2021-07-01_at_11.17.47_AM.png)
 In the example below, **my_database** is an example source and the host url has been in the **database_url** variable. **Username** and **API password** would be passed as well.
 
 ```python title="Python"

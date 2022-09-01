@@ -13,11 +13,11 @@ excerpt: "Integrating Rill with Looker"
 ### Add a connection for your Rill workspace
 1. Go to Looker and choose Admin -> Connections. 
 2. Fill in the Connections modal as follows:
-![](https://files.readme.io/3d5bfd8-looker.png)
+![](https://images.contentful.com/ve6smfzbifwz/QxfGwygyMxlmW8wIPXiui/12f28efef722cce06e33156cfeacf7ee/3d5bfd8-looker.png)
   * **Name:** Enter a descriptive name for your connection
   * **Dialect:** Select Apache Druid 0.18+
   * **Remote Host Port: ** Add your Remote Host connection string from the Integrations page in RCC. Then type the number 443.
-![](https://files.readme.io/c519ce5-Screen_Shot_2021-07-01_at_11.17.01_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/2V9LlWyR7QoY3I2Ziky1KW/db8b256512b9148800131641e897df9a/c519ce5-Screen_Shot_2021-07-01_at_11.17.01_AM.png)
   * **Database:** Enter druid
   * **Enter Username/Password:** Enter either your Rill username and your API password or your service account and service account password, as described above.
   * **SSL:** keep this box checked

@@ -10,7 +10,7 @@ slug: "superset"
   * DISPLAY NAME: Enter a descriptive name for your connection
   * SQLALCHEMY URI: Copy the Superset SQLAlchemy URI from the Integrations page in RCC and paste it into the SQLALCHEMY URI field. 
   * Replace the username/password in the image with your username and API password. 
-  ![](https://files.readme.io/f17e194-Screen_Shot_2021-07-01_at_11.18.44_AM.png)
+  ![](https://images.contentful.com/ve6smfzbifwz/3kE2qxTa3mmzQA6SjKqxIK/039d5ecab2ecfc806cbc895b030469ca/f17e194-Screen_Shot_2021-07-01_at_11.18.44_AM.png)
  3. Click Test Connection. If the connection works, you will see a "Connection Looks Good!" message appear.
  4. Click Connect to save the connection
 

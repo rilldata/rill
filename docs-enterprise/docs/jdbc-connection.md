@@ -12,7 +12,7 @@ To authenticate via a JDBC connection, you will need to use either an [API Passw
 1. Download the [Avatica JDBC driver](https://calcite.apache.org/avatica/downloads/), version 1.17.0 or later. Note that as of the time of this writing, Avatica 1.17.0, the latest version, does not support passing connection string parameters from the URL to Druid, so you must pass them using a Properties object.
 2. Add the Avatica client jar to your class path.
 3. Copy the JDBC Connection URL from the Integrations page in RCC. In the example below, this url has been used in the database_url variable.
-![](https://files.readme.io/a684bdb-Screen_Shot_2021-07-01_at_11.12.25_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/3O2fyAFUOMfeEIBeUX7JGL/843b359d27ae75a3229e139ee7825c92/a684bdb-Screen_Shot_2021-07-01_at_11.12.25_AM.png)
 4. To authenticate, in your code you will supply either your username and API password or service account and service account password, as described above.
 
 

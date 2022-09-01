@@ -12,7 +12,7 @@ To create a service account:
   - Select the Workspace to create the Service Account within (*Public in the example below*)
   - Select `Users`
   - Select `Add Service Account`
-    ![](https://files.readme.io/ade0381-Screen_Shot_2021-06-17_at_9.46.45_AM.png)
+    ![](https://images.contentful.com/ve6smfzbifwz/4EGgTfCsJgKDwQlxNzsdfr/a31c91da011337878483b2a015c8a20b/ade0381-Screen_Shot_2021-06-17_at_9.46.45_AM.png)
   - Enter a name and password. Make sure the Service Account remains an Admin user. 
 
 

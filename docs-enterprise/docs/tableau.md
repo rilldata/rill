@@ -24,9 +24,9 @@ excerpt: "Integrating Rill with Tableau"
 ### Launch Tableau (version 2018.3 or later)
 1. Launch Tableau and choose Other databases (JDBC). If you have never used this before, you'll find it under More->Other databases (JDBC).
 2. Fill in the Other Databases (JDBC) modal as follows: 
-![](https://files.readme.io/9a83bff-tableau.png)
+![](https://images.contentful.com/ve6smfzbifwz/HfMHwXwK8cSkWuViGyCKk/5a849c728cd54b5cbcf23ee2b2c8691d/9a83bff-tableau.png)
   * **URL:** Copy the Tableau JDBC URL from the Integrations page in RCC and paste it into the URL field of the Other Databases (JDBC) modal (*ws1.public used in the example below*) 
-![](https://files.readme.io/69659a3-Screen_Shot_2021-07-01_at_11.14.51_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/7z6ezdn9IGyP2jFINgsSFY/aebfaf1560042acd9410129c6105b9de/69659a3-Screen_Shot_2021-07-01_at_11.14.51_AM.png)
   * **Dialect:** SQL92
   * **Username/Password:** Enter either your Rill username and your API password or your service account and service account password, as described above.  
   * **Properties:** Leave the properties field blank.

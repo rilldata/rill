@@ -26,13 +26,13 @@ The first step is to create a security key you can use from Rill Data for access
 #### Create Key and Secret
 
 Select "+ Add Key" from the "Cloud API Keys" menu option and create a non-admin account.  Create a service account unique to accessing data from RillData and be sure to download and secure the client key and secret for use from RillData Druid Ingestion.
-![](https://files.readme.io/75eea87-ConfluentCloude_CreateKey.png)
+![](https://images.contentful.com/ve6smfzbifwz/5HiNL1sLTjHYiDS84JtE2x/b09301d098dcc607a6425f8195dd3823/75eea87-ConfluentCloude_CreateKey.png)
 
 It is recommended to create a unique service account, so your access control can be uniquely established for access from Rill Data into your Confluent Cloud Kafka Cluster.
-![](https://files.readme.io/bd80f25-ConfluentCloud_CreateServiceAccount.png)
+![](https://images.contentful.com/ve6smfzbifwz/1DOizo2ByONZ1Opi1HTqyR/56b664aff37ff383a9c2623e3275ba4a/bd80f25-ConfluentCloud_CreateServiceAccount.png)
 
 If you fail to download or lose the key/secret a new key/secret will need to be generated.
-![](https://files.readme.io/bd84278-ConfluentCloud_GetYourAPIKey.png)
+![](https://images.contentful.com/ve6smfzbifwz/3Lr9B7dkG7CxzA2RRyRda7/4a77770602887417ad3bf46e5239b534/bd84278-ConfluentCloud_GetYourAPIKey.png)
 
 #### Create Cluster API Access
 
@@ -40,12 +40,12 @@ Rill Data manages the Kafka topic offset internally, so the Apache Kafka Connect
 
 The best way to provide Rill access to your cluster is through Granular access with the above service account.  
 
-![](https://files.readme.io/8890a01-Cluster_API_access_CreateKey.png)
+![](https://images.contentful.com/ve6smfzbifwz/5Wz3N9flKfCXWnjRejEA7s/b7980aa50b952fcf81db88ded458f892/8890a01-Cluster_API_access_CreateKey.png)
 
-![](https://files.readme.io/29892a7-Cluster_API_access_CreateKey_existingAccount.png)
+![](https://images.contentful.com/ve6smfzbifwz/61NKrV83vKBztG9BWJBhNh/0697f50056dac8114b37212fc4818051/29892a7-Cluster_API_access_CreateKey_existingAccount.png)
 
 Ideally, using a topic-name prefix is preferred; since it minimizes the number of ACLs rules you need to create and manage for the API access key/secret. 
-![](https://files.readme.io/cf93955-Cluser_API_access_CreateKey_AddACLs.png)
+![](https://images.contentful.com/ve6smfzbifwz/5ddRH8fsCh4LOnYXkM4eh9/080acb7d04e2db38f6010d76f0c158c0/cf93955-Cluser_API_access_CreateKey_AddACLs.png)
 
 #### Data Ingestion
 
@@ -84,7 +84,7 @@ When connecting to a private Apache Kafka Cluster, accessibility and security ar
 When configuring your Kafka Cluster, ensure it can be accessible from the Rill by establishing a VPC. An example setup is shown via AWS Private Link below. AWS Private Link allows exposure of the Kafka brokers over Network Load Balancer using VPC Endpoints. The network packets always retain within the AWS Network.
 
 #### AWS Private Link
-![](https://files.readme.io/ab1c9f4-Data_Ingestion.png)
+![](https://images.contentful.com/ve6smfzbifwz/4H3Ftfisefdnmr9YpYPlGp/27bb4189246cbde3fa29e1a25effb809/ab1c9f4-Data_Ingestion.png)
 
 :::info AWS Private Link with Private DNS
 Kafka **EXTERNAL** advertised listeners should match the DNS name configured.

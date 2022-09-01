@@ -12,17 +12,17 @@ Starting in Rill, your workspace has a Google Service Account associated with it
 1. Find your Google Cloud Service Account by logging into Rill and clicking on Integrations. Your Google Cloud Service Account will be displayed. It will be of the form <organization\>-\<workspace\>@rilldata.iam.gserviceaccount.com. 
 
 2. Go to your Google Cloud Console and select the project to which you want to grant access. 
-  ![](https://files.readme.io/0fa73d4-Project_selector.png)
+  ![](https://images.contentful.com/ve6smfzbifwz/6QItw8AUlK7ACgoqbf0UpC/9a92c4ca0e1c68753f65660fa717c703/0fa73d4-Project_selector.png)
 
 3. Open the sidebar menu by clicking the 3 lines button in the top left, then choose IAM & Admin then click on IAM https://console.cloud.google.com/iam-admin/iam 
-  ![](https://files.readme.io/dc89c3c-iam_menu_selection.png)
+  ![](https://images.contentful.com/ve6smfzbifwz/5eMuGJMf6mx8cViZ94a8BJ/6160486e5898cec6d6ef41bcb7e1bda8/dc89c3c-iam_menu_selection.png)
 
 4. In the IAM menu click the ADD button. This will display a form where you can input the service accounts that can access your project and the permissions with which they can access it.
 
 5. In the New members field, enter your google service account, found in step 1.  
 
 6. Select the role `BigQuery Data Viewer`. This will permit Rill to fetch your projects tables into BigQuery.
-  ![](https://files.readme.io/b11ba7f-add_member.png)
+  ![](https://images.contentful.com/ve6smfzbifwz/5eMuGJMf6mx8cViZ94a8BJ/6160486e5898cec6d6ef41bcb7e1bda8/dc89c3c-iam_menu_selection.png)
 
 7. Click on save.
 
@@ -30,7 +30,7 @@ Starting in Rill, your workspace has a Google Service Account associated with it
 Now that you've given Rill permission to access your BigQuery data, you'll load your BigQuery dataset into Rill.
 
 1. Go to your BigQuery dataset, select the table you want to load, and click on Details to find the table id.  Copy the table id into your clipboard. You will use this table id when you load your data so save it away - either keep it in your clipboard or copy it into a document.
-![](https://files.readme.io/5ce7b0f-BigQuery_table_id.png)
+![](https://images.contentful.com/ve6smfzbifwz/3ixrM3Du9SgGqUXgQg8mka/e49a5cf7749f8b1cd2666d8883b081e7/5ce7b0f-BigQuery_table_id.png)
 
 1. **In Rill, click on `Druid Console`**
 

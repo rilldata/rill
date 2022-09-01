@@ -60,7 +60,7 @@ arn:aws:iam::248432388601:root
    ]
 }
 ```
-![](https://files.readme.io/a2fff1a-Screen_Shot_2020-09-11_at_5.22.23_PM.png)
+![](https://images.contentful.com/ve6smfzbifwz/5pQbl3HSlLZrHEkeikrCk0/e32fbac29841f7f7ef94a9c942a6111d/a2fff1a-Screen_Shot_2020-09-11_at_5.22.23_PM.png)
 
 #### Using CLI
 
@@ -84,19 +84,19 @@ https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/crea
 
 2. Use Amazon S3 URL: 
 `https://s3.amazonaws.com/cf-templates.rilldata.com/rilldata-s3-bucket-access.yaml`
-![](https://files.readme.io/6266ce4-Screen_Shot_2020-09-14_at_3.44.05_PM.png)
+![](https://images.contentful.com/ve6smfzbifwz/2PLlx4LviVGr8lDwSTMIn7/6b652cf3c578b34ea1f6b60e39b56ec4/6266ce4-Screen_Shot_2020-09-14_at_3.44.05_PM.png)
 
 3. Specify Stack Details
 ** Stack Name: `rilldata-s3-access`
 ** Bucket Name: Name of the bucket we want to provide access to.
-![](https://files.readme.io/01cef67-c2681ce-Screen_Shot_2020-06-03_at_12.46.58_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/6oyNvy8RYkxRNGEj04g33Z/0112a51eadd29ae3f165d70f4c6d325a/01cef67-c2681ce-Screen_Shot_2020-06-03_at_12.46.58_AM.png)
 
 4. Click Next, Again Next, Acknowledge the Capabilities and Create the Stack.
 5. You can check the events and it should create the resources for you.
-![](https://files.readme.io/209865b-f84093e-Screen_Shot_2020-06-03_at_1.21.47_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/2Klnft4rComRhVBQZOHKah/c2797be0657d535fd614a2e63f71b540/209865b-f84093e-Screen_Shot_2020-06-03_at_1.21.47_AM.png)
 
 6. Share the Outputs with Rill Data
-![](https://files.readme.io/3448175-00dea4a-Screen_Shot_2020-06-03_at_1.31.40_AM.png)
+![](https://images.contentful.com/ve6smfzbifwz/6ZwtzmCgUR5qduKnZjxL4r/bb09c4adea36e4107b26774957af96c8/3448175-00dea4a-Screen_Shot_2020-06-03_at_1.31.40_AM.png)
 
 ##### CloudFormation Template Reference
 

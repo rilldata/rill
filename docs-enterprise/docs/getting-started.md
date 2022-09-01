@@ -8,7 +8,7 @@ import Loom from '@site/src/components/Loom';
 ## Explore Overview
 
 Any metric or dimension in your Druid dataset is available for your Explore dashboards. In Explore, you can create a data source that divides those fields into any subset, transformation (via calculations, lookups, formatting), or re-ordering depending on your dashboard needs.
-![](https://files.readme.io/0414458-Explore_Overview.png)
+![](https://images.contentful.com/ve6smfzbifwz/1FFOZlkR6MlgoyFapErhzF/8dc89b283134f95446dc4c52f54b883f/0414458-Explore_Overview.png)
 
 :::info Default Dashboards
 By default, Rill creates a Staging dashboard which includes all Dimensions and Metrics in your data source which is then editable or can be leveraged to create customized views.",
@@ -46,16 +46,16 @@ Throughout the Dashboard, you are able to filter data including:
   * Adjusting timezones to troubleshoot global customer questions
 
 To filter dimension values, select the + next to the dashboard title or filter within a dimension table. You can search the list of dimension values to find a specific value if it does not appear in the list.
-![](https://files.readme.io/de9288f-Dim_Filter.png)
+![](https://images.contentful.com/ve6smfzbifwz/DHFqB2d6PTdsnaZe51wPa/42bae9410be66183173177f04ba6bbba/de9288f-Dim_Filter.png)
 
-![](https://files.readme.io/8e50202-Dim_Filter_Search.png)
+![](https://images.contentful.com/ve6smfzbifwz/tgGeuOUfv2Yd6qE4QOtGP/38cd24dc7e2b68780e35e9257044c406/8e50202-Dim_Filter_Search.png)
 ### Search
 Explore's search bar provides the ability to search all data for potential results and filtering. Search is useful for identifying all dimensions that contain a specific value or for quick filtering of a value in all places. 
 
 Search is the magnifying glass icon located in the top right.
-![](https://files.readme.io/9299736-Search_Bar.png)
+![](https://images.contentful.com/ve6smfzbifwz/23QAlhQp4IzRNwBSweKQad/d8a85bf89aa382466d444ae890cce280/9299736-Search_Bar.png)
 Search results cover all dimensions and return values across all dimensions or selected dimensions.
-![](https://files.readme.io/7ab968d-Search_Results.png)
+![](https://images.contentful.com/ve6smfzbifwz/4sh1MsdWmLvZbNrvWpigYu/550e8fb460a0fe08a28160ff7a200a2c/7ab968d-Search_Results.png)
 ### Chart Comparisons
 Dashboards provide the ability to compare dimensions to each other and across time to identify outliers and insights:
 
