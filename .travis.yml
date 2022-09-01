@@ -147,8 +147,8 @@ jobs:
         - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
 
         - echo "version=${TRAVIS_TAG}" > metadata.txt
-        - echo "build_url=${TRAVIS_BUILD_WEB_URL} >> metadata.txt
-        - echo "sha=$(git rev-parse) >> metadata.txt
+        - echo "build_url=${TRAVIS_BUILD_WEB_URL}" >> metadata.txt
+        - echo "sha=$(git rev-parse)" >> metadata.txt
 
         - echo ${GCP_TOKEN} > gcp.json
         - gcloud auth activate-service-account --key-file gcp.json
