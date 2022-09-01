@@ -38,16 +38,15 @@
   let showPreview = true;
 
   let currentModel: PersistentModelEntity;
+  $: activeEntityID = $store?.activeEntity?.id;
   $: currentModel =
-    $store?.activeEntity && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find(
-          (q) => q.id === $store.activeEntity.id
-        )
+    activeEntityID && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
   let currentDerivedModel: DerivedModelEntity;
   $: currentDerivedModel =
-    $store?.activeEntity && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === $store.activeEntity.id)
+    activeEntityID && $derivedModelStore?.entities
+      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
       : undefined;
 
   // track innerHeight to calculate the size of the editor element.
