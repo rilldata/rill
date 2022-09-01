@@ -90,7 +90,7 @@ public class SqlNodeProtoBuilder
     // handle select list
     sqlSelectBuilder.setSelectList(handleSqlNodeList(sqlSelect.getSelectList()));
     // handle from
-    if (sqlSelect.getFrom()  != null) {
+    if (sqlSelect.getFrom() != null) {
       sqlSelectBuilder.setFrom(handleSqlNode(sqlSelect.getFrom()));
     }
     // handle where clause
