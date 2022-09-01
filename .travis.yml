@@ -133,7 +133,7 @@ jobs:
       os: osx
       addons:
         homebrew:
-          packages:
+          casks:
           - google-cloud-sdk
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
