@@ -159,9 +159,8 @@ jobs:
         - gcloud auth activate-service-account --key-file gcp.json
         - gcloud config set project rilldata
         - gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill
-        - gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill
-        - gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill
         - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
+
       deploy: &deploy-vercel-pkg
         provider: releases
         api_key: ${GITHUB_TOKEN}
@@ -177,7 +176,7 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Linux binary"
-      if: tag IS present
+      #if: tag IS present
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
@@ -188,19 +187,29 @@ jobs:
       #before_install: *python-setup
       install: *npm-install
       script: *build-vercel-pkg
+        - echo ${GCP_TOKEN} > gcp.json
+        - gcloud auth activate-service-account --key-file gcp.json
+        - gcloud config set project rilldata
+        - gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill
+        
       deploy: *deploy-vercel-pkg
 
     - stage: Release
       name: "Build & Publish Windows binary"
-      if: tag IS present
+      #if: tag IS present
       os: windows
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
       before_install:
-        - echo "Installing python 3"
-        - choco install python3
+        - echo "Installing python 3 and gcloud"
+        - choco install python3 gcloudsdk
 
       install: *npm-install
       script: *build-vercel-pkg
+        - echo ${GCP_TOKEN} > gcp.json
+        - gcloud auth activate-service-account --key-file gcp.json
+        - gcloud config set project rilldata
+        - gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill
+
       deploy: *deploy-vercel-pkg
