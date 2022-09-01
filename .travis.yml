@@ -129,7 +129,7 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Mac os binary"
-      if: tag IS present
+      #if: tag IS present #for testing
       os: osx
       addons:
         homebrew:
