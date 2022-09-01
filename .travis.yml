@@ -131,6 +131,7 @@ jobs:
       name: "Build & Publish Mac os binary"
       #if: tag IS present #for testing
       os: osx
+      osx_image: xcode13.4
       addons:
         homebrew:
           casks:
@@ -157,7 +158,9 @@ jobs:
         - echo ${GCP_TOKEN} > gcp.json
         - gcloud auth activate-service-account --key-file gcp.json
         - gcloud config set project rilldata
-        - gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill
+        - if [ ${TRAVIS_OS_NAME} == "osx" ]; then gsutil cp rilldata/rill-macos-x64 gs://prod-cdn.rilldata.com/rill/latest/macos-x64/rill; fi
+        - if [ ${TRAVIS_OS_NAME} == "linux" ]; then gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill; fi
+        - if [ ${TRAVIS_OS_NAME} == "windows" ]; then gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill; fi      
         - gsutil cp metadata.txt gs://prod-cdn.rilldata.com/rill/latest/
 
       deploy: &deploy-vercel-pkg
@@ -185,13 +188,7 @@ jobs:
         - pyenv global 3.7.0
       #before_install: *python-setup
       install: *npm-install
-
-      script: &build-vercel-pkg
-        - echo ${GCP_TOKEN} > gcp.json
-        - gcloud auth activate-service-account --key-file gcp.json
-        - gcloud config set project rilldata
-        - gsutil cp rilldata/rill-linux-x64 gs://prod-cdn.rilldata.com/rill/latest/linux-x64/rill
-        
+      script: *build-vercel-pkg        
       deploy: *deploy-vercel-pkg
 
     - stage: Release
@@ -206,11 +203,5 @@ jobs:
         - choco install python3 gcloudsdk
 
       install: *npm-install
-
-      script: &build-vercel-pkg
-        - echo ${GCP_TOKEN} > gcp.json
-        - gcloud auth activate-service-account --key-file gcp.json
-        - gcloud config set project rilldata
-        - gsutil cp rilldata/rill-win-x64.exe gs://prod-cdn.rilldata.com/rill/latest/win-x64/rill
-
+      script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
