@@ -131,6 +131,7 @@ jobs:
       name: "Build & Publish Mac os binary"
       #if: tag IS present #for testing
       os: osx
+      osx_image: xcode13.3
       addons:
         homebrew:
           casks:
