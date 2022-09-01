@@ -31,7 +31,7 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-      if: tag IS NOT present
+      if: tag IS present
 
       # in order to achieve npm ci (clean install) delete the travis cache.
       install: &npm-install
@@ -61,7 +61,7 @@ jobs:
 
     - stage: Test
       name: "Verify docker build"
-      if: tag IS NOT present
+      if: tag IS present
 
       install: docker --version
       script:
@@ -73,7 +73,7 @@ jobs:
       language: java
       jdk: openjdk17
       name: "Run SQL lib tests"
-      if: tag IS NOT present
+      if: tag IS present
       install:
         - PROTOC_ZIP=protoc-21.5-linux-x86_64.zip
         - curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v21.5/$PROTOC_ZIP
@@ -135,7 +135,6 @@ jobs:
         homebrew:
           packages:
           - google-cloud-sdk
-          update: true
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
