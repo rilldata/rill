@@ -1,5 +1,4 @@
 import React from 'react';
-//44.06%
 
 export default function Loom({id, padding='56.25%'}) {
   const url = 'https://www.loom.com/embed/' + id;

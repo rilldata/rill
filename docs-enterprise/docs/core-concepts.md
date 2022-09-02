@@ -1,9 +1,10 @@
 ---
 title: "🧰 Core Concepts"
 slug: "core-concepts"
-excerpt: "Rill Cloud Console to manage data; Rill Explore to analyze & share"
 ---
+import Excerpt from '@site/src/components/Excerpt'
 
+<Excerpt text="Rill Cloud Console to manage data; Rill Explore to analyze & share"/>
 Rill enables you to leverage all the power of Druid with a serverless cloud service that is simple, secure, and elastic. Rill is designed to fit into your existing analytics ecosystem. You can read from a wide variety of streamed or batch data sources such as Kafka and Big Query, and you can perform analytics using industry standard tools such as Tableau and Looker.
 
 As such, this section introduces the core concepts related to managing your datasources, querying your data and terminology around application integration.

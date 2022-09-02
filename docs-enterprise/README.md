@@ -1,6 +1,6 @@
-# `docs/`
+# `docs-enterprise/`
 
-This folder contains docs for Rill, generated using [Docusaurus](https://docusaurus.io/) and deployed to [https://enterprise.rilldata.com](https://enterprise.rilldata.com).
+This folder contains docs for Rill Enterprise, generated using [Docusaurus](https://docusaurus.io/) and deployed to [https://enterprise.rilldata.com](https://enterprise.rilldata.com).
 
 ## Local development
 
