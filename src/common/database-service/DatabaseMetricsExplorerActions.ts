@@ -2,7 +2,7 @@ import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import type { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";
 import {
   getCoalesceExpressionForMeasures,
   getWhereClauseFromFilters,
@@ -21,12 +21,12 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     table: string,
     column: string,
     expression: string,
-    filters: MetricViewRequestFilter,
+    filters: MetricsViewRequestFilter,
     timestampColumn: string,
     timeRange?: TimeSeriesTimeRange
   ) {
     // remove filters for this specific dimension.
-    const isolatedFilters: MetricViewRequestFilter = {
+    const isolatedFilters: MetricsViewRequestFilter = {
       include: filters?.include.filter((filter) => filter.name !== column),
       exclude: filters?.exclude.filter((filter) => filter.name !== column),
     };
@@ -53,7 +53,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     table: string,
     measures: Array<BasicMeasureDefinition>,
-    filters: MetricViewRequestFilter,
+    filters: MetricsViewRequestFilter,
     timestampColumn: string,
     timeRange?: TimeSeriesTimeRange
   ): Promise<BigNumberResponse> {

@@ -6,9 +6,9 @@
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import {
-    invalidateMetricViewData,
+    invalidateMetricsViewData,
     useMetaQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  } from "$lib/svelte-query/queries/metrics-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
@@ -29,8 +29,8 @@
         metricsDefId,
       ]);
     } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
-      // FIXME: understand this logic before removing invalidateMetricViewData
-      invalidateMetricViewData(queryClient, metricsDefId);
+      // FIXME: understand this logic before removing invalidateMetricsViewData
+      invalidateMetricsViewData(queryClient, metricsDefId);
     }
     metricsExplorerStore.sync(metricsDefId, $metaQuery.data);
   }

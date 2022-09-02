@@ -1,8 +1,8 @@
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type {
-  MetricViewMetaResponse,
-  MetricViewRequestFilter,
-} from "$common/rill-developer-service/MetricViewActions";
+  MetricsViewMetaResponse,
+  MetricsViewRequestFilter,
+} from "$common/rill-developer-service/MetricsViewActions";
 import { removeIfExists } from "$common/utils/arrayUtils";
 import { Readable, writable } from "svelte/store";
 
@@ -25,7 +25,7 @@ export interface MetricsExplorerEntity {
   selectedMeasureIds: Array<string>;
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
-  filters: MetricViewRequestFilter;
+  filters: MetricsViewRequestFilter;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
 }
@@ -55,7 +55,7 @@ const updateMetricsExplorerById = (
 };
 
 const metricViewReducers = {
-  sync(id: string, meta: MetricViewMetaResponse) {
+  sync(id: string, meta: MetricsViewMetaResponse) {
     if (!id || !meta || !meta.measures) return;
     updateMetricsExplorerById(
       id,
