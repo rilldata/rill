@@ -8,7 +8,6 @@ import { store } from "$lib/redux-store/store-root";
 import { setApplicationActiveState } from "$lib/redux-store/application/application-slice";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { bootstrapMetricsDefinition } from "$lib/redux-store/metrics-definition/bootstrapMetricsDefinition";
-import { bootstrapMetricsExplorer } from "$lib/redux-store/explore/bootstrapMetricsExplorer";
 
 export const syncApplicationState = (appStore: ApplicationStore) => {
   appStore.subscribe(() => {
@@ -30,9 +29,10 @@ export const syncApplicationState = (appStore: ApplicationStore) => {
  * Based on the entity type we call the appropriate bootstrap to load related entities.
  */
 export const handleActiveEntityChange = (activeEntity: ActiveEntity) => {
-  if (activeEntity.type === EntityType.MetricsDefinition) {
+  if (
+    activeEntity.type === EntityType.MetricsDefinition ||
+    activeEntity.type === EntityType.MetricsExplorer
+  ) {
     store.dispatch(bootstrapMetricsDefinition(activeEntity.id));
-  } else if (activeEntity.type === EntityType.MetricsExplorer) {
-    store.dispatch(bootstrapMetricsExplorer(activeEntity.id));
   }
 };

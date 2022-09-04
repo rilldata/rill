@@ -6,7 +6,8 @@ import type {
 import type { EntityRecordMapType } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import type { AsyncThunk } from "@reduxjs/toolkit";
 import type { RillReduxState } from "$lib/redux-store/store-root";
-import { setExplorerIsStale } from "$lib/redux-store/explore/explore-slice";
+import { invalidateMetricView } from "$lib/svelte-query/queries/metric-view";
+import { queryClient } from "$lib/svelte-query/globalQueryClient";
 
 /**
  * Async thunk version that invalidates explorer.
@@ -72,7 +73,7 @@ export const invalidateExplorer = async <
       id
     );
     metricsExplorerIds.forEach((metricsExplorerId) =>
-      thunkAPI.dispatch(setExplorerIsStale(metricsExplorerId, true))
+      invalidateMetricView(queryClient, metricsExplorerId)
     );
   }
 };

@@ -17,6 +17,7 @@ import {
 import type { EntityState } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import { Throttler } from "$common/utils/Throttler";
+import path from "path";
 
 export class PersistentModelRepository extends EntityRepository<PersistentModelEntity> {
   private readonly saveDirectory: string;
@@ -64,6 +65,8 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
       this.filesForEntities.set(this.getFileName(entity), entity.id)
     );
 
+    const filesToBeRemoved = new Map<string, string>();
+
     // go through all current files.
     currentFiles.forEach((id, currentFile) => {
       // if a file has an entry in new map ignore it.
@@ -77,7 +80,10 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
       if (id) {
         // if the file has no entry in new map but has an id in currentFiles then remove the file.
         // this was a possible rename
-        unlinkSync(currentFilePath);
+        filesToBeRemoved.set(
+          path.parse(currentFile).name.toLowerCase(),
+          currentFilePath
+        );
       } else {
         // else this a file added from outside.
         // create a new model
@@ -99,6 +105,7 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
     });
     this.filesForEntities.forEach((id, fileName) => {
       if (currentFiles.has(fileName)) return;
+      const normalisedEntityName = path.parse(fileName).name.toLowerCase();
       if (this.previousFilesForEntities.get(fileName) === id) {
         // if current files is missing one of the entities then it is a possible delete.
         setTimeout(() => {
@@ -112,8 +119,17 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
           );
           // add a small timeout to make sure it runs after the sync ends
         }, 5);
+      } else if (filesToBeRemoved.has(normalisedEntityName)) {
+        this.renameFileToDifferentCase(
+          filesToBeRemoved.get(normalisedEntityName),
+          `${this.saveDirectory}/${fileName}`
+        );
+        filesToBeRemoved.delete(normalisedEntityName);
       }
     });
+    for (const fileToBeRemoved of filesToBeRemoved.values()) {
+      unlinkSync(fileToBeRemoved);
+    }
 
     return entityState;
   }
@@ -179,5 +195,15 @@ export class PersistentModelRepository extends EntityRepository<PersistentModelE
 
   protected async deleteEntity(id: string) {
     return this.dataModelerService.dispatch("deleteModel", [id]);
+  }
+
+  /**
+   * Treats file systems as case-sensitive to match model name.
+   * Removes old file and re adds new one to get around this.
+   */
+  private renameFileToDifferentCase(fromFileName: string, toFileName: string) {
+    const content = readFileSync(fromFileName).toString();
+    unlinkSync(fromFileName);
+    writeFileSync(toFileName, content);
   }
 }
