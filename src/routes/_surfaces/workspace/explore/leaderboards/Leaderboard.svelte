@@ -88,7 +88,7 @@
   ) {
     topListQuery = useTopListQuery(metricsDefId, dimensionId, {
       measures: [metricsExplorer?.leaderboardMeasureId],
-      limit: 10,
+      limit: 15,
       offset: 0,
       sort: [],
       time: {
