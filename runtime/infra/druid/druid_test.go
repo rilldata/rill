@@ -3,25 +3,86 @@ package druid
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 	"testing"
+	"time"
 
-	"github.com/jmoiron/sqlx"
-	"github.com/rilldata/rill/runtime/infra"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/rilldata/rill/runtime/infra"
 )
 
-const dataSourceName = "test_data"
+const testTable = "test_data"
 
-func TestIngestDataDruid(t *testing.T) {
-	dataJson := fmt.Sprintf(`{
+var testCSV = strings.TrimSpace(`
+id,timestamp,publisher,domain,bid_price
+5000,2022-03-18T12:25:58.074Z,Facebook,facebook.com,4.19
+9000,2022-03-15T11:17:23.530Z,Microsoft,msn.com,3.48
+10000,2022-03-02T04:00:56.643Z,Microsoft,msn.com,3.57
+11000,2022-01-16T00:26:44.770Z,,instagram.com,5.38
+12000,2022-01-17T08:55:09.270Z,,msn.com,1.34
+13000,2022-03-20T03:16:57.618Z,Yahoo,news.yahoo.com,1.05
+14000,2022-01-29T19:05:33.545Z,Google,news.google.com,4.54
+15000,2022-03-22T00:56:22.035Z,Yahoo,news.yahoo.com,1.13
+16000,2022-01-24T13:41:43.527Z,,instagram.com,1.78
+`)
+
+// TestDruid starts a Druid cluster using testcontainers, ingests data into it, then runs all other tests
+// in this file as sub-tests (to prevent spawning many clusters).
+func TestDruid(t *testing.T) {
+	ctx := context.Background()
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		Started: true,
+		ContainerRequest: testcontainers.ContainerRequest{
+			ExposedPorts: []string{"8081/tcp", "8082/tcp"},
+			WaitingFor:   wait.ForHTTP("/status/health").WithPort("8081"),
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:       ".",
+				Dockerfile:    "Dockerfile",
+				PrintBuildLog: true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer container.Terminate(ctx)
+
+	coordinatorURL, err := container.PortEndpoint(ctx, "8081/tcp", "http")
+	require.NoError(t, err)
+
+	t.Run("ingest", func(t *testing.T) { testIngest(t, coordinatorURL) })
+
+	brokerURL, err := container.PortEndpoint(ctx, "8082/tcp", "http")
+	require.NoError(t, err)
+
+	avaticaURL, err := url.JoinPath(brokerURL, "/druid/v2/sql/avatica-protobuf/")
+	require.NoError(t, err)
+
+	conn, err := driver{}.Open(avaticaURL)
+	require.NoError(t, err)
+
+	time.Sleep(30 * time.Second)
+
+	t.Run("count", func(t *testing.T) { testCount(t, conn) })
+	t.Run("max", func(t *testing.T) { testMax(t, conn) })
+	// Add new tests here
+
+	require.NoError(t, conn.Close())
+	require.Error(t, conn.(*connection).db.Ping())
+}
+
+func testIngest(t *testing.T, coordinatorURL string) {
+	escapedCSV := strings.ReplaceAll(testCSV, "\n", "\\n")
+	ingestSpec := fmt.Sprintf(`{
 		"type": "index_parallel",
 		"spec": {
 		  "ioConfig": {
 			"type": "index_parallel",
 			"inputSource": {
 			  "type": "inline",
-			  "data": "id,timestamp,publisher,domain,bid_price\n5000,2022-03-18T12:25:58.074Z,Facebook,facebook.com,4.19\n9000,2022-03-15T11:17:23.530Z,Microsoft,msn.com,3.48\n10000,2022-03-02T04:00:56.643Z,Microsoft,msn.com,3.57\n11000,2022-01-16T00:26:44.770Z,,instagram.com,5.38\n12000,2022-01-17T08:55:09.270Z,,msn.com,1.34\n13000,2022-03-20T03:16:57.618Z,Yahoo,news.yahoo.com,1.05\n14000,2022-01-29T19:05:33.545Z,Google,news.google.com,4.54\n15000,2022-03-22T00:56:22.035Z,Yahoo,news.yahoo.com,1.13\n16000,2022-01-24T13:41:43.527Z,,instagram.com,1.78"
+			  "data": "%s"
 			},
 			"inputFormat": {
 			  "type": "csv",
@@ -62,18 +123,16 @@ func TestIngestDataDruid(t *testing.T) {
 			}
 		  }
 		}
-	  }`, dataSourceName)
+	  }`, escapedCSV, testTable)
 
-	druidCoordinatorUrl := "http://localhost:8081"
-	ingestionStats, err := Ingest(druidCoordinatorUrl, dataJson, dataSourceName)
-
+	timeout := 5 * time.Minute
+	err := Ingest(coordinatorURL, ingestSpec, testTable, timeout)
 	require.NoError(t, err)
-	assert.Equal(t, 200, ingestionStats.StatusCode)
+}
 
-	conn := prepareConn(t)
-	var qry string
-	qry = fmt.Sprintf("SELECT count(*) FROM %s", dataSourceName)
-	rows, err := conn.Execute(context.Background(), 0, qry)
+func testCount(t *testing.T, conn infra.Connection) {
+	qry := fmt.Sprintf("SELECT count(*) FROM %s", testTable)
+	rows, err := conn.Execute(context.Background(), &infra.Statement{Query: qry})
 	require.NoError(t, err)
 
 	var count int
@@ -82,55 +141,17 @@ func TestIngestDataDruid(t *testing.T) {
 	require.NoError(t, rows.Scan(&count))
 	require.Equal(t, 9, count)
 	require.NoError(t, rows.Close())
-
 }
 
-func TestExecute(t *testing.T) {
-	conn := prepareConn(t)
-
-	var qry string
-	qry = fmt.Sprintf("SELECT max(id) FROM %s", dataSourceName)
-	rows, err := conn.Execute(context.Background(), 0, qry)
+func testMax(t *testing.T, conn infra.Connection) {
+	qry := fmt.Sprintf("SELECT max(id) FROM %s", testTable)
+	expectedValue := 16000
+	rows, err := conn.Execute(context.Background(), &infra.Statement{Query: qry})
 	require.NoError(t, err)
 
 	var count int
-	expectedValue := 16000
 	rows.Next()
 	require.NoError(t, rows.Scan(&count))
 	require.Equal(t, expectedValue, count)
 	require.NoError(t, rows.Close())
-
-	err = conn.Close()
-	require.NoError(t, err)
-	err = conn.(*connection).db.Ping()
-	require.Error(t, err)
-
-}
-
-func TestQueryAvaticaDriver(t *testing.T) {
-	db, err := sqlx.Open("avatica", "http://localhost:8082/druid/v2/sql/avatica-protobuf/")
-	require.NoError(t, err)
-
-	rows, err := db.Queryx(`SELECT 'Foo' as domain`)
-	require.NoError(t, err)
-
-	defer func() {
-		if err := rows.Close(); err != nil {
-			require.NoError(t, err)
-		}
-	}()
-
-	var domain string
-	rows.Next()
-
-	require.NoError(t, rows.Scan(&domain))
-	require.Equal(t, "Foo", domain)
-	require.NoError(t, rows.Close())
-}
-
-func prepareConn(t *testing.T) infra.Connection {
-	conn, err := driver{}.Open("http://localhost:8082/druid/v2/sql/avatica-protobuf/")
-	require.NoError(t, err)
-
-	return conn
 }

@@ -33,5 +33,4 @@ EXPOSE 8888
 # middle manager
 EXPOSE 8091
 
-# CMD druid-start.sh
 CMD ./bin/start-micro-quickstart
