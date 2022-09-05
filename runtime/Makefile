@@ -37,37 +37,18 @@ release/windows-amd64.exe:
 		CXX="zig c++ -target x86_64-windows-gnu" \
 		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/windows-amd64.exe ./cmd
 
-release/darwin-arm64: $(MACOS_SDK)
+# NOTE: Move darwin builds to to Zig (for fully cross-platform builds) when the issues mentioned here have been solved: https://github.com/rilldata/rill-developer/pull/846
+
+release/darwin-arm64:
+	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
 	mkdir -p release
 	GOOS=darwin GOARCH=arm64 ./scripts/setup_sql.sh -f
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
-		CGO_LDFLAGS="-mmacosx-version-min=${MACOS_MIN_VERSION} --sysroot ${MACOS_SDK} -F/System/Library/Frameworks -L/usr/lib" \
-		CC="zig cc -mmacosx-version-min=${MACOS_MIN_VERSION} -target aarch64-macos-gnu -isysroot ${MACOS_SDK} -iwithsysroot /usr/include -iframeworkwithsysroot /System/Library/Frameworks" \
-		CXX="zig c++ -mmacosx-version-min=${MACOS_MIN_VERSION} -target aarch64-macos-gnu -isysroot ${MACOS_SDK} -iwithsysroot /usr/include -iframeworkwithsysroot /System/Library/Frameworks" \
-		go build -ldflags "-s -w -X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -buildmode=pie -trimpath -o release/darwin-arm64 ./cmd
+		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/darwin-arm64 ./cmd
 
-release/darwin-amd64: $(MACOS_SDK)
+release/darwin-amd64:
+	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
 	mkdir -p release
 	GOOS=darwin GOARCH=amd64 ./scripts/setup_sql.sh -f
 	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
-		CGO_LDFLAGS="-mmacosx-version-min=${MACOS_MIN_VERSION} --sysroot ${MACOS_SDK} -F/System/Library/Frameworks -L/usr/lib" \
-		CC="zig cc -mmacosx-version-min=${MACOS_MIN_VERSION} -target x86_64-macos-gnu -isysroot ${MACOS_SDK} -iwithsysroot /usr/include -iframeworkwithsysroot /System/Library/Frameworks" \
-		CXX="zig c++ -mmacosx-version-min=${MACOS_MIN_VERSION} -target x86_64-macos-gnu -isysroot ${MACOS_SDK} -iwithsysroot /usr/include -iframeworkwithsysroot /System/Library/Frameworks" \
-		go build -ldflags "-s -w -X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -buildmode=pie -trimpath -o release/darwin-amd64 ./cmd
-
-##
-# MACOS SDK HACK
-##
-
-MACOS_MIN_VERSION=11.3
-
-OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
-ifeq ($(OS),darwin)
-  MACOS_SDK = $(shell xcrun --show-sdk-path)
-else
-  MACOS_SDK = $(shell pwd)/release/tmp/MacOSX11.3.sdk
-endif
-
-$(MACOS_SDK):
-	mkdir -p $(MACOS_SDK)
-	curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C "$(shell pwd)/release/tmp"
+		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/darwin-amd64 ./cmd
