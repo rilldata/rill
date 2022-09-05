@@ -21,10 +21,21 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     table: string,
     column: string,
     expression: string,
-    filters: MetricsViewRequestFilter,
-    timestampColumn: string,
-    timeRange?: TimeSeriesTimeRange
+    // additional arguments
+    {
+      filters,
+      timestampColumn,
+      timeRange,
+      limit,
+    }: {
+      filters: MetricsViewRequestFilter;
+      timestampColumn: string;
+      timeRange: TimeSeriesTimeRange;
+      limit: number;
+    }
   ) {
+    limit ??= 15;
+
     // remove filters for this specific dimension.
     const isolatedFilters: MetricsViewRequestFilter = {
       include: filters?.include.filter((filter) => filter.name !== column),
@@ -44,7 +55,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       ${whereClause}
       GROUP BY "${column}"
       ORDER BY value desc NULLS LAST
-      LIMIT 15
+      LIMIT ${limit}
     `
     );
   }
