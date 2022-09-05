@@ -15,6 +15,13 @@ export interface BigNumberResponse {
   error?: string;
 }
 
+export interface LeaderboardQueryAdditionalArguments {
+  filters: MetricsViewRequestFilter;
+  timestampColumn: string;
+  timeRange: TimeSeriesTimeRange;
+  limit: number;
+}
+
 export class DatabaseMetricsExplorerActions extends DatabaseActions {
   public async getLeaderboardValues(
     metadata: DatabaseMetadata,
@@ -27,12 +34,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       timestampColumn,
       timeRange,
       limit,
-    }: {
-      filters: MetricsViewRequestFilter;
-      timestampColumn: string;
-      timeRange: TimeSeriesTimeRange;
-      limit: number;
-    }
+    }: LeaderboardQueryAdditionalArguments
   ) {
     limit ??= 15;
 
