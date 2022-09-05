@@ -31,8 +31,8 @@ see more button
       {referenceValue}
       {atLeastOneActive}
       {active}
-      on:click={() => {
-        dispatch("select-item", { label, isActive: active });
+      on:click={(evt) => {
+        dispatch("select-item", { label, include: !evt.metaKey });
       }}
     >
       <svelte:fragment slot="label">

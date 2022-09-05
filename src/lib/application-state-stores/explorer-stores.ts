@@ -4,6 +4,7 @@ import type {
   MetricViewRequestFilter,
 } from "$common/rill-developer-service/MetricViewActions";
 import { removeIfExists } from "$common/utils/arrayUtils";
+import { removeFilterIfExists } from "$lib/util/dashboard-filter-utils";
 import { Readable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
@@ -100,44 +101,43 @@ const metricViewReducers = {
     });
   },
 
-  toggleFilter(id: string, dimensionId: string, dimensionValue: string) {
+  toggleFilter(
+    id: string,
+    dimensionId: string,
+    dimensionValue: string,
+    include: boolean
+  ) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      const existingDimensionIndex = metricsExplorer.filters.include.findIndex(
-        (dimensionValues) => dimensionValues.name === dimensionId
-      );
+      const relevantFilterKey = include ? "include" : "exclude";
+      const otherFilterKey = include ? "exclude" : "include";
 
-      // if entry for dimension doesnt exist, add it
-      if (existingDimensionIndex === -1) {
-        metricsExplorer.filters.include.push({
+      removeFilterIfExists(
+        dimensionId,
+        dimensionValue,
+        metricsExplorer.filters[otherFilterKey]
+      );
+      if (
+        removeFilterIfExists(
+          dimensionId,
+          dimensionValue,
+          metricsExplorer.filters[relevantFilterKey]
+        )
+      )
+        return;
+
+      const existingDimensionEntry = metricsExplorer.filters[
+        relevantFilterKey
+      ].find((filter) => filter.name === dimensionId);
+      if (!existingDimensionEntry) {
+        metricsExplorer.filters[relevantFilterKey].push({
           name: dimensionId,
           values: [dimensionValue],
         });
-        return;
-      }
-
-      const existingIncludeIndex =
-        metricsExplorer.filters.include[existingDimensionIndex].values.indexOf(
-          dimensionValue
-        ) ?? -1;
-
-      // add the value if it doesn't exist, remove the value if it does exist
-      if (existingIncludeIndex === -1) {
-        metricsExplorer.filters.include[existingDimensionIndex].values.push(
-          dimensionValue
-        );
       } else {
-        metricsExplorer.filters.include[existingDimensionIndex].values.splice(
-          existingIncludeIndex,
-          1
-        );
-        // remove the entry for dimension if no values are selected.
-        if (
-          metricsExplorer.filters.include[existingDimensionIndex].values
-            .length === 0
-        ) {
-          metricsExplorer.filters.include.splice(existingDimensionIndex, 1);
-        }
+        existingDimensionEntry.values.push(dimensionValue);
       }
+
+      console.log(metricsExplorer.filters[relevantFilterKey]);
     });
   },
 

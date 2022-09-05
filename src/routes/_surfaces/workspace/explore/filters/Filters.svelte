@@ -69,7 +69,8 @@ The main feature-set component for dashboard filters
       metricsExplorerStore.toggleFilter(
         metricsDefId,
         item.dimensionId,
-        dimensionValue
+        dimensionValue,
+        true
       );
     });
   }

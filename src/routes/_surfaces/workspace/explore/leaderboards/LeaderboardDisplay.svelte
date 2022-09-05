@@ -84,7 +84,8 @@
     metricsExplorerStore.toggleFilter(
       metricsDefId,
       item.id,
-      event.detail.label
+      event.detail.label,
+      event.detail.include
     );
   }
 
