@@ -1,5 +1,9 @@
 # Using a Rill binary
-Our binary is the fastest path to installing Rill Developer. Download the latest package that is relevant for your OS and architecture:
+Our binary script is the fastest path to installing Rill Developer. Use this command to get started:
+```
+curl -s https://cdn.rilldata.com/install.sh | bash
+```
+Alternatively you can manually download the latest binary that is relevant for your OS and architecture:
 
 - [macos-arm64](https://cdn.rilldata.com/rill/latest/macos-arm64/rill)
 - [macos-x64](https://cdn.rilldata.com/rill/latest/macos-x64/rill)
@@ -8,8 +12,8 @@ Our binary is the fastest path to installing Rill Developer. Download the latest
 
 _Note: Rill is temporarily unavailable on Windows. We're working on bringing Rill back to Windows soon._
 
-## CLI commands
-To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands.
+## Nuance for manually download binaries
+Installing the Rill binary manually doesn't give you the ablity to use Rill globally. Instead, you should open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands as expected.
 ```
 cd downloads
 rill init
@@ -33,4 +37,3 @@ If you see a warning "SmartScreen protected an unrecognized app from starting", 
 * Click Properties.
 * Click the checkbox next to Unblock so that a checkmark appears.
 * Click Apply. -->
-

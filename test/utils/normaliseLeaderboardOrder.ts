@@ -1,4 +1,4 @@
-import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
+import type { LeaderboardValues } from "$lib/application-state-stores/explorer-stores";
 
 const FuzzyGroupLargeThreshold = 500;
 const FuzzyGroupSmallThreshold = 0.25;

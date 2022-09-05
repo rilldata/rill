@@ -1,34 +1,33 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "$lib/application-state-stores/explorer-stores";
   import { SelectMenu } from "$lib/components/menu";
-  import { setMeasureIdAndUpdateLeaderboard } from "$lib/redux-store/explore/explore-apis";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { store } from "$lib/redux-store/store-root";
-  import type { Readable } from "svelte/store";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
 
   export let metricsDefId;
 
-  let measures: Readable<Array<MeasureDefinitionEntity>>;
-  $: measures = getMeasuresByMetricsId(metricsDefId);
+  // query the `/meta` endpoint to get the valid measures
+  $: metaQuery = useMetaQuery(metricsDefId);
+  $: measures = $metaQuery.data?.measures;
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    setMeasureIdAndUpdateLeaderboard(
-      store.dispatch,
+    metricsExplorerStore.setLeaderboardMeasureId(
       metricsDefId,
       event.detail.key
     );
   }
 
   function formatForSelector(measure: MeasureDefinitionEntity) {
+    if (!measure) return undefined;
     return {
       ...measure,
       key: measure.id,
@@ -42,18 +41,18 @@
   // reset selections based on the active leaderboard measure
   let activeLeaderboardMeasure;
   $: activeLeaderboardMeasure =
-    $measures?.length &&
-    $metricsExplorer?.leaderboardMeasureId &&
+    measures?.length &&
+    metricsExplorer?.leaderboardMeasureId &&
     formatForSelector(
-      $measures.find(
-        (measure) => measure.id === $metricsExplorer?.leaderboardMeasureId
+      measures.find(
+        (measure) => measure.id === metricsExplorer?.leaderboardMeasureId
       ) ?? undefined
     );
 
   /** this controls the animation direction */
 
   $: options =
-    $measures?.map((measure) => {
+    measures?.map((measure) => {
       let main = measure.label?.length ? measure.label : measure.expression;
       return {
         ...measure,
@@ -62,16 +61,16 @@
       };
     }) || [];
 
-  /** set the selection only if $measures is not undefined */
-  $: selection = $measures ? activeLeaderboardMeasure : [];
+  /** set the selection only if measures is not undefined */
+  $: selection = measures ? activeLeaderboardMeasure : [];
 </script>
 
 <div>
-  {#if $measures && options.length && selection}
+  {#if measures && options.length && selection}
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:send={{ key: "leaderboard-metric", y: 8 }}
+      in:send={{ key: "leaderboard-metric" }}
     >
       <div>Dimension Leaders by</div>
 
@@ -88,7 +87,7 @@
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:receive={{ key: "loading-leaderboard-metric", y: 8 }}
+      in:receive={{ key: "loading-leaderboard-metric" }}
     >
       pulling leaderboards <Spinner status={EntityStatus.Running} />
     </div>

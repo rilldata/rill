@@ -2,23 +2,14 @@
   import type { TimeGrain } from "$common/database-service/DatabaseTimeSeriesActions";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "$lib/components/menu/wrappers/WithSelectMenu.svelte";
-  import { getMetricsExplorerById } from "$lib/redux-store/explore/explore-readables";
-  import type { Readable } from "svelte/store";
-  import type { MetricsExplorerEntity } from "$lib/redux-store/explore/explore-slice";
-  import { updateSelectedTimeGrainApi } from "$lib/redux-store/explore/explore-apis";
-  import { store } from "$lib/redux-store/store-root";
+  import { createEventDispatcher } from "svelte";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
-  export let metricsDefId: string;
+  export let selectedTimeGrain: TimeGrain;
+  export let selectableTimeGrains: TimeGrainOption[];
 
-  let metricsExplorer: Readable<MetricsExplorerEntity>;
-  $: metricsExplorer = getMetricsExplorerById(metricsDefId);
-
-  let selectableTimeGrains: TimeGrainOption[];
-  $: selectableTimeGrains = $metricsExplorer?.selectableTimeGrains ?? [];
-
-  let selectedTimeGrain: TimeGrain;
-  $: selectedTimeGrain = $metricsExplorer?.selectedTimeGrain;
+  const dispatch = createEventDispatcher();
+  const EVENT_NAME = "select-time-grain";
 
   $: options = selectableTimeGrains
     ? selectableTimeGrains.map(({ timeGrain, enabled }) => ({
@@ -30,7 +21,7 @@
     : undefined;
 
   const onTimeGrainSelect = (timeGrain: TimeGrain) => {
-    store.dispatch(updateSelectedTimeGrainApi({ metricsDefId, timeGrain }));
+    dispatch(EVENT_NAME, { timeGrain });
   };
 </script>
 
