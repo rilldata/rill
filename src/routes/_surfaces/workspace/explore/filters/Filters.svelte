@@ -26,15 +26,20 @@ The main feature-set component for dashboard filters
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  // TODO: handle exclude filters
-  let values: MetricsViewDimensionValues;
-  $: values = metricsExplorer?.filters.include;
+  let includeValues: MetricsViewDimensionValues;
+  $: includeValues = metricsExplorer?.filters.include;
+  let excludeValues: MetricsViewDimensionValues;
+  $: excludeValues = metricsExplorer?.filters.exclude;
 
   let dimensions: Readable<DimensionDefinitionEntity[]>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
-  function clearFilterForDimension(dimensionId) {
-    metricsExplorerStore.clearFilterForDimension(metricsDefId, dimensionId);
+  function clearFilterForDimension(dimensionId, include: boolean) {
+    metricsExplorerStore.clearFilterForDimension(
+      metricsDefId,
+      dimensionId,
+      include
+    );
   }
 
   function isFiltered(filters: MetricsViewRequestFilter): boolean {
@@ -51,26 +56,32 @@ The main feature-set component for dashboard filters
   }
 
   /** prune the values and prepare for for templating */
-  let currentDimensionFilters = [];
-  $: if (values) {
+  let currentDimensionIncludeFilters = [];
+  let currentDimensionExcludeFilters = [];
+  $: if (includeValues && excludeValues) {
     const dimensionIdMap = getMapFromArray(
       $dimensions,
       (dimension) => dimension.id
     );
-    currentDimensionFilters = values.map((dimensionValues) => ({
+    currentDimensionIncludeFilters = includeValues.map((dimensionValues) => ({
+      name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
+      dimensionId: dimensionValues.name,
+      selectedValues: dimensionValues.values,
+    }));
+    currentDimensionExcludeFilters = excludeValues.map((dimensionValues) => ({
       name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
       dimensionId: dimensionValues.name,
       selectedValues: dimensionValues.values,
     }));
   }
 
-  function toggleDimensionValue(event, item) {
+  function toggleDimensionValue(event, item, include: boolean) {
     event.detail.forEach((dimensionValue) => {
       metricsExplorerStore.toggleFilter(
         metricsDefId,
         item.dimensionId,
         dimensionValue,
-        true
+        include
       );
     });
   }
@@ -90,15 +101,32 @@ The main feature-set component for dashboard filters
   >
     <Filter size="16px" />
   </div>
-  {#if currentDimensionFilters?.length}
+  {#if currentDimensionIncludeFilters?.length || currentDimensionExcludeFilters?.length}
     <ChipContainer>
-      {#each currentDimensionFilters as { name, dimensionId, selectedValues } (dimensionId)}
+      {#each currentDimensionIncludeFilters as { name, dimensionId, selectedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
-            on:remove={() => clearFilterForDimension(dimensionId)}
-            on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
+            on:remove={() => clearFilterForDimension(dimensionId, true)}
+            on:apply={(event) =>
+              toggleDimensionValue(event, { dimensionId }, true)}
             typeLabel="dimension"
             {name}
+            {selectedValues}
+          >
+            <svelte:fragment slot="body-tooltip-content">
+              click to edit the the filters in this dimension
+            </svelte:fragment>
+          </RemovableListChip>
+        </div>
+      {/each}
+      {#each currentDimensionExcludeFilters as { name, dimensionId, selectedValues } (dimensionId)}
+        <div animate:flip={{ duration: 200 }}>
+          <RemovableListChip
+            on:remove={() => clearFilterForDimension(dimensionId, false)}
+            on:apply={(event) =>
+              toggleDimensionValue(event, { dimensionId }, false)}
+            typeLabel="dimension"
+            name={`Exclude ${name}`}
             {selectedValues}
           >
             <svelte:fragment slot="body-tooltip-content">
@@ -127,7 +155,7 @@ The main feature-set component for dashboard filters
         </div>
       {/if}
     </ChipContainer>
-  {:else if currentDimensionFilters?.length === 0}
+  {:else if currentDimensionIncludeFilters?.length === 0 && currentDimensionExcludeFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
       class="italic text-gray-400  grid items-center"

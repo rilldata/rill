@@ -65,11 +65,15 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  let activeValues: Array<unknown>;
-  $: activeValues =
+  let includeValues: Array<unknown>;
+  $: includeValues =
     metricsExplorer?.filters.include.find((d) => d.name === $dimension?.id)
       ?.values ?? [];
-  $: atLeastOneActive = !!activeValues?.length;
+  let excludeValues: Array<unknown>;
+  $: excludeValues =
+    metricsExplorer?.filters.exclude.find((d) => d.name === $dimension?.id)
+      ?.values ?? [];
+  $: atLeastOneActive = !!includeValues?.length || !!excludeValues?.length;
 
   function setLeaderboardValues(values) {
     dispatch("leaderboard-value", {
@@ -123,7 +127,7 @@
 
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.
-  $: selectedValuesThatAreBelowTheFold = activeValues
+  $: selectedValuesThatAreBelowTheFold = [...includeValues, ...excludeValues]
     ?.filter((label) => {
       return (
         // the value is visible within the fold.
@@ -186,7 +190,8 @@
         <LeaderboardEntrySet
           loading={$topListQuery?.isFetching}
           values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
-          {activeValues}
+          {includeValues}
+          {excludeValues}
           {atLeastOneActive}
           {referenceValue}
           {isSummableMeasure}
@@ -198,7 +203,8 @@
           <LeaderboardEntrySet
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
-            {activeValues}
+            {includeValues}
+            {excludeValues}
             {atLeastOneActive}
             {referenceValue}
             {isSummableMeasure}

@@ -111,12 +111,12 @@ const metricViewReducers = {
       const relevantFilterKey = include ? "include" : "exclude";
       const otherFilterKey = include ? "exclude" : "include";
 
-      removeFilterIfExists(
-        dimensionId,
-        dimensionValue,
-        metricsExplorer.filters[otherFilterKey]
-      );
       if (
+        removeFilterIfExists(
+          dimensionId,
+          dimensionValue,
+          metricsExplorer.filters[otherFilterKey]
+        ) ||
         removeFilterIfExists(
           dimensionId,
           dimensionValue,
@@ -136,8 +136,6 @@ const metricViewReducers = {
       } else {
         existingDimensionEntry.values.push(dimensionValue);
       }
-
-      console.log(metricsExplorer.filters[relevantFilterKey]);
     });
   },
 
@@ -148,16 +146,19 @@ const metricViewReducers = {
     });
   },
 
-  clearFilterForDimension(id: string, dimensionId: string) {
+  clearFilterForDimension(id: string, dimensionId: string, include: boolean) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      removeIfExists(
-        metricsExplorer.filters.include,
-        (dimensionValues) => dimensionValues.name === dimensionId
-      );
-      removeIfExists(
-        metricsExplorer.filters.exclude,
-        (dimensionValues) => dimensionValues.name === dimensionId
-      );
+      if (include) {
+        removeIfExists(
+          metricsExplorer.filters.include,
+          (dimensionValues) => dimensionValues.name === dimensionId
+        );
+      } else {
+        removeIfExists(
+          metricsExplorer.filters.exclude,
+          (dimensionValues) => dimensionValues.name === dimensionId
+        );
+      }
     });
   },
 };

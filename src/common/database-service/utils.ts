@@ -54,7 +54,7 @@ export function getFilterFromMetricsViewFilters(
             ? `"${dimensionValues.name}" IS NOT NULL`
             : `"${dimensionValues.name}" != '${value}'`
         )
-        .join(" OR ")
+        .join(" AND ")
     )
     .map((filter) => `(${filter})`)
     .join(" AND ");
