@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/rilldata/rill/runtime/infra"
 	proto "github.com/rilldata/rill/runtime/proto"
 )
 
@@ -45,10 +46,22 @@ func (s *Server) QueryDirect(ctx context.Context, req *proto.QueryDirectRequest)
 		args[i] = arg.AsInterface()
 	}
 
-	rows, err := s.query(ctx, req.InstanceId, int(req.Priority), req.Sql, args...)
+	rows, err := s.query(ctx, req.InstanceId, &infra.Statement{
+		Query:    req.Sql,
+		Args:     args,
+		DryRun:   req.DryRun,
+		Priority: int(req.Priority),
+	})
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+		// TODO: Parse error to determine error code
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	if req.DryRun {
+		// NOTE: Currently, dry run queries return nil rows
+		return &proto.QueryDirectResponse{}, nil
+	}
+
 	defer rows.Close()
 
 	meta, err := rowsToMeta(rows)
@@ -105,7 +118,10 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *proto.MetricsViewT
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := s.query(ctx, req.InstanceId, 1, sql, req.Limit, req.Offset)
+	rows, err := s.query(ctx, req.InstanceId, &infra.Statement{
+		Query: sql,
+		Args:  []any{req.Limit, req.Offset},
+	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -138,7 +154,10 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *proto.MetricsVi
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	rows, err := s.query(ctx, req.InstanceId, 1, sql, args...)
+	rows, err := s.query(ctx, req.InstanceId, &infra.Statement{
+		Query: sql,
+		Args:  args,
+	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -162,7 +181,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *proto.MetricsVi
 	return resp, nil
 }
 
-func (s *Server) query(ctx context.Context, instanceID string, priority int, sql string, args ...interface{}) (*sqlx.Rows, error) {
+func (s *Server) query(ctx context.Context, instanceID string, stmt *infra.Statement) (*sqlx.Rows, error) {
 	id, err := uuid.Parse(instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid instance_id")
@@ -173,7 +192,7 @@ func (s *Server) query(ctx context.Context, instanceID string, priority int, sql
 		return nil, err
 	}
 
-	return instance.Query(ctx, priority, sql, args...)
+	return instance.Query(ctx, stmt)
 }
 
 func rowsToMeta(rows *sqlx.Rows) ([]*proto.SchemaColumn, error) {

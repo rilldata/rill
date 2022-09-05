@@ -49,7 +49,7 @@ export const getSelectableTimeGrains = (
   timeRangeName: TimeRangeName,
   allTimeRange: TimeSeriesTimeRange
 ): TimeGrainOption[] => {
-  if (!allTimeRange) return [];
+  if (!timeRangeName || !allTimeRange) return [];
   const timeRangeDuration = getTimeRangeDuration(timeRangeName, allTimeRange);
 
   const timeGrains: TimeGrainOption[] = [];
@@ -285,6 +285,7 @@ export const formatDateByInterval = (
   interval: string, // DuckDB interval
   date: string
 ): string => {
+  if (!interval || !date) return "";
   switch (interval) {
     case "1 minute":
       return new Date(date).toLocaleDateString(undefined, {

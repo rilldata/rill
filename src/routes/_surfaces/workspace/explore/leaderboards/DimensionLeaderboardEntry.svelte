@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { fly } from "svelte/transition";
   import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
+  import { fly } from "svelte/transition";
 
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+
+  /** grays out the value if this is true */
+  export let loading = false;
 
   export let active;
   /** the measure value to be displayed on the right side */
@@ -48,8 +51,8 @@
       The current approach does a decent enough job of maintaining the flow and scan-friendliness.
      -->
     <div
-      class:text-gray-700={!atLeastOneActive}
-      class:text-gray-500={atLeastOneActive && !active}
+      class:text-gray-700={!atLeastOneActive && !loading}
+      class:text-gray-500={(atLeastOneActive && !active) || loading}
       class:italic={atLeastOneActive && !active}
       class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
       slot="title"
@@ -60,7 +63,8 @@
     <div class="leaderboard-list-item-right" slot="right">
       <!-- {#if !(atLeastOneActive && !active)} -->
       <div
-        class={!active && atLeastOneActive ? "text-gray-500 italic" : ""}
+        class:text-gray-500={(!active && atLeastOneActive) || loading}
+        class:italic={!active && atLeastOneActive}
         in:fly={{ duration: 200, y: 4 }}
       >
         <slot name="right" />

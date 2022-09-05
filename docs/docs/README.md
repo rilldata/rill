@@ -22,13 +22,16 @@ It's best to show and not tell, so here's a little preview of Rill Developer:
 You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 ## Pick an install option:
-Our binary is the fastest way to install Rill Developer:
-- [binary](https://docs.rilldata.com/install/binary) : download the most recent assets binary.
+Our binary script is the fastest way to install Rill Developer on Mac or Linux. You can install it using this command:
+
+- [script](https://docs.rilldata.com/install/binary) : run `curl -s https://cdn.rilldata.com/install.sh | bash` and you are ready to start using the Rill [CLI](https://docs.rilldata.com/cli).
+
+Alternatively you can also download the binary manually:
+- [manual](https://docs.rilldata.com/install/binary) : download the most recent version's binary. `cd` to your download directory and get started with the Rill [CLI](https://docs.rilldata.com/cli).
   - [macos-arm64](https://cdn.rilldata.com/rill/latest/macos-arm64/rill)
   - [macos-x64](https://cdn.rilldata.com/rill/latest/macos-x64/rill)
   - [linux-x64](https://cdn.rilldata.com/rill/latest/linux-x64/rill)
   <!-- - [win-x64](https://cdn.rilldata.com/rill/latest/win-x64/rill.exe) -->
-- `cd` to your download directory and get started with the Rill [CLI](./cli.md).
 
 You can also install Rill Developer using npm or docker:
 - [npm](https://docs.rilldata.com/install/npm) : run `npm install -g @rilldata/rill`

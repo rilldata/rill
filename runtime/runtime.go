@@ -76,6 +76,6 @@ func (i *Instance) Load() error {
 	return nil
 }
 
-func (r *Instance) Query(ctx context.Context, priority int, sql string, args ...interface{}) (*sqlx.Rows, error) {
-	return r.Conn.Execute(ctx, priority, sql, args...)
+func (r *Instance) Query(ctx context.Context, stmt *infra.Statement) (*sqlx.Rows, error) {
+	return r.Conn.Execute(ctx, stmt)
 }

@@ -284,6 +284,9 @@
                 "priority": {
                   "type": "string",
                   "format": "int64"
+                },
+                "dryRun": {
+                  "type": "boolean"
                 }
               }
             }
