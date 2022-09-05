@@ -6,24 +6,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// importSourceCmd represents the importSource command
+// ImportSourceCmd represents the import-source command
 func ImportSourceCmd() *cobra.Command {
 	var importSourceCmd = &cobra.Command{
-		Use:   "importSource",
-		Short: "A brief description of your rill importSource",
+		Use:   "import-source",
+		Short: "A brief description of rill import-source",
 		Long:  `A longer description.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			sourcePath, _ := cmd.Flags().GetString("sourcePath")
+			sourcePath, _ := cmd.Flags().GetString("source-path")
 			if sourcePath != "" {
-				fmt.Printf("importSource called with source file Path %s \n", sourcePath)
+				fmt.Printf("import-source called with source path %s\n", sourcePath)
 			} else {
-				fmt.Printf("importSource called with source file Path '.' \n")
+				fmt.Printf("import-source called with source path '.'\n")
 			}
 		},
-		ValidArgs: []string{"--sourcePath", "-p"},
+		ValidArgs: []string{"--source-path", "-p"},
 	}
 
-	importSourceCmd.Flags().StringP("sourcePath", "p", ".", "Source file path for Rill")
+	importSourceCmd.Flags().StringP("source-path", "p", ".", "Source path for Rill")
 
 	return importSourceCmd
 }

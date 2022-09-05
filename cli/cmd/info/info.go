@@ -6,11 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// infoCmd represents the info command
+// InfoCmd represents the info command
 func InfoCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "info",
-		Short: "A brief description of your rill info",
+		Short: "A brief description of rill info",
 		Long:  `A longer description.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("info called")

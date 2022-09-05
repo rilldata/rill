@@ -7,14 +7,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// versionCmd represents the version command
+// VersionCmd represents the version command
 func VersionCmd(ver string) *cobra.Command {
 	var versionCmd = &cobra.Command{
 		Use:   "version",
-		Short: "A brief description of your rill version",
-		Long:  `A longer description.`,
+		Short: "Show rill version",
+		Long:  `A longer description`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf(Format(ver))
+			fmt.Print(Format(ver))
 		},
 	}
 
@@ -33,12 +33,10 @@ func init() {
 	// versionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-// Format formats a version string with the given information.
 func Format(ver string) string {
 	if ver == "" {
 		return "rill version (built from source)"
 	}
 	ver = strings.TrimPrefix(ver, "v")
-
-	return fmt.Sprintf("rill version %s \n", ver)
+	return fmt.Sprintf("rill version %s\n", ver)
 }

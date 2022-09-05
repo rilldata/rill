@@ -6,14 +6,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// initExampleCmd represents the initExample command
+// InitExampleCmd represents the init-example command
 func InitExampleCmd() *cobra.Command {
 	var initExampleCmd = &cobra.Command{
-		Use:   "initExample",
-		Short: "A brief description of your rill initExample",
+		Use:   "init-example",
+		Short: "A brief description of rill init-example",
 		Long:  `A longer description.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("initExample called")
+			fmt.Println("init-example called")
 		},
 	}
 

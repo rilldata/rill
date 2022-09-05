@@ -6,11 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// startCmd represents the start command
+// StartCmd represents the start command
 func StartCmd() *cobra.Command {
 	var startCmd = &cobra.Command{
 		Use:   "start",
-		Short: "A brief description of your rill start",
+		Short: "A brief description of rill start",
 		Long:  `A longer description.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("start called")

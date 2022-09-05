@@ -10,7 +10,7 @@ func init() {
 	rootCmd.AddCommand(completionCmd)
 }
 
-//For ref : https://github.com/spf13/cobra/blob/main/shell_completions.md
+// See: https://github.com/spf13/cobra/blob/main/shell_completions.md
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
 	Short: "Generate completion script for your shell",

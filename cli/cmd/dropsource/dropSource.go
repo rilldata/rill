@@ -6,24 +6,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// dropSourceCmd represents the dropSource command
+// DropSourceCmd represents the drop-source command
 func DropSourceCmd() *cobra.Command {
 	var dropSourceCmd = &cobra.Command{
-		Use:   "dropSource",
-		Short: "A brief description of your rill dropSource",
+		Use:   "drop-source",
+		Short: "A brief description of rill drop-source",
 		Long:  `A longer description`,
 		Run: func(cmd *cobra.Command, args []string) {
-			sourceName, _ := cmd.Flags().GetString("sourceName")
+			sourceName, _ := cmd.Flags().GetString("source-name")
 			if sourceName != "" {
-				fmt.Printf("dropSource called with source name: %s \n", sourceName)
+				fmt.Printf("drop-source called with source name: %s \n", sourceName)
 			} else {
-				fmt.Printf("dropSource called with source name: public \n")
+				fmt.Printf("drop-source called with source name: public \n")
 			}
 		},
-		ValidArgs: []string{"--sourceName", "-n"},
+		ValidArgs: []string{"--source-name", "-n"},
 	}
 
-	dropSourceCmd.Flags().StringP("sourceName", "n", "public", "Source Name to be dropped")
+	dropSourceCmd.Flags().StringP("source-name", "n", "public", "Source Name to be dropped")
 
 	return dropSourceCmd
 }
