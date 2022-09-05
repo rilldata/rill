@@ -24,9 +24,16 @@ type Driver interface {
 }
 
 type Connection interface {
-	Execute(ctx context.Context, priority int, sql string, args ...any) (*sqlx.Rows, error)
+	Execute(ctx context.Context, stmt *Statement) (*sqlx.Rows, error)
 	Close() error
 	InformationSchema() string
+}
+
+type Statement struct {
+	Query    string
+	Args     []any
+	DryRun   bool
+	Priority int
 }
 
 // ErrClosed should be returned by Execute if the connection is closed
