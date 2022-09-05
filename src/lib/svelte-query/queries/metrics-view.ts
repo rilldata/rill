@@ -145,7 +145,11 @@ function getTopListQueryOptions(
  * and a request parameter.
  * The request parameter matches the API signature needed for the toplist request.
  */
-export function useTopListQuery(metricsDefId, dimensionId, requestParameter) {
+export function useTopListQuery(
+  metricsDefId: string,
+  dimensionId: string,
+  requestParameter: MetricsViewTopListRequest
+) {
   const topListQueryKey = getTopListQueryKey(
     metricsDefId,
     dimensionId,
