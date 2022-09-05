@@ -30,7 +30,7 @@
   import { bootstrapMetricsDefinition } from "$lib/redux-store/metrics-definition/bootstrapMetricsDefinition";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { queryClient } from "$lib/svelte-query/globalQueryClient";
-  import { invalidateMetricView } from "$lib/svelte-query/queries/metric-view";
+  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
 
   export let metricsDefId;
@@ -52,7 +52,7 @@
   }
   function handleDeleteMeasure(evt) {
     store.dispatch(deleteMeasuresApi(evt.detail));
-    invalidateMetricView(queryClient, metricsDefId);
+    invalidateMetricsView(queryClient, metricsDefId);
   }
   function handleMeasureExpressionValidation(index, name, value) {
     store.dispatch(
@@ -79,7 +79,7 @@
   }
   function handleDeleteDimension(evt) {
     store.dispatch(deleteDimensionsApi(evt.detail));
-    invalidateMetricView(queryClient, metricsDefId);
+    invalidateMetricsView(queryClient, metricsDefId);
   }
 
   // FIXME: the only data that is needed from the derived model store is the data types of the

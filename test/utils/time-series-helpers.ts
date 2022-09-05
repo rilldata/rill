@@ -1,8 +1,8 @@
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { MetricsViewTimeSeriesResponse } from "$common/rill-developer-service/MetricsViewActions";
 import type { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import { END_DATE, START_DATE } from "../data/generator/data-constants";
 import { isTimestampDiffAccurate } from "./time-series-time-diff";
-import type { MetricViewTimeSeriesResponse } from "$common/rill-developer-service/MetricViewActions";
 
 export type TimeSeriesMeasureRange = Record<string, [min: number, max: number]>;
 
@@ -19,7 +19,7 @@ export function getTimeRange(
 }
 
 export function assertTimeSeries(
-  timeSeries: MetricViewTimeSeriesResponse,
+  timeSeries: MetricsViewTimeSeriesResponse,
   rollupInterval: PreviewRollupInterval,
   measures: Array<string>
 ) {
@@ -55,7 +55,7 @@ export function assertTimeSeries(
 }
 
 export function assertTimeSeriesMeasureRange(
-  timeSeries: MetricViewTimeSeriesResponse,
+  timeSeries: MetricsViewTimeSeriesResponse,
   measureRanges: Array<TimeSeriesMeasureRange>
 ) {
   expect(timeSeries.data.length).toBe(measureRanges.length);

@@ -3,7 +3,7 @@ import {
   getFallbackMeasureName,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import type { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";
 import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
 
 export function getFilterFromFilters(filters: ActiveValues): string {
@@ -30,8 +30,8 @@ export function getFilterFromFilters(filters: ActiveValues): string {
     .join(" AND ");
 }
 
-export function getFilterFromMetricViewFilters(
-  filters: MetricViewRequestFilter
+export function getFilterFromMetricsViewFilters(
+  filters: MetricsViewRequestFilter
 ): string {
   const includeFilters = filters.include
     .map((dimensionValues) =>
@@ -103,7 +103,7 @@ export function getCoalesceStatementsMeasures(
 
 // TODO: remove ActiveValues once all uses have been moved
 export function getWhereClauseFromFilters(
-  metricViewFilters: MetricViewRequestFilter,
+  metricViewFilters: MetricsViewRequestFilter,
   timestampColumn: string,
   timeRange: TimeSeriesTimeRange,
   prefix: string
@@ -113,7 +113,7 @@ export function getWhereClauseFromFilters(
     metricViewFilters?.include?.length ||
     metricViewFilters?.exclude?.length
   ) {
-    whereClauses.push(getFilterFromMetricViewFilters(metricViewFilters));
+    whereClauses.push(getFilterFromMetricsViewFilters(metricViewFilters));
   }
   if (timeRange?.start || timeRange?.end) {
     whereClauses.push(getFilterFromTimeRange(timestampColumn, timeRange));
