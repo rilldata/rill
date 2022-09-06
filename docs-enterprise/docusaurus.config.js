@@ -52,6 +52,12 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      algolia: {
+        appId: "O4A4YNY97A",
+        apiKey: "f7bc8583cf7d74049dd1bd937cf42685",
+        indexName: "rill_enterprise",
+        debug: false // Set debug to true if you want to inspect the modal        
+      },
       docs: {
         sidebar: {
           autoCollapseCategories: true,
@@ -79,7 +85,8 @@ const config = {
           { to: "https://rilldata.com/apache-druid", position: "left", label: "Apache Druid" },
           { to: "https://rilldata.com/team", position: "left", label: "Team" },
           { to: "https://rilldata.com/blog", position: "left", label: "Blog" },
-          { to: "https://rilldata.com/try-free", position: "left", label: "Try for Free" }
+          { to: "https://rilldata.com/try-free", position: "left", label: "Try for Free" },
+          { type: "search", position: "right" }
         ],
       },
       footer: {
