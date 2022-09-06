@@ -1,13 +1,39 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import {
+    invalidateMetricsViewData,
+    useMetaQuery,
+  } from "$lib/svelte-query/queries/metrics-view";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
+
+  const queryClient = useQueryClient();
+
+  $: metaQuery = useMetaQuery(metricsDefId);
+  // TODO: move this "sync" to a more relevant component
+  $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data?.id) {
+    if (
+      !$metaQuery.data?.measures?.length ||
+      !$metaQuery.data?.dimensions?.length
+    ) {
+      dataModelerService.dispatch("setActiveAsset", [
+        EntityType.MetricsDefinition,
+        metricsDefId,
+      ]);
+    } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
+      // FIXME: understand this logic before removing invalidateMetricsViewData
+      invalidateMetricsViewData(queryClient, metricsDefId);
+    }
+    metricsExplorerStore.sync(metricsDefId, $metaQuery.data);
+  }
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 </script>

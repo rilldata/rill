@@ -1,10 +1,6 @@
-import type { BigNumberResponse } from "$common/database-service/DatabaseMetricsExplorerActions";
-import type {
-  TimeSeriesResponse,
-  TimeSeriesTimeRange,
-} from "$common/database-service/DatabaseTimeSeriesActions";
+import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
+import type { MetricsViewTimeSeriesResponse } from "$common/rill-developer-service/MetricsViewActions";
 import type { PreviewRollupInterval } from "$lib/duckdb-data-types";
-import type { TimeSeriesValue } from "$lib/redux-store/timeseries/timeseries-slice";
 import { END_DATE, START_DATE } from "../data/generator/data-constants";
 import { isTimestampDiffAccurate } from "./time-series-time-diff";
 
@@ -23,19 +19,18 @@ export function getTimeRange(
 }
 
 export function assertTimeSeries(
-  timeSeries: TimeSeriesResponse,
+  timeSeries: MetricsViewTimeSeriesResponse,
   rollupInterval: PreviewRollupInterval,
   measures: Array<string>
 ) {
-  expect(timeSeries.timeRange.interval).toBe(rollupInterval);
   const mismatchTimestamps = new Array<[string, string]>();
   const mismatchMeasures = new Array<
     [dimension: string, value: number, timestamp: string]
   >();
   const rollupIntervalGrain = rollupInterval.split(" ")[1];
 
-  let prevRow: TimeSeriesValue;
-  for (const row of timeSeries.results) {
+  let prevRow: any;
+  for (const row of timeSeries.data) {
     if (prevRow) {
       if (!isTimestampDiffAccurate(prevRow.ts, row.ts, rollupIntervalGrain)) {
         mismatchTimestamps.push([prevRow.ts, row.ts]);
@@ -60,16 +55,16 @@ export function assertTimeSeries(
 }
 
 export function assertTimeSeriesMeasureRange(
-  timeSeries: TimeSeriesResponse,
+  timeSeries: MetricsViewTimeSeriesResponse,
   measureRanges: Array<TimeSeriesMeasureRange>
 ) {
-  expect(timeSeries.results.length).toBe(measureRanges.length);
+  expect(timeSeries.data.length).toBe(measureRanges.length);
 
   const mismatchMeasures = new Array<
     [dimension: string, value: number, timestamp: string]
   >();
 
-  timeSeries.results.forEach((row, index) => {
+  timeSeries.data.forEach((row, index) => {
     for (const measureName in measureRanges[index]) {
       const value = row[measureName];
       if (
@@ -88,13 +83,13 @@ export function assertTimeSeriesMeasureRange(
 }
 
 export function assertBigNumber(
-  bigNumber: BigNumberResponse,
+  bigNumber: Record<string, number>,
   expectedBigNumber: TimeSeriesMeasureRange
 ) {
   const mismatchBigNumbers = new Array<[dimension: string, value: number]>();
 
   for (const measureName in expectedBigNumber) {
-    const value = bigNumber.bigNumbers[measureName];
+    const value = bigNumber[measureName];
     if (
       value < expectedBigNumber[measureName][0] &&
       value > expectedBigNumber[measureName][1]

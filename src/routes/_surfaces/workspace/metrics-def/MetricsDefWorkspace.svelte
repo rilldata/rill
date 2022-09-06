@@ -22,14 +22,16 @@
 
   import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
   import { Callout } from "$lib/components/callout";
+  import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
   import { CATEGORICALS } from "$lib/duckdb-data-types";
   import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
-  import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
   import { bootstrapMetricsDefinition } from "$lib/redux-store/metrics-definition/bootstrapMetricsDefinition";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { queryClient } from "$lib/svelte-query/globalQueryClient";
+  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
+  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
 
   export let metricsDefId;
 
@@ -50,6 +52,7 @@
   }
   function handleDeleteMeasure(evt) {
     store.dispatch(deleteMeasuresApi(evt.detail));
+    invalidateMetricsView(queryClient, metricsDefId);
   }
   function handleMeasureExpressionValidation(index, name, value) {
     store.dispatch(
@@ -76,6 +79,7 @@
   }
   function handleDeleteDimension(evt) {
     store.dispatch(deleteDimensionsApi(evt.detail));
+    invalidateMetricsView(queryClient, metricsDefId);
   }
 
   // FIXME: the only data that is needed from the derived model store is the data types of the

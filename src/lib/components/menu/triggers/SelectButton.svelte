@@ -1,7 +1,7 @@
 <script lang="ts">
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { getContext, hasContext } from "svelte";
-  import { Writable } from "svelte/store";
+  import type { Writable } from "svelte/store";
 
   export let block = false;
   export let tailwindClasses: string = undefined;
