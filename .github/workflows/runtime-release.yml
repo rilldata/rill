@@ -1,0 +1,81 @@
+name: Release runtime binaries
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/runtime-release.yml"
+      - "runtime/**"
+jobs:
+  release:
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            name: linux-amd64
+            ext: ""
+          - os: windows
+            arch: amd64
+            name: windows-amd64
+            ext: ".exe"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: "0.9.1"
+      - name: Authenticate GCS
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: "${{ secrets.RILL_RUNTIME_SA }}"
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v0"
+      - name: Build and upload ${{ matrix.name }}
+        shell: bash
+        run: |
+          cd runtime
+          make release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
+          mv release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} release/runtime${{ matrix.ext }}
+          zip -j release/runtime-${{ matrix.name }}.zip release/runtime${{ matrix.ext }}
+          RUNTIME_VERSION=$(cat version.txt | tr -d "[:space:]")
+          gsutil cp release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/runtime/releases/v$RUNTIME_VERSION/
+  release_macos:
+    # NOTE: Currently, darwin builds must run on macOS. See Makefile for details.
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+            name: macos-amd64
+            ext: ""
+          - os: darwin
+            arch: arm64
+            name: macos-arm64
+            ext: ""
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
+      - name: Authenticate GCS
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: "${{ secrets.RILL_SQL_SA }}"
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v0"
+      - name: Build and upload ${{ matrix.name }}
+        shell: bash
+        run: |
+          cd runtime
+          make release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
+          mv release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} release/runtime${{ matrix.ext }}
+          zip -j release/runtime-${{ matrix.name }}.zip release/runtime${{ matrix.ext }}
+          RUNTIME_VERSION=$(cat version.txt | tr -d "[:space:]")
+          gsutil cp release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/runtime/releases/v$RUNTIME_VERSION/

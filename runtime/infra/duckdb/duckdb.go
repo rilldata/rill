@@ -29,22 +29,20 @@ func (d driver) Open(dsn string) (infra.Connection, error) {
 
 type connection struct {
 	db     *sqlx.DB
-	worker *priorityworker.PriorityWorker[*query]
+	worker *priorityworker.PriorityWorker[*job]
 }
 
-type query struct {
-	sql  string
-	args []any
-	rows *sqlx.Rows
+type job struct {
+	stmt   *infra.Statement
+	result *sqlx.Rows
 }
 
-func (c *connection) Execute(ctx context.Context, priority int, sql string, args ...any) (*sqlx.Rows, error) {
-	q := &query{
-		sql:  sql,
-		args: args,
+func (c *connection) Execute(ctx context.Context, stmt *infra.Statement) (*sqlx.Rows, error) {
+	j := &job{
+		stmt: stmt,
 	}
 
-	err := c.worker.Process(ctx, priority, q)
+	err := c.worker.Process(ctx, stmt.Priority, j)
 	if err != nil {
 		if err == priorityworker.ErrStopped {
 			return nil, infra.ErrClosed
@@ -52,12 +50,22 @@ func (c *connection) Execute(ctx context.Context, priority int, sql string, args
 		return nil, err
 	}
 
-	return q.rows, nil
+	return j.result, nil
 }
 
-func (c *connection) executeQuery(ctx context.Context, q *query) error {
-	rows, err := c.db.QueryxContext(ctx, q.sql, q.args...)
-	q.rows = rows
+func (c *connection) executeQuery(ctx context.Context, j *job) error {
+	if j.stmt.DryRun {
+		// TODO: Find way to validate with args
+		prepared, err := c.db.PrepareContext(ctx, j.stmt.Query)
+		if err != nil {
+			return err
+		}
+		prepared.Close()
+		return nil
+	}
+
+	rows, err := c.db.QueryxContext(ctx, j.stmt.Query, j.stmt.Args...)
+	j.result = rows
 	return err
 }
 

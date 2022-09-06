@@ -1,32 +1,8 @@
-<script context="module">
-  let activatedOverlays = 0;
-</script>
-
 <script>
-  import { browser } from "$app/env";
-  import { fade } from "svelte/transition";
   import Portal from "$lib/components/Portal.svelte";
-  import { onDestroy, onMount } from "svelte";
+  import { fade } from "svelte/transition";
 
   export let bg = "rgba(0,0,0,.8)";
-
-  onMount(() => {
-    if (browser) {
-      activatedOverlays += 1;
-      document.querySelector(".body").ariaHidden = "true";
-      document.querySelector(".body").classList.add("big-process-overlay");
-    }
-  });
-
-  onDestroy(() => {
-    if (browser) {
-      activatedOverlays -= 1;
-      if (activatedOverlays === 0) {
-        document.querySelector(".body").ariaHidden = "false";
-        document.querySelector(".body").classList.remove("big-process-overlay");
-      }
-    }
-  });
 
   // FIXME: when an element pops up before the last one has dismounted,
   // the focus trapping won't work.

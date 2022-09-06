@@ -14,7 +14,7 @@ import (
 func TestQuery(t *testing.T) {
 	conn := prepareConn(t)
 
-	rows, err := conn.Execute(context.Background(), 0, "SELECT COUNT(*) FROM foo")
+	rows, err := conn.Execute(context.Background(), &infra.Statement{Query: "SELECT COUNT(*) FROM foo"})
 	require.NoError(t, err)
 
 	var count int
@@ -40,7 +40,11 @@ func TestPriorityQueue(t *testing.T) {
 	for i := n; i > 0; i-- {
 		priority := i
 		g.Go(func() error {
-			rows, err := conn.Execute(context.Background(), priority, "SELECT ?", priority)
+			rows, err := conn.Execute(context.Background(), &infra.Statement{
+				Query:    "SELECT ?",
+				Args:     []any{priority},
+				Priority: priority,
+			})
 			if err != nil {
 				return err
 			}
@@ -86,7 +90,11 @@ func TestCancel(t *testing.T) {
 				}()
 			}
 
-			rows, err := conn.Execute(ctx, priority, "SELECT ?", priority)
+			rows, err := conn.Execute(ctx, &infra.Statement{
+				Query:    "SELECT ?",
+				Args:     []any{priority},
+				Priority: priority,
+			})
 
 			if priority == cancelIdx {
 				require.Error(t, err)
@@ -126,7 +134,11 @@ func TestClose(t *testing.T) {
 	for i := n; i > 0; i-- {
 		priority := i
 		g.Go(func() error {
-			rows, err := conn.Execute(context.Background(), priority, "SELECT ?", priority)
+			rows, err := conn.Execute(context.Background(), &infra.Statement{
+				Query:    "SELECT ?",
+				Args:     []any{priority},
+				Priority: priority,
+			})
 			if err != nil {
 				return err
 			}
@@ -157,11 +169,15 @@ func prepareConn(t *testing.T) infra.Connection {
 	conn, err := driver{}.Open("?access_mode=read_write")
 	require.NoError(t, err)
 
-	rows, err := conn.Execute(context.Background(), 0, "CREATE TABLE foo(bar VARCHAR, baz INTEGER)")
+	rows, err := conn.Execute(context.Background(), &infra.Statement{
+		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER)",
+	})
 	require.NoError(t, err)
 	require.NoError(t, rows.Close())
 
-	rows, err = conn.Execute(context.Background(), 0, "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)")
+	rows, err = conn.Execute(context.Background(), &infra.Statement{
+		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
+	})
 	require.NoError(t, err)
 	require.NoError(t, rows.Close())
 

@@ -1,4 +1,8 @@
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { getMessageFromParseError } from "$common/expression-parser/getMessageFromParseError";
+import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import {
   addManyMeasures,
   addOneMeasure,
@@ -6,16 +10,12 @@ import {
   setMeasureExpressionValidation,
   updateMeasure,
 } from "$lib/redux-store/measure-definition/measure-definition-slice";
-import { fetchWrapper } from "$lib/util/fetchWrapper";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import { generateApis } from "$lib/redux-store/utils/api-utils";
-import type { ValidationConfig } from "$lib/redux-store/utils/validation-utils";
-import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
-import { getMessageFromParseError } from "$common/expression-parser/getMessageFromParseError";
+import { generateApis } from "$lib/redux-store/utils/api-utils";
 import { handleErrorResponse } from "$lib/redux-store/utils/handleErrorResponse";
-import { selectMeasureById } from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import { invalidateExplorerThunk } from "$lib/redux-store/utils/invalidateExplorerThunk";
+import type { ValidationConfig } from "$lib/redux-store/utils/validation-utils";
+import { fetchWrapper } from "$lib/util/fetchWrapper";
 
 const MeasureExpressionValidation: ValidationConfig<MeasureDefinitionEntity> = {
   field: "expression",
@@ -60,7 +60,7 @@ export const {
 export const updateMeasuresWrapperApi = invalidateExplorerThunk(
   EntityType.MeasureDefinition,
   updateMeasuresApi,
-  ["expression", "sqlName"],
+  ["label", "expression", "sqlName", "description", "formatPreset"],
   (state, id) => [selectMeasureById(state, id).metricsDefId]
 );
 

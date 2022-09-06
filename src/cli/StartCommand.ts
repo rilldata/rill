@@ -3,7 +3,7 @@ import { EntityType } from "$common/data-modeler-state-service/entity-state-serv
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
-import { MetricsExplorerActions } from "$common/rill-developer-service/MetricsExplorerActions";
+import { MetricsViewActions } from "$common/rill-developer-service/MetricsViewActions";
 import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
 import { ExpressServer } from "$server/ExpressServer";
 import { Command } from "commander";
@@ -46,7 +46,7 @@ export class StartCommand extends DataModelerCliCommand {
           MetricsDefinitionActions,
           DimensionsActions,
           MeasuresActions,
-          MetricsExplorerActions,
+          MetricsViewActions,
         ].map(
           (RillDeveloperActionsClass) =>
             new RillDeveloperActionsClass(
