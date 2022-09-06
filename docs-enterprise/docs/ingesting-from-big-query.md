@@ -10,9 +10,9 @@ import Excerpt from '@site/src/components/Excerpt'
 To import data form BigQuery, you will first need to grant Rill access to your BigQuery data. Once that is complete, you'll ingest the data via the Druid console following the same steps shown in [Druid Data Ingestion](https://druid.apache.org/docs/latest/tutorials/tutorial-batch.html) and [Druid Optimization During Ingestion](https://druid.apache.org/docs/latest/ingestion/index.html)
 
 ## Grant Rill access to your BigQuery project
-Starting in Rill, your workspace has a Google Service Account associated with it. You will then go to your BigQuery project and add that Google Service Account as a member with BigQuery Data Viewer permission. To keep everything in one place for this tutorial, we'll walk you through granting access here. These instructions call also be found [here](/google-big-query).
+Starting in Rill, your workspace has a Google Service Account associated with it. You will then go to your BigQuery project and add that Google Service Account as a member with BigQuery Data Viewer permission. To keep everything in one place for this tutorial, we'll walk you through granting access here. These instructions call also be found [here](/google-bigquery).
 
-1. Find your Google Cloud Service Account by logging into Rill and clicking on Integrations. Your Google Cloud Service Account will be displayed. It will be of the form <organization\>-\<workspace\>@rilldata.iam.gserviceaccount.com. 
+1. Find your Google Cloud Service Account by logging into Rill and clicking on Integrations. Your Google Cloud Service Account will be displayed. It will be of the form `organization`-`workspace`@rilldata.iam.gserviceaccount.com. 
 
 2. Go to your Google Cloud Console and select the project to which you want to grant access. 
   ![](https://images.contentful.com/ve6smfzbifwz/6QItw8AUlK7ACgoqbf0UpC/9a92c4ca0e1c68753f65660fa717c703/0fa73d4-Project_selector.png)
@@ -44,5 +44,5 @@ Now that you've given Rill permission to access your BigQuery data, you'll load 
 5. **Click on `Connect Data`**
 6. **Paste the table id from BigQuery that you copied into your clipboard into the Table ID field and click `Apply`.
 7. You should see a preview of your data
-8. Follow the instructions in [Druid Data Ingestion](/druid-data-ingestion), clicking `Next` in the bottom right to step through the various ingestions stages. Remember to name your dataset appropriately in the `Publish` stage
+8. Proceed through Druid Data Ingestion, clicking `Next` in the bottom right to step through the various ingestions stages. Remember to name your dataset appropriately in the `Publish` stage
 9. Submit your ingestion spec in the final stage. When the status of the job says `Success`, click on the `Query` tab at the top to go to the Druid SQL console and use SQL to query your new dataset.
