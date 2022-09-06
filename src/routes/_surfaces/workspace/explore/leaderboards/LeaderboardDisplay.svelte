@@ -11,7 +11,7 @@
   import {
     useMetaQuery,
     useTotalsQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  } from "$lib/svelte-query/queries/metrics-view";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,

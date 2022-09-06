@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
-  import type { MetricViewTimeSeriesResponse } from "$common/rill-developer-service/MetricViewActions";
+  import type { MetricsViewTimeSeriesResponse } from "$common/rill-developer-service/MetricsViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -15,7 +15,7 @@
     useMetaQuery,
     useTimeSeriesQuery,
     useTotalsQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  } from "$lib/svelte-query/queries/metrics-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
@@ -56,7 +56,10 @@
     });
   }
 
-  let timeSeriesQuery: UseQueryStoreResult<MetricViewTimeSeriesResponse, Error>;
+  let timeSeriesQuery: UseQueryStoreResult<
+    MetricsViewTimeSeriesResponse,
+    Error
+  >;
   $: if (
     metricsExplorer &&
     metaQuery &&
