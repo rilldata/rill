@@ -70,6 +70,7 @@ message QueryDirectRequest {
   string sql = 2;
   repeated google.protobuf.Value args = 3;
   int64 priority = 4;
+  bool dry_run = 5;
 }
 
 message QueryDirectResponse {
