@@ -9,7 +9,7 @@ export class ServerConfig extends Config<ServerConfig> {
 
   @Config.ConfigField("localhost")
   public uiHost: string;
-  @Config.ConfigField(3000)
+  @Config.ConfigField(5173)
   public uiPort: number;
   public uiUrl: string;
 
