@@ -1,10 +1,9 @@
 module.exports = {
-  purge: [
+  content: [
     "./src/**/*.html",
     "./src/**/*.svelte",
     "./src/lib/duckdb-data-types.ts",
   ],
-  content: [],
   theme: {
     extend: {},
   },
