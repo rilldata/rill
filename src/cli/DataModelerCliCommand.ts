@@ -10,6 +10,7 @@ import { isPortOpen } from "$common/utils/isPortOpen";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
 import { RillDeveloper } from "$server/RillDeveloper";
 import { ProjectConfig } from "$common/config/ProjectConfig";
+import { LocalConfig } from "$common/config/LocalConfig";
 
 const DATABASE_NAME = "stage.db";
 
@@ -46,6 +47,9 @@ export abstract class DataModelerCliCommand {
       server: new ServerConfig({
         serverPort: Number(process.env.RILL_SERVER_PORT ?? 8080),
         serveStaticFile: true,
+      }),
+      local: new LocalConfig({
+        isDev: Boolean(process.env.RILL_IS_DEV ?? false),
       }),
       project: new ProjectConfig({ duckDbPath: cliRunArgs.duckDbPath }),
       projectFolder: this.projectPath,

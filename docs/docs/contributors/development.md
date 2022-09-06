@@ -25,6 +25,9 @@ Run `npm run dev` to start the UI and backend dev servers. UI will be available 
 Initializing a project, adding datasets as sources, and starting a project are currently supported through our [CLI](cli).
 
 ## Creating a project
+
+Set the following enviornment variable `RILL_IS_DEV=true` for marking the project as a dev project.
+
 Initialize in the current directory.
 ```
 npm run cli --silent -- init
