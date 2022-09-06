@@ -85,6 +85,10 @@
     });
   }
 
+  function selectDimension(dimensionId) {
+    metricsExplorerStore.setMetricDimensionId(metricsDefId, dimensionId);
+  }
+
   let topListQuery;
 
   $: if (
@@ -165,6 +169,7 @@
         slot="title"
         class:text-gray-500={atLeastOneActive}
         class:italic={atLeastOneActive}
+        on:click={() => selectDimension(dimensionId)}
       >
         <Tooltip location="top" distance={16}>
           <div class="flex flex-row gap-x-2 items-center">
