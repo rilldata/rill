@@ -67,6 +67,8 @@ func TestDruid(t *testing.T) {
 
 	t.Run("count", func(t *testing.T) { testCount(t, conn) })
 	t.Run("max", func(t *testing.T) { testMax(t, conn) })
+	t.Run("schema all", func(t *testing.T) { testSchemaAll(t, conn) })
+	t.Run("schema lookup", func(t *testing.T) { testSchemaLookup(t, conn) })
 	// Add new tests here
 
 	require.NoError(t, conn.Close())
@@ -154,4 +156,32 @@ func testMax(t *testing.T, conn infra.Connection) {
 	require.NoError(t, rows.Scan(&count))
 	require.Equal(t, expectedValue, count)
 	require.NoError(t, rows.Close())
+}
+
+func testSchemaAll(t *testing.T, conn infra.Connection) {
+	table, err := conn.InformationSchema().All()
+	require.NoError(t, err)
+	schemaCount := len(table)
+	require.GreaterOrEqual(t, schemaCount, 1)
+
+	var tableNames []string
+	for _, element := range table {
+		tableNames = append(tableNames, element.Name)
+	}
+	require.Contains(t, tableNames, testTable)
+	require.Contains(t, tableNames, "COLUMNS")
+}
+
+func testSchemaLookup(t *testing.T, conn infra.Connection) {
+	table, err := conn.InformationSchema().Lookup(testTable)
+	require.NoError(t, err)
+	require.Equal(t, testTable, table.Name)
+
+	_, err = conn.InformationSchema().Lookup("temp")
+	require.Error(t, err)
+
+	err = conn.Close()
+	require.NoError(t, err)
+	err = conn.(*connection).db.Ping()
+	require.Error(t, err)
 }

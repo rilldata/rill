@@ -37,6 +37,14 @@ type job struct {
 	result *sqlx.Rows
 }
 
+type informationSchema struct {
+	conn *connection
+}
+
+func (c *connection) InformationSchema() infra.InformationSchema {
+	return nil
+}
+
 func (c *connection) Execute(ctx context.Context, stmt *infra.Statement) (*sqlx.Rows, error) {
 	j := &job{
 		stmt: stmt,
@@ -67,10 +75,6 @@ func (c *connection) executeQuery(ctx context.Context, j *job) error {
 	rows, err := c.db.QueryxContext(ctx, j.stmt.Query, j.stmt.Args...)
 	j.result = rows
 	return err
-}
-
-func (c *connection) InformationSchema() string {
-	return ""
 }
 
 func (c *connection) Close() error {

@@ -26,7 +26,7 @@ type Driver interface {
 type Connection interface {
 	Execute(ctx context.Context, stmt *Statement) (*sqlx.Rows, error)
 	Close() error
-	InformationSchema() string
+	InformationSchema() InformationSchema
 }
 
 type Statement struct {
@@ -34,6 +34,24 @@ type Statement struct {
 	Args     []any
 	DryRun   bool
 	Priority int
+}
+
+type InformationSchema interface {
+	All() ([]*Table, error)
+	Lookup(name string) (*Table, error)
+}
+
+type Table struct {
+	Database string
+	Schema string
+	Name string
+	Type string
+	Columns []Column
+}
+
+type Column struct {
+	Name string
+	Type string
 }
 
 // ErrClosed should be returned by Execute if the connection is closed
