@@ -1,8 +1,11 @@
 ---
 title: "Azure Storage Container"
 slug: "azure-storage-container"
-excerpt: "Integrating with Azure Cloud"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Integrating with Azure Cloud" />
+
 Rill would need access to the Azure Storage Container to fetch the data. For this Rill needs 
 * Storage Account
 * Container Name

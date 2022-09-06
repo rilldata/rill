@@ -2,6 +2,9 @@
 title: "Tutorial: Manual Batch Ingestion"
 slug: "tutorial-druid-ingestion"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
 
 ## Tutorial: Load Sample Data into Druid
 

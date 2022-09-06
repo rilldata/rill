@@ -1,8 +1,11 @@
 ---
 title: "🔓 Authenticate & Connect"
 slug: "authenticating-integrated-applications"
-excerpt: "Set up Service Accounts and Generic JDBC/API access"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Set up Service Accounts and Generic JDBC/API access"/>
+
 ## Overview
 When you query Druid via an application, that application must provide authentication credentials to Druid. There are two ways to do this: a service account or an API password.
 

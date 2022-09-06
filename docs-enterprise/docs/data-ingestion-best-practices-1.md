@@ -2,6 +2,10 @@
 title: "Ingestion Best Practices"
 slug: "data-ingestion-best-practices-1"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 :::info Apache Druid Ingestion Details
 For a full list of ingestion best practices, visit the [Apache Druid Ingestion guide](https://druid.apache.org/docs/latest/ingestion/index.html).
 :::

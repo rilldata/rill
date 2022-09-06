@@ -1,8 +1,10 @@
 ---
 title: "AWS S3 Bucket"
 slug: "aws-s3-bucket"
-excerpt: "Batch Ingestion: integrating Rill with S3 storage"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Batch Ingestion: integrating Rill with S3 storage" />
 
 ## Setup instructions
 

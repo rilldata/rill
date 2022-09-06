@@ -1,9 +1,11 @@
 ---
 title: "Explore Quickstart"
 slug: "getting-started"
-excerpt: "Analysis basics and capabilities overview"
 ---
+import Excerpt from '@site/src/components/Excerpt'
 import Loom from '@site/src/components/Loom';
+
+<Excerpt text="Analysis basics and capabilities overview" />
 
 ## Explore Overview
 

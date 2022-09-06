@@ -1,8 +1,11 @@
 ---
 title: "Jupyter"
 slug: "jupyter"
-excerpt: "Jupyter"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Using Rill with Jupyter"/>
+
 ## Overview
 Using Jupyter with Druid is easy. Simply post an SQL query with your authentication credentials  an then parse the json output that is returned.
 

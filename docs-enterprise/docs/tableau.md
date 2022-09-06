@@ -1,8 +1,11 @@
 ---
 title: "Tableau"
 slug: "tableau"
-excerpt: "Integrating Rill with Tableau"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Integrating Rill with Tableau"/>
+
 ## Setup instructions
 
 ### Install the Avatica JDBC driver

@@ -2,6 +2,10 @@
 title: "Security"
 slug: "security"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Credentials Management
 
 We are securing the secrets required for internal communications as well as the database credentials are stored in Hashicorp's Vault. 

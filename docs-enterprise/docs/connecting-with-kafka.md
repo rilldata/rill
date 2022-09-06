@@ -1,8 +1,11 @@
 ---
 title: "Confluent/Apache Kafka"
 slug: "connecting-with-kafka"
-excerpt: "Stream data directly from your Kafka instance into Rill"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Stream data directly from your Kafka instance into Rill"/>
+
 ## Setup Instructions
 Follow the instructions below to grant Rill access to your Apache Kafka Cluster and the data on a given topic within the cluster. Proving access to a cloud provided service, such as Confluent Cloud, is easier due to all of the connection and security is already taken care of for you.  If you are using a self-manage cluster, ensure security and encryption are configured accordingly. 
 

@@ -2,6 +2,9 @@
 title: "Tutorial: Kafka Ingestion"
 slug: "tutorial-kafka-ingestion"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
 
 To get comfortable with Druid and Streaming from Apache Kafka, we'll walk you through loading a sample data set. If you have yet configured an Apache Kafka instance that is accessible by RillData, please see the documentation on [Connecting Sources for Kafka](/connecting-with-kafka).
 

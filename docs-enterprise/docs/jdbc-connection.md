@@ -2,6 +2,10 @@
 title: "JDBC Connection"
 slug: "jdbc-connection"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Overview
 You can use a JDBC connection to query your Druid service. 
 

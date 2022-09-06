@@ -1,8 +1,11 @@
 ---
 title: "Metadata Lookups"
 slug: "metadata-lookups"
-excerpt: "Adding lookup tables for data enrichment"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Adding lookup tables for data enrichment"/>
+
 ## Overview
 
 Lookup tables are useful to reduce the size of your overall data set and to make sure that id/name combinations are always available with the latest data. Lookup examples would include:

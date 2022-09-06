@@ -2,6 +2,10 @@
 title: "🤓 Contact Support"
 slug: "contact-support"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 Contact support via [support@rilldata.com](mailto:support@rilldata.com)
 
 You can also access the support portal, which includes your ticket history and additional product videos, at [support.rilldata.com](support.rilldata.com).

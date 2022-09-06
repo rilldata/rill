@@ -1,8 +1,11 @@
 ---
 title: "❓ FAQ"
 slug: "faq"
-excerpt: "General queries and common asks"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="General queries and common asks"/>
+
 ## Where do you see the biggest validation issues come from?
 
 There are several situations where Rill may not process data. Events that can not be processed fall into several categories and will be handled in the following ways:

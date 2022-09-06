@@ -1,8 +1,11 @@
 ---
 title: "Private Link"
 slug: "aws-private-link"
-excerpt: "Share data privately"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Share data privately" />
+
 The choice between Transit Gateway, VPC peering, and AWS PrivateLink is dependent on connectivity.
 
 **AWS PrivateLink** — Use AWS PrivateLink when you have a client/server set up where you want to allow one or more consumer VPCs unidirectional access to a specific service or set of instances in the service provider VPC. Only the clients in the consumer VPC can initiate a connection to the service in the service provider VPC. This is also a good option when client and servers in the two VPCs have overlapping IP addresses as AWS PrivateLink leverages ENIs within the client VPC such that there are no IP conflicts with the service provider. You can access AWS PrivateLink endpoints over VPC Peering, VPN, and AWS Direct Connect.

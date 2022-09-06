@@ -2,6 +2,10 @@
 title: "Connect Real-time Publishing to Rill"
 slug: "real-time-publishing-to-rill"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Streaming Platform
 
 Connectivity is done with standard Apache Kafka client configuration allowing for easy in while also being secure. 

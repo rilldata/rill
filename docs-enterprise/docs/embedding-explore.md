@@ -1,8 +1,11 @@
 ---
 title: "⚙️ Embedding Explore"
 slug: "embedding-explore"
-excerpt: "White-labeling your dashboards within existing applications"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="White-labeling your dashboards within existing applications" />
+
 The Explore dashboard can be embedded into you own web application using an iFrame, a standard HTML element, and authenticated using our built-in support for single-sign-on (SSO) login.
 
 Security is accomplished with a one-way hash using the secret key provided in the Rill account [administration page for SSO support](https://dash.rilldata.com/admin/#/sso).

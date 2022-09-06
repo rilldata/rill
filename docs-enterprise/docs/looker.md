@@ -1,8 +1,11 @@
 ---
 title: "Looker"
 slug: "looker"
-excerpt: "Integrating Rill with Looker"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Integrating Rill with Looker"/>
+
 ## Setup instructions
 
 ### Create credentials that allow Looker to connect to Rill

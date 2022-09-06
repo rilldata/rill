@@ -1,9 +1,11 @@
 ---
 title: "Facet: Pivot tables & Splits"
 slug: "facet-pivot-table-splits"
-excerpt: "Visualize data intersections and create reports for export"
 ---
+import Excerpt from '@site/src/components/Excerpt'
 import Loom from '@site/src/components/Loom';
+
+<Excerpt text="Visualize data intersections and create reports for export" />
 
 ## Overview
 The Facet view allows users to create reporting on intersections of dimensions and metrics. In this view, you can:

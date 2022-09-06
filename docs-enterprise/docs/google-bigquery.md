@@ -1,8 +1,10 @@
 ---
 title: "Google BigQuery"
 slug: "google-bigquery"
-excerpt: "Direction integration via Rill's homegrown BigQuery connector"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Direction integration via Rill's homegrown BigQuery connector" />
 
 ## Setup instructions
 Follow the instructions below to grant Rill access to your Google BigQuery datasets.

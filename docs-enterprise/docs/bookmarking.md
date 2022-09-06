@@ -1,8 +1,11 @@
 ---
 title: "Bookmarks: Saved Views"
 slug: "bookmarking"
-excerpt: "Saved dashboard views with filter settings for recurring analyses"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Saved dashboard views with filter settings for recurring analyses"/>
+
 ## Setting Bookmarks
 
 Bookmarks are useful to return to regular analyses and filter sets commonly used for reporting or deep dives. 

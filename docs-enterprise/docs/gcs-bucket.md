@@ -1,8 +1,10 @@
 ---
 title: "GCS Bucket"
 slug: "gcs-bucket"
-excerpt: "Batch ingestion: integrating Rill with Google Cloud Storage"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Batch ingestion: integrating Rill with Google Cloud Storage" />
 
 ## Setup instructions
 Follow the instructions below to grant Rill access to your Google Cloud Storage Bucket.

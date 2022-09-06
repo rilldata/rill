@@ -2,6 +2,10 @@
 title: "Scheduled Exports"
 slug: "scheduled-exports"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Scheduled Exports
 
 Scheduled exports provide the ability for regular reporting based on a series of dimensions and metrics. 

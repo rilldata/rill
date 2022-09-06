@@ -1,8 +1,10 @@
 ---
 title: "AWS Encryption"
 slug: "aws-encryption"
-excerpt: "with Customer Managed Keys"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="with Customer Managed Keys" />
 We can encrypt the data with Customer managed AWS KMS Key.
 
 ## Create a new AWS KMS Key

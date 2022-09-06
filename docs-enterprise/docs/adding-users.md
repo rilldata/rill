@@ -1,8 +1,11 @@
 ---
 title: "Adding Users"
 slug: "adding-users"
-excerpt: "How to manage access to Explore"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="How to manage access to Explore"/>
+
 ## Adding Users (for Admins)
 
 Select "My Profile" on the top right to access User settings to [enter the Admin page](/explore-admin). 

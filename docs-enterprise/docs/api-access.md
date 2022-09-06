@@ -2,6 +2,10 @@
 title: "API Access"
 slug: "api-access"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 With access to RCC, Admin users are able to access raw data via the Druid API.
 
 Additional information on the API can be found in the [Apache Druid API documentation](https://druid.apache.org/docs/latest/operations/api-reference.html).

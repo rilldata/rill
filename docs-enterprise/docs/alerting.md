@@ -2,6 +2,10 @@
 title: "Alerting"
 slug: "alerting"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Alerting
 
 To access alerts, click the bell icon at the top of the page to bring up the alerts window.

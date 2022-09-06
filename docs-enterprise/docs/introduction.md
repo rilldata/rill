@@ -2,6 +2,9 @@
 title: "🔖 Introduction"
 slug: /
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
 
 ## Welcome
 

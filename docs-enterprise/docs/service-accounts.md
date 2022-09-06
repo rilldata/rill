@@ -2,6 +2,10 @@
 title: "Service Accounts"
 slug: "service-accounts"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Overview 
 A Service Account is an account that your admin will create and use to authenticate API calls made to Druid by another application. If multiple users in your workspace will be using this application to access Druid, your admin can create a single service account and embed the credentials in the application that the users are running. As a user of that application, once your Admin creates the service account and provides the credentials to the application, you will be able to interact with Druid through that application without additional Druid credentials.
 

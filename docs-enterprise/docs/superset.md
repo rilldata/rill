@@ -2,6 +2,10 @@
 title: "Superset"
 slug: "superset"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Setup instructions
 
 ### Connect to your database/Rill workspace

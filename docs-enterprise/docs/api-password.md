@@ -2,6 +2,10 @@
 title: "API Password"
 slug: "api-password"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Overview 
 
 If you want to use an application that makes API calls to Druid, you can create an API password and authenticate the API call using your Rill login and the API password. This is an alternative to using a [Service Account](/service-accounts), which is an account that your admin can create to allow multiple users to access Druid through an application via a single authorized user.

@@ -1,8 +1,11 @@
 ---
 title: "Edit Dashboard Metrics"
 slug: "explore-json-examples"
-excerpt: "Illustrative snippets for updating your dashboards"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Illustrative snippets for updating your dashboards"/>
+
 ## Adding a Dashboard in Explore
 
 To get started, a Staging dashboard will be created for your each datasource in your account. These staging dashboards will contain a full set of dimensions and metrics available in your datasource.

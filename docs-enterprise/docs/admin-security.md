@@ -1,8 +1,11 @@
 ---
 title: "Permissions & Security Policies"
 slug: "admin-security"
-excerpt: "How to manage access and log-in to Explore"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="How to manage access and log-in to Explore"/>
+
 ## Permissions & Security Policies: Assign dashboards to users (for Admins)
 
 Access is managed [on the Admin page](/explore-admin) via security polices where a security policy can be assigned 1:many users or dashboards. Security policies thus provide granular level access to limit specific users to only a specific set of data. 

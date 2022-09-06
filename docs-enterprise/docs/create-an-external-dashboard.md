@@ -1,8 +1,11 @@
 ---
 title: "Create External Dashboards"
 slug: "create-an-external-dashboard"
-excerpt: "Use a saved \"Parent\" Dashboard to create a \"Child\" based on predetermined filters"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text='Use a saved "Parent" Dashboard to create a "Child" based on predetermined filters' />
+
 To create dashboards for a set of stakeholders, external users or other partners, start by creating a Parent dashboard view that contains all of the dimensions and metrics you wish to display. That parent dashboard can then be filtered by a set of criteria that then limits the data available to each user you wish to grant access. Further, that child dashboard can be embedded to be a specific application view within your product/portal for that set of users.
 ![](https://images.contentful.com/ve6smfzbifwz/2LCl2vzrcK3mguqOmEqBdD/35756cfa9dcfe9e91f402ec31d6d6879/cc0ee04-Child_Dash.png)
 

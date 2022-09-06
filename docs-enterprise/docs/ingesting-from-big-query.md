@@ -1,8 +1,11 @@
 ---
 title: "Tutorial: BigQuery Ingestion"
 slug: "ingesting-from-big-query"
-excerpt: "Creating a dataset from a Google BigQuery table"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt text="Creating a dataset from a Google BigQuery table"/>
+
 ## Overview
 To import data form BigQuery, you will first need to grant Rill access to your BigQuery data. Once that is complete, you'll ingest the data via the Druid console following the same steps shown in [Druid Data Ingestion](https://druid.apache.org/docs/latest/tutorials/tutorial-batch.html) and [Druid Optimization During Ingestion](https://druid.apache.org/docs/latest/ingestion/index.html)
 

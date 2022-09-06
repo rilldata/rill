@@ -2,6 +2,10 @@
 title: "🔐 Explore Admin"
 slug: "explore-admin"
 ---
+import Excerpt from '@site/src/components/Excerpt'
+
+<Excerpt />
+
 ## Explore Admin Functions
 
 To access the Admin tool, select your profile in the dropdown on the top right of the screen.
