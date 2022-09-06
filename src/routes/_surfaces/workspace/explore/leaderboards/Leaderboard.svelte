@@ -24,7 +24,7 @@
   import {
     useMetaQuery,
     useTopListQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  } from "$lib/svelte-query/queries/metrics-view";
   import { slideRight } from "$lib/transitions";
   import {
     humanizeGroupValues,
@@ -88,7 +88,7 @@
   ) {
     topListQuery = useTopListQuery(metricsDefId, dimensionId, {
       measures: [metricsExplorer?.leaderboardMeasureId],
-      limit: 10,
+      limit: 15,
       offset: 0,
       sort: [],
       time: {

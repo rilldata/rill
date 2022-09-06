@@ -6,9 +6,9 @@ The main feature-set component for dashboard filters
   import { flip } from "svelte/animate";
 
   import type {
-    MetricViewDimensionValues,
-    MetricViewRequestFilter,
-  } from "$common/rill-developer-service/MetricViewActions";
+    MetricsViewDimensionValues,
+    MetricsViewRequestFilter,
+  } from "$common/rill-developer-service/MetricsViewActions";
   import { getMapFromArray } from "$common/utils/arrayUtils";
   import {
     MetricsExplorerEntity,
@@ -27,7 +27,7 @@ The main feature-set component for dashboard filters
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // TODO: handle exclude filters
-  let values: MetricViewDimensionValues;
+  let values: MetricsViewDimensionValues;
   $: values = metricsExplorer?.filters.include;
 
   let dimensions: Readable<DimensionDefinitionEntity[]>;
@@ -37,7 +37,7 @@ The main feature-set component for dashboard filters
     metricsExplorerStore.clearFilterForDimension(metricsDefId, dimensionId);
   }
 
-  function isFiltered(filters: MetricViewRequestFilter): boolean {
+  function isFiltered(filters: MetricsViewRequestFilter): boolean {
     if (!filters) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
   }

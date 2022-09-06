@@ -2,7 +2,11 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 # Using a Rill binary
-Our binary is the fastest path to installing Rill Developer. Download the latest package that is relevant for your OS and architecture:
+Our binary script is the fastest path to installing Rill Developer. Use this command to get started:
+```
+curl -s https://cdn.rilldata.com/install.sh | bash
+```
+Alternatively you can manually download the latest binary that is relevant for your OS and architecture:
 
 <Tabs >
   <TabItem label="MacOS" value="mac">
@@ -43,8 +47,8 @@ If you see a warning "SmartScreen protected an unrecognized app from starting," 
   </TabItem>
 </Tabs>
 
-## CLI commands
-To start the application you need to open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands.
+## Nuance for manually download binaries
+Installing the Rill binary manually doesn't give you the ablity to use Rill globally. Instead, you should open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands as expected.
 ```
 cd downloads
 rill init
