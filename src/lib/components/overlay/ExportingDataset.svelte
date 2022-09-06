@@ -4,7 +4,7 @@
 </script>
 
 <BlockingOverlayContainer
-  bg="linear-gradient(to right, rgba(0,0,50, .5), rgba(0, 30, 30,.6))"
+  bg="linear-gradient(to right, rgba(0, 0, 0, .5), rgba(0, 0, 0,.6))"
 >
   <div slot="title">
     <span class="font-bold">Exporting dataset</span>

@@ -6,7 +6,7 @@
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { SelectMenu } from "$lib/components/menu";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
 
@@ -70,7 +70,7 @@
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:send={{ key: "leaderboard-metric", y: 8 }}
+      in:send={{ key: "leaderboard-metric" }}
     >
       <div>Dimension Leaders by</div>
 
@@ -87,7 +87,7 @@
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:receive={{ key: "loading-leaderboard-metric", y: 8 }}
+      in:receive={{ key: "loading-leaderboard-metric" }}
     >
       pulling leaderboards <Spinner status={EntityStatus.Running} />
     </div>

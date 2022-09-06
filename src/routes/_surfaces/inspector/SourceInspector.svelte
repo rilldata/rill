@@ -223,6 +223,7 @@
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry
+                entityId={currentTable.id}
                 indentLevel={0}
                 {containerWidth}
                 cardinality={currentDerivedTable?.cardinality ?? 0}
