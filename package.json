@@ -11,7 +11,6 @@
     "postinstall:dev": "ts-node-dev --quiet --project tsconfig.node.json src/cli/post-install.ts",
     "postinstall:prod": "node dist/cli/post-install.js",
     "install-and-build": "npm install && npm run build",
-    "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint --ignore-path .gitignore .",
