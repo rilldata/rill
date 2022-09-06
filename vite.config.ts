@@ -20,8 +20,8 @@ try {
 const config = defineConfig({
   resolve: {
     alias: {
-      $common: "./src/common",
-      $server: "./src/server",
+      $common: "/src/common",
+      $server: "/src/server",
     },
   },
   define: {
