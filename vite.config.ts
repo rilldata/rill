@@ -1,8 +1,12 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import { execSync } from "child_process";
+import dns from "dns";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { defineConfig } from "vite";
+
+// print dev server as `localhost` not `127.0.0.1`
+dns.setDefaultResultOrder("verbatim");
 
 // get current version
 const file = fileURLToPath(new URL("package.json", import.meta.url));
@@ -23,6 +27,9 @@ const config = defineConfig({
       $common: "/src/common",
       $server: "/src/server",
     },
+  },
+  server: {
+    port: 3000,
   },
   define: {
     RILL_VERSION: `"${pkg.version}"`,

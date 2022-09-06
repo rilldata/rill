@@ -17,7 +17,7 @@ type ErrorOutput = string;
   {
     cliFolder: "temp/test-ui",
     serverPort: PORT,
-    uiPort: 5173,
+    uiPort: 3000,
   } as TestServerSetupParameter,
 ])
 @TestBase.TestLibrary(JestTestLibrary)

@@ -19,7 +19,7 @@ Run `npm install` to install all the dependencies and compile duckdb and other p
 Run `npm run build` to build the application.
  
 ## Starting a dev server
-Run `npm run dev` to start the UI and backend dev servers. UI will be available on http://localhost:5173/
+Run `npm run dev` to start the UI and backend dev servers. UI will be available on http://localhost:3000/
 
 ## Developer CLI
 Initializing a project, adding datasets as sources, and starting a project are currently supported through our [CLI](cli).
