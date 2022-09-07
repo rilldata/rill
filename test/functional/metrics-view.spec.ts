@@ -45,7 +45,7 @@ describe("Metrics View", () => {
                 start: MetricsExplorerTest.timeRange?.start,
                 end: MetricsExplorerTest.timeRange?.end,
               },
-              limit: 0,
+              limit: 15,
               offset: 0,
               sort: [],
             };

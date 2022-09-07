@@ -40,7 +40,10 @@ see more button
       {atLeastOneActive}
       {active}
       on:click={(evt) => {
-        dispatch("select-item", { label, include: !evt.metaKey });
+        dispatch("select-item", {
+          label,
+          include: !(evt.ctrlKey || evt.metaKey),
+        });
       }}
     >
       <svelte:fragment slot="label">

@@ -15,16 +15,29 @@ export interface BigNumberResponse {
   error?: string;
 }
 
+export interface LeaderboardQueryAdditionalArguments {
+  filters: MetricsViewRequestFilter;
+  timestampColumn: string;
+  timeRange: TimeSeriesTimeRange;
+  limit: number;
+}
+
 export class DatabaseMetricsExplorerActions extends DatabaseActions {
   public async getLeaderboardValues(
     metadata: DatabaseMetadata,
     table: string,
     column: string,
     expression: string,
-    filters: MetricsViewRequestFilter,
-    timestampColumn: string,
-    timeRange?: TimeSeriesTimeRange
+    // additional arguments
+    {
+      filters,
+      timestampColumn,
+      timeRange,
+      limit,
+    }: LeaderboardQueryAdditionalArguments
   ) {
+    limit ??= 15;
+
     // remove filters for this specific dimension.
     const isolatedFilters: MetricsViewRequestFilter = {
       include: filters?.include.filter((filter) => filter.name !== column),
@@ -44,7 +57,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       ${whereClause}
       GROUP BY "${column}"
       ORDER BY value desc NULLS LAST
-      LIMIT 15
+      LIMIT ${limit}
     `
     );
   }

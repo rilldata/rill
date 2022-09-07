@@ -235,14 +235,17 @@ export class MetricsViewActions extends RillDeveloperActions {
         model.tableName,
         dimension.dimensionColumn,
         measure.expression,
-        mapDimensionIdToName(
-          request.filter,
-          this.dataModelerStateService
-            .getDimensionDefinitionService()
-            .getManyByField("metricsDefId", metricsDefId)
-        ),
-        rillRequestContext.record.timeDimension,
-        request.time,
+        {
+          filters: mapDimensionIdToName(
+            request.filter,
+            this.dataModelerStateService
+              .getDimensionDefinitionService()
+              .getManyByField("metricsDefId", metricsDefId)
+          ),
+          timeRange: request.time,
+          timestampColumn: rillRequestContext.record.timeDimension,
+          limit: request.limit,
+        },
       ]
     );
     const response: MetricsViewTopListResponse = {
