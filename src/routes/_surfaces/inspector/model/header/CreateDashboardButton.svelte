@@ -4,6 +4,12 @@
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import { Button } from "$lib/components/button";
   import Explore from "$lib/components/icons/Explore.svelte";
   import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
@@ -44,6 +50,13 @@
       ).tableName,
       activeEntityID,
       timestampColumns[0].name
+    );
+
+    navigationEvent.fireEvent(
+      activeEntityID,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Dashboard
     );
   };
 </script>

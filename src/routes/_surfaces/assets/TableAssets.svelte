@@ -1,5 +1,10 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import {
     ApplicationStore,
     dataModelerService,
@@ -21,6 +26,7 @@
   import Source from "$lib/components/icons/Source.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
   import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
@@ -69,6 +75,37 @@
       id,
       tableName
     );
+
+    navigationEvent.fireEvent(
+      id,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      MetricsEventScreenName.Dashboard
+    );
+  };
+
+  const viewSource = (id: string) => {
+    dataModelerService.dispatch("setActiveAsset", [EntityType.Table, id]);
+
+    if (id != activeEntityID) {
+      navigationEvent.fireEvent(
+        id,
+        BehaviourEventMedium.AssetName,
+        MetricsEventSpace.LeftPanel,
+        MetricsEventScreenName.Source
+      );
+    }
+  };
+
+  const createModel = (tableName: string, id: string) => {
+    queryHandler(tableName);
+
+    navigationEvent.fireEvent(
+      id,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      MetricsEventScreenName.Model
+    );
   };
 
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
@@ -105,10 +142,7 @@
           <CollapsibleTableSummary
             on:query={() => queryHandler(tableName)}
             on:select={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Table,
-                id,
-              ]);
+              viewSource(id);
             }}
             entityType={EntityType.Table}
             name={tableName}
@@ -128,7 +162,7 @@
               />
             </svelte:fragment>
             <svelte:fragment slot="menu-items" let:toggleMenu>
-              <MenuItem icon on:select={() => queryHandler(tableName)}>
+              <MenuItem icon on:select={() => createModel(tableName, id)}>
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>

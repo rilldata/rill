@@ -2,6 +2,11 @@
   import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
@@ -23,6 +28,7 @@
   } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import { TableSourceType } from "$lib/types";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -74,6 +80,13 @@
       $persistentModelStore.entities,
       currentTable.tableName
     );
+
+    navigationEvent.fireEvent(
+      activeEntityID,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Model
+    );
   };
 
   const handleCreateMetric = () => {
@@ -88,6 +101,13 @@
       $persistentTableStore.entities.find(
         (table) => table.id === activeEntityID
       ).tableName
+    );
+
+    navigationEvent.fireEvent(
+      activeEntityID,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Dashboard
     );
   };
 

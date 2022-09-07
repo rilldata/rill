@@ -1,5 +1,10 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
@@ -10,6 +15,7 @@
     useMetaQuery,
   } from "$lib/svelte-query/queries/metrics-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
@@ -36,6 +42,20 @@
   }
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
+
+  const viewMetrics = () => {
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.MetricsDefinition,
+      metricsDefId,
+    ]);
+
+    navigationEvent.fireEvent(
+      metricsDefId,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.MetricsDefinition
+    );
+  };
 </script>
 
 <section id="header" class="w-full flex flex-col">
@@ -56,10 +76,7 @@
       <Button
         type="secondary"
         on:click={() => {
-          dataModelerService.dispatch("setActiveAsset", [
-            EntityType.MetricsDefinition,
-            metricsDefId,
-          ]);
+          viewMetrics();
         }}
       >
         <div class="flex items-center gap-x-2">
