@@ -1,0 +1,76 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+@font-face {
+  font-family: "Proxima Nova";
+  src: url("https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/624f2a9ba37f420fa0e55f2f_ProximaNovaExtrabld.woff2")
+    format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Proxima Nova";
+  src: url("https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/624f2a9ba37f4234c0e55f2e_ProximaNovaRegular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Proxima Nova";
+  src: url("https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/624f2a9ba37f42ebd9e55f2d_ProximaNovaBold.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.sidebar-title {
+  color: var(--ifm-menu-color);
+  text-transform: uppercase;
+  padding: calc(3 * var(--ifm-menu-link-padding-vertical))
+    var(--ifm-menu-link-padding-horizontal) 0
+    var(--ifm-menu-link-padding-horizontal);
+  font-weight: var(--ifm-font-weight-bold);
+  font-size: calc(var(--ifm-font-size-base) / 1.15);
+}
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #1e78fa;
+  --ifm-color-primary-dark: #046ae0;
+  --ifm-color-primary-darker: #0259be;
+  --ifm-color-primary-darkest: #08274f;
+  --ifm-color-primary-light: #00cbd7;
+  --ifm-color-primary-lighter: #01d4e0;
+  --ifm-color-primary-lightest: #01dce9;
+  --ifm-color-secondary-contrast-background: #efefef;
+  --ifm-font-family-base: "Proxima Nova", sans-serif;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme="dark"] {
+  --ifm-color-primary: #459bff;
+  --ifm-color-primary-dark: #3190ff;
+  --ifm-color-primary-darker: #107fff;
+  --ifm-color-primary-darkest: #27599a;
+  --ifm-color-primary-light: #00cbd7;
+  --ifm-color-primary-lighter: #01d4e0;
+  --ifm-color-primary-lightest: #01dce9;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.navbar__brand {
+  margin: 0 99px;
+}
+
+.social-link {
+  margin-right: 16px;
+  width: 36px;
+}
