@@ -12,7 +12,7 @@ import { LocalConfig } from "$common/config/LocalConfig";
  * 2. Creates a config file LocalConfigFile
  * 3. Generates installId and saves into the LocalConfigFile
  */
-export function initLocalConfig() {
+export function initLocalConfig(localConfig?: LocalConfig) {
   if (!existsSync(ApplicationConfigFolder)) {
     mkdirSync(ApplicationConfigFolder, { recursive: true });
     console.log("creating folder");
@@ -33,6 +33,10 @@ export function initLocalConfig() {
       installId: guidGenerator(),
     };
     writeFileSync(LocalConfigFile, JSON.stringify(configJson));
+  }
+
+  if (localConfig?.isDev) {
+    configJson.isDev = localConfig.isDev;
   }
 
   return new LocalConfig(configJson);

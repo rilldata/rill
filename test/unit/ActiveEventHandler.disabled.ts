@@ -161,6 +161,7 @@ export class ActiveEventHandlerDisabled extends TestBase {
       app_name: this.config.metrics.appName,
       install_id: undefined,
       build_id: "",
+      is_dev: false,
       version: "",
       project_id: applicationState.projectId,
       event_type: "active",
