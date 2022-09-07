@@ -15,8 +15,6 @@ export class RillIntakeClient {
   }
 
   public async fireEvent(event: MetricsEvent) {
-    // Debug Telemetry by uncommenting the below line
-    // console.log(event);
     try {
       await axios.post(this.config.metrics.rillIntakeUrl, event, {
         headers: {

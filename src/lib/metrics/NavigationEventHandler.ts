@@ -15,6 +15,7 @@ export class NavigationEventHandler {
     entity_id: string,
     medium: BehaviourEventMedium,
     space: MetricsEventSpace,
+    source_screen: MetricsEventScreenName,
     screen_name: MetricsEventScreenName
   ) {
     sendTelemetryEvent(
@@ -23,6 +24,7 @@ export class NavigationEventHandler {
       entity_id,
       medium,
       space,
+      source_screen,
       screen_name
     );
   }

@@ -20,6 +20,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     entity_id: string,
     medium: BehaviourEventMedium,
     space: MetricsEventSpace,
+    source_screen: MetricsEventScreenName,
     screen_name: MetricsEventScreenName
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
@@ -32,6 +33,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     event.medium = medium;
     event.space = space;
     event.screen_name = screen_name;
+    event.source_screen = source_screen;
     return event;
   }
 }

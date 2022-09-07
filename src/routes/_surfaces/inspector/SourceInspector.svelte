@@ -84,6 +84,7 @@
         createdModelId,
         BehaviourEventMedium.Button,
         MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Source,
         MetricsEventScreenName.Model
       );
     });
@@ -106,6 +107,7 @@
         createdMetricsId,
         BehaviourEventMedium.Button,
         MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Source,
         MetricsEventScreenName.Dashboard
       );
     });

@@ -55,6 +55,7 @@
         createdMetricsId,
         BehaviourEventMedium.Button,
         MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Model,
         MetricsEventScreenName.Dashboard
       );
     });

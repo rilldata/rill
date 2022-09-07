@@ -5,6 +5,7 @@
   import { waitUntil } from "$common/utils/waitUtils";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
+    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
@@ -75,6 +76,7 @@
       sourceModelId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[$appStore?.activeEntity?.type],
       MetricsEventScreenName.Model
     );
   };
@@ -89,6 +91,7 @@
       metricsId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[$appStore?.activeEntity?.type],
       MetricsEventScreenName.MetricsDefinition
     );
   };
@@ -103,6 +106,7 @@
       id,
       BehaviourEventMedium.AssetName,
       MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[$appStore?.activeEntity?.type],
       MetricsEventScreenName.Dashboard
     );
   };

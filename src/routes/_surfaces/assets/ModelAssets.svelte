@@ -14,6 +14,7 @@
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
+    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
@@ -59,6 +60,7 @@
         id,
         BehaviourEventMedium.AssetName,
         MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[$store?.activeEntity?.type],
         MetricsEventScreenName.Model
       );
     }
@@ -76,6 +78,7 @@
         createdMetricsId,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[$store?.activeEntity?.type],
         MetricsEventScreenName.Dashboard
       );
     });

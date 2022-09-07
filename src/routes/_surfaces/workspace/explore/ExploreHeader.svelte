@@ -53,6 +53,7 @@
       metricsDefId,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
+      MetricsEventScreenName.Dashboard,
       MetricsEventScreenName.MetricsDefinition
     );
   };

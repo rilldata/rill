@@ -2,6 +2,7 @@
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
+    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
@@ -80,6 +81,7 @@
       createdMetricsId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[$rillAppStore?.activeEntity?.type],
       MetricsEventScreenName.Dashboard
     );
   };
@@ -92,6 +94,7 @@
         id,
         BehaviourEventMedium.AssetName,
         MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[$rillAppStore?.activeEntity?.type],
         MetricsEventScreenName.Source
       );
     }
@@ -104,6 +107,7 @@
           createdModelId,
           BehaviourEventMedium.Menu,
           MetricsEventSpace.LeftPanel,
+          EntityTypeToScreenMap[$rillAppStore?.activeEntity?.type],
           MetricsEventScreenName.Model
         );
       }
