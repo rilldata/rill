@@ -1,4 +1,6 @@
-export const config = {
+import type { VirtualizedTableConfig } from "$lib/components/virtualized-table/types";
+
+export const config: VirtualizedTableConfig = {
   defaultColumnWidth: 200,
   maxColumnWidth: 320,
   minColumnWidth: 120,

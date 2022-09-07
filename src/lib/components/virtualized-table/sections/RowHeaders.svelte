@@ -1,8 +1,11 @@
 <script lang="ts">
-  import { config } from "../config";
+  import { getContext } from "svelte";
   import StickyHeader from "../core/StickyHeader.svelte";
+  import type { VirtualizedTableConfig } from "../types";
   export let totalHeight: number;
   export let virtualRowItems;
+
+  const config: VirtualizedTableConfig = getContext("config");
 </script>
 
 <div
