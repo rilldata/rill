@@ -72,6 +72,7 @@ func (is informationSchema) All() ([]*infra.Table, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return table, nil
 }
 
@@ -88,6 +89,7 @@ func (is informationSchema) Lookup(name string) (*infra.Table, error) {
 	if len(table) == 0 {
 		return nil, fmt.Errorf("Table not Found")
 	}
+
 	return table[0], nil
 }
 
@@ -149,4 +151,3 @@ type schemaResults struct {
 	ColumnName string
 	ColumnType string
 }
-

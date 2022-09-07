@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"time"
-
+	
 	"github.com/rilldata/rill/runtime/infra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -181,5 +181,56 @@ func prepareConn(t *testing.T) infra.Connection {
 	require.NoError(t, err)
 	require.NoError(t, rows.Close())
 
+	rows, err = conn.Execute(context.Background(), &infra.Statement{
+		Query: "CREATE TABLE bar(bar VARCHAR, baz INTEGER)",
+	})
+	require.NoError(t, err)
+	require.NoError(t, rows.Close())
+
+	rows, err = conn.Execute(context.Background(), &infra.Statement{
+		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
+	})
+
+	require.NoError(t, err)
+	require.NoError(t, rows.Close())
+
 	return conn
+}
+
+func TestInformationSchemaAll(t *testing.T) {
+	conn := prepareConn(t)
+	table, err := conn.InformationSchema().All()
+	require.NoError(t, err)
+
+	schemaCount := len(table)
+	require.GreaterOrEqual(t, schemaCount, 1)
+
+	var tableNames []string
+	for _, element := range table {
+		tableNames = append(tableNames, element.Name)
+	}
+	require.Contains(t, tableNames, "foo")
+	require.Contains(t, tableNames, "bar")
+
+	err = conn.Close()
+	require.NoError(t, err)
+	err = conn.(*connection).db.Ping()
+	require.Error(t, err)
+}
+
+func TestInformationSchemaLookup(t *testing.T) {
+	conn := prepareConn(t)
+	testTableName := "foo"
+	table, err := conn.InformationSchema().Lookup(testTableName)
+
+	require.NoError(t, err)
+	require.Equal(t, testTableName, table.Name)
+
+	_, err = conn.InformationSchema().Lookup("temp")
+	require.Error(t, err)
+
+	err = conn.Close()
+	require.NoError(t, err)
+	err = conn.(*connection).db.Ping()
+	require.Error(t, err)
 }
