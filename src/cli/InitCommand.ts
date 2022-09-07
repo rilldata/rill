@@ -18,7 +18,6 @@ export class InitCommand extends DataModelerCliCommand {
       )
       .action((opts, command) => {
         const { project } = command.optsWithGlobals();
-
         const projectPath = project ?? process.cwd();
 
         return this.createProjectAndRun(opts, projectPath);

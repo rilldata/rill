@@ -103,7 +103,7 @@ export function metricsServiceFactory(
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {
-  config.local = initLocalConfig();
+  config.local = initLocalConfig(config.local);
   try {
     config.local.version = JSON.parse(
       readFileSync(PACKAGE_JSON).toString()
