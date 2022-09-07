@@ -56,7 +56,7 @@ const config = {
         appId: "O4A4YNY97A",
         apiKey: "f7bc8583cf7d74049dd1bd937cf42685",
         indexName: "rill_enterprise",
-        debug: false // Set debug to true if you want to inspect the modal        
+        debug: false, // Set debug to true if you want to inspect the modal
       },
       docs: {
         sidebar: {
@@ -64,11 +64,15 @@ const config = {
         },
       },
       metadata: [
-        { 
-          property: 'og:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+        {
+          property: "og:image",
+          content:
+            "https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png",
         },
         {
-          name: 'twitter:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+          name: "twitter:image",
+          content:
+            "https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png",
         },
       ],
       navbar: {
@@ -81,12 +85,24 @@ const config = {
         },
         items: [
           { to: "https://rilldata.com", position: "left", label: "Home" },
-          { to: "https://rilldata.com/product", position: "left", label: "Product" },
-          { to: "https://rilldata.com/apache-druid", position: "left", label: "Apache Druid" },
+          {
+            to: "https://rilldata.com/product",
+            position: "left",
+            label: "Product",
+          },
+          {
+            to: "https://rilldata.com/apache-druid",
+            position: "left",
+            label: "Apache Druid",
+          },
           { to: "https://rilldata.com/team", position: "left", label: "Team" },
           { to: "https://rilldata.com/blog", position: "left", label: "Blog" },
-          { to: "https://rilldata.com/try-free", position: "left", label: "Try for Free" },
-          { type: "search", position: "right" }
+          {
+            to: "https://rilldata.com/try-free",
+            position: "left",
+            label: "Try for Free",
+          },
+          { type: "search", position: "right" },
         ],
       },
       footer: {
@@ -115,7 +131,7 @@ const config = {
                  <a class="social-link" href="https://twitter.com/RillData" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/624f2a9ba37f429995e55f34_social-twitter.svg" loading="lazy" alt="twitter logo"></a>
                  <a class="social-link" href="https://discord.gg/eEvSYHdfWK" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1dc6a667e2367b552ae_Discord-Logo.svg" loading="lazy" alt="Discord logo"></a>
                  </div>
-                `
+                `,
               },
             ],
           },
@@ -125,18 +141,18 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
-        additionalLanguages: ['java'],
+        additionalLanguages: ["java"],
       },
     }),
-  
+
   plugins: [
     [
-      require.resolve('docusaurus-gtm-plugin'),
+      require.resolve("docusaurus-gtm-plugin"),
       {
-        id: 'GTM-TH485ZV',
-      }
-    ]
-  ]
+        id: "GTM-TH485ZV",
+      },
+    ],
+  ],
 };
 
 module.exports = config;
