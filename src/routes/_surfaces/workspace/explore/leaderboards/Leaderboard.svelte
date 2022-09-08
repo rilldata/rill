@@ -11,11 +11,13 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
+  import FilterRemove from "$lib/components/icons/FilterRemove.svelte";
   import LeaderboardContainer from "$lib/components/leaderboard/LeaderboardContainer.svelte";
   import LeaderboardHeader from "$lib/components/leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
@@ -65,21 +67,30 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  let includeValues: Array<unknown>;
-  $: includeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === $dimension?.id)
-      ?.values ?? [];
-  let excludeValues: Array<unknown>;
-  $: excludeValues =
-    metricsExplorer?.filters.exclude.find((d) => d.name === $dimension?.id)
-      ?.values ?? [];
-  $: atLeastOneActive = !!includeValues?.length || !!excludeValues?.length;
+  let filterMode: boolean;
+  $: filterMode =
+    metricsExplorer?.dimensionFilterMode.get(dimensionId) ?? false;
+  let filterKey: string;
+  $: filterKey = filterMode ? "exclude" : "include";
+  let otherFilterKey: string;
+  $: otherFilterKey = filterMode ? "include" : "exclude";
+
+  let activeValues: Array<unknown>;
+  $: if (metricsExplorer)
+    activeValues =
+      metricsExplorer.filters[filterKey].find((d) => d.name === $dimension?.id)
+        ?.values ?? [];
+  $: atLeastOneActive = !!activeValues?.length;
 
   function setLeaderboardValues(values) {
     dispatch("leaderboard-value", {
       dimensionId,
       values,
     });
+  }
+
+  function toggleFilterMode() {
+    metricsExplorerStore.toggleFilterMode(metricsDefId, dimensionId);
   }
 
   let topListQuery;
@@ -127,7 +138,7 @@
 
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.
-  $: selectedValuesThatAreBelowTheFold = [...includeValues, ...excludeValues]
+  $: selectedValuesThatAreBelowTheFold = activeValues
     ?.filter((label) => {
       return (
         // the value is visible within the fold.
@@ -182,6 +193,22 @@
           </TooltipContent>
         </Tooltip>
       </div>
+      <div slot="right">
+        <Tooltip location="top" distance={16}>
+          <div on:click={toggleFilterMode}>
+            <FilterRemove />
+          </div>
+          <TooltipContent slot="tooltip-content">
+            <svelte:fragment slot="name">
+              filter {filterKey} mode
+            </svelte:fragment>
+            <TooltipShortcutContainer>
+              <div>toggle {otherFilterKey} mode</div>
+              <Shortcut>Click</Shortcut>
+            </TooltipShortcutContainer>
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </LeaderboardHeader>
 
     {#if values}
@@ -190,8 +217,8 @@
         <LeaderboardEntrySet
           loading={$topListQuery?.isFetching}
           values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
-          {includeValues}
-          {excludeValues}
+          {activeValues}
+          {filterMode}
           {atLeastOneActive}
           {referenceValue}
           {isSummableMeasure}
@@ -203,8 +230,8 @@
           <LeaderboardEntrySet
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
-            {includeValues}
-            {excludeValues}
+            {activeValues}
+            {filterMode}
             {atLeastOneActive}
             {referenceValue}
             {isSummableMeasure}

@@ -8,17 +8,13 @@ divider
 see more button
 -->
 <script lang="ts">
-  import Check from "$lib/components/icons/Check.svelte";
-  import Close from "$lib/components/icons/Close.svelte";
-  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
-  import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
-  import { isMac } from "$lib/util/os-detection";
   import { createEventDispatcher } from "svelte";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
   export let values;
-  export let includeValues: Array<unknown>;
-  export let excludeValues: Array<unknown>;
+  export let activeValues: Array<unknown>;
+  // false = include, true = exclude
+  export let filterMode: boolean;
   export let isSummableMeasure: boolean;
   export let referenceValue;
   export let atLeastOneActive;
@@ -28,9 +24,7 @@ see more button
 </script>
 
 {#each values as { label, value, formattedValue } (label)}
-  {@const included = includeValues.findIndex((value) => value === label) >= 0}
-  {@const excluded = excludeValues.findIndex((value) => value === label) >= 0}
-  {@const active = included || excluded}
+  {@const active = activeValues.findIndex((value) => value === label) >= 0}
   <div>
     <DimensionLeaderboardEntry
       measureValue={value}
@@ -39,45 +33,31 @@ see more button
       {referenceValue}
       {atLeastOneActive}
       {active}
-      on:click={(evt) => {
+      on:click={() => {
         dispatch("select-item", {
           label,
-          include: !(evt.ctrlKey || evt.metaKey),
         });
       }}
     >
       <svelte:fragment slot="label">
-        <div class="flex flex-row">
-          {#if included}<Check size="16px" />{:else if excluded}<div
-              style="margin-top: 2px;"
-            >
-              <Close size="14px" />
-            </div>{/if}
-          {label}
-        </div>
+        {label}
       </svelte:fragment>
       <svelte:fragment slot="right">
         {formattedValue || value || "∅"}
       </svelte:fragment>
       <svelte:fragment slot="tooltip">
-        <TooltipShortcutContainer>
-          {#if !active}
-            <div>include filter on <span class="italic">{label}</span></div>
-            <Shortcut>Click</Shortcut>
-            <div>exclude filter on <span class="italic">{label}</span></div>
-            <Shortcut>
-              {#if isMac()}<span
-                  style="
-          font-family: var(--system);
-          font-size: 11.5px;
-        ">⌘</span
-                >{:else}ctrl{/if} + Click</Shortcut
-            >
+        {#if !active}
+          {#if atLeastOneActive}
+            <div>
+              filter {filterMode ? "out" : "on"}
+              <span class="italic">{label}</span>
+            </div>
           {:else}
-            <div>remove filter for <span class="italic">{label}</span></div>
-            <Shortcut>Click</Shortcut>
+            <div>include <span class="italic">{label}</span> in filter</div>
           {/if}
-        </TooltipShortcutContainer>
+        {:else}
+          <div>remove <span class="italic">{label}</span> from filter</div>
+        {/if}
       </svelte:fragment>
     </DimensionLeaderboardEntry>
   </div>

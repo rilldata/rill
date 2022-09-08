@@ -4,7 +4,6 @@ import type {
   MetricsViewRequestFilter,
 } from "$common/rill-developer-service/MetricsViewActions";
 import { removeIfExists } from "$common/utils/arrayUtils";
-import { removeFilterIfExists } from "$lib/util/dashboard-filter-utils";
 import { Readable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
@@ -27,6 +26,9 @@ export interface MetricsExplorerEntity {
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
   filters: MetricsViewRequestFilter;
+  // stores whether a dimension is in include/exclude filter mode
+  // false/absence = include, true = exclude
+  dimensionFilterMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
 }
@@ -85,6 +87,7 @@ const metricViewReducers = {
           include: [],
           exclude: [],
         },
+        dimensionFilterMode: new Map(),
       })
     );
   },
@@ -101,41 +104,76 @@ const metricViewReducers = {
     });
   },
 
-  toggleFilter(
-    id: string,
-    dimensionId: string,
-    dimensionValue: string,
-    include: boolean
-  ) {
+  toggleFilter(id: string, dimensionId: string, dimensionValue: string) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      const relevantFilterKey = include ? "include" : "exclude";
-      const otherFilterKey = include ? "exclude" : "include";
-
-      if (
-        removeFilterIfExists(
-          dimensionId,
-          dimensionValue,
-          metricsExplorer.filters[otherFilterKey]
-        ) ||
-        removeFilterIfExists(
-          dimensionId,
-          dimensionValue,
-          metricsExplorer.filters[relevantFilterKey]
-        )
+      const relevantFilterKey = metricsExplorer.dimensionFilterMode.get(
+        dimensionId
       )
-        return;
+        ? "exclude"
+        : "include";
 
-      const existingDimensionEntry = metricsExplorer.filters[
+      const dimensionEntryIndex = metricsExplorer.filters[
         relevantFilterKey
-      ].find((filter) => filter.name === dimensionId);
-      if (!existingDimensionEntry) {
+      ].findIndex((filter) => filter.name === dimensionId);
+
+      if (dimensionEntryIndex >= 0) {
+        if (
+          removeIfExists(
+            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]
+              .values,
+            (value) => value === dimensionValue
+          )
+        ) {
+          if (
+            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]
+              .values.length === 0
+          ) {
+            metricsExplorer.filters[relevantFilterKey].splice(
+              dimensionEntryIndex,
+              1
+            );
+          }
+          return;
+        }
+
+        metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].values.push(dimensionValue);
+      } else {
         metricsExplorer.filters[relevantFilterKey].push({
           name: dimensionId,
           values: [dimensionValue],
         });
-      } else {
-        existingDimensionEntry.values.push(dimensionValue);
       }
+    });
+  },
+
+  /**
+   * Toggle a dimension filter between include/exclude modes
+   */
+  toggleFilterMode(id: string, dimensionId: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      const exclude = metricsExplorer.dimensionFilterMode.get(dimensionId);
+      metricsExplorer.dimensionFilterMode.set(dimensionId, !exclude);
+
+      const relevantFilterKey = exclude ? "exclude" : "include";
+      const otherFilterKey = exclude ? "include" : "exclude";
+
+      const otherFilterEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionId);
+      // if relevant filter is not present then return
+      if (otherFilterEntryIndex === -1) return;
+
+      // push relevant filters to other filter
+      metricsExplorer.filters[otherFilterKey].push(
+        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex]
+      );
+      // remove entry from relevant filter
+      metricsExplorer.filters[relevantFilterKey].splice(
+        otherFilterEntryIndex,
+        1
+      );
     });
   },
 
@@ -143,6 +181,7 @@ const metricViewReducers = {
     updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.filters.include = [];
       metricsExplorer.filters.exclude = [];
+      metricsExplorer.dimensionFilterMode.clear();
     });
   },
 
