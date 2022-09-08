@@ -52,12 +52,12 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      algolia: {
-        appId: "O4A4YNY97A",
-        apiKey: "f7bc8583cf7d74049dd1bd937cf42685",
-        indexName: "rill_enterprise",
-        debug: false, // Set debug to true if you want to inspect the modal
-      },
+      // algolia: {
+      //   appId: "O4A4YNY97A",
+      //   apiKey: "f7bc8583cf7d74049dd1bd937cf42685",
+      //   indexName: "rill_enterprise",
+      //   debug: false, // Set debug to true if you want to inspect the modal
+      // },
       docs: {
         sidebar: {
           autoCollapseCategories: true,
