@@ -1,8 +1,8 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import Model from "src/routes/_surfaces/workspace/Model.svelte";
-  import ModelWorkspaceHeader from "src/routes/_surfaces/workspace/ModelWorkspaceHeader.svelte";
+  import Model from "$lib/components/workspace/Model.svelte";
+  import ModelWorkspaceHeader from "$lib/components/workspace/ModelWorkspaceHeader.svelte";
 
   export let data;
 

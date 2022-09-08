@@ -1,10 +1,10 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import ExploreContainer from "../../../_surfaces/workspace/explore/ExploreContainer.svelte";
-  import ExploreHeader from "../../../_surfaces/workspace/explore/ExploreHeader.svelte";
-  import LeaderboardDisplay from "../../../_surfaces/workspace/explore/leaderboards/LeaderboardDisplay.svelte";
-  import MetricsTimeSeriesCharts from "../../../_surfaces/workspace/explore/time-series-charts/MetricsTimeSeriesCharts.svelte";
+  import ExploreContainer from "$lib/components/workspace/explore/ExploreContainer.svelte";
+  import ExploreHeader from "$lib/components/workspace/explore/ExploreHeader.svelte";
+  import LeaderboardDisplay from "$lib/components/workspace/explore/leaderboards/LeaderboardDisplay.svelte";
+  import MetricsTimeSeriesCharts from "$lib/components/workspace/explore/time-series-charts/MetricsTimeSeriesCharts.svelte";
 
   export let data;
 

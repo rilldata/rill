@@ -58,8 +58,8 @@
   import { getContext, onMount, setContext } from "svelte";
   import "../app.css";
   import "../fonts.css";
-  import AssetsSidebar from "./_surfaces/assets/index.svelte";
-  import InspectorSidebar from "./_surfaces/inspector/index.svelte";
+  import AssetsSidebar from "../lib/components/assets/index.svelte";
+  import InspectorSidebar from "../lib/components/inspector/index.svelte";
 
   let store;
   let queryHighlight = createQueryHighlightStore();

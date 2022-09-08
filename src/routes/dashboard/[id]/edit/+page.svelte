@@ -1,8 +1,8 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import MetricsDefWorkspace from "src/routes/_surfaces/workspace/metrics-def/MetricsDefWorkspace.svelte";
-  import MetricsDefWorkspaceHeader from "src/routes/_surfaces/workspace/metrics-def/MetricsDefWorkspaceHeader.svelte";
+  import MetricsDefWorkspace from "$lib/components/workspace/metrics-def/MetricsDefWorkspace.svelte";
+  import MetricsDefWorkspaceHeader from "$lib/components/workspace/metrics-def/MetricsDefWorkspaceHeader.svelte";
 
   export let data;
 

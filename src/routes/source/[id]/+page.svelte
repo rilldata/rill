@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import SourceWorkspace from "../../../_surfaces/workspace/source/SourceWorkspace.svelte";
+  import SourceWorkspace from "$lib/components/workspace/source/SourceWorkspace.svelte";
 
   export let data;
 
