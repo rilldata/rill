@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import { goto } from "$app/navigation";
   import { Button } from "$lib/components/button";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
@@ -38,13 +37,10 @@
   <Button
     type="primary"
     disabled={buttonDisabled}
-    on:click={() => {
-      dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsExplorer,
-        metricsDefId,
-      ]);
-    }}>Go to Dashboard <ExploreIcon size="16px" /></Button
+    on:click={() => goto(`/dashboard/${metricsDefId}`)}
   >
+    Go to Dashboard <ExploreIcon size="16px" />
+  </Button>
   <TooltipContent slot="tooltip-content">
     <div>
       {#if buttonStatus === "MISSING_MODEL_OR_TIMESTAMP"}

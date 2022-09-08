@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import { goto } from "$app/navigation";
+
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
@@ -24,10 +24,7 @@
       !$metaQuery.data?.measures?.length ||
       !$metaQuery.data?.dimensions?.length
     ) {
-      dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsDefinition,
-        metricsDefId,
-      ]);
+      goto(`/dashboard/${metricsDefId}/edit`);
     } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
       // FIXME: understand this logic before removing invalidateMetricsViewData
       invalidateMetricsViewData(queryClient, metricsDefId);
@@ -55,12 +52,7 @@
     <div>
       <Button
         type="secondary"
-        on:click={() => {
-          dataModelerService.dispatch("setActiveAsset", [
-            EntityType.MetricsDefinition,
-            metricsDefId,
-          ]);
-        }}
+        on:click={() => goto(`/dashboard/${metricsDefId}/edit`)}
       >
         <div class="flex items-center gap-x-2">
           Edit Metrics <MetricsIcon />

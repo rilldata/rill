@@ -1,12 +1,10 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
   import { waitUntil } from "$common/utils/waitUtils";
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "$lib/application-state-stores/application-store";
+  import { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
@@ -60,10 +58,7 @@
   };
 
   const dispatchSetMetricsDefActive = (id: string) => {
-    dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsExplorer,
-      id,
-    ]);
+    goto(`/dashboard/${id}`);
   };
 
   const dispatchDeleteMetricsDef = (id: string) => {
@@ -132,12 +127,7 @@
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Model,
-                metricsDef.sourceModelId,
-              ]);
-            }}
+            on:select={() => goto(`/model/${metricsDef.sourceModelId}`)}
           >
             <svelte:fragment slot="icon">
               <Model />
@@ -152,12 +142,7 @@
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.MetricsDefinition,
-                metricsDef.id,
-              ]);
-            }}
+            on:select={() => goto(`/dashboard/${metricsDef.id}/edit`)}
           >
             <svelte:fragment slot="icon">
               <MetricsIcon />
