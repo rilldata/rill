@@ -11,7 +11,7 @@
   import {
     useMetaQuery,
     useTotalsQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  } from "$lib/svelte-query/queries/metrics-view";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
@@ -48,10 +48,6 @@
   ) {
     totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
-      filter: {
-        include: metricsExplorer?.filters?.include,
-        exclude: metricsExplorer?.filters?.exclude,
-      },
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,

@@ -3,6 +3,7 @@ export interface CommonFields {
   install_id: string;
   build_id: string;
   version: string;
+  is_dev: boolean;
   project_id: string;
 }
 

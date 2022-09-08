@@ -10,6 +10,9 @@ export class LocalConfig extends Config<LocalConfig> {
   @Config.ConfigField()
   public version: string;
 
+  @Config.ConfigField(false)
+  public isDev: boolean;
+
   @Config.ConfigField(true)
   public sendTelemetryData: boolean;
 }

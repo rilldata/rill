@@ -1,11 +1,11 @@
 import { layout } from "$lib/application-state-stores/layout-store";
 export function drag(node, params) {
-  let minSize_ = params?.minSize || 300;
-  let maxSize_ = params?.maxSize || 800;
-  let reverse_ = params?.reverse || false;
-  let orientation_ = params?.orientation || "horizontal";
+  const minSize_ = params?.minSize || 300;
+  const maxSize_ = params?.maxSize || 800;
+  const reverse_ = params?.reverse || false;
+  const orientation_ = params?.orientation || "horizontal";
 
-  let side_ = params?.side || "right";
+  const side_ = params?.side || "right";
   let moving = false;
   let space = minSize_;
 

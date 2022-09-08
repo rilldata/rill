@@ -2,7 +2,7 @@ import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import type { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";
 import {
   getCoalesceExpressionForMeasures,
   getWhereClauseFromFilters,
@@ -15,18 +15,31 @@ export interface BigNumberResponse {
   error?: string;
 }
 
+export interface LeaderboardQueryAdditionalArguments {
+  filters: MetricsViewRequestFilter;
+  timestampColumn: string;
+  timeRange: TimeSeriesTimeRange;
+  limit: number;
+}
+
 export class DatabaseMetricsExplorerActions extends DatabaseActions {
   public async getLeaderboardValues(
     metadata: DatabaseMetadata,
     table: string,
     column: string,
     expression: string,
-    filters: MetricViewRequestFilter,
-    timestampColumn: string,
-    timeRange?: TimeSeriesTimeRange
+    // additional arguments
+    {
+      filters,
+      timestampColumn,
+      timeRange,
+      limit,
+    }: LeaderboardQueryAdditionalArguments
   ) {
+    limit ??= 15;
+
     // remove filters for this specific dimension.
-    const isolatedFilters: MetricViewRequestFilter = {
+    const isolatedFilters: MetricsViewRequestFilter = {
       include: filters?.include.filter((filter) => filter.name !== column),
       exclude: filters?.exclude.filter((filter) => filter.name !== column),
     };
@@ -44,7 +57,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       ${whereClause}
       GROUP BY "${column}"
       ORDER BY value desc NULLS LAST
-      LIMIT 15
+      LIMIT ${limit}
     `
     );
   }
@@ -53,7 +66,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     table: string,
     measures: Array<BasicMeasureDefinition>,
-    filters: MetricViewRequestFilter,
+    filters: MetricsViewRequestFilter,
     timestampColumn: string,
     timeRange?: TimeSeriesTimeRange
   ): Promise<BigNumberResponse> {

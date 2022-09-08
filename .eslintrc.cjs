@@ -25,8 +25,6 @@ module.exports = {
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/ban-ts-comment": "warn",
-    "no-useless-escape": "warn",
-    "@typescript-eslint/no-empty-interface": "warn",
   },
   globals: {
     RILL_VERSION: true,
