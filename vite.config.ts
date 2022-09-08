@@ -24,6 +24,7 @@ try {
 const config = defineConfig({
   resolve: {
     alias: {
+      src: "/src", // trick to get absolute imports to work
       $common: "/src/common",
       $server: "/src/server",
     },
