@@ -7,6 +7,7 @@
    */
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -21,6 +22,7 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
+  import { getMeasureById } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import {
     useMetaQuery,
     useTopListQuery,
@@ -62,6 +64,9 @@
   // TODO: select based on label?
   $: displayName = getDisplayName($dimension);
 
+  let measure: Readable<MeasureDefinitionEntity>;
+  $: measure = getMeasureById(metricsExplorer?.leaderboardMeasureId);
+
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
@@ -81,16 +86,21 @@
   let topListQuery;
 
   $: if (
-    metricsExplorer?.leaderboardMeasureId &&
+    $measure?.id &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
     topListQuery = useTopListQuery(metricsDefId, dimensionId, {
-      measures: [metricsExplorer?.leaderboardMeasureId],
+      measures: [$measure?.id],
       limit: 15,
       offset: 0,
-      sort: [],
+      sort: [
+        {
+          name: $measure?.sqlName,
+          direction: "desc",
+        },
+      ],
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
@@ -103,7 +113,11 @@
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
-    values = $topListQuery?.data?.data ?? [];
+    values =
+      $topListQuery?.data?.data.map((val) => ({
+        value: val[$measure?.sqlName],
+        label: val[$dimension?.dimensionColumn],
+      })) ?? [];
     setLeaderboardValues(values);
   }
   /** figure out how many selected values are currently hidden */

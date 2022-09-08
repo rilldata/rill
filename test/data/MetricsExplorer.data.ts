@@ -35,7 +35,7 @@ const DefaultDomainLeaderboard: [string, Array<string>] = [
     "sports.yahoo.com",
   ],
 ];
-const DefaultCityLeaderboard: [string, Array<string>] = [
+export const DefaultCityLeaderboard: [string, Array<string>] = [
   "city",
   [
     null,
@@ -50,6 +50,10 @@ const DefaultCityLeaderboard: [string, Array<string>] = [
     "New York City",
     "San Francisco",
   ],
+];
+export const DefaultCityLeaderboardReversed: [string, Array<string>] = [
+  "city",
+  [...DefaultCityLeaderboard[1].slice(1), null],
 ];
 
 export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [

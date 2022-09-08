@@ -60,12 +60,16 @@ export interface MetricsViewTimeSeriesResponse {
   data: Array<TimeSeriesValue>;
 }
 
+export interface MetricsViewTopListSortEntry {
+  name: string;
+  direction: "desc" | "asc";
+}
 export interface MetricsViewTopListRequest {
   measures: Array<string>;
   time: Pick<MetricsViewRequestTimeRange, "start" | "end">;
   limit: number;
   offset: number;
-  sort: Array<{ name: string; direction: "desc" | "asc" }>;
+  sort: Array<MetricsViewTopListSortEntry>;
   filter?: MetricsViewRequestFilter;
 }
 export interface MetricsViewTopListResponse {
@@ -218,9 +222,6 @@ export class MetricsViewActions extends RillDeveloperActions {
         ExplorerSourceModelDoesntExist
       );
     }
-    const measure = this.dataModelerStateService
-      .getMeasureDefinitionService()
-      .getById(request.measures[0]);
     const dimension = this.dataModelerStateService
       .getDimensionDefinitionService()
       .getById(dimensionId);
@@ -234,7 +235,11 @@ export class MetricsViewActions extends RillDeveloperActions {
       [
         model.tableName,
         dimension.dimensionColumn,
-        measure.expression,
+        request.measures.map((measureId) =>
+          this.dataModelerStateService
+            .getMeasureDefinitionService()
+            .getById(measureId)
+        ),
         {
           filters: mapDimensionIdToName(
             request.filter,
@@ -242,6 +247,7 @@ export class MetricsViewActions extends RillDeveloperActions {
               .getDimensionDefinitionService()
               .getManyByField("metricsDefId", metricsDefId)
           ),
+          sort: request.sort,
           timeRange: request.time,
           timestampColumn: rillRequestContext.record.timeDimension,
           limit: request.limit,
