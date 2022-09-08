@@ -10,7 +10,7 @@ fi
 
 echo "version=${VERSION}" > metadata.txt;
 echo "build_url=${TRAVIS_BUILD_WEB_URL}" >> metadata.txt
-echo "sha=$(git rev-parse)" >> metadata.txt
+echo "sha=$(git rev-parse HEAD)" >> metadata.txt
 echo "time=$(date +%FT%T)" >> metadata.txt
 
 # Activate GCP Access
