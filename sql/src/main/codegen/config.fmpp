@@ -12,8 +12,11 @@ data: {
     # List of additional classes and packages to import.
     # Example: "org.apache.calcite.sql.*", "java.util.List".
     imports: [
-      "org.apache.calcite.sql.SqlCreate",
+      "org.apache.calcite.sql.SqlCreate"
       "com.rilldata.calcite.extensions.SqlCreateMetric"
+      "com.rilldata.calcite.extensions.SqlCreateSource"
+      "java.util.Map"
+      "java.util.HashMap"
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
@@ -34,6 +37,7 @@ data: {
     # Example: "SqlCreateForeignSchema".
     createStatementParserMethods: [
       "SqlCreateMetric"
+      "SqlCreateSource"
     ]
 
     # List of files in @includes directory that have parser method
@@ -42,6 +46,7 @@ data: {
     # "dataTypeParserMethods".
     implementationFiles: [
       "create-metric.ftl"
+      "create-source.ftl"
     ]
   }
 }

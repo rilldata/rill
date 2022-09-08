@@ -32,6 +32,6 @@ public class ExtractArtifact extends SqlBasicVisitor<Artifact>
 
   @Override public Artifact visit(SqlIdentifier id)
   {
-    return id.isSimple() ? artifactManager.getArtifact(ArtifactType.METRIC_VIEW, id.getSimple()) : null;
+    return id.isSimple() ? artifactManager.getArtifact(ArtifactType.METRICS_VIEW, id.getSimple()) : null;
   }
 }

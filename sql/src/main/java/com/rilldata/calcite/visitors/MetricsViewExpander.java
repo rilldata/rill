@@ -73,7 +73,7 @@ public class MetricsViewExpander extends SqlBasicVisitor<SqlNode>
           // 5. If some measures are present in the query then create a groupBy list of dimensions
           // 6. Prepare a select query using all these artifacts, it will be a group by query if any measures are present
           // 7. return the new query
-          SqlCreateMetric sqlCreateMetric = calciteToolbox.parseModelingQuery(artifact.getPayload());
+          SqlCreateMetric sqlCreateMetric = (SqlCreateMetric) calciteToolbox.parseQuery(artifact.getPayload());
           Map<String, SqlNode> artifactMeasures = sqlCreateMetric.measuresMap;
           Map<String, SqlNode> artifactDimensions = sqlCreateMetric.dimensionsMap;
 

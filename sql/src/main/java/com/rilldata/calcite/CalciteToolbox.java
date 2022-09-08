@@ -2,6 +2,7 @@ package com.rilldata.calcite;
 
 import com.rilldata.calcite.dialects.Dialects;
 import com.rilldata.calcite.extensions.SqlCreateMetric;
+import com.rilldata.calcite.extensions.SqlCreateSource;
 import com.rilldata.calcite.generated.RillSqlParserImpl;
 import com.rilldata.calcite.models.Artifact;
 import com.rilldata.calcite.models.ArtifactManager;
@@ -133,19 +134,30 @@ public class CalciteToolbox
 
   public String saveModel(String sql) throws SqlParseException, ValidationException
   {
-    SqlCreateMetric sqlCreateMetric = parseModelingQuery(sql);
+    SqlCreateMetric sqlCreateMetric = (SqlCreateMetric) parseQuery(sql);
     String metricViewString = validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
     artifactManager.saveArtifact(
-        new Artifact(ArtifactType.METRIC_VIEW, sqlCreateMetric.name.getSimple(), metricViewString));
-    return metricViewString;
+        new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetric.name.getSimple(), metricViewString));
+    // if things are valid return the original sql string
+    return sql;
   }
 
-  public SqlCreateMetric parseModelingQuery(String sql) throws SqlParseException
+  public String createSource(String sql) throws SqlParseException
+  {
+    SqlCreateSource sqlCreateSource = (SqlCreateSource) parseQuery(sql);
+    String createSourceString = sqlCreateSource.toSqlString(Dialects.DUCKDB.getSqlDialect()).toString();
+    artifactManager.saveArtifact(
+        new Artifact(ArtifactType.SOURCE, sqlCreateSource.name.getSimple(), createSourceString));
+    // if things are valid return the original sql string
+    return sql;
+  }
+
+  public SqlNode parseQuery(String sql) throws SqlParseException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     planner.close();
-    return (SqlCreateMetric) sqlNode;
+    return sqlNode;
   }
 
   /**
