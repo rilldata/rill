@@ -9,7 +9,6 @@ import type {
 import type { LeaderboardValues } from "$lib/application-state-stores/explorer-stores";
 import axios from "axios";
 import {
-  DefaultCityLeaderboard,
   DefaultCityLeaderboardReversed,
   MetricsExplorerTestData,
 } from "../data/MetricsExplorer.data";
