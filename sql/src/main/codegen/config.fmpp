@@ -14,6 +14,7 @@ data: {
     imports: [
       "org.apache.calcite.sql.SqlCreate",
       "com.rilldata.calcite.extensions.SqlCreateMetric"
+      "com.rilldata.calcite.extensions.SqlCreateSource"
       "org.apache.calcite.schema.ColumnStrategy"
       "org.apache.calcite.sql.SqlDrop"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
@@ -40,6 +41,7 @@ data: {
       "MATERIALIZED"
       "STORED"
       "VIRTUAL"
+      "SOURCE"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
@@ -50,6 +52,7 @@ data: {
       "SqlCreateMaterializedView"
       "SqlCreateTable"
       "SqlCreateView"
+      "SqlCreateSource"
     ]
 
     dropStatementParserMethods: [

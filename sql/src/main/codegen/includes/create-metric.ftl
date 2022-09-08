@@ -18,6 +18,42 @@ SqlCreate SqlCreateMetric(Span s, boolean replace) :
     }
 }
 
+SqlCreateSource SqlCreateSource(Span s) :
+{
+    final Map<String, String> map;
+}
+{
+    <SOURCE> id = SimpleIdentifier()
+    <WITH> <LPAREN>
+    map = Properties()
+    <RPAREN>
+    {
+      return new SqlCreateSource(s.end(this), id, map);
+    }
+}
+
+Map<String, String> Properties() :
+{
+    final Map<String, String> props = new HashMap<>();
+    final String key;
+    final String value;
+}
+{
+    key = StringLiteral() <EQ> value = StringLiteral()
+    {
+        props.put(key, value);
+    }
+    (
+        <COMMA> key = StringLiteral() <EQ> value = StringLiteral()
+        {
+            props.put(key, value);
+        }
+    )*
+    {
+        return props;
+    }
+}
+
 boolean IfNotExistsOpt() :
 {
 }
