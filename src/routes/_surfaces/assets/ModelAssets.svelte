@@ -53,6 +53,8 @@
   let renameModelName = null;
 
   const viewModel = (id: string) => {
+    const previousActiveEntity = $store?.activeEntity?.type;
+
     dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
 
     if (id != activeEntityID) {
@@ -60,13 +62,15 @@
         id,
         BehaviourEventMedium.AssetName,
         MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[$store?.activeEntity?.type],
+        EntityTypeToScreenMap[previousActiveEntity],
         MetricsEventScreenName.Model
       );
     }
   };
 
   const quickStartMetrics = (derivedModel: DerivedModelEntity) => {
+    const previousActiveEntity = $store?.activeEntity?.type;
+
     autoCreateMetricsDefinitionForModel(
       $persistentModelStore.entities.find(
         (model) => model.id === derivedModel.id
@@ -78,7 +82,7 @@
         createdMetricsId,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[$store?.activeEntity?.type],
+        EntityTypeToScreenMap[previousActiveEntity],
         MetricsEventScreenName.Dashboard
       );
     });

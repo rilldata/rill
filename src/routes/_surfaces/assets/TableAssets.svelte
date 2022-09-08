@@ -70,6 +70,7 @@
   };
 
   const quickStartMetrics = async (id: string, tableName: string) => {
+    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
     const createdMetricsId = await autoCreateMetricsDefinitionForSource(
       $persistentModelStore.entities,
       $derivedTableStore.entities,
@@ -81,12 +82,13 @@
       createdMetricsId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[$rillAppStore?.activeEntity?.type],
+      EntityTypeToScreenMap[previousActiveEntity],
       MetricsEventScreenName.Dashboard
     );
   };
 
   const viewSource = (id: string) => {
+    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
     dataModelerService.dispatch("setActiveAsset", [EntityType.Table, id]);
 
     if (id != activeEntityID) {
@@ -94,20 +96,22 @@
         id,
         BehaviourEventMedium.AssetName,
         MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[$rillAppStore?.activeEntity?.type],
+        EntityTypeToScreenMap[previousActiveEntity],
         MetricsEventScreenName.Source
       );
     }
   };
 
   const createModel = (tableName: string) => {
+    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+
     createModelForSource($persistentModelStore.entities, tableName).then(
       (createdModelId) => {
         navigationEvent.fireEvent(
           createdModelId,
           BehaviourEventMedium.Menu,
           MetricsEventSpace.LeftPanel,
-          EntityTypeToScreenMap[$rillAppStore?.activeEntity?.type],
+          EntityTypeToScreenMap[previousActiveEntity],
           MetricsEventScreenName.Model
         );
       }

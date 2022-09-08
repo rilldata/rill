@@ -67,6 +67,8 @@
   };
 
   const editModel = (sourceModelId: string) => {
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+
     dataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
       sourceModelId,
@@ -76,12 +78,14 @@
       sourceModelId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[$appStore?.activeEntity?.type],
+      EntityTypeToScreenMap[previousActiveEntity],
       MetricsEventScreenName.Model
     );
   };
 
   const editMetrics = (metricsId: string) => {
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+
     dataModelerService.dispatch("setActiveAsset", [
       EntityType.MetricsDefinition,
       metricsId,
@@ -91,12 +95,14 @@
       metricsId,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[$appStore?.activeEntity?.type],
+      EntityTypeToScreenMap[previousActiveEntity],
       MetricsEventScreenName.MetricsDefinition
     );
   };
 
   const dispatchSetMetricsDefActive = (id: string) => {
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+
     dataModelerService.dispatch("setActiveAsset", [
       EntityType.MetricsExplorer,
       id,
@@ -106,7 +112,7 @@
       id,
       BehaviourEventMedium.AssetName,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[$appStore?.activeEntity?.type],
+      EntityTypeToScreenMap[previousActiveEntity],
       MetricsEventScreenName.Dashboard
     );
   };
