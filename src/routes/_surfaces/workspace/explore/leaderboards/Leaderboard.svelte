@@ -11,7 +11,8 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
-  import FilterRemove from "$lib/components/icons/FilterRemove.svelte";
+  import FilterExclude from "$lib/components/icons/FilterExclude.svelte";
+  import FilterInclude from "$lib/components/icons/FilterInclude.svelte";
   import LeaderboardContainer from "$lib/components/leaderboard/LeaderboardContainer.svelte";
   import LeaderboardHeader from "$lib/components/leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
@@ -37,6 +38,7 @@
   import type { Readable } from "svelte/store";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+
   export let metricsDefId: string;
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -196,12 +198,16 @@
       <div slot="right">
         <Tooltip location="top" distance={16}>
           <div on:click={toggleFilterMode}>
-            <FilterRemove />
+            {#if filterMode}<FilterExclude size="20px" />{:else}<FilterInclude
+                size="20px"
+              />{/if}
           </div>
           <TooltipContent slot="tooltip-content">
-            <svelte:fragment slot="name">
-              filter {filterKey} mode
-            </svelte:fragment>
+            <TooltipTitle>
+              <svelte:fragment slot="name">
+                filter {filterKey} mode
+              </svelte:fragment>
+            </TooltipTitle>
             <TooltipShortcutContainer>
               <div>toggle {otherFilterKey} mode</div>
               <Shortcut>Click</Shortcut>
