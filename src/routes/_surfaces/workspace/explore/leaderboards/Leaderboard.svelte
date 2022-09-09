@@ -157,10 +157,20 @@
     .sort((a, b) => {
       return b.value - a.value;
     });
+
+  let hovered: boolean;
 </script>
 
 {#if topListQuery}
-  <LeaderboardContainer focused={atLeastOneActive}>
+  <LeaderboardContainer
+    focused={atLeastOneActive}
+    on:mouseenter={() => {
+      hovered = true;
+    }}
+    on:mouseleave={() => {
+      hovered = false;
+    }}
+  >
     <LeaderboardHeader isActive={atLeastOneActive}>
       <div
         slot="title"
@@ -196,24 +206,26 @@
         </Tooltip>
       </div>
       <div slot="right">
-        <Tooltip location="top" distance={16}>
-          <div on:click={toggleFilterMode}>
-            {#if filterMode}<FilterExclude size="20px" />{:else}<FilterInclude
-                size="20px"
-              />{/if}
-          </div>
-          <TooltipContent slot="tooltip-content">
-            <TooltipTitle>
-              <svelte:fragment slot="name">
-                filter {filterKey} mode
-              </svelte:fragment>
-            </TooltipTitle>
-            <TooltipShortcutContainer>
-              <div>toggle {otherFilterKey} mode</div>
-              <Shortcut>Click</Shortcut>
-            </TooltipShortcutContainer>
-          </TooltipContent>
-        </Tooltip>
+        {#if hovered}
+          <Tooltip location="top" distance={16}>
+            <div on:click={toggleFilterMode}>
+              {#if filterMode}<FilterExclude size="16px" />{:else}<FilterInclude
+                  size="16px"
+                />{/if}
+            </div>
+            <TooltipContent slot="tooltip-content">
+              <TooltipTitle>
+                <svelte:fragment slot="name">
+                  filter {filterKey} mode
+                </svelte:fragment>
+              </TooltipTitle>
+              <TooltipShortcutContainer>
+                <div>toggle {otherFilterKey} mode</div>
+                <Shortcut>Click</Shortcut>
+              </TooltipShortcutContainer>
+            </TooltipContent>
+          </Tooltip>
+        {/if}
       </div>
     </LeaderboardHeader>
 

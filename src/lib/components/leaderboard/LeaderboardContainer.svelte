@@ -6,6 +6,12 @@
   export let focused = false;
 </script>
 
-<div style:width="315px" style:margin="8px" class:drop-shadow-lg={focused}>
+<div
+  style:width="315px"
+  style:margin="8px"
+  class:drop-shadow-lg={focused}
+  on:mouseenter
+  on:mouseleave
+>
   <slot />
 </div>
