@@ -2,6 +2,11 @@
   import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
@@ -23,6 +28,7 @@
   } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import { TableSourceType } from "$lib/types";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -70,10 +76,18 @@
     selectTimestampColumnFromProfileEntity(currentDerivedTable);
 
   const handleCreateModelFromSource = async () => {
-    await createModelForSource(
+    createModelForSource(
       $persistentModelStore.entities,
       currentTable.tableName
-    );
+    ).then((createdModelId) => {
+      navigationEvent.fireEvent(
+        createdModelId,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Source,
+        MetricsEventScreenName.Model
+      );
+    });
   };
 
   const handleCreateMetric = () => {
@@ -88,7 +102,15 @@
       $persistentTableStore.entities.find(
         (table) => table.id === activeEntityID
       ).tableName
-    );
+    ).then((createdMetricsId) => {
+      navigationEvent.fireEvent(
+        createdMetricsId,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Source,
+        MetricsEventScreenName.Dashboard
+      );
+    });
   };
 
   /** source summary information */
