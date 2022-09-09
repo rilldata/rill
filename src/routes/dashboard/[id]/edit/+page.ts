@@ -1,6 +1,5 @@
 import { error } from "@sveltejs/kit";
 
-// TODO: figure out what this type does
 /** @type {import('./$types').PageLoad} */
 export function load({ params }) {
   // TODO: Check to see if the metricsDefId exists server-side
