@@ -129,15 +129,20 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Mac os binary"
-      if: tag IS present
+      if: tag IS present OR type IN (cron)
       os: osx
       osx_image: xcode13.4
       addons:
         homebrew:
           casks:
           - google-cloud-sdk
+          packages:
+          - jq
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
+
+      before_install:
+        - ./scripts/check_nightly.sh
 
       install: *npm-install
 
@@ -167,7 +172,7 @@ jobs:
 
     - stage: Release
       name: "Build & Publish Linux binary"
-      if: tag IS present
+      if: tag IS present OR type IN (cron)
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
@@ -175,14 +180,15 @@ jobs:
         - echo "Installing python 3.7.0 needed during npm install"
         - pyenv install 3.7.0
         - pyenv global 3.7.0
-      # before_install: *python-setup
+        - ./scripts/check_nightly.sh
+
       install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
 
     - stage: Release
       name: "Build & Publish Windows binary"
-      if: tag IS present
+      if: tag IS present OR type IN (cron)
       os: windows
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
@@ -190,6 +196,7 @@ jobs:
       before_install:
         - echo "Installing python 3 and gcloud"
         - choco install python3 gcloudsdk
+        - ./scripts/check_nightly.sh
 
       install: *npm-install
       script: *build-vercel-pkg
