@@ -6,7 +6,6 @@ export function load({ params }) {
   const sourceExists = true;
 
   if (sourceExists) {
-    // TODO: should I return an object or does a string work?
     return {
       sourceId: params.id,
     };

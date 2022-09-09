@@ -6,7 +6,6 @@ export function load({ params }) {
   const modelExists = true;
 
   if (modelExists) {
-    // TODO: should I return an object or does a string work?
     return {
       modelId: params.id,
     };

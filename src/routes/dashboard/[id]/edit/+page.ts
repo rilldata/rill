@@ -6,7 +6,6 @@ export function load({ params }) {
   const metricsDefExists = true;
 
   if (metricsDefExists) {
-    // TODO: should I return an object or does a string work?
     return {
       metricsDefId: params.id,
     };
