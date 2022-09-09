@@ -1,4 +1,5 @@
-<script>
+<script lang="ts">
+  import { createEventDispatcher, getContext } from "svelte";
   import { FormattedDataType } from "$lib/components/data-types";
   import notificationStore from "$lib/components/notifications";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
@@ -10,7 +11,9 @@
   import { INTERVALS, STRING_LIKES, TIMESTAMPS } from "$lib/duckdb-data-types";
   import { formatDataType } from "$lib/util/formatters";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
-  import { createEventDispatcher } from "svelte";
+  import type { VirtualizedTableConfig } from "../types";
+
+  const config: VirtualizedTableConfig = getContext("config");
 
   export let row;
   export let column;
@@ -78,7 +81,8 @@
   >
     <button
       class="
-      py-2 px-4 
+      {config.rowHeight <= 28 ? 'py-1' : 'py-2'}
+      px-4 
       text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap"
       use:shiftClickAction
       on:shift-click={async () => {

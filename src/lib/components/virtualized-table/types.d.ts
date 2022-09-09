@@ -1,5 +1,7 @@
 export type HeaderPosition = "top" | "left" | "top-left";
 
+export type PinnedColumnSide = "left" | "right";
+
 export interface VirtualizedTableConfig {
   defaultColumnWidth: number;
   maxColumnWidth: number;
@@ -7,4 +9,5 @@ export interface VirtualizedTableConfig {
   minHeaderWidthWhenColumsAreSmall: number;
   rowHeight: number;
   indexWidth: number;
+  columnHeaderHeight: number;
 }

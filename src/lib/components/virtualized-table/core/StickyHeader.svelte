@@ -1,9 +1,13 @@
 <script lang="ts">
   import { dragTableCell } from "../drag-table-cell";
 
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
 
   import type { HeaderPosition } from "../types";
+  import type { VirtualizedTableConfig } from "../types";
+
+  const config: VirtualizedTableConfig = getContext("config");
+
   const dispatch = createEventDispatcher();
   export let header;
   export let position: HeaderPosition = "top";
@@ -38,7 +42,7 @@
   on:blur={blur}
   style:transform="translate{position === "left" ? "Y" : "X"}({header.start}px)"
   style:width="{header.size}px"
-  style:height="36px"
+  style:height="{config.columnHeaderHeight}px"
   class="{positionClasses}
    bg-white text-left border-b border-b-4 border-r border-r-1"
 >

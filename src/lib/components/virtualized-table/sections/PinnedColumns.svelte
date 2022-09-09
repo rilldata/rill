@@ -4,9 +4,11 @@
   import Cell from "../core/Cell.svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import Row from "../core/Row.svelte";
+  import type { PinnedColumnSide } from "../types";
 
   const dispatch = createEventDispatcher();
 
+  export let side: PinnedColumnSide = "right";
   export let virtualRowItems;
   export let virtualColumnItems;
   export let pinnedColumns: ProfileColumn[];
@@ -49,7 +51,8 @@
 </script>
 
 <div
-  style:right={0}
+  style:right={side === "right" ? 0 : "auto"}
+  style:left={side === "left" ? 0 : "auto"}
   class=" top-0 sticky z-40 border-l-2 border-gray-400"
   style:width="{totalWidth}px"
 >
