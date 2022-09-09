@@ -57,6 +57,15 @@ export const useMetaQuery = (metricViewId: string) => {
   );
 };
 
+export const selectDimensionFromMeta = (
+  meta: MetricsViewMetaResponse,
+  dimensionId: string
+) => meta?.dimensions?.find((dimension) => dimension.id === dimensionId);
+export const selectMeasureFromMeta = (
+  meta: MetricsViewMetaResponse,
+  measureId: string
+) => meta?.measures?.find((measure) => measure.id === measureId);
+
 // POST /api/v1/metrics-views/{view-name}/timeseries
 
 export const getMetricsViewTimeSeries = async (
