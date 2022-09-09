@@ -1,9 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { Button } from "$lib/components/button";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
 
@@ -18,6 +24,19 @@
 
   let buttonDisabled = true;
   let buttonStatus = "OK";
+
+  const viewDashboard = (metricsDefId: string) => {
+    goto(`/dashboard/${metricsDefId}`);
+
+    navigationEvent.fireEvent(
+      metricsDefId,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.MetricsDefinition,
+      MetricsEventScreenName.Dashboard
+    );
+  };
+
   $: if (
     $selectedMetricsDef?.sourceModelId === undefined ||
     $selectedMetricsDef?.timeDimension === undefined
@@ -37,7 +56,7 @@
   <Button
     type="primary"
     disabled={buttonDisabled}
-    on:click={() => goto(`/dashboard/${metricsDefId}`)}
+    on:click={() => viewDashboard(metricsDefId)}
   >
     Go to Dashboard <ExploreIcon size="16px" />
   </Button>

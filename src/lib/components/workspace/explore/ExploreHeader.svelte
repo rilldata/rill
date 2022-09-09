@@ -1,9 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import {
     invalidateMetricsViewData,
@@ -33,6 +38,18 @@
   }
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
+
+  const viewMetrics = (metricsDefId: string) => {
+    goto(`/dashboard/${metricsDefId}/edit`);
+
+    navigationEvent.fireEvent(
+      metricsDefId,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.Dashboard,
+      MetricsEventScreenName.MetricsDefinition
+    );
+  };
 </script>
 
 <section id="header" class="w-full flex flex-col">
@@ -50,10 +67,7 @@
     </h1>
     <!-- top right CTAs -->
     <div>
-      <Button
-        type="secondary"
-        on:click={() => goto(`/dashboard/${metricsDefId}/edit`)}
-      >
+      <Button type="secondary" on:click={() => viewMetrics(metricsDefId)}>
         <div class="flex items-center gap-x-2">
           Edit Metrics <MetricsIcon />
         </div>

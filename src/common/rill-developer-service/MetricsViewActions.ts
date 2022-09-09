@@ -4,7 +4,10 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type {
+  BasicMeasureDefinition,
+  MeasureDefinitionEntity,
+} from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { getFallbackMeasureName } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
@@ -60,12 +63,16 @@ export interface MetricsViewTimeSeriesResponse {
   data: Array<TimeSeriesValue>;
 }
 
+export interface MetricsViewTopListSortEntry {
+  name: string;
+  direction: "desc" | "asc";
+}
 export interface MetricsViewTopListRequest {
   measures: Array<string>;
   time: Pick<MetricsViewRequestTimeRange, "start" | "end">;
   limit: number;
   offset: number;
-  sort: Array<{ name: string; direction: "desc" | "asc" }>;
+  sort: Array<MetricsViewTopListSortEntry>;
   filter?: MetricsViewRequestFilter;
 }
 export interface MetricsViewTopListResponse {
@@ -218,9 +225,6 @@ export class MetricsViewActions extends RillDeveloperActions {
         ExplorerSourceModelDoesntExist
       );
     }
-    const measure = this.dataModelerStateService
-      .getMeasureDefinitionService()
-      .getById(request.measures[0]);
     const dimension = this.dataModelerStateService
       .getDimensionDefinitionService()
       .getById(dimensionId);
@@ -234,7 +238,10 @@ export class MetricsViewActions extends RillDeveloperActions {
       [
         model.tableName,
         dimension.dimensionColumn,
-        measure.expression,
+        await this.getBasicMeasures(
+          rillRequestContext.record,
+          request.measures
+        ),
         {
           filters: mapDimensionIdToName(
             request.filter,
@@ -242,6 +249,7 @@ export class MetricsViewActions extends RillDeveloperActions {
               .getDimensionDefinitionService()
               .getManyByField("metricsDefId", metricsDefId)
           ),
+          sort: request.sort,
           timeRange: request.time,
           timestampColumn: rillRequestContext.record.timeDimension,
           limit: request.limit,
@@ -280,11 +288,10 @@ export class MetricsViewActions extends RillDeveloperActions {
         "getBigNumber",
         [
           model.tableName,
-          request.measures.map((measureId) => ({
-            ...this.dataModelerStateService
-              .getMeasureDefinitionService()
-              .getById(measureId),
-          })),
+          await this.getBasicMeasures(
+            rillRequestContext.record,
+            request.measures
+          ),
           mapDimensionIdToName(
             request.filter,
             this.dataModelerStateService
@@ -366,5 +373,14 @@ export class MetricsViewActions extends RillDeveloperActions {
       measure.sqlName = getFallbackMeasureName(index, measure.sqlName);
     });
     return validMeasures;
+  }
+
+  private async getBasicMeasures(
+    metricsDef: MetricsDefinitionEntity,
+    measureIds: Array<string>
+  ): Promise<Array<BasicMeasureDefinition>> {
+    return (await this.getValidMeasures(metricsDef)).filter(
+      (measure) => measureIds.indexOf(measure.id) >= 0
+    );
   }
 }

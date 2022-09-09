@@ -3,8 +3,14 @@
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { waitUntil } from "$common/utils/waitUtils";
-  import { ApplicationStore } from "$lib/application-state-stores/application-store";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
@@ -18,6 +24,7 @@
   import { Divider, MenuItem } from "$lib/components/menu";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import {
     createMetricsDefsAndFocusApi,
     deleteMetricsDefsApi,
@@ -57,8 +64,43 @@
     store.dispatch(createMetricsDefsAndFocusApi());
   };
 
+  const editModel = (sourceModelId: string) => {
+    goto(`/model/${sourceModelId}`);
+
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+    navigationEvent.fireEvent(
+      sourceModelId,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[previousActiveEntity],
+      MetricsEventScreenName.Model
+    );
+  };
+
+  const editMetrics = (metricsId: string) => {
+    goto(`/dashboard/${metricsId}/edit`);
+
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+    navigationEvent.fireEvent(
+      metricsId,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[previousActiveEntity],
+      MetricsEventScreenName.MetricsDefinition
+    );
+  };
+
   const dispatchSetMetricsDefActive = (id: string) => {
     goto(`/dashboard/${id}`);
+
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+    navigationEvent.fireEvent(
+      id,
+      BehaviourEventMedium.AssetName,
+      MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[previousActiveEntity],
+      MetricsEventScreenName.Dashboard
+    );
   };
 
   const dispatchDeleteMetricsDef = (id: string) => {
@@ -127,7 +169,7 @@
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => goto(`/model/${metricsDef.sourceModelId}`)}
+            on:select={() => editModel(metricsDef.sourceModelId)}
           >
             <svelte:fragment slot="icon">
               <Model />
@@ -142,7 +184,7 @@
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => goto(`/dashboard/${metricsDef.id}/edit`)}
+            on:select={() => editMetrics(metricsDef.id)}
           >
             <svelte:fragment slot="icon">
               <MetricsIcon />
