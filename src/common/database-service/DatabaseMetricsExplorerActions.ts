@@ -2,7 +2,10 @@ import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";
+import type {
+  MetricsViewRequestFilter,
+  MetricsViewTopListSortEntry,
+} from "$common/rill-developer-service/MetricsViewActions";
 import {
   getCoalesceExpressionForMeasures,
   getWhereClauseFromFilters,
@@ -17,6 +20,7 @@ export interface BigNumberResponse {
 
 export interface LeaderboardQueryAdditionalArguments {
   filters: MetricsViewRequestFilter;
+  sort: Array<MetricsViewTopListSortEntry>;
   timestampColumn: string;
   timeRange: TimeSeriesTimeRange;
   limit: number;
@@ -27,10 +31,11 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     table: string,
     column: string,
-    expression: string,
+    measures: Array<BasicMeasureDefinition>,
     // additional arguments
     {
       filters,
+      sort,
       timestampColumn,
       timeRange,
       limit,
@@ -51,12 +56,24 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       "WHERE"
     );
 
+    const expressionColumns = measures
+      .map((measure) => `${measure.expression} as ${measure.sqlName}`)
+      .join(",");
+    const sortQuery = sort?.length
+      ? "ORDER BY " +
+        sort
+          .map(
+            (sortEntry) => `${sortEntry.name} ${sortEntry.direction} NULLS LAST`
+          )
+          .join(",")
+      : "";
+
     return this.databaseClient.execute(
       `
-      SELECT ${expression} as value, "${column}" as label from "${table}"
+      SELECT ${expressionColumns}, "${column}" from "${table}"
       ${whereClause}
       GROUP BY "${column}"
-      ORDER BY value desc NULLS LAST
+      ${sortQuery}
       LIMIT ${limit}
     `
     );
