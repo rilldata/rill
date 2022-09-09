@@ -4,7 +4,10 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type {
+  BasicMeasureDefinition,
+  MeasureDefinitionEntity,
+} from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { getFallbackMeasureName } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
@@ -235,10 +238,9 @@ export class MetricsViewActions extends RillDeveloperActions {
       [
         model.tableName,
         dimension.dimensionColumn,
-        request.measures.map((measureId) =>
-          this.dataModelerStateService
-            .getMeasureDefinitionService()
-            .getById(measureId)
+        await this.getBasicMeasures(
+          rillRequestContext.record,
+          request.measures
         ),
         {
           filters: mapDimensionIdToName(
@@ -286,11 +288,10 @@ export class MetricsViewActions extends RillDeveloperActions {
         "getBigNumber",
         [
           model.tableName,
-          request.measures.map((measureId) => ({
-            ...this.dataModelerStateService
-              .getMeasureDefinitionService()
-              .getById(measureId),
-          })),
+          await this.getBasicMeasures(
+            rillRequestContext.record,
+            request.measures
+          ),
           mapDimensionIdToName(
             request.filter,
             this.dataModelerStateService
@@ -372,5 +373,14 @@ export class MetricsViewActions extends RillDeveloperActions {
       measure.sqlName = getFallbackMeasureName(index, measure.sqlName);
     });
     return validMeasures;
+  }
+
+  private async getBasicMeasures(
+    metricsDef: MetricsDefinitionEntity,
+    measureIds: Array<string>
+  ): Promise<Array<BasicMeasureDefinition>> {
+    return (await this.getValidMeasures(metricsDef)).filter(
+      (measure) => measureIds.indexOf(measure.id) >= 0
+    );
   }
 }
