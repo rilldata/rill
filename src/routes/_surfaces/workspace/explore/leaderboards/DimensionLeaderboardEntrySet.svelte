@@ -48,12 +48,12 @@ see more button
       <svelte:fragment slot="tooltip">
         {#if !active}
           {#if atLeastOneActive}
+            <div>include <span class="italic">{label}</span> in filter</div>
+          {:else}
             <div>
               filter {filterMode ? "out" : "on"}
               <span class="italic">{label}</span>
             </div>
-          {:else}
-            <div>include <span class="italic">{label}</span> in filter</div>
           {/if}
         {:else}
           <div>remove <span class="italic">{label}</span> from filter</div>

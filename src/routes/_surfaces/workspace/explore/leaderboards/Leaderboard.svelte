@@ -11,8 +11,8 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
-  import FilterExclude from "$lib/components/icons/FilterExclude.svelte";
   import FilterInclude from "$lib/components/icons/FilterInclude.svelte";
+  import FilterRemove from "$lib/components/icons/FilterRemove.svelte";
   import LeaderboardContainer from "$lib/components/leaderboard/LeaderboardContainer.svelte";
   import LeaderboardHeader from "$lib/components/leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
@@ -209,7 +209,7 @@
         {#if hovered}
           <Tooltip location="top" distance={16}>
             <div on:click={toggleFilterMode}>
-              {#if filterMode}<FilterExclude size="16px" />{:else}<FilterInclude
+              {#if filterMode}<FilterRemove size="16px" />{:else}<FilterInclude
                   size="16px"
                 />{/if}
             </div>
