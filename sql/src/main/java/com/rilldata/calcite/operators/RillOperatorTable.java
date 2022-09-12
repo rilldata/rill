@@ -76,12 +76,15 @@ public class RillOperatorTable implements SqlOperatorTable
   public RillOperatorTable()
   {
     operatorTables = new ArrayList<>();
-    SqlOperatorTable postgresOperators = SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
-        EnumSet.of(SqlLibrary.POSTGRESQL));
+    // Add standard sql operators
     SqlStdOperatorTable sqlStdOperatorTable = SqlStdOperatorTable.instance();
     operatorTables.add(sqlStdOperatorTable);
+    // Add postgres operators
+    SqlOperatorTable postgresOperators = SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
+        EnumSet.of(SqlLibrary.POSTGRESQL));
     operatorTables.add(postgresOperators);
 
+    // add custom operators
     final ListSqlOperatorTable customOperatorTable = new ListSqlOperatorTable();
     customOperatorTable.add(DATE_TRUNC);
     customOperatorTable.add(GREATEST);
