@@ -40,7 +40,9 @@ const branch = "release";
 console.log(`Pushing to ${branch}`);
 execSyncToStdout(`git checkout ${branch}`);
 execSyncToStdout(`git add ${PACKAGE_JSON_FILE} ${PACKAGE_LOCK_JSON_FILE}`);
-execSyncToStdout(`git commit -m "Bump version: v${currentVersion} -> v${newVersion}"`);
+execSyncToStdout(
+  `git commit -m "Bump version: v${currentVersion} -> v${newVersion}"`
+);
 execSyncToStdout(`git push origin ${branch}`);
 
 console.log(`Creating tag ${newVersion}`);
@@ -48,4 +50,6 @@ execSyncToStdout(`git tag -m "Release: v${newVersion}" v${newVersion}`);
 execSyncToStdout(`git push --tags`);
 
 console.log("Trying to create a github release");
-execSyncToStdout(`gh release create v${newVersion} --notes "Release: v${newVersion}" -t "Release: v${newVersion}"`);
+execSyncToStdout(
+  `gh release create v${newVersion} --notes "Release: v${newVersion}" -t "Release: v${newVersion}"`
+);

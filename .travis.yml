@@ -41,6 +41,7 @@ jobs:
         - cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
 
       script:
+        - set -e
         - echo "Running npm install"
         - npm install
 
