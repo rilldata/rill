@@ -121,9 +121,13 @@
     </Tooltip>
     {#if isSelected}
       {#if isSortingDesc}
-        <ArrowDown size="16px" />
+        <div in:fly|local={{ duration: 200, y: -8 }}>
+          <ArrowDown size="16px" />
+        </div>
       {:else}
-        <ArrowDown transform="scale(1 -1)" size="16px" />
+        <div in:fly|local={{ duration: 200, y: 8 }}>
+          <ArrowDown transform="scale(1 -1)" size="16px" />
+        </div>
       {/if}
     {/if}
     {#if !noPin && showMore}
@@ -137,7 +141,7 @@
             dispatch("pin");
           }}
         >
-          <Pin size="24px" />
+          <Pin size="16px" />
         </button>
         <TooltipContent slot="tooltip-content">
           {pinned
