@@ -2,7 +2,7 @@
 set -e
 
 # Hardcoded runtime version to install
-RUNTIME_VERSION=0.1.0
+RUNTIME_VERSION="68b61dde444249aa1ca282452520f77e51d6b8e5"
 
 # Targets dist/runtime as the output directory
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -32,6 +32,6 @@ fi
 # Install runtime
 mkdir -p $OUTPUT_DIR
 cd $OUTPUT_DIR
-curl -Lso runtime.zip https://storage.googleapis.com/pkg.rilldata.com/rillsql/runtime/releases/v$RUNTIME_VERSION/runtime-$TARGET.zip
+curl -Lso runtime.zip https://storage.googleapis.com/pkg.rilldata.com/runtime/releases/$RUNTIME_VERSION/runtime-$TARGET.zip
 unzip -q -u runtime.zip
 rm runtime.zip
