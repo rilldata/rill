@@ -21,7 +21,24 @@ clean:
 	rm -f main
 	rm -rf release
 
+# NOTE: Move darwin builds to to Zig (for fully cross-platform builds) when the issues mentioned here have been solved: https://github.com/rilldata/rill-developer/pull/846
+
+release/darwin-amd64:
+	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
+	mkdir -p release
+	GOOS=darwin GOARCH=amd64 ./scripts/setup_sql.sh -f
+	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
+		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/darwin-amd64 ./cmd
+
+release/darwin-arm64:
+	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
+	mkdir -p release
+	GOOS=darwin GOARCH=arm64 ./scripts/setup_sql.sh -f
+	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
+		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/darwin-arm64 ./cmd
+
 release/linux-amd64:
+	# NOTE: Move Linux builds to Zig (there was a bug with linking to libc++)
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "linux" ]; then echo "Error: must run build on linux"; false; fi
 	mkdir -p release
 	GOOS=linux GOARCH=amd64 ./scripts/setup_sql.sh -f
@@ -35,19 +52,3 @@ release/windows-amd64.exe:
 		CC="zig cc -target x86_64-windows-gnu" \
 		CXX="zig c++ -target x86_64-windows-gnu" \
 		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/windows-amd64.exe ./cmd
-
-# NOTE: Move darwin builds to to Zig (for fully cross-platform builds) when the issues mentioned here have been solved: https://github.com/rilldata/rill-developer/pull/846
-
-release/darwin-arm64:
-	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
-	mkdir -p release
-	GOOS=darwin GOARCH=arm64 ./scripts/setup_sql.sh -f
-	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
-		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/darwin-arm64 ./cmd
-
-release/darwin-amd64:
-	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
-	mkdir -p release
-	GOOS=darwin GOARCH=amd64 ./scripts/setup_sql.sh -f
-	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
-		go build -ldflags "-X 'github.com/rilldata/rill/runtime.Version=${RUNTIME_VERSION}'" -trimpath -o release/darwin-amd64 ./cmd
