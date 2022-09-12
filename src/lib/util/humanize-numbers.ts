@@ -10,6 +10,7 @@ export type ShortHandSymbols = typeof shortHandSymbols[number];
 interface HumanizeOptions {
   scale?: ShortHandSymbols;
   excludeDecimalZeros?: boolean;
+  columnName?: string;
 }
 
 type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
@@ -161,14 +162,13 @@ function determineScaleForValues(values: number[]): ShortHandSymbols {
   else median = (numberValues[half - 1] + numberValues[half]) / 2.0;
 
   let scaleForMax = getScaleForValue(numberValues[0]);
-
   while (scaleForMax != shortHandSymbols[shortHandSymbols.length - 1]) {
     const medianShorthand = (
       Math.abs(median) / shortHandMap[scaleForMax]
     ).toFixed(1);
 
     const numDigitsInMedian = medianShorthand.toString().split(".")[0].length;
-    if (numDigitsInMedian >= 2) {
+    if (numDigitsInMedian >= 1) {
       return scaleForMax;
     } else {
       scaleForMax = shortHandSymbols[shortHandSymbols.indexOf(scaleForMax) + 1];
@@ -237,7 +237,8 @@ export function humanizeGroupValues(
   type: NicelyFormattedTypes,
   options?: formatterOptions
 ) {
-  let numValues = values.map((v) => v.value);
+  const valueKey = options.columnName ? options.columnName : "value";
+  let numValues = values.map((v) => v[valueKey]);
 
   const areAllNumbers = numValues.some((e) => typeof e === "number");
   if (!areAllNumbers) return values;
@@ -249,12 +250,24 @@ export function humanizeGroupValues(
     options
   );
 
+  const formattedValueKey = "__formatted_" + valueKey;
   const humanizedValues = values.map((v) => {
-    const index = numValues.indexOf(v.value);
-    return { ...v, formattedValue: formattedValues[index] };
+    const index = numValues.indexOf(v[valueKey]);
+    return { ...v, [formattedValueKey]: formattedValues[index] };
   });
 
   return humanizedValues;
+}
+
+export function humanizeGroupByColumns(
+  values: Array<any>,
+  columnNames: string[]
+) {
+  return columnNames.reduce((valuesObj, columnName) => {
+    return humanizeGroupValues(valuesObj, NicelyFormattedTypes.HUMANIZE, {
+      columnName,
+    });
+  }, values);
 }
 
 export function getScaleForLeaderboard(

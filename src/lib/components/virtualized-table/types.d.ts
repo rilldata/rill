@@ -10,4 +10,6 @@ export interface VirtualizedTableConfig {
   rowHeight: number;
   indexWidth: number;
   columnHeaderHeight: number;
+  columnHeaderFontWeightClass: string;
+  defaultFontWeightClass: string;
 }

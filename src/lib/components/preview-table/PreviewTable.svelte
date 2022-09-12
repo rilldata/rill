@@ -10,7 +10,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import { tweened } from "svelte/motion";
 
   import { DATES, TIMESTAMPS } from "$lib/duckdb-data-types";
-  import type { ProfileColumn } from "$lib/types";
+  import type { VirtualizedTableColumns } from "$lib/types";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
 
   import ColumnHeaders from "$lib/components/virtualized-table/sections/ColumnHeaders.svelte";
@@ -20,7 +20,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import { config } from "./config";
 
   export let rows;
-  export let columnNames: ProfileColumn[];
+  export let columnNames: VirtualizedTableColumns[];
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -253,6 +253,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       <ColumnHeaders
         virtualColumnItems={virtualColumns}
         columns={columnNames}
+        showDataIcon={true}
         {pinnedColumns}
         on:pin={handlePin}
         on:resize-column={handleResizeColumn}

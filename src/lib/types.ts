@@ -11,6 +11,10 @@ export interface ProfileColumn {
   nullCount?: number;
 }
 
+export interface VirtualizedTableColumns extends ProfileColumn {
+  label?: string;
+}
+
 export interface Item {
   id: string;
   status?: string;

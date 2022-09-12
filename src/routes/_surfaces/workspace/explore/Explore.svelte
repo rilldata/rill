@@ -7,7 +7,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
-  import DimensionExpandedTable from "./leaderboards/DimensionExpandedTable.svelte";
+  import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";
 
   export let metricsDefId: string;
 
@@ -25,10 +25,7 @@
   </svelte:fragment>
   <svelte:fragment slot="leaderboards">
     {#if selectedDimensionId}
-      <DimensionExpandedTable
-        {metricsDefId}
-        dimensionId={selectedDimensionId}
-      />
+      <DimensionDisplay {metricsDefId} dimensionId={selectedDimensionId} />
     {:else}
       <LeaderboardDisplay {metricsDefId} />
     {/if}

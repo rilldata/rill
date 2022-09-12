@@ -26,6 +26,9 @@
     }
   }
 
+  $: paddingVertical =
+    position === "top" && config.columnHeaderHeight <= 28 ? "py-1" : "py-2";
+
   function focus() {
     dispatch("focus");
   }
@@ -40,6 +43,7 @@
   on:mouseleave={blur}
   on:focus={focus}
   on:blur={blur}
+  on:click
   style:transform="translate{position === "left" ? "Y" : "X"}({header.start}px)"
   style:width="{header.size}px"
   style:height="{config.columnHeaderHeight}px"
@@ -55,9 +59,9 @@
   border-t-0
   border-l-0
   bg-gray-100
-  {position === 'top' && 'py-2 text-left'}
-  {position === 'left' && 'py-2'}
-  {position === 'top-left' && 'py-2 text-center'}
+  {position === 'top' && `${paddingVertical} text-left`}
+  {position === 'left' && paddingVertical}
+  {position === 'top-left' && `${paddingVertical} text-center`}
 "
   >
     <slot />

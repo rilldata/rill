@@ -155,6 +155,7 @@
     .map((label) => {
       const existingValue = values.find((value) => value.label === label);
       // return the existing value, or if it does not exist, just return the label.
+      // FIX ME return values for label which are not in the query
       return existingValue ? { ...existingValue } : { label };
     })
     .sort((a, b) => {
@@ -164,12 +165,14 @@
 
 {#if topListQuery}
   <LeaderboardContainer focused={atLeastOneActive}>
-    <LeaderboardHeader isActive={atLeastOneActive}>
+    <LeaderboardHeader
+      isActive={atLeastOneActive}
+      on:click={() => selectDimension(dimensionId)}
+    >
       <div
         slot="title"
         class:text-gray-500={atLeastOneActive}
         class:italic={atLeastOneActive}
-        on:click={() => selectDimension(dimensionId)}
       >
         <Tooltip location="top" distance={16}>
           <div class="flex flex-row gap-x-2 items-center">
@@ -240,16 +243,14 @@
             <LeaderboardListItem
               value={0}
               color="bg-gray-100"
-              on:click={() => {
-                seeMore = !seeMore;
-              }}
+              on:click={() => selectDimension(dimensionId)}
             >
               <div class="italic text-gray-500" slot="title">
-                See {#if seeMore}Less{:else}More{/if}
+                (Expand Table)
               </div>
             </LeaderboardListItem>
             <TooltipContent slot="tooltip-content"
-              >See More Items</TooltipContent
+              >Expand dimension to see more values</TooltipContent
             >
           </Tooltip>
         {/if}

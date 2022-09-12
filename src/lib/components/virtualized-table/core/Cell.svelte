@@ -18,9 +18,12 @@
   export let row;
   export let column;
   export let value;
+  export let formattedValue;
   export let type;
   export let rowActive = false;
   export let suppressTooltip = false;
+  export let rowSelected = false;
+  export let atLeastOneSelected = false;
 
   let cellActive = false;
 
@@ -31,6 +34,10 @@
   function onFocus() {
     dispatch("inspect", row.index);
     cellActive = true;
+  }
+
+  function onSelectItem() {
+    dispatch("select-item", row.index);
   }
 
   function onBlur() {
@@ -66,6 +73,7 @@
     on:mouseout={onBlur}
     on:focus={onFocus}
     on:blur={onBlur}
+    on:click={onSelectItem}
     class="
       absolute 
       z-9 
@@ -97,7 +105,16 @@
         // update this to set the active animation in the tooltip text
       }}
     >
-      <FormattedDataType {value} {type} inTable />
+      <FormattedDataType
+        value={formattedValue || value}
+        {type}
+        customStyle={rowSelected
+          ? "font-bold"
+          : atLeastOneSelected
+          ? "font-normal italic text-gray-400"
+          : config.defaultFontWeightClass}
+        inTable
+      />
     </button>
   </div>
   <TooltipContent slot="tooltip-content" maxWidth="360px">
