@@ -21,6 +21,11 @@ if (!(bumpType in BUMP_TYPES)) {
   process.exit(1);
 }
 
+const branch = "main";
+console.log(`Pulling latest changes from ${branch} branch`);
+execSyncToStdout(`git checkout ${branch}`);
+execSyncToStdout(`git pull`);
+
 const packageJsonString = readFileSync(PACKAGE_JSON_FILE).toString();
 const currentVersion = JSON.parse(packageJsonString).version;
 const newVersion = semverInc(currentVersion, bumpType);
@@ -36,9 +41,7 @@ writeFileSync(
 console.log("Regenerating `package-lock.json`");
 execSyncToStdout(`npm install`);
 
-const branch = "release";
 console.log(`Pushing to ${branch}`);
-execSyncToStdout(`git checkout ${branch}`);
 execSyncToStdout(`git add ${PACKAGE_JSON_FILE} ${PACKAGE_LOCK_JSON_FILE}`);
 execSyncToStdout(
   `git commit -m "Bump version: v${currentVersion} -> v${newVersion}"`
