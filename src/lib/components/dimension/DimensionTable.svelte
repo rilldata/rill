@@ -64,6 +64,7 @@ TableCells – the cell contents.
     .filter((i) => i >= 0);
 
   $: rowScrollOffset = 0;
+  $: colScrollOffset = 0;
   let manuallyResizedColumns = tweened({});
   $: if (rows && columns) {
     // initialize resizers?
@@ -184,6 +185,7 @@ TableCells – the cell contents.
         return estimateColumnSize[index];
       },
       overscan: columnOverscanAmount,
+      initialOffset: colScrollOffset,
     });
   }
 
@@ -219,6 +221,7 @@ TableCells – the cell contents.
   function onSelectItem(event) {
     // store previous scroll position before re-render
     rowScrollOffset = $rowVirtualizer.scrollOffset;
+    colScrollOffset = $columnVirtualizer.scrollOffset;
     dispatch("select-item", event.detail);
   }
 
