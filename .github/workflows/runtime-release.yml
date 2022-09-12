@@ -1,12 +1,13 @@
 name: Release runtime binaries
 on:
   push:
-    branches: ["main", "runtime-release-fix"]
+    branches: ["main"]
     paths:
       - ".github/workflows/runtime-release.yml"
       - "runtime/**"
 jobs:
   release:
+    # NOTE: linux builds must currently run on Linux. See Makefile for details.
     strategy:
       matrix:
         include:
@@ -25,10 +26,10 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.19"
-      - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@v1
-        with:
-          version: "0.9.1"
+      # - name: Setup Zig
+      #   uses: goto-bus-stop/setup-zig@v1
+      #   with:
+      #     version: "0.9.1"
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
@@ -42,10 +43,9 @@ jobs:
           make release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
           mv release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} release/runtime${{ matrix.ext }}
           zip -j release/runtime-${{ matrix.name }}.zip release/runtime${{ matrix.ext }}
-          RUNTIME_VERSION=$(cat version.txt | tr -d "[:space:]")
-          gsutil cp release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/runtime/releases/v$RUNTIME_VERSION/
+          gsutil cp release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/runtime/releases/${{ github.sha }}/
   release_macos:
-    # NOTE: Currently, darwin builds must run on macOS. See Makefile for details.
+    # NOTE: darwin builds must currently run on macOS. See Makefile for details.
     strategy:
       matrix:
         include:
@@ -77,5 +77,4 @@ jobs:
           make release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
           mv release/${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} release/runtime${{ matrix.ext }}
           zip -j release/runtime-${{ matrix.name }}.zip release/runtime${{ matrix.ext }}
-          RUNTIME_VERSION=$(cat version.txt | tr -d "[:space:]")
-          gsutil cp release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/runtime/releases/v$RUNTIME_VERSION/
+          gsutil cp release/runtime-${{ matrix.name }}.zip gs://pkg.rilldata.com/runtime/releases/${{ github.sha }}/
