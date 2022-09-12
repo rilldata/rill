@@ -63,6 +63,7 @@ TableCells – the cell contents.
     })
     .filter((i) => i >= 0);
 
+  $: rowScrollOffset = 0;
   let manuallyResizedColumns = tweened({});
   $: if (rows && columns) {
     // initialize resizers?
@@ -82,6 +83,7 @@ TableCells – the cell contents.
       estimateSize: () => DimensionTableConfig.rowHeight,
       overscan: rowOverscanAmount,
       paddingStart: DimensionTableConfig.columnHeaderHeight,
+      initialOffset: rowScrollOffset,
     });
 
     /** if we're inferring the column widths from static-ish data, let's
@@ -216,6 +218,7 @@ TableCells – the cell contents.
 
   function onSelectItem(event) {
     // store previous scroll position before re-render
+    rowScrollOffset = $rowVirtualizer.scrollOffset;
     dispatch("select-item", event.detail);
   }
 
