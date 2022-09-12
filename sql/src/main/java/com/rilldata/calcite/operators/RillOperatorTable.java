@@ -26,7 +26,7 @@ import java.util.List;
 public class RillOperatorTable implements SqlOperatorTable
 {
   private static final SqlFunction DATE_TRUNC = OperatorConversions.operatorBuilder("DATE_TRUNC")
-      .operandTypes(SqlTypeFamily.CHARACTER, SqlTypeFamily.TIMESTAMP)
+      .operandTypes(SqlTypeFamily.CHARACTER, SqlTypeFamily.DATETIME)
       .requiredOperands(2)
       .returnTypeInference(CalciteUtils.ARG1_NULLABLE_RETURN_TYPE_INFERENCE)
       .functionCategory(SqlFunctionCategory.TIMEDATE)
