@@ -54,5 +54,5 @@ execSyncToStdout(`git push --tags`);
 
 console.log("Trying to create a github release");
 execSyncToStdout(
-  `gh release create v${newVersion} --notes "Release: v${newVersion}" -t "Release: v${newVersion}"`
+  `gh release create v${newVersion} --generate-notes -t "v${newVersion}"`
 );
