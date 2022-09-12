@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionErrorType } from "$common/data-modeler-service/response/ActionResponseMessage";
 import {
@@ -150,7 +149,10 @@ export class ModelQuerySpec extends FunctionalTestBase {
       ids.push(model.id);
     }
 
-    goto(`/model/${ids[1]}`);
+    await this.clientDataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      ids[1],
+    ]);
     await asyncWait(100);
     expect(this.getActiveEntity().id).toBe(ids[1]);
 
