@@ -26,7 +26,7 @@ import java.util.List;
 public class RillOperatorTable implements SqlOperatorTable
 {
   private static final SqlFunction DATE_TRUNC = OperatorConversions.operatorBuilder("DATE_TRUNC")
-      .operandTypes(SqlTypeFamily.CHARACTER, SqlTypeFamily.DATETIME)
+      .operandTypes(SqlTypeFamily.CHARACTER, SqlTypeFamily.TIMESTAMP)
       .requiredOperands(2)
       .returnTypeInference(CalciteUtils.ARG1_NULLABLE_RETURN_TYPE_INFERENCE)
       .functionCategory(SqlFunctionCategory.TIMEDATE)
@@ -62,6 +62,7 @@ public class RillOperatorTable implements SqlOperatorTable
           SqlFunctionCategory.NUMERIC
       );
 
+  // This is called BITWISE_XOR in Druid
   public static final SqlFunction XOR =
       new SqlFunction(
           "XOR",
