@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
-   * DimensionTable.svelte
+   * DimensionDisplay.svelte
    * -------------------------
    * Create a table with the selected dimension and measures
-   * to be displayed in the dashboard
+   * to be displayed in explore
    */
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import {
