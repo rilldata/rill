@@ -110,4 +110,4 @@ require (
 	google.golang.org/protobuf v1.28.0
 )
 
-replace github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd => github.com/begelundmuller/go-duckdb v0.0.0-20220826094821-52f8cb0089a0
+replace github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd => github.com/begelundmuller/go-duckdb v0.0.0-20220912114310-886e6036e270
