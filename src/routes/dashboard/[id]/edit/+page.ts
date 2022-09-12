@@ -1,9 +1,16 @@
+import { getMetricsViewMetadata } from "$lib/svelte-query/queries/metrics-view";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
-export function load({ params }) {
-  // TODO: Check to see if the metricsDefId exists server-side
-  const metricsDefExists = true;
+export async function load({ params }) {
+  let metricsDefExists: boolean;
+  await getMetricsViewMetadata(params.id).then((meta) => {
+    if (meta.timeDimension !== undefined) {
+      metricsDefExists = true;
+    } else {
+      metricsDefExists = false;
+    }
+  });
 
   if (metricsDefExists) {
     return {
@@ -11,6 +18,5 @@ export function load({ params }) {
     };
   }
 
-  console.log("params", params);
   throw error(404, "Metrics definition not found");
 }
