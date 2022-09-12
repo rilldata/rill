@@ -36,7 +36,7 @@ writeFileSync(
 console.log("Regenerating `package-lock.json`");
 execSyncToStdout(`npm install`);
 
-const branch = "release";
+const branch = "main";
 console.log(`Pushing to ${branch}`);
 execSyncToStdout(`git checkout ${branch}`);
 execSyncToStdout(`git add ${PACKAGE_JSON_FILE} ${PACKAGE_LOCK_JSON_FILE}`);
