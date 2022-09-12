@@ -33,15 +33,17 @@ upload(){
 }
 
 if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
-  shasum -a 256 rilldata/rill-macos-x64 > rill.sha256
-  upload rilldata/rill-macos-x64 macos-x64/rill
+  mv rilldata/rill-macos-x64 rill
+  shasum -a 256 rill > rill.sha256
+  upload rill macos-x64/rill
   upload rill.sha256 macos-x64/rill.sha256
   upload metadata.txt metadata.txt
 fi
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
-  sha256sum rilldata/rill-linux-x64 > rill.sha256
-  upload rilldata/rill-linux-x64 linux-x64/rill
+  mv rilldata/rill-linux-x64 rill
+  shasum -a 256 rill > rill.sha256
+  upload rill linux-x64/rill
   upload rill.sha256 linux-x64/rill.sha256
 fi
 
