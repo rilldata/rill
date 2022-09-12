@@ -21,10 +21,6 @@ if (!(bumpType in BUMP_TYPES)) {
   process.exit(1);
 }
 
-console.log("Pulling latest changes from main branch");
-execSyncToStdout("git checkout main");
-execSyncToStdout("git pull");
-
 const packageJsonString = readFileSync(PACKAGE_JSON_FILE).toString();
 const currentVersion = JSON.parse(packageJsonString).version;
 const newVersion = semverInc(currentVersion, bumpType);
@@ -40,8 +36,16 @@ writeFileSync(
 console.log("Regenerating `package-lock.json`");
 execSyncToStdout(`npm install`);
 
-console.log("Creating new branch");
-const branchName = `release-candidate-${newVersion}`;
-execSyncToStdout(`git checkout -b ${branchName}`);
+const branch = "release";
+console.log(`Pushing to ${branch}`);
+execSyncToStdout(`git checkout ${branch}`);
 execSyncToStdout(`git add ${PACKAGE_JSON_FILE} ${PACKAGE_LOCK_JSON_FILE}`);
-execSyncToStdout(`git push origin ${branchName}`);
+execSyncToStdout(`git commit -m "Bump version: v${currentVersion} -> v${newVersion}"`);
+execSyncToStdout(`git push origin ${branch}`);
+
+console.log(`Creating tag ${newVersion}`);
+execSyncToStdout(`git tag -m "Release: v${newVersion}" v${newVersion}`);
+execSyncToStdout(`git push --tags`);
+
+console.log("Trying to create a github release");
+execSyncToStdout(`gh release create v${newVersion} --notes "Release: v${newVersion}" -t "Release: v${newVersion}"`);

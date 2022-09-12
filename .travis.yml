@@ -201,3 +201,20 @@ jobs:
       install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
+
+    - stage: Tag
+      name: "Cut a new Release"
+      if: tag IS NOT present AND type IN (api)
+      install: *npm-install
+      addons:
+        snaps:
+        - name: gh
+          channel: latest/stable
+      script:
+        - set -e
+        - gh pr status
+        - if [[ -z ${BUMP_TYPE} ]]; then
+            echo "Please specify the BUMP_TYPE from (major/minor/patch)";
+            exit 1;
+          fi
+        - npm run bump-version -- ${BUMP_TYPE}
