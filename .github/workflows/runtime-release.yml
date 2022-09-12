@@ -1,7 +1,7 @@
 name: Release runtime binaries
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "runtime-release-fix"]
     paths:
       - ".github/workflows/runtime-release.yml"
       - "runtime/**"
@@ -10,10 +10,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: linux
-            arch: amd64
-            name: linux-amd64
-            ext: ""
+          # - os: linux
+          #   arch: amd64
+          #   name: linux-amd64
+          #   ext: ""
           # - os: windows
           #   arch: amd64
           #   name: windows-amd64
@@ -67,7 +67,7 @@ jobs:
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
-          credentials_json: "${{ secrets.RILL_SQL_SA }}"
+          credentials_json: "${{ secrets.RILL_RUNTIME_SA }}"
       - name: "Set up Cloud SDK"
         uses: "google-github-actions/setup-gcloud@v0"
       - name: Build and upload ${{ matrix.name }}
