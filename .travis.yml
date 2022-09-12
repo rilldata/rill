@@ -41,6 +41,7 @@ jobs:
         - cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
 
       script:
+        - set -e
         - echo "Running npm install"
         - npm install
 
@@ -201,3 +202,22 @@ jobs:
       install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
+
+    - stage: Tag
+      name: "Cut a new Release"
+      if: tag IS NOT present AND type IN (api)
+      install: *npm-install
+      addons:
+        snaps:
+        - name: gh
+          channel: latest/stable
+      script:
+        - set -e
+        - git remote remove origin
+        - git remote add origin https://${GITHUB_TOKEN}@github.com/gorillio/rill-developer-internal
+        - gh pr status
+        - if [[ -z ${BUMP_TYPE} ]]; then
+            echo "Please specify the BUMP_TYPE from (major/minor/patch)";
+            exit 1;
+          fi
+        - npm run bump-version -- ${BUMP_TYPE}
