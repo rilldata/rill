@@ -1,6 +1,7 @@
 package com.rilldata;
 
 import com.rilldata.calcite.CalciteToolbox;
+import com.rilldata.calcite.dialects.Dialects;
 import com.rilldata.calcite.extensions.SqlCreateMetric;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.H2SqlDialect;
@@ -30,11 +31,7 @@ public class CalciteTests
   static void setUp() throws SQLException, ValidationException, SqlParseException
   {
     HsqlDbSchemaSupplier rootSchemaSupplier = new HsqlDbSchemaSupplier(Map.of("main", "PUBLIC"));
-    calciteToolbox = new CalciteToolbox(
-        rootSchemaSupplier,
-        H2SqlDialect.DEFAULT,
-        null
-    );
+    calciteToolbox = new CalciteToolbox(rootSchemaSupplier, null);
     DataSource dataSource = rootSchemaSupplier.getDataSource();
     try (Connection conn = dataSource.getConnection(); Statement statement = conn.createStatement()) {
       statement.executeUpdate(
@@ -67,6 +64,7 @@ public class CalciteTests
     SqlCreateMetric sqlCreateMetric = null;
     try {
       sqlCreateMetric = calciteToolbox.parseModelingQuery(modelingQuery);
+      Assertions.assertTrue(parseExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
         throw new RuntimeException(e);
@@ -75,7 +73,8 @@ public class CalciteTests
     Assertions.assertEquals(numDims, sqlCreateMetric.dimensions.size());
     Assertions.assertEquals(numMeasures, sqlCreateMetric.measures.size());
     try {
-      calciteToolbox.validateModelingQuery(sqlCreateMetric);
+      calciteToolbox.validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
+      Assertions.assertTrue(validationExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
       throw new RuntimeException(e);
     } catch (ValidationException e) {
@@ -91,11 +90,13 @@ public class CalciteTests
       throws SqlParseException
   {
     try {
-      String resultantQuery = calciteToolbox.getRunnableQuery(query);
-      String expectedQuery = calciteToolbox.getRunnableQuery(expandedQuery);
-      SqlNode actual = parseQuery(resultantQuery);
-      SqlNode expected = parseQuery(expectedQuery);
-      Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+      for (Dialects dialect : Dialects.values()) {
+        String resultantQuery = calciteToolbox.getRunnableQuery(query, dialect.getSqlDialect());
+        String expectedQuery = calciteToolbox.getRunnableQuery(expandedQuery, dialect.getSqlDialect());
+        SqlNode actual = parseQuery(resultantQuery);
+        SqlNode expected = parseQuery(expectedQuery);
+        Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+      }
     } catch (RuntimeException | ValidationException e) {
       Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
     }
@@ -103,14 +104,22 @@ public class CalciteTests
 
   @ParameterizedTest
   @MethodSource("testOperatorsParams")
-  public void testOperators(String query, String expectedQuery, Optional<String> exceptionMessage)
-      throws SqlParseException
+  public void testOperators(String query, String expectedDuckDBQuery, String expectedDruidQuery,
+      Optional<String> exceptionMessage
+  ) throws SqlParseException
   {
     try {
-      String resultantQuery = calciteToolbox.getRunnableQuery(query);
-      SqlNode actual = parseQuery(resultantQuery);
-      SqlNode expected = parseQuery(expectedQuery);
-      Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+      for (Dialects dialect : Dialects.values()) {
+        String resultantQuery = calciteToolbox.getRunnableQuery(query, dialect.getSqlDialect());
+        SqlNode actual = parseQuery(resultantQuery);
+        SqlNode expected;
+        if (dialect.equals(Dialects.DUCKDB)) {
+          expected = parseQuery(expectedDuckDBQuery);
+        } else {
+          expected = parseQuery(expectedDruidQuery);
+        }
+        Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+      }
     } catch (RuntimeException | ValidationException e) {
       Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
     }
@@ -190,7 +199,8 @@ public class CalciteTests
             Optional.empty()
         ),
         Arguments.of(
-            "SELECT DIM1 AS D1, M_DIST FROM METRICS_VIEW WHERE DIM1='something' ORDER BY D1 DESC LIMIT 5", // where clause works
+            "SELECT DIM1 AS D1, M_DIST FROM METRICS_VIEW WHERE DIM1='something' ORDER BY D1 DESC LIMIT 5",
+            // where clause works
             "SELECT DIM1 AS D1, COUNT(DISTINCT DIM1) AS M_DIST FROM MAIN.TEST WHERE DIM1='something' GROUP BY 1 ORDER BY D1 DESC LIMIT 5",
             Optional.empty()
         ),
@@ -250,7 +260,8 @@ public class CalciteTests
             Optional.of("Cannot specify columns along with *")
         ),
         Arguments.of(
-            "SELECT DIM1, DIM3, M_DIST, DIM4 FROM METRICS_VIEW", // cannot use column which was not present in metrics view
+            "SELECT DIM1, DIM3, M_DIST, DIM4 FROM METRICS_VIEW",
+            // cannot use column which was not present in metrics view
             "",
             Optional.of("Column [DIM4] not present in metrics view [METRICS_VIEW]")
         ),
@@ -283,24 +294,29 @@ public class CalciteTests
         Arguments.of(
             "SELECT GREATEST(1,2)",
             "SELECT GREATEST(1,2)",
+            "SELECT GREATEST(1,2)",
             Optional.empty()
         ),
         Arguments.of(
             "SELECT GREATEST('ABC','DEF')",
+            "SELECT GREATEST('ABC', 'DEF')",
             "SELECT GREATEST('ABC', 'DEF')",
             Optional.empty()
         ),
         Arguments.of(
             "SELECT LEAST('ABC','DEF')",
             "SELECT LEAST('ABC', 'DEF')",
+            "SELECT LEAST('ABC', 'DEF')",
             Optional.empty()
         ),
         Arguments.of(
             "SELECT LOG(1)",
             "SELECT LOG(1)",
+            "SELECT LOG(1)",
             Optional.empty()
         ),
         Arguments.of(
+            "SELECT LOG2(1)",
             "SELECT LOG2(1)",
             "SELECT LOG2(1)",
             Optional.empty()
@@ -308,22 +324,28 @@ public class CalciteTests
         Arguments.of(
             "SELECT LOG2('ABC')",
             "",
-            Optional.of("Cannot apply 'LOG2' to arguments of type 'LOG2(<CHAR(3)>)'. Supported form(s): 'LOG2(<NUMERIC>)")
+            "",
+            Optional.of(
+                "Cannot apply 'LOG2' to arguments of type 'LOG2(<CHAR(3)>)'. Supported form(s): 'LOG2(<NUMERIC>)")
         ),
         Arguments.of(
             "SELECT XOR(1,2)",
             "SELECT XOR(1,2)",
+            "SELECT BITWISE_XOR(1,2)",
             Optional.empty()
         ),
         Arguments.of(
             "SELECT XOR(2)",
+            "",
             "",
             Optional.of("Invalid number of arguments to function 'XOR'")
         ),
         Arguments.of(
             "SELECT XOR('ABC', 'DEF')",
             "",
-            Optional.of("Cannot apply 'XOR' to arguments of type 'XOR(<CHAR(3)>, <CHAR(3)>)'. Supported form(s): 'XOR(<INTEGER>, <INTEGER>)'")
+            "",
+            Optional.of(
+                "Cannot apply 'XOR' to arguments of type 'XOR(<CHAR(3)>, <CHAR(3)>)'. Supported form(s): 'XOR(<INTEGER>, <INTEGER>)'")
         )
     );
   }
@@ -368,7 +390,6 @@ public class CalciteTests
             Optional.empty(),
             Optional.of("Expression 'time' is not being grouped")
         ),
-        // currently not all duckdb functions are supported, this should ideally pass
         Arguments.of("""
                 CREATE METRICS VIEW Test4
                 DIMENSIONS
@@ -379,7 +400,7 @@ public class CalciteTests
             2,
             1,
             Optional.empty(),
-            Optional.of("No match found for function signature DATE_TRUNC(<CHARACTER>, <DATE>)")
+            Optional.empty()
         ),
         Arguments.of("""
                 CREATE METRICS VIEW Test5
