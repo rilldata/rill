@@ -14,10 +14,10 @@ jobs:
             arch: amd64
             name: linux-amd64
             ext: ""
-          - os: windows
-            arch: amd64
-            name: windows-amd64
-            ext: ".exe"
+          # - os: windows
+          #   arch: amd64
+          #   name: windows-amd64
+          #   ext: ".exe"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

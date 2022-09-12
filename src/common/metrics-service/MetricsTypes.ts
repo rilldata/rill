@@ -1,3 +1,5 @@
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+
 export interface CommonFields {
   app_name: string;
   install_id: string;
@@ -31,6 +33,16 @@ export enum MetricsEventScreenName {
   Dashboard = "dashboard",
   MetricsDefinition = "metrics-definition",
 }
+
+export const EntityTypeToScreenMap = {
+  [EntityType.Table]: MetricsEventScreenName.Source,
+  [EntityType.Model]: MetricsEventScreenName.Model,
+  [EntityType.Application]: MetricsEventScreenName.Source,
+  [EntityType.MetricsDefinition]: MetricsEventScreenName.MetricsDefinition,
+  [EntityType.MeasureDefinition]: MetricsEventScreenName.MetricsDefinition,
+  [EntityType.MetricsExplorer]: MetricsEventScreenName.Dashboard,
+  [EntityType.DimensionDefinition]: MetricsEventScreenName.Dashboard,
+};
 
 export interface ActiveEvent extends MetricsEvent {
   event_type: "active";
