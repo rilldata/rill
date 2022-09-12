@@ -1,4 +1,4 @@
-import { goto } from "$app/navigation";
+import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { asyncWait } from "$common/utils/waitUtils";
 import { assert } from "sinon";
 import {
@@ -82,15 +82,26 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       "updateModelQuery",
       [model0.id, TwoTableJoinQuery]
     );
-    goto(`/model/${model0.id}`);
+
+    await this.clientDataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      model0.id,
+    ]);
+
     await asyncWait(50);
+
     const [model1] = this.getModels("tableName", "model_0");
     const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model1.id, SingleTableQuery]
     );
+
     await asyncWait(50);
-    goto(`/model/${model1.id}`);
+
+    await this.clientDataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      model1.id,
+    ]);
 
     await this.waitAndAssertPromiseOrder(
       modelQueryTwoPromise,
