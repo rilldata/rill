@@ -1,15 +1,21 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import {
-    invalidateMetricViewData,
+    invalidateMetricsViewData,
     useMetaQuery,
-  } from "$lib/svelte-query/queries/metric-view";
+  } from "$lib/svelte-query/queries/metrics-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
@@ -29,13 +35,28 @@
         metricsDefId,
       ]);
     } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
-      // FIXME: understand this logic before removing invalidateMetricViewData
-      invalidateMetricViewData(queryClient, metricsDefId);
+      // FIXME: understand this logic before removing invalidateMetricsViewData
+      invalidateMetricsViewData(queryClient, metricsDefId);
     }
     metricsExplorerStore.sync(metricsDefId, $metaQuery.data);
   }
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
+
+  const viewMetrics = () => {
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.MetricsDefinition,
+      metricsDefId,
+    ]);
+
+    navigationEvent.fireEvent(
+      metricsDefId,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.Dashboard,
+      MetricsEventScreenName.MetricsDefinition
+    );
+  };
 </script>
 
 <section id="header" class="w-full flex flex-col">
@@ -56,10 +77,7 @@
       <Button
         type="secondary"
         on:click={() => {
-          dataModelerService.dispatch("setActiveAsset", [
-            EntityType.MetricsDefinition,
-            metricsDefId,
-          ]);
+          viewMetrics();
         }}
       >
         <div class="flex items-center gap-x-2">

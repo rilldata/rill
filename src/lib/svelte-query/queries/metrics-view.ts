@@ -4,14 +4,14 @@
  */
 
 import type {
-  MetricViewMetaResponse,
-  MetricViewTimeSeriesRequest,
-  MetricViewTimeSeriesResponse,
-  MetricViewTopListRequest,
-  MetricViewTopListResponse,
-  MetricViewTotalsRequest,
-  MetricViewTotalsResponse,
-} from "$common/rill-developer-service/MetricViewActions";
+  MetricsViewMetaResponse,
+  MetricsViewTimeSeriesRequest,
+  MetricsViewTimeSeriesResponse,
+  MetricsViewTopListRequest,
+  MetricsViewTopListResponse,
+  MetricsViewTotalsRequest,
+  MetricsViewTotalsResponse,
+} from "$common/rill-developer-service/MetricsViewActions";
 import { config } from "$lib/application-state-stores/application-store";
 import { QueryClient, useQuery } from "@sveltestack/svelte-query";
 
@@ -29,17 +29,17 @@ async function fetchUrl(path: string, method: string, body?) {
   return json;
 }
 
-// GET /api/v1/metric-views/{view-name}/meta
+// GET /api/v1/metrics-views/{view-name}/meta
 
 export const getMetricsViewMetadata = async (
   metricViewId: string
-): Promise<MetricViewMetaResponse> => {
-  const json = await fetchUrl(`metric-views/${metricViewId}/meta`, "GET");
+): Promise<MetricsViewMetaResponse> => {
+  const json = await fetchUrl(`metrics-views/${metricViewId}/meta`, "GET");
   json.id = metricViewId;
   return json;
 };
 
-const MetaId = `v1/metric-view/meta`;
+const MetaId = `v1/metrics-view/meta`;
 export const getMetaQueryKey = (metricViewId: string) => {
   return [MetaId, metricViewId];
 };
@@ -50,33 +50,42 @@ export const useMetaQuery = (metricViewId: string) => {
   const metaQueryOptions = {
     enabled: !!metricViewId,
   };
-  return useQuery<MetricViewMetaResponse, Error>(
+  return useQuery<MetricsViewMetaResponse, Error>(
     metaQueryKey,
     metaQueryFn,
     metaQueryOptions
   );
 };
 
-// POST /api/v1/metric-views/{view-name}/timeseries
+export const selectDimensionFromMeta = (
+  meta: MetricsViewMetaResponse,
+  dimensionId: string
+) => meta?.dimensions?.find((dimension) => dimension.id === dimensionId);
+export const selectMeasureFromMeta = (
+  meta: MetricsViewMetaResponse,
+  measureId: string
+) => meta?.measures?.find((measure) => measure.id === measureId);
+
+// POST /api/v1/metrics-views/{view-name}/timeseries
 
 export const getMetricsViewTimeSeries = async (
   metricViewId: string,
-  request: MetricViewTimeSeriesRequest
-): Promise<MetricViewTimeSeriesResponse> => {
-  return fetchUrl(`metric-views/${metricViewId}/timeseries`, "POST", request);
+  request: MetricsViewTimeSeriesRequest
+): Promise<MetricsViewTimeSeriesResponse> => {
+  return fetchUrl(`metrics-views/${metricViewId}/timeseries`, "POST", request);
 };
 
-const TimeSeriesId = `v1/metric-view/timeseries`;
+const TimeSeriesId = `v1/metrics-view/timeseries`;
 export const getTimeSeriesQueryKey = (
   metricViewId: string,
-  request: MetricViewTimeSeriesRequest
+  request: MetricsViewTimeSeriesRequest
 ) => {
   return [TimeSeriesId, metricViewId, request];
 };
 
 export const useTimeSeriesQuery = (
   metricViewId: string,
-  request: MetricViewTimeSeriesRequest
+  request: MetricsViewTimeSeriesRequest
 ) => {
   const timeSeriesQueryKey = getTimeSeriesQueryKey(metricViewId, request);
   const timeSeriesQueryFn = () =>
@@ -85,20 +94,20 @@ export const useTimeSeriesQuery = (
     staleTime: 1000 * 30,
     enabled: !!(metricViewId && request.measures && request.time),
   };
-  return useQuery<MetricViewTimeSeriesResponse, Error>(
+  return useQuery<MetricsViewTimeSeriesResponse, Error>(
     timeSeriesQueryKey,
     timeSeriesQueryFn,
     timeSeriesQueryOptions
   );
 };
 
-// POST /api/v1/metric-views/{view-name}/toplist/{dimension}
+// POST /api/v1/metrics-views/{view-name}/toplist/{dimension}
 
 export const getMetricsViewTopList = async (
   metricViewId: string,
   dimensionId: string,
-  request: MetricViewTopListRequest
-): Promise<MetricViewTopListResponse> => {
+  request: MetricsViewTopListRequest
+): Promise<MetricsViewTopListResponse> => {
   if (!metricViewId || !dimensionId)
     return {
       meta: [],
@@ -106,17 +115,17 @@ export const getMetricsViewTopList = async (
     };
 
   return fetchUrl(
-    `metric-views/${metricViewId}/toplist/${dimensionId}`,
+    `metrics-views/${metricViewId}/toplist/${dimensionId}`,
     "POST",
     request
   );
 };
 
-const TopListId = `v1/metric-view/toplist`;
+const TopListId = `v1/metrics-view/toplist`;
 export const getTopListQueryKey = (
   metricViewId: string,
   dimensionId: string,
-  request: MetricViewTopListRequest
+  request: MetricsViewTopListRequest
 ) => {
   return [TopListId, metricViewId, dimensionId, request];
 };
@@ -145,7 +154,11 @@ function getTopListQueryOptions(
  * and a request parameter.
  * The request parameter matches the API signature needed for the toplist request.
  */
-export function useTopListQuery(metricsDefId, dimensionId, requestParameter) {
+export function useTopListQuery(
+  metricsDefId: string,
+  dimensionId: string,
+  requestParameter: MetricsViewTopListRequest
+) {
   const topListQueryKey = getTopListQueryKey(
     metricsDefId,
     dimensionId,
@@ -162,31 +175,31 @@ export function useTopListQuery(metricsDefId, dimensionId, requestParameter) {
   return useQuery(topListQueryKey, topListQueryFn, topListQueryOptions);
 }
 
-// POST /api/v1/metric-views/{view-name}/totals
+// POST /api/v1/metrics-views/{view-name}/totals
 
 export const getMetricsViewTotals = async (
   metricViewId: string,
-  request: MetricViewTotalsRequest
-): Promise<MetricViewTotalsResponse> => {
-  return fetchUrl(`metric-views/${metricViewId}/totals`, "POST", request);
+  request: MetricsViewTotalsRequest
+): Promise<MetricsViewTotalsResponse> => {
+  return fetchUrl(`metrics-views/${metricViewId}/totals`, "POST", request);
 };
 
-const TotalsId = `v1/metric-view/totals`;
+const TotalsId = `v1/metrics-view/totals`;
 export const getTotalsQueryKey = (
   metricViewId: string,
-  request: MetricViewTotalsRequest
+  request: MetricsViewTotalsRequest
 ) => {
   return [TotalsId, metricViewId, request];
 };
 
 export const useTotalsQuery = (
   metricViewId: string,
-  request: MetricViewTotalsRequest
+  request: MetricsViewTotalsRequest
 ) => {
   const totalsQueryKey = getTotalsQueryKey(metricViewId, request);
   const totalsQueryFn = () => getMetricsViewTotals(metricViewId, request);
 
-  return useQuery<MetricViewTotalsResponse, Error>(
+  return useQuery<MetricsViewTotalsResponse, Error>(
     totalsQueryKey,
     totalsQueryFn,
     {
@@ -198,16 +211,16 @@ export const useTotalsQuery = (
 
 // invalidation helpers
 
-export const invalidateMetricView = async (
+export const invalidateMetricsView = async (
   queryClient: QueryClient,
   metricViewId: string
 ) => {
   // wait for meta to be invalidated
   await queryClient.refetchQueries([MetaId, metricViewId]);
-  // invalidateMetricViewData(queryClient, metricViewId);
+  // invalidateMetricsViewData(queryClient, metricViewId);
 };
 
-export const invalidateMetricViewData = (
+export const invalidateMetricsViewData = (
   queryClient: QueryClient,
   metricViewId: string
 ) => {

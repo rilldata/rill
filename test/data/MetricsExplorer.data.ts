@@ -1,5 +1,5 @@
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import type { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";
 import { PreviewRollupInterval } from "$lib/duckdb-data-types";
 import type { TimeSeriesMeasureRange } from "../utils/time-series-helpers";
 import { getTimeRange } from "../utils/time-series-helpers";
@@ -9,7 +9,7 @@ export interface MetricsExplorerTestDataType {
 
   // request arguments
   measures?: Array<number>;
-  filters?: MetricViewRequestFilter;
+  filters?: MetricsViewRequestFilter;
   timeRange?: TimeSeriesTimeRange;
 
   // assert arguments
@@ -35,7 +35,7 @@ const DefaultDomainLeaderboard: [string, Array<string>] = [
     "sports.yahoo.com",
   ],
 ];
-const DefaultCityLeaderboard: [string, Array<string>] = [
+export const DefaultCityLeaderboard: [string, Array<string>] = [
   "city",
   [
     null,
@@ -50,6 +50,10 @@ const DefaultCityLeaderboard: [string, Array<string>] = [
     "New York City",
     "San Francisco",
   ],
+];
+export const DefaultCityLeaderboardReversed: [string, Array<string>] = [
+  "city",
+  [...DefaultCityLeaderboard[1].slice(1), null],
 ];
 
 export const MetricsExplorerTestData: Array<MetricsExplorerTestDataType> = [

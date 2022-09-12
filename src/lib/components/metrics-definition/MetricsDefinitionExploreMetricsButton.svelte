@@ -1,12 +1,18 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { Button } from "$lib/components/button";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metric-view";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
 
   export let metricsDefId: string;
 
@@ -19,6 +25,22 @@
 
   let buttonDisabled = true;
   let buttonStatus = "OK";
+
+  const viewDashboard = () => {
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.MetricsExplorer,
+      metricsDefId,
+    ]);
+
+    navigationEvent.fireEvent(
+      metricsDefId,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.MetricsDefinition,
+      MetricsEventScreenName.Dashboard
+    );
+  };
+
   $: if (
     $selectedMetricsDef?.sourceModelId === undefined ||
     $selectedMetricsDef?.timeDimension === undefined
@@ -39,10 +61,7 @@
     type="primary"
     disabled={buttonDisabled}
     on:click={() => {
-      dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsExplorer,
-        metricsDefId,
-      ]);
+      viewDashboard();
     }}>Go to Dashboard <ExploreIcon size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">

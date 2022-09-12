@@ -72,6 +72,7 @@ export class MetricsService
       install_id: this.config.local.installId,
       build_id: this.config.local.version ?? "",
       version: this.config.local.version ?? "",
+      is_dev: this.config.local.isDev,
       project_id: applicationState.projectId,
     };
   }

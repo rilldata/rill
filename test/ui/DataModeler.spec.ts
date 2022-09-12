@@ -1,7 +1,7 @@
-import { expect, Page, PlaywrightTestArgs } from "@playwright/test";
+import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import { PlaywrightSuiteSetup } from "@adityahegde/typescript-test-utils/dist/playwright/PlaywrightSuiteSetup";
-import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
+import { expect, Page, PlaywrightTestArgs } from "@playwright/test";
 import {
   TestServerSetup,
   TestServerSetupParameter,

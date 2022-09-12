@@ -1,11 +1,14 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import { browser } from "$app/env";
+  import { browser } from "$app/environment";
+  import { onDestroy, onMount } from "svelte";
+
   export let target: string = undefined;
+
   let ref;
   let portal;
   let mounted = false;
   let targetEntity;
+
   onMount(() => {
     if (browser) {
       portal = document.createElement("div");

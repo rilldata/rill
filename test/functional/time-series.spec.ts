@@ -1,5 +1,9 @@
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type {
+  MetricsViewTimeSeriesRequest,
+  MetricsViewTimeSeriesResponse,
+} from "$common/rill-developer-service/MetricsViewActions";
 import request from "supertest";
 import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
 import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
@@ -8,10 +12,6 @@ import {
   assertTimeSeriesMeasureRange,
 } from "../utils/time-series-helpers";
 import { useInlineTestServer } from "../utils/useInlineTestServer";
-import type {
-  MetricViewTimeSeriesRequest,
-  MetricViewTimeSeriesResponse,
-} from "$common/rill-developer-service/MetricViewActions";
 
 describe("TimeSeries", () => {
   const { inlineServer } = useInlineTestServer(8082, 8083);
@@ -28,7 +28,7 @@ describe("TimeSeries", () => {
       const requestMeasures = MetricsExplorerTest.measures
         ? MetricsExplorerTest.measures.map((index) => measures[index])
         : measures;
-      const timeSeriesRequest: MetricViewTimeSeriesRequest = {
+      const timeSeriesRequest: MetricsViewTimeSeriesRequest = {
         // select measures based on index passed or default to all measures
         measures: requestMeasures.map((measure) => measure.id),
         filter: MetricsExplorerTest.filters,
@@ -39,11 +39,11 @@ describe("TimeSeries", () => {
         },
       };
       const resp = await request(inlineServer.app)
-        .post(`/api/v1/metric-views/${metricsDef.id}/timeseries`)
+        .post(`/api/v1/metrics-views/${metricsDef.id}/timeseries`)
         .send(timeSeriesRequest)
         .set("Accept", "application/json");
 
-      const timeSeries = resp.body as MetricViewTimeSeriesResponse;
+      const timeSeries = resp.body as MetricsViewTimeSeriesResponse;
 
       assertTimeSeries(
         timeSeries,

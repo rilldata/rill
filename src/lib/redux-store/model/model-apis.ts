@@ -1,10 +1,10 @@
 import { dataModelerService } from "$lib/application-state-stores/application-store";
-import { selectMetricsDefinitionsByModelId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
-import { store } from "$lib/redux-store/store-root";
 import { selectApplicationActiveEntity } from "$lib/redux-store/application/application-selectors";
+import { selectMetricsDefinitionsByModelId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
 import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
-import { invalidateMetricView } from "$lib/svelte-query/queries/metric-view";
+import { store } from "$lib/redux-store/store-root";
 import { queryClient } from "$lib/svelte-query/globalQueryClient";
+import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
 
 export const updateModelQueryApi = async (
   modelId: string,
@@ -31,7 +31,7 @@ const syncMetricsDefinitions = (modelId: string) => {
 
   const metricsDefinitions = selectMetricsDefinitionsByModelId(state, modelId);
   metricsDefinitions.forEach((metricsDefinition) => {
-    invalidateMetricView(queryClient, metricsDefinition.id);
+    invalidateMetricsView(queryClient, metricsDefinition.id);
     if (activeEntity.id === metricsDefinition.id) {
       store.dispatch(validateSelectedSources(metricsDefinition.id));
     }

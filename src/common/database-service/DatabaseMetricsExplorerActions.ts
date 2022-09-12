@@ -2,7 +2,10 @@ import type { BasicMeasureDefinition } from "$common/data-modeler-state-service/
 import { DatabaseActions } from "$common/database-service/DatabaseActions";
 import type { DatabaseMetadata } from "$common/database-service/DatabaseMetadata";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
-import type { MetricViewRequestFilter } from "$common/rill-developer-service/MetricViewActions";
+import type {
+  MetricsViewRequestFilter,
+  MetricsViewTopListSortEntry,
+} from "$common/rill-developer-service/MetricsViewActions";
 import {
   getCoalesceExpressionForMeasures,
   getWhereClauseFromFilters,
@@ -15,18 +18,33 @@ export interface BigNumberResponse {
   error?: string;
 }
 
+export interface LeaderboardQueryAdditionalArguments {
+  filters: MetricsViewRequestFilter;
+  sort: Array<MetricsViewTopListSortEntry>;
+  timestampColumn: string;
+  timeRange: TimeSeriesTimeRange;
+  limit: number;
+}
+
 export class DatabaseMetricsExplorerActions extends DatabaseActions {
   public async getLeaderboardValues(
     metadata: DatabaseMetadata,
     table: string,
     column: string,
-    expression: string,
-    filters: MetricViewRequestFilter,
-    timestampColumn: string,
-    timeRange?: TimeSeriesTimeRange
+    measures: Array<BasicMeasureDefinition>,
+    // additional arguments
+    {
+      filters,
+      sort,
+      timestampColumn,
+      timeRange,
+      limit,
+    }: LeaderboardQueryAdditionalArguments
   ) {
+    limit ??= 15;
+
     // remove filters for this specific dimension.
-    const isolatedFilters: MetricViewRequestFilter = {
+    const isolatedFilters: MetricsViewRequestFilter = {
       include: filters?.include.filter((filter) => filter.name !== column),
       exclude: filters?.exclude.filter((filter) => filter.name !== column),
     };
@@ -38,13 +56,25 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
       "WHERE"
     );
 
+    const expressionColumns = measures
+      .map((measure) => `${measure.expression} as ${measure.sqlName}`)
+      .join(",");
+    const sortQuery = sort?.length
+      ? "ORDER BY " +
+        sort
+          .map(
+            (sortEntry) => `${sortEntry.name} ${sortEntry.direction} NULLS LAST`
+          )
+          .join(",")
+      : "";
+
     return this.databaseClient.execute(
       `
-      SELECT ${expression} as value, "${column}" as label from "${table}"
+      SELECT ${expressionColumns}, "${column}" from "${table}"
       ${whereClause}
       GROUP BY "${column}"
-      ORDER BY value desc NULLS LAST
-      LIMIT 15
+      ${sortQuery}
+      LIMIT ${limit}
     `
     );
   }
@@ -53,7 +83,7 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     table: string,
     measures: Array<BasicMeasureDefinition>,
-    filters: MetricViewRequestFilter,
+    filters: MetricsViewRequestFilter,
     timestampColumn: string,
     timeRange?: TimeSeriesTimeRange
   ): Promise<BigNumberResponse> {

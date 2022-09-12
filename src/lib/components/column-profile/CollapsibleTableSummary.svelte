@@ -1,10 +1,8 @@
 <script lang="ts">
+  import type { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-
   import CollapsibleTableHeader from "./CollapsibleTableHeader.svelte";
-
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   export let entityType: EntityType;
   export let name: string;
@@ -18,7 +16,6 @@
   export let notExpandable = false;
 
   let containerWidth = 0;
-  let contextMenu;
   let contextMenuOpen;
   let container;
 
@@ -29,9 +26,6 @@
     observer.observe(container);
     return () => observer.unobserve(container);
   });
-
-  let menuX;
-  let menuY;
 </script>
 
 <div bind:this={container}>
@@ -42,13 +36,10 @@
         on:query
         on:expand={() => (show = !show)}
         bind:contextMenuOpen
-        bind:menuX
-        bind:menuY
         bind:name
         bind:show
         {showRows}
         {entityType}
-        {contextMenu}
         {cardinality}
         {sizeInBytes}
         {active}

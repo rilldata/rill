@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metadata"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	_ "github.com/rilldata/rill/runtime/sql"
 
 	_ "github.com/rilldata/rill/runtime/infra/duckdb"
 	_ "github.com/rilldata/rill/runtime/metadata/sqlite"
