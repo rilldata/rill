@@ -19,15 +19,15 @@
     if (position === "top") {
       positionClasses = "absolute left-0 top-0";
     } else if (position === "left") {
-      positionClasses = "absolute left-0 top-0 text-center font-bold";
+      positionClasses = "absolute left-0 top-0 text-center font-semibold";
       offsetTop = true;
     } else if (position === "top-left") {
       positionClasses = "sticky left-0 top-0 z-40  font-bold";
     }
   }
 
-  $: paddingVertical =
-    position === "top" && config.columnHeaderHeight <= 28 ? "py-1" : "py-2";
+  const paddingVerticalTop = config.columnHeaderHeight <= 28 ? "py-1" : "py-2";
+  const paddingVerticalLeft = config.rowHeight <= 28 ? "py-0.5" : "py-2";
 
   function focus() {
     dispatch("focus");
@@ -46,7 +46,9 @@
   on:click
   style:transform="translate{position === "left" ? "Y" : "X"}({header.start}px)"
   style:width="{header.size}px"
-  style:height="{config.columnHeaderHeight}px"
+  style:height="{position === "left"
+    ? config.rowHeight
+    : config.columnHeaderHeight}px"
   class="{positionClasses}
    bg-white text-left border-b border-b-4 border-r border-r-1"
 >
@@ -59,9 +61,9 @@
   border-t-0
   border-l-0
   bg-gray-100
-  {position === 'top' && `${paddingVertical} text-left`}
-  {position === 'left' && paddingVertical}
-  {position === 'top-left' && `${paddingVertical} text-center`}
+  {position === 'top' && `${paddingVerticalTop} text-left`}
+  {position === 'left' && paddingVerticalLeft}
+  {position === 'top-left' && `${paddingVerticalTop} text-center`}
 "
   >
     <slot />
