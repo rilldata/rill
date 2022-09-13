@@ -6,9 +6,9 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import { DataConnection } from "./DataConnection";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 /**
  * Connects to an existing duck db.
@@ -56,6 +56,7 @@ export class DuckDbConnection extends DataConnection {
 
     for (const table of tables) {
       const tableName = table.table_name;
+      if (!tableName) continue;
       if (existingTables.has(tableName)) {
         await this.dataModelerService.dispatch("syncTable", [
           existingTables.get(tableName).id,
