@@ -24,12 +24,6 @@
   import type { Readable } from "svelte/store";
   export let metricsDefId: string;
   export let dimensionId: string;
-  /** The reference value is the one that the bar in the LeaderboardListItem
-   * gets scaled with. For a summable metric, the total is a reference value,
-   * or for a count(*) metric, the reference value is the total number of rows.
-   */
-  // export let referenceValue: number;
-  // export let isSummableMeasure = false;
 
   $: metaQuery = useMetaQuery(metricsDefId);
 
