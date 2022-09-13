@@ -1,4 +1,6 @@
 <script lang="ts">
+  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
+
   import type { VirtualizedTableColumns } from "$lib/types";
   import Cell from "../core/Cell.svelte";
   import Row from "../core/Row.svelte";
@@ -23,6 +25,9 @@
       {@const type = columns[column.index]?.type}
       {@const rowActive = activeIndex === row?.index}
       {@const suppressTooltip = scrolling}
+      {@const barValue = columns[column.index]?.total
+        ? value / columns[column.index]?.total
+        : 0}
       {@const rowSelected =
         selectedIndex.findIndex((value) => row?.index === value) >= 0}
       <Cell
@@ -32,6 +37,7 @@
         {formattedValue}
         {row}
         {column}
+        {barValue}
         {type}
         {rowSelected}
         {atLeastOneSelected}

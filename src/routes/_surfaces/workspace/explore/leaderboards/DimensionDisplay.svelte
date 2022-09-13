@@ -18,6 +18,7 @@
     selectMeasureFromMeta,
     useMetaQuery,
     useTopListQuery,
+    useTotalsQuery,
   } from "$lib/svelte-query/queries/metrics-view";
   import { humanizeGroupByColumns } from "$lib/util/humanize-numbers";
   import type { Readable } from "svelte/store";
@@ -78,6 +79,34 @@
     });
   }
 
+  let totalsQuery;
+  $: if (
+    metricsExplorer &&
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching
+  ) {
+    totalsQuery = useTotalsQuery(metricsDefId, {
+      measures: metricsExplorer?.selectedMeasureIds,
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+    });
+  }
+
+  let referenceValues = {};
+  $: if ($totalsQuery?.data?.data) {
+    allMeasures.map((m) => {
+      const isSummableMeasure =
+        m?.expression.toLowerCase()?.includes("count(") ||
+        m?.expression?.toLowerCase()?.includes("sum(");
+      if (isSummableMeasure) {
+        referenceValues[m.sqlName] = $totalsQuery.data.data?.[m.sqlName];
+      }
+    });
+  }
+
   let values = [];
   let columns = [];
   let measureNames = [];
@@ -105,6 +134,7 @@
             name: columnName,
             type: "INT",
             label: measure?.label || measure?.expression,
+            total: referenceValues[measure.sqlName] || 0,
           };
         } else
           return {

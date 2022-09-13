@@ -13,6 +13,7 @@ export interface ProfileColumn {
 
 export interface VirtualizedTableColumns extends ProfileColumn {
   label?: string;
+  total?: number;
 }
 
 export interface Item {
