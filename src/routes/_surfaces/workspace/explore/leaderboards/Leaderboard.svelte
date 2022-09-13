@@ -186,9 +186,9 @@
           <TooltipContent slot="tooltip-content">
             <TooltipTitle>
               <svelte:fragment slot="name">
-                {displayName}
+                Expand table for {displayName}
               </svelte:fragment>
-              <svelte:fragment slot="description">dimension</svelte:fragment>
+              <svelte:fragment slot="description">Click</svelte:fragment>
             </TooltipTitle>
             <TooltipShortcutContainer>
               <div>
