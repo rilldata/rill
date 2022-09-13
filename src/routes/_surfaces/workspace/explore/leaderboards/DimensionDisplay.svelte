@@ -129,12 +129,14 @@
             type: "INT",
             label: measure?.label || measure?.expression,
             total: referenceValues[measure.sqlName] || 0,
+            enableResize: false,
           };
         } else
           return {
             name: columnName,
             type: "VARCHAR",
             label: $dimension?.labelSingle,
+            enableResize: true,
           };
       });
     }

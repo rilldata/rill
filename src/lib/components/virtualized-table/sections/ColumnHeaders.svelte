@@ -14,6 +14,10 @@
 
   $: columnHeaders = virtualColumnItems.map((column) => {
     const name = columns[column.index]?.label || columns[column.index]?.name;
+    const isEnableResizeDefined = "enableResize" in columns[column.index];
+    const enableResize = isEnableResizeDefined
+      ? columns[column.index].enableResize
+      : true;
     return {
       name,
       key: column.key,
@@ -22,6 +26,7 @@
       type: columns[column.index]?.type,
       pinned: pinnedColumns.some((column) => column.name === name),
       isSelected: selectedColumn === columns[column.index]?.name,
+      enableResize,
     };
   });
 </script>
@@ -36,6 +41,7 @@
       type={column.type}
       pinned={column.pinned}
       isSelected={column.isSelected}
+      enableResize={column.enableResize}
       {noPin}
       {showDataIcon}
       on:pin={() => {
