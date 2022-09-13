@@ -1,10 +1,10 @@
+import type { DatabaseConfig } from "$common/config/DatabaseConfig";
+import { isPortOpen } from "$common/utils/isPortOpen";
+import { asyncWaitUntil } from "$common/utils/waitUtils";
 import fetch from "isomorphic-unfetch";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import { URL } from "url";
-import type { DatabaseConfig } from "$common/config/DatabaseConfig";
-import { isPortOpen } from "$common/utils/isPortOpen";
-import { asyncWaitUntil } from "$common/utils/waitUtils";
 
 /**
  * Spawns or connects to a runtime and uses it to proxy DuckDB queries.
@@ -36,6 +36,34 @@ export class DuckDBClient {
     await this.connectRuntime();
   }
 
+  public async execute<Row = Record<string, unknown>>(
+    query: string,
+    log = false,
+    dry_run = false
+  ): Promise<Array<Row>> {
+    this.onCallback?.();
+    if (log) console.log(query);
+
+    try {
+      const resp = await this.request(
+        `/v1/instances/${this.instanceID}/query/direct`,
+        {
+          sql: query,
+          priority: 0,
+          dry_run: dry_run,
+        }
+      );
+      return resp.data;
+    } catch (err) {
+      if (log) console.error(err);
+      throw err;
+    }
+  }
+
+  public async prepare(query: string): Promise<void> {
+    await this.execute(query, false, true);
+  }
+
   protected async spawnRuntime() {
     if (!this.databaseConfig.spawnRuntime) {
       return;
@@ -47,6 +75,13 @@ export class DuckDBClient {
 
     const httpPort = this.databaseConfig.spawnRuntimePort;
     const grpcPort = httpPort + 1000; // Hack to prevent port collision when spawning many runtimes
+
+    if ((await isPortOpen(httpPort)) || (await isPortOpen(grpcPort))) {
+      // TODO: once isDev is merged, throw error when isDev=false
+      // throw Error(`Ports ${httpPort} or ${grpcPort} already in use.`);
+      console.warn(`Ports ${httpPort} or ${grpcPort} already in use.`);
+      return;
+    }
 
     this.runtimeProcess = spawn("./dist/runtime/runtime", [], {
       env: {
@@ -99,34 +134,6 @@ export class DuckDBClient {
     );
   }
 
-  public execute<Row = Record<string, unknown>>(
-    query: string,
-    log = false,
-    dry_run = false
-  ): Promise<Array<Row>> {
-    this.onCallback?.();
-    if (log) console.log(query);
-    return new Promise((resolve, reject) => {
-      this.request(`/v1/instances/${this.instanceID}/query/direct`, {
-        sql: query,
-        priority: 0,
-        dry_run: dry_run,
-      })
-        .then((data) => {
-          this.offCallback?.();
-          resolve(data["data"]);
-        })
-        .catch((err) => {
-          if (log) console.error(err);
-          reject(err);
-        });
-    });
-  }
-
-  public async prepare(query: string): Promise<void> {
-    await this.execute(query, false, true);
-  }
-
   private async request(path: string, data: any): Promise<any> {
     let base = this.databaseConfig.runtimeUrl;
     if (!base && this.databaseConfig.spawnRuntime) {
@@ -146,8 +153,7 @@ export class DuckDBClient {
     const json = await res.json();
     if (!res.ok) {
       const msg = json["message"];
-      const err = new Error(msg);
-      throw err;
+      throw new Error(msg);
     }
 
     return json;
