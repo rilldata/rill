@@ -165,8 +165,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.6.1/go.mod h1:hLZ/AnkIKHLuPGjEiyghNE
 github.com/aws/aws-sdk-go-v2/service/sts v1.7.2/go.mod h1:8EzeIqfWt2wWT4rJVu3f21TfrhJ8AEMzVybRNSb/b4g=
 github.com/aws/smithy-go v1.7.0/go.mod h1:SObp3lf9smib00L/v3U2eAKG8FyQ7iLrJnQiAmR5n+E=
 github.com/aws/smithy-go v1.8.0/go.mod h1:SObp3lf9smib00L/v3U2eAKG8FyQ7iLrJnQiAmR5n+E=
-github.com/begelundmuller/go-duckdb v0.0.0-20220912114310-886e6036e270 h1:cfizn5FFq+cM5jZN41Vlj9Q37NgtG8W0cVK1ukCpHn0=
-github.com/begelundmuller/go-duckdb v0.0.0-20220912114310-886e6036e270/go.mod h1:Gj9bx5vKiusQJCfpvK4dtdkatM+asZlq3EH1lWNoygc=
+github.com/begelundmuller/go-duckdb v0.0.0-20220913095727-6db9d135dc34 h1:BS4hQgImVRoHYWsS2aDsgri/otyJ1S7qj/xOY6PI4dw=
+github.com/begelundmuller/go-duckdb v0.0.0-20220913095727-6db9d135dc34/go.mod h1:Gj9bx5vKiusQJCfpvK4dtdkatM+asZlq3EH1lWNoygc=
 github.com/benbjohnson/clock v1.0.3/go.mod h1:bGMdMPoPVvcYyt1gHDf4J2KE153Yf9BuiUKYMaxlTDM=
 github.com/beorn7/perks v0.0.0-20160804104726-4c0e84591b9a/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
