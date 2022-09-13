@@ -8,7 +8,10 @@ import type {
 } from "$common/rill-developer-service/MetricsViewActions";
 import type { LeaderboardValues } from "$lib/application-state-stores/explorer-stores";
 import axios from "axios";
-import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
+import {
+  DefaultCityLeaderboardReversed,
+  MetricsExplorerTestData,
+} from "../data/MetricsExplorer.data";
 import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
 import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
 import { assertBigNumber } from "../utils/time-series-helpers";
@@ -47,7 +50,7 @@ describe("Metrics View", () => {
               },
               limit: 15,
               offset: 0,
-              sort: [],
+              sort: [{ name: requestMeasures[0].sqlName, direction: "desc" }],
             };
             const resp = await axios.post(
               `${config.server.serverUrl}/api/v1/metrics-views/${metricsDef.id}/toplist/${dimension.id}`,
@@ -61,11 +64,42 @@ describe("Metrics View", () => {
           })
         );
 
-        expect(normaliseLeaderboardOrder(leaderboards)).toStrictEqual(
-          MetricsExplorerTest.leaderboards
-        );
+        expect(
+          normaliseLeaderboardOrder(leaderboards, requestMeasures[0].sqlName)
+        ).toStrictEqual(MetricsExplorerTest.leaderboards);
       });
     }
+  });
+
+  it("Top list with multiple measures and sorting", async () => {
+    const dimension = dimensions[2];
+    const request: MetricsViewTopListRequest = {
+      measures: measures.map((measure) => measure.id),
+      time: { start: undefined, end: undefined },
+      limit: 15,
+      offset: 0,
+      sort: [{ name: measures[0].sqlName, direction: "asc" }],
+    };
+    const resp = await axios.post(
+      `${config.server.serverUrl}/api/v1/metrics-views/${metricsDef.id}/toplist/${dimension.id}`,
+      request,
+      { responseType: "json" }
+    );
+
+    // 2nd measure is present
+    expect(resp.data.data[0][measures[1].sqlName]).toBeGreaterThan(0);
+    // check 1st measure in reverse order
+    expect(
+      normaliseLeaderboardOrder(
+        [
+          {
+            values: resp.data.data,
+            dimensionName: dimension.dimensionColumn,
+          } as LeaderboardValues,
+        ],
+        measures[0].sqlName
+      )
+    ).toStrictEqual([DefaultCityLeaderboardReversed]);
   });
 
   describe("Metrics view totals", () => {

@@ -1,5 +1,11 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import {
     ApplicationStore,
     dataModelerService,
@@ -21,6 +27,7 @@
   import Source from "$lib/components/icons/Source.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
   import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
@@ -63,11 +70,51 @@
   };
 
   const quickStartMetrics = async (id: string, tableName: string) => {
-    await autoCreateMetricsDefinitionForSource(
+    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+    const createdMetricsId = await autoCreateMetricsDefinitionForSource(
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       id,
       tableName
+    );
+
+    navigationEvent.fireEvent(
+      createdMetricsId,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[previousActiveEntity],
+      MetricsEventScreenName.Dashboard
+    );
+  };
+
+  const viewSource = (id: string) => {
+    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+    dataModelerService.dispatch("setActiveAsset", [EntityType.Table, id]);
+
+    if (id != activeEntityID) {
+      navigationEvent.fireEvent(
+        id,
+        BehaviourEventMedium.AssetName,
+        MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[previousActiveEntity],
+        MetricsEventScreenName.Source
+      );
+    }
+  };
+
+  const createModel = (tableName: string) => {
+    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+
+    createModelForSource($persistentModelStore.entities, tableName).then(
+      (createdModelId) => {
+        navigationEvent.fireEvent(
+          createdModelId,
+          BehaviourEventMedium.Menu,
+          MetricsEventSpace.LeftPanel,
+          EntityTypeToScreenMap[previousActiveEntity],
+          MetricsEventScreenName.Model
+        );
+      }
     );
   };
 
@@ -105,10 +152,7 @@
           <CollapsibleTableSummary
             on:query={() => queryHandler(tableName)}
             on:select={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Table,
-                id,
-              ]);
+              viewSource(id);
             }}
             entityType={EntityType.Table}
             name={tableName}
@@ -128,7 +172,7 @@
               />
             </svelte:fragment>
             <svelte:fragment slot="menu-items" let:toggleMenu>
-              <MenuItem icon on:select={() => queryHandler(tableName)}>
+              <MenuItem icon on:select={() => createModel(tableName)}>
                 <svelte:fragment slot="icon">
                   <Model />
                 </svelte:fragment>

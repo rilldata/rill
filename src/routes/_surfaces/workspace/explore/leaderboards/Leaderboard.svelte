@@ -7,6 +7,7 @@
    */
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -20,8 +21,9 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
+    selectDimensionFromMeta,
+    selectMeasureFromMeta,
     useMetaQuery,
     useTopListQuery,
   } from "$lib/svelte-query/queries/metrics-view";
@@ -32,9 +34,9 @@
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
   import { createEventDispatcher } from "svelte";
-  import type { Readable } from "svelte/store";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+
   export let metricsDefId: string;
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -55,19 +57,24 @@
 
   $: metaQuery = useMetaQuery(metricsDefId);
 
-  let dimension: Readable<DimensionDefinitionEntity>;
-
-  $: dimension = getDimensionById(dimensionId);
+  let dimension: DimensionDefinitionEntity;
+  $: dimension = selectDimensionFromMeta($metaQuery.data, dimensionId);
   let displayName: string;
   // TODO: select based on label?
-  $: displayName = getDisplayName($dimension);
+  $: displayName = getDisplayName(dimension);
+
+  let measure: MeasureDefinitionEntity;
+  $: measure = selectMeasureFromMeta(
+    $metaQuery.data,
+    metricsExplorer?.leaderboardMeasureId
+  );
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === $dimension?.id)
+    metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
@@ -81,16 +88,21 @@
   let topListQuery;
 
   $: if (
-    metricsExplorer?.leaderboardMeasureId &&
+    measure?.id &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
     topListQuery = useTopListQuery(metricsDefId, dimensionId, {
-      measures: [metricsExplorer?.leaderboardMeasureId],
+      measures: [measure?.id],
       limit: 15,
       offset: 0,
-      sort: [],
+      sort: [
+        {
+          name: measure?.sqlName,
+          direction: "desc",
+        },
+      ],
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
@@ -103,7 +115,11 @@
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
-    values = $topListQuery?.data?.data ?? [];
+    values =
+      $topListQuery?.data?.data.map((val) => ({
+        value: val[measure?.sqlName],
+        label: val[dimension?.dimensionColumn],
+      })) ?? [];
     setLeaderboardValues(values);
   }
   /** figure out how many selected values are currently hidden */
@@ -168,8 +184,8 @@
             </TooltipTitle>
             <TooltipShortcutContainer>
               <div>
-                {#if $dimension?.description}
-                  {$dimension.description}
+                {#if dimension?.description}
+                  {dimension.description}
                 {:else}
                   the leaderboard metrics for {displayName}
                 {/if}

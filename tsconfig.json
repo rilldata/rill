@@ -1,4 +1,6 @@
 {
+  // TODO: SvelteKit recommends extending their config, but it currently triggers type import errors throughout application that we need to fix
+  // "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "moduleResolution": "node",
     "module": "es2020",
