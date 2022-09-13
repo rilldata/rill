@@ -28,18 +28,21 @@
 
 <div class="w-full sticky relative top-0 z-10">
   {#each columnHeaders as column (column.key)}
-    {@const { key: _, index, ...props } = column}
     <ColumnHeader
       on:resize-column
       on:reset-column-size
-      {...props}
+      name={column.name}
+      header={column.header}
+      type={column.type}
+      pinned={column.pinned}
+      isSelected={column.isSelected}
       {noPin}
       {showDataIcon}
       on:pin={() => {
-        dispatch("pin", columns[index]);
+        dispatch("pin", columns[column.index]);
       }}
       on:click-column={() => {
-        dispatch("click-column", columns[index]?.name);
+        dispatch("click-column", columns[column.index]?.name);
       }}
     />
   {/each}
