@@ -32,6 +32,11 @@ export enum NicelyFormattedTypes {
   DECIMAL = "comma_separators",
 }
 
+interface ColFormatSpec {
+  columnName: string;
+  formatPreset: NicelyFormattedTypes;
+}
+
 export const nicelyFormattedTypesSelectorOptions = [
   { value: NicelyFormattedTypes.HUMANIZE, label: "Humanize" },
   {
@@ -220,10 +225,9 @@ function humanizeGroupValuesUtil(
     return applyScaleOnValues(values, scale).map((v) => "$" + v);
   } else {
     let formatterOptions = {};
-    if (options?.scale) {
-      formatterOptions = Object.assign({}, options);
-      delete formatterOptions["scale"];
-    }
+    formatterOptions = Object.assign({}, options);
+    delete formatterOptions["scale"];
+    delete formatterOptions["columnName"];
     const formatter = getNumberFormatter(type, formatterOptions);
     return values.map((v) => {
       if (v === null) return "∅";
@@ -261,11 +265,11 @@ export function humanizeGroupValues(
 
 export function humanizeGroupByColumns(
   values: Array<any>,
-  columnNames: string[]
+  columnFormatSpec: ColFormatSpec[]
 ) {
-  return columnNames.reduce((valuesObj, columnName) => {
-    return humanizeGroupValues(valuesObj, NicelyFormattedTypes.HUMANIZE, {
-      columnName,
+  return columnFormatSpec.reduce((valuesObj, column) => {
+    return humanizeGroupValues(valuesObj, column.formatPreset, {
+      columnName: column.columnName,
     });
   }, values);
 }
