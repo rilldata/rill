@@ -1,6 +1,4 @@
 <script lang="ts">
-  import BarAndLabel from "$lib/components/viz/BarAndLabel.svelte";
-
   import type { VirtualizedTableColumns } from "$lib/types";
   import Cell from "../core/Cell.svelte";
   import Row from "../core/Row.svelte";

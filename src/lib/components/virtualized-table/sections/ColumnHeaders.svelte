@@ -28,7 +28,7 @@
 
 <div class="w-full sticky relative top-0 z-10">
   {#each columnHeaders as column (column.key)}
-    {@const { key, index, ...props } = column}
+    {@const { key: _, index, ...props } = column}
     <ColumnHeader
       on:resize-column
       on:reset-column-size
