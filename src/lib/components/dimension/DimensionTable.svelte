@@ -173,7 +173,7 @@ TableCells – the cell contents.
 
     // Dimension column should expand to cover whole container
     estimateColumnSize[0] = Math.max(
-      containerWidth - measureColumnSizeSum,
+      containerWidth - measureColumnSizeSum - DimensionTableConfig.indexWidth,
       estimateColumnSize[0]
     );
 
