@@ -237,7 +237,7 @@ function humanizeGroupValuesUtil(
 }
 
 export function humanizeGroupValues(
-  values: Array<any>,
+  values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
   options?: formatterOptions
 ) {
@@ -264,13 +264,17 @@ export function humanizeGroupValues(
 }
 
 export function humanizeGroupByColumns(
-  values: Array<any>,
+  values: Array<Record<string, number | string>>,
   columnFormatSpec: ColFormatSpec[]
 ) {
   return columnFormatSpec.reduce((valuesObj, column) => {
-    return humanizeGroupValues(valuesObj, column.formatPreset, {
-      columnName: column.columnName,
-    });
+    return humanizeGroupValues(
+      valuesObj,
+      column.formatPreset || NicelyFormattedTypes.HUMANIZE,
+      {
+        columnName: column.columnName,
+      }
+    );
   }, values);
 }
 
