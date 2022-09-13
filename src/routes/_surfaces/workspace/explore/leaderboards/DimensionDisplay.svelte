@@ -99,13 +99,14 @@
       measureNames = allMeasures.map((m) => m.sqlName);
 
       columns = columnNames.map((columnName) => {
-        if (measureNames.includes(columnName))
+        if (measureNames.includes(columnName)) {
+          const measure = allMeasures.find((m) => m.sqlName === columnName);
           return {
             name: columnName,
             type: "INT",
-            label: allMeasures.find((m) => m.sqlName === columnName)?.label,
+            label: measure?.label || measure?.expression,
           };
-        else
+        } else
           return {
             name: columnName,
             type: "VARCHAR",

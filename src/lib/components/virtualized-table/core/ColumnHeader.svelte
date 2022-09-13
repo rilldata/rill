@@ -33,6 +33,8 @@
   let showMore = false;
   $: isSortingDesc = true;
 
+  $: isDimensionTable = config.table === "DimensionTable";
+
   $: columnFontWeight = isSelected
     ? "font-bold"
     : config.columnHeaderFontWeightClass;
@@ -76,6 +78,7 @@
            items-center
            justify-stretch
            select-none
+           over
            gap-x-2
            "
   >
@@ -86,15 +89,18 @@
         items-center cursor-pointer
         {isSelected ? '' : 'w-full gap-x-2'}
         "
-        style:grid-template-columns="max-content auto {!noPin && showMore
-          ? "max-content"
-          : ""}"
+        style:grid-template-columns={isDimensionTable
+          ? ""
+          : `max-content auto ${!noPin && showMore ? "max-content" : ""}`}
       >
         {#if showDataIcon}
           <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         {/if}
         <span
-          class="text-ellipsis overflow-hidden whitespace-nowrap {columnFontWeight}"
+          in:fly={{ y: 200, duration: 200 }}
+          class="text-ellipsis overflow-hidden whitespace-nowrap
+          {columnFontWeight} {isDimensionTable ? 'text-center' : ''}
+          "
         >
           {name}
         </span>
@@ -121,11 +127,11 @@
     </Tooltip>
     {#if isSelected}
       {#if isSortingDesc}
-        <div in:fly|local={{ duration: 200, y: -8 }}>
+        <div in:fly={{ duration: 200, y: -8 }}>
           <ArrowDown size="16px" />
         </div>
       {:else}
-        <div in:fly|local={{ duration: 200, y: 8 }}>
+        <div in:fly={{ duration: 200, y: 8 }}>
           <ArrowDown transform="scale(1 -1)" size="16px" />
         </div>
       {/if}

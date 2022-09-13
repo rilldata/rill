@@ -10,4 +10,5 @@ export const DimensionTableConfig: VirtualizedTableConfig = {
   indexWidth: 60,
   columnHeaderFontWeightClass: "font-normal",
   defaultFontWeightClass: "font-normal",
+  table: "DimensionTable",
 };

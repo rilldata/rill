@@ -12,4 +12,5 @@ export interface VirtualizedTableConfig {
   columnHeaderHeight: number;
   columnHeaderFontWeightClass: string;
   defaultFontWeightClass: string;
+  table: string;
 }

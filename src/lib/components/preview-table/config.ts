@@ -10,4 +10,5 @@ export const config: VirtualizedTableConfig = {
   indexWidth: 60,
   columnHeaderFontWeightClass: "font-bold",
   defaultFontWeightClass: "font-semibold",
+  table: "PreviewTable",
 };

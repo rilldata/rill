@@ -51,7 +51,7 @@ TableCells – the cell contents.
   const CHARACTER_X_PAD = 16 * 2;
   const HEADER_ICON_WIDTHS = 16;
   const HEADER_X_PAD = CHARACTER_X_PAD;
-  const HEADER_FLEX_SPACING = 10;
+  const HEADER_FLEX_SPACING = 14;
 
   /* set context for child components */
   setContext("config", DimensionTableConfig);
@@ -240,6 +240,11 @@ TableCells – the cell contents.
       return state;
     });
   }
+
+  async function handleColumnHeaderClick(event) {
+    colScrollOffset = $columnVirtualizer.scrollOffset;
+    dispatch("sort", event.detail);
+  }
 </script>
 
 <div
@@ -276,7 +281,7 @@ TableCells – the cell contents.
           selectedColumn={sortByColumn}
           on:resize-column={handleResizeColumn}
           on:reset-column-size={handleResetColumnSize}
-          on:click-column={(event) => dispatch("sort", event.detail)}
+          on:click-column={handleColumnHeaderClick}
         />
         <!-- VirtualTableBody -->
         <TableCells
