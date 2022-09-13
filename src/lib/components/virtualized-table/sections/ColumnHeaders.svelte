@@ -10,31 +10,36 @@
   export let virtualColumnItems;
   export let noPin = false;
   export let showDataIcon = false;
-  export let selectedColumn: string;
+  export let selectedColumn: string = null;
+
+  $: columnHeaders = virtualColumnItems.map((column) => {
+    const name = columns[column.index]?.label || columns[column.index]?.name;
+    return {
+      name,
+      key: column.key,
+      index: column.index,
+      header: { start: column.start, size: column.size },
+      type: columns[column.index]?.type,
+      pinned: pinnedColumns.some((column) => column.name === name),
+      isSelected: selectedColumn === columns[column.index]?.name,
+    };
+  });
 </script>
 
 <div class="w-full sticky relative top-0 z-10">
-  {#each virtualColumnItems as header (header.key)}
-    {@const name = columns[header.index]?.label || columns[header.index]?.name}
-    {@const type = columns[header.index]?.type}
-    {@const pinned = pinnedColumns.some((column) => column.name === name)}
-    {@const isSelected = selectedColumn === columns[header.index]?.name}
-
+  {#each columnHeaders as column (column.key)}
+    {@const { key, index, ...props } = column}
     <ColumnHeader
       on:resize-column
       on:reset-column-size
-      {header}
-      {name}
-      {type}
+      {...props}
       {noPin}
-      {pinned}
       {showDataIcon}
-      {isSelected}
       on:pin={() => {
-        dispatch("pin", columns[header.index]);
+        dispatch("pin", columns[index]);
       }}
       on:click-column={() => {
-        dispatch("click-column", columns[header.index]?.name);
+        dispatch("click-column", columns[index]?.name);
       }}
     />
   {/each}
