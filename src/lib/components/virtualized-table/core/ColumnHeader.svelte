@@ -111,7 +111,7 @@
             {name}
           </svelte:fragment>
           <svelte:fragment slot="description">
-            {type}
+            {isDimensionTable || showDataIcon ? "" : type}
           </svelte:fragment>
         </TooltipTitle>
         <TooltipShortcutContainer>
