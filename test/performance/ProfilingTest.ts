@@ -1,13 +1,13 @@
-import "../../src/moduleAlias";
-import { FunctionalTestBase } from "../functional/FunctionalTestBase";
-import { execSync } from "node:child_process";
-import { RootConfig } from "$common/config/RootConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
+import { RootConfig } from "$common/config/RootConfig";
 import { StateConfig } from "$common/config/StateConfig";
 import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { execSync } from "node:child_process";
+import "../../src/moduleAlias";
+import { FunctionalTestBase } from "../functional/FunctionalTestBase";
 
 const PROFILING_TEST_FOLDER = "temp/profile";
 
@@ -17,7 +17,10 @@ export class ProfilingTest extends FunctionalTestBase {
     execSync(`mkdir -p ${PROFILING_TEST_FOLDER}`);
 
     const config = new RootConfig({
-      database: new DatabaseConfig({ databaseName: ":memory:" }),
+      database: new DatabaseConfig({
+        databaseName: ":memory:",
+        spawnRuntime: false,
+      }),
       state: new StateConfig({ autoSync: true, syncInterval: 50 }),
       projectFolder: PROFILING_TEST_FOLDER,
       profileWithUpdate: true,

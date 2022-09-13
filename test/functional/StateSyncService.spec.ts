@@ -1,13 +1,10 @@
-import { FunctionalTestBase } from "./FunctionalTestBase";
-import { execSync } from "node:child_process";
-import { dataModelerServiceFactory } from "$server/serverFactory";
-import { RootConfig } from "$common/config/RootConfig";
-import { DatabaseConfig } from "$common/config/DatabaseConfig";
-import { StateConfig } from "$common/config/StateConfig";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
+import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import { DataModelerStateSyncService } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import { asyncWait } from "$common/utils/waitUtils";
+import { dataModelerServiceFactory } from "$server/serverFactory";
 import { TestBase } from "@adityahegde/typescript-test-utils";
+import { execSync } from "node:child_process";
 import { UserColumnsTestData } from "../data/DataLoader.data";
 import {
   SingleTableQuery,
@@ -15,7 +12,8 @@ import {
   TwoTableJoinQuery,
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
-import { DataModelerStateSyncService } from "$common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
+import { getTestConfig } from "../utils/getTestConfig";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 const SYNC_TEST_FOLDER = "temp/sync-test";
 
@@ -28,10 +26,7 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
   public async setup(): Promise<void> {
     execSync(`rm -rf ${SYNC_TEST_FOLDER}/*`);
     execSync(`mkdir -p ${SYNC_TEST_FOLDER}`);
-    const config = new RootConfig({
-      database: new DatabaseConfig({ databaseName: ":memory:" }),
-      state: new StateConfig({ autoSync: true, syncInterval: 50 }),
-      projectFolder: SYNC_TEST_FOLDER,
+    const config = getTestConfig(SYNC_TEST_FOLDER, {
       profileWithUpdate: false,
     });
     await super.setup(config);

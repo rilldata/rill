@@ -36,6 +36,10 @@ export class DuckDBClient {
     await this.connectRuntime();
   }
 
+  public async destroy(): Promise<void> {
+    this.runtimeProcess?.kill();
+  }
+
   public async execute<Row = Record<string, unknown>>(
     query: string,
     log = false,
@@ -95,10 +99,6 @@ export class DuckDBClient {
       shell: true,
     });
 
-    this.runtimeProcess.on("exit", (code) => {
-      process.exit(code);
-    });
-
     await asyncWaitUntil(() =>
       isPortOpen(this.databaseConfig.spawnRuntimePort)
     );
@@ -106,7 +106,8 @@ export class DuckDBClient {
 
   protected async connectRuntime() {
     if (this.instanceID) {
-      throw Error("Already connected to runtime");
+      console.log("Already connected to runtime");
+      return;
     }
 
     let databaseName = this.databaseConfig.databaseName;
@@ -135,12 +136,7 @@ export class DuckDBClient {
   }
 
   private async request(path: string, data: any): Promise<any> {
-    let base = this.databaseConfig.runtimeUrl;
-    if (!base && this.databaseConfig.spawnRuntime) {
-      base = `http://localhost:${this.databaseConfig.spawnRuntimePort}`;
-    }
-
-    const url = new URL(path, base).toString();
+    const url = new URL(path, this.databaseConfig.runtimeUrl).toString();
 
     const res = await fetch(url, {
       method: "POST",

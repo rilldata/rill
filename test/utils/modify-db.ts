@@ -1,10 +1,14 @@
 import "../../src/moduleAlias";
-import { DuckDBClient } from "$common/database-service/DuckDBClient";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
+import { DuckDBClient } from "$common/database-service/DuckDBClient";
 
 (async () => {
   const duckDbClient = DuckDBClient.getInstance(
-    new DatabaseConfig({ databaseName: process.argv[2] })
+    new DatabaseConfig({
+      databaseName: process.argv[2],
+      spawnRuntime: false,
+      runtimeUrl: `http://localhost:8081`,
+    })
   );
   await duckDbClient.init();
 
@@ -19,4 +23,6 @@ import { DatabaseConfig } from "$common/config/DatabaseConfig";
   await duckDbClient.execute(
     `CREATE OR REPLACE TEMPORARY VIEW FullTable AS (select * from AdBids b join Impressions i on b.id=i.id);`
   );
+
+  await duckDbClient.destroy();
 })();

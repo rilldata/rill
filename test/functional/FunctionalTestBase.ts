@@ -1,17 +1,10 @@
-import { TestBase } from "@adityahegde/typescript-test-utils";
-import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
-import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import { dataModelerStateServiceClientFactory } from "$common/clientFactory";
+import type { RootConfig } from "$common/config/RootConfig";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
-import { asyncWait, waitUntil } from "$common/utils/waitUtils";
-import type { ProfileColumn } from "$lib/types";
-import type { TestDataColumns } from "../data/DataLoader.data";
-import { ParquetFileTestData } from "../data/DataLoader.data";
-import { DataModelerSocketServiceMock } from "./DataModelerSocketServiceMock";
-import { SocketServerMock } from "./SocketServerMock";
-import { DATA_FOLDER } from "../data/generator/data-constants";
-import { RootConfig } from "$common/config/RootConfig";
-import { DatabaseConfig } from "$common/config/DatabaseConfig";
-import { StateConfig } from "$common/config/StateConfig";
+import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
+import type { ActiveEntity } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import {
   EntityRecord,
   EntityStateService,
@@ -19,13 +12,19 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { dataModelerStateServiceClientFactory } from "$common/clientFactory";
 import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { ActiveEntity } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { asyncWait, waitUntil } from "$common/utils/waitUtils";
+import type { ProfileColumn } from "$lib/types";
 import { RillDeveloper } from "$server/RillDeveloper";
+import { TestBase } from "@adityahegde/typescript-test-utils";
+import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
+import type { TestDataColumns } from "../data/DataLoader.data";
+import { ParquetFileTestData } from "../data/DataLoader.data";
+import { DATA_FOLDER } from "../data/generator/data-constants";
+import { getTestConfig } from "../utils/getTestConfig";
+import { DataModelerSocketServiceMock } from "./DataModelerSocketServiceMock";
+import { SocketServerMock } from "./SocketServerMock";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
@@ -46,11 +45,10 @@ export class FunctionalTestBase extends TestBase {
 
     const config =
       configOverride ??
-      new RootConfig({
-        database: new DatabaseConfig({ databaseName: ":memory:" }),
-        state: new StateConfig({ autoSync: false }),
-        projectFolder: "temp/test",
+      getTestConfig("temp/test", {
+        autoSync: false,
       });
+
     this.rillDeveloper = RillDeveloper.getRillDeveloper(config);
     this.serverDataModelerStateService =
       this.rillDeveloper.dataModelerStateService;

@@ -1,4 +1,4 @@
-import type { NumericHistogramBin } from "$lib/types";
+import type {NumericHistogramBin} from "$lib/types";
 
 let fdTestValues = []
 const numeredArray = [...Array(50).keys()]
@@ -7,7 +7,7 @@ numeredArray.forEach(n => {
 })
 const fdTestInput = "SELECT 1 as column \n" +  fdTestValues.map(n => `UNION ALL SELECT ${n}`).join("\n")
 
-interface NumericHistogramTestCase {
+export interface NumericHistogramTestCase {
     name: string,
     input: string,
     output: NumericHistogramBin[]

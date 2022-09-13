@@ -1,7 +1,4 @@
-import { RootConfig } from "$common/config/RootConfig";
-import { DatabaseConfig } from "$common/config/DatabaseConfig";
-import { StateConfig } from "$common/config/StateConfig";
-import { ServerConfig } from "$common/config/ServerConfig";
+import { getTestConfig } from "./getTestConfig";
 import { InlineTestServer } from "./InlineTestServer";
 import type { TestServer } from "./TestServer";
 
@@ -15,13 +12,12 @@ import type { TestServer } from "./TestServer";
  *
  * TODO: auto assign port
  */
-export function useInlineTestServer(port: number, runtimePort: number) {
-  const config = new RootConfig({
-    database: new DatabaseConfig({ databaseName: ":memory:", spawnRuntimePort: runtimePort }),
-    state: new StateConfig({ autoSync: false }),
-    server: new ServerConfig({ serverPort: port }),
-    projectFolder: "temp/test",
+export function useInlineTestServer(port: number) {
+  const config = getTestConfig("temp/test", {
+    socketPort: port,
+    autoSync: false,
   });
+
   const inlineServer = new InlineTestServer(config);
 
   beforeAll(async () => {

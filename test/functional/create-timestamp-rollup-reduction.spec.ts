@@ -1,13 +1,11 @@
-import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
-import { FunctionalTestBase } from "./FunctionalTestBase";
 import type { DatabaseService } from "$common/database-service/DatabaseService";
-import { RootConfig } from "$common/config/RootConfig";
-import { DatabaseConfig } from "$common/config/DatabaseConfig";
-import { StateConfig } from "$common/config/StateConfig";
-import { dataModelerServiceFactory } from "$server/serverFactory";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
+import { dataModelerServiceFactory } from "$server/serverFactory";
+import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
+import { getTestConfig } from "../utils/getTestConfig";
 
 import { generateSeries } from "../utils/query-generators";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 const SYNC_TEST_FOLDER = "temp/sync-test";
 
@@ -69,10 +67,7 @@ export class CreateTimestampRollupReduction extends FunctionalTestBase {
   protected dbClient: DuckDBClient;
 
   public async setup(): Promise<void> {
-    const config = new RootConfig({
-      database: new DatabaseConfig({ databaseName: ":memory:" }),
-      state: new StateConfig({ autoSync: true, syncInterval: 50 }),
-      projectFolder: SYNC_TEST_FOLDER,
+    const config = getTestConfig(SYNC_TEST_FOLDER, {
       profileWithUpdate: false,
     });
     const secondServerInstances = dataModelerServiceFactory(config);

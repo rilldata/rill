@@ -1,16 +1,16 @@
 import type { DerivedTableState } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import type { PersistentTableState } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import { exec } from "node:child_process";
 import { readFileSync } from "fs";
+import { exec } from "node:child_process";
+import { promisify } from "util";
 import {
   AdBidsColumnsTestData,
   AdImpressionColumnsTestData,
   TestDataColumns,
   UserColumnsTestData,
 } from "../data/DataLoader.data";
-import { promisify } from "util";
-import { FunctionalTestBase } from "./FunctionalTestBase";
 import { CLI_COMMAND } from "../utils/getCliCommand";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 const execPromise = promisify(exec);
 // uncomment this to better debug these tests
@@ -52,7 +52,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     );
   }
 
-  // @FunctionalTestBase.Test()
+  @FunctionalTestBase.Test()
   public async shouldLoadTablesFromDB() {
     await execVerbose(
       `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
@@ -131,7 +131,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     );
   }
 
-  // @FunctionalTestBase.Test()
+  @FunctionalTestBase.Test()
   public async shouldCopyDBToLocalDB() {
     await execVerbose(
       `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +

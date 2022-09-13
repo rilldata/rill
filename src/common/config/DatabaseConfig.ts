@@ -11,7 +11,7 @@ export class DatabaseConfig extends Config<DatabaseConfig> {
 
   @Config.ConfigField(false)
   public skipDatabase: boolean;
-  
+
   @Config.ConfigField()
   public runtimeUrl: string;
 
@@ -27,5 +27,12 @@ export class DatabaseConfig extends Config<DatabaseConfig> {
       this.databaseName === DUCK_MEMORY_DB
         ? this.databaseName
         : `${projectFolder}/${this.databaseName}`;
+
+    if (process.env.RILL_EXTERNAL_RUNTIME) {
+      this.spawnRuntime = false;
+    }
+    if (!this.runtimeUrl) {
+      this.runtimeUrl = `http://localhost:${this.spawnRuntimePort}`;
+    }
   }
 }

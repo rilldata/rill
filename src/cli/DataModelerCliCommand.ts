@@ -1,16 +1,16 @@
+import { clientFactory } from "$common/clientFactory";
+import { DatabaseConfig } from "$common/config/DatabaseConfig";
+import { LocalConfig } from "$common/config/LocalConfig";
+import { ProjectConfig } from "$common/config/ProjectConfig";
+import { RootConfig } from "$common/config/RootConfig";
+import { ServerConfig } from "$common/config/ServerConfig";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
-import { RootConfig } from "$common/config/RootConfig";
-import { DatabaseConfig } from "$common/config/DatabaseConfig";
-import type { Command } from "commander";
-import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
-import { ServerConfig } from "$common/config/ServerConfig";
-import { clientFactory } from "$common/clientFactory";
-import { isPortOpen } from "$common/utils/isPortOpen";
 import type { MetricsService } from "$common/metrics-service/MetricsService";
+import type { SocketNotificationService } from "$common/socket/SocketNotificationService";
+import { isPortOpen } from "$common/utils/isPortOpen";
 import { RillDeveloper } from "$server/RillDeveloper";
-import { ProjectConfig } from "$common/config/ProjectConfig";
-import { LocalConfig } from "$common/config/LocalConfig";
+import type { Command } from "commander";
 
 const DATABASE_NAME = "stage.db";
 

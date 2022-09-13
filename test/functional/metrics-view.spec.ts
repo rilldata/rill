@@ -18,7 +18,7 @@ import { assertBigNumber } from "../utils/time-series-helpers";
 import { useInlineTestServer } from "../utils/useInlineTestServer";
 
 describe("Metric View", () => {
-  const { config, inlineServer } = useInlineTestServer(8083, 8084);
+  const { config, inlineServer } = useInlineTestServer(8083);
   let metricsDef: MetricsDefinitionEntity;
   let measures: Array<MeasureDefinitionEntity>;
   let dimensions: Array<DimensionDefinitionEntity>;
