@@ -1,6 +1,6 @@
 import {
-  BasicMeasureDefinition,
   getFallbackMeasureName,
+  type BasicMeasureDefinition,
 } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";

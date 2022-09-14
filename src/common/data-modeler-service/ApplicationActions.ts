@@ -4,11 +4,12 @@ import type {
   ApplicationStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import {
-  EntityRecord,
-  EntityStateActionArg,
   EntityType,
   StateType,
+  type EntityRecord,
+  type EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { PersistentModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import {
   DatabaseActionQueuePriority,
   DatabaseProfilesFieldPriority,
@@ -16,7 +17,6 @@ import {
   MetadataPriority,
   ProfileMetadataPriorityMap,
 } from "$common/priority-action-queue/DatabaseActionQueuePriority";
-import type { PersistentModelStateActionArg } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 
 export class ApplicationActions extends DataModelerActions {
   @DataModelerActions.ApplicationAction()

@@ -1,14 +1,12 @@
+import type { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+import {
+  BehaviourEventAction,
+  type BehaviourEvent,
+} from "$common/metrics-service/BehaviourEventTypes";
 import { MetricsEventFactory } from "$common/metrics-service/MetricsEventFactory";
 import type {
   CommonFields,
   CommonUserFields,
-} from "$common/metrics-service/MetricsTypes";
-import {
-  BehaviourEvent,
-  BehaviourEventAction,
-} from "$common/metrics-service/BehaviourEventTypes";
-import type { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
-import type {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "$common/metrics-service/MetricsTypes";

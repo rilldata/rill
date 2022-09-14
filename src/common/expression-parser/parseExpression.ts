@@ -1,7 +1,12 @@
-import { Expr, ExprBinary, ExprCall, parse } from "pgsql-ast-parser";
 import type { InvalidAggregate } from "$common/expression-parser/validateAggregate";
 import { validateAggregate } from "$common/expression-parser/validateAggregate";
 import type { ProfileColumn } from "$lib/types";
+import {
+  parse,
+  type Expr,
+  type ExprBinary,
+  type ExprCall,
+} from "pgsql-ast-parser";
 
 export interface ParseExpressionError {
   message?: string;

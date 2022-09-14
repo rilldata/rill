@@ -1,14 +1,14 @@
-import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type {
   EntityRecord,
   EntityState,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
-  EntityStateActionArg,
   EntityStateService,
   EntityType,
   StateType,
+  type EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
 
 export interface BasicMeasureDefinition {

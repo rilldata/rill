@@ -1,7 +1,7 @@
 import { SOURCE_PREVIEW_COUNT } from "$common/constants";
 import {
-  ActionResponse,
   ActionStatus,
+  type ActionResponse,
 } from "$common/data-modeler-service/response/ActionResponse";
 import { ActionResponseFactory } from "$common/data-modeler-service/response/ActionResponseFactory";
 import type {
@@ -22,8 +22,8 @@ import { getNewDerivedTable, getNewTable } from "$common/stateInstancesFactory";
 import { getName } from "$common/utils/incrementName";
 import {
   FILE_EXTENSION_TO_TABLE_TYPE,
-  ProfileColumn,
   TableSourceType,
+  type ProfileColumn,
 } from "$lib/types";
 import {
   extractFileExtension,

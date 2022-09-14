@@ -1,13 +1,13 @@
-import type { ProfileColumnSummary } from "$lib/types";
-import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import {
-  EntityRecord,
-  EntityState,
-  EntityStateActionArg,
   EntityStateService,
   EntityType,
   StateType,
+  type EntityRecord,
+  type EntityState,
+  type EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { ProfileColumnSummary } from "$lib/types";
 
 export interface DimensionDefinitionEntity extends EntityRecord {
   metricsDefId: string;
