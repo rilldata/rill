@@ -21,13 +21,13 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
+  import { getTopListRequest } from "$lib/svelte-query/metrics-view-requests";
   import {
     useMetaQuery,
     useTopListQuery,
   } from "$lib/svelte-query/queries/metrics-view";
   import {
     selectDimensionFromMeta,
-    selectMappedFilterFromMeta,
     selectMeasureFromMeta,
   } from "$lib/svelte-query/selectors/metrics-view";
   import { slideRight } from "$lib/transitions";
@@ -92,29 +92,16 @@
 
   $: if (
     measure?.id &&
+    metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
-      measures: [measure?.id],
-      limit: 15,
-      offset: 0,
-      sort: [
-        {
-          name: measure?.sqlName,
-          direction: "desc",
-        },
-      ],
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-      filter: selectMappedFilterFromMeta(
-        $metaQuery.data,
-        metricsExplorer?.filters
-      ),
-    });
+    topListQuery = useTopListQuery(
+      metricsDefId,
+      dimensionId,
+      getTopListRequest($metaQuery.data, measure, metricsExplorer)
+    );
   }
 
   let values = [];

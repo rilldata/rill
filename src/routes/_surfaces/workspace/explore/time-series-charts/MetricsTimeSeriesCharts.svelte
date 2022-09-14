@@ -12,11 +12,14 @@
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import {
+    getTimeSeriesRequest,
+    getTotalsRequest,
+  } from "$lib/svelte-query/metrics-view-requests";
+  import {
     useMetaQuery,
     useTimeSeriesQuery,
     useTotalsQuery,
   } from "$lib/svelte-query/queries/metrics-view";
-  import { selectMappedFilterFromMeta } from "$lib/svelte-query/selectors/metrics-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
@@ -47,17 +50,10 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
-      filter: selectMappedFilterFromMeta(
-        $metaQuery.data,
-        metricsExplorer?.filters
-      ),
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-    });
+    totalsQuery = useTotalsQuery(
+      metricsDefId,
+      getTotalsRequest($metaQuery.data, metricsExplorer)
+    );
   }
 
   let timeSeriesQuery: UseQueryStoreResult<
@@ -70,18 +66,10 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
-      filter: selectMappedFilterFromMeta(
-        $metaQuery.data,
-        metricsExplorer?.filters
-      ),
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-        granularity: metricsExplorer?.selectedTimeRange?.interval,
-      },
-    });
+    timeSeriesQuery = useTimeSeriesQuery(
+      metricsDefId,
+      getTimeSeriesRequest($metaQuery.data, metricsExplorer)
+    );
   }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is

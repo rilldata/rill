@@ -8,6 +8,7 @@
   } from "$lib/application-state-stores/explorer-stores";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
+  import { getTotalsRequest } from "$lib/svelte-query/metrics-view-requests";
   import {
     useMetaQuery,
     useTotalsQuery,
@@ -46,13 +47,10 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-    });
+    totalsQuery = useTotalsQuery(
+      metricsDefId,
+      getTotalsRequest($metaQuery.data, metricsExplorer, false)
+    );
   }
 
   let referenceValue: number;

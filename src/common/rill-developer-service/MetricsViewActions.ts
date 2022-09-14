@@ -166,11 +166,10 @@ export class MetricsViewActions extends RillDeveloperActions {
         {
           tableName: model.tableName,
           timestampColumn: rillRequestContext.record.timeDimension,
-          measures: request.measures.map((measureId) => ({
-            ...this.dataModelerStateService
-              .getMeasureDefinitionService()
-              .getById(measureId),
-          })),
+          measures: await this.getBasicMeasures(
+            rillRequestContext.record,
+            request.measures
+          ),
           filters: convertToActiveValues(request.filter),
           timeRange: {
             ...request.time,
@@ -324,10 +323,12 @@ export class MetricsViewActions extends RillDeveloperActions {
     const validMeasures = (
       await Promise.all(
         measures.map(async (measure) => {
+          if ("expressionIsValid" in measure) return { ...measure };
+          // backwards compatibility
           const measureValidation = await this.rillDeveloperService.dispatch(
             RillRequestContext.getNewContext(),
             "validateMeasureExpression",
-            [metricsDef.id, measure.expression]
+            [metricsDef.id, measure.id, measure.expression]
           );
           return {
             ...measure,
@@ -346,8 +347,10 @@ export class MetricsViewActions extends RillDeveloperActions {
     metricsDef: MetricsDefinitionEntity,
     measureIds: Array<string>
   ): Promise<Array<BasicMeasureDefinition>> {
+    const measureIdsSet = new Set(measureIds);
     return (await this.getValidMeasures(metricsDef)).filter(
-      (measure) => measureIds.indexOf(measure.id) >= 0
+      (measure) =>
+        measureIdsSet.has(measure.id) || measureIdsSet.has(measure.sqlName)
     );
   }
 }
