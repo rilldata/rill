@@ -20,6 +20,7 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import {
     selectDimensionFromMeta,
@@ -186,9 +187,9 @@
           <TooltipContent slot="tooltip-content">
             <TooltipTitle>
               <svelte:fragment slot="name">
-                Expand table for {displayName}
+                {displayName}
               </svelte:fragment>
-              <svelte:fragment slot="description">Click</svelte:fragment>
+              <svelte:fragment slot="description" />
             </TooltipTitle>
             <TooltipShortcutContainer>
               <div>
@@ -198,6 +199,9 @@
                   the leaderboard metrics for {displayName}
                 {/if}
               </div>
+              <Shortcut />
+              <div>Expand leaderboard</div>
+              <Shortcut>Click</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>
         </Tooltip>
