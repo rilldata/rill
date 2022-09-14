@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { getMapFromArray } from "$common/utils/arrayUtils";
   import {
@@ -17,16 +18,18 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { onDestroy, onMount } from "svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
 
   export let metricsDefId: string;
+
+  const config = getContext<RootConfig>("config");
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
@@ -46,7 +49,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(metricsDefId, {
+    totalsQuery = useTotalsQuery(config, metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,

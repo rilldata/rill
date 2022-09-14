@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
   import type {
     TimeRangeName,
     TimeSeriesTimeRange,
@@ -13,7 +14,7 @@
   import { Menu, MenuItem } from "$lib/components/menu";
   import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
   import { onClickOutside } from "$lib/util/on-click-outside";
-  import { createEventDispatcher, tick } from "svelte";
+  import { createEventDispatcher, getContext, tick } from "svelte";
   import {
     getSelectableTimeRangeNames,
     makeTimeRanges,
@@ -22,6 +23,8 @@
 
   export let metricsDefId: string;
   export let selectedTimeRangeName: TimeRangeName;
+
+  const config = getContext<RootConfig>("config");
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-range-name";
@@ -32,7 +35,7 @@
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly

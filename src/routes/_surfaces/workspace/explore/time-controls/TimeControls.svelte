@@ -6,6 +6,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
   import type {
     TimeGrain,
     TimeRangeName,
@@ -16,6 +17,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { getContext } from "svelte";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -28,6 +30,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   export let metricsDefId: string;
 
+  const config = getContext<RootConfig>("config");
+
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
@@ -35,7 +39,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   let selectedTimeGrain;
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   const initializeState = (metricsExplorer: MetricsExplorerEntity) => {

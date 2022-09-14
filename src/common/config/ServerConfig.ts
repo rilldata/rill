@@ -5,7 +5,10 @@ export class ServerConfig extends Config<ServerConfig> {
   public serverHost: string;
   @Config.ConfigField(8080)
   public serverPort: number;
+  @Config.ConfigField()
   public serverUrl: string;
+  @Config.ConfigField()
+  public exploreUrl: string;
 
   @Config.ConfigField("localhost")
   public uiHost: string;
@@ -25,7 +28,12 @@ export class ServerConfig extends Config<ServerConfig> {
   constructor(configJson) {
     super(configJson);
 
-    this.serverUrl = `http://${this.serverHost}:${this.serverPort}`;
+    if (!this.serverUrl) {
+      this.serverUrl = `http://${this.serverHost}:${this.serverPort}`;
+    }
+    if (!this.exploreUrl) {
+      this.exploreUrl = this.serverUrl;
+    }
     this.uiUrl = `http://${this.uiHost}:${this.uiPort}`;
     this.socketUrl = `http://${this.socketHost}:${this.socketPort}`;
   }

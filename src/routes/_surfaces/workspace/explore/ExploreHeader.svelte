@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
@@ -9,21 +10,24 @@
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import {
     invalidateMetricsViewData,
     useMetaQuery,
   } from "$lib/svelte-query/queries/metrics-view";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { navigationEvent } from "$lib/metrics/initMetrics";
+  import { getContext } from "svelte";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
 
+  const config = getContext<RootConfig>("config");
+
   const queryClient = useQueryClient();
 
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   // TODO: move this "sync" to a more relevant component
   $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data?.id) {
     if (

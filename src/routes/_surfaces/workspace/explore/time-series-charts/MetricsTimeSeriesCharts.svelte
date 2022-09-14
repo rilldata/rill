@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
   import type { MetricsViewTimeSeriesResponse } from "$common/rill-developer-service/MetricsViewActions";
@@ -21,6 +22,7 @@
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
+  import { getContext } from "svelte";
   import { fly } from "svelte/transition";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
@@ -29,11 +31,13 @@
 
   export let metricsDefId;
 
+  const config = getContext<RootConfig>("config");
+
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
 
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
@@ -46,7 +50,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(metricsDefId, {
+    totalsQuery = useTotalsQuery(config, metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: metricsExplorer?.filters,
       time: {
@@ -66,7 +70,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
+    timeSeriesQuery = useTimeSeriesQuery(config, metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       filter: metricsExplorer?.filters,
       time: {

@@ -3,6 +3,7 @@
  * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
  */
 
+import type { RootConfig } from "$common/config/RootConfig";
 import type {
   MetricsViewMetaResponse,
   MetricsViewTimeSeriesRequest,
@@ -12,11 +13,10 @@ import type {
   MetricsViewTotalsRequest,
   MetricsViewTotalsResponse,
 } from "$common/rill-developer-service/MetricsViewActions";
-import { config } from "$lib/application-state-stores/application-store";
 import { QueryClient, useQuery } from "@sveltestack/svelte-query";
 
-async function fetchUrl(path: string, method: string, body?) {
-  const resp = await fetch(`${config.server.serverUrl}/api/v1/${path}`, {
+async function fetchUrl(base: string, path: string, method: string, body?) {
+  const resp = await fetch(`${base}/api/v1/${path}`, {
     method,
     headers: { "Content-Type": "application/json" },
     ...(body ? { body: JSON.stringify(body) } : {}),
@@ -32,9 +32,14 @@ async function fetchUrl(path: string, method: string, body?) {
 // GET /api/v1/metrics-views/{view-name}/meta
 
 export const getMetricsViewMetadata = async (
+  config: RootConfig,
   metricViewId: string
 ): Promise<MetricsViewMetaResponse> => {
-  const json = await fetchUrl(`metrics-views/${metricViewId}/meta`, "GET");
+  const json = await fetchUrl(
+    config.server.exploreUrl,
+    `metrics-views/${metricViewId}/meta`,
+    "GET"
+  );
   json.id = metricViewId;
   return json;
 };
@@ -44,9 +49,9 @@ export const getMetaQueryKey = (metricViewId: string) => {
   return [MetaId, metricViewId];
 };
 
-export const useMetaQuery = (metricViewId: string) => {
+export const useMetaQuery = (config: RootConfig, metricViewId: string) => {
   const metaQueryKey = getMetaQueryKey(metricViewId);
-  const metaQueryFn = () => getMetricsViewMetadata(metricViewId);
+  const metaQueryFn = () => getMetricsViewMetadata(config, metricViewId);
   const metaQueryOptions = {
     enabled: !!metricViewId,
   };
@@ -69,10 +74,16 @@ export const selectMeasureFromMeta = (
 // POST /api/v1/metrics-views/{view-name}/timeseries
 
 export const getMetricsViewTimeSeries = async (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTimeSeriesRequest
 ): Promise<MetricsViewTimeSeriesResponse> => {
-  return fetchUrl(`metrics-views/${metricViewId}/timeseries`, "POST", request);
+  return fetchUrl(
+    config.server.exploreUrl,
+    `metrics-views/${metricViewId}/timeseries`,
+    "POST",
+    request
+  );
 };
 
 const TimeSeriesId = `v1/metrics-view/timeseries`;
@@ -84,12 +95,13 @@ export const getTimeSeriesQueryKey = (
 };
 
 export const useTimeSeriesQuery = (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTimeSeriesRequest
 ) => {
   const timeSeriesQueryKey = getTimeSeriesQueryKey(metricViewId, request);
   const timeSeriesQueryFn = () =>
-    getMetricsViewTimeSeries(metricViewId, request);
+    getMetricsViewTimeSeries(config, metricViewId, request);
   const timeSeriesQueryOptions = {
     staleTime: 1000 * 30,
     enabled: !!(metricViewId && request.measures && request.time),
@@ -104,6 +116,7 @@ export const useTimeSeriesQuery = (
 // POST /api/v1/metrics-views/{view-name}/toplist/{dimension}
 
 export const getMetricsViewTopList = async (
+  config: RootConfig,
   metricViewId: string,
   dimensionId: string,
   request: MetricsViewTopListRequest
@@ -115,6 +128,7 @@ export const getMetricsViewTopList = async (
     };
 
   return fetchUrl(
+    config.server.exploreUrl,
     `metrics-views/${metricViewId}/toplist/${dimensionId}`,
     "POST",
     request
@@ -155,6 +169,7 @@ function getTopListQueryOptions(
  * The request parameter matches the API signature needed for the toplist request.
  */
 export function useTopListQuery(
+  config: RootConfig,
   metricsDefId: string,
   dimensionId: string,
   requestParameter: MetricsViewTopListRequest
@@ -165,7 +180,12 @@ export function useTopListQuery(
     requestParameter
   );
   const topListQueryFn = () => {
-    return getMetricsViewTopList(metricsDefId, dimensionId, requestParameter);
+    return getMetricsViewTopList(
+      config,
+      metricsDefId,
+      dimensionId,
+      requestParameter
+    );
   };
   const topListQueryOptions = getTopListQueryOptions(
     metricsDefId,
@@ -178,10 +198,16 @@ export function useTopListQuery(
 // POST /api/v1/metrics-views/{view-name}/totals
 
 export const getMetricsViewTotals = async (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTotalsRequest
 ): Promise<MetricsViewTotalsResponse> => {
-  return fetchUrl(`metrics-views/${metricViewId}/totals`, "POST", request);
+  return fetchUrl(
+    config.server.exploreUrl,
+    `metrics-views/${metricViewId}/totals`,
+    "POST",
+    request
+  );
 };
 
 const TotalsId = `v1/metrics-view/totals`;
@@ -193,11 +219,13 @@ export const getTotalsQueryKey = (
 };
 
 export const useTotalsQuery = (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTotalsRequest
 ) => {
   const totalsQueryKey = getTotalsQueryKey(metricViewId, request);
-  const totalsQueryFn = () => getMetricsViewTotals(metricViewId, request);
+  const totalsQueryFn = () =>
+    getMetricsViewTotals(config, metricViewId, request);
 
   return useQuery<MetricsViewTotalsResponse, Error>(
     totalsQueryKey,

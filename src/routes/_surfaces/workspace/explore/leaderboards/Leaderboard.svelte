@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
+
   /**
    * Leaderboard.svelte
    * -------------------------
@@ -33,7 +35,7 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
@@ -55,7 +57,9 @@
 
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useMetaQuery(metricsDefId);
+  const config = getContext<RootConfig>("config");
+
+  $: metaQuery = useMetaQuery(config, metricsDefId);
 
   let dimension: DimensionDefinitionEntity;
   $: dimension = selectDimensionFromMeta($metaQuery.data, dimensionId);
@@ -93,7 +97,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
+    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: [measure?.id],
       limit: 15,
       offset: 0,

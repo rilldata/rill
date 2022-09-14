@@ -2,6 +2,7 @@
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     ApplicationStore,
+    config,
     duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
   import {
@@ -33,6 +34,7 @@
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
   import QuickStartDashboard from "$lib/components/overlay/QuickStartDashboard.svelte";
   import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
+  import ConfigProvider from "$lib/config/ConfigProvider.svelte";
   import { getContext } from "svelte";
   import AssetsSidebar from "./_surfaces/assets/index.svelte";
   import InspectorSidebar from "./_surfaces/inspector/index.svelte";
@@ -198,7 +200,9 @@
       ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
       : 0}px"
   >
-    <Workspace />
+    <ConfigProvider {config}>
+      <Workspace />
+    </ConfigProvider>
   </div>
 
   <!-- inspector sidebar -->

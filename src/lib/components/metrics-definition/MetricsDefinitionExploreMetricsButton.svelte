@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
@@ -10,14 +11,17 @@
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { navigationEvent } from "$lib/metrics/initMetrics";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { getContext } from "svelte";
 
   export let metricsDefId: string;
 
+  const config = getContext<RootConfig>("config");
+
   // query the `/meta` endpoint to get the valid measures and dimensions
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   $: measures = $metaQuery.data?.measures;
   $: dimensions = $metaQuery.data?.dimensions;
 
