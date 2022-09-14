@@ -25,12 +25,15 @@ import java.util.List;
 
 public class RillOperatorTable implements SqlOperatorTable
 {
-  private static final SqlFunction DATE_TRUNC = OperatorConversions.operatorBuilder("DATE_TRUNC")
-      .operandTypes(SqlTypeFamily.CHARACTER, SqlTypeFamily.DATETIME)
-      .requiredOperands(2)
-      .returnTypeInference(CalciteUtils.ARG1_NULLABLE_RETURN_TYPE_INFERENCE)
-      .functionCategory(SqlFunctionCategory.TIMEDATE)
-      .build();
+  private static final SqlFunction DATE_TRUNC =
+    new SqlFunction(
+        "DATE_TRUNC",
+        SqlKind.OTHER_FUNCTION,
+        ReturnTypes.TIMESTAMP,
+        null,
+        OperandTypes.family(SqlTypeFamily.CHARACTER, SqlTypeFamily.TIMESTAMP),
+        SqlFunctionCategory.TIMEDATE
+    );
 
   private static final SqlFunction GREATEST = OperatorConversions.operatorBuilder("GREATEST")
       .operandTypeChecker(OperandTypes.VARIADIC)

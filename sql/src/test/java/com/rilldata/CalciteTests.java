@@ -66,9 +66,8 @@ public class CalciteTests
       sqlCreateMetric = calciteToolbox.parseModelingQuery(modelingQuery);
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
-      if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
-        throw new RuntimeException(e);
-      }
+      Assertions.assertTrue(parseExceptionMatch.isPresent() && e.getMessage().contains(parseExceptionMatch.get()));
+      return; // found parse exception - test done - return now
     }
     Assertions.assertEquals(numDims, sqlCreateMetric.dimensions.size());
     Assertions.assertEquals(numMeasures, sqlCreateMetric.measures.size());
@@ -78,9 +77,7 @@ public class CalciteTests
     } catch (SqlParseException e) {
       throw new RuntimeException(e);
     } catch (ValidationException e) {
-      if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
-        throw new RuntimeException(e);
-      }
+      Assertions.assertTrue(validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
     }
   }
 
@@ -335,6 +332,37 @@ public class CalciteTests
             Optional.empty()
         ),
         Arguments.of(
+            "SELECT XOR(1,2)",
+            "SELECT XOR(1,2)",
+            "SELECT BITWISE_XOR(1,2)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
+            "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
+            "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', '2022-09-01')", // sql literal, should be type casted explicitly
+            "",
+            "",
+            Optional.of("Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <CHAR(10)>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
+        ),
+        // next 2 should ideally pass, DATE can be implicitly cast to TIMESTAMP
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', DATE '2022-08-01')", // druid only supports timestamp in date_trunc
+            "",
+            "",
+            Optional.of("Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <DATE>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
+        ),
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', CAST(DATE '2022-08-01' AS TIMESTAMP))", // date column
+            "SELECT DATE_TRUNC('year', CAST(DATE '2022-08-01' AS TIMESTAMP))",
+            "SELECT DATE_TRUNC('year', CAST(DATE '2022-08-01' AS TIMESTAMP))",
+            Optional.empty()
+        ),
+        Arguments.of(
             "SELECT XOR(2)",
             "",
             "",
@@ -393,7 +421,19 @@ public class CalciteTests
         Arguments.of("""
                 CREATE METRICS VIEW Test4
                 DIMENSIONS
-                DATE_TRUNC('year', "date"), current_timestamp AS CURR
+                DATE_TRUNC('year', CAST("date" AS TIMESTAMP)), current_timestamp AS CURR
+                MEASURES
+                COUNT(*) AS C_STAR
+                FROM MAIN.TEST""",
+            2,
+            1,
+            Optional.of("Please provide an alias for `DATE_TRUNC`('year', CAST(`date` AS TIMESTAMP))"),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE METRICS VIEW Test4
+                DIMENSIONS
+                DATE_TRUNC('year', CAST("date" AS TIMESTAMP)) AS "the-year", current_timestamp AS CURR
                 MEASURES
                 COUNT(*) AS C_STAR
                 FROM MAIN.TEST""",

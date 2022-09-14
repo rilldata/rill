@@ -45,7 +45,8 @@ public class DruidDialect extends SqlDialect
           xor.getKind(),
           xor.getReturnTypeInference(),
           xor.getOperandTypeInference(),
-          xor.getOperandTypeChecker(), xor.getFunctionType()
+          xor.getOperandTypeChecker(),
+          xor.getFunctionType()
       );
       SqlCall bitwiseXorCall = bitWiseXOR.createCall(call.getFunctionQuantifier(), call.getParserPosition(),
           call.getOperandList()
