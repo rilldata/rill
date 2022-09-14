@@ -1,0 +1,118 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Rill Cloud
+paths:
+  /v1/organizations:
+    post:
+      operationId: createOrganization
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string 
+        - name: description
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/organizations/{name}:
+    get:
+      operationId: findOrganization
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      operationId: updateOrganization
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string 
+        - name: description
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteOrganization
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Organization:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        createdOn:
+          type: string
+          format: date
+        updatedOn:
+          type: string
+          format: date
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+  responses:
+    ErrorResponse:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+# security:
+#   - BearerAuth: [ ]
