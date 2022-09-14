@@ -86,7 +86,7 @@ jobs:
         - mvn -f sql/ clean test
 
     # Publish docker image on the merge to main branch
-    - stage: Publish
+    - stage: Release
       name: "Build & Publish docker"
       if: tag IS present
 
