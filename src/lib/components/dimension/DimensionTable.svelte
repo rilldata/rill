@@ -13,7 +13,6 @@ TableCells – the cell contents.
   import { DimensionTableConfig } from "./DimensionTableConfig";
   import ColumnHeaders from "$lib/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "$lib/components/virtualized-table/sections/TableCells.svelte";
-  import RowHeaders from "$lib/components/virtualized-table/sections/RowHeaders.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -173,7 +172,7 @@ TableCells – the cell contents.
 
     // Dimension column should expand to cover whole container
     estimateColumnSize[0] = Math.max(
-      containerWidth - measureColumnSizeSum - DimensionTableConfig.indexWidth,
+      containerWidth - measureColumnSizeSum,
       estimateColumnSize[0]
     );
 
@@ -187,7 +186,6 @@ TableCells – the cell contents.
       },
       overscan: columnOverscanAmount,
       initialOffset: colScrollOffset,
-      paddingStart: DimensionTableConfig.indexWidth,
     });
   }
 
@@ -285,8 +283,6 @@ TableCells – the cell contents.
           on:reset-column-size={handleResetColumnSize}
           on:click-column={handleColumnHeaderClick}
         />
-        <!-- RowHeader -->
-        <RowHeaders virtualRowItems={virtualRows} totalHeight={virtualHeight} />
         <!-- VirtualTableBody -->
         <TableCells
           virtualColumnItems={virtualColumns}
