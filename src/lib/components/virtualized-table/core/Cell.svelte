@@ -62,6 +62,12 @@
     }
   }
 
+  /** Show left border for Dimension table 
+  /* using the information that dimension column 
+  /* cells have no formatting present
+  */
+  const leftBorder = config.table === "DimensionTable" && !formattedValue;
+
   $: barColor = rowSelected
     ? "bg-blue-300"
     : atLeastOneSelected
@@ -88,6 +94,7 @@
       text-ellipsis 
       whitespace-nowrap 
       border-r border-b 
+      {leftBorder ? 'border-l' : ''}
       {activityStatus}
       "
     style:left="{column.start}px"
