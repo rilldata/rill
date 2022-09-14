@@ -16,6 +16,7 @@
     useTimeSeriesQuery,
     useTotalsQuery,
   } from "$lib/svelte-query/queries/metrics-view";
+  import { selectMappedFilterFromMeta } from "$lib/svelte-query/selectors/metrics-view";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
@@ -48,7 +49,10 @@
   ) {
     totalsQuery = useTotalsQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
-      filter: metricsExplorer?.filters,
+      filter: selectMappedFilterFromMeta(
+        $metaQuery.data,
+        metricsExplorer?.filters
+      ),
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
@@ -68,7 +72,10 @@
   ) {
     timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
-      filter: metricsExplorer?.filters,
+      filter: selectMappedFilterFromMeta(
+        $metaQuery.data,
+        metricsExplorer?.filters
+      ),
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,

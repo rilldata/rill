@@ -22,11 +22,14 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import {
-    selectDimensionFromMeta,
-    selectMeasureFromMeta,
     useMetaQuery,
     useTopListQuery,
   } from "$lib/svelte-query/queries/metrics-view";
+  import {
+    selectDimensionFromMeta,
+    selectMappedFilterFromMeta,
+    selectMeasureFromMeta,
+  } from "$lib/svelte-query/selectors/metrics-view";
   import { slideRight } from "$lib/transitions";
   import {
     humanizeGroupValues,
@@ -107,7 +110,10 @@
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-      filter: metricsExplorer?.filters,
+      filter: selectMappedFilterFromMeta(
+        $metaQuery.data,
+        metricsExplorer?.filters
+      ),
     });
   }
 
