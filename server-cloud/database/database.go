@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -53,6 +54,8 @@ type DB interface {
 	UpdateProject(ctx context.Context, id string, description string) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 }
+
+var ErrNotFound = errors.New("database: not found")
 
 type Organization struct {
 	ID          string

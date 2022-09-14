@@ -27,31 +27,38 @@ type Error struct {
 
 // Organization defines model for Organization.
 type Organization struct {
-	CreatedOn   *openapi_types.Date `json:"createdOn,omitempty"`
-	Description *string             `json:"description,omitempty"`
-	Name        string              `json:"name"`
-	UpdatedOn   *openapi_types.Date `json:"updatedOn,omitempty"`
+	CreatedOn   openapi_types.Date `json:"created_on"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Name        string             `json:"name"`
+	UpdatedOn   openapi_types.Date `json:"updated_on"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse = Error
 
-// CreateOrganizationParams defines parameters for CreateOrganization.
-type CreateOrganizationParams struct {
-	Name        string  `form:"name" json:"name"`
-	Description *string `form:"description,omitempty" json:"description,omitempty"`
+// CreateOrganizationJSONBody defines parameters for CreateOrganization.
+type CreateOrganizationJSONBody struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
 }
 
-// UpdateOrganizationParams defines parameters for UpdateOrganization.
-type UpdateOrganizationParams struct {
-	Description *string `form:"description,omitempty" json:"description,omitempty"`
+// UpdateOrganizationJSONBody defines parameters for UpdateOrganization.
+type UpdateOrganizationJSONBody struct {
+	Description *string `json:"description,omitempty"`
 }
+
+// CreateOrganizationJSONRequestBody defines body for CreateOrganization for application/json ContentType.
+type CreateOrganizationJSONRequestBody CreateOrganizationJSONBody
+
+// UpdateOrganizationJSONRequestBody defines body for UpdateOrganization for application/json ContentType.
+type UpdateOrganizationJSONRequestBody UpdateOrganizationJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (POST /v1/organizations)
-	CreateOrganization(ctx echo.Context, params CreateOrganizationParams) error
+	CreateOrganization(ctx echo.Context) error
 
 	// (DELETE /v1/organizations/{name})
 	DeleteOrganization(ctx echo.Context, name string) error
@@ -60,7 +67,7 @@ type ServerInterface interface {
 	FindOrganization(ctx echo.Context, name string) error
 
 	// (PUT /v1/organizations/{name})
-	UpdateOrganization(ctx echo.Context, name string, params UpdateOrganizationParams) error
+	UpdateOrganization(ctx echo.Context, name string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -72,24 +79,8 @@ type ServerInterfaceWrapper struct {
 func (w *ServerInterfaceWrapper) CreateOrganization(ctx echo.Context) error {
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params CreateOrganizationParams
-	// ------------- Required query parameter "name" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "name", ctx.QueryParams(), &params.Name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Optional query parameter "description" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "description", ctx.QueryParams(), &params.Description)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter description: %s", err))
-	}
-
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CreateOrganization(ctx, params)
+	err = w.Handler.CreateOrganization(ctx)
 	return err
 }
 
@@ -136,17 +127,8 @@ func (w *ServerInterfaceWrapper) UpdateOrganization(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params UpdateOrganizationParams
-	// ------------- Optional query parameter "description" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "description", ctx.QueryParams(), &params.Description)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter description: %s", err))
-	}
-
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UpdateOrganization(ctx, name, params)
+	err = w.Handler.UpdateOrganization(ctx, name)
 	return err
 }
 
@@ -188,15 +170,15 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RUwW7UMBD9FTRwtJpte8sNFSrBpVIBcah6cOPZrKvEdsfjSssq/47G3m02JKBKBYHE",
-	"Xtaesd/Me8+THTS+D96h4wj1Dghj8C5i3rwn8nS9j0ig8Y7RsSx1CJ1tNFvvqvvoncRis8Fey+oN4Rpq",
-	"eF2N6FXJxiqjwiA/tb8yVpNFIB+Q2JYmGm9y7bWnXjPUYB2fn4EC3gYsW2yRYFDQY4y6zaf3ychkXQtS",
-	"ifAhWUID9U3BHM/fPoH5u3tsWLCuqNXOfssEF5oi1Izmyk06M5pxbOxQW4HB2JANB6hZ3ukeFxMpmGeX",
-	"+YFixpwTE8mxSWR5+0mkL3TuUBPS28SbcXd5KPfx62fYGyVIJTvW3zAHyF5at/aZhuVOMte2615ddD4Z",
-	"UPCIFDN/OD1ZnayEnQ/odLBQw3kOKQiaN7mh6vG08kcO5GDwMT89MSJHPxio4SJbMbFLgEj3yEgR6psd",
-	"WKn7kJC2cFC7/B1rxpRQHb3hmb7LOMfm/ur6rZoO19lq9dtGasK+DJbBtU4d/+zmUyvVdMjL5Zn81U7Y",
-	"DoJmsEPGuQ/vcvwZPojJL7BhWccXMVbQ4sLLurTO/C0+/+C7UBDSgkpf8jfqz+v034zfMHwPAAD//+78",
-	"3T6VBwAA",
+	"H4sIAAAAAAAC/9xUzW7UMBB+FTRwtJpte8sNCpXgglRAHKoKufFs1lVim/GkUlnl3ZHHyWazmwoQvyIn",
+	"e8Yez/cz2ULl2+AdOo5QboEwBu8iyuYVkaerIZIClXeMjtNSh9DYSrP1rriL3qVYrDbY6rR6RriGEp4W",
+	"U/UiZ2MhVaFPnxquTK+lRSAfkNjmJipv5O21p1YzlGAdn5+BAn4ImLdYI0GvoMUYdS2nh2Rksq6G9BLh",
+	"584SGiivc83p/M2umL+9w4pTrbdUa2e/CMCFpgg1o/mUc7vWjGacOhsfV2AwVmTDWOsob81i2OkWFxNd",
+	"MN///AF2a2CorPZhzIoeE5Kkwqojyw/vkmSZhlvUhPS84820uxy7efPxPQwCp0o5O7W3YQ4gHrBu7QWm",
+	"5SZlrmzTPLlofJc6vUeKQhucnqxOVgm9D+h0sFDCuYQUBM0baai4Py38nnISDD6KZZOAEn1toIQLwT6T",
+	"OROFkV948/BDfp+741tyP6LrgVByakGJ2TGmDiWwN7Znq9UvG9YZP3lkDa511/BjN3etFPPfR758JFCx",
+	"TTj7TFuDjMdKvZT4gVJBk26RkSKU11uwySHJBqO5y9Hjc67UHu5D+m8WefwpxApqXPDepXXmb+H5B32h",
+	"IHQLLH2QH9If4un3z33/X41y338NAAD//5UhMew7CAAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

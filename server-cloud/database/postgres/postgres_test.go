@@ -56,7 +56,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
 	org, err := db.FindOrganizationByName(ctx, "foo")
-	require.NoError(t, err)
+	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
 
 	org, err = db.CreateOrganization(ctx, "foo", "hello world")
@@ -80,7 +80,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	org, err = db.FindOrganizationByName(ctx, "foo")
-	require.NoError(t, err)
+	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
 }
 
@@ -92,7 +92,7 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, "foo", org.Name)
 
 	proj, err := db.FindProjectByName(ctx, org.Name, "bar")
-	require.NoError(t, err)
+	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, proj)
 
 	proj, err = db.CreateProject(ctx, org.ID, "bar", "hello world")
@@ -122,13 +122,13 @@ func testProjects(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	proj, err = db.FindProjectByName(ctx, org.Name, "bar")
-	require.NoError(t, err)
+	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, proj)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
 
 	org, err = db.FindOrganizationByName(ctx, "foo")
-	require.NoError(t, err)
+	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
 }

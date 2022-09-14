@@ -6,17 +6,19 @@ paths:
   /v1/organizations:
     post:
       operationId: createOrganization
-      parameters:
-        - name: name
-          in: query
-          required: true
-          schema:
-            type: string 
-        - name: description
-          in: query
-          required: false
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+                description:
+                  type: string
       responses:
         '200':
           content:
@@ -50,11 +52,15 @@ paths:
           required: true
           schema:
             type: string 
-        - name: description
-          in: query
-          required: false
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
       responses:
         '200':
           content:
@@ -85,16 +91,21 @@ components:
     Organization:
       type: object
       required:
+        - id
         - name
+        - created_on
+        - updated_on
       properties:
+        id:
+          type: string
         name:
           type: string
         description:
           type: string
-        createdOn:
+        created_on:
           type: string
           format: date
-        updatedOn:
+        updated_on:
           type: string
           format: date
     Error:
@@ -114,5 +125,3 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-# security:
-#   - BearerAuth: [ ]

@@ -47,7 +47,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	err := c.db.QueryRowxContext(ctx, "SELECT * FROM organizations WHERE name = $1", name).StructScan(res)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, database.ErrNotFound
 		}
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName string, name
 	err := c.db.QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE p.name=$1 AND o.name=$2", name, orgName).StructScan(res)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, database.ErrNotFound
 		}
 		return nil, err
 	}
