@@ -66,6 +66,15 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.Less(t, time.Since(org.CreatedOn), 10*time.Second)
 	require.Less(t, time.Since(org.UpdatedOn), 10*time.Second)
 
+	org, err = db.CreateOrganization(ctx, "bar", "")
+	require.NoError(t, err)
+	require.Equal(t, "bar", org.Name)
+
+	orgs, err := db.FindOrganizations(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "bar", orgs[0].Name)
+	require.Equal(t, "foo", orgs[1].Name)
+
 	org, err = db.FindOrganizationByName(ctx, "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)

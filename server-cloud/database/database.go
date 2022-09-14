@@ -44,6 +44,7 @@ type DB interface {
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
 
+	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	CreateOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)

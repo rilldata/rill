@@ -42,6 +42,15 @@ func (c *connection) FindMigrationVersion(ctx context.Context) (int, error) {
 	return version, nil
 }
 
+func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organization, error) {
+	var res []*database.Organization
+	err := c.db.Select(&res, "SELECT * FROM organizations ORDER BY name")
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.db.QueryRowxContext(ctx, "SELECT * FROM organizations WHERE name = $1", name).StructScan(res)

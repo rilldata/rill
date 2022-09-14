@@ -9,6 +9,21 @@ import (
 	"github.com/rilldata/rill/server-cloud/database"
 )
 
+// (GET /v1/organizations)
+func (s *Server) FindOrganizations(ctx echo.Context) error {
+	orgs, err := s.db.FindOrganizations(ctx.Request().Context())
+	if err != nil {
+		return sendError(ctx, http.StatusBadRequest, err.Error())
+	}
+
+	dtos := make([]*api.Organization, len(orgs))
+	for i, org := range orgs {
+		dtos[i] = orgToDTO(org)
+	}
+
+	return ctx.JSON(http.StatusOK, dtos)
+}
+
 // (POST /organizations)
 func (s *Server) CreateOrganization(ctx echo.Context) error {
 	var dto api.CreateOrganizationJSONBody

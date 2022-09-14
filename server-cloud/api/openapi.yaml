@@ -4,6 +4,18 @@ info:
   title: Rill Cloud
 paths:
   /v1/organizations:
+    get:
+      operationId: findOrganizations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Organization'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
     post:
       operationId: createOrganization
       requestBody:
