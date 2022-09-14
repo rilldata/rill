@@ -12,33 +12,33 @@
   export let activeIndex: number;
 
   $: atLeastOneSelected = !!selectedIndex?.length;
+
+  const getCellProps = (row, column) => {
+    const value = rows[row.index][columns[column.index]?.name];
+
+    return {
+      value,
+      formattedValue:
+        rows[row.index]["__formatted_" + columns[column.index]?.name],
+      type: columns[column.index]?.type,
+      rowActive: activeIndex === row?.index,
+      suppressTooltip: scrolling,
+      barValue: columns[column.index]?.total
+        ? value / columns[column.index]?.total
+        : 0,
+      rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
+    };
+  };
 </script>
 
 {#each virtualColumnItems as column (column.key)}
   <Row>
     {#each virtualRowItems as row (`${row.key}-${column.key}`)}
-      {@const formattedValue =
-        rows[row.index]["__formatted_" + columns[column.index]?.name]}
-      {@const value = rows[row.index][columns[column.index]?.name]}
-      {@const type = columns[column.index]?.type}
-      {@const rowActive = activeIndex === row?.index}
-      {@const suppressTooltip = scrolling}
-      {@const barValue = columns[column.index]?.total
-        ? value / columns[column.index]?.total
-        : 0}
-      {@const rowSelected =
-        selectedIndex.findIndex((value) => row?.index === value) >= 0}
       <Cell
-        {suppressTooltip}
-        {rowActive}
-        {value}
-        {formattedValue}
         {row}
         {column}
-        {barValue}
-        {type}
-        {rowSelected}
         {atLeastOneSelected}
+        {...getCellProps(row, column)}
         on:inspect
         on:select-item
       />
