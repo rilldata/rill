@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
+
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -21,11 +23,15 @@
     useTotalsQuery,
   } from "$lib/svelte-query/queries/metrics-view";
   import { humanizeGroupByColumns } from "$lib/util/humanize-numbers";
+  import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
+
   export let metricsDefId: string;
   export let dimensionId: string;
 
-  $: metaQuery = useMetaQuery(metricsDefId);
+  const config = getContext<RootConfig>("config");
+
+  $: metaQuery = useMetaQuery(config, metricsDefId);
 
   let dimension: Readable<DimensionDefinitionEntity>;
 
@@ -60,7 +66,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
+    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: metricsExplorer?.selectedMeasureIds,
       limit: 250,
       offset: 0,
@@ -80,7 +86,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(metricsDefId, {
+    totalsQuery = useTotalsQuery(config, metricsDefId, {
       measures: metricsExplorer?.selectedMeasureIds,
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
