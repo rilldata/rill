@@ -28,6 +28,8 @@ export interface MetricsExplorerEntity {
   filters: MetricsViewRequestFilter;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
+  // user selected dimension
+  selectedDimensionId?: string;
 }
 
 export interface MetricsExplorerStoreType {
@@ -103,6 +105,12 @@ const metricViewReducers = {
   setSelectedTimeRange(id: string, timeRange: TimeSeriesTimeRange) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
+    });
+  },
+
+  setMetricDimensionId(id: string, dimensionId: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      metricsExplorer.selectedDimensionId = dimensionId;
     });
   },
 
