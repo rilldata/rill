@@ -13,7 +13,9 @@
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import { store } from "$lib/redux-store/store-root";
+  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
   import type { ProfileColumn } from "$lib/types";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
@@ -22,8 +24,10 @@
 
   export let metricsDefId: string;
 
-  function handleGenerateClick() {
-    store.dispatch(generateMeasuresAndDimensionsApi(metricsDefId));
+  const queryClient = useQueryClient();
+
+  async function handleGenerateClick() {
+    await store.dispatch(generateMeasuresAndDimensionsApi(metricsDefId));
     if (!$selectedMetricsDef?.timeDimension && timestampColumns.length > 0) {
       // select the first available timestamp column if one has not been
       // selected and there are some available
@@ -34,6 +38,13 @@
         })
       );
     }
+    invalidateMetricsView(queryClient, metricsDefId);
+    // In `svelte-query/metrics-view.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
+    // We should make that change, but it has a wide surface area, so we need to take the time to QA it properly. In the meantime, we need to remove old
+    // queryKeys from the queryCache, so they don't get refetched and generate 500 errors.
+    queryClient.removeQueries([`v1/metrics-view/toplist`, metricsDefId], {
+      exact: false,
+    });
     closeModal();
   }
 

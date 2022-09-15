@@ -6,7 +6,7 @@
   <div class="explore-metrics pl-8 pb-8">
     <slot name="metrics" />
   </div>
-  <div class="explore-leaderboards pr-8 pb-8">
+  <div class="explore-leaderboards pr-4 pb-8">
     <slot name="leaderboards" />
   </div>
 </section>

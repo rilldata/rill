@@ -1,9 +1,13 @@
 <script lang="ts">
   import { dragTableCell } from "../drag-table-cell";
 
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
 
   import type { HeaderPosition } from "../types";
+  import type { VirtualizedTableConfig } from "../types";
+
+  const config: VirtualizedTableConfig = getContext("config");
+
   const dispatch = createEventDispatcher();
   export let header;
   export let position: HeaderPosition = "top";
@@ -15,12 +19,15 @@
     if (position === "top") {
       positionClasses = "absolute left-0 top-0";
     } else if (position === "left") {
-      positionClasses = "absolute left-0 top-0 text-center font-bold";
+      positionClasses = "absolute left-0 top-0 text-center font-semibold";
       offsetTop = true;
     } else if (position === "top-left") {
       positionClasses = "sticky left-0 top-0 z-40  font-bold";
     }
   }
+
+  const paddingVerticalTop = config.columnHeaderHeight <= 28 ? "py-1" : "py-2";
+  const paddingVerticalLeft = config.rowHeight <= 28 ? "py-0.5" : "py-2";
 
   function focus() {
     dispatch("focus");
@@ -36,9 +43,12 @@
   on:mouseleave={blur}
   on:focus={focus}
   on:blur={blur}
+  on:click
   style:transform="translate{position === "left" ? "Y" : "X"}({header.start}px)"
   style:width="{header.size}px"
-  style:height="36px"
+  style:height="{position === "left"
+    ? config.rowHeight
+    : config.columnHeaderHeight}px"
   class="{positionClasses}
    bg-white text-left border-b border-b-4 border-r border-r-1"
 >
@@ -51,9 +61,9 @@
   border-t-0
   border-l-0
   bg-gray-100
-  {position === 'top' && 'py-2 text-left'}
-  {position === 'left' && 'py-2'}
-  {position === 'top-left' && 'py-2 text-center'}
+  {position === 'top' && `${paddingVerticalTop} text-left`}
+  {position === 'left' && paddingVerticalLeft}
+  {position === 'top-left' && `${paddingVerticalTop} text-center`}
 "
   >
     <slot />

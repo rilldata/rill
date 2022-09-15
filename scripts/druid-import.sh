@@ -1,7 +1,7 @@
 #!/bin/bash
 ## Usage Sample
 # scripts/druid-import.sh --druid=<druid_url> --user=<username> --pass=<password> --datasource=chalice_sample --project=<project>
-rows=100000
+rows=5000000
 project='.'
 
 while [ $# -gt 0 ]; do
@@ -35,7 +35,7 @@ while [ $# -gt 0 ]; do
 done
 
 
-query="{\"query\" : \"SELECT * FROM $datasource limit $rows\",\"resultFormat\" : \"csv\", \"header\" : true}"
+query="{\"query\" : \"SELECT * FROM \\\"$datasource\\\" limit $rows\",\"resultFormat\" : \"csv\", \"header\" : true}"
 echo "$query" > "/tmp/$datasource-query.json"
 printf "Downloading data using query :  $query \n"
 

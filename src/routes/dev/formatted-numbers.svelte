@@ -79,26 +79,26 @@
     </div>
   {/each}
   <div class="text-lg text-left pt-5 pl-2 pr-2">
-    {#each humanizedTable as { formattedValue, label }}
+    {#each humanizedTable as { __formatted_value, label }}
       <div>
         <span>{label}</span>
-        <span class="font-bold float-right">{formattedValue}</span>
+        <span class="font-bold float-right">{__formatted_value}</span>
       </div>
     {/each}
   </div>
   <div class="text-lg text-left pt-5 pl-2 pr-2">
-    {#each humanizedTable2 as { formattedValue, label }}
+    {#each humanizedTable2 as { __formatted_value, label }}
       <div>
         <span>{label}</span>
-        <span class="font-bold float-right">{formattedValue}</span>
+        <span class="font-bold float-right">{__formatted_value}</span>
       </div>
     {/each}
   </div>
   <div class="text-lg text-left pt-5 pl-2 pr-2">
-    {#each humanizedTableCurrency as { formattedValue, label }}
+    {#each humanizedTableCurrency as { __formatted_value, label }}
       <div>
         <span>{label}</span>
-        <span class="font-bold float-right">{formattedValue}</span>
+        <span class="font-bold float-right">{__formatted_value}</span>
       </div>
     {/each}
   </div>
