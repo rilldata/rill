@@ -94,6 +94,12 @@ const metricViewReducers = {
     });
   },
 
+  clearLeaderboardMeasureId(id: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      metricsExplorer.leaderboardMeasureId = undefined;
+    });
+  },
+
   setSelectedTimeRange(id: string, timeRange: TimeSeriesTimeRange) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
