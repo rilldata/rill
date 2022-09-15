@@ -30,6 +30,50 @@ id,timestamp,publisher,domain,bid_price
 16000,2022-01-24T13:41:43.527Z,,instagram.com,1.78
 `)
 
+var testIngestSpec = fmt.Sprintf(`{
+	"type": "index_parallel",
+	"spec": {
+		"ioConfig": {
+			"type": "index_parallel",
+			"inputSource": {
+				"type": "inline",
+				"data": "%s"
+			},
+			"inputFormat": {
+				"type": "csv",
+				"findColumnsFromHeader": true
+			}
+		},
+		"tuningConfig": {
+			"type": "index_parallel",
+			"partitionsSpec": {
+				"type": "dynamic"
+			}
+		},
+		"dataSchema": {
+			"dataSource": "%s",
+			"timestampSpec": {
+				"column": "timestamp",
+				"format": "iso"
+			},
+			"transformSpec": {},
+			"dimensionsSpec": {
+				"dimensions": [
+					{"type": "long", "name": "id"},
+					"publisher",
+					"domain",
+					{"type": "double", "name": "bid_price"}
+				]
+			},
+			"granularitySpec": {
+				"queryGranularity": "none",
+				"rollup": false,
+				"segmentGranularity": "day"
+			}
+		}
+	}
+}`, strings.ReplaceAll(testCSV, "\n", "\\n"), testTable)
+
 // TestDruid starts a Druid cluster using testcontainers, ingests data into it, then runs all other tests
 // in this file as sub-tests (to prevent spawning many clusters).
 func TestDruid(t *testing.T) {
@@ -67,6 +111,8 @@ func TestDruid(t *testing.T) {
 
 	t.Run("count", func(t *testing.T) { testCount(t, conn) })
 	t.Run("max", func(t *testing.T) { testMax(t, conn) })
+	t.Run("schema all", func(t *testing.T) { testSchemaAll(t, conn) })
+	t.Run("schema lookup", func(t *testing.T) { testSchemaLookup(t, conn) })
 	// Add new tests here
 
 	require.NoError(t, conn.Close())
@@ -74,59 +120,8 @@ func TestDruid(t *testing.T) {
 }
 
 func testIngest(t *testing.T, coordinatorURL string) {
-	escapedCSV := strings.ReplaceAll(testCSV, "\n", "\\n")
-	ingestSpec := fmt.Sprintf(`{
-		"type": "index_parallel",
-		"spec": {
-		  "ioConfig": {
-			"type": "index_parallel",
-			"inputSource": {
-			  "type": "inline",
-			  "data": "%s"
-			},
-			"inputFormat": {
-			  "type": "csv",
-			  "findColumnsFromHeader": true
-			}
-		  },
-		  "tuningConfig": {
-			"type": "index_parallel",
-			"partitionsSpec": {
-			  "type": "dynamic"
-			}
-		  },
-		  "dataSchema": {
-			"dataSource": "%s",
-			"timestampSpec": {
-			  "column": "timestamp",
-			  "format": "iso"
-			},
-			"transformSpec": {},
-			"dimensionsSpec": {
-			  "dimensions": [
-				{
-				  "type": "long",
-				  "name": "id"
-				},
-				"publisher",
-				"domain",
-				{
-				  "type": "double",
-				  "name": "bid_price"
-				}
-			  ]
-			},
-			"granularitySpec": {
-			  "queryGranularity": "none",
-			  "rollup": false,
-			  "segmentGranularity": "day"
-			}
-		  }
-		}
-	  }`, escapedCSV, testTable)
-
 	timeout := 5 * time.Minute
-	err := Ingest(coordinatorURL, ingestSpec, testTable, timeout)
+	err := Ingest(coordinatorURL, testIngestSpec, testTable, timeout)
 	require.NoError(t, err)
 }
 
@@ -154,4 +149,33 @@ func testMax(t *testing.T, conn infra.Connection) {
 	require.NoError(t, rows.Scan(&count))
 	require.Equal(t, expectedValue, count)
 	require.NoError(t, rows.Close())
+}
+
+func testSchemaAll(t *testing.T, conn infra.Connection) {
+	tables, err := conn.InformationSchema().All(context.Background())
+	require.NoError(t, err)
+
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, testTable, tables[0].Name)
+
+	require.Equal(t, "__time", tables[0].Columns[0].Name)
+	require.Equal(t, "TIMESTAMP", tables[0].Columns[0].Type)
+	require.Equal(t, "bid_price", tables[0].Columns[1].Name)
+	require.Equal(t, "DOUBLE", tables[0].Columns[1].Type)
+	require.Equal(t, "domain", tables[0].Columns[2].Name)
+	require.Equal(t, "VARCHAR", tables[0].Columns[2].Type)
+	require.Equal(t, "id", tables[0].Columns[3].Name)
+	require.Equal(t, "BIGINT", tables[0].Columns[3].Type)
+	require.Equal(t, "publisher", tables[0].Columns[4].Name)
+	require.Equal(t, "VARCHAR", tables[0].Columns[4].Type)
+}
+
+func testSchemaLookup(t *testing.T, conn infra.Connection) {
+	ctx := context.Background()
+	table, err := conn.InformationSchema().Lookup(ctx, testTable)
+	require.NoError(t, err)
+	require.Equal(t, testTable, table.Name)
+
+	_, err = conn.InformationSchema().Lookup(ctx, "foo")
+	require.Equal(t, infra.ErrNotFound, err)
 }
