@@ -10,6 +10,7 @@ export type ShortHandSymbols = typeof shortHandSymbols[number];
 interface HumanizeOptions {
   scale?: ShortHandSymbols;
   excludeDecimalZeros?: boolean;
+  columnName?: string;
 }
 
 type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
@@ -29,6 +30,11 @@ export enum NicelyFormattedTypes {
   CURRENCY = "currency_usd",
   PERCENTAGE = "percentage",
   DECIMAL = "comma_separators",
+}
+
+interface ColFormatSpec {
+  columnName: string;
+  formatPreset: NicelyFormattedTypes;
 }
 
 export const nicelyFormattedTypesSelectorOptions = [
@@ -161,14 +167,13 @@ function determineScaleForValues(values: number[]): ShortHandSymbols {
   else median = (numberValues[half - 1] + numberValues[half]) / 2.0;
 
   let scaleForMax = getScaleForValue(numberValues[0]);
-
   while (scaleForMax != shortHandSymbols[shortHandSymbols.length - 1]) {
     const medianShorthand = (
       Math.abs(median) / shortHandMap[scaleForMax]
     ).toFixed(1);
 
     const numDigitsInMedian = medianShorthand.toString().split(".")[0].length;
-    if (numDigitsInMedian >= 2) {
+    if (numDigitsInMedian >= 1) {
       return scaleForMax;
     } else {
       scaleForMax = shortHandSymbols[shortHandSymbols.indexOf(scaleForMax) + 1];
@@ -220,10 +225,9 @@ function humanizeGroupValuesUtil(
     return applyScaleOnValues(values, scale).map((v) => "$" + v);
   } else {
     let formatterOptions = {};
-    if (options?.scale) {
-      formatterOptions = Object.assign({}, options);
-      delete formatterOptions["scale"];
-    }
+    formatterOptions = Object.assign({}, options);
+    delete formatterOptions["scale"];
+    delete formatterOptions["columnName"];
     const formatter = getNumberFormatter(type, formatterOptions);
     return values.map((v) => {
       if (v === null) return "∅";
@@ -233,11 +237,12 @@ function humanizeGroupValuesUtil(
 }
 
 export function humanizeGroupValues(
-  values: Array<any>,
+  values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
   options?: formatterOptions
 ) {
-  let numValues = values.map((v) => v.value);
+  const valueKey = options.columnName ? options.columnName : "value";
+  let numValues = values.map((v) => v[valueKey]);
 
   const areAllNumbers = numValues.some((e) => typeof e === "number");
   if (!areAllNumbers) return values;
@@ -249,12 +254,28 @@ export function humanizeGroupValues(
     options
   );
 
+  const formattedValueKey = "__formatted_" + valueKey;
   const humanizedValues = values.map((v) => {
-    const index = numValues.indexOf(v.value);
-    return { ...v, formattedValue: formattedValues[index] };
+    const index = numValues.indexOf(v[valueKey]);
+    return { ...v, [formattedValueKey]: formattedValues[index] };
   });
 
   return humanizedValues;
+}
+
+export function humanizeGroupByColumns(
+  values: Array<Record<string, number | string>>,
+  columnFormatSpec: ColFormatSpec[]
+) {
+  return columnFormatSpec.reduce((valuesObj, column) => {
+    return humanizeGroupValues(
+      valuesObj,
+      column.formatPreset || NicelyFormattedTypes.HUMANIZE,
+      {
+        columnName: column.columnName,
+      }
+    );
+  }, values);
 }
 
 export function getScaleForLeaderboard(

@@ -20,6 +20,7 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import {
     selectDimensionFromMeta,
@@ -83,6 +84,10 @@
       dimensionId,
       values,
     });
+  }
+
+  function selectDimension(dimensionId) {
+    metricsExplorerStore.setMetricDimensionId(metricsDefId, dimensionId);
   }
 
   let topListQuery;
@@ -151,6 +156,7 @@
     .map((label) => {
       const existingValue = values.find((value) => value.label === label);
       // return the existing value, or if it does not exist, just return the label.
+      // FIX ME return values for label which are not in the query
       return existingValue ? { ...existingValue } : { label };
     })
     .sort((a, b) => {
@@ -160,7 +166,10 @@
 
 {#if topListQuery}
   <LeaderboardContainer focused={atLeastOneActive}>
-    <LeaderboardHeader isActive={atLeastOneActive}>
+    <LeaderboardHeader
+      isActive={atLeastOneActive}
+      on:click={() => selectDimension(dimensionId)}
+    >
       <div
         slot="title"
         class:text-gray-500={atLeastOneActive}
@@ -180,7 +189,7 @@
               <svelte:fragment slot="name">
                 {displayName}
               </svelte:fragment>
-              <svelte:fragment slot="description">dimension</svelte:fragment>
+              <svelte:fragment slot="description" />
             </TooltipTitle>
             <TooltipShortcutContainer>
               <div>
@@ -190,6 +199,9 @@
                   the leaderboard metrics for {displayName}
                 {/if}
               </div>
+              <Shortcut />
+              <div>Expand leaderboard</div>
+              <Shortcut>Click</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>
         </Tooltip>
@@ -235,16 +247,14 @@
             <LeaderboardListItem
               value={0}
               color="bg-gray-100"
-              on:click={() => {
-                seeMore = !seeMore;
-              }}
+              on:click={() => selectDimension(dimensionId)}
             >
               <div class="italic text-gray-500" slot="title">
-                See {#if seeMore}Less{:else}More{/if}
+                (Expand Table)
               </div>
             </LeaderboardListItem>
             <TooltipContent slot="tooltip-content"
-              >See More Items</TooltipContent
+              >Expand dimension to see more values</TooltipContent
             >
           </Tooltip>
         {/if}
