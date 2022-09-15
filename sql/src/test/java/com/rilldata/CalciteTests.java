@@ -92,8 +92,24 @@ public class CalciteTests
   {
     try {
       String resultantQuery = calciteToolbox.getRunnableQuery(query);
+      String expectedQuery = calciteToolbox.getRunnableQuery(expandedQuery);
       SqlNode actual = parseQuery(resultantQuery);
-      SqlNode expected = parseQuery(expandedQuery);
+      SqlNode expected = parseQuery(expectedQuery);
+      Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+    } catch (RuntimeException | ValidationException e) {
+      Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("testOperatorsParams")
+  public void testOperators(String query, String expectedQuery, Optional<String> exceptionMessage)
+      throws SqlParseException
+  {
+    try {
+      String resultantQuery = calciteToolbox.getRunnableQuery(query);
+      SqlNode actual = parseQuery(resultantQuery);
+      SqlNode expected = parseQuery(expectedQuery);
       Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
     } catch (RuntimeException | ValidationException e) {
       Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
@@ -257,6 +273,57 @@ public class CalciteTests
                 )\s
                 SELECT * FROM CTE1""",
             Optional.empty()
+        )
+    );
+  }
+
+  public static Stream<Arguments> testOperatorsParams()
+  {
+    return Stream.of(
+        Arguments.of(
+            "SELECT GREATEST(1,2)",
+            "SELECT GREATEST(1,2)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT GREATEST('ABC','DEF')",
+            "SELECT GREATEST('ABC', 'DEF')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LEAST('ABC','DEF')",
+            "SELECT LEAST('ABC', 'DEF')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LOG(1)",
+            "SELECT LOG(1)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LOG2(1)",
+            "SELECT LOG2(1)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LOG2('ABC')",
+            "",
+            Optional.of("Cannot apply 'LOG2' to arguments of type 'LOG2(<CHAR(3)>)'. Supported form(s): 'LOG2(<NUMERIC>)")
+        ),
+        Arguments.of(
+            "SELECT XOR(1,2)",
+            "SELECT XOR(1,2)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT XOR(2)",
+            "",
+            Optional.of("Invalid number of arguments to function 'XOR'")
+        ),
+        Arguments.of(
+            "SELECT XOR('ABC', 'DEF')",
+            "",
+            Optional.of("Cannot apply 'XOR' to arguments of type 'XOR(<CHAR(3)>, <CHAR(3)>)'. Supported form(s): 'XOR(<INTEGER>, <INTEGER>)'")
         )
     );
   }

@@ -1,10 +1,11 @@
-import {
-  createSlice,
-  createEntityAdapter,
-} from "$lib/redux-store/redux-toolkit-wrapper";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { PayloadAction } from "@reduxjs/toolkit";
 import type { ValidationState } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
+import {
+  createEntityAdapter,
+  createSlice,
+} from "$lib/redux-store/redux-toolkit-wrapper";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 const measureDefAdapter = createEntityAdapter<MeasureDefinitionEntity>();
 
@@ -46,6 +47,7 @@ export const measureDefSlice = createSlice({
             (id) => state.entities[id].metricsDefId === action.payload
           )
         );
+        metricsExplorerStore.clearLeaderboardMeasureId(action.payload);
       },
       prepare: (id: string) => ({ payload: id }),
     },

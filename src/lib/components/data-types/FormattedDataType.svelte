@@ -12,6 +12,7 @@
   export let inTable = false;
   export let dark = false;
   export let value = undefined;
+  export let customStyle = "";
 
   let dataType = Varchar;
   $: {
@@ -32,6 +33,7 @@
   this={dataType}
   isNull={isNull || value === null}
   {inTable}
+  {customStyle}
   {dark}
 >
   {#if value === undefined}

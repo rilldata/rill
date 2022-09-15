@@ -6,20 +6,21 @@ TableCells – the cell contents.
 PinnedColumns – any reference columns pinned on the right side of the overall table.
 -->
 <script lang="ts">
-  import { DATES, TIMESTAMPS } from "$lib/duckdb-data-types";
-
-  import type { ProfileColumn } from "$lib/types";
-
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
+  import { setContext } from "svelte";
   import { tweened } from "svelte/motion";
+
+  import { DATES, TIMESTAMPS } from "$lib/duckdb-data-types";
+  import type { VirtualizedTableColumns } from "$lib/types";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
+
+  import ColumnHeaders from "$lib/components/virtualized-table/sections/ColumnHeaders.svelte";
+  import PinnedColumns from "$lib/components/virtualized-table/sections/PinnedColumns.svelte";
+  import RowHeaders from "$lib/components/virtualized-table/sections/RowHeaders.svelte";
+  import TableCells from "$lib/components/virtualized-table/sections/TableCells.svelte";
   import { config } from "./config";
-  import ColumnHeaders from "./sections/ColumnHeaders.svelte";
-  import PinnedColumns from "./sections/PinnedColumns.svelte";
-  import RowHeaders from "./sections/RowHeaders.svelte";
-  import TableCells from "./sections/TableCells.svelte";
 
   export let rows;
-  export let columnNames: ProfileColumn[];
+  export let columnNames: VirtualizedTableColumns[];
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -44,6 +45,9 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   let virtualColumns;
   let virtualWidth;
   let virtualHeight;
+
+  /* set context for child components */
+  setContext("config", config);
 
   /** this is a perceived character width value, in pixels, when our monospace
    * font is 12px high. */
@@ -249,6 +253,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       <ColumnHeaders
         virtualColumnItems={virtualColumns}
         columns={columnNames}
+        showDataIcon={true}
         {pinnedColumns}
         on:pin={handlePin}
         on:resize-column={handleResizeColumn}

@@ -32,7 +32,12 @@
     ? "hsla(217,5%, 90%, .25)"
     : "hsl(217, 0%, 100%, .25)"}
 >
-  <div class="pl-2 pr-2 text-right" style="position: relative;"><slot /></div>
+  <div
+    class="pl-2 pr-2 text-right overflow-x-hidden "
+    style="position: relative;"
+  >
+    <slot />
+  </div>
   <div
     class="number-bar {color}"
     style="--width: {Math.min(1, $valueTween)};"
