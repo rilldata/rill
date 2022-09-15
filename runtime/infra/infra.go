@@ -14,7 +14,7 @@ var Drivers = make(map[string]Driver)
 // Register registers a new driver
 func Register(name string, driver Driver) {
 	if Drivers[name] != nil {
-		panic(fmt.Errorf("Already registered infra driver with name '%s'", name))
+		panic(fmt.Errorf("already registered infra driver with name '%s'", name))
 	}
 	Drivers[name] = driver
 }
@@ -37,22 +37,26 @@ type Statement struct {
 }
 
 type InformationSchema interface {
-	All() ([]*Table, error)
-	Lookup(name string) (*Table, error)
+	All(ctx context.Context) ([]*Table, error)
+	Lookup(ctx context.Context, name string) (*Table, error)
 }
 
 type Table struct {
 	Database string
-	Schema string
-	Name string
-	Type string
-	Columns []Column
+	Schema   string
+	Name     string
+	Type     string
+	Columns  []Column
 }
 
 type Column struct {
-	Name string
-	Type string
+	Name     string
+	Type     string
+	Nullable bool
 }
 
 // ErrClosed should be returned by Execute if the connection is closed
 var ErrClosed = errors.New("infra: connection is closed")
+
+// ErrNotFound should be returned by InformationSchema.Lookup if no resource was found
+var ErrNotFound = errors.New("infra: not found")

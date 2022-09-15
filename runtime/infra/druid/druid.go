@@ -2,8 +2,6 @@ package druid
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	_ "github.com/apache/calcite-avatica-go/v5"
 	"github.com/jmoiron/sqlx"
@@ -36,14 +34,6 @@ func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-type informationSchema struct {
-	conn *connection
-}
-
-func (c *connection) InformationSchema() infra.InformationSchema {
-	return &informationSchema{conn: c}
-}
-
 func (c *connection) Execute(ctx context.Context, stmt *infra.Statement) (*sqlx.Rows, error) {
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
@@ -63,91 +53,118 @@ func (c *connection) Execute(ctx context.Context, stmt *infra.Statement) (*sqlx.
 	return rows, nil
 }
 
-
-func (is informationSchema) All() ([]*infra.Table, error) {
-	qry := fmt.Sprintf(`SELECT t.TABLE_CATALOG  as "Database", t.TABLE_SCHEMA as "Schema", t.TABLE_NAME as "Name", t.TABLE_TYPE as "Type", 
-	c.COLUMN_NAME as "Columns", c.DATA_TYPE as "ColumnType" FROM INFORMATION_SCHEMA.TABLES t 
-	join INFORMATION_SCHEMA.COLUMNS c on t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME`)
-	table, err := getAggregatedSchema(is, qry)
-	if err != nil {
-		return nil, err
-	}
-
-	return table, nil
+type informationSchema struct {
+	c *connection
 }
 
-func (is informationSchema) Lookup(name string) (*infra.Table, error) {
-	qry := fmt.Sprintf(`SELECT t.TABLE_CATALOG  as "Database", t.TABLE_SCHEMA as "Schema", t.TABLE_NAME as "Name", t.TABLE_TYPE as "Type", 
-	c.COLUMN_NAME as "Columns", c.DATA_TYPE as "ColumnType" FROM INFORMATION_SCHEMA.TABLES t 
-	join INFORMATION_SCHEMA.COLUMNS c on t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME 
-	WHERE t.TABLE_NAME = '%s' `, name)
-	table, err := getAggregatedSchema(is,qry)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(table) == 0 {
-		return nil, fmt.Errorf("Table not Found")
-	}
-
-	return table[0], nil
+func (c *connection) InformationSchema() infra.InformationSchema {
+	return informationSchema{c: c}
 }
 
-func getAggregatedSchema(is informationSchema, qry string) ([]*infra.Table, error) {
-	rows, err := is.conn.Execute(context.Background(), &infra.Statement{Query: qry})
+func (i informationSchema) All(ctx context.Context) ([]*infra.Table, error) {
+	q := `
+		SELECT
+			T.TABLE_CATALOG AS DATABASE,
+			T.TABLE_SCHEMA AS SCHEMA,
+			T.TABLE_NAME AS NAME,
+			T.TABLE_TYPE AS TABLE_TYPE, 
+			C.COLUMN_NAME AS COLUMNS,
+			C.DATA_TYPE AS COLUMN_TYPE,
+			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
+		FROM INFORMATION_SCHEMA.TABLES T 
+		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
+		WHERE T.TABLE_SCHEMA NOT IN ('INFORMATION_SCHEMA', 'sys')
+		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+	`
+
+	rows, err := i.c.db.QueryxContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 
-	res := map[schemaKey][]string{}
-	var table []*infra.Table
-	result := schemaResults{}
+	tables, err := i.scanTables(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return tables, nil
+}
+
+func (i informationSchema) Lookup(ctx context.Context, name string) (*infra.Table, error) {
+	q := `
+		SELECT
+			T.TABLE_CATALOG AS DATABASE,
+			T.TABLE_SCHEMA AS SCHEMA,
+			T.TABLE_NAME AS NAME,
+			T.TABLE_TYPE AS TABLE_TYPE, 
+			C.COLUMN_NAME AS COLUMN_NAME,
+			C.DATA_TYPE AS COLUMN_TYPE,
+			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
+		FROM INFORMATION_SCHEMA.TABLES T 
+		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
+		WHERE T.TABLE_SCHEMA NOT IN ('INFORMATION_SCHEMA', 'sys') AND T.TABLE_NAME = ?
+		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+	`
+
+	rows, err := i.c.db.QueryxContext(ctx, q, name)
+	if err != nil {
+		return nil, err
+	}
+
+	tables, err := i.scanTables(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tables) == 0 {
+		return nil, infra.ErrNotFound
+	}
+
+	return tables[0], nil
+}
+
+func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*infra.Table, error) {
+	var res []*infra.Table
 
 	for rows.Next() {
-		err := rows.Scan(&result.Database, &result.Schema, &result.Name, &result.Type, &result.ColumnName, &result.ColumnType)
+		var database string
+		var schema string
+		var name string
+		var tableType string
+		var columnName string
+		var columnType string
+		var nullable bool
+
+		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType, &nullable)
 		if err != nil {
 			return nil, err
 		}
-		key := schemaKey{result.Database, result.Schema, result.Name, result.Type}
-		res[key] = append(res[key], result.ColumnName+"$"+result.ColumnType)
-	}
-	
-	for key, elements := range res {
-		var info infra.Table
-		info.Database = key.Database
-		info.Name = key.Name
-		info.Schema = key.Schema
-		info.Type = key.Type
 
-		var columns []infra.Column
-		for _, element := range elements {
-
-			var column infra.Column
-			cols := strings.Split(element, "$")
-			column.Name = cols[0]
-			column.Type = cols[1]
-			columns = append(columns, column)
+		// set t to res[len(res)-1] if it's the same table, else set t to a new table and append it
+		var t *infra.Table
+		if len(res) > 0 {
+			t = res[len(res)-1]
+			if !(t.Database == database && t.Schema == schema && t.Name == name && t.Type == tableType) {
+				t = nil
+			}
 		}
-		info.Columns = columns
-		table = append(table, &info)
+		if t == nil {
+			t = &infra.Table{
+				Database: database,
+				Schema:   schema,
+				Name:     name,
+				Type:     tableType,
+			}
+			res = append(res, t)
+		}
 
+		// append column
+		t.Columns = append(t.Columns, infra.Column{
+			Name:     columnName,
+			Type:     columnType,
+			Nullable: nullable,
+		})
 	}
 
-	return table, nil
-}
-
-type schemaKey struct {
-	Database string
-	Schema   string
-	Name     string
-	Type     string
-}
-
-type schemaResults struct {
-	Database   string
-	Schema     string
-	Name       string
-	Type       string
-	ColumnName string
-	ColumnType string
+	return res, nil
 }

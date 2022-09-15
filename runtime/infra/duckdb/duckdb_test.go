@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"time"
-	
+
 	"github.com/rilldata/rill/runtime/infra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,6 +27,34 @@ func TestQuery(t *testing.T) {
 	require.NoError(t, err)
 	err = conn.(*connection).db.Ping()
 	require.Error(t, err)
+}
+
+func TestInformationSchemaAll(t *testing.T) {
+	conn := prepareConn(t)
+
+	tables, err := conn.InformationSchema().All(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, 2, len(tables[1].Columns))
+	require.Equal(t, "bar", tables[1].Columns[0].Name)
+	require.Equal(t, "VARCHAR", tables[1].Columns[0].Type)
+	require.Equal(t, "baz", tables[1].Columns[1].Name)
+	require.Equal(t, "INTEGER", tables[1].Columns[1].Type)
+}
+
+func TestInformationSchemaLookup(t *testing.T) {
+	conn := prepareConn(t)
+	ctx := context.Background()
+
+	table, err := conn.InformationSchema().Lookup(ctx, "foo")
+	require.NoError(t, err)
+	require.Equal(t, "foo", table.Name)
+
+	_, err = conn.InformationSchema().Lookup(ctx, "bad")
+	require.Equal(t, infra.ErrNotFound, err)
 }
 
 func TestPriorityQueue(t *testing.T) {
@@ -195,42 +223,4 @@ func prepareConn(t *testing.T) infra.Connection {
 	require.NoError(t, rows.Close())
 
 	return conn
-}
-
-func TestInformationSchemaAll(t *testing.T) {
-	conn := prepareConn(t)
-	table, err := conn.InformationSchema().All()
-	require.NoError(t, err)
-
-	schemaCount := len(table)
-	require.GreaterOrEqual(t, schemaCount, 1)
-
-	var tableNames []string
-	for _, element := range table {
-		tableNames = append(tableNames, element.Name)
-	}
-	require.Contains(t, tableNames, "foo")
-	require.Contains(t, tableNames, "bar")
-
-	err = conn.Close()
-	require.NoError(t, err)
-	err = conn.(*connection).db.Ping()
-	require.Error(t, err)
-}
-
-func TestInformationSchemaLookup(t *testing.T) {
-	conn := prepareConn(t)
-	testTableName := "foo"
-	table, err := conn.InformationSchema().Lookup(testTableName)
-
-	require.NoError(t, err)
-	require.Equal(t, testTableName, table.Name)
-
-	_, err = conn.InformationSchema().Lookup("temp")
-	require.Error(t, err)
-
-	err = conn.Close()
-	require.NoError(t, err)
-	err = conn.(*connection).db.Ping()
-	require.Error(t, err)
 }
