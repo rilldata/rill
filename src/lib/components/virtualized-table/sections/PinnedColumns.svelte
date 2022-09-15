@@ -1,22 +1,24 @@
 <script lang="ts">
-  import type { ProfileColumn } from "$lib/types";
+  import type { VirtualizedTableColumns } from "$lib/types";
   import { createEventDispatcher } from "svelte";
   import Cell from "../core/Cell.svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import Row from "../core/Row.svelte";
+  import type { PinnedColumnSide } from "../types";
 
   const dispatch = createEventDispatcher();
 
+  export let side: PinnedColumnSide = "right";
   export let virtualRowItems;
   export let virtualColumnItems;
-  export let pinnedColumns: ProfileColumn[];
+  export let pinnedColumns: VirtualizedTableColumns[];
   export let scrolling = false;
   export let activeIndex: number;
   export let rows;
 
   function reconcileVirtualColumns(
     virtualColumns,
-    pinnedColumns: ProfileColumn[]
+    pinnedColumns: VirtualizedTableColumns[]
   ) {
     // for each pinned column, we need to add size + start (based on 0);
     let virtualColumnSet = pinnedColumns.map((columnProfile) => {
@@ -49,7 +51,8 @@
 </script>
 
 <div
-  style:right={0}
+  style:right={side === "right" ? 0 : "auto"}
+  style:left={side === "left" ? 0 : "auto"}
   class=" top-0 sticky z-40 border-l-2 border-gray-400"
   style:width="{totalWidth}px"
 >
