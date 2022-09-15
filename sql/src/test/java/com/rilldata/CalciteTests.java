@@ -332,24 +332,18 @@ public class CalciteTests
             Optional.empty()
         ),
         Arguments.of(
-            "SELECT XOR(1,2)",
-            "SELECT XOR(1,2)",
-            "SELECT BITWISE_XOR(1,2)",
-            Optional.empty()
-        ),
-        Arguments.of(
             "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
             "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
             "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
             Optional.empty()
         ),
         Arguments.of(
-            "SELECT DATE_TRUNC('year', '2022-09-01')", // sql literal, should be type casted explicitly
+            "SELECT DATE_TRUNC('year', '2022-09-01')", // sql literal
             "",
             "",
             Optional.of("Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <CHAR(10)>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
         ),
-        // next 2 should ideally pass, DATE can be implicitly cast to TIMESTAMP
+        // ideally DATE can be implicitly cast to TIMESTAMP so that this one passes
         Arguments.of(
             "SELECT DATE_TRUNC('year', DATE '2022-08-01')", // druid only supports timestamp in date_trunc
             "",

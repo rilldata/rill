@@ -7,6 +7,7 @@
    */
   import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -19,9 +20,11 @@
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
+    selectDimensionFromMeta,
+    selectMeasureFromMeta,
     useMetaQuery,
     useTopListQuery,
   } from "$lib/svelte-query/queries/metrics-view";
@@ -32,9 +35,9 @@
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
   import { createEventDispatcher } from "svelte";
-  import type { Readable } from "svelte/store";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+
   export let metricsDefId: string;
   export let dimensionId: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -55,19 +58,24 @@
 
   $: metaQuery = useMetaQuery(metricsDefId);
 
-  let dimension: Readable<DimensionDefinitionEntity>;
-
-  $: dimension = getDimensionById(dimensionId);
+  let dimension: DimensionDefinitionEntity;
+  $: dimension = selectDimensionFromMeta($metaQuery.data, dimensionId);
   let displayName: string;
   // TODO: select based on label?
-  $: displayName = getDisplayName($dimension);
+  $: displayName = getDisplayName(dimension);
+
+  let measure: MeasureDefinitionEntity;
+  $: measure = selectMeasureFromMeta(
+    $metaQuery.data,
+    metricsExplorer?.leaderboardMeasureId
+  );
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === $dimension?.id)
+    metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
       ?.values ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
@@ -78,19 +86,28 @@
     });
   }
 
+  function selectDimension(dimensionId) {
+    metricsExplorerStore.setMetricDimensionId(metricsDefId, dimensionId);
+  }
+
   let topListQuery;
 
   $: if (
-    metricsExplorer?.leaderboardMeasureId &&
+    measure?.id &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
     topListQuery = useTopListQuery(metricsDefId, dimensionId, {
-      measures: [metricsExplorer?.leaderboardMeasureId],
+      measures: [measure?.id],
       limit: 15,
       offset: 0,
-      sort: [],
+      sort: [
+        {
+          name: measure?.sqlName,
+          direction: "desc",
+        },
+      ],
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
@@ -103,7 +120,11 @@
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
-    values = $topListQuery?.data?.data ?? [];
+    values =
+      $topListQuery?.data?.data.map((val) => ({
+        value: val[measure?.sqlName],
+        label: val[dimension?.dimensionColumn],
+      })) ?? [];
     setLeaderboardValues(values);
   }
   /** figure out how many selected values are currently hidden */
@@ -135,6 +156,7 @@
     .map((label) => {
       const existingValue = values.find((value) => value.label === label);
       // return the existing value, or if it does not exist, just return the label.
+      // FIX ME return values for label which are not in the query
       return existingValue ? { ...existingValue } : { label };
     })
     .sort((a, b) => {
@@ -144,7 +166,10 @@
 
 {#if topListQuery}
   <LeaderboardContainer focused={atLeastOneActive}>
-    <LeaderboardHeader isActive={atLeastOneActive}>
+    <LeaderboardHeader
+      isActive={atLeastOneActive}
+      on:click={() => selectDimension(dimensionId)}
+    >
       <div
         slot="title"
         class:text-gray-500={atLeastOneActive}
@@ -164,16 +189,19 @@
               <svelte:fragment slot="name">
                 {displayName}
               </svelte:fragment>
-              <svelte:fragment slot="description">dimension</svelte:fragment>
+              <svelte:fragment slot="description" />
             </TooltipTitle>
             <TooltipShortcutContainer>
               <div>
-                {#if $dimension?.description}
-                  {$dimension.description}
+                {#if dimension?.description}
+                  {dimension.description}
                 {:else}
                   the leaderboard metrics for {displayName}
                 {/if}
               </div>
+              <Shortcut />
+              <div>Expand leaderboard</div>
+              <Shortcut>Click</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>
         </Tooltip>
@@ -219,16 +247,14 @@
             <LeaderboardListItem
               value={0}
               color="bg-gray-100"
-              on:click={() => {
-                seeMore = !seeMore;
-              }}
+              on:click={() => selectDimension(dimensionId)}
             >
               <div class="italic text-gray-500" slot="title">
-                See {#if seeMore}Less{:else}More{/if}
+                (Expand Table)
               </div>
             </LeaderboardListItem>
             <TooltipContent slot="tooltip-content"
-              >See More Items</TooltipContent
+              >Expand dimension to see more values</TooltipContent
             >
           </Tooltip>
         {/if}

@@ -50,15 +50,21 @@ export const createModelForSource = async (
   models: Array<PersistentModelEntity>,
   sourceName: string
 ) => {
+  const createdModelId = await createModelFromSourceAndGetId(
+    models,
+    sourceName
+  );
   // change the active asset to the new model
   await dataModelerService.dispatch("setActiveAsset", [
     EntityType.Model,
-    await createModelFromSourceAndGetId(models, sourceName),
+    createdModelId,
   ]);
 
   notificationStore.send({
     message: `queried ${sourceName} in workspace`,
   });
+
+  return createdModelId;
 };
 
 /**
@@ -71,6 +77,7 @@ export const autoCreateMetricsDefinitionForSource = async (
   id: string,
   sourceName: string
 ) => {
+  let createdMetricsId: string = null;
   try {
     const timestampColumns = derivedSources
       .find((source) => source.id === id)
@@ -79,7 +86,7 @@ export const autoCreateMetricsDefinitionForSource = async (
     showQuickStartDashboardOverlay(sourceName, timestampColumns[0].name);
     const modelId = await createModelFromSourceAndGetId(models, sourceName);
 
-    await autoCreateMetricsDefinitionForModel(
+    createdMetricsId = await autoCreateMetricsDefinitionForModel(
       sourceName,
       modelId,
       timestampColumns[0].name
@@ -88,6 +95,7 @@ export const autoCreateMetricsDefinitionForSource = async (
     console.error(e);
   }
   resetQuickStartDashboardOverlay();
+  return createdMetricsId;
 };
 
 /**
@@ -99,7 +107,7 @@ export const autoCreateMetricsDefinitionForModel = async (
   sourceName: string,
   sourceModelId: string,
   timeDimension: string
-) => {
+): Promise<string> => {
   const metricsLabel = `${sourceName}_dashboard`;
   const existingMetrics = selectMetricsDefinitionMatchingName(
     store.getState(),
@@ -122,6 +130,8 @@ export const autoCreateMetricsDefinitionForModel = async (
     EntityType.MetricsExplorer,
     createdMetricsDef.id,
   ]);
+
+  return createdMetricsDef.id;
 };
 
 /**

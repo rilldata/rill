@@ -12,6 +12,12 @@
 
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
@@ -24,11 +30,13 @@
   import { Divider, MenuItem } from "$lib/components/menu";
   import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
   import { deleteModelApi } from "$lib/redux-store/model/model-apis";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import {
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "$lib/redux-store/source/source-selectors";
+  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -43,6 +51,42 @@
   let showRenameModelModal = false;
   let renameModelID = null;
   let renameModelName = null;
+
+  const viewModel = (id: string) => {
+    const previousActiveEntity = $store?.activeEntity?.type;
+
+    dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
+
+    if (id != activeEntityID) {
+      navigationEvent.fireEvent(
+        id,
+        BehaviourEventMedium.AssetName,
+        MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[previousActiveEntity],
+        MetricsEventScreenName.Model
+      );
+    }
+  };
+
+  const quickStartMetrics = (derivedModel: DerivedModelEntity) => {
+    const previousActiveEntity = $store?.activeEntity?.type;
+
+    autoCreateMetricsDefinitionForModel(
+      $persistentModelStore.entities.find(
+        (model) => model.id === derivedModel.id
+      ).tableName,
+      derivedModel.id,
+      selectTimestampColumnFromProfileEntity(derivedModel)[0].name
+    ).then((createdMetricsId) => {
+      navigationEvent.fireEvent(
+        createdMetricsId,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[previousActiveEntity],
+        MetricsEventScreenName.Dashboard
+      );
+    });
+  };
 
   const openRenameModelModal = (modelID: string, modelName: string) => {
     showRenameModelModal = true;
@@ -122,7 +166,7 @@
       <CollapsibleTableSummary
         entityType={EntityType.Model}
         on:select={() => {
-          dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
+          viewModel(id);
         }}
         cardinality={tableSummaryProps.cardinality}
         name={tableSummaryProps.name}
@@ -144,13 +188,7 @@
             disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
             icon
             on:select={() => {
-              autoCreateMetricsDefinitionForModel(
-                $persistentModelStore.entities.find(
-                  (model) => model.id === derivedModel.id
-                ).tableName,
-                derivedModel.id,
-                selectTimestampColumnFromProfileEntity(derivedModel)[0].name
-              );
+              quickStartMetrics(derivedModel);
             }}
           >
             <svelte:fragment slot="icon"><Explore /></svelte:fragment>
