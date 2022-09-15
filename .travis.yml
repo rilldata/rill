@@ -214,7 +214,10 @@ jobs:
       script:
         - set -e
         - git remote remove origin
-        - git remote add origin https://${GITHUB_TOKEN}@github.com/gorillio/rill-developer-internal
+        - git remote add origin https://${GITHUB_TOKEN}@github.com/rilldata/rill-developer
+        - git fetch
+        - git checkout main
+        - git branch --set-upstream-to=origin/main main
         - gh pr status
         - if [[ -z ${BUMP_TYPE} ]]; then
             echo "Please specify the BUMP_TYPE from (major/minor/patch)";

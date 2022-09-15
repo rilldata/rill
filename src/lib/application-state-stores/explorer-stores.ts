@@ -28,6 +28,8 @@ export interface MetricsExplorerEntity {
   filters: MetricsViewRequestFilter;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
+  // user selected dimension
+  selectedDimensionId?: string;
 }
 
 export interface MetricsExplorerStoreType {
@@ -94,9 +96,21 @@ const metricViewReducers = {
     });
   },
 
+  clearLeaderboardMeasureId(id: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      metricsExplorer.leaderboardMeasureId = undefined;
+    });
+  },
+
   setSelectedTimeRange(id: string, timeRange: TimeSeriesTimeRange) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
+    });
+  },
+
+  setMetricDimensionId(id: string, dimensionId: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      metricsExplorer.selectedDimensionId = dimensionId;
     });
   },
 

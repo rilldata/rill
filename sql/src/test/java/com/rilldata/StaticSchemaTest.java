@@ -32,19 +32,22 @@ public class StaticSchemaTest
         null
     );
 
-    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"id\") from \"main\".\"heroes\"");
+    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"name\") from \"main\".\"heroes\"");
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("select"), "no select");
 
-    runnableQuery = calciteToolbox.getRunnableQuery("select \"power\" from \"main\".\"heroes\" where \"heroes\".\"power\" > 10000.001");
+    runnableQuery = calciteToolbox.getRunnableQuery(
+        "select \"power\" from \"main\".\"heroes\" where \"heroes\".\"power\" > 10000.001");
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("select"), "no select");
 
-    runnableQuery = calciteToolbox.getRunnableQuery("insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100.001)");
+    runnableQuery = calciteToolbox.getRunnableQuery(
+        "insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100.001)");
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("insert"), "no insert");
 
-    runnableQuery = calciteToolbox.getRunnableQuery("insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100000)");
+    runnableQuery = calciteToolbox.getRunnableQuery(
+        "insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100000)");
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("insert"), "no insert");
   }
@@ -58,7 +61,7 @@ public class StaticSchemaTest
         null
     );
 
-    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"id\") from \"main\".\"heroes\"");
+    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"name\") from \"main\".\"heroes\"");
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("select"), "no select");
   }

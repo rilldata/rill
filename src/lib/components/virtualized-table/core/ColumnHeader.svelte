@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { createEventDispatcher, getContext } from "svelte";
+  import { fly } from "svelte/transition";
   import { DataTypeIcon } from "$lib/components/data-types";
+  import ArrowDown from "$lib/components/icons/ArrowDown.svelte";
   import Pin from "$lib/components/icons/Pin.svelte";
   import notificationStore from "$lib/components/notifications";
   import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
@@ -9,23 +12,32 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import { createShiftClickAction } from "$lib/util/shift-click-action";
-  import { createEventDispatcher } from "svelte";
-  import { fly } from "svelte/transition";
-  import type { HeaderPosition } from "../types";
+  import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
   export let pinned = false;
+  export let noPin = false;
+  export let showDataIcon = false;
   export let name: string;
   export let type: string;
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
+  export let isSelected = false;
 
+  const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
 
   const { shiftClickAction } = createShiftClickAction();
 
   let showMore = false;
+  $: isSortingDesc = true;
+
+  $: isDimensionTable = config.table === "DimensionTable";
+
+  $: columnFontWeight = isSelected
+    ? "font-bold"
+    : config.columnHeaderFontWeightClass;
 </script>
 
 <StickyHeader
@@ -47,6 +59,11 @@
   on:blur={() => {
     showMore = false;
   }}
+  on:click={() => {
+    if (isSelected) isSortingDesc = !isSortingDesc;
+    else isSortingDesc = true;
+    dispatch("click-column");
+  }}
 >
   <div
     use:shiftClickAction
@@ -61,6 +78,7 @@
            items-center
            justify-stretch
            select-none
+           over
            gap-x-2
            "
   >
@@ -68,13 +86,22 @@
       <div
         class="
         grid
-        w-full gap-x-2 items-center cursor-pointer"
-        style:grid-template-columns="max-content auto {showMore
-          ? "max-content"
-          : ""}"
+        items-center cursor-pointer
+        {isSelected ? '' : 'w-full gap-x-2'}
+        "
+        style:grid-template-columns={isDimensionTable
+          ? ""
+          : `max-content auto ${!noPin && showMore ? "max-content" : ""}`}
       >
-        <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
-        <span class="text-ellipsis overflow-hidden whitespace-nowrap font-bold">
+        {#if showDataIcon}
+          <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+        {/if}
+        <span
+          in:fly={{ y: 200, duration: 200 }}
+          class="text-ellipsis overflow-hidden whitespace-nowrap
+          {columnFontWeight} {isDimensionTable ? 'text-center' : ''}
+          "
+        >
           {name}
         </span>
       </div>
@@ -84,7 +111,7 @@
             {name}
           </svelte:fragment>
           <svelte:fragment slot="description">
-            {type}
+            {isDimensionTable || showDataIcon ? "" : type}
           </svelte:fragment>
         </TooltipTitle>
         <TooltipShortcutContainer>
@@ -98,7 +125,18 @@
         </TooltipShortcutContainer>
       </TooltipContent>
     </Tooltip>
-    {#if showMore}
+    {#if isSelected}
+      {#if isSortingDesc}
+        <div in:fly={{ duration: 200, y: -8 }}>
+          <ArrowDown size="16px" />
+        </div>
+      {:else}
+        <div in:fly={{ duration: 200, y: 8 }}>
+          <ArrowDown transform="scale(1 -1)" size="16px" />
+        </div>
+      {/if}
+    {/if}
+    {#if !noPin && showMore}
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
           transition:fly|local={{ duration: 200, y: 4 }}
