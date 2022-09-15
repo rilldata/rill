@@ -6,6 +6,7 @@ import com.rilldata.calcite.models.Artifact;
 import com.rilldata.calcite.models.ArtifactManager;
 import com.rilldata.calcite.models.ArtifactType;
 import com.rilldata.calcite.models.InMemoryArtifactManager;
+import com.rilldata.calcite.operators.RillOperatorTable;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -23,7 +24,6 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
@@ -67,7 +67,7 @@ public class CalciteToolbox
     frameworkConfig = Frameworks.newConfigBuilder()
         .defaultSchema(rootSchemaSupplier.get())
         .parserConfig(PARSER_CONFIG)
-        .sqlValidatorConfig(SqlValidator.Config.DEFAULT.withConformance(SqlConformanceEnum.LENIENT))
+        .sqlValidatorConfig(SqlValidator.Config.DEFAULT.withTypeCoercionEnabled(false).withConformance(SqlConformanceEnum.LENIENT))
         .context(new Context()
         {
           @Override
@@ -79,7 +79,7 @@ public class CalciteToolbox
             return null;
           }
         })
-        .sqlToRelConverterConfig(SqlToRelConverter.config())
+        .operatorTable(new RillOperatorTable())
         .build();
   }
 
@@ -95,10 +95,10 @@ public class CalciteToolbox
     SqlNode sqlNode = planner.parse(sql);
     // expand query if needed
     sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
-    sql = sqlNode.toSqlString(sqlDialect).getSql();
     // expansion done, now validate query
     SqlNode validated = planner.validate(sqlNode);
     planner.close();
+    sql = validated.toSqlString(sqlDialect).getSql();
     return sql;
   }
 
