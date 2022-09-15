@@ -21,7 +21,7 @@ see more button
   const dispatch = createEventDispatcher();
 </script>
 
-{#each values as { label, value, formattedValue } (label)}
+{#each values as { label, value, __formatted_value } (label)}
   {@const active = activeValues.findIndex((value) => value === label) >= 0}
   <div>
     <DimensionLeaderboardEntry
@@ -39,7 +39,7 @@ see more button
         {label}
       </svelte:fragment>
       <svelte:fragment slot="right">
-        {formattedValue || value || "∅"}
+        {__formatted_value || value || "∅"}
       </svelte:fragment>
       <svelte:fragment slot="tooltip">
         {#if !active}
