@@ -24,7 +24,7 @@ if (!(bumpType in BUMP_TYPES)) {
 const branch = "main";
 console.log(`Pulling latest changes from ${branch} branch`);
 execSyncToStdout(`git checkout ${branch}`);
-//execSyncToStdout(`git pull`);
+execSyncToStdout(`git pull`);
 
 const packageJsonString = readFileSync(PACKAGE_JSON_FILE).toString();
 const currentVersion = JSON.parse(packageJsonString).version;
