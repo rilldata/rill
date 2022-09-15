@@ -3,6 +3,7 @@ import type {
   MetricsViewMetaResponse,
   MetricsViewTimeSeriesRequest,
   MetricsViewTopListRequest,
+  MetricsViewTopListSortEntry,
   MetricsViewTotalsRequest,
 } from "$common/rill-developer-service/MetricsViewActions";
 import type { MetricsExplorerEntity } from "$lib/application-state-stores/explorer-stores";
@@ -49,6 +50,26 @@ export function getTopListRequest(
       end: metricsExplorer.selectedTimeRange?.end,
     },
     filter: selectMappedFilterFromMeta(meta, metricsExplorer.filters),
+  };
+}
+export function getLongerTopListRequest(
+  meta: MetricsViewMetaResponse,
+  metricsExplorer: MetricsExplorerEntity,
+  sortEntry: MetricsViewTopListSortEntry
+): MetricsViewTopListRequest {
+  return {
+    measures: selectMeasureNamesFromMeta(
+      meta,
+      metricsExplorer?.selectedMeasureIds
+    ),
+    limit: 250,
+    offset: 0,
+    sort: [sortEntry],
+    time: {
+      start: metricsExplorer?.selectedTimeRange?.start,
+      end: metricsExplorer?.selectedTimeRange?.end,
+    },
+    filter: selectMappedFilterFromMeta(meta, metricsExplorer?.filters),
   };
 }
 

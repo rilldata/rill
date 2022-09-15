@@ -15,13 +15,18 @@
   import DimensionTable from "$lib/components/dimension/DimensionTable.svelte";
   import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
-    selectMeasureFromMeta,
+    getLongerTopListRequest,
+    getTotalsRequest,
+  } from "$lib/svelte-query/metrics-view-requests";
+  import {
     useMetaQuery,
     useTopListQuery,
     useTotalsQuery,
   } from "$lib/svelte-query/queries/metrics-view";
+  import { selectMeasureFromMeta } from "$lib/svelte-query/selectors/metrics-view";
   import { humanizeGroupByColumns } from "$lib/util/humanize-numbers";
   import type { Readable } from "svelte/store";
+
   export let metricsDefId: string;
   export let dimensionId: string;
 
@@ -60,17 +65,14 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
-      measures: metricsExplorer?.selectedMeasureIds,
-      limit: 250,
-      offset: 0,
-      sort: [{ name: sortByColumn, direction: sortDirection }],
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-      filter: metricsExplorer?.filters,
-    });
+    topListQuery = useTopListQuery(
+      metricsDefId,
+      dimensionId,
+      getLongerTopListRequest($metaQuery.data, metricsExplorer, {
+        name: sortByColumn,
+        direction: sortDirection,
+      })
+    );
   }
 
   let totalsQuery;
@@ -80,13 +82,10 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-    });
+    totalsQuery = useTotalsQuery(
+      metricsDefId,
+      getTotalsRequest($metaQuery.data, metricsExplorer, false)
+    );
   }
 
   let referenceValues = {};
