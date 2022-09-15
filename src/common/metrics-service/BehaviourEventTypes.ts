@@ -20,4 +20,5 @@ export interface BehaviourEvent extends MetricsEvent {
   entity_id: string;
   space: MetricsEventSpace;
   screen_name: MetricsEventScreenName;
+  source_screen: MetricsEventScreenName;
 }

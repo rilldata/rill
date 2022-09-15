@@ -3,6 +3,12 @@
   import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
   import { waitUntil } from "$common/utils/waitUtils";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import {
     ApplicationStore,
     dataModelerService,
@@ -28,6 +34,7 @@
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
 
@@ -59,11 +66,55 @@
     store.dispatch(createMetricsDefsAndFocusApi());
   };
 
+  const editModel = (sourceModelId: string) => {
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      sourceModelId,
+    ]);
+
+    navigationEvent.fireEvent(
+      sourceModelId,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[previousActiveEntity],
+      MetricsEventScreenName.Model
+    );
+  };
+
+  const editMetrics = (metricsId: string) => {
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.MetricsDefinition,
+      metricsId,
+    ]);
+
+    navigationEvent.fireEvent(
+      metricsId,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[previousActiveEntity],
+      MetricsEventScreenName.MetricsDefinition
+    );
+  };
+
   const dispatchSetMetricsDefActive = (id: string) => {
+    const previousActiveEntity = $appStore?.activeEntity?.type;
+
     dataModelerService.dispatch("setActiveAsset", [
       EntityType.MetricsExplorer,
       id,
     ]);
+
+    navigationEvent.fireEvent(
+      id,
+      BehaviourEventMedium.AssetName,
+      MetricsEventSpace.LeftPanel,
+      EntityTypeToScreenMap[previousActiveEntity],
+      MetricsEventScreenName.Dashboard
+    );
   };
 
   const dispatchDeleteMetricsDef = (id: string) => {
@@ -133,10 +184,7 @@
             icon
             disabled={hasSourceError}
             on:select={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Model,
-                metricsDef.sourceModelId,
-              ]);
+              editModel(metricsDef.sourceModelId);
             }}
           >
             <svelte:fragment slot="icon">
@@ -153,10 +201,7 @@
             icon
             disabled={hasSourceError}
             on:select={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.MetricsDefinition,
-                metricsDef.id,
-              ]);
+              editMetrics(metricsDef.id);
             }}
           >
             <svelte:fragment slot="icon">
