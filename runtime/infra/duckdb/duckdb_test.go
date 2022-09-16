@@ -61,6 +61,9 @@ func TestPriorityQueue(t *testing.T) {
 	conn := prepareConn(t)
 	defer conn.Close()
 
+	// pause the priority worker to allow the queue to fill up
+	conn.(*connection).worker.Pause()
+
 	n := 100
 	results := make(chan int, n)
 	var g errgroup.Group
@@ -86,6 +89,10 @@ func TestPriorityQueue(t *testing.T) {
 		})
 	}
 
+	// give the queue plenty of time to fill up, then unpause
+	time.Sleep(100 * time.Millisecond)
+	conn.(*connection).worker.Unpause()
+
 	err := g.Wait()
 	require.NoError(t, err)
 
@@ -98,6 +105,9 @@ func TestPriorityQueue(t *testing.T) {
 func TestCancel(t *testing.T) {
 	conn := prepareConn(t)
 	defer conn.Close()
+
+	// pause the priority worker to allow the queue to fill up
+	conn.(*connection).worker.Pause()
 
 	n := 100
 	cancelIdx := 50
@@ -140,6 +150,10 @@ func TestCancel(t *testing.T) {
 		})
 	}
 
+	// give the queue plenty of time to fill up, then unpause
+	time.Sleep(100 * time.Millisecond)
+	conn.(*connection).worker.Unpause()
+
 	err := g.Wait()
 	require.NoError(t, err)
 
@@ -154,6 +168,9 @@ func TestCancel(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	conn := prepareConn(t)
+
+	// pause the priority worker to allow the queue to fill up
+	conn.(*connection).worker.Pause()
 
 	n := 100
 	results := make(chan int, n)
@@ -179,6 +196,9 @@ func TestClose(t *testing.T) {
 			return rows.Close()
 		})
 	}
+
+	// unpause the queue, so it con process a bit before closing
+	conn.(*connection).worker.Unpause()
 
 	g.Go(func() error {
 		err := conn.Close()
