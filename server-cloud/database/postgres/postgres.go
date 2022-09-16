@@ -86,6 +86,15 @@ func (c *connection) DeleteOrganization(ctx context.Context, name string) error 
 	return err
 }
 
+func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
+	var res []*database.Project
+	err := c.db.Select(&res, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE o.name=$1 ORDER BY p.name", orgName)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectByName(ctx context.Context, orgName string, name string) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE p.name=$1 AND o.name=$2", name, orgName).StructScan(res)

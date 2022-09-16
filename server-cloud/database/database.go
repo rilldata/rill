@@ -50,6 +50,7 @@ type DB interface {
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
+	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	CreateProject(ctx context.Context, orgID string, name string, description string) (*Project, error)
 	UpdateProject(ctx context.Context, id string, description string) (*Project, error)
