@@ -5,6 +5,7 @@ This folder contains the cloud frontend implemented with TypeScript and [SvelteK
 ## Running in development
 
 1. Run the Go backend in `server-cloud` (see its `README` for instructions)
+2. Run `cd web-cloud` (until we refactor for NPM workspaces, the root-level NPM is used for Rill Developer)
 2. Run `npm install`
 3. Run `npm run dev`
 
