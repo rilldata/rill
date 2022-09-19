@@ -94,24 +94,25 @@ function formatNicely(
 }
 
 function convertToShorthand(value: number): string | number {
-  if (value < 1000) return formatNicely(value, NicelyFormattedTypes.DECIMAL);
+  if (Math.abs(value) < 1000)
+    return formatNicely(value, NicelyFormattedTypes.DECIMAL);
 
   // Fifteen Zeros for Quadrillion
   return Math.abs(value) >= 1.0e15
-    ? (Math.abs(value) / 1.0e15).toFixed(1) + "Q"
+    ? (value / 1.0e15).toFixed(1) + "Q"
     : // Twelve Zeros for Trillions
     Math.abs(value) >= 1.0e12
-    ? (Math.abs(value) / 1.0e12).toFixed(1) + "T"
+    ? (value / 1.0e12).toFixed(1) + "T"
     : // Nine Zeroes for Billions
     Math.abs(value) >= 1.0e9
-    ? (Math.abs(value) / 1.0e9).toFixed(1) + "B"
+    ? (value / 1.0e9).toFixed(1) + "B"
     : // Six Zeroes for Millions
     Math.abs(value) >= 1.0e6
-    ? (Math.abs(value) / 1.0e6).toFixed(1) + "M"
+    ? (value / 1.0e6).toFixed(1) + "M"
     : // Three Zeroes for Thousands
     Math.abs(value) >= 1.0e3
-    ? (Math.abs(value) / 1.0e3).toFixed(1) + "k"
-    : Math.abs(value);
+    ? (value / 1.0e3).toFixed(1) + "k"
+    : value;
 }
 
 function getScaleForValue(value: number): ShortHandSymbols {
@@ -155,11 +156,17 @@ export function humanizeDataType(
 }
 
 function determineScaleForValues(values: number[]): ShortHandSymbols {
-  let numberValues = values;
+  let numberValues = values.sort();
   const nullIndex = values.indexOf(null);
   if (nullIndex !== -1) {
     numberValues = values.slice(0, nullIndex);
   }
+
+  // Convert negative numbers to absolute
+  numberValues = numberValues
+    .map((v) => Math.abs(v))
+    .sort()
+    .reverse();
 
   const half = Math.floor(numberValues.length / 2);
   let median: number;
@@ -192,9 +199,9 @@ function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
   }
   return values.map((v) => {
     if (v === null) return "∅";
-    const shortHandNumber = Math.abs(v) / shortHandMap[scale];
+    const shortHandNumber = v / shortHandMap[scale];
     let shortHandValue: string;
-    if (shortHandNumber < 0.1) {
+    if (Math.abs(shortHandNumber) < 0.1) {
       shortHandValue = "<0.1";
     } else {
       shortHandValue = shortHandNumber.toFixed(1);
