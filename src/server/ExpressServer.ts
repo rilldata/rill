@@ -20,6 +20,7 @@ import http from "http";
 import path from "path";
 
 const STATIC_FILES = `${__dirname}/../../build`;
+const SVELTEKIT_FALLBACK_PAGE = "index.html";
 
 export class ExpressServer {
   public readonly app: express.Application;
@@ -53,9 +54,10 @@ export class ExpressServer {
       this.app.use(express.static(STATIC_FILES));
     }
 
-    this.addDynamicRoute("/source/:id");
-    this.addDynamicRoute("/model/:id");
-    this.addDynamicRoute("/dashboard/:id");
+    // add fallback route
+    this.app.get("*", (req, res) => {
+      res.sendFile(path.resolve(STATIC_FILES, SVELTEKIT_FALLBACK_PAGE));
+    });
   }
 
   public async init(): Promise<void> {
@@ -108,11 +110,5 @@ export class ExpressServer {
         this.rillDeveloperService
       ).setup(this.app, "/api")
     );
-  }
-
-  private addDynamicRoute(route: string) {
-    this.app.get(route, (req, res) => {
-      res.sendFile(path.resolve(STATIC_FILES, "index.html"));
-    });
   }
 }
