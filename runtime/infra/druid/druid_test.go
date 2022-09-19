@@ -111,8 +111,6 @@ func TestDruid(t *testing.T) {
 	conn, err := driver{}.Open(avaticaURL)
 	require.NoError(t, err)
 
-	time.Sleep(30 * time.Second)
-
 	t.Run("count", func(t *testing.T) { testCount(t, conn) })
 	t.Run("max", func(t *testing.T) { testMax(t, conn) })
 	t.Run("schema all", func(t *testing.T) { testSchemaAll(t, conn) })
