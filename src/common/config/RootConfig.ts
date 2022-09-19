@@ -1,10 +1,10 @@
-import { Config } from "$common/utils/Config";
-import type { NonFunctionProperties } from "$common/utils/Config";
-import { ServerConfig } from "$common/config/ServerConfig";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
-import { StateConfig } from "$common/config/StateConfig";
-import { MetricsConfig } from "$common/config/MetricsConfig";
 import { LocalConfig } from "$common/config/LocalConfig";
+import { MetricsConfig } from "$common/config/MetricsConfig";
+import { ServerConfig } from "$common/config/ServerConfig";
+import { StateConfig } from "$common/config/StateConfig";
+import type { NonFunctionProperties } from "$common/utils/Config";
+import { Config } from "$common/utils/Config";
 import { ProjectConfig } from "./ProjectConfig";
 
 export class RootConfig extends Config<RootConfig> {
