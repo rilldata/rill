@@ -101,7 +101,6 @@ public class CalciteTests
         throw new RuntimeException(e);
       }
     }
-    System.out.println(sqlCreateSource);
   }
 
   private static Stream<Arguments> testCreateSourceParams()
@@ -131,10 +130,10 @@ public class CalciteTests
                 WITH (
                     'connector' = 's3',
                     'aws.access.key' = env('S3_ACCESS_KEY'),
-                    'aws.secret.key' = env('S3_SECRET_KEY)',
+                    'aws.secret.key' = env('S3_SECRET_KEY'),
                     'prefix' = 's3://my_bucket/*.csv'
                 )""",
-            Optional.empty()
+            Optional.of("Encountered \" <IDENTIFIER> \"env \"\"")
         )
     );
   }
