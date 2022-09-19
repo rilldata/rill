@@ -17,6 +17,7 @@ import express from "express";
 import fileUpload from "express-fileupload";
 import { existsSync, mkdirSync } from "fs";
 import http from "http";
+import path from "path";
 
 const STATIC_FILES = `${__dirname}/../../build`;
 
@@ -51,6 +52,10 @@ export class ExpressServer {
     if (config.server.serveStaticFile) {
       this.app.use(express.static(STATIC_FILES));
     }
+
+    this.addDynamicRoute("/source/:id");
+    this.addDynamicRoute("/model/:id");
+    this.addDynamicRoute("/dashboard/:id");
   }
 
   public async init(): Promise<void> {
@@ -103,5 +108,11 @@ export class ExpressServer {
         this.rillDeveloperService
       ).setup(this.app, "/api")
     );
+  }
+
+  private addDynamicRoute(route: string) {
+    this.app.get(route, (req, res) => {
+      res.sendFile(path.resolve(STATIC_FILES, "index.html"));
+    });
   }
 }
