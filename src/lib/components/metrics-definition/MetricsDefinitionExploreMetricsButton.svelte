@@ -10,9 +10,9 @@
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { navigationEvent } from "$lib/metrics/initMetrics";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
 
   export let metricsDefId: string;
 

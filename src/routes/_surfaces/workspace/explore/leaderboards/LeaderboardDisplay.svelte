@@ -8,11 +8,11 @@
   } from "$lib/application-state-stores/explorer-stores";
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
-  import { getTotalsRequest } from "$lib/svelte-query/metrics-view-requests";
   import {
+    useMeasureNamesFromMetaQuery,
     useMetaQuery,
-    useTotalsQuery,
-  } from "$lib/svelte-query/queries/metrics-view";
+  } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-totals";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
@@ -31,6 +31,11 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
+  $: selectedMeasureNames = useMeasureNamesFromMetaQuery(
+    metricsDefId,
+    metricsExplorer?.selectedMeasureIds
+  );
+
   $: activeMeasure =
     measures &&
     measures.find(
@@ -47,10 +52,13 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(
-      metricsDefId,
-      getTotalsRequest($metaQuery.data, metricsExplorer, false)
-    );
+    totalsQuery = useTotalsQuery(metricsDefId, {
+      measures: $selectedMeasureNames.data,
+      time: {
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
+      },
+    });
   }
 
   let referenceValue: number;

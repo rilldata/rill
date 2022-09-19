@@ -6,7 +6,7 @@
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { SelectMenu } from "$lib/components/menu";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
 

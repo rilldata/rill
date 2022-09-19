@@ -1,6 +1,7 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
+  import { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";
   import type { MetricsViewTimeSeriesResponse } from "$common/rill-developer-service/MetricsViewActions";
   import {
     MetricsExplorerEntity,
@@ -12,14 +13,12 @@
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import {
-    getTimeSeriesRequest,
-    getTotalsRequest,
-  } from "$lib/svelte-query/metrics-view-requests";
-  import {
+    useMappedFiltersFromMetaQuery,
+    useMeasureNamesFromMetaQuery,
     useMetaQuery,
-    useTimeSeriesQuery,
-    useTotalsQuery,
-  } from "$lib/svelte-query/queries/metrics-view";
+  } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-totals";
+  import { useTimeSeriesQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-time-series";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
@@ -39,6 +38,16 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(metricsDefId);
 
+  $: mappedFiltersQuery = useMappedFiltersFromMetaQuery(
+    metricsDefId,
+    metricsExplorer?.filters
+  );
+
+  $: selectedMeasureNames = useMeasureNamesFromMetaQuery(
+    metricsDefId,
+    metricsExplorer?.selectedMeasureIds
+  );
+
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
     $metaQuery.data?.timeDimension?.timeRange?.interval;
@@ -50,10 +59,14 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(
-      metricsDefId,
-      getTotalsRequest($metaQuery.data, metricsExplorer)
-    );
+    totalsQuery = useTotalsQuery(metricsDefId, {
+      measures: $selectedMeasureNames.data,
+      filter: $mappedFiltersQuery.data,
+      time: {
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
+      },
+    });
   }
 
   let timeSeriesQuery: UseQueryStoreResult<
@@ -66,10 +79,15 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    timeSeriesQuery = useTimeSeriesQuery(
-      metricsDefId,
-      getTimeSeriesRequest($metaQuery.data, metricsExplorer)
-    );
+    timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
+      measures: $selectedMeasureNames.data,
+      filter: $mappedFiltersQuery.data,
+      time: {
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
+        granularity: metricsExplorer.selectedTimeRange?.interval,
+      },
+    });
   }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is

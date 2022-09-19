@@ -15,7 +15,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,

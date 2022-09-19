@@ -17,20 +17,18 @@
   import LeaderboardList from "$lib/components/leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
+  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
-  import Shortcut from "$lib/components/tooltip/Shortcut.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import { getTopListRequest } from "$lib/svelte-query/metrics-view-requests";
   import {
+    useDimensionFromMetaQuery,
+    useMappedFiltersFromMetaQuery,
+    useMeasureFromMetaQuery,
     useMetaQuery,
-    useTopListQuery,
-  } from "$lib/svelte-query/queries/metrics-view";
-  import {
-    selectDimensionFromMeta,
-    selectMeasureFromMeta,
-  } from "$lib/svelte-query/selectors/metrics-view";
+  } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
+  import { useTopListQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-top-list";
   import { slideRight } from "$lib/transitions";
   import {
     humanizeGroupValues,
@@ -61,20 +59,27 @@
 
   $: metaQuery = useMetaQuery(metricsDefId);
 
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+
+  $: dimensionQuery = useDimensionFromMetaQuery(metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
-  $: dimension = selectDimensionFromMeta($metaQuery.data, dimensionId);
+  $: dimension = $dimensionQuery?.data;
   let displayName: string;
   // TODO: select based on label?
   $: displayName = getDisplayName(dimension);
 
-  let measure: MeasureDefinitionEntity;
-  $: measure = selectMeasureFromMeta(
-    $metaQuery.data,
+  $: measureQuery = useMeasureFromMetaQuery(
+    metricsDefId,
     metricsExplorer?.leaderboardMeasureId
   );
+  let measure: MeasureDefinitionEntity;
+  $: measure = $measureQuery?.data;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: mappedFiltersQuery = useMappedFiltersFromMetaQuery(
+    metricsDefId,
+    metricsExplorer?.filters
+  );
 
   let activeValues: Array<unknown>;
   $: activeValues =
@@ -98,15 +103,25 @@
   $: if (
     measure?.id &&
     metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
+    $metaQuery?.isSuccess &&
+    !$metaQuery?.isRefetching
   ) {
-    topListQuery = useTopListQuery(
-      metricsDefId,
-      dimensionId,
-      getTopListRequest($metaQuery.data, measure, metricsExplorer)
-    );
+    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
+      measures: [measure.sqlName],
+      limit: 15,
+      offset: 0,
+      sort: [
+        {
+          name: measure.sqlName,
+          direction: "desc",
+        },
+      ],
+      time: {
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
+      },
+      filter: $mappedFiltersQuery.data,
+    });
   }
 
   let values = [];

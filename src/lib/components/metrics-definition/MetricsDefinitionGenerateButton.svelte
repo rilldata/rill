@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
@@ -13,9 +11,10 @@
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import { store } from "$lib/redux-store/store-root";
-  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
+  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-views/invalidate-metrics-views";
   import type { ProfileColumn } from "$lib/types";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getContext } from "svelte";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
@@ -39,7 +38,7 @@
       );
     }
     invalidateMetricsView(queryClient, metricsDefId);
-    // In `svelte-query/metrics-view.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
+    // In `svelte-query/metrics-views-totals.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
     // We should make that change, but it has a wide surface area, so we need to take the time to QA it properly. In the meantime, we need to remove old
     // queryKeys from the queryCache, so they don't get refetched and generate 500 errors.
     queryClient.removeQueries([`v1/metrics-view/toplist`, metricsDefId], {
