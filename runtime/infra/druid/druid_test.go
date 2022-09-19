@@ -77,6 +77,10 @@ var testIngestSpec = fmt.Sprintf(`{
 // TestDruid starts a Druid cluster using testcontainers, ingests data into it, then runs all other tests
 // in this file as sub-tests (to prevent spawning many clusters).
 func TestDruid(t *testing.T) {
+	if testing.Short() {
+		t.Skip("druid: skipping test in short mode")
+	}
+
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		Started: true,
