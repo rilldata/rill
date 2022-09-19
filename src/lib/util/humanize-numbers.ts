@@ -10,6 +10,7 @@ export type ShortHandSymbols = typeof shortHandSymbols[number];
 interface HumanizeOptions {
   scale?: ShortHandSymbols;
   excludeDecimalZeros?: boolean;
+  columnName?: string;
 }
 
 type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
@@ -29,6 +30,11 @@ export enum NicelyFormattedTypes {
   CURRENCY = "currency_usd",
   PERCENTAGE = "percentage",
   DECIMAL = "comma_separators",
+}
+
+interface ColFormatSpec {
+  columnName: string;
+  formatPreset: NicelyFormattedTypes;
 }
 
 export const nicelyFormattedTypesSelectorOptions = [
@@ -88,24 +94,25 @@ function formatNicely(
 }
 
 function convertToShorthand(value: number): string | number {
-  if (value < 1000) return formatNicely(value, NicelyFormattedTypes.DECIMAL);
+  if (Math.abs(value) < 1000)
+    return formatNicely(value, NicelyFormattedTypes.DECIMAL);
 
   // Fifteen Zeros for Quadrillion
   return Math.abs(value) >= 1.0e15
-    ? (Math.abs(value) / 1.0e15).toFixed(1) + "Q"
+    ? (value / 1.0e15).toFixed(1) + "Q"
     : // Twelve Zeros for Trillions
     Math.abs(value) >= 1.0e12
-    ? (Math.abs(value) / 1.0e12).toFixed(1) + "T"
+    ? (value / 1.0e12).toFixed(1) + "T"
     : // Nine Zeroes for Billions
     Math.abs(value) >= 1.0e9
-    ? (Math.abs(value) / 1.0e9).toFixed(1) + "B"
+    ? (value / 1.0e9).toFixed(1) + "B"
     : // Six Zeroes for Millions
     Math.abs(value) >= 1.0e6
-    ? (Math.abs(value) / 1.0e6).toFixed(1) + "M"
+    ? (value / 1.0e6).toFixed(1) + "M"
     : // Three Zeroes for Thousands
     Math.abs(value) >= 1.0e3
-    ? (Math.abs(value) / 1.0e3).toFixed(1) + "k"
-    : Math.abs(value);
+    ? (value / 1.0e3).toFixed(1) + "k"
+    : value;
 }
 
 function getScaleForValue(value: number): ShortHandSymbols {
@@ -149,11 +156,17 @@ export function humanizeDataType(
 }
 
 function determineScaleForValues(values: number[]): ShortHandSymbols {
-  let numberValues = values;
+  let numberValues = values.sort();
   const nullIndex = values.indexOf(null);
   if (nullIndex !== -1) {
     numberValues = values.slice(0, nullIndex);
   }
+
+  // Convert negative numbers to absolute
+  numberValues = numberValues
+    .map((v) => Math.abs(v))
+    .sort()
+    .reverse();
 
   const half = Math.floor(numberValues.length / 2);
   let median: number;
@@ -161,14 +174,13 @@ function determineScaleForValues(values: number[]): ShortHandSymbols {
   else median = (numberValues[half - 1] + numberValues[half]) / 2.0;
 
   let scaleForMax = getScaleForValue(numberValues[0]);
-
   while (scaleForMax != shortHandSymbols[shortHandSymbols.length - 1]) {
     const medianShorthand = (
       Math.abs(median) / shortHandMap[scaleForMax]
     ).toFixed(1);
 
     const numDigitsInMedian = medianShorthand.toString().split(".")[0].length;
-    if (numDigitsInMedian >= 2) {
+    if (numDigitsInMedian >= 1) {
       return scaleForMax;
     } else {
       scaleForMax = shortHandSymbols[shortHandSymbols.indexOf(scaleForMax) + 1];
@@ -187,9 +199,9 @@ function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
   }
   return values.map((v) => {
     if (v === null) return "∅";
-    const shortHandNumber = Math.abs(v) / shortHandMap[scale];
+    const shortHandNumber = v / shortHandMap[scale];
     let shortHandValue: string;
-    if (shortHandNumber < 0.1) {
+    if (Math.abs(shortHandNumber) < 0.1) {
       shortHandValue = "<0.1";
     } else {
       shortHandValue = shortHandNumber.toFixed(1);
@@ -220,10 +232,9 @@ function humanizeGroupValuesUtil(
     return applyScaleOnValues(values, scale).map((v) => "$" + v);
   } else {
     let formatterOptions = {};
-    if (options?.scale) {
-      formatterOptions = Object.assign({}, options);
-      delete formatterOptions["scale"];
-    }
+    formatterOptions = Object.assign({}, options);
+    delete formatterOptions["scale"];
+    delete formatterOptions["columnName"];
     const formatter = getNumberFormatter(type, formatterOptions);
     return values.map((v) => {
       if (v === null) return "∅";
@@ -233,11 +244,12 @@ function humanizeGroupValuesUtil(
 }
 
 export function humanizeGroupValues(
-  values: Array<any>,
+  values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
   options?: formatterOptions
 ) {
-  let numValues = values.map((v) => v.value);
+  const valueKey = options.columnName ? options.columnName : "value";
+  let numValues = values.map((v) => v[valueKey]);
 
   const areAllNumbers = numValues.some((e) => typeof e === "number");
   if (!areAllNumbers) return values;
@@ -249,12 +261,28 @@ export function humanizeGroupValues(
     options
   );
 
+  const formattedValueKey = "__formatted_" + valueKey;
   const humanizedValues = values.map((v) => {
-    const index = numValues.indexOf(v.value);
-    return { ...v, formattedValue: formattedValues[index] };
+    const index = numValues.indexOf(v[valueKey]);
+    return { ...v, [formattedValueKey]: formattedValues[index] };
   });
 
   return humanizedValues;
+}
+
+export function humanizeGroupByColumns(
+  values: Array<Record<string, number | string>>,
+  columnFormatSpec: ColFormatSpec[]
+) {
+  return columnFormatSpec.reduce((valuesObj, column) => {
+    return humanizeGroupValues(
+      valuesObj,
+      column.formatPreset || NicelyFormattedTypes.HUMANIZE,
+      {
+        columnName: column.columnName,
+      }
+    );
+  }, values);
 }
 
 export function getScaleForLeaderboard(

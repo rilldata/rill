@@ -41,6 +41,7 @@ last-query-output.json
 staging-databases
 projects/
 /rilldata
+docs/dist/
 
 # Maven
 target/

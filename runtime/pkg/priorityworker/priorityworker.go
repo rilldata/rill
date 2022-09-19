@@ -16,12 +16,14 @@ type Handler[V any] func(context.Context, V) error
 // PriorityWorker implements a concurrency-safe worker that prioritizes work
 // using a priority queue.
 type PriorityWorker[V any] struct {
-	handler      Handler[V]
-	enqueueJobCh chan *item[V]
-	cancelJobCh  chan *item[V]
-	stopped      bool
-	mu           sync.RWMutex
-	stopDoneCh   chan struct{}
+	handler        Handler[V]
+	enqueueJobCh   chan *item[V]
+	cancelJobCh    chan *item[V]
+	paused         bool
+	pausedToggleCh chan bool
+	stopped        bool
+	stoppedMu      sync.RWMutex
+	stopDoneCh     chan struct{}
 }
 
 // New creates a new PriorityWorker that calls the provided handler for every
@@ -29,12 +31,14 @@ type PriorityWorker[V any] struct {
 // loop. You must call Stop on the worker when you're done using it.
 func New[V any](handler Handler[V]) *PriorityWorker[V] {
 	pw := &PriorityWorker[V]{
-		handler:      handler,
-		enqueueJobCh: make(chan *item[V]),
-		cancelJobCh:  make(chan *item[V]),
-		stopped:      false,
-		mu:           sync.RWMutex{},
-		stopDoneCh:   make(chan struct{}),
+		handler:        handler,
+		enqueueJobCh:   make(chan *item[V]),
+		cancelJobCh:    make(chan *item[V]),
+		paused:         false,
+		pausedToggleCh: make(chan bool),
+		stopped:        false,
+		stoppedMu:      sync.RWMutex{},
+		stopDoneCh:     make(chan struct{}),
 	}
 
 	go pw.work()
@@ -53,14 +57,14 @@ func (pw *PriorityWorker[V]) Process(ctx context.Context, priority int, val V) e
 		index:    -1,
 	}
 
-	pw.mu.RLock()
+	pw.stoppedMu.RLock()
 	if !pw.stopped {
 		pw.enqueueJobCh <- job
 	} else {
 		job.err = ErrStopped
 		close(job.doneCh)
 	}
-	pw.mu.RUnlock()
+	pw.stoppedMu.RUnlock()
 
 	select {
 	case <-job.doneCh:
@@ -72,13 +76,24 @@ func (pw *PriorityWorker[V]) Process(ctx context.Context, priority int, val V) e
 	return job.err
 }
 
+// Pause keeps the queue open for new jobs, but won't process them until Unpause is called.
+// Pause is mainly useful for predictable testing of the priority worker.
+func (pw *PriorityWorker[V]) Pause() {
+	pw.pausedToggleCh <- true
+}
+
+// Unpause reverses Pause
+func (pw *PriorityWorker[V]) Unpause() {
+	pw.pausedToggleCh <- false
+}
+
+// Stop cancels all jobs that haven't started, and returns once the current job has finished
 func (pw *PriorityWorker[V]) Stop() {
-	pw.mu.Lock()
+	pw.stoppedMu.Lock()
 	pw.stopped = true
-	pw.mu.Unlock()
+	pw.stoppedMu.Unlock()
 	close(pw.enqueueJobCh)
 	<-pw.stopDoneCh
-	return
 }
 
 func (pw *PriorityWorker[V]) work() {
@@ -107,7 +122,7 @@ func (pw *PriorityWorker[V]) work() {
 			}
 
 			// Process or enqueue item
-			if currentDoneCh == nil {
+			if !pw.paused && currentDoneCh == nil {
 				// If we're currently idle, we process the item directly
 				currentDoneCh = job.doneCh
 				go pw.handle(job)
@@ -121,7 +136,7 @@ func (pw *PriorityWorker[V]) work() {
 				heap.Remove(&pq, job.index)
 			}
 		case <-currentDoneCh:
-			if pq.Len() > 0 {
+			if !pw.paused && pq.Len() > 0 {
 				// If the queue isn't empty, start a new item
 				job := heap.Pop(&pq).(*item[V])
 				currentDoneCh = job.doneCh
@@ -130,6 +145,15 @@ func (pw *PriorityWorker[V]) work() {
 				// Else, go idle until next query
 				currentDoneCh = nil
 			}
+		case p := <-pw.pausedToggleCh:
+			pw.paused = p
+			if !pw.paused && currentDoneCh == nil && pq.Len() > 0 {
+				// We just unpaused, we're idle, and the queue is not empty – start the next job
+				job := heap.Pop(&pq).(*item[V])
+				currentDoneCh = job.doneCh
+				go pw.handle(job)
+			}
+
 		}
 	}
 }
