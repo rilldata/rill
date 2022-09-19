@@ -7,10 +7,10 @@ import type { DatabaseTableActions } from "$common/database-service/DatabaseTabl
 import type { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
 import type { DuckDBClient } from "$common/database-service/DuckDBClient";
 import {
+  ActionServiceBase,
+  ExtractActionTypeDefinitions,
   getActionMethods,
-  type ActionServiceBase,
-  type ExtractActionTypeDefinitions,
-  type PickActionFunctions,
+  PickActionFunctions,
 } from "$common/ServiceBase";
 
 type DatabaseActionsClasses = PickActionFunctions<

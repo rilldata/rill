@@ -1,38 +1,36 @@
+import type { DataModelerState } from "$lib/types";
+import type { TableStateActions } from "./TableStateActions";
+import type { ModelStateActions } from "./ModelStateActions";
+import type { ProfileColumnStateActions } from "./ProfileColumnStateActions";
+import type { ExtractActionTypeDefinitions } from "$common/ServiceBase";
+import type { StateActions } from "$common/data-modeler-state-service/StateActions";
+import { writable } from "svelte/store";
+import type { Writable } from "svelte/store";
+import { enablePatches } from "immer";
+import type { Patch } from "immer";
+import { initialState } from "../stateInstancesFactory";
+import { getActionMethods } from "$common/ServiceBase";
+import type { PickActionFunctions } from "$common/ServiceBase";
 import type { RootConfig } from "$common/config/RootConfig";
-import type { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
-import { BatchedStateUpdate } from "$common/data-modeler-state-service/BatchedStateUpdate";
-import type { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
-import type {
-  EntityState,
-  EntityStateActionArg,
-} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
+  EntityRecord,
   EntityStateService,
   EntityType,
   StateType,
-  type EntityRecord,
+} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type {
+  EntityState,
+  EntityStateActionArg,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {
   EntityRecordMapType,
   EntityStateServicesMapType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
-import type { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
-import type { StateActions } from "$common/data-modeler-state-service/StateActions";
-import type {
-  ExtractActionTypeDefinitions,
-  PickActionFunctions,
-} from "$common/ServiceBase";
-import { getActionMethods } from "$common/ServiceBase";
-import type { DataModelerState } from "$lib/types";
-import type { Patch } from "immer";
-import { enablePatches } from "immer";
-import type { Writable } from "svelte/store";
-import { writable } from "svelte/store";
-import { initialState } from "../stateInstancesFactory";
+import type { CommonStateActions } from "$common/data-modeler-state-service/CommonStateActions";
+import type { ApplicationStateActions } from "$common/data-modeler-state-service/ApplicationStateActions";
 import type { ApplicationState } from "./entity-state-service/ApplicationEntityService";
-import type { ModelStateActions } from "./ModelStateActions";
-import type { ProfileColumnStateActions } from "./ProfileColumnStateActions";
-import type { TableStateActions } from "./TableStateActions";
+import { BatchedStateUpdate } from "$common/data-modeler-state-service/BatchedStateUpdate";
+import type { MetricsDefinitionStateActions } from "$common/data-modeler-state-service/MetricsDefinitionStateActions";
 
 enablePatches();
 
