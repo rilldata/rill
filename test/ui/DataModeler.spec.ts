@@ -101,6 +101,7 @@ export class DataModelerTest extends TestBase<TestServerSetupParameter> {
   @TestBase.Test()
   public async testActiveInitializeModel({ page }: PlaywrightTestArgs) {
     await page.goto(URL);
+    await this.delay(500);
     const defaultActiveModel = page.locator(
       "#assets-model-list .collapsible-table-summary-title"
     );
@@ -108,33 +109,6 @@ export class DataModelerTest extends TestBase<TestServerSetupParameter> {
 
     // we start with one model.
     expect(count).toBe(1);
-  }
-
-  @TestBase.Test()
-  public async testNewModelCreation({ page }: PlaywrightTestArgs) {
-    await page.goto(URL);
-
-    const oldModelCount = await page
-      .locator("#assets-model-list > div")
-      .count();
-
-    await page.click("button#create-model-button");
-
-    await this.delay(300);
-
-    const newModelCount = await page
-      .locator("#assets-model-list > div")
-      .count();
-    expect(newModelCount).toBe(oldModelCount + 1);
-
-    // get the text of the last model and compare to the title element in the workspace.
-    const modelName = (
-      await page.locator("#assets-model-list > div").last().textContent()
-    ).replace(/\s/g, "");
-
-    // check the modelName against the model title input element.
-    const modelTitleElement = await page.inputValue("input#model-title-input");
-    expect(modelName.includes(modelTitleElement)).toBeTruthy();
   }
 
   @TestBase.Test("errorDataProvider")
