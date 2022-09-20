@@ -1,7 +1,7 @@
-import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
-import { Command } from "commander";
-import { existsSync, mkdirSync, copyFileSync } from "fs";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {DataModelerCliCommand} from "$cli/DataModelerCliCommand";
+import {EntityType} from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {Command} from "commander";
+import {copyFileSync, existsSync, mkdirSync} from "fs";
 
 export class InitCommand extends DataModelerCliCommand {
   private alreadyInitialised: boolean;
@@ -99,6 +99,9 @@ export class InitCommand extends DataModelerCliCommand {
 
     if (copy) {
       copyFileSync(duckDbPath, `${projectPath}/stage.db`);
+      if (existsSync(`${duckDbPath}.wal`)) {
+        copyFileSync(`${duckDbPath}.wal`, `${projectPath}/stage.db.wal`);
+      }
       console.log(
         "Copied over the database files. Any changes in Rill Developer won't be reflected in the other database file."
       );
