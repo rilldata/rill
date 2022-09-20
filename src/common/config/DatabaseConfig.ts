@@ -30,7 +30,9 @@ export class DatabaseConfig extends Config<DatabaseConfig> {
       if (process.env.RILL_EXTERNAL_RUNTIME) {
         this.spawnRuntime = false;
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
     if (!this.runtimeUrl) {
       this.runtimeUrl = `http://localhost:${this.spawnRuntimePort}`;
     }

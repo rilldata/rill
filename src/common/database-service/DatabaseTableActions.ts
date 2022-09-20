@@ -91,7 +91,9 @@ export class DatabaseTableActions extends DatabaseActions {
     });
     try {
       await this.databaseClient.execute(`DROP TABLE tbl_${guid};`);
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
     return tableDef;
   }
 
