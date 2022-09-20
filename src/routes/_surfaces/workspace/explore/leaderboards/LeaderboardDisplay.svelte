@@ -9,10 +9,10 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import {
-    useMeasureNamesFromMetaQuery,
+    useMetaMeasureNames,
     useMetaQuery,
-  } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
-  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-totals";
+  } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/totals";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
@@ -31,7 +31,7 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
-  $: selectedMeasureNames = useMeasureNamesFromMetaQuery(
+  $: selectedMeasureNames = useMetaMeasureNames(
     metricsDefId,
     metricsExplorer?.selectedMeasureIds
   );

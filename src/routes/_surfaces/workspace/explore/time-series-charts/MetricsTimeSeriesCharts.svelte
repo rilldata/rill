@@ -1,7 +1,6 @@
 <script lang="ts">
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "$common/database-service/DatabaseTimeSeriesActions";
-  import { MetricsViewRequestFilter } from "$common/rill-developer-service/MetricsViewActions";
   import type { MetricsViewTimeSeriesResponse } from "$common/rill-developer-service/MetricsViewActions";
   import {
     MetricsExplorerEntity,
@@ -13,12 +12,12 @@
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import {
-    useMappedFiltersFromMetaQuery,
-    useMeasureNamesFromMetaQuery,
+    useMetaMappedFilters,
+    useMetaMeasureNames,
     useMetaQuery,
-  } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
-  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-totals";
-  import { useTimeSeriesQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-time-series";
+  } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/totals";
+  import { useTimeSeriesQuery } from "$lib/svelte-query/queries/metrics-views/time-series";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
@@ -38,12 +37,12 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(metricsDefId);
 
-  $: mappedFiltersQuery = useMappedFiltersFromMetaQuery(
+  $: mappedFiltersQuery = useMetaMappedFilters(
     metricsDefId,
     metricsExplorer?.filters
   );
 
-  $: selectedMeasureNames = useMeasureNamesFromMetaQuery(
+  $: selectedMeasureNames = useMetaMeasureNames(
     metricsDefId,
     metricsExplorer?.selectedMeasureIds
   );

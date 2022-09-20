@@ -23,12 +23,12 @@
   import TooltipShortcutContainer from "$lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
   import {
-    useDimensionFromMetaQuery,
-    useMappedFiltersFromMetaQuery,
-    useMeasureFromMetaQuery,
+    useMetaDimension,
+    useMetaMappedFilters,
+    useMetaMeasure,
     useMetaQuery,
-  } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
-  import { useTopListQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-top-list";
+  } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useTopListQuery } from "$lib/svelte-query/queries/metrics-views/top-list";
   import { slideRight } from "$lib/transitions";
   import {
     humanizeGroupValues,
@@ -62,21 +62,21 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  $: dimensionQuery = useDimensionFromMetaQuery(metricsDefId, dimensionId);
+  $: dimensionQuery = useMetaDimension(metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
   $: dimension = $dimensionQuery?.data;
   let displayName: string;
   // TODO: select based on label?
   $: displayName = getDisplayName(dimension);
 
-  $: measureQuery = useMeasureFromMetaQuery(
+  $: measureQuery = useMetaMeasure(
     metricsDefId,
     metricsExplorer?.leaderboardMeasureId
   );
   let measure: MeasureDefinitionEntity;
   $: measure = $measureQuery?.data;
 
-  $: mappedFiltersQuery = useMappedFiltersFromMetaQuery(
+  $: mappedFiltersQuery = useMetaMappedFilters(
     metricsDefId,
     metricsExplorer?.filters
   );

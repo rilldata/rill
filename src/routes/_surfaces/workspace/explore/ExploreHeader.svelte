@@ -11,8 +11,8 @@
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
   import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { invalidateMetricsViewData } from "$lib/svelte-query/queries/metrics-views/invalidate-metrics-views";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
+  import { invalidateMetricsViewData } from "$lib/svelte-query/queries/metrics-views/invalidation";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";

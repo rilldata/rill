@@ -26,7 +26,7 @@
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
   import { queryClient } from "$lib/svelte-query/globalQueryClient";
-  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-views/invalidate-metrics-views";
+  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-views/invalidation";
   import { getContext, onMount } from "svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";

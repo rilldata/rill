@@ -11,7 +11,7 @@
   import Calendar from "$lib/components/icons/Calendar.svelte";
   import CaretDownIcon from "$lib/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "$lib/components/menu";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
   import { onClickOutside } from "$lib/util/on-click-outside";
   import { createEventDispatcher, tick } from "svelte";
   import {

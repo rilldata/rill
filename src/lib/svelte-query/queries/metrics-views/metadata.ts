@@ -42,14 +42,11 @@ export const useMetaQuery = <T = MetricsViewMetaResponse>(
   );
 };
 
-export const useMeasureFromMetaQuery = (
-  metricViewId: string,
-  measureId: string
-) =>
+export const useMetaMeasure = (metricViewId: string, measureId: string) =>
   useMetaQuery<MeasureDefinitionEntity>(metricViewId, (meta) =>
     meta.measures?.find((measure) => measure.id === measureId)
   );
-export const useMeasureNamesFromMetaQuery = (
+export const useMetaMeasureNames = (
   metricViewId: string,
   measureIds: Array<string>
 ) =>
@@ -63,15 +60,12 @@ export const useMeasureNamesFromMetaQuery = (
     );
   });
 
-export const useDimensionFromMetaQuery = (
-  metricViewId: string,
-  dimensionId: string
-) =>
+export const useMetaDimension = (metricViewId: string, dimensionId: string) =>
   useMetaQuery<DimensionDefinitionEntity>(metricViewId, (meta) =>
     meta.dimensions?.find((dimension) => dimension.id === dimensionId)
   );
 
-export const useMappedFiltersFromMetaQuery = (
+export const useMetaMappedFilters = (
   metricViewId: string,
   filters: MetricsViewRequestFilter
 ) =>

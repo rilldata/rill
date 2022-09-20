@@ -14,14 +14,14 @@
   import DimensionHeader from "$lib/components/dimension/DimensionHeader.svelte";
   import DimensionTable from "$lib/components/dimension/DimensionTable.svelte";
   import {
-    useDimensionFromMetaQuery,
-    useMappedFiltersFromMetaQuery,
-    useMeasureFromMetaQuery,
-    useMeasureNamesFromMetaQuery,
+    useMetaDimension,
+    useMetaMappedFilters,
+    useMetaMeasure,
+    useMetaMeasureNames,
     useMetaQuery,
-  } from "$lib/svelte-query/queries/metrics-views/metrics-views-metadata";
-  import { useTopListQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-top-list";
-  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/metrics-views-totals";
+  } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useTopListQuery } from "$lib/svelte-query/queries/metrics-views/top-list";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/totals";
   import { humanizeGroupByColumns } from "$lib/util/humanize-numbers";
 
   export let metricsDefId: string;
@@ -29,12 +29,12 @@
 
   $: metaQuery = useMetaQuery(metricsDefId);
 
-  $: dimensionQuery = useDimensionFromMetaQuery(metricsDefId, dimensionId);
+  $: dimensionQuery = useMetaDimension(metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
   $: dimension = dimensionQuery?.data;
 
   $: leaderboardMeasureId = metricsExplorer?.leaderboardMeasureId;
-  $: leaderboardMeasureQuery = useMeasureFromMetaQuery(
+  $: leaderboardMeasureQuery = useMetaMeasure(
     metricsDefId,
     metricsExplorer?.leaderboardMeasureId
   );
@@ -42,12 +42,12 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  $: mappedFiltersQuery = useMappedFiltersFromMetaQuery(
+  $: mappedFiltersQuery = useMetaMappedFilters(
     metricsDefId,
     metricsExplorer?.filters
   );
 
-  $: selectedMeasureNames = useMeasureNamesFromMetaQuery(
+  $: selectedMeasureNames = useMetaMeasureNames(
     metricsDefId,
     metricsExplorer?.selectedMeasureIds
   );
