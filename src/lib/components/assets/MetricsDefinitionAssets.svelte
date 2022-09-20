@@ -145,7 +145,7 @@
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: 200 }}
-    id="assets-model-list"
+    id="assets-metrics-list"
   >
     {#each $metricsDefinitions as metricsDef (metricsDef.id)}
       <CollapsibleTableSummary
