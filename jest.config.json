@@ -19,7 +19,7 @@
     "@testing-library/jest-dom/extend-expect",
     "<rootDir>/test/global-test-setup.ts"
   ],
-  "modulePathIgnorePatterns": ["<rootDir>/dist/"],
+  "modulePathIgnorePatterns": ["<rootDir>/dist/", "<rootDir>/web-cloud/"],
   "testEnvironment": "node",
   "testTimeout": 250000
 }

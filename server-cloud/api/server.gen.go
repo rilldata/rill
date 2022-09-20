@@ -27,31 +27,67 @@ type Error struct {
 
 // Organization defines model for Organization.
 type Organization struct {
-	CreatedOn   *openapi_types.Date `json:"createdOn,omitempty"`
-	Description *string             `json:"description,omitempty"`
-	Name        string              `json:"name"`
-	UpdatedOn   *openapi_types.Date `json:"updatedOn,omitempty"`
+	CreatedOn   openapi_types.Date `json:"created_on"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Name        string             `json:"name"`
+	UpdatedOn   openapi_types.Date `json:"updated_on"`
+}
+
+// Project defines model for Project.
+type Project struct {
+	CreatedOn   openapi_types.Date `json:"created_on"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Name        string             `json:"name"`
+	UpdatedOn   openapi_types.Date `json:"updated_on"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse = Error
 
-// CreateOrganizationParams defines parameters for CreateOrganization.
-type CreateOrganizationParams struct {
-	Name        string  `form:"name" json:"name"`
-	Description *string `form:"description,omitempty" json:"description,omitempty"`
+// CreateOrganizationJSONBody defines parameters for CreateOrganization.
+type CreateOrganizationJSONBody struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
 }
 
-// UpdateOrganizationParams defines parameters for UpdateOrganization.
-type UpdateOrganizationParams struct {
-	Description *string `form:"description,omitempty" json:"description,omitempty"`
+// UpdateOrganizationJSONBody defines parameters for UpdateOrganization.
+type UpdateOrganizationJSONBody struct {
+	Description *string `json:"description,omitempty"`
 }
+
+// UpdateProjectJSONBody defines parameters for UpdateProject.
+type UpdateProjectJSONBody struct {
+	Description *string `json:"description,omitempty"`
+}
+
+// CreateProjectJSONBody defines parameters for CreateProject.
+type CreateProjectJSONBody struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+}
+
+// CreateOrganizationJSONRequestBody defines body for CreateOrganization for application/json ContentType.
+type CreateOrganizationJSONRequestBody CreateOrganizationJSONBody
+
+// UpdateOrganizationJSONRequestBody defines body for UpdateOrganization for application/json ContentType.
+type UpdateOrganizationJSONRequestBody UpdateOrganizationJSONBody
+
+// UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
+type UpdateProjectJSONRequestBody UpdateProjectJSONBody
+
+// CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
+type CreateProjectJSONRequestBody CreateProjectJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /v1/organizations)
+	FindOrganizations(ctx echo.Context) error
+
 	// (POST /v1/organizations)
-	CreateOrganization(ctx echo.Context, params CreateOrganizationParams) error
+	CreateOrganization(ctx echo.Context) error
 
 	// (DELETE /v1/organizations/{name})
 	DeleteOrganization(ctx echo.Context, name string) error
@@ -60,7 +96,22 @@ type ServerInterface interface {
 	FindOrganization(ctx echo.Context, name string) error
 
 	// (PUT /v1/organizations/{name})
-	UpdateOrganization(ctx echo.Context, name string, params UpdateOrganizationParams) error
+	UpdateOrganization(ctx echo.Context, name string) error
+
+	// (DELETE /v1/organizations/{organization}/project/{name})
+	DeleteProject(ctx echo.Context, organization string, name string) error
+
+	// (GET /v1/organizations/{organization}/project/{name})
+	FindProject(ctx echo.Context, organization string, name string) error
+
+	// (PUT /v1/organizations/{organization}/project/{name})
+	UpdateProject(ctx echo.Context, organization string, name string) error
+
+	// (GET /v1/organizations/{organization}/projects)
+	FindProjects(ctx echo.Context, organization string) error
+
+	// (POST /v1/organizations/{organization}/projects)
+	CreateProject(ctx echo.Context, organization string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -68,28 +119,21 @@ type ServerInterfaceWrapper struct {
 	Handler ServerInterface
 }
 
+// FindOrganizations converts echo context to params.
+func (w *ServerInterfaceWrapper) FindOrganizations(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindOrganizations(ctx)
+	return err
+}
+
 // CreateOrganization converts echo context to params.
 func (w *ServerInterfaceWrapper) CreateOrganization(ctx echo.Context) error {
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params CreateOrganizationParams
-	// ------------- Required query parameter "name" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "name", ctx.QueryParams(), &params.Name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Optional query parameter "description" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "description", ctx.QueryParams(), &params.Description)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter description: %s", err))
-	}
-
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CreateOrganization(ctx, params)
+	err = w.Handler.CreateOrganization(ctx)
 	return err
 }
 
@@ -136,17 +180,112 @@ func (w *ServerInterfaceWrapper) UpdateOrganization(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params UpdateOrganizationParams
-	// ------------- Optional query parameter "description" -------------
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UpdateOrganization(ctx, name)
+	return err
+}
 
-	err = runtime.BindQueryParameter("form", true, false, "description", ctx.QueryParams(), &params.Description)
+// DeleteProject converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteProject(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter description: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UpdateOrganization(ctx, name, params)
+	err = w.Handler.DeleteProject(ctx, organization, name)
+	return err
+}
+
+// FindProject converts echo context to params.
+func (w *ServerInterfaceWrapper) FindProject(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindProject(ctx, organization, name)
+	return err
+}
+
+// UpdateProject converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateProject(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UpdateProject(ctx, organization, name)
+	return err
+}
+
+// FindProjects converts echo context to params.
+func (w *ServerInterfaceWrapper) FindProjects(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindProjects(ctx, organization)
+	return err
+}
+
+// CreateProject converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateProject(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CreateProject(ctx, organization)
 	return err
 }
 
@@ -178,25 +317,33 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/v1/organizations", wrapper.FindOrganizations)
 	router.POST(baseURL+"/v1/organizations", wrapper.CreateOrganization)
 	router.DELETE(baseURL+"/v1/organizations/:name", wrapper.DeleteOrganization)
 	router.GET(baseURL+"/v1/organizations/:name", wrapper.FindOrganization)
 	router.PUT(baseURL+"/v1/organizations/:name", wrapper.UpdateOrganization)
+	router.DELETE(baseURL+"/v1/organizations/:organization/project/:name", wrapper.DeleteProject)
+	router.GET(baseURL+"/v1/organizations/:organization/project/:name", wrapper.FindProject)
+	router.PUT(baseURL+"/v1/organizations/:organization/project/:name", wrapper.UpdateProject)
+	router.GET(baseURL+"/v1/organizations/:organization/projects", wrapper.FindProjects)
+	router.POST(baseURL+"/v1/organizations/:organization/projects", wrapper.CreateProject)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RUwW7UMBD9FTRwtJpte8sNFSrBpVIBcah6cOPZrKvEdsfjSssq/47G3m02JKBKBYHE",
-	"Xtaesd/Me8+THTS+D96h4wj1Dghj8C5i3rwn8nS9j0ig8Y7RsSx1CJ1tNFvvqvvoncRis8Fey+oN4Rpq",
-	"eF2N6FXJxiqjwiA/tb8yVpNFIB+Q2JYmGm9y7bWnXjPUYB2fn4EC3gYsW2yRYFDQY4y6zaf3ychkXQtS",
-	"ifAhWUID9U3BHM/fPoH5u3tsWLCuqNXOfssEF5oi1Izmyk06M5pxbOxQW4HB2JANB6hZ3ukeFxMpmGeX",
-	"+YFixpwTE8mxSWR5+0mkL3TuUBPS28SbcXd5KPfx62fYGyVIJTvW3zAHyF5at/aZhuVOMte2615ddD4Z",
-	"UPCIFDN/OD1ZnayEnQ/odLBQw3kOKQiaN7mh6vG08kcO5GDwMT89MSJHPxio4SJbMbFLgEj3yEgR6psd",
-	"WKn7kJC2cFC7/B1rxpRQHb3hmb7LOMfm/ur6rZoO19lq9dtGasK+DJbBtU4d/+zmUyvVdMjL5Zn81U7Y",
-	"DoJmsEPGuQ/vcvwZPojJL7BhWccXMVbQ4sLLurTO/C0+/+C7UBDSgkpf8jfqz+v034zfMHwPAAD//+78",
-	"3T6VBwAA",
+	"H4sIAAAAAAAC/+xWQW/bPAz9Kx/47WjUaXvzbetWYLu06DbsUASDajGJClvSKLpAFvi/D5LiOE7c1UWa",
+	"YCnqk0TKFPn4HqEF5Ka0RqNmB9kCCJ012mHYfCIydLO0eENuNKNmvxTWFioXrIxO753R3ubyGZbCr94R",
+	"TiCD/9M2ehq9Lg1RofZfsvylvc0vLBmLxComkRsZ7p4YKgVDBkrz+RkkwHOLcYtTJKgTKNE5MQ2nl07H",
+	"pPQU/E2EvypFKCG7jTHb8+NVMHN3jzn7WFc0FVr9DgX2JEUoGOXP6FulJgVjm1lzeQISXU7KNrG2/Er2",
+	"mrUosddRWTn8+o3alYRl5GS9jE7QPkCuyYTlGxaetphXpHj+1dM3wnCHgpDeVzxrd5dNNl9+fIMl2X2k",
+	"6G3TmzFbCHpQemJCmYoL77lRRfHfRWEqn+kDkguwwenJ6GTkqzcWtbAKMjgPpgSs4FlIKH04Tc0ai4Nx",
+	"iqGDvn/B+FlCBpdKy6vOyaQ7CM5Go2fJXzGW7qk50FFYvcJCEIk5xOkgcSKqgh+LtMox7U6q8K81rqfU",
+	"i9DlztWREuj4g5HzZ5XZ1cFTxH6EwRuUDKd6ONc5xlRhvWOPhrdmx1bUyTYV04Wvs46wFci43amPwb7R",
+	"KStIlMhIDrLbBSivBU/4RsZZo+YuVsla3Zvwj3tx3JF8g2R2yHr+QV4kYKselL6H0XsgnPav+/r1S3l9",
+	"W6c2vhMGK7x5Vwxpstme28OanRzjrDh+ZF6Gwg0Oex04Rwf26x9dL9X3Z0ytv7+Rr5tDeyXJ+BCP7xW2",
+	"B313H0Rk47cH/f6kVNd/AgAA//9nMzaDMhIAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
