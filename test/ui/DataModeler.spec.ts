@@ -158,6 +158,7 @@ export class DataModelerTest extends TestBase<TestServerSetupParameter> {
     { page }: PlaywrightTestArgs
   ) {
     await page.goto(URL);
+    await page.click("button#create-model-button");
 
     const error = page.locator(".error").first();
 
