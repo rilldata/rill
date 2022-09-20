@@ -38,6 +38,8 @@ export class DuckDBClient {
 
   public async destroy(): Promise<void> {
     this.runtimeProcess?.kill();
+    this.runtimeProcess = undefined;
+    this.instanceID = undefined;
   }
 
   public async execute<Row = Record<string, unknown>>(
@@ -74,7 +76,9 @@ export class DuckDBClient {
     }
 
     if (this.runtimeProcess) {
-      throw Error("Already spawned runtime");
+      console.log("Already spawned runtime");
+      // do not throw error. this is the case when the same instance is reused
+      return;
     }
 
     const httpPort = this.databaseConfig.spawnRuntimePort;
