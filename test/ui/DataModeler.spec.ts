@@ -110,20 +110,6 @@ export class DataModelerTest extends TestBase<TestServerSetupParameter> {
     expect(count).toBe(1);
   }
 
-  // @TestBase.Test('queryDataProvider')
-  // public async testCostEstimates(query: string, result: string, { page }: PlaywrightTestArgs) {
-  //   await page.goto(URL);
-
-  //   await this.execute(page, query);
-
-  //   const cost = page.locator('.cost-estimate');
-
-  //   await this.execute(page, query);
-  //   const actualCost = encodeURI(await cost.textContent());
-  //   const expectedCost = result;
-  //   expect(actualCost).toEqual(expectedCost);
-  // }
-
   @TestBase.Test()
   public async testNewModelCreation({ page }: PlaywrightTestArgs) {
     await page.goto(URL);
