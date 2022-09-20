@@ -29,9 +29,40 @@ func TestQuery(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestInformationSchemaAll(t *testing.T) {
+	conn := prepareConn(t)
+
+	tables, err := conn.InformationSchema().All(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, 2, len(tables[1].Columns))
+	require.Equal(t, "bar", tables[1].Columns[0].Name)
+	require.Equal(t, "VARCHAR", tables[1].Columns[0].Type)
+	require.Equal(t, "baz", tables[1].Columns[1].Name)
+	require.Equal(t, "INTEGER", tables[1].Columns[1].Type)
+}
+
+func TestInformationSchemaLookup(t *testing.T) {
+	conn := prepareConn(t)
+	ctx := context.Background()
+
+	table, err := conn.InformationSchema().Lookup(ctx, "foo")
+	require.NoError(t, err)
+	require.Equal(t, "foo", table.Name)
+
+	_, err = conn.InformationSchema().Lookup(ctx, "bad")
+	require.Equal(t, infra.ErrNotFound, err)
+}
+
 func TestPriorityQueue(t *testing.T) {
 	conn := prepareConn(t)
 	defer conn.Close()
+
+	// pause the priority worker to allow the queue to fill up
+	conn.(*connection).worker.Pause()
 
 	n := 100
 	results := make(chan int, n)
@@ -58,6 +89,10 @@ func TestPriorityQueue(t *testing.T) {
 		})
 	}
 
+	// give the queue plenty of time to fill up, then unpause
+	time.Sleep(100 * time.Millisecond)
+	conn.(*connection).worker.Unpause()
+
 	err := g.Wait()
 	require.NoError(t, err)
 
@@ -70,6 +105,9 @@ func TestPriorityQueue(t *testing.T) {
 func TestCancel(t *testing.T) {
 	conn := prepareConn(t)
 	defer conn.Close()
+
+	// pause the priority worker to allow the queue to fill up
+	conn.(*connection).worker.Pause()
 
 	n := 100
 	cancelIdx := 50
@@ -112,6 +150,10 @@ func TestCancel(t *testing.T) {
 		})
 	}
 
+	// give the queue plenty of time to fill up, then unpause
+	time.Sleep(100 * time.Millisecond)
+	conn.(*connection).worker.Unpause()
+
 	err := g.Wait()
 	require.NoError(t, err)
 
@@ -126,6 +168,9 @@ func TestCancel(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	conn := prepareConn(t)
+
+	// pause the priority worker to allow the queue to fill up
+	conn.(*connection).worker.Pause()
 
 	n := 100
 	results := make(chan int, n)
@@ -151,6 +196,9 @@ func TestClose(t *testing.T) {
 			return rows.Close()
 		})
 	}
+
+	// unpause the queue, so it con process a bit before closing
+	conn.(*connection).worker.Unpause()
 
 	g.Go(func() error {
 		err := conn.Close()
@@ -178,6 +226,19 @@ func prepareConn(t *testing.T) infra.Connection {
 	rows, err = conn.Execute(context.Background(), &infra.Statement{
 		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
 	})
+	require.NoError(t, err)
+	require.NoError(t, rows.Close())
+
+	rows, err = conn.Execute(context.Background(), &infra.Statement{
+		Query: "CREATE TABLE bar(bar VARCHAR, baz INTEGER)",
+	})
+	require.NoError(t, err)
+	require.NoError(t, rows.Close())
+
+	rows, err = conn.Execute(context.Background(), &infra.Statement{
+		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
+	})
+
 	require.NoError(t, err)
 	require.NoError(t, rows.Close())
 
