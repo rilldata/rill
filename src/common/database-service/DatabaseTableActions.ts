@@ -89,7 +89,9 @@ export class DatabaseTableActions extends DatabaseActions {
       column.largestStringLength = characterLengths[column.name];
       return column;
     });
-    await this.databaseClient.execute(`DROP TABLE tbl_${guid};`);
+    try {
+      await this.databaseClient.execute(`DROP TABLE tbl_${guid};`);
+    } catch (err) {}
     return tableDef;
   }
 

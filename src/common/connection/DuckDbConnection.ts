@@ -1,5 +1,4 @@
 import type { RootConfig } from "$common/config/RootConfig";
-import { DATABASE_POLLING_INTERVAL } from "$common/constants";
 import type { DataModelerService } from "$common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "$common/data-modeler-state-service/DataModelerStateService";
 import {
@@ -34,9 +33,9 @@ export class DuckDbConnection extends DataConnection {
 
     await this.dataModelerService.dispatch("loadModels", []);
 
-    this.syncTimer = setInterval(() => {
-      this.sync();
-    }, DATABASE_POLLING_INTERVAL);
+    // this.syncTimer = setInterval(() => {
+    //   this.sync();
+    // }, DATABASE_POLLING_INTERVAL);
   }
 
   public async sync(): Promise<void> {
@@ -56,7 +55,7 @@ export class DuckDbConnection extends DataConnection {
 
     for (const table of tables) {
       const tableName = table.table_name;
-      if (!tableName) continue;
+      if (!tableName || tableName.endsWith("___")) continue;
       if (existingTables.has(tableName)) {
         await this.dataModelerService.dispatch("syncTable", [
           existingTables.get(tableName).id,

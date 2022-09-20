@@ -98,6 +98,7 @@ export class DuckDBClient {
       stdio: "inherit",
       shell: true,
     });
+    this.runtimeProcess.on("error", console.log);
 
     await asyncWaitUntil(() =>
       isPortOpen(this.databaseConfig.spawnRuntimePort)
