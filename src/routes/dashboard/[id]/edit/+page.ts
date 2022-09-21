@@ -1,4 +1,4 @@
-import { getMetricsViewMetadata } from "$lib/svelte-query/queries/metrics-view";
+import { getMetricsViewMetadata } from "$lib/svelte-query/queries/metrics-views/metadata";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
