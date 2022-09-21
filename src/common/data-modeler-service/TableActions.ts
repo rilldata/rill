@@ -527,7 +527,7 @@ export class TableActions extends DataModelerActions {
     }
     if (response?.status === ActionStatus.Failure) {
       this.notificationService.notify({
-        message: `failed to import ${table.name} from ${table.path}`,
+        message: `Failed to import ${table.name}`,
         type: "error",
         detail: `${response.messages[0].message}`,
         options: {
