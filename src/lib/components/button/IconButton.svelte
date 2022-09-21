@@ -2,6 +2,7 @@
   export let disabled = false;
   export let rounded = false;
   export let compact = false;
+  export let bgDark = false;
 </script>
 
 <button
@@ -10,8 +11,7 @@
   class:rounded
   class="ml-3 grid place-items-center 
 {disabled ? 'text-gray-400' : 'text-gray-800'}
-
-{disabled ? '' : 'hover:bg-gray-200'}"
+{disabled ? '' : bgDark ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}"
   style:width="{compact ? 20 : 24}px"
   style:height="{compact ? 20 : 24}px"
   style:font-size="18px"
