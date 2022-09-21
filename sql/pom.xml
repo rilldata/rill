@@ -45,6 +45,12 @@
       <groupId>org.apache.druid</groupId>
       <artifactId>druid-sql</artifactId>
       <version>${druid.sql.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
