@@ -1,5 +1,4 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
@@ -25,16 +24,6 @@ export class StartCommand extends DataModelerCliCommand {
   }
 
   protected async sendActions(): Promise<void> {
-    const activeEntity =
-      this.dataModelerStateService.getApplicationState().activeEntity;
-    if (!activeEntity || activeEntity?.type !== EntityType.Model) {
-      // set dummy asset as active to show onboarding steps
-      await this.dataModelerService.dispatch("setActiveAsset", [
-        EntityType.Model,
-        undefined,
-      ]);
-    }
-
     return new ExpressServer(
       this.config,
       this.dataModelerService,

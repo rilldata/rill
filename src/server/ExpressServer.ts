@@ -17,8 +17,10 @@ import express from "express";
 import fileUpload from "express-fileupload";
 import { existsSync, mkdirSync } from "fs";
 import http from "http";
+import path from "path";
 
 const STATIC_FILES = `${__dirname}/../../build`;
+const SVELTEKIT_FALLBACK_PAGE = "index.html";
 
 export class ExpressServer {
   public readonly app: express.Application;
@@ -51,6 +53,11 @@ export class ExpressServer {
     if (config.server.serveStaticFile) {
       this.app.use(express.static(STATIC_FILES));
     }
+
+    // add fallback route
+    this.app.get("*", (req, res) => {
+      res.sendFile(path.resolve(STATIC_FILES, SVELTEKIT_FALLBACK_PAGE));
+    });
   }
 
   public async init(): Promise<void> {

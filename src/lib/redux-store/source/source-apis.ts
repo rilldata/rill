@@ -1,5 +1,5 @@
+import { goto } from "$app/navigation";
 import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { dataModelerService } from "$lib/application-state-stores/application-store";
 import {
@@ -54,11 +54,8 @@ export const createModelForSource = async (
     models,
     sourceName
   );
-  // change the active asset to the new model
-  await dataModelerService.dispatch("setActiveAsset", [
-    EntityType.Model,
-    createdModelId,
-  ]);
+
+  goto(`/model/${createdModelId}`);
 
   notificationStore.send({
     message: `queried ${sourceName} in workspace`,
@@ -126,10 +123,8 @@ export const autoCreateMetricsDefinitionForModel = async (
   );
 
   await store.dispatch(generateMeasuresAndDimensionsApi(createdMetricsDef.id));
-  await dataModelerService.dispatch("setActiveAsset", [
-    EntityType.MetricsExplorer,
-    createdMetricsDef.id,
-  ]);
+
+  goto(`/dashboard/${createdMetricsDef.id}`);
 
   return createdMetricsDef.id;
 };

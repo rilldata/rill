@@ -59,4 +59,4 @@ rill init-example
 
 
 ## Legal
-By downloading and using our application you are agreeing to the [Rill Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
+By downloading and using our application you are agreeing to the [Privacy Policy](https://www.rilldata.com/legal/privacy) and [Rill Terms of Service](https://www.rilldata.com/legal/tos).

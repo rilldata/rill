@@ -6,7 +6,7 @@ import type { EntityRecordMapType } from "$common/data-modeler-state-service/ent
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
 import type { RillReduxState } from "$lib/redux-store/store-root";
 import { queryClient } from "$lib/svelte-query/globalQueryClient";
-import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
+import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-views/invalidation";
 import type { AsyncThunk } from "@reduxjs/toolkit";
 
 /**

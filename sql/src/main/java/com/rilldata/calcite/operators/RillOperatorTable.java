@@ -16,7 +16,6 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.util.ListSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
-import org.apache.druid.sql.calcite.expression.OperatorConversions;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
@@ -25,22 +24,35 @@ import java.util.List;
 
 public class RillOperatorTable implements SqlOperatorTable
 {
-  private static final SqlFunction DATE_TRUNC = OperatorConversions.operatorBuilder("DATE_TRUNC")
-      .operandTypes(SqlTypeFamily.CHARACTER, SqlTypeFamily.DATETIME)
-      .requiredOperands(2)
-      .returnTypeInference(CalciteUtils.ARG1_NULLABLE_RETURN_TYPE_INFERENCE)
-      .functionCategory(SqlFunctionCategory.TIMEDATE)
-      .build();
+  private static final SqlFunction DATE_TRUNC =
+    new SqlFunction(
+        "DATE_TRUNC",
+        SqlKind.OTHER_FUNCTION,
+        ReturnTypes.TIMESTAMP,
+        null,
+        OperandTypes.family(SqlTypeFamily.CHARACTER, SqlTypeFamily.TIMESTAMP),
+        SqlFunctionCategory.TIMEDATE
+    );
 
-  private static final SqlFunction GREATEST = OperatorConversions.operatorBuilder("GREATEST")
-      .operandTypeChecker(OperandTypes.VARIADIC)
-      .returnTypeInference(CalciteUtils.TYPE_INFERENCE)
-      .build();
+  private static final SqlFunction GREATEST =
+      new SqlFunction(
+          "GREATEST",
+          SqlKind.GREATEST,
+          CalciteUtils.TYPE_INFERENCE,
+          null,
+          OperandTypes.VARIADIC,
+          SqlFunctionCategory.SYSTEM
+      );
 
-  private static final SqlFunction LEAST = OperatorConversions.operatorBuilder("LEAST")
-      .operandTypeChecker(OperandTypes.VARIADIC)
-      .returnTypeInference(CalciteUtils.TYPE_INFERENCE)
-      .build();
+  private static final SqlFunction LEAST =
+      new SqlFunction(
+          "LEAST",
+          SqlKind.LEAST,
+          CalciteUtils.TYPE_INFERENCE,
+          null,
+          OperandTypes.VARIADIC,
+          SqlFunctionCategory.SYSTEM
+      );
 
   public static final SqlFunction LOG =
       new SqlFunction(

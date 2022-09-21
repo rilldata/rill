@@ -42,7 +42,7 @@ describe("Metrics View", () => {
         const leaderboards = await Promise.all(
           dimensions.map(async (dimension) => {
             const request: MetricsViewTopListRequest = {
-              measures: [requestMeasures[0].id],
+              measures: [requestMeasures[0].sqlName],
               filter: MetricsExplorerTest.filters,
               time: {
                 start: MetricsExplorerTest.timeRange?.start,
@@ -74,7 +74,7 @@ describe("Metrics View", () => {
   it("Top list with multiple measures and sorting", async () => {
     const dimension = dimensions[2];
     const request: MetricsViewTopListRequest = {
-      measures: measures.map((measure) => measure.id),
+      measures: measures.map((measure) => measure.sqlName),
       time: { start: undefined, end: undefined },
       limit: 15,
       offset: 0,
@@ -108,8 +108,10 @@ describe("Metrics View", () => {
         const request: MetricsViewTotalsRequest = {
           // select measures based on index passed or default to all measures
           measures: MetricsExplorerTest.measures
-            ? MetricsExplorerTest.measures.map((index) => measures[index].id)
-            : measures.map((measure) => measure.id),
+            ? MetricsExplorerTest.measures.map(
+                (index) => measures[index].sqlName
+              )
+            : measures.map((measure) => measure.sqlName),
           filter: MetricsExplorerTest.filters,
           time: {
             start: MetricsExplorerTest.timeRange?.start,

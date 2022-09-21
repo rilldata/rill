@@ -1,5 +1,6 @@
 package com.rilldata;
 
+import com.rilldata.calcite.dialects.Dialects;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -21,14 +22,18 @@ public class SqlConverterEntrypoint
     CCharPointer call(long size);
   }
 
-  @CEntryPoint(name="convert_sql")
-  public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql, CCharPointer schema)
+  @CEntryPoint(name = "convert_sql")
+  public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
+      CCharPointer schema, CCharPointer dialect
+  )
   {
     try {
+      String dialectString = CTypeConversion.toJavaString(dialect);
+      Dialects dialectEnum = Dialects.valueOf(dialectString.toUpperCase());
       String javaSchemaString = CTypeConversion.toJavaString(schema);
       SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
       String javaSqlString = CTypeConversion.toJavaString(sql);
-      String runnableQuery = sqlConverter.convert(javaSqlString);
+      String runnableQuery = sqlConverter.convert(javaSqlString, dialectEnum.getSqlDialect());
       if (runnableQuery == null) {
         return WordFactory.nullPointer();
       }
@@ -42,7 +47,7 @@ public class SqlConverterEntrypoint
   private static CCharPointer convertToCCharPointer(AllocatorFn allocatorFn, String javaString)
   {
     byte[] b = javaString.getBytes();
-    CCharPointer a =  allocatorFn.call(b.length + 1);
+    CCharPointer a = allocatorFn.call(b.length + 1);
     for (int i = 0; i < b.length; i++) {
       a.write(i, b[i]);
     }

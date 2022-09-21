@@ -1,18 +1,17 @@
 <script lang="ts">
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { goto } from "$app/navigation";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { Button } from "$lib/components/button";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { navigationEvent } from "$lib/metrics/initMetrics";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
 
   export let metricsDefId: string;
 
@@ -26,11 +25,8 @@
   let buttonDisabled = true;
   let buttonStatus = "OK";
 
-  const viewDashboard = () => {
-    dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsExplorer,
-      metricsDefId,
-    ]);
+  const viewDashboard = (metricsDefId: string) => {
+    goto(`/dashboard/${metricsDefId}`);
 
     navigationEvent.fireEvent(
       metricsDefId,
@@ -60,10 +56,10 @@
   <Button
     type="primary"
     disabled={buttonDisabled}
-    on:click={() => {
-      viewDashboard();
-    }}>Go to Dashboard <ExploreIcon size="16px" /></Button
+    on:click={() => viewDashboard(metricsDefId)}
   >
+    Go to Dashboard <ExploreIcon size="16px" />
+  </Button>
   <TooltipContent slot="tooltip-content">
     <div>
       {#if buttonStatus === "MISSING_MODEL_OR_TIMESTAMP"}
