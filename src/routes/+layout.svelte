@@ -10,7 +10,7 @@
     createDerivedTableStore,
     createPersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import notification from "$lib/components/notifications/";
+  import notificationStore from "$lib/components/notifications/";
   import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
   import { initMetrics } from "$lib/metrics/initMetrics";
   import { syncApplicationState } from "$lib/redux-store/application/application-apis";
@@ -42,7 +42,7 @@
     setContext(`rill:app:derived-table-store`, createDerivedTableStore());
     setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
     setContext(`rill:app:derived-model-store`, createDerivedModelStore());
-    notification.listenToSocket(store.socket);
+    notificationStore.listenToSocket(store.socket);
     syncApplicationState(store);
   }
 
