@@ -1,0 +1,34 @@
+name: Test SQL shared library
+on:
+  pull_request:
+    paths:
+      - "sql/**"
+      - ".github/workflows/sql-test.yml"
+
+jobs:
+  librillsql:
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            arch: amd64
+            runner: macos-latest
+          - os: linux
+            arch: amd64
+            runner: ubuntu-latest
+          - os: windows
+            arch: amd64
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: "22.1.0"
+          java-version: "17"
+          components: "native-image"
+      - name: Build native library
+        shell: bash
+        run: |
+          cd sql
+          mvn package -Pnative-lib

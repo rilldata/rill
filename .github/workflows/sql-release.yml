@@ -5,10 +5,6 @@ on:
     paths:
       - ".github/workflows/sql-release.yml"
       - "sql/**"
-  pull_request:
-    paths:
-      - "sql/**"
-      - ".github/workflows/sql-release.yml"
 
 jobs:
   librillsql:
