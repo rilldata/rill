@@ -4,7 +4,6 @@ import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.dialects.Dialects;
 import com.rilldata.calcite.extensions.SqlCreateMetric;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.H2SqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.ValidationException;
@@ -64,8 +63,12 @@ public class CalciteTests
     SqlCreateMetric sqlCreateMetric = null;
     try {
       sqlCreateMetric = calciteToolbox.parseModelingQuery(modelingQuery);
+      parseExceptionMatch.ifPresent(s -> System.out.println("Expected exception but got none " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
+      if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
+        e.printStackTrace();
+      }
       Assertions.assertTrue(parseExceptionMatch.isPresent() && e.getMessage().contains(parseExceptionMatch.get()));
       return; // found parse exception - test done - return now
     }
@@ -73,10 +76,14 @@ public class CalciteTests
     Assertions.assertEquals(numMeasures, sqlCreateMetric.measures.size());
     try {
       calciteToolbox.validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
+      validationExceptionMatch.ifPresent(s -> System.out.println("Expected exception but got none " + s));
       Assertions.assertTrue(validationExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
       throw new RuntimeException(e);
     } catch (ValidationException e) {
+      if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
+        e.printStackTrace();
+      }
       Assertions.assertTrue(validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
     }
   }
@@ -92,9 +99,13 @@ public class CalciteTests
         String expectedQuery = calciteToolbox.getRunnableQuery(expandedQuery, dialect.getSqlDialect());
         SqlNode actual = parseQuery(resultantQuery);
         SqlNode expected = parseQuery(expectedQuery);
+        exceptionMessage.ifPresent(s -> System.out.println("Expected exception but got none " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
       }
     } catch (RuntimeException | ValidationException e) {
+      if (exceptionMessage.isEmpty() || !e.getMessage().contains(exceptionMessage.get())) {
+        e.printStackTrace();
+      }
       Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
     }
   }
@@ -115,9 +126,13 @@ public class CalciteTests
         } else {
           expected = parseQuery(expectedDruidQuery);
         }
+        exceptionMessage.ifPresent(s -> System.out.println("Expected exception but got none " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
       }
     } catch (RuntimeException | ValidationException e) {
+      if (exceptionMessage.isEmpty() || !e.getMessage().contains(exceptionMessage.get())) {
+        e.printStackTrace();
+      }
       Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
     }
   }
@@ -295,6 +310,12 @@ public class CalciteTests
             Optional.empty()
         ),
         Arguments.of(
+            "SELECT GREATEST(1,'a')",
+            "SELECT GREATEST(1,'a')",
+            "SELECT GREATEST(1,'a')",
+            Optional.empty()
+        ),
+        Arguments.of(
             "SELECT GREATEST('ABC','DEF')",
             "SELECT GREATEST('ABC', 'DEF')",
             "SELECT GREATEST('ABC', 'DEF')",
@@ -304,6 +325,12 @@ public class CalciteTests
             "SELECT LEAST('ABC','DEF')",
             "SELECT LEAST('ABC', 'DEF')",
             "SELECT LEAST('ABC', 'DEF')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LEAST(1,'a', 100)",
+            "SELECT LEAST(1,'a', 100)",
+            "SELECT LEAST(1,'a', 100)",
             Optional.empty()
         ),
         Arguments.of(

@@ -16,7 +16,6 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.util.ListSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
-import org.apache.druid.sql.calcite.expression.OperatorConversions;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
@@ -35,15 +34,25 @@ public class RillOperatorTable implements SqlOperatorTable
         SqlFunctionCategory.TIMEDATE
     );
 
-  private static final SqlFunction GREATEST = OperatorConversions.operatorBuilder("GREATEST")
-      .operandTypeChecker(OperandTypes.VARIADIC)
-      .returnTypeInference(CalciteUtils.TYPE_INFERENCE)
-      .build();
+  private static final SqlFunction GREATEST =
+      new SqlFunction(
+          "GREATEST",
+          SqlKind.GREATEST,
+          CalciteUtils.TYPE_INFERENCE,
+          null,
+          OperandTypes.VARIADIC,
+          SqlFunctionCategory.SYSTEM
+      );
 
-  private static final SqlFunction LEAST = OperatorConversions.operatorBuilder("LEAST")
-      .operandTypeChecker(OperandTypes.VARIADIC)
-      .returnTypeInference(CalciteUtils.TYPE_INFERENCE)
-      .build();
+  private static final SqlFunction LEAST =
+      new SqlFunction(
+          "LEAST",
+          SqlKind.LEAST,
+          CalciteUtils.TYPE_INFERENCE,
+          null,
+          OperandTypes.VARIADIC,
+          SqlFunctionCategory.SYSTEM
+      );
 
   public static final SqlFunction LOG =
       new SqlFunction(
