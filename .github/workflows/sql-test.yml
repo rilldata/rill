@@ -27,6 +27,12 @@ jobs:
           version: "22.1.0"
           java-version: "17"
           components: "native-image"
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build native library
         shell: bash
         run: |
