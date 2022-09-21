@@ -1,18 +1,21 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
-  import Onboarding from "$lib/components/workspace/Onboarding.svelte";
+  import SourceWorkspace from "$lib/components/workspace/source/SourceWorkspace.svelte";
 
-  // clear any existing active asset
+  export let data;
+
+  $: sourceId = data.sourceId;
+
   $: dataModelerService.dispatch("setActiveAsset", [
     EntityType.Table,
-    undefined,
+    sourceId,
   ]);
 </script>
 
 <svelte:head>
+  <!-- TODO: add the source name to the title -->
   <title>Rill Developer</title>
-  <meta name="Description" content="DESCRIPTION" />
 </svelte:head>
 
-<Onboarding />
+<SourceWorkspace />

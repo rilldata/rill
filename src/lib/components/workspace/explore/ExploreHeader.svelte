@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { goto } from "$app/navigation";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
@@ -28,10 +27,7 @@
       !$metaQuery.data?.measures?.length ||
       !$metaQuery.data?.dimensions?.length
     ) {
-      dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsDefinition,
-        metricsDefId,
-      ]);
+      goto(`/dashboard/${metricsDefId}/edit`);
     } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
       // FIXME: understand this logic before removing invalidateMetricsViewData
       invalidateMetricsViewData(queryClient, metricsDefId);
@@ -41,11 +37,8 @@
 
   $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
 
-  const viewMetrics = () => {
-    dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsDefinition,
-      metricsDefId,
-    ]);
+  const viewMetrics = (metricsDefId: string) => {
+    goto(`/dashboard/${metricsDefId}/edit`);
 
     navigationEvent.fireEvent(
       metricsDefId,
@@ -72,12 +65,7 @@
     </h1>
     <!-- top right CTAs -->
     <div>
-      <Button
-        type="secondary"
-        on:click={() => {
-          viewMetrics();
-        }}
-      >
+      <Button type="secondary" on:click={() => viewMetrics(metricsDefId)}>
         <div class="flex items-center gap-x-2">
           Edit Metrics <MetricsIcon />
         </div>

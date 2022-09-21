@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
   import {
     assetVisibilityTween,
     inspectorVisibilityTween,
@@ -16,7 +15,6 @@
   import { slide } from "svelte/transition";
 
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type {
     DerivedModelStore,
@@ -66,12 +64,6 @@
           <Editor
             content={currentModel.query}
             selections={$queryHighlight}
-            on:receive-focus={() => {
-              dataModelerService.dispatch("setActiveAsset", [
-                EntityType.Model,
-                currentModel.id,
-              ]);
-            }}
             on:write={(evt) =>
               updateModelQueryApi(currentModel.id, evt.detail.content)}
           />

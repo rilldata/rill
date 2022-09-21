@@ -1,18 +1,16 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
-  import { waitUntil } from "$common/utils/waitUtils";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "$lib/application-state-stores/application-store";
+  import { waitUntil } from "$common/utils/waitUtils";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
@@ -26,6 +24,7 @@
   import { Divider, MenuItem } from "$lib/components/menu";
   import MetricsDefinitionSummary from "$lib/components/metrics-definition/MetricsDefinitionSummary.svelte";
   import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import {
     createMetricsDefsAndFocusApi,
     deleteMetricsDefsApi,
@@ -34,7 +33,6 @@
   } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "$lib/redux-store/store-root";
-  import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
 
@@ -67,13 +65,9 @@
   };
 
   const editModel = (sourceModelId: string) => {
+    goto(`/model/${sourceModelId}`);
+
     const previousActiveEntity = $appStore?.activeEntity?.type;
-
-    dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Model,
-      sourceModelId,
-    ]);
-
     navigationEvent.fireEvent(
       sourceModelId,
       BehaviourEventMedium.Menu,
@@ -84,13 +78,9 @@
   };
 
   const editMetrics = (metricsId: string) => {
+    goto(`/dashboard/${metricsId}/edit`);
+
     const previousActiveEntity = $appStore?.activeEntity?.type;
-
-    dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsDefinition,
-      metricsId,
-    ]);
-
     navigationEvent.fireEvent(
       metricsId,
       BehaviourEventMedium.Menu,
@@ -101,13 +91,9 @@
   };
 
   const dispatchSetMetricsDefActive = (id: string) => {
+    goto(`/dashboard/${id}`);
+
     const previousActiveEntity = $appStore?.activeEntity?.type;
-
-    dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsExplorer,
-      id,
-    ]);
-
     navigationEvent.fireEvent(
       id,
       BehaviourEventMedium.AssetName,
@@ -159,7 +145,7 @@
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: 200 }}
-    id="assets-model-list"
+    id="assets-metrics-list"
   >
     {#each $metricsDefinitions as metricsDef (metricsDef.id)}
       <CollapsibleTableSummary
@@ -183,9 +169,7 @@
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => {
-              editModel(metricsDef.sourceModelId);
-            }}
+            on:select={() => editModel(metricsDef.sourceModelId)}
           >
             <svelte:fragment slot="icon">
               <Model />
@@ -200,9 +184,7 @@
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => {
-              editMetrics(metricsDef.id);
-            }}
+            on:select={() => editMetrics(metricsDef.id)}
           >
             <svelte:fragment slot="icon">
               <MetricsIcon />

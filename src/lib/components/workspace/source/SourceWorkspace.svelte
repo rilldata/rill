@@ -25,7 +25,7 @@
   ) as DerivedTableStore;
 
   let currentSource: PersistentTableEntity;
-  $: activeEntityID = $store.activeEntity.id;
+  $: activeEntityID = $store?.activeEntity?.id;
   $: currentSource =
     activeEntityID && $persistentTableStore?.entities
       ? $persistentTableStore.entities.find((q) => q.id === activeEntityID)

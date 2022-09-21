@@ -58,12 +58,13 @@
           class="grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center"
         >
           {#if mounted}
-            <RillLogo size="16px" iconOnly />
+            <a href="/">
+              <RillLogo size="16px" iconOnly />
+            </a>
           {:else}
             <Spacer size="16px" />
           {/if}
-
-          <div class="font-bold">Rill Developer</div>
+          <a href="/" class="font-bold">Rill Developer</a>
         </h1>
       </header>
       <TableAssets />

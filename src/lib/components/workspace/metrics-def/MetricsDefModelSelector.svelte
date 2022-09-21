@@ -1,12 +1,11 @@
 <script lang="ts">
-  import ModelIcon from "$lib/components/icons/Model.svelte";
-
-  import { store } from "$lib/redux-store/store-root";
   import type { MetricsDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { getContext } from "svelte";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
   import { updateMetricsDefsWrapperApi } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { store } from "$lib/redux-store/store-root";
+  import { getContext } from "svelte";
 
   export let metricsDefId: string;
 
@@ -47,7 +46,7 @@
       <option value="__DEFAULT_VALUE__" disabled selected
         >select a model...</option
       >
-      {#each $persistentModelStore?.entities as entity}
+      {#each $persistentModelStore?.entities || [] as entity}
         <option value={entity.id}>{entity.name}</option>
       {/each}
     </select>

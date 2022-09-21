@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
@@ -6,10 +8,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "$lib/application-state-stores/application-store";
+  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -88,10 +87,10 @@
   };
 
   const viewSource = (id: string) => {
-    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-    dataModelerService.dispatch("setActiveAsset", [EntityType.Table, id]);
+    goto(`/source/${id}`);
 
     if (id != activeEntityID) {
+      const previousActiveEntity = $rillAppStore?.activeEntity?.type;
       navigationEvent.fireEvent(
         id,
         BehaviourEventMedium.AssetName,
@@ -151,9 +150,7 @@
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             on:query={() => queryHandler(tableName)}
-            on:select={() => {
-              viewSource(id);
-            }}
+            on:select={() => viewSource(id)}
             entityType={EntityType.Table}
             name={tableName}
             cardinality={derivedTable?.cardinality ?? 0}

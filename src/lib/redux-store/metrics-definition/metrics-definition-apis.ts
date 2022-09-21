@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -7,10 +8,17 @@ import { SourceModelValidationStatus } from "$common/data-modeler-state-service/
 import { asyncWait } from "$common/utils/waitUtils";
 import { dataModelerService } from "$lib/application-state-stores/application-store";
 import { selectApplicationActiveEntity } from "$lib/redux-store/application/application-selectors";
+import { validateDimensionColumnApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
 import {
   addOneDimension,
   clearDimensionsForMetricsDefId,
 } from "$lib/redux-store/dimension-definition/dimension-definition-slice";
+import { validateMeasureExpressionApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
+import {
+  selectMeasureById,
+  selectMeasuresByMetricsId,
+} from "$lib/redux-store/measure-definition/measure-definition-selectors";
 import {
   addOneMeasure,
   clearMeasuresForMetricsDefId,
@@ -26,18 +34,11 @@ import {
 } from "$lib/redux-store/metrics-definition/metrics-definition-slice";
 import { selectDerivedModelById } from "$lib/redux-store/model/model-selector";
 import { createAsyncThunk } from "$lib/redux-store/redux-toolkit-wrapper";
+import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
 import { RillReduxState, store } from "$lib/redux-store/store-root";
 import { generateApis } from "$lib/redux-store/utils/api-utils";
-import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 import { invalidateExplorer } from "$lib/redux-store/utils/invalidateExplorerThunk";
-import { validateMeasureExpressionApi } from "$lib/redux-store/measure-definition/measure-definition-apis";
-import {
-  selectMeasureById,
-  selectMeasuresByMetricsId,
-} from "$lib/redux-store/measure-definition/measure-definition-selectors";
-import { validateDimensionColumnApi } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
-import { selectDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-selectors";
-import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
+import { streamingFetchWrapper } from "$lib/util/fetchWrapper";
 
 const handleMetricsDefDelete = async (id: string) => {
   const activeEntity = selectApplicationActiveEntity(store.getState());
@@ -53,10 +54,7 @@ const handleMetricsDefDelete = async (id: string) => {
       // TODO: refactor to use redux store once we move model and tables there.
       await dataModelerService.dispatch("setModelAsActiveAsset", []);
     } else {
-      await dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsDefinition,
-        nextId as string,
-      ]);
+      goto(`/dashboard/${nextId}`);
     }
   }
 };
@@ -81,10 +79,7 @@ export const createMetricsDefsAndFocusApi = createAsyncThunk(
     const { payload: createdMetricsDef } = await thunkAPI.dispatch(
       createMetricsDefsApi(args)
     );
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.MetricsDefinition,
-      createdMetricsDef.id,
-    ]);
+    goto(`/dashboard/${createdMetricsDef.id}/edit`);
     return createdMetricsDef;
   }
 );
@@ -200,10 +195,7 @@ export const validateSelectedSources = createAsyncThunk(
       (sourceModelValidationStatus !== SourceModelValidationStatus.OK ||
         timeDimensionValidationStatus !== SourceModelValidationStatus.OK)
     ) {
-      await dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsDefinition,
-        id,
-      ]);
+      goto(`/dashboard/${id}/edit`);
     }
 
     // trigger measure and dimension validations

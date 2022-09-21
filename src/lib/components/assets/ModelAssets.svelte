@@ -1,15 +1,6 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
-
-  import type { ApplicationStore } from "$lib/application-state-stores/application-store";
-
-  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
-  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
-  import AddIcon from "$lib/components/icons/Add.svelte";
-  import ModelIcon from "$lib/components/icons/Model.svelte";
-
+  import { goto } from "$app/navigation";
+  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
@@ -18,25 +9,34 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "$common/metrics-service/MetricsTypes";
-  import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "$lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "$lib/application-state-stores/model-stores";
+  import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
+  import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import ContextButton from "$lib/components/column-profile/ContextButton.svelte";
+  import AddIcon from "$lib/components/icons/Add.svelte";
   import Cancel from "$lib/components/icons/Cancel.svelte";
   import EditIcon from "$lib/components/icons/EditIcon.svelte";
   import Explore from "$lib/components/icons/Explore.svelte";
+  import ModelIcon from "$lib/components/icons/Model.svelte";
   import { Divider, MenuItem } from "$lib/components/menu";
   import RenameEntityModal from "$lib/components/modal/RenameEntityModal.svelte";
-  import { deleteModelApi } from "$lib/redux-store/model/model-apis";
   import { navigationEvent } from "$lib/metrics/initMetrics";
+  import { deleteModelApi } from "$lib/redux-store/model/model-apis";
   import { autoCreateMetricsDefinitionForModel } from "$lib/redux-store/source/source-apis";
   import {
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "$lib/redux-store/source/source-selectors";
-  import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { getContext } from "svelte";
+  import { slide } from "svelte/transition";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -53,11 +53,10 @@
   let renameModelName = null;
 
   const viewModel = (id: string) => {
-    const previousActiveEntity = $store?.activeEntity?.type;
-
-    dataModelerService.dispatch("setActiveAsset", [EntityType.Model, id]);
+    goto(`/model/${id}`);
 
     if (id != activeEntityID) {
+      const previousActiveEntity = $store?.activeEntity?.type;
       navigationEvent.fireEvent(
         id,
         BehaviourEventMedium.AssetName,
@@ -95,13 +94,8 @@
   };
 
   async function addModel() {
-    // create the new model.
     let response = await dataModelerService.dispatch("addModel", [{}]);
-    // change the active asset to the new model.
-    dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Model,
-      response.id,
-    ]);
+    goto(`/model/${response.id}`);
     // if the models are not visible in the assets list, show them.
     if (!showModels) {
       showModels = true;
@@ -165,9 +159,7 @@
       )}
       <CollapsibleTableSummary
         entityType={EntityType.Model}
-        on:select={() => {
-          viewModel(id);
-        }}
+        on:select={() => viewModel(id)}
         cardinality={tableSummaryProps.cardinality}
         name={tableSummaryProps.name}
         sizeInBytes={tableSummaryProps.sizeInBytes}
@@ -187,9 +179,7 @@
           <MenuItem
             disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
             icon
-            on:select={() => {
-              quickStartMetrics(derivedModel);
-            }}
+            on:select={() => quickStartMetrics(derivedModel)}
           >
             <svelte:fragment slot="icon"><Explore /></svelte:fragment>
             autogenerate dashboard
