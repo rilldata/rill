@@ -11,7 +11,7 @@
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
 
   export let metricsDefId: string;
 

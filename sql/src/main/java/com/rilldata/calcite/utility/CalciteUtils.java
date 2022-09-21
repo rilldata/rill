@@ -8,13 +8,16 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.druid.sql.calcite.planner.Calcites;
 
 /**
- * Methods resued from https://github.com/apache/druid/blob/master/sql/src/main/java/org/apache/druid/sql/calcite/planner/Calcites.java
+ * Methods resued from Apache Druid project
  * */
 public class CalciteUtils
 {
   public static final SqlReturnTypeInference
       ARG1_NULLABLE_RETURN_TYPE_INFERENCE = new Arg1NullableTypeInference();
 
+  /**
+   * org.apache.druid.sql.calcite.planner.Calcites
+   */
   public static class Arg1NullableTypeInference implements SqlReturnTypeInference
   {
     @Override
@@ -29,6 +32,12 @@ public class CalciteUtils
     }
   }
 
+  /**
+   * org.apache.druid.sql.calcite.expression.builtin.ReductionOperatorConversionHelper
+   *
+   * Implements type precedence rules similar to:
+   * https://dev.mysql.com/doc/refman/8.0/en/comparison-operators.html#function_least
+   */
   public static final SqlReturnTypeInference TYPE_INFERENCE =
       opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();

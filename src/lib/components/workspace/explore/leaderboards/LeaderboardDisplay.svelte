@@ -9,9 +9,10 @@
   import LeaderboardMeasureSelector from "$lib/components/leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "$lib/components/VirtualizedGrid.svelte";
   import {
+    useMetaMeasureNames,
     useMetaQuery,
-    useTotalsQuery,
-  } from "$lib/svelte-query/queries/metrics-view";
+  } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/totals";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
@@ -30,6 +31,11 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
+  $: selectedMeasureNames = useMetaMeasureNames(
+    metricsDefId,
+    metricsExplorer?.selectedMeasureIds
+  );
+
   $: activeMeasure =
     measures &&
     measures.find(
@@ -47,10 +53,10 @@
     !$metaQuery.isRefetching
   ) {
     totalsQuery = useTotalsQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
+      measures: $selectedMeasureNames.data,
       time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
       },
     });
   }

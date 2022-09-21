@@ -35,7 +35,7 @@ export class MeasuresActions extends RillDeveloperActions {
       const expressionValidationResp = await this.rillDeveloperService.dispatch(
         rillRequestContext,
         "validateMeasureExpression",
-        [metricsDefId, expression]
+        [metricsDefId, measure.id, expression]
       );
       newMeasure.expressionIsValid = (
         expressionValidationResp?.data as Partial<MeasureDefinitionEntity>
@@ -81,6 +81,7 @@ export class MeasuresActions extends RillDeveloperActions {
   public async validateMeasureExpression(
     rillRequestContext: MetricsDefinitionContext,
     metricsDefId: string,
+    measureId: string,
     expression: string
   ) {
     if (!metricsDefId || !rillRequestContext.record)
@@ -135,6 +136,19 @@ export class MeasuresActions extends RillDeveloperActions {
         expressionIsValid = false;
       }
     }
+
+    // save this validation status for meta api
+    this.dataModelerStateService.dispatch("updateEntity", [
+      EntityType.MeasureDefinition,
+      StateType.Persistent,
+      {
+        id: measureId,
+        expressionIsValid: expressionIsValid
+          ? ValidationState.OK
+          : ValidationState.ERROR,
+        expressionValidationError: parsedExpression.error,
+      } as MeasureDefinitionEntity,
+    ]);
 
     return ActionResponseFactory.getSuccessResponse("", {
       expressionIsValid: expressionIsValid

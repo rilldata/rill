@@ -12,10 +12,12 @@
   import CrossIcon from "$lib/components/icons/CrossIcon.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import {
+    useMetaMappedFilters,
+    useMetaMeasureNames,
     useMetaQuery,
-    useTimeSeriesQuery,
-    useTotalsQuery,
-  } from "$lib/svelte-query/queries/metrics-view";
+  } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/totals";
+  import { useTimeSeriesQuery } from "$lib/svelte-query/queries/metrics-views/time-series";
   import { convertTimestampPreview } from "$lib/util/convertTimestampPreview";
   import { removeTimezoneOffset } from "$lib/util/formatters";
   import { NicelyFormattedTypes } from "$lib/util/humanize-numbers";
@@ -35,6 +37,16 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(metricsDefId);
 
+  $: mappedFiltersQuery = useMetaMappedFilters(
+    metricsDefId,
+    metricsExplorer?.filters
+  );
+
+  $: selectedMeasureNames = useMetaMeasureNames(
+    metricsDefId,
+    metricsExplorer?.selectedMeasureIds
+  );
+
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
     $metaQuery.data?.timeDimension?.timeRange?.interval;
@@ -47,11 +59,11 @@
     !$metaQuery.isRefetching
   ) {
     totalsQuery = useTotalsQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
-      filter: metricsExplorer?.filters,
+      measures: $selectedMeasureNames.data,
+      filter: $mappedFiltersQuery.data,
       time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
       },
     });
   }
@@ -67,12 +79,12 @@
     !$metaQuery.isRefetching
   ) {
     timeSeriesQuery = useTimeSeriesQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
-      filter: metricsExplorer?.filters,
+      measures: $selectedMeasureNames.data,
+      filter: $mappedFiltersQuery.data,
       time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-        granularity: metricsExplorer?.selectedTimeRange?.interval,
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
+        granularity: metricsExplorer.selectedTimeRange?.interval,
       },
     });
   }

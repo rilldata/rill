@@ -77,8 +77,7 @@ export interface MetricsViewTopListRequest {
 }
 export interface MetricsViewTopListResponse {
   meta: Array<{ name: string; type: string }>;
-  // data: Array<Record<string, number | string>>;
-  data: Array<{ label: string; value: number }>;
+  data: Array<Record<string, number | string>>;
 }
 
 export interface MetricsViewTotalsRequest {
@@ -106,21 +105,6 @@ function convertToActiveValues(
     );
   });
   return activeValues;
-}
-
-function mapDimensionIdToName(
-  filters: MetricsViewRequestFilter,
-  dimensions: Array<DimensionDefinitionEntity>
-): MetricsViewRequestFilter {
-  if (!filters) return undefined;
-  const dimensionsIdMap = getMapFromArray(dimensions, (d) => d.id);
-  filters.include.forEach((value) => {
-    value.name = dimensionsIdMap.get(value.name)?.dimensionColumn ?? value.name;
-  });
-  filters.exclude.forEach((value) => {
-    value.name = dimensionsIdMap.get(value.name)?.dimensionColumn ?? value.name;
-  });
-  return filters;
 }
 
 /**
@@ -182,19 +166,11 @@ export class MetricsViewActions extends RillDeveloperActions {
         {
           tableName: model.tableName,
           timestampColumn: rillRequestContext.record.timeDimension,
-          measures: request.measures.map((measureId) => ({
-            ...this.dataModelerStateService
-              .getMeasureDefinitionService()
-              .getById(measureId),
-          })),
-          filters: convertToActiveValues(
-            mapDimensionIdToName(
-              request.filter,
-              this.dataModelerStateService
-                .getDimensionDefinitionService()
-                .getManyByField("metricsDefId", metricsDefId)
-            )
+          measures: await this.getBasicMeasures(
+            rillRequestContext.record,
+            request.measures
           ),
+          filters: convertToActiveValues(request.filter),
           timeRange: {
             ...request.time,
             interval: request.time.granularity,
@@ -243,12 +219,7 @@ export class MetricsViewActions extends RillDeveloperActions {
           request.measures
         ),
         {
-          filters: mapDimensionIdToName(
-            request.filter,
-            this.dataModelerStateService
-              .getDimensionDefinitionService()
-              .getManyByField("metricsDefId", metricsDefId)
-          ),
+          filters: request.filter,
           sort: request.sort,
           timeRange: request.time,
           timestampColumn: rillRequestContext.record.timeDimension,
@@ -292,12 +263,7 @@ export class MetricsViewActions extends RillDeveloperActions {
             rillRequestContext.record,
             request.measures
           ),
-          mapDimensionIdToName(
-            request.filter,
-            this.dataModelerStateService
-              .getDimensionDefinitionService()
-              .getManyByField("metricsDefId", metricsDefId)
-          ),
+          request.filter,
           rillRequestContext.record.timeDimension,
           request.time,
         ]
@@ -357,10 +323,12 @@ export class MetricsViewActions extends RillDeveloperActions {
     const validMeasures = (
       await Promise.all(
         measures.map(async (measure) => {
+          if ("expressionIsValid" in measure) return { ...measure };
+          // backwards compatibility
           const measureValidation = await this.rillDeveloperService.dispatch(
             RillRequestContext.getNewContext(),
             "validateMeasureExpression",
-            [metricsDef.id, measure.expression]
+            [metricsDef.id, measure.id, measure.expression]
           );
           return {
             ...measure,
@@ -379,8 +347,10 @@ export class MetricsViewActions extends RillDeveloperActions {
     metricsDef: MetricsDefinitionEntity,
     measureIds: Array<string>
   ): Promise<Array<BasicMeasureDefinition>> {
+    const measureIdsSet = new Set(measureIds);
     return (await this.getValidMeasures(metricsDef)).filter(
-      (measure) => measureIds.indexOf(measure.id) >= 0
+      (measure) =>
+        measureIdsSet.has(measure.id) || measureIdsSet.has(measure.sqlName)
     );
   }
 }
