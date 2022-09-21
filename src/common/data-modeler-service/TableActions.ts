@@ -529,6 +529,10 @@ export class TableActions extends DataModelerActions {
       this.notificationService.notify({
         message: `failed to import ${table.name} from ${table.path}`,
         type: "error",
+        detail: `${response.messages[0].message}`,
+        options: {
+          persisted: true,
+        },
       });
     } else {
       this.notificationService.notify({
