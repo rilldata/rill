@@ -1,37 +1,36 @@
 <script lang="ts">
+  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
   import type { DerivedModelStore } from "$lib/application-state-stores/model-stores";
-  import { store } from "$lib/redux-store/store-root";
-  import { getContext, onMount } from "svelte";
+  import { Callout } from "$lib/components/callout";
 
   import { initDimensionColumns } from "$lib/components/metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "$lib/components/metrics-definition/MeasuresColumns";
   import MetricsDefinitionGenerateButton from "$lib/components/metrics-definition/MetricsDefinitionGenerateButton.svelte";
+  import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
+  import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
+  import { CATEGORICALS } from "$lib/duckdb-data-types";
   import {
     createDimensionsApi,
     deleteDimensionsApi,
     updateDimensionsWrapperApi,
   } from "$lib/redux-store/dimension-definition/dimension-definition-apis";
+  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
     createMeasuresApi,
     deleteMeasuresApi,
     updateMeasuresWrapperApi,
     validateMeasureExpressionApi,
   } from "$lib/redux-store/measure-definition/measure-definition-apis";
-  import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
-  import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
-
-  import { MetricsSourceSelectionError } from "$common/errors/ErrorMessages";
-  import { Callout } from "$lib/components/callout";
-  import LayoutManager from "$lib/components/metrics-definition/MetricsDesignerLayoutManager.svelte";
-  import type { SelectorOption } from "$lib/components/table-editable/ColumnConfig";
-  import { CATEGORICALS } from "$lib/duckdb-data-types";
-  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { bootstrapMetricsDefinition } from "$lib/redux-store/metrics-definition/bootstrapMetricsDefinition";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { store } from "$lib/redux-store/store-root";
   import { queryClient } from "$lib/svelte-query/globalQueryClient";
-  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
+  import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-views/invalidation";
+  import { getContext, onMount } from "svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
+  import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
+  import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
 
   export let metricsDefId;
 

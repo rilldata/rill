@@ -9,13 +9,11 @@
   import { metricsExplorerStore } from "$lib/application-state-stores/explorer-stores";
   import { Button } from "$lib/components/button";
   import MetricsIcon from "$lib/components/icons/Metrics.svelte";
-  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import {
-    invalidateMetricsViewData,
-    useMetaQuery,
-  } from "$lib/svelte-query/queries/metrics-view";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import { navigationEvent } from "$lib/metrics/initMetrics";
+  import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
+  import { invalidateMetricsViewData } from "$lib/svelte-query/queries/metrics-views/invalidation";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 

@@ -30,7 +30,7 @@ describe("TimeSeries", () => {
         : measures;
       const timeSeriesRequest: MetricsViewTimeSeriesRequest = {
         // select measures based on index passed or default to all measures
-        measures: requestMeasures.map((measure) => measure.id),
+        measures: requestMeasures.map((measure) => measure.sqlName),
         filter: MetricsExplorerTest.filters,
         time: {
           start: MetricsExplorerTest.timeRange?.start,

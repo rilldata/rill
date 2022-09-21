@@ -13,43 +13,55 @@
   import DimensionContainer from "$lib/components/dimension/DimensionContainer.svelte";
   import DimensionHeader from "$lib/components/dimension/DimensionHeader.svelte";
   import DimensionTable from "$lib/components/dimension/DimensionTable.svelte";
-  import { getDimensionById } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
   import {
-    selectMeasureFromMeta,
+    useMetaDimension,
+    useMetaMappedFilters,
+    useMetaMeasure,
+    useMetaMeasureNames,
     useMetaQuery,
-    useTopListQuery,
-    useTotalsQuery,
-  } from "$lib/svelte-query/queries/metrics-view";
+  } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { useTopListQuery } from "$lib/svelte-query/queries/metrics-views/top-list";
+  import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/totals";
   import { humanizeGroupByColumns } from "$lib/util/humanize-numbers";
-  import type { Readable } from "svelte/store";
+
   export let metricsDefId: string;
   export let dimensionId: string;
 
   $: metaQuery = useMetaQuery(metricsDefId);
 
-  let dimension: Readable<DimensionDefinitionEntity>;
-
-  $: dimension = getDimensionById(dimensionId);
+  $: dimensionQuery = useMetaDimension(metricsDefId, dimensionId);
+  let dimension: DimensionDefinitionEntity;
+  $: dimension = dimensionQuery?.data;
 
   $: leaderboardMeasureId = metricsExplorer?.leaderboardMeasureId;
-  $: leaderboardMeasure = selectMeasureFromMeta(
-    $metaQuery.data,
-    leaderboardMeasureId
+  $: leaderboardMeasureQuery = useMetaMeasure(
+    metricsDefId,
+    metricsExplorer?.leaderboardMeasureId
   );
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
+  $: mappedFiltersQuery = useMetaMappedFilters(
+    metricsDefId,
+    metricsExplorer?.filters
+  );
+
+  $: selectedMeasureNames = useMetaMeasureNames(
+    metricsDefId,
+    metricsExplorer?.selectedMeasureIds
+  );
+
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === $dimension?.id)
+    metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
       ?.values ?? [];
 
   let topListQuery;
 
   $: allMeasures = $metaQuery.data?.measures;
 
-  $: sortByColumn = leaderboardMeasure?.sqlName;
+  $: sortByColumn = $leaderboardMeasureQuery.data?.sqlName;
   $: sortDirection = sortDirection || "desc";
 
   $: if (
@@ -61,15 +73,20 @@
     !$metaQuery.isRefetching
   ) {
     topListQuery = useTopListQuery(metricsDefId, dimensionId, {
-      measures: metricsExplorer?.selectedMeasureIds,
+      measures: $selectedMeasureNames.data,
       limit: 250,
       offset: 0,
-      sort: [{ name: sortByColumn, direction: sortDirection }],
+      sort: [
+        {
+          name: sortByColumn,
+          direction: sortDirection,
+        },
+      ],
       time: {
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-      filter: metricsExplorer?.filters,
+      filter: $mappedFiltersQuery.data,
     });
   }
 
@@ -81,10 +98,10 @@
     !$metaQuery.isRefetching
   ) {
     totalsQuery = useTotalsQuery(metricsDefId, {
-      measures: metricsExplorer?.selectedMeasureIds,
+      measures: $selectedMeasureNames.data,
       time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
       },
     });
   }
@@ -116,9 +133,9 @@
       let columnNames = Object.keys(values[0]).sort();
 
       columnNames = columnNames.filter(
-        (name) => name !== $dimension?.dimensionColumn
+        (name) => name !== dimension?.dimensionColumn
       );
-      columnNames.unshift($dimension?.dimensionColumn);
+      columnNames.unshift(dimension?.dimensionColumn);
       measureNames = allMeasures.map((m) => m.sqlName);
 
       columns = columnNames.map((columnName) => {
@@ -135,7 +152,7 @@
           return {
             name: columnName,
             type: "VARCHAR",
-            label: $dimension?.labelSingle,
+            label: dimension?.labelSingle,
             enableResize: true,
           };
       });
@@ -143,8 +160,8 @@
   }
 
   function onSelectItem(event) {
-    const label = values[event.detail][$dimension?.dimensionColumn];
-    metricsExplorerStore.toggleFilter(metricsDefId, $dimension?.id, label);
+    const label = values[event.detail][dimension?.dimensionColumn];
+    metricsExplorerStore.toggleFilter(metricsDefId, dimension?.id, label);
   }
 
   function onSortByColumn(event) {
