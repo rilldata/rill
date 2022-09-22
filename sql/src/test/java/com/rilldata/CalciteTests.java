@@ -2,8 +2,10 @@ package com.rilldata;
 
 import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.dialects.Dialects;
-import com.rilldata.calcite.extensions.SqlCreateMetric;
-import com.rilldata.calcite.extensions.SqlCreateSource;
+import com.rilldata.calcite.models.SqlCreateMetricsView;
+import com.rilldata.calcite.models.SqlCreateSource;
+import com.rilldata.calcite.validators.CreateMetricsViewValidator;
+import com.rilldata.calcite.validators.CreateSourceValidator;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.Planner;
@@ -61,10 +63,10 @@ public class CalciteTests
       Optional<String> validationExceptionMatch
   )
   {
-    SqlCreateMetric sqlCreateMetric = null;
+    SqlCreateMetricsView sqlCreateMetricsView;
     try {
-      sqlCreateMetric = (SqlCreateMetric) calciteToolbox.parseQuery(modelingQuery);
-      parseExceptionMatch.ifPresent(s -> System.out.println("Expected exception but got none " + s));
+      sqlCreateMetricsView = (SqlCreateMetricsView) calciteToolbox.parseQuery(modelingQuery);
+      parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
@@ -73,31 +75,41 @@ public class CalciteTests
       Assertions.assertTrue(parseExceptionMatch.isPresent() && e.getMessage().contains(parseExceptionMatch.get()));
       return; // found parse exception - test done - return now
     }
-    Assertions.assertEquals(numDims, sqlCreateMetric.dimensions.size());
-    Assertions.assertEquals(numMeasures, sqlCreateMetric.measures.size());
+    Assertions.assertEquals(numDims, sqlCreateMetricsView.dimensions.size());
+    Assertions.assertEquals(numMeasures, sqlCreateMetricsView.measures.size());
     try {
-      calciteToolbox.validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
-      validationExceptionMatch.ifPresent(s -> System.out.println("Expected exception but got none " + s));
+      CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView, Dialects.DUCKDB.getSqlDialect(),
+          calciteToolbox.getPlanner()
+      );
+      validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(validationExceptionMatch.isEmpty());
-    } catch (SqlParseException e) {
-      throw new RuntimeException(e);
     } catch (ValidationException e) {
       if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
         e.printStackTrace();
       }
-      Assertions.assertTrue(validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
+      Assertions.assertTrue(
+          validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
     }
   }
 
   @ParameterizedTest
   @MethodSource("testCreateSourceParams")
-  public void testCreateSourceParsing(String createSourceQuery, Optional<String> parseExceptionMatch)
+  public void testCreateSource(String createSourceQuery, Optional<String> parseExceptionMatch,
+      Optional<String> validationExceptionMatch
+  )
   {
-    SqlCreateSource sqlCreateSource = null;
+    SqlCreateSource sqlCreateSource;
     try {
       sqlCreateSource = (SqlCreateSource) calciteToolbox.parseQuery(createSourceQuery);
+      parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
+      Assertions.assertTrue(parseExceptionMatch.isEmpty());
+      CreateSourceValidator.validateConnector(sqlCreateSource);
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
+        throw new RuntimeException(e);
+      }
+    } catch (ValidationException e) {
+      if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
         throw new RuntimeException(e);
       }
     }
@@ -113,6 +125,7 @@ public class CalciteTests
                     'prefix' = 's3://my_bucket/a.csv', // comments are ignored
                     'FORMAT' = 'CSV'
                 )""",
+            Optional.empty(),
             Optional.empty()
         ),
         Arguments.of("""
@@ -123,21 +136,86 @@ public class CalciteTests
                     'prefix' = 's3://my_bucket/a.csv', -- comments are ignored
                     'FORMAT' = 'CSV'
                 )""",
+            Optional.empty(),
             Optional.empty()
         ),
-        // TODO this should pass
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv',
+                    'FORMAT' = 'CSV', // extra comma
+                )""",
+            Optional.of("Encountered \" \")\" \") \"\""),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv' -- comments are ignored
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [format] not present or blank for s3 connector")
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv',
+                    'format' = '' -- empty
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [format] not present or blank for s3 connector")
+        ),
         Arguments.of("""
                 CREATE SOURCE clicks_raw
                 WITH (
                     'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv',
+                    'format' = 'myformat'
+                )""",
+            Optional.empty(),
+            Optional.of("Format [myformat] not supported, supported formats are")
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'prefix' = 's3://my_bucket/a.csv' -- comments are ignored
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [connector] not found for source [CLICKS_RAW]")
+        ),
+        // TODO this probably should pass
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3',
+                    'format' = 'csv',
+                    'prefix' = 's3://my_bucket/*.csv',
                     'aws.access.key' = env('S3_ACCESS_KEY'),
-                    'aws.secret.key' = env('S3_SECRET_KEY'),
+                    'aws.secret.key' = env('S3_SECRET_KEY')
+                )""",
+            Optional.of("Encountered \" <IDENTIFIER> \"env \"\""),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's4',
+                    'format' = 'csv',
                     'prefix' = 's3://my_bucket/*.csv'
                 )""",
-            Optional.of("Encountered \" <IDENTIFIER> \"env \"\"")
+            Optional.empty(),
+            Optional.of("No connector of type [s4] found for source [CLICKS_RAW]")
         )
     );
   }
+
   @ParameterizedTest
   @MethodSource("testQueryExpansionParams")
   public void testQueryExpansion(String query, String expandedQuery, Optional<String> exceptionMessage)
@@ -149,7 +227,7 @@ public class CalciteTests
         String expectedQuery = calciteToolbox.getRunnableQuery(expandedQuery, dialect.getSqlDialect());
         SqlNode actual = parseQuery(resultantQuery);
         SqlNode expected = parseQuery(expectedQuery);
-        exceptionMessage.ifPresent(s -> System.out.println("Expected exception but got none " + s));
+        exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
       }
     } catch (RuntimeException | ValidationException e) {
@@ -176,7 +254,7 @@ public class CalciteTests
         } else {
           expected = parseQuery(expectedDruidQuery);
         }
-        exceptionMessage.ifPresent(s -> System.out.println("Expected exception but got none " + s));
+        exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
       }
     } catch (RuntimeException | ValidationException e) {
@@ -418,14 +496,16 @@ public class CalciteTests
             "SELECT DATE_TRUNC('year', '2022-09-01')", // sql literal
             "",
             "",
-            Optional.of("Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <CHAR(10)>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
+            Optional.of(
+                "Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <CHAR(10)>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
         ),
         // ideally DATE can be implicitly cast to TIMESTAMP so that this one passes
         Arguments.of(
             "SELECT DATE_TRUNC('year', DATE '2022-08-01')", // druid only supports timestamp in date_trunc
             "",
             "",
-            Optional.of("Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <DATE>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
+            Optional.of(
+                "Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <DATE>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
         ),
         Arguments.of(
             "SELECT DATE_TRUNC('year', CAST(DATE '2022-08-01' AS TIMESTAMP))", // date column

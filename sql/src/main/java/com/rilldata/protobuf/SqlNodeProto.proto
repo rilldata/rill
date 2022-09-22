@@ -66,7 +66,7 @@ message MultisetSqlTypeProto {
 	string digest = 5;
 }
 
-enum SqlTypeNameProto { 
+enum SqlTypeNameProto {
 	SqlTypeNameProto_BOOLEAN_ = 0;
 	SqlTypeNameProto_TINYINT_ = 1;
 	SqlTypeNameProto_SMALLINT_ = 2;
@@ -219,7 +219,7 @@ message CharsetProto {
 message LocaleProto {
 }
 
-enum CoercibilityProto { 
+enum CoercibilityProto {
 	CoercibilityProto_EXPLICIT_ = 0;
 	CoercibilityProto_IMPLICIT_ = 1;
 	CoercibilityProto_COERCIBLE_ = 2;
@@ -245,7 +245,7 @@ message SqlIntervalQualifierProto {
 	RelDataTypeProto typeInformation = 5;
 }
 
-enum TimeUnitRangeProto { 
+enum TimeUnitRangeProto {
 	TimeUnitRangeProto_YEAR_ = 0;
 	TimeUnitRangeProto_YEAR_TO_MONTH_ = 1;
 	TimeUnitRangeProto_MONTH_ = 2;
@@ -302,7 +302,7 @@ message SqlIdentifierProto {
 	RelDataTypeProto typeInformation = 5;
 }
 
-enum RelDataTypeComparabilityProto { 
+enum RelDataTypeComparabilityProto {
 	RelDataTypeComparabilityProto_NONE_ = 0;
 	RelDataTypeComparabilityProto_UNORDERED_ = 1;
 	RelDataTypeComparabilityProto_ALL_ = 2;
@@ -328,7 +328,7 @@ message RelDataTypeFamilyProto {
 	}
 }
 
-enum SqlTypeFamilyProto { 
+enum SqlTypeFamilyProto {
 	SqlTypeFamilyProto_CHARACTER_ = 0;
 	SqlTypeFamilyProto_BINARY_ = 1;
 	SqlTypeFamilyProto_NUMERIC_ = 2;
@@ -389,7 +389,7 @@ message JavaRecordTypeProto {
 message ClassProto {
 }
 
-enum StructKindProto { 
+enum StructKindProto {
 	StructKindProto_NONE_ = 0;
 	StructKindProto_FULLY_QUALIFIED_ = 1;
 	StructKindProto_PEEK_FIELDS_DEFAULT_ = 2;
@@ -964,7 +964,7 @@ message SqlHintProto {
 	RelDataTypeProto typeInformation = 5;
 }
 
-enum HintOptionFormatProto { 
+enum HintOptionFormatProto {
 	HintOptionFormatProto_EMPTY_ = 0;
 	HintOptionFormatProto_LITERAL_LIST_ = 1;
 	HintOptionFormatProto_ID_LIST_ = 2;
@@ -1151,7 +1151,7 @@ message SqlNewOperatorProto {
 	string allowedSignatures = 8;
 }
 
-enum SqlKindProto { 
+enum SqlKindProto {
 	SqlKindProto_OTHER_ = 0;
 	SqlKindProto_SELECT_ = 1;
 	SqlKindProto_HINT_ = 2;
@@ -1600,7 +1600,7 @@ message ComparableOperandTypeCheckerProto {
 	sint32 nOperands = 3;
 }
 
-enum ConsistencyProto { 
+enum ConsistencyProto {
 	ConsistencyProto_NONE_ = 0;
 	ConsistencyProto_COMPARE_ = 1;
 	ConsistencyProto_LEAST_RESTRICTIVE_ = 2;
@@ -1626,7 +1626,7 @@ message CompositeSingleOperandTypeCheckerProto {
 message SqlOperandCountRangeProto {
 }
 
-enum CompositionProto { 
+enum CompositionProto {
 	CompositionProto_AND_ = 0;
 	CompositionProto_OR_ = 1;
 	CompositionProto_SEQUENCE_ = 2;
@@ -1806,7 +1806,7 @@ message SqlUnresolvedFunctionProto {
 	string allowedSignatures = 10;
 }
 
-enum SqlFunctionCategoryProto { 
+enum SqlFunctionCategoryProto {
 	SqlFunctionCategoryProto_STRING_ = 0;
 	SqlFunctionCategoryProto_NUMERIC_ = 1;
 	SqlFunctionCategoryProto_TIMEDATE_ = 2;
@@ -2276,7 +2276,7 @@ message SqlDatePartFunctionProto {
 	string allowedSignatures = 11;
 }
 
-enum TimeUnitProto { 
+enum TimeUnitProto {
 	TimeUnitProto_YEAR_ = 0;
 	TimeUnitProto_MONTH_ = 1;
 	TimeUnitProto_DAY_ = 2;
@@ -2702,7 +2702,7 @@ message com_google_common_base_PredicateProto {
 	}
 }
 
-enum ObjectPredicateProto { 
+enum ObjectPredicateProto {
 	ObjectPredicateProto_ALWAYS_TRUE_ = 0;
 	ObjectPredicateProto_ALWAYS_FALSE_ = 1;
 	ObjectPredicateProto_IS_NULL_ = 2;
@@ -3011,7 +3011,7 @@ message SqlUserDefinedAggFunctionProto {
 	string allowedSignatures = 14;
 }
 
-enum OptionalityProto { 
+enum OptionalityProto {
 	OptionalityProto_MANDATORY_ = 0;
 	OptionalityProto_OPTIONAL_ = 1;
 	OptionalityProto_IGNORED_ = 2;
@@ -3053,7 +3053,7 @@ message SqlJsonArrayAggAggFunctionProto {
 	string allowedSignatures = 14;
 }
 
-enum SqlJsonConstructorNullClauseProto { 
+enum SqlJsonConstructorNullClauseProto {
 	SqlJsonConstructorNullClauseProto_NULL_ON_NULL_ = 0;
 	SqlJsonConstructorNullClauseProto_ABSENT_ON_NULL_ = 1;
 }
@@ -3205,7 +3205,7 @@ message SqlBasicAggFunctionProto {
 	string allowedSignatures = 18;
 }
 
-enum SqlSyntaxProto { 
+enum SqlSyntaxProto {
 	SqlSyntaxProto_FUNCTION_ = 0;
 	SqlSyntaxProto_FUNCTION_STAR_ = 1;
 	SqlSyntaxProto_ORDERED_FUNCTION_ = 2;
@@ -4003,7 +4003,7 @@ message SqlCollectionTableOperatorProto {
 	string allowedSignatures = 9;
 }
 
-enum SqlModalityProto { 
+enum SqlModalityProto {
 	SqlModalityProto_RELATION_ = 0;
 	SqlModalityProto_STREAM_ = 1;
 }
@@ -4168,7 +4168,7 @@ message SqlBetweenOperatorProto {
 	string allowedSignatures = 11;
 }
 
-enum FlagProto { 
+enum FlagProto {
 	FlagProto_ASYMMETRIC_ = 0;
 	FlagProto_SYMMETRIC_ = 1;
 }
@@ -4603,7 +4603,7 @@ message SqlColumnDeclarationProto {
 	RelDataTypeProto typeInformation = 6;
 }
 
-enum ColumnStrategyProto { 
+enum ColumnStrategyProto {
 	ColumnStrategyProto_NULLABLE_ = 0;
 	ColumnStrategyProto_NOT_NULLABLE_ = 1;
 	ColumnStrategyProto_DEFAULT_ = 2;
@@ -4618,3 +4618,28 @@ message SqlDynamicParamProto {
 	RelDataTypeProto typeInformation = 3;
 }
 
+// Java Class: com.rilldata.calcite.extensions.SqlCreateMetricsView
+message SqlCreateMetricsViewProto {
+	SqlIdentifierProto name = 1;
+	SqlNodeListProto dimensions = 2;
+	SqlNodeListProto measures = 3;
+	SqlNodeProto from = 4;
+	map<string, SqlNodeProto> dimensionsMap = 5;
+	map<string, SqlNodeProto> measuresMap = 6;
+	bool replace = 7;
+	bool ifNotExists = 8;
+	SqlOperatorProto operator = 9;
+	SqlParserPosProto pos = 10;
+	RelDataTypeProto typeInformation = 11;
+}
+
+// Java Class: com.rilldata.calcite.extensions.SqlCreateSource
+message SqlCreateSourceProto {
+	SqlIdentifierProto name = 1;
+	map<string, string> properties = 2;
+	bool replace = 3;
+	bool ifNotExists = 4;
+	SqlOperatorProto operator = 5;
+	SqlParserPosProto pos = 6;
+	RelDataTypeProto typeInformation = 7;
+}

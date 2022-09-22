@@ -1,7 +1,7 @@
 package com.rilldata.calcite.visitors;
 
 import com.rilldata.calcite.CalciteToolbox;
-import com.rilldata.calcite.extensions.SqlCreateMetric;
+import com.rilldata.calcite.models.SqlCreateMetricsView;
 import com.rilldata.calcite.models.Artifact;
 import com.rilldata.calcite.models.ArtifactManager;
 import org.apache.calcite.sql.SqlCall;
@@ -73,9 +73,9 @@ public class MetricsViewExpander extends SqlBasicVisitor<SqlNode>
           // 5. If some measures are present in the query then create a groupBy list of dimensions
           // 6. Prepare a select query using all these artifacts, it will be a group by query if any measures are present
           // 7. return the new query
-          SqlCreateMetric sqlCreateMetric = (SqlCreateMetric) calciteToolbox.parseQuery(artifact.getPayload());
-          Map<String, SqlNode> artifactMeasures = sqlCreateMetric.measuresMap;
-          Map<String, SqlNode> artifactDimensions = sqlCreateMetric.dimensionsMap;
+          SqlCreateMetricsView sqlCreateMetricsView = (SqlCreateMetricsView) calciteToolbox.parseQuery(artifact.getPayload());
+          Map<String, SqlNode> artifactMeasures = sqlCreateMetricsView.measuresMap;
+          Map<String, SqlNode> artifactDimensions = sqlCreateMetricsView.dimensionsMap;
 
           SqlNodeList dimensions = new SqlNodeList(SqlParserPos.ZERO);
           SqlNodeList aggregates = new SqlNodeList(SqlParserPos.ZERO);
@@ -112,7 +112,7 @@ public class MetricsViewExpander extends SqlBasicVisitor<SqlNode>
           selectList.addAll(dimensions);
           selectList.addAll(aggregates);
           sqlSelect.setSelectList(selectList);
-          sqlSelect.setFrom(sqlCreateMetric.from);
+          sqlSelect.setFrom(sqlCreateMetricsView.from);
 
           if (!groupByList.isEmpty()) {
             sqlSelect.setGroupBy(groupByList);

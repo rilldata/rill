@@ -1,5 +1,6 @@
-package com.rilldata.calcite.extensions;
+package com.rilldata.calcite.models;
 
+import com.rilldata.calcite.generated.ParseException;
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -23,13 +24,18 @@ public class SqlCreateSource extends SqlCreate
   private static final SqlOperator OPERATOR =
       new SqlSpecialOperator("CREATE SOURCE", SqlKind.OTHER);
 
-  public SqlCreateSource(SqlParserPos pos, SqlIdentifier name, Map<SqlNode, SqlNode> properties)
+  public SqlCreateSource(SqlParserPos pos, SqlIdentifier name, Map<SqlNode, SqlNode> properties) throws ParseException
   {
     super(OPERATOR, pos, false, false);
     this.name = name;
     this.properties = new HashMap<>();
     for (Map.Entry<SqlNode, SqlNode> entry : properties.entrySet()) {
-      this.properties.put(((SqlLiteral) entry.getKey()).toValue(), ((SqlLiteral) entry.getValue()).toValue());
+      String key = ((SqlLiteral) entry.getKey()).toValue();
+      String value = ((SqlLiteral) entry.getValue()).toValue();
+      if (key == null || value == null) {
+        throw new ParseException(String.format("Either key or value is null for property %s", entry));
+      }
+      this.properties.put(key.toLowerCase(), value.toLowerCase());
     }
   }
 

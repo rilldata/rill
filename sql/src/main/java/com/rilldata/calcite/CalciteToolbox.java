@@ -1,14 +1,15 @@
 package com.rilldata.calcite;
 
 import com.rilldata.calcite.dialects.Dialects;
-import com.rilldata.calcite.extensions.SqlCreateMetric;
-import com.rilldata.calcite.extensions.SqlCreateSource;
+import com.rilldata.calcite.models.SqlCreateMetricsView;
+import com.rilldata.calcite.models.SqlCreateSource;
 import com.rilldata.calcite.generated.RillSqlParserImpl;
 import com.rilldata.calcite.models.Artifact;
 import com.rilldata.calcite.models.ArtifactManager;
 import com.rilldata.calcite.models.ArtifactType;
 import com.rilldata.calcite.models.InMemoryArtifactManager;
 import com.rilldata.calcite.operators.RillOperatorTable;
+import com.rilldata.calcite.validators.CreateMetricsViewValidator;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -17,13 +18,9 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -134,10 +131,12 @@ public class CalciteToolbox
 
   public String saveModel(String sql) throws SqlParseException, ValidationException
   {
-    SqlCreateMetric sqlCreateMetric = (SqlCreateMetric) parseQuery(sql);
-    String metricViewString = validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
+    SqlCreateMetricsView sqlCreateMetricsView = (SqlCreateMetricsView) parseQuery(sql);
+    String metricViewString = CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView,
+        Dialects.DUCKDB.getSqlDialect(), getPlanner()
+    );
     artifactManager.saveArtifact(
-        new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetric.name.getSimple(), metricViewString));
+        new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetricsView.name.getSimple(), metricViewString));
     // if things are valid return the original sql string
     return sql;
   }
@@ -158,44 +157,5 @@ public class CalciteToolbox
     SqlNode sqlNode = planner.parse(sql);
     planner.close();
     return sqlNode;
-  }
-
-  /**
-   * Validates create metrics view query by parsing and validating group by queries
-   * created from the dimensions and measures specified in the modeling query
-   */
-  public String validateModelingQuery(SqlCreateMetric sqlCreateMetric, SqlDialect sqlDialect)
-      throws SqlParseException, ValidationException
-  {
-    SqlNodeList dimensions = sqlCreateMetric.dimensions;
-    SqlNodeList groupByList = new SqlNodeList(SqlParserPos.ZERO);
-    for (int i = 1; i <= dimensions.size(); i++) {
-      groupByList.add(SqlLiteral.createExactNumeric(i + "", SqlParserPos.ZERO));
-    }
-    for (SqlNode measure : sqlCreateMetric.measures.getList()) {
-      Planner planner = getPlanner();
-      SqlNodeList selectList = new SqlNodeList(dimensions, SqlParserPos.ZERO);
-      selectList.add(measure);
-      SqlSelect groupBy = new SqlSelect(
-          SqlParserPos.ZERO,
-          SqlNodeList.EMPTY,
-          selectList,
-          sqlCreateMetric.from,
-          null,
-          groupByList,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null
-      );
-      String sqlString = groupBy.toSqlString(sqlDialect).toString();
-      SqlNode parsed = planner.parse(sqlString);
-      SqlNode validated = planner.validate(parsed);
-      planner.close();
-    }
-    // dimensions, measures and table are validated, return sql string to be stored in db
-    return sqlCreateMetric.toSqlString(sqlDialect).toString();
   }
 }
