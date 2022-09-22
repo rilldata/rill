@@ -14,6 +14,13 @@ import org.apache.calcite.sql.util.SqlBasicVisitor;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Finds the dependencies of a database entity, ie can find what tables a view depends on.
+ * For example, given the following view:
+ * create view C as select * from B join A on B.a = A.a
+ * The dependencies of C are B and A.
+ * Transient dependencies are not included, for example for a dependency tree C->B->A, C depends on A (B is transient).
+ */
 public class DependencyFinder extends SqlBasicVisitor<List<String>>
 {
   List<String> dependencies = new ArrayList<>();

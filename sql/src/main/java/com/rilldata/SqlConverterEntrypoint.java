@@ -45,7 +45,7 @@ public class SqlConverterEntrypoint
     }
   }
 
-  @CEntryPoint(name="infer_migrations")
+  @CEntryPoint(name="apply")
   public static CCharPointer inferMigrationsSteps(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer json, CCharPointer catalog)
   {
     try {
