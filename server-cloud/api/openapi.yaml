@@ -4,19 +4,33 @@ info:
   title: Rill Cloud
 paths:
   /v1/organizations:
+    get:
+      operationId: findOrganizations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Organization'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
     post:
       operationId: createOrganization
-      parameters:
-        - name: name
-          in: query
-          required: true
-          schema:
-            type: string 
-        - name: description
-          in: query
-          required: false
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+                description:
+                  type: string
       responses:
         '200':
           content:
@@ -50,11 +64,15 @@ paths:
           required: true
           schema:
             type: string 
-        - name: description
-          in: query
-          required: false
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
       responses:
         '200':
           content:
@@ -75,6 +93,123 @@ paths:
         '200': {}
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /v1/organizations/{organization}/projects:
+    get:
+      operationId: findProjects
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      operationId: createProject
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/organizations/{organization}/project/{name}:
+    get:
+      operationId: findProject
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      operationId: updateProject
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteProject
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          $ref: "#/components/responses/ErrorResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -85,16 +220,41 @@ components:
     Organization:
       type: object
       required:
+        - id
         - name
+        - created_on
+        - updated_on
       properties:
+        id:
+          type: string
         name:
           type: string
         description:
           type: string
-        createdOn:
+        created_on:
           type: string
           format: date
-        updatedOn:
+        updated_on:
+          type: string
+          format: date
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - created_on
+        - updated_on
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        created_on:
+          type: string
+          format: date
+        updated_on:
           type: string
           format: date
     Error:
@@ -114,5 +274,3 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-# security:
-#   - BearerAuth: [ ]

@@ -1,11 +1,13 @@
 package com.rilldata.calcite;
 
+import com.rilldata.calcite.dialects.Dialects;
 import com.rilldata.calcite.extensions.SqlCreateMetric;
 import com.rilldata.calcite.generated.RillSqlParserImpl;
 import com.rilldata.calcite.models.Artifact;
 import com.rilldata.calcite.models.ArtifactManager;
 import com.rilldata.calcite.models.ArtifactType;
 import com.rilldata.calcite.models.InMemoryArtifactManager;
+import com.rilldata.calcite.operators.RillOperatorTable;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -23,7 +25,6 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
@@ -38,19 +39,17 @@ import java.util.function.Supplier;
 /**
  * Run `mvn package` to generate the custom SQL parser {@link com.rilldata.calcite.generated.RillSqlParserImpl}
  * under `target/generated-sources/javacc` folder
- * */
+ */
 public class CalciteToolbox
 {
   static final SqlParser.Config PARSER_CONFIG = SqlParser.config().withCaseSensitive(false)
       .withParserFactory(RillSqlParserImpl::new);
 
   private final FrameworkConfig frameworkConfig;
-  private final SqlDialect sqlDialect;
   private final ArtifactManager artifactManager;
 
-  public CalciteToolbox(Supplier<SchemaPlus> rootSchemaSupplier, SqlDialect sqlDialect, @Nullable ArtifactManager artifactManager)
+  public CalciteToolbox(Supplier<SchemaPlus> rootSchemaSupplier, @Nullable ArtifactManager artifactManager)
   {
-    this.sqlDialect = sqlDialect;
     this.artifactManager = Objects.requireNonNullElseGet(artifactManager, InMemoryArtifactManager::new);
 
     /* Creating CalciteConnectionConfigImpl just like it is done in calcite code but adding LENIENT conformance instead
@@ -67,7 +66,8 @@ public class CalciteToolbox
     frameworkConfig = Frameworks.newConfigBuilder()
         .defaultSchema(rootSchemaSupplier.get())
         .parserConfig(PARSER_CONFIG)
-        .sqlValidatorConfig(SqlValidator.Config.DEFAULT.withConformance(SqlConformanceEnum.LENIENT))
+        .sqlValidatorConfig(
+            SqlValidator.Config.DEFAULT.withTypeCoercionEnabled(false).withConformance(SqlConformanceEnum.LENIENT))
         .context(new Context()
         {
           @Override
@@ -79,7 +79,7 @@ public class CalciteToolbox
             return null;
           }
         })
-        .sqlToRelConverterConfig(SqlToRelConverter.config())
+        .operatorTable(new RillOperatorTable())
         .build();
   }
 
@@ -89,16 +89,16 @@ public class CalciteToolbox
     return Frameworks.getPlanner(frameworkConfig);
   }
 
-  public String getRunnableQuery(String sql) throws SqlParseException, ValidationException
+  public String getRunnableQuery(String sql, SqlDialect sqlDialect) throws SqlParseException, ValidationException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     // expand query if needed
     sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
-    sql = sqlNode.toSqlString(sqlDialect).getSql();
     // expansion done, now validate query
     SqlNode validated = planner.validate(sqlNode);
     planner.close();
+    sql = validated.toSqlString(sqlDialect).getSql();
     return sql;
   }
 
@@ -134,7 +134,7 @@ public class CalciteToolbox
   public String saveModel(String sql) throws SqlParseException, ValidationException
   {
     SqlCreateMetric sqlCreateMetric = parseModelingQuery(sql);
-    String metricViewString = validateModelingQuery(sqlCreateMetric);
+    String metricViewString = validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
     artifactManager.saveArtifact(
         new Artifact(ArtifactType.METRIC_VIEW, sqlCreateMetric.name.getSimple(), metricViewString));
     return metricViewString;
@@ -152,7 +152,8 @@ public class CalciteToolbox
    * Validates create metrics view query by parsing and validating group by queries
    * created from the dimensions and measures specified in the modeling query
    */
-  public String validateModelingQuery(SqlCreateMetric sqlCreateMetric) throws SqlParseException, ValidationException
+  public String validateModelingQuery(SqlCreateMetric sqlCreateMetric, SqlDialect sqlDialect)
+      throws SqlParseException, ValidationException
   {
     SqlNodeList dimensions = sqlCreateMetric.dimensions;
     SqlNodeList groupByList = new SqlNodeList(SqlParserPos.ZERO);

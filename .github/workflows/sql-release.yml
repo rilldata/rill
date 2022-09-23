@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/sql-release.yml"
       - "sql/**"
+
 jobs:
   librillsql:
     strategy:

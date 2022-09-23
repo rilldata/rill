@@ -2,7 +2,9 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 )
 
 // Drivers is a registry of drivers
@@ -31,11 +33,45 @@ func Open(driver string, dsn string) (DB, error) {
 	return db, nil
 }
 
+// Driver is the interface for DB drivers
 type Driver interface {
 	Open(dsn string) (DB, error)
 }
 
+// DB is the interface for a database connection
 type DB interface {
+	Close() error
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
+
+	FindOrganizations(ctx context.Context) ([]*Organization, error)
+	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	CreateOrganization(ctx context.Context, name string, description string) (*Organization, error)
+	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
+	DeleteOrganization(ctx context.Context, name string) error
+
+	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
+	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
+	CreateProject(ctx context.Context, orgID string, name string, description string) (*Project, error)
+	UpdateProject(ctx context.Context, id string, description string) (*Project, error)
+	DeleteProject(ctx context.Context, id string) error
+}
+
+var ErrNotFound = errors.New("database: not found")
+
+type Organization struct {
+	ID          string
+	Name        string
+	Description string
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+type Project struct {
+	ID             string
+	OrganizationID string `db:"organization_id"`
+	Name           string
+	Description    string
+	CreatedOn      time.Time `db:"created_on"`
+	UpdatedOn      time.Time `db:"updated_on"`
 }

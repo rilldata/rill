@@ -4,7 +4,7 @@ import { selectMetricsDefinitionsByModelId } from "$lib/redux-store/dimension-de
 import { validateSelectedSources } from "$lib/redux-store/metrics-definition/metrics-definition-apis";
 import { store } from "$lib/redux-store/store-root";
 import { queryClient } from "$lib/svelte-query/globalQueryClient";
-import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-view";
+import { invalidateMetricsView } from "$lib/svelte-query/queries/metrics-views/invalidation";
 
 export const updateModelQueryApi = async (
   modelId: string,

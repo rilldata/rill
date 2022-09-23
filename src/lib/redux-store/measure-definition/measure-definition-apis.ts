@@ -23,6 +23,7 @@ const MeasureExpressionValidation: ValidationConfig<MeasureDefinitionEntity> = {
     try {
       const resp = await fetchWrapper("measures/validate-expression", "POST", {
         metricsDefId: changes.metricsDefId ?? entity.metricsDefId,
+        measureId: entity.id,
         expression: changes.expression,
       });
       return {
@@ -77,6 +78,7 @@ export const validateMeasureExpressionApi = createAsyncThunk(
     try {
       const resp = await fetchWrapper("measures/validate-expression", "POST", {
         metricsDefId,
+        measureId,
         expression,
       });
       thunkAPI.dispatch(

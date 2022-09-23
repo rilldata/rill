@@ -27,6 +27,7 @@
     <reflections.version>0.10.2</reflections.version>
     <hsqldb.version>2.3.4</hsqldb.version>
     <protobuf.version>3.21.5</protobuf.version>
+    <druid.sql.version>0.23.0</druid.sql.version>
   </properties>
   <dependencies>
     <!--calcite-->
@@ -39,6 +40,17 @@
       <groupId>org.apache.calcite.avatica</groupId>
       <artifactId>avatica</artifactId>
       <version>${avatica.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.druid</groupId>
+      <artifactId>druid-sql</artifactId>
+      <version>${druid.sql.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>

@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   dataModelerService,
@@ -84,6 +85,7 @@ export async function uploadFile(file: File, url: string, tableName?: string) {
       {}
     );
     await sourceUpdated(persistentTable.tableName);
+    goto(`/source/${persistentTable.id}`);
     // do not await here. it should not block importOverlayVisible being set to false
     dataModelerService.dispatch("collectTableInfo", [persistentTable.id]);
   } catch (err) {

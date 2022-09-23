@@ -108,7 +108,7 @@ public class SqlCreateMetric extends SqlCreate
     for (SqlNode sqlNode : sqlNodes) {
       String name = sqlNode.accept(simpleIdentifierExtractor);
       if (name == null) {
-        throw new ParseException(String.format("Cannot find identifier for node %s", sqlNode));
+        throw new ParseException(String.format("Please provide an alias for %s", sqlNode));
       }
       sqlNodeMap.put(name, sqlNode);
     }

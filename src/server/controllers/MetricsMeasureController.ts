@@ -1,11 +1,11 @@
-import type { Router, Request, Response } from "express";
+import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
 import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { EntityController } from "$server/controllers/EntityController";
 import type { RillRequestContext } from "$common/rill-developer-service/RillRequestContext";
-import type { ActionResponse } from "$common/data-modeler-service/response/ActionResponse";
+import { EntityController } from "$server/controllers/EntityController";
+import type { Request, Response, Router } from "express";
 
 export class MetricsMeasureController extends EntityController {
   protected static entityPath = "measures";
@@ -70,6 +70,7 @@ export class MetricsMeasureController extends EntityController {
     await EntityController.wrapAction(res, async (context) =>
       this.rillDeveloperService.dispatch(context, "validateMeasureExpression", [
         req.body.metricsDefId,
+        req.body.measureId,
         req.body.expression,
       ])
     );

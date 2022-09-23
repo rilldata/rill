@@ -1,7 +1,6 @@
 import { DataModelerCliCommand } from "$cli/DataModelerCliCommand";
 import { Command } from "commander";
-import { existsSync, mkdirSync, copyFileSync } from "fs";
-import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { copyFileSync, existsSync, mkdirSync } from "fs";
 
 export class InitCommand extends DataModelerCliCommand {
   private alreadyInitialised: boolean;
@@ -46,11 +45,6 @@ export class InitCommand extends DataModelerCliCommand {
     if (!this.alreadyInitialised) {
       // add a single model.
       await this.dataModelerService.dispatch("addModel", [{}]);
-      // set dummy asset as active to show onboarding steps
-      await this.dataModelerService.dispatch("setActiveAsset", [
-        EntityType.Model,
-        undefined,
-      ]);
       console.log(
         "\nYou have successfully initialized a new project with Rill Developer. "
       );
