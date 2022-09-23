@@ -12,7 +12,7 @@
   import { drag } from "$lib/drag";
   import { getContext } from "svelte";
   import { cubicOut as easing } from "svelte/easing";
-  import { slide, fade } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
 
   import type { DerivedModelEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type { PersistentModelEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
@@ -114,6 +114,14 @@
         class:border-gray-300={!!currentDerivedModel?.error}
       >
         <div class="flex h-full flex-col">
+          {#if currentDerivedModel?.error}
+            <div
+              transition:slide={{ duration: 200, easing }}
+              class="error m-3 p-2 font-bold text-gray-700"
+            >
+              {currentDerivedModel.error}
+            </div>
+          {/if}
           {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
             <div class="relative flex-auto min-h-0">
               {#if currentDerivedModel?.error}
@@ -134,14 +142,6 @@
               class="grid items-center justify-center italic pt-3 text-gray-600"
             >
               no columns selected
-            </div>
-          {/if}
-          {#if currentDerivedModel?.error}
-            <div
-              transition:slide={{ duration: 200, easing }}
-              class="error border-2 border-gray-300 m-3 font-bold p-2 text-gray-700"
-            >
-              {currentDerivedModel.error}
             </div>
           {/if}
         </div>
