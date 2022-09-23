@@ -1,14 +1,14 @@
 <script>
-  import { Button } from "$lib/components/button";
+  import { Button } from "$web-local/lib/components/button";
 
-  import Check from "$lib/components/icons/Check.svelte";
-  import Close from "$lib/components/icons/Close.svelte";
-  import Spacer from "$lib/components/icons/Spacer.svelte";
+  import Check from "$web-local/lib/components/icons/Check.svelte";
+  import Close from "$web-local/lib/components/icons/Close.svelte";
+  import Spacer from "$web-local/lib/components/icons/Spacer.svelte";
 
-  import { Menu } from "$lib/components/menu";
-  import Divider from "$lib/components/menu/core/Divider.svelte";
-  import MenuHeader from "$lib/components/menu/core/MenuHeader.svelte";
-  import MenuItem from "$lib/components/menu/core/MenuItem.svelte";
+  import { Menu } from "$web-local/lib/components/menu";
+  import Divider from "$web-local/lib/components/menu/core/Divider.svelte";
+  import MenuHeader from "$web-local/lib/components/menu/core/MenuHeader.svelte";
+  import MenuItem from "$web-local/lib/components/menu/core/MenuItem.svelte";
   import { createEventDispatcher, tick } from "svelte";
   import Footer from "./Footer.svelte";
 

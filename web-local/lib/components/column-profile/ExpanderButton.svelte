@@ -1,7 +1,7 @@
 <script>
-  import SlidingWords from "$lib/components/tooltip/SlidingWords.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
+  import SlidingWords from "$web-local/lib/components/tooltip/SlidingWords.svelte";
+  import Tooltip from "$web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "$web-local/lib/components/tooltip/TooltipContent.svelte";
   import { createHoverStateActionFactory } from "../actions/hover-state-action-factory.ts";
   export let rotated = false;
   export let suppressTooltip = false;

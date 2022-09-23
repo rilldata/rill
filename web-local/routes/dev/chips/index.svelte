@@ -1,7 +1,10 @@
 <script>
-  import { ChipContainer, RemovableListChip } from "$lib/components/chip";
-  import Add from "$lib/components/icons/Add.svelte";
-  import Cancel from "$lib/components/icons/Cancel.svelte";
+  import {
+    ChipContainer,
+    RemovableListChip,
+  } from "$web-local/lib/components/chip";
+  import Add from "$web-local/lib/components/icons/Add.svelte";
+  import Cancel from "$web-local/lib/components/icons/Cancel.svelte";
   import { flip } from "svelte/animate";
 
   const chipValues = [

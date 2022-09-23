@@ -1,5 +1,5 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "commonjs",
     "sourceMap": false
@@ -8,5 +8,9 @@
     "**/*.d.ts",
     "**/*.ts",
     "**/*.svelte"
+  ],
+  "exclude": [
+    "test/**",
+    "vite.config.ts"
   ]
 }

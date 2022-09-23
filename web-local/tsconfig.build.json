@@ -1,8 +1,11 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "./tsconfig.json",
   "include": [
-    "web-local/src/**/*.d.ts",
-    "web-local/src/**/*.ts",
-    "web-local/src/**/*.svelte"
+    "**/*.d.ts",
+    "**/*.ts",
+    "**/*.svelte"
+  ],
+  "exclude": [
+    "test/**"
   ]
 }

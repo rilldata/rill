@@ -1,5 +1,5 @@
 {
-  "name": "@rilldata/rill-web-local",
+  "name": "web-local",
   "version": "0.10.0",
   "type": "module",
   "scripts": {
@@ -112,5 +112,13 @@
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1",
     "svelte": "^3.48.0"
+  },
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "node_modules/**/*",
+      "build/**/*",
+      "package.json"
+    ]
   }
 }

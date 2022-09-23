@@ -1,8 +1,8 @@
 <script>
-  import { Divider, Menu, MenuItem } from "$lib/components/menu";
+  import { Divider, Menu, MenuItem } from "$web-local/lib/components/menu";
 
-  import CheckCircle from "$lib/components/icons/CheckCircle.svelte";
-  import CircleEmpty from "$lib/components/icons/EmptyCircle.svelte";
+  import CheckCircle from "$web-local/lib/components/icons/CheckCircle.svelte";
+  import CircleEmpty from "$web-local/lib/components/icons/EmptyCircle.svelte";
 
   let commands = [];
   function add(cmd) {

@@ -18,13 +18,5 @@
     "package-lock.json",
     "LICENSE.md",
     "README.md"
-  ],
-  "pkg": {
-    "scripts": "dist/**/*.js",
-    "assets": [
-      "node_modules/**/*",
-      "build/**/*",
-      "package.json"
-    ]
-  }
+  ]
 }

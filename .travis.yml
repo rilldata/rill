@@ -52,13 +52,13 @@ jobs:
         - npx playwright install
 
         - echo "Build the entire application"
-        - npm run build
+        - npm run build -w web-local
 
         - echo "Verify lint of the repo"
-        - npm run lint -- --quiet
+        - npm run lint -w web-local -- --quiet
 
         - echo "Run all tests"
-        - npm run test
+        - npm run test -w web-local
 
     - stage: Test
       name: "Verify docker build"
@@ -117,7 +117,7 @@ jobs:
         - npx playwright install
 
         - echo "Build the entire application"
-        - npm run build
+        - npm run build -w web-local
 
       # Deploy will run npm test
       deploy:
@@ -149,13 +149,13 @@ jobs:
 
       script: &build-vercel-pkg
         - echo "Build the entire application"
-        - npm run build
+        - npm run build -w web-local
 
         - echo "Cleaning dev dependencies"
         - npm prune --production
 
         - echo "Building vercel/pkg binary"
-        - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
+        - cd web-local && node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
         - ./scripts/upload.sh
 
       deploy: &deploy-vercel-pkg

@@ -1,5 +1,5 @@
 <script>
-  import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
+  import SurfaceViewIcon from "$web-local/lib/components/icons/SurfaceView.svelte";
   let mode = "hamburger;";
 </script>
 

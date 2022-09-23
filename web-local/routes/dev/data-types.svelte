@@ -1,6 +1,6 @@
 <script>
-  import DataTypeIcon from "$lib/components/data-types/DataTypeIcon.svelte";
-  import FormattedDataType from "$lib/components/data-types/FormattedDataType.svelte";
+  import DataTypeIcon from "$web-local/lib/components/data-types/DataTypeIcon.svelte";
+  import FormattedDataType from "$web-local/lib/components/data-types/FormattedDataType.svelte";
 
   const examples = [
     { value: 10.534234, type: "FLOAT", label: "float", comment: "" },
