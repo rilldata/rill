@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { RootConfig } from "$common/config/RootConfig";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -13,14 +14,17 @@
   import { invalidateMetricsViewData } from "$lib/svelte-query/queries/metrics-views/invalidation";
   import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getContext } from "svelte";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricsDefId: string;
 
+  const config = getContext<RootConfig>("config");
+
   const queryClient = useQueryClient();
 
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   // TODO: move this "sync" to a more relevant component
   $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data?.id) {
     if (

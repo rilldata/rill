@@ -7,6 +7,7 @@
     createStore,
     duplicateSourceName,
   } from "$lib/application-state-stores/application-store";
+  import { config } from "$lib/application-state-stores/application-store.js";
   import {
     assetsVisible,
     assetVisibilityTween,
@@ -47,6 +48,7 @@
   import PreparingImport from "$lib/components/overlay/PreparingImport.svelte";
   import QuickStartDashboard from "$lib/components/overlay/QuickStartDashboard.svelte";
   import SurfaceControlButton from "$lib/components/surface/SurfaceControlButton.svelte";
+  import ConfigProvider from "$lib/config/ConfigProvider.svelte";
   import { initMetrics } from "$lib/metrics/initMetrics";
   import { syncApplicationState } from "$lib/redux-store/application/application-apis";
   import {
@@ -164,123 +166,126 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <div class="body">
-    {#if derivedExportedModel && persistentExportedModel}
-      <ExportingDataset tableName={persistentExportedModel.name} />
-    {:else if derivedImportedTable && persistentImportedTable}
-      <ImportingTable
-        importName={persistentImportedTable.path}
-        tableName={persistentImportedTable.name}
-      />
-    {:else if $importOverlayVisible}
-      <PreparingImport />
-    {:else if $quickStartDashboardOverlay?.show}
-      <QuickStartDashboard
-        sourceName={$quickStartDashboardOverlay.sourceName}
-        timeDimension={$quickStartDashboardOverlay.timeDimension}
-      />
-    {:else if showDropOverlay}
-      <FileDrop bind:showDropOverlay />
-    {/if}
+  <ConfigProvider {config}>
+    <div class="body">
+      {#if derivedExportedModel && persistentExportedModel}
+        <ExportingDataset tableName={persistentExportedModel.name} />
+      {:else if derivedImportedTable && persistentImportedTable}
+        <ImportingTable
+          importName={persistentImportedTable.path}
+          tableName={persistentImportedTable.name}
+        />
+      {:else if $importOverlayVisible}
+        <PreparingImport />
+      {:else if $quickStartDashboardOverlay?.show}
+        <QuickStartDashboard
+          sourceName={$quickStartDashboardOverlay.sourceName}
+          timeDimension={$quickStartDashboardOverlay.timeDimension}
+        />
+      {:else if showDropOverlay}
+        <FileDrop bind:showDropOverlay />
+      {/if}
 
-    {#if $duplicateSourceName !== null}
-      <DuplicateSource />
-    {/if}
+      {#if $duplicateSourceName !== null}
+        <DuplicateSource />
+      {/if}
 
-    <div
-      class="index-body absolute w-screen h-screen bg-gray-100"
-      on:drop|preventDefault|stopPropagation
-      on:drag|preventDefault|stopPropagation
-      on:dragenter|preventDefault|stopPropagation
-      on:dragover|preventDefault|stopPropagation={(e) => {
-        if (isEventWithFiles(e)) showDropOverlay = true;
-      }}
-      on:dragleave|preventDefault|stopPropagation
-    >
-      <!-- left assets pane expansion button -->
-      <!-- make this the first element to select with tab by placing it first.-->
-      <SurfaceControlButton
-        show={true}
-        left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) +
-          12 * $assetVisibilityTween}px"
-        on:click={() => {
-          assetsVisible.set(!$assetsVisible);
+      <div
+        class="index-body absolute w-screen h-screen bg-gray-100"
+        on:drop|preventDefault|stopPropagation
+        on:drag|preventDefault|stopPropagation
+        on:dragenter|preventDefault|stopPropagation
+        on:dragover|preventDefault|stopPropagation={(e) => {
+          if (isEventWithFiles(e)) showDropOverlay = true;
         }}
+        on:dragleave|preventDefault|stopPropagation
       >
-        {#if $assetsVisible}
-          <HideLeftSidebar size="20px" />
-        {:else}
-          <SurfaceViewIcon size="16px" mode={"hamburger"} />
-        {/if}
-        <svelte:fragment slot="tooltip-content">
-          {#if $assetVisibilityTween === 0} close {:else} show {/if} sidebar
-        </svelte:fragment>
-      </SurfaceControlButton>
-
-      <!-- inspector pane hide -->
-      {#if hasInspector}
+        <!-- left assets pane expansion button -->
+        <!-- make this the first element to select with tab by placing it first.-->
         <SurfaceControlButton
           show={true}
-          right="{($layout.inspectorWidth - 12 - 24) *
-            (1 - $inspectorVisibilityTween) +
-            12 * $inspectorVisibilityTween}px"
+          left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) +
+            12 * $assetVisibilityTween}px"
           on:click={() => {
-            inspectorVisible.set(!$inspectorVisible);
+            assetsVisible.set(!$assetsVisible);
           }}
         >
-          {#if $inspectorVisible}
-            <HideRightSidebar size="20px" />
+          {#if $assetsVisible}
+            <HideLeftSidebar size="20px" />
           {:else}
-            <MoreHorizontal size="16px" />
+            <SurfaceViewIcon size="16px" mode={"hamburger"} />
           {/if}
           <svelte:fragment slot="tooltip-content">
             {#if $assetVisibilityTween === 0} close {:else} show {/if} sidebar
           </svelte:fragment>
         </SurfaceControlButton>
-      {/if}
-      <!-- assets sidebar component -->
-      <!-- this is where we handle navigation -->
-      <div
-        class="box-border	 assets fixed"
-        aria-hidden={!$assetsVisible}
-        style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
-      >
-        <AssetsSidebar />
-      </div>
 
-      <!-- workspace component -->
-      <div
-        class="box-border fixed {views[activeEntityType]?.bg || 'bg-gray-100'}"
-        style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
-        style:padding-right="{$inspectorVisibilityTween *
-          SIDE_PAD *
-          (hasInspector ? 1 : 0)}px"
-        style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
-        style:top="0px"
-        style:right="{hasInspector
-          ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
-          : 0}px"
-      >
-        <slot />
-      </div>
+        <!-- inspector pane hide -->
+        {#if hasInspector}
+          <SurfaceControlButton
+            show={true}
+            right="{($layout.inspectorWidth - 12 - 24) *
+              (1 - $inspectorVisibilityTween) +
+              12 * $inspectorVisibilityTween}px"
+            on:click={() => {
+              inspectorVisible.set(!$inspectorVisible);
+            }}
+          >
+            {#if $inspectorVisible}
+              <HideRightSidebar size="20px" />
+            {:else}
+              <MoreHorizontal size="16px" />
+            {/if}
+            <svelte:fragment slot="tooltip-content">
+              {#if $assetVisibilityTween === 0} close {:else} show {/if} sidebar
+            </svelte:fragment>
+          </SurfaceControlButton>
+        {/if}
+        <!-- assets sidebar component -->
+        <!-- this is where we handle navigation -->
+        <div
+          class="box-border	 assets fixed"
+          aria-hidden={!$assetsVisible}
+          style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
+        >
+          <AssetsSidebar />
+        </div>
 
-      <!-- inspector sidebar -->
-      <!-- Workaround: hide the inspector on MetricsDefinition or 
+        <!-- workspace component -->
+        <div
+          class="box-border fixed {views[activeEntityType]?.bg ||
+            'bg-gray-100'}"
+          style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
+          style:padding-right="{$inspectorVisibilityTween *
+            SIDE_PAD *
+            (hasInspector ? 1 : 0)}px"
+          style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
+          style:top="0px"
+          style:right="{hasInspector
+            ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
+            : 0}px"
+        >
+          <slot />
+        </div>
+
+        <!-- inspector sidebar -->
+        <!-- Workaround: hide the inspector on MetricsDefinition or 
             on MetricsExplorer for now.
           Once we refactor how layout routing works, we will have a better solution to this.
       -->
-      {#if hasInspector}
-        <div
-          class="fixed"
-          aria-hidden={!$inspectorVisible}
-          style:right="{$layout.inspectorWidth *
-            (1 - $inspectorVisibilityTween)}px"
-        >
-          <InspectorSidebar />
-        </div>
-      {/if}
+        {#if hasInspector}
+          <div
+            class="fixed"
+            aria-hidden={!$inspectorVisible}
+            style:right="{$layout.inspectorWidth *
+              (1 - $inspectorVisibilityTween)}px"
+          >
+            <InspectorSidebar />
+          </div>
+        {/if}
+      </div>
     </div>
-  </div>
+  </ConfigProvider>
 </QueryClientProvider>
 
 <NotificationCenter />

@@ -1,7 +1,10 @@
-import { config } from "$lib/application-state-stores/application-store";
-
-export async function fetchUrl(path: string, method: string, body?) {
-  const resp = await fetch(`${config.server.serverUrl}/api/v1/${path}`, {
+export async function fetchUrl(
+  base: string,
+  path: string,
+  method: string,
+  body?
+) {
+  const resp = await fetch(`${base}/api/v1/${path}`, {
     method,
     headers: { "Content-Type": "application/json" },
     ...(body ? { body: JSON.stringify(body) } : {}),
