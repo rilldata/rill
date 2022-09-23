@@ -13,7 +13,7 @@ COPY web-local/src src/
 RUN echo "Installing npm dependencies..." && \
     npm install -d
 
-COPY static static/
+COPY web-local/static static/
 RUN echo "Compiling the code..." && \
     npm run build
 

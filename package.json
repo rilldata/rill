@@ -13,7 +13,7 @@
     "dist",
     "web-local/build-tools/post_install.cjs",
     "build",
-    "static",
+    "web-local/static",
     "package.json",
     "package-lock.json",
     "LICENSE.md",
