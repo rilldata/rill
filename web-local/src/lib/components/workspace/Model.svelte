@@ -12,7 +12,7 @@
   import { drag } from "../../drag";
   import { getContext } from "svelte";
   import { cubicOut as easing } from "svelte/easing";
-  import { slide } from "svelte/transition";
+  import { slide, fade } from "svelte/transition";
 
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
@@ -113,26 +113,38 @@
         class:border={!!currentDerivedModel?.error}
         class:border-gray-300={!!currentDerivedModel?.error}
       >
-        {#if currentDerivedModel?.error}
-          <div
-            transition:slide={{ duration: 200, easing }}
-            class="error font-bold rounded-lg p-5 text-gray-700"
-          >
-            {currentDerivedModel.error}
-          </div>
-        {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
-          <PreviewTable
-            rows={currentDerivedModel.preview}
-            columnNames={currentDerivedModel.profile}
-            rowOverscanAmount={20}
-          />
-        {:else}
-          <div
-            class="grid items-center justify-center italic pt-3 text-gray-600"
-          >
-            no columns selected
-          </div>
-        {/if}
+        <div class="flex h-full flex-col">
+          {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
+            <div class="relative flex-auto min-h-0">
+              {#if currentDerivedModel?.error}
+                <div
+                  transition:fade={{ duration: 200 }}
+                  style:background="rgba(0,0,0,0.2)"
+                  class="absolute z-10 h-full w-full pointer-events-none z-100"
+                />
+              {/if}
+              <PreviewTable
+                rows={currentDerivedModel.preview}
+                columnNames={currentDerivedModel.profile}
+                rowOverscanAmount={20}
+              />
+            </div>
+          {:else}
+            <div
+              class="grid items-center justify-center italic pt-3 text-gray-600"
+            >
+              no columns selected
+            </div>
+          {/if}
+          {#if currentDerivedModel?.error}
+            <div
+              transition:slide={{ duration: 200, easing }}
+              class="error border-2 border-gray-300 m-3 font-bold p-2 text-gray-700"
+            >
+              {currentDerivedModel.error}
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
   {/if}
