@@ -37,5 +37,8 @@
     },
     "outDir": "dist"
   },
-  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.svelte", "test/**/*.ts"]
+  "include": [
+    "web-local/**/*.d.ts",
+    "web-local/**/*.ts",
+    "web-local/**/*.svelte", "test/**/*.ts"]
 }

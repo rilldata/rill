@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "sourceMap": false
+  },
+  "include": [
+    "**/*.d.ts",
+    "**/*.ts",
+    "**/*.svelte"
+  ]
+}

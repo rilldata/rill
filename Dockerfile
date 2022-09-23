@@ -8,7 +8,7 @@ COPY package.json package-lock.json \
     svelte.config.js vite.config.ts tailwind.config.cjs postcss.config.cjs .babelrc ./
 
 COPY build-tools build-tools/
-COPY src src/
+COPY web-local/src src/
 
 RUN echo "Installing npm dependencies..." && \
     npm install -d

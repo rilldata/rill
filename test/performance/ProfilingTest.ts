@@ -1,4 +1,4 @@
-import "../../src/moduleAlias";
+import "../../web-local/moduleAlias";
 import { FunctionalTestBase } from "../functional/FunctionalTestBase";
 import { execSync } from "node:child_process";
 import { RootConfig } from "$common/config/RootConfig";

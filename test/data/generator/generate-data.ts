@@ -1,4 +1,4 @@
-import "../../../src/moduleAlias";
+import "../../../web-local/moduleAlias";
 import { DataGeneratorFarm } from "./DataGeneratorFarm";
 import { AD_BID_COUNT, AD_IMPRESSION_COUNT, MAX_USERS } from "./data-constants";
 import { execSync } from "node:child_process";
