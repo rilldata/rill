@@ -39,8 +39,36 @@ public class SqlConverterEntrypoint
       }
       return convertToCCharPointer(allocatorFn, runnableQuery);
     } catch (Exception e) {
+      e.printStackTrace(); // todo level-logging for native libraries?
+      return convertToCCharPointer(allocatorFn, String.format("{'error': '%s'}", e.getMessage()));
+    }
+  }
+
+  @CEntryPoint(name = "create_source")
+  public static byte[] createSource(IsolateThread thread, CCharPointer sourceDef, CCharPointer schema)
+  {
+    try {
+      String javaSchemaString = CTypeConversion.toJavaString(schema);
+      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String createSource = CTypeConversion.toJavaString(sourceDef);
+      return sqlConverter.createSource(createSource);
+    } catch (Exception e) {
       e.printStackTrace();
-      return WordFactory.nullPointer();
+      return null;
+    }
+  }
+
+  @CEntryPoint(name = "create_metrics_view")
+  public static byte[] createMetricsView(IsolateThread thread, CCharPointer metricsViewDef, CCharPointer schema)
+  {
+    try {
+      String javaSchemaString = CTypeConversion.toJavaString(schema);
+      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String createMetricsView = CTypeConversion.toJavaString(metricsViewDef);
+      return sqlConverter.createMetricsView(createMetricsView);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
     }
   }
 

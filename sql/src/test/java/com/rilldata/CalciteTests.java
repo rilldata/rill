@@ -54,7 +54,7 @@ public class CalciteTests
         COUNT(DISTINCT DIM1) AS M_DIST,
         AVG(DISTINCT MET1) AS M_AVG
         FROM MAIN.TEST""";
-    calciteToolbox.saveModel(modelingQuery);
+    calciteToolbox.createMetricsView(modelingQuery);
   }
 
   @ParameterizedTest
@@ -65,7 +65,7 @@ public class CalciteTests
   {
     SqlCreateMetricsView sqlCreateMetricsView;
     try {
-      sqlCreateMetricsView = (SqlCreateMetricsView) calciteToolbox.parseQuery(modelingQuery);
+      sqlCreateMetricsView = (SqlCreateMetricsView) calciteToolbox.parseSql(modelingQuery);
       parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
@@ -100,7 +100,7 @@ public class CalciteTests
   {
     SqlCreateSource sqlCreateSource;
     try {
-      sqlCreateSource = (SqlCreateSource) calciteToolbox.parseQuery(createSourceQuery);
+      sqlCreateSource = (SqlCreateSource) calciteToolbox.parseSql(createSourceQuery);
       parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
       CreateSourceValidator.validateConnector(sqlCreateSource);

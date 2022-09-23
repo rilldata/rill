@@ -100,19 +100,30 @@ public class CalciteToolbox
     return sql;
   }
 
-  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
+  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     // expand query if needed
     sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
+    return getAST(sqlNode, planner, addTypeInfo);
+  }
+
+  public byte[] getAST(SqlNode sqlNode, boolean addTypeInfo)
+  {
+    Planner planner = getPlanner();
+    return getAST(sqlNode, planner, addTypeInfo);
+  }
+
+  public byte[] getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
+  {
     SqlValidator sqlValidator = null;
     if (addTypeInfo) {
       SqlNode toValidate = sqlNode.clone(sqlNode.getParserPosition());
-      planner.validate(toValidate);
       try {
+        planner.validate(toValidate);
         sqlValidator = getValidator((PlannerImpl) planner);
-      } catch (NoSuchFieldException | IllegalAccessException e) {
+      } catch (NoSuchFieldException | IllegalAccessException | ValidationException e) {
         throw new RuntimeException(e);
       }
     }
@@ -129,29 +140,29 @@ public class CalciteToolbox
     return (SqlValidator) validatorField.get(planner);
   }
 
-  public String saveModel(String sql) throws SqlParseException, ValidationException
+  public SqlCreateMetricsView createMetricsView(String sql) throws SqlParseException, ValidationException
   {
-    SqlCreateMetricsView sqlCreateMetricsView = (SqlCreateMetricsView) parseQuery(sql);
+    SqlCreateMetricsView sqlCreateMetricsView = (SqlCreateMetricsView) parseSql(sql);
     String metricViewString = CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView,
         Dialects.DUCKDB.getSqlDialect(), getPlanner()
     );
     artifactManager.saveArtifact(
         new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetricsView.name.getSimple(), metricViewString));
-    // if things are valid return the original sql string
-    return sql;
+    // if things are valid return the parsed SqlNode/AST
+    return sqlCreateMetricsView;
   }
 
-  public String createSource(String sql) throws SqlParseException
+  public SqlCreateSource createSource(String sql) throws SqlParseException
   {
-    SqlCreateSource sqlCreateSource = (SqlCreateSource) parseQuery(sql);
+    SqlCreateSource sqlCreateSource = (SqlCreateSource) parseSql(sql);
     String createSourceString = sqlCreateSource.toSqlString(Dialects.DUCKDB.getSqlDialect()).toString();
     artifactManager.saveArtifact(
         new Artifact(ArtifactType.SOURCE, sqlCreateSource.name.getSimple(), createSourceString));
-    // if things are valid return the original sql string
-    return sql;
+    // if things are valid return the parsed SqlNode/AST
+    return sqlCreateSource;
   }
 
-  public SqlNode parseQuery(String sql) throws SqlParseException
+  public SqlNode parseSql(String sql) throws SqlParseException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
