@@ -1,5 +1,7 @@
 package com.rilldata.protobuf;
 
+import com.rilldata.calcite.models.SqlCreateMetricsView;
+import com.rilldata.calcite.models.SqlCreateSource;
 import com.rilldata.protobuf.generated.BasicSqlTypeProto;
 import com.rilldata.protobuf.generated.CoercibilityProto;
 import com.rilldata.protobuf.generated.IntervalSqlTypeProto;
@@ -12,6 +14,8 @@ import com.rilldata.protobuf.generated.SerializableCharsetProto;
 import com.rilldata.protobuf.generated.SqlBasicCallProto;
 import com.rilldata.protobuf.generated.SqlCharStringLiteralProto;
 import com.rilldata.protobuf.generated.SqlCollationProto;
+import com.rilldata.protobuf.generated.SqlCreateMetricsViewProto;
+import com.rilldata.protobuf.generated.SqlCreateSourceProto;
 import com.rilldata.protobuf.generated.SqlDateLiteralProto;
 import com.rilldata.protobuf.generated.SqlIdentifierProto;
 import com.rilldata.protobuf.generated.SqlIntervalQualifierProto;
@@ -69,8 +73,8 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * Run `mvn package` to generate the protobuf builder classes in target/generated-sources/annotations folder
- * It uses script - protoc-java.sh
+ * Run `mvn package` to generate the protobuf builder classes in target/generated-sources/annotations folder.
+ * It uses following script - protoc-java.sh
  */
 public class SqlNodeProtoBuilder
 {
@@ -527,6 +531,40 @@ public class SqlNodeProtoBuilder
     return sqlIntervalQualifierProtoBuilder.build();
   }
 
+  private SqlCreateSourceProto handleSqlCreateSource(SqlCreateSource sqlCreateSource)
+  {
+   SqlCreateSourceProto.Builder sqlCreateSourceProtoBuilder = SqlCreateSourceProto.newBuilder();
+   sqlCreateSourceProtoBuilder.setName(handleSqlIdentifier(sqlCreateSource.name));
+   sqlCreateSourceProtoBuilder.putAllProperties(sqlCreateSource.properties);
+   sqlCreateSourceProtoBuilder.setReplace(sqlCreateSource.getReplace());
+   sqlCreateSourceProtoBuilder.setIfNotExists(sqlCreateSource.ifNotExists);
+   sqlCreateSourceProtoBuilder.setOperator(handleSqlOperator(sqlCreateSource.getOperator()));
+    RelDataType relDataType =
+        sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlCreateSource) : null;
+    if (relDataType != null) {
+      sqlCreateSourceProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlCreateSourceProtoBuilder.build();
+  }
+
+  private SqlCreateMetricsViewProto handleSqlCreateMetricsView(SqlCreateMetricsView sqlCreateMetricsView)
+  {
+    SqlCreateMetricsViewProto.Builder sqlCreateMetricsViewProtoBuilder = SqlCreateMetricsViewProto.newBuilder();
+    sqlCreateMetricsViewProtoBuilder.setName(handleSqlIdentifier(sqlCreateMetricsView.name));
+    sqlCreateMetricsViewProtoBuilder.setDimensions(handleSqlNodeList(sqlCreateMetricsView.dimensions));
+    sqlCreateMetricsViewProtoBuilder.setMeasures(handleSqlNodeList(sqlCreateMetricsView.measures));
+    sqlCreateMetricsViewProtoBuilder.setFrom(handleSqlNode(sqlCreateMetricsView.from));
+    sqlCreateMetricsViewProtoBuilder.setReplace(sqlCreateMetricsView.getReplace());
+    sqlCreateMetricsViewProtoBuilder.setIfNotExists(sqlCreateMetricsView.ifNotExists);
+    sqlCreateMetricsViewProtoBuilder.setOperator(handleSqlOperator(sqlCreateMetricsView.getOperator()));
+    RelDataType relDataType =
+        sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlCreateMetricsView) : null;
+    if (relDataType != null) {
+      sqlCreateMetricsViewProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlCreateMetricsViewProtoBuilder.build();
+  }
+
   private SqlTypeNameProto handleSqlTypeName(SqlTypeName sqlTypeName)
   {
     return SqlTypeNameProto.valueOf(sqlTypeName.getClass().getSimpleName() + "Proto_" + sqlTypeName.name() + "_");
@@ -581,6 +619,12 @@ public class SqlNodeProtoBuilder
     } else if (sqlNode instanceof SqlIntervalQualifier) {
       return SqlNodeProto.newBuilder()
           .setSqlIntervalQualifierProto(handleSqlIntervalQualifier((SqlIntervalQualifier) sqlNode)).build();
+    } else if (sqlNode instanceof SqlCreateSource) {
+      return SqlNodeProto.newBuilder()
+          .setSqlCreateSourceProto(handleSqlCreateSource((SqlCreateSource) sqlNode)).build();
+    } else if (sqlNode instanceof SqlCreateMetricsView) {
+      return SqlNodeProto.newBuilder()
+          .setSqlCreateMetricsViewProto(handleSqlCreateMetricsView((SqlCreateMetricsView) sqlNode)).build();
     } else {
       return null;
     }

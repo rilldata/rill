@@ -521,8 +521,10 @@ message SqlNodeProto {
 		SqlDropViewProto sqlDropViewProto = 58;
 		SqlDropFunctionProto sqlDropFunctionProto = 59;
 		SqlDropTypeProto sqlDropTypeProto = 60;
+		SqlCreateSourceProto sqlCreateSourceProto = 61;
+		SqlCreateMetricsViewProto sqlCreateMetricsViewProto = 62;
 	}
-	SqlParserPosProto pos = 61;
+	SqlParserPosProto pos = 63;
 }
 
 // Java Class: org.apache.calcite.sql.SqlCall
