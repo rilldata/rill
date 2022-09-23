@@ -4,6 +4,7 @@
   import type { PersistentTableStore } from "$lib/application-state-stores/table-stores";
 
   import Source from "$lib/components/icons/Source.svelte";
+  import { formatSourceType } from "$lib/types";
   import { getContext } from "svelte";
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
 
@@ -31,6 +32,11 @@
   <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
     <svelte:fragment slot="icon">
       <Source />
+    </svelte:fragment>
+    <svelte:fragment slot="label">
+      <span class="text-gray-500 text-sm font-medium">
+        {formatSourceType(currentSource.sourceType)}</span
+      >
     </svelte:fragment>
   </WorkspaceHeader>
 </div>

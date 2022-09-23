@@ -42,6 +42,29 @@ export interface ImportTableOptions {
 
 export class TableActions extends DataModelerActions {
   @DataModelerActions.PersistentTableAction()
+  public async addSQLSource(): Promise<ActionResponse> {
+    const persistentTable = getNewTable();
+    persistentTable.sourceType = TableSourceType.SQL;
+    persistentTable.sql = getSourceSqlTemplate();
+    persistentTable.tableName = persistentTable.name = `source_${Math.floor(
+      Math.random() * 100000
+    )}`;
+
+    this.dataModelerStateService.dispatch("addEntity", [
+      EntityType.Table,
+      StateType.Persistent,
+      persistentTable,
+    ]);
+    this.dataModelerStateService.dispatch("addEntity", [
+      EntityType.Table,
+      StateType.Derived,
+      getNewDerivedTable(persistentTable),
+    ]);
+
+    return ActionResponseFactory.getSuccessResponse("", persistentTable);
+  }
+
+  @DataModelerActions.PersistentTableAction()
   public async clearAllTables({
     stateService,
   }: PersistentTableStateActionArg): Promise<void> {
@@ -57,6 +80,60 @@ export class TableActions extends DataModelerActions {
         table.id,
       ]);
     });
+  }
+
+  @DataModelerActions.PersistentTableAction()
+  public async submitSourceSql(
+    { stateService }: PersistentTableStateActionArg,
+    tableName: string,
+    sql: string
+  ): Promise<ActionResponse> {
+    const table = stateService.getByField("tableName", tableName);
+    if (!table) {
+      return ActionResponseFactory.getEntityError(
+        `Table ${tableName} does not exist`
+      );
+    }
+
+    this.dataModelerStateService.dispatch("setEntityStatus", [
+      EntityType.Table,
+      table.id,
+      EntityStatus.Importing,
+    ]);
+
+    const response = await this.databaseActionQueue.enqueue(
+      { id: table.id, priority: DatabaseActionQueuePriority.TableImport },
+      "createTableFromSql",
+      [tableName, sql] // table.tableName or table.name?
+    );
+
+    let sqlError;
+    if (response?.status === ActionStatus.Failure) {
+      sqlError = response.messages[0].message;
+    }
+
+    const updatedTable = { ...table };
+    updatedTable.sql = sql;
+    updatedTable.sqlError = sqlError;
+    updatedTable.lastUpdated = Date.now();
+
+    this.dataModelerStateService.dispatch("updateEntity", [
+      EntityType.Table,
+      StateType.Persistent,
+      updatedTable,
+    ]);
+
+    this.dataModelerStateService.dispatch("setEntityStatus", [
+      EntityType.Table,
+      updatedTable.id,
+      EntityStatus.Idle,
+    ]);
+
+    if (!sqlError) {
+      await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+    }
+
+    return ActionResponseFactory.getSuccessResponse("", updatedTable);
   }
 
   @DataModelerActions.PersistentTableAction()
@@ -94,6 +171,13 @@ export class TableActions extends DataModelerActions {
     if (options.csvDelimiter) {
       table.csvDelimiter = options.csvDelimiter;
     }
+    // Consider generating SQL for local file imports
+    // if (table.sourceType === TableSourceType.CSVFile) {
+    //   table.sql = generateSqlForCSVImport(path, options.csvDelimiter);
+    // }
+    // if (table.sourceType === TableSourceType.ParquetFile) {
+    //   // table.sql = generateSqlForParquetImport(...)
+    // }
 
     const existingModelResp = this.checkExistingModel(name);
     if (existingModelResp) {
@@ -321,11 +405,16 @@ export class TableActions extends DataModelerActions {
     }
 
     if (!removeOnly) {
-      await this.databaseActionQueue.enqueue(
-        { id: table.id, priority: DatabaseActionQueuePriority.TableImport },
-        "dropTable",
-        [table.tableName]
-      );
+      try {
+        await this.databaseActionQueue.enqueue(
+          { id: table.id, priority: DatabaseActionQueuePriority.TableImport },
+          "dropTable",
+          [table.tableName]
+        );
+      } catch (err) {
+        // removing a table that doesn't exist in DuckDB yet is fine
+        console.error(err);
+      }
     }
     this.notificationService.notify({
       message: `dropped table ${table.tableName}`,
@@ -554,4 +643,23 @@ export class TableActions extends DataModelerActions {
     }
     return undefined;
   }
+}
+function getSourceSqlTemplate(): string {
+  return "-- Hey there, with DuckDB SQL you can read remote parquet files! Try one of these queries with your own data.\n\
+\n\
+-- Read a parquet file over HTTP(S)\n\
+\n\
+CREATE OR REPLACE TABLE <table> AS \n\
+SELECT * FROM read_parquet('https://<host>/<file>');\n\
+\n\
+\n\
+-- Read a parquet file from AWS s3\n\
+\n\
+SET s3_region='us-east-1';\n\
+SET s3_access_key_id='<AWS access key id>';\n\
+SET s3_secret_access_key='<AWS secret access key>';\n\
+\n\
+CREATE OR REPLACE TABLE <table> AS \n\
+SELECT * FROM read_parquet('s3://<bucket>/<file>');\
+";
 }

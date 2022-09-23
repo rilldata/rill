@@ -1,9 +1,9 @@
+import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
+import { EntityController } from "$server/controllers/EntityController";
 import { RillDeveloperController } from "$server/controllers/RillDeveloperController";
 import type { Request, Response, Router } from "express";
-import { ActionStatus } from "$common/data-modeler-service/response/ActionResponse";
-import path from "path";
 import { existsSync } from "fs";
-import { EntityController } from "$server/controllers/EntityController";
+import path from "path";
 
 interface FileUploadEntry {
   name: string;
@@ -19,6 +19,9 @@ export class FileActionsController extends RillDeveloperController {
   protected setupRouter(router: Router) {
     router.post("/table-upload", (req: FileUploadRequest, res: Response) =>
       this.handleFileUpload(req, res)
+    );
+    router.post("/create-table-with-sql", (req: Request, res: Response) =>
+      this.handleCreateTableWithSql(req, res)
     );
     router.get("/export", async (req: Request, res: Response) =>
       this.handleFileExport(req, res)
@@ -52,6 +55,13 @@ export class FileActionsController extends RillDeveloperController {
         ]);
       }
     });
+  }
+
+  private async handleCreateTableWithSql(req: Request, res: Response) {
+    const { sql, tableName } = req.body;
+    await EntityController.wrapAction(res, () =>
+      this.dataModelerService.dispatch("submitSourceSql", [tableName, sql])
+    );
   }
 
   private async handleFileExport(req: Request, res: Response) {

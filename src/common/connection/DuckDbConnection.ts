@@ -6,9 +6,10 @@ import {
   EntityType,
   StateType,
 } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { DuckDBClient } from "$common/database-service/DuckDBClient";
-import { DataConnection } from "./DataConnection";
 import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DuckDBClient } from "$common/database-service/DuckDBClient";
+import { TableSourceType } from "$lib/types";
+import { DataConnection } from "./DataConnection";
 
 /**
  * Connects to an existing duck db.
@@ -28,6 +29,10 @@ export class DuckDbConnection extends DataConnection {
   }
 
   public async init(): Promise<void> {
+    // install HTTPFS extension, used to connect to remote sources like S3
+    await this.duckDbClient.execute("INSTALL httpfs;", false, false);
+    await this.duckDbClient.execute("LOAD httpfs;", false, false);
+
     if (this.config.database.databaseName === ":memory:") return;
 
     await this.sync();
@@ -40,7 +45,9 @@ export class DuckDbConnection extends DataConnection {
   }
 
   public async sync(): Promise<void> {
-    const tables = await this.duckDbClient.execute<{ table_name: string }>(
+    const duckDbTables = await this.duckDbClient.execute<{
+      table_name: string;
+    }>(
       "SELECT table_name FROM information_schema.tables " +
         "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW';",
       false,
@@ -49,26 +56,44 @@ export class DuckDbConnection extends DataConnection {
     const persistentTables = this.dataModelerStateService
       .getEntityStateService(EntityType.Table, StateType.Persistent)
       .getCurrentState().entities;
-
-    const existingTables = new Map<string, PersistentTableEntity>();
-    persistentTables.forEach((persistentTable) =>
-      existingTables.set(persistentTable.tableName, persistentTable)
-    );
-
-    for (const table of tables) {
+    const tablesFromLocalFiles = new Map<string, PersistentTableEntity>();
+    const tablesFromSql = new Map<string, PersistentTableEntity>();
+    const tablesFromDuckDb = new Map<string, PersistentTableEntity>();
+    persistentTables.forEach((persistentTable) => {
+      if (persistentTable.sourceType === TableSourceType.SQL) {
+        tablesFromSql.set(persistentTable.name, persistentTable);
+      }
+      if (
+        persistentTable.sourceType === TableSourceType.CSVFile ||
+        persistentTable.sourceType === TableSourceType.ParquetFile
+      ) {
+        tablesFromLocalFiles.set(persistentTable.name, persistentTable);
+      }
+      if (persistentTable.sourceType === TableSourceType.DuckDB) {
+        tablesFromDuckDb.set(persistentTable.name, persistentTable);
+      }
+    });
+    for (const table of duckDbTables) {
       const tableName = table.table_name;
-      if (existingTables.has(tableName)) {
+      if (tablesFromLocalFiles.has(tableName)) {
         await this.dataModelerService.dispatch("syncTable", [
-          existingTables.get(tableName).id,
+          tablesFromLocalFiles.get(tableName).id,
         ]);
-        existingTables.delete(tableName);
+        tablesFromLocalFiles.delete(tableName);
+      } else if (tablesFromDuckDb.has(tableName)) {
+        await this.dataModelerService.dispatch("syncTable", [
+          tablesFromDuckDb.get(tableName).id,
+        ]);
+      } else if (tablesFromSql.has(tableName)) {
+        continue;
       } else {
         await this.dataModelerService.dispatch("addOrSyncTableFromDB", [
           tableName,
         ]);
       }
     }
-    for (const removedTable of existingTables.values()) {
+    // clean up source entities for sources that don't exist in DuckDB anymore
+    for (const removedTable of tablesFromLocalFiles.values()) {
       await this.dataModelerService.dispatch("dropTable", [
         removedTable.tableName,
         true,
