@@ -6,6 +6,12 @@
     "web-cloud",
     "web-local"
   ],
+  "scripts": {
+    "build": "npm run build -w web-local",
+    "build-vercel-pkg": "node dist/cli/build-vercel-pkg.js",
+    "dev": "npm run dev -w web-local",
+    "test": "npm run test -w web-local"
+  },
   "bin": {
     "rill": "./dist/cli/data-modeler-cli.js"
   },
@@ -18,5 +24,14 @@
     "package-lock.json",
     "LICENSE.md",
     "README.md"
-  ]
+  ],
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "node_modules/**/*",
+      "build/**/*",
+      "package.json",
+      "web-local/package.json"
+    ]
+  }
 }

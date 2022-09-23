@@ -16,6 +16,7 @@ const config = {
       lib: "lib",
       routes: "routes",
     },
+    outDir: "../build",
   },
 };
 
