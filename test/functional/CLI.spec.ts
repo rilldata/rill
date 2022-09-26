@@ -62,7 +62,7 @@ export class CLISpec extends FunctionalTestBase {
 
   @FunctionalTestBase.Test()
   public async shouldErrorIfSourceFileIsMalformed(): Promise<void> {
-    await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER}`);
+    await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
     await execPromise(
       `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
@@ -89,6 +89,7 @@ export class CLISpec extends FunctionalTestBase {
     await execPromise(
       `${CLI_COMMAND} import-source test/data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`
     );
+    console.log(".3.");
     // check to see if the sources are the same.
     persistentState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
