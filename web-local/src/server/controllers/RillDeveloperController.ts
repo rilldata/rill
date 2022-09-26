@@ -1,14 +1,14 @@
 import type { Application } from "express";
 import { Response, Router } from "express";
-import type { RootConfig } from "$web-local/common/config/RootConfig";
-import type { RillDeveloperService } from "$web-local/common/rill-developer-service/RillDeveloperService";
-import { RillRequestContext } from "$web-local/common/rill-developer-service/RillRequestContext";
-import type { ActionResponse } from "$web-local/common/data-modeler-service/response/ActionResponse";
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import type { RillDeveloperService } from "@rilldata/web-local/common/rill-developer-service/RillDeveloperService";
+import { RillRequestContext } from "@rilldata/web-local/common/rill-developer-service/RillRequestContext";
+import type { ActionResponse } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import type {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export abstract class RillDeveloperController {
   public constructor(

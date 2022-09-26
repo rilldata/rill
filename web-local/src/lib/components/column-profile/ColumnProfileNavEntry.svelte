@@ -1,11 +1,7 @@
 <script lang="ts">
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import ColumnProfile from "./ColumnProfile.svelte";
-  import {
-    defaultSort,
-    sortByName,
-    sortByNullity,
-  } from "./sort-utils";
+  import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
   import { NATIVE_SELECT } from "../../util/component-classes";
   import Spacer from "../icons/Spacer.svelte";
 

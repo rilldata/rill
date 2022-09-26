@@ -1,7 +1,7 @@
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
-import { StateConfig } from "$web-local/common/config/StateConfig";
-import { ServerConfig } from "$web-local/common/config/ServerConfig";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
+import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
+import { ServerConfig } from "@rilldata/web-local/common/config/ServerConfig";
 import { InlineTestServer } from "./InlineTestServer";
 import type { TestServer } from "./TestServer";
 

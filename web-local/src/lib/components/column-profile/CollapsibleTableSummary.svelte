@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import CollapsibleTableHeader from "./CollapsibleTableHeader.svelte";

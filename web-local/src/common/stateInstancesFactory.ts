@@ -9,12 +9,12 @@ import type { MeasureDefinitionEntity } from "./data-modeler-state-service/entit
 import type { MetricsDefinitionEntity } from "./data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { PersistentModelEntity } from "./data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { PersistentTableEntity } from "./data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import type { DataModelerState } from "$web-local/lib/types";
+import type { DataModelerState } from "@rilldata/web-local/lib/types";
 import {
   extractTableName,
   sanitizeEntityName,
-} from "$web-local/lib/util/extract-table-name";
-import { guidGenerator } from "$web-local/lib/util/guid";
+} from "@rilldata/web-local/lib/util/extract-table-name";
+import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 
 interface NewModelArguments {
   query?: string;

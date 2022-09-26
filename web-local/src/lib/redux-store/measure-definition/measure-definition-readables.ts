@@ -7,7 +7,7 @@ import {
   selectMeasuresByMetricsId,
   selectValidMeasuresByMetricsId,
 } from "./measure-definition-selectors";
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 
 export const getMeasureById = createReadableFactoryWithSelector<
   MeasureDefinitionEntity,

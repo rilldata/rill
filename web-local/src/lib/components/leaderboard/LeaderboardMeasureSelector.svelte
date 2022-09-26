@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
-  import { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

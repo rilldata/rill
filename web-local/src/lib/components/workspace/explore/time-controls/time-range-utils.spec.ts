@@ -1,7 +1,7 @@
 import {
   TimeGrain,
   TimeRangeName,
-} from "$web-local/common/database-service/DatabaseTimeSeriesActions";
+} from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
 import {
   getDefaultTimeGrain,
   getDefaultTimeRangeName,

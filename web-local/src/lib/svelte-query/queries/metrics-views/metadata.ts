@@ -1,11 +1,11 @@
-import type { RootConfig } from "$web-local/common/config/RootConfig";
-import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type {
   MetricsViewMetaResponse,
   MetricsViewRequestFilter,
-} from "$web-local/common/rill-developer-service/MetricsViewActions";
-import { getMapFromArray } from "$web-local/common/utils/arrayUtils";
+} from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
 import { fetchUrl } from "../fetch-url";
 import { useQuery } from "@sveltestack/svelte-query";
 import type { UseQueryOptions } from "@sveltestack/svelte-query/dist/types";

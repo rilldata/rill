@@ -1,5 +1,5 @@
-import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { asyncWait } from "$web-local/common/utils/waitUtils";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import { assert } from "sinon";
 import {
   SingleTableQuery,

@@ -2,7 +2,7 @@ import {
   extractFileExtension,
   extractTableName,
   sanitizeEntityName,
-} from "$web-local/lib/util/extract-table-name";
+} from "@rilldata/web-local/lib/util/extract-table-name";
 import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 

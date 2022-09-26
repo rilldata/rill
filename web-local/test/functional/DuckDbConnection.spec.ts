@@ -1,5 +1,5 @@
-import type { DerivedTableState } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import type { PersistentTableState } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DerivedTableState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { PersistentTableState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import { exec } from "node:child_process";
 import { readFileSync } from "fs";
 import {

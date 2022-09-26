@@ -1,8 +1,8 @@
 import { TestBase } from "@adityahegde/typescript-test-utils";
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import type { SinonStub } from "sinon";
-import { ActionQueueOrchestrator } from "$web-local/common/priority-action-queue/ActionQueueOrchestrator";
-import { asyncWait } from "$web-local/common/utils/waitUtils";
+import { ActionQueueOrchestrator } from "@rilldata/web-local/common/priority-action-queue/ActionQueueOrchestrator";
+import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 
 interface TestActionsDefinition extends Record<string, any> {
   actionOne: [string, string];

@@ -8,11 +8,18 @@
     GraphicContext,
     Body,
     SimpleDataGraphic,
-  } from "$web-local/lib/components/data-graphic/elements";
-  import { Line, Area } from "$web-local/lib/components/data-graphic/marks";
-  import { Axis, Grid, PointLabel } from "$web-local/lib/components/data-graphic/guides";
-  import { WithBisector } from "$web-local/lib/components/data-graphic/functional-components";
-  import type { PointLabelVariant } from "$web-local/lib/components/data-graphic/guides/types";
+  } from "@rilldata/web-local/lib/components/data-graphic/elements";
+  import {
+    Line,
+    Area,
+  } from "@rilldata/web-local/lib/components/data-graphic/marks";
+  import {
+    Axis,
+    Grid,
+    PointLabel,
+  } from "@rilldata/web-local/lib/components/data-graphic/guides";
+  import { WithBisector } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
+  import type { PointLabelVariant } from "@rilldata/web-local/lib/components/data-graphic/guides/types";
 
   function makeData(intervalSize = 1000000) {
     let v1 = 36;

@@ -1,11 +1,7 @@
 <script lang="ts">
   import * as classes from "../../util/component-classes";
+  import { defaultSort, sortByNullity, sortByName } from "./sort-utils";
 
-  import {
-    defaultSort,
-    sortByNullity,
-    sortByName,
-  } from "./sort-utils";
   export let sortMethod = defaultSort;
   export let previewView = "summaries";
 </script>

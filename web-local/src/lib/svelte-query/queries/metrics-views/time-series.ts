@@ -1,8 +1,8 @@
-import type { RootConfig } from "$web-local/common/config/RootConfig";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type {
   MetricsViewTimeSeriesRequest,
   MetricsViewTimeSeriesResponse,
-} from "$web-local/common/rill-developer-service/MetricsViewActions";
+} from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import { fetchUrl } from "../fetch-url";
 import { useQuery } from "@sveltestack/svelte-query";
 

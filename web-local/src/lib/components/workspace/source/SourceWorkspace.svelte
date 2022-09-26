@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { DerivedTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
   import {
     ApplicationStore,
     dataModelerService,

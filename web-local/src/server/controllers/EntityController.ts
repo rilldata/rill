@@ -1,14 +1,14 @@
 import { RillDeveloperController } from "./RillDeveloperController";
 import type { Request, Response, Router } from "express";
-import type { ActionResponse } from "$web-local/common/data-modeler-service/response/ActionResponse";
-import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
-import { ActionResponseFactory } from "$web-local/common/data-modeler-service/response/ActionResponseFactory";
-import { RillRequestContext } from "$web-local/common/rill-developer-service/RillRequestContext";
+import type { ActionResponse } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponseFactory";
+import { RillRequestContext } from "@rilldata/web-local/common/rill-developer-service/RillRequestContext";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { ActionDefinitionError } from "$web-local/common/errors/ActionDefinitionError";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { ActionDefinitionError } from "@rilldata/web-local/common/errors/ActionDefinitionError";
 
 export abstract class EntityController extends RillDeveloperController {
   protected static entityPath: string;

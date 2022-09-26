@@ -7,7 +7,7 @@ import {
   StateType,
 } from "./EntityStateService";
 import type { ValidationState } from "./MetricsDefinitionEntityService";
-import type { ProfileColumnSummary } from "$web-local/lib/types";
+import type { ProfileColumnSummary } from "@rilldata/web-local/lib/types";
 
 export interface DimensionDefinitionEntity extends EntityRecord {
   metricsDefId: string;

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
   import type {
     TimeRangeName,
     TimeSeriesTimeRange,
-  } from "$web-local/common/database-service/DatabaseTimeSeriesActions";
+  } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

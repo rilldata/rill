@@ -1,5 +1,5 @@
 import { createSlice } from "../redux-toolkit-wrapper";
-import type { ActiveEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
 export interface ApplicationReduxState {

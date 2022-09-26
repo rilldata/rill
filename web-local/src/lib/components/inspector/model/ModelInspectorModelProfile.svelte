@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { PersistentModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { ApplicationStore } from "../../../application-state-stores/application-store";
   import type {
     DerivedModelStore,

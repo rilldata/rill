@@ -1,5 +1,5 @@
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
 import type { DataModelerSocketServiceMock } from "./DataModelerSocketServiceMock";
 
 export class SocketServerMock {

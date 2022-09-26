@@ -2,14 +2,14 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
-  import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
 
   import type {
     MetricsViewDimensionValues,
     MetricsViewRequestFilter,
-  } from "$web-local/common/rill-developer-service/MetricsViewActions";
-  import { getMapFromArray } from "$web-local/common/utils/arrayUtils";
+  } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+  import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

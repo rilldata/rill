@@ -1,8 +1,8 @@
 import type {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { EntityRecordMapType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityRecordMapType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import { createAsyncThunk } from "../redux-toolkit-wrapper";
 import type { RillReduxState } from "../store-root";
 import { queryClient } from "../../svelte-query/globalQueryClient";

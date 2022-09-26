@@ -1,8 +1,5 @@
 import { readable } from "svelte/store";
-import type {
-  RillReduxState,
-  RillReduxStore,
-} from "./store-root";
+import type { RillReduxState, RillReduxStore } from "./store-root";
 
 type OptionalRestArgs = undefined | unknown[];
 

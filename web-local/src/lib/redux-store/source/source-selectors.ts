@@ -1,4 +1,4 @@
-import type { DataProfileEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DataProfileEntity";
+import type { DataProfileEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 import { TIMESTAMPS } from "../../duckdb-data-types";
 import type { ProfileColumn } from "../../types";
 

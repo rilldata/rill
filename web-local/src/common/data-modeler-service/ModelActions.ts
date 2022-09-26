@@ -25,8 +25,8 @@ import {
 import {
   extractTableName,
   sanitizeEntityName,
-} from "$web-local/lib/util/extract-table-name";
-import { sanitizeQuery } from "$web-local/lib/util/sanitize-query";
+} from "@rilldata/web-local/lib/util/extract-table-name";
+import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
 
 export enum FileExportType {
   Parquet = "exportToParquet",

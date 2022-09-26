@@ -1,5 +1,5 @@
-import type { EntityRecord } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { ValidationState } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 import type { SvelteComponent } from "svelte";
 

@@ -1,6 +1,6 @@
 import { DataModelerCliCommand } from "./DataModelerCliCommand";
 import { Command } from "commander";
-import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 
 export class DropTableCommand extends DataModelerCliCommand {
   public getCommand(): Command {

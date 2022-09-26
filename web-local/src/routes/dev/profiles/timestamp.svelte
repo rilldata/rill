@@ -7,12 +7,12 @@
   import type {
     DerivedTableStore,
     PersistentTableStore,
-  } from "$web-local/lib/application-state-stores/table-stores";
+  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import {
     TimestampDetail,
     TimestampSpark,
-  } from "$web-local/lib/components/data-graphic/compositions/timestamp-profile";
-  import { TIMESTAMPS } from "$web-local/lib/duckdb-data-types";
+  } from "@rilldata/web-local/lib/components/data-graphic/compositions/timestamp-profile";
+  import { TIMESTAMPS } from "@rilldata/web-local/lib/duckdb-data-types";
 
   import { getContext } from "svelte";
 

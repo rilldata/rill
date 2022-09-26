@@ -1,10 +1,10 @@
-import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
-import { ActionErrorType } from "$web-local/common/data-modeler-service/response/ActionResponseMessage";
+import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+import { ActionErrorType } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponseMessage";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { asyncWait } from "$web-local/common/utils/waitUtils";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import type { TestDataColumns } from "../data/DataLoader.data";
 import {
   ModelQueryTestData,

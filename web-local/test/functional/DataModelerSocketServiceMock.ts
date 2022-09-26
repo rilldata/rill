@@ -1,18 +1,18 @@
 import {
   DataModelerActionsDefinition,
   DataModelerService,
-} from "$web-local/common/data-modeler-service/DataModelerService";
+} from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import type {
   DataModelerStateService,
   EntityTypeAndStates,
-} from "$web-local/common/data-modeler-state-service/DataModelerStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
 import type { SocketServerMock } from "./SocketServerMock";
 import type { Patch } from "immer";
 import type {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { ActionResponse } from "$web-local/common/data-modeler-service/response/ActionResponse";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { ActionResponse } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 
 export class DataModelerSocketServiceMock extends DataModelerService {
   public socketServerMock: SocketServerMock;

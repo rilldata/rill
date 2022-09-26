@@ -1,31 +1,34 @@
 import { TestBase } from "@adityahegde/typescript-test-utils";
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
-import { asyncWait, waitUntil } from "$web-local/common/utils/waitUtils";
-import type { ProfileColumn } from "$web-local/lib/types";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
+import {
+  asyncWait,
+  waitUntil,
+} from "@rilldata/web-local/common/utils/waitUtils";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 import type { TestDataColumns } from "../data/DataLoader.data";
 import { ParquetFileTestData } from "../data/DataLoader.data";
 import { DataModelerSocketServiceMock } from "./DataModelerSocketServiceMock";
 import { SocketServerMock } from "./SocketServerMock";
 import { DATA_FOLDER } from "../data/generator/data-constants";
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
-import { StateConfig } from "$web-local/common/config/StateConfig";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
+import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
 import {
   EntityRecord,
   EntityStateService,
   EntityStatus,
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { PersistentTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import type { DerivedTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import { dataModelerStateServiceClientFactory } from "$web-local/common/clientFactory";
-import type { PersistentModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type { DerivedModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { ActiveEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import { RillDeveloper } from "$web-local/server/RillDeveloper";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import { dataModelerStateServiceClientFactory } from "@rilldata/web-local/common/clientFactory";
+import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import { RillDeveloper } from "@rilldata/web-local/server/RillDeveloper";
 
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {

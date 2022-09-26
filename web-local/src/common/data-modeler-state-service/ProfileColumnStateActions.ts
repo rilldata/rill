@@ -1,5 +1,8 @@
 import { StateActions } from ".//StateActions";
-import type { ColumnarTypeKeys, ProfileColumnSummary } from "$web-local/lib/types";
+import type {
+  ColumnarTypeKeys,
+  ProfileColumnSummary,
+} from "@rilldata/web-local/lib/types";
 import type { DataProfileStateActionArg } from "./entity-state-service/DataProfileEntity";
 import type { EntityType } from "./entity-state-service/EntityStateService";
 import { shallowCopy } from "../utils/shallowCopy";

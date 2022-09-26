@@ -1,12 +1,12 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import { execSync } from "node:child_process";
-import { dataModelerServiceFactory } from "$web-local/server/serverFactory";
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
-import { StateConfig } from "$web-local/common/config/StateConfig";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
-import { asyncWait } from "$web-local/common/utils/waitUtils";
+import { dataModelerServiceFactory } from "@rilldata/web-local/server/serverFactory";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
+import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
+import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import { TestBase } from "@adityahegde/typescript-test-utils";
 import { UserColumnsTestData } from "../data/DataLoader.data";
 import {
@@ -15,7 +15,7 @@ import {
   TwoTableJoinQuery,
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
-import { DataModelerStateSyncService } from "$web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
+import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 
 const SYNC_TEST_FOLDER = "temp/sync-test";
 

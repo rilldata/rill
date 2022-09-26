@@ -1,11 +1,11 @@
 import { existsSync } from "fs";
-import type { RootConfig } from "$web-local/common/config/RootConfig";
-import { DuckDbConnection } from "$web-local/common/connection/DuckDbConnection";
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
-import { DataModelerStateSyncService } from "$web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
-import type { MetricsService } from "$web-local/common/metrics-service/MetricsService";
-import type { NotificationService } from "$web-local/common/notifications/NotificationService";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { DuckDbConnection } from "@rilldata/web-local/common/connection/DuckDbConnection";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
+import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
+import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
+import type { NotificationService } from "@rilldata/web-local/common/notifications/NotificationService";
 import { dataModelerServiceFactory } from "./serverFactory";
 
 /**

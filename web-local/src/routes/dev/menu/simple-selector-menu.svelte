@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { SelectMenu } from "$web-local/lib/components/menu";
-  import Tooltip from "$web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { SelectMenu } from "@rilldata/web-local/lib/components/menu";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
 
   const singleSelectorOptions = [
     { key: 0, main: "option 1", right: "opt1" },

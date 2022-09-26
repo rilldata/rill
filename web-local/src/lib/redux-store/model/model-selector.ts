@@ -2,7 +2,7 @@ import { dataModelerStateService } from "../../application-state-stores/applicat
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export const selectPersistentModelById = (id: string) =>
   dataModelerStateService

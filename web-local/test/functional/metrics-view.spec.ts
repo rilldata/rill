@@ -1,12 +1,12 @@
-import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type {
   MetricsViewTopListRequest,
   MetricsViewTotalsRequest,
   MetricsViewTotalsResponse,
-} from "$web-local/common/rill-developer-service/MetricsViewActions";
-import type { LeaderboardValues } from "$web-local/lib/application-state-stores/explorer-stores";
+} from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+import type { LeaderboardValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 import axios from "axios";
 import {
   DefaultCityLeaderboardReversed,

@@ -1,4 +1,4 @@
-import type { EntityRecord } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export interface ValidationConfig<Entity extends EntityRecord> {
   field: keyof Entity;

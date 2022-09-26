@@ -1,6 +1,6 @@
 <script lang="ts">
   import { slideRight } from "../../transitions";
-  import { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   import Back from "../icons/Back.svelte";
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";

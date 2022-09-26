@@ -18,10 +18,7 @@ import type {
   DimensionDefinitionStateActionArg,
   DimensionDefinitionStateService,
 } from "./DimensionDefinitionStateService";
-import {
-  EntityType,
-  StateType,
-} from "./EntityStateService";
+import { EntityType, StateType } from "./EntityStateService";
 import type {
   MeasureDefinitionEntity,
   MeasureDefinitionStateActionArg,

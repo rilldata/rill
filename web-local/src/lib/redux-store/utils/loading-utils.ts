@@ -1,4 +1,4 @@
-import type { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityState, PayloadAction } from "@reduxjs/toolkit";
 
 /**

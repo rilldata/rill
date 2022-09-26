@@ -1,5 +1,5 @@
 import type { DataProviderData } from "@adityahegde/typescript-test-utils";
-import { EstimatedSmallestTimeGrain } from "$web-local/common/database-service/DatabaseColumnActions";
+import { EstimatedSmallestTimeGrain } from "@rilldata/web-local/common/database-service/DatabaseColumnActions";
 
 export interface GeneratedTimeseriesTestCase {
   start: string;

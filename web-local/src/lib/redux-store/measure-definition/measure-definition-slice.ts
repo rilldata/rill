@@ -1,10 +1,7 @@
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { ValidationState } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
-import {
-  createEntityAdapter,
-  createSlice,
-} from "../redux-toolkit-wrapper";
+import { createEntityAdapter, createSlice } from "../redux-toolkit-wrapper";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
 const measureDefAdapter = createEntityAdapter<MeasureDefinitionEntity>();

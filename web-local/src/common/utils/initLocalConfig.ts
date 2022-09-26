@@ -3,7 +3,7 @@ import {
   ApplicationConfigFolder,
   LocalConfigFile,
 } from "../config/ConfigFolders";
-import { guidGenerator } from "$web-local/lib/util/guid";
+import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { LocalConfig } from "../config/LocalConfig";
 
 /**

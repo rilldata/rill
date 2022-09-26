@@ -1,9 +1,9 @@
-import type { RootConfig } from "$web-local/common/config/RootConfig";
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
-import type { MetricsService } from "$web-local/common/metrics-service/MetricsService";
-import type { RillDeveloperService } from "$web-local/common/rill-developer-service/RillDeveloperService";
-import type { SocketNotificationService } from "$web-local/common/socket/SocketNotificationService";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
+import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
+import type { RillDeveloperService } from "@rilldata/web-local/common/rill-developer-service/RillDeveloperService";
+import type { SocketNotificationService } from "@rilldata/web-local/common/socket/SocketNotificationService";
 import { FileActionsController } from "./controllers/FileActionsController";
 import { MetricsDefinitionController } from "./controllers/MetricsDefinitionController";
 import { MetricsDimensionController } from "./controllers/MetricsDimensionController";

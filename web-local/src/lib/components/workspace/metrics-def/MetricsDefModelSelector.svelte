@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import ModelIcon from "../../icons/Model.svelte";
   import { updateMetricsDefsWrapperApi } from "../../../redux-store/metrics-definition/metrics-definition-apis";

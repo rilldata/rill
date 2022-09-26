@@ -1,7 +1,4 @@
-import type {
-  EntityState,
-  EntityStateActionArg,
-} from "./EntityStateService";
+import type { EntityState, EntityStateActionArg } from "./EntityStateService";
 import {
   EntityStateService,
   EntityType,

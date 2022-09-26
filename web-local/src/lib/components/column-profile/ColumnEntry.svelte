@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { createShiftClickAction } from "$web-local/lib/util/shift-click-action";
+  import { createShiftClickAction } from "@rilldata/web-local/lib/util/shift-click-action";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();

@@ -1,11 +1,11 @@
 import { goto } from "$app/navigation";
-import type { DerivedModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { SourceModelValidationStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { asyncWait } from "$web-local/common/utils/waitUtils";
+import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import { dataModelerService } from "../../application-state-stores/application-store";
 import { selectApplicationActiveEntity } from "../application/application-selectors";
 import { validateDimensionColumnApi } from "../dimension-definition/dimension-definition-apis";

@@ -1,14 +1,14 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "../../../../application-state-stores/model-stores";
-  import { BehaviourEventMedium } from "$web-local/common/metrics-service/BehaviourEventTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "$web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { navigationEvent } from "../../../../metrics/initMetrics";
   import { Button } from "../../../button";
   import Explore from "../../../icons/Explore.svelte";

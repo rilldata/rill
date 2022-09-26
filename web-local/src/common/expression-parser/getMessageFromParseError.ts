@@ -1,6 +1,6 @@
 import type { ParseExpressionError } from "./parseExpression";
 import { AllowedAggregates } from "./validateAggregate";
-import { TypesMap } from "$web-local/lib/duckdb-data-types";
+import { TypesMap } from "@rilldata/web-local/lib/duckdb-data-types";
 
 export function getMessageFromParseError(
   expression: string,

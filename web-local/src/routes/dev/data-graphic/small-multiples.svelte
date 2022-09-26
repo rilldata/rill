@@ -6,13 +6,19 @@
     GraphicContext,
     Body,
     SimpleDataGraphic,
-  } from "$web-local/lib/components/data-graphic/elements";
-  import { Axis, PointLabel } from "$web-local/lib/components/data-graphic/guides";
-  import { Line, Area } from "$web-local/lib/components/data-graphic/marks";
-  import { WithBisector } from "$web-local/lib/components/data-graphic/functional-components";
+  } from "@rilldata/web-local/lib/components/data-graphic/elements";
+  import {
+    Axis,
+    PointLabel,
+  } from "@rilldata/web-local/lib/components/data-graphic/guides";
+  import {
+    Line,
+    Area,
+  } from "@rilldata/web-local/lib/components/data-graphic/marks";
+  import { WithBisector } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import type { DomainCoordinates } from "$web-local/lib/components/data-graphic/constants/types";
+  import type { DomainCoordinates } from "@rilldata/web-local/lib/components/data-graphic/constants/types";
 
   /** bind the mouseoverValue of a graph to this variable to share
    * with other graphs

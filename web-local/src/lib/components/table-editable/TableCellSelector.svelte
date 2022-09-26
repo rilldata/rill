@@ -1,11 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import type {
-    ColumnConfig,
-    CellConfigSelector,
-  } from "./ColumnConfig";
-  import type { EntityRecord } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { ColumnConfig, CellConfigSelector } from "./ColumnConfig";
+  import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";

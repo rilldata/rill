@@ -1,10 +1,10 @@
 import { DataModelerCliCommand } from "./DataModelerCliCommand";
 import { Command } from "commander";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export class InfoCommand extends DataModelerCliCommand {
   public getCommand(): Command {

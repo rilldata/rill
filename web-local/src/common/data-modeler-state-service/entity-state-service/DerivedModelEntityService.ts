@@ -1,14 +1,11 @@
-import type {
-  EntityState,
-  EntityStateActionArg,
-} from "./EntityStateService";
+import type { EntityState, EntityStateActionArg } from "./EntityStateService";
 import {
   EntityStateService,
   EntityType,
   StateType,
 } from "./EntityStateService";
 import type { DataProfileEntity } from "./DataProfileEntity";
-import type { SourceTable } from "$web-local/lib/types";
+import type { SourceTable } from "@rilldata/web-local/lib/types";
 
 export interface DerivedModelEntity extends DataProfileEntity {
   type: EntityType.Model;

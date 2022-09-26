@@ -1,8 +1,5 @@
 import type { RootConfig } from "../config/RootConfig";
-import type {
-  CommonUserFields,
-  MetricsEvent,
-} from "./MetricsTypes";
+import type { CommonUserFields, MetricsEvent } from "./MetricsTypes";
 import type { CommonFields } from "./MetricsTypes";
 
 export class MetricsEventFactory {

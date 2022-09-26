@@ -1,4 +1,4 @@
-import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
   addManyDimensions,
   addOneDimension,
@@ -6,11 +6,11 @@ import {
   setDimensionValidationStatus,
   updateDimension,
 } from "./dimension-definition-slice";
-import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { fetchWrapper } from "../../util/fetchWrapper";
 import { generateApis } from "../utils/api-utils";
 import type { ValidationConfig } from "../utils/validation-utils";
-import { ValidationState } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { handleErrorResponse } from "../utils/handleErrorResponse";
 import { selectDimensionById } from "./dimension-definition-selectors";
 import { invalidateExplorerThunk } from "../utils/invalidateExplorerThunk";

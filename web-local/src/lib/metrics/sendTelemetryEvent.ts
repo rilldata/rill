@@ -1,4 +1,4 @@
-import type { MetricsActionDefinition } from "$web-local/common/metrics-service/MetricsService";
+import type { MetricsActionDefinition } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import { fetchWrapper } from "../util/fetchWrapper";
 
 export async function sendTelemetryEvent<

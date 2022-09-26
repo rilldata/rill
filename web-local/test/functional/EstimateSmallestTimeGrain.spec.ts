@@ -1,16 +1,16 @@
 import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
 import { FunctionalTestBase } from "./FunctionalTestBase";
-import type { DatabaseService } from "$web-local/common/database-service/DatabaseService";
-import type { EstimatedSmallestTimeGrain } from "$web-local/common/database-service/DatabaseColumnActions";
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
-import { StateConfig } from "$web-local/common/config/StateConfig";
-import { dataModelerServiceFactory } from "$web-local/server/serverFactory";
+import type { DatabaseService } from "@rilldata/web-local/common/database-service/DatabaseService";
+import type { EstimatedSmallestTimeGrain } from "@rilldata/web-local/common/database-service/DatabaseColumnActions";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
+import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
+import { dataModelerServiceFactory } from "@rilldata/web-local/server/serverFactory";
 
 import { generateSeries } from "../utils/query-generators";
 import { timeGrainSeriesData } from "../data/EstimatedSmallestTimeGrain.data";
 import type { GeneratedTimeseriesTestCase } from "../data/EstimatedSmallestTimeGrain.data";
-import type { DuckDBClient } from "$web-local/common/database-service/DuckDBClient";
+import type { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDBClient";
 
 const SYNC_TEST_FOLDER = "temp/sync-test";
 

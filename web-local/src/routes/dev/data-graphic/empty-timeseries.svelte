@@ -1,9 +1,9 @@
 <script>
-  import { SimpleDataGraphic } from "$web-local/lib/components/data-graphic/elements";
-  import { WithBisector } from "$web-local/lib/components/data-graphic/functional-components";
-  import { Axis } from "$web-local/lib/components/data-graphic/guides";
+  import { SimpleDataGraphic } from "@rilldata/web-local/lib/components/data-graphic/elements";
+  import { WithBisector } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
+  import { Axis } from "@rilldata/web-local/lib/components/data-graphic/guides";
 
-  import { NicelyFormattedTypes } from "$web-local/lib/util/humanize-numbers";
+  import { NicelyFormattedTypes } from "@rilldata/web-local/lib/util/humanize-numbers";
 
   import TimeSeriesBody from "../../_surfaces/workspace/explore/time-series-charts/TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "../../_surfaces/workspace/explore/time-series-charts/TimeSeriesChartContainer.svelte";

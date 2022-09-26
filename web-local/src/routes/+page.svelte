@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "$web-local/lib/application-state-stores/application-store";
-  import Onboarding from "$web-local/lib/components/workspace/Onboarding.svelte";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import Onboarding from "@rilldata/web-local/lib/components/workspace/Onboarding.svelte";
 
   // clear any existing active asset
   $: dataModelerService.dispatch("setActiveAsset", [

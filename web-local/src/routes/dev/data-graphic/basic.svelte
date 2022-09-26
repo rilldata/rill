@@ -2,9 +2,9 @@
   import {
     SimpleDataGraphic,
     Body,
-  } from "$web-local/lib/components/data-graphic/elements";
-  import { Line } from "$web-local/lib/components/data-graphic/marks";
-  import { Axis } from "$web-local/lib/components/data-graphic/guides";
+  } from "@rilldata/web-local/lib/components/data-graphic/elements";
+  import { Line } from "@rilldata/web-local/lib/components/data-graphic/marks";
+  import { Axis } from "@rilldata/web-local/lib/components/data-graphic/guides";
 
   function makeData(intervalSize = 1000) {
     let v = 50;

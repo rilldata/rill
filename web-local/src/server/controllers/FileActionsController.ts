@@ -1,6 +1,6 @@
 import { RillDeveloperController } from "./RillDeveloperController";
 import type { Request, Response, Router } from "express";
-import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 import path from "path";
 import { existsSync } from "fs";
 import { EntityController } from "./EntityController";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PersistentModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { ApplicationStore } from "../../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import { createResizeListenerActionFactory } from "../../actions/create-resize-listener-factory";

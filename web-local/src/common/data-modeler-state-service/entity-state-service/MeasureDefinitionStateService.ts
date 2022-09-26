@@ -1,15 +1,12 @@
 import type { ValidationState } from "./MetricsDefinitionEntityService";
-import type {
-  EntityRecord,
-  EntityState,
-} from "./EntityStateService";
+import type { EntityRecord, EntityState } from "./EntityStateService";
 import {
   EntityStateActionArg,
   EntityStateService,
   EntityType,
   StateType,
 } from "./EntityStateService";
-import type { NicelyFormattedTypes } from "$web-local/lib/util/humanize-numbers";
+import type { NicelyFormattedTypes } from "@rilldata/web-local/lib/util/humanize-numbers";
 
 export interface BasicMeasureDefinition {
   id: string;

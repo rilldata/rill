@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
-  import { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { TimeSeriesValue } from "$web-local/common/database-service/DatabaseTimeSeriesActions";
-  import type { MetricsViewTimeSeriesResponse } from "$web-local/common/rill-developer-service/MetricsViewActions";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import type { MetricsViewTimeSeriesResponse } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

@@ -1,10 +1,7 @@
-import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import {
-  createEntityAdapter,
-  createSlice,
-} from "../redux-toolkit-wrapper";
+import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { createEntityAdapter, createSlice } from "../redux-toolkit-wrapper";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { SourceModelValidationStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 const metricsDefAdapter = createEntityAdapter<MetricsDefinitionEntity>({
   sortComparer: (a, b) => a.creationTime - b.creationTime,

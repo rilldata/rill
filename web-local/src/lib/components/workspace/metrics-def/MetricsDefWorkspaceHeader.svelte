@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MetricsSourceSelectionError } from "$web-local/common/errors/ErrorMessages";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import MetricsIcon from "../../icons/Metrics.svelte";
   import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import { updateMetricsDefsWrapperApi } from "../../../redux-store/metrics-definition/metrics-definition-apis";

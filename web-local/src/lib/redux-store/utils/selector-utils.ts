@@ -1,7 +1,4 @@
-import type {
-  RillReduxEntities,
-  RillReduxState,
-} from "../store-root";
+import type { RillReduxEntities, RillReduxState } from "../store-root";
 import type { RillReduxEntityKeys } from "../store-root";
 
 /**

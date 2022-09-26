@@ -1,8 +1,8 @@
 import { generateFilteredEntitySelectors } from "../utils/selector-utils";
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import { getFallbackMeasureName } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { getFallbackMeasureName } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { RillReduxState } from "../store-root";
-import { ValidationState } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
 export const {
   singleSelector: selectMeasureById,

@@ -13,15 +13,15 @@ import { dataModelerStateService } from "./application-store";
 import type {
   PersistentModelEntity,
   PersistentModelState,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type {
   DerivedModelEntity,
   DerivedModelState,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export type PersistentModelStore = AppStore<
   PersistentModelEntity,

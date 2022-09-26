@@ -1,5 +1,5 @@
 {
-  "name": "@rilldata/rill",
+  "name": "@rilldata/dev",
   "version": "0.10.0",
   "type": "module",
   "workspaces": [
@@ -10,6 +10,7 @@
     "build": "npm run build -w web-local",
     "build-vercel-pkg": "node dist/cli/build-vercel-pkg.js",
     "dev": "npm run dev -w web-local",
+    "cli": "npm run cli -w web-local",
     "test": "npm run test -w web-local"
   },
   "bin": {

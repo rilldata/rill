@@ -26,14 +26,10 @@
     "allowJs": true,
     "checkJs": true,
     "paths": {
-      "$web-local/lib": ["web-local/src/lib"],
-      "$web-local/lib/*": ["web-local/src/lib/*"],
-      "$web-local/common": ["web-local/src/common"],
-      "$web-local/common/*": ["web-local/src/common/*"],
-      "$web-local/cli": ["web-local/src/cli"],
-      "$web-local/cli/*": ["web-local/src/cli/*"],
-      "$web-local/server": ["web-local/src/server"],
-      "$web-local/server/*": ["web-local/src/server/*"]
+      "@rilldata/web-local/lib/*": ["web-local/src/lib/*"],
+      "@rilldata/web-local/common/*": ["web-local/src/common/*"],
+      "@rilldata/web-local/cli/*": ["web-local/src/cli/*"],
+      "@rilldata/web-local/server/*": ["web-local/src/server/*"]
     },
     "outDir": "dist"
   },

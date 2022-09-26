@@ -1,9 +1,9 @@
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type {
   MetricsViewTimeSeriesRequest,
   MetricsViewTimeSeriesResponse,
-} from "$web-local/common/rill-developer-service/MetricsViewActions";
+} from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import request from "supertest";
 import { MetricsExplorerTestData } from "../data/MetricsExplorer.data";
 import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";

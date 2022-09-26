@@ -1,4 +1,4 @@
-import type { NumericHistogramBin } from "$web-local/lib/types";
+import type { NumericHistogramBin } from "@rilldata/web-local/lib/types";
 
 let fdTestValues = [];
 const numeredArray = [...Array(50).keys()];

@@ -1,15 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { SourceModelValidationStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { MetricsSourceSelectionError } from "$web-local/common/errors/ErrorMessages";
-  import { BehaviourEventMedium } from "$web-local/common/metrics-service/BehaviourEventTypes";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
+  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "$web-local/common/metrics-service/MetricsTypes";
-  import { waitUntil } from "$web-local/common/utils/waitUtils";
+  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import type { DerivedModelStore } from "../../application-state-stores/model-stores";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";

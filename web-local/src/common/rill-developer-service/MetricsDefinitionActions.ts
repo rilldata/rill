@@ -6,8 +6,8 @@ import {
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
 import { getMetricsDefinition } from "../stateInstancesFactory";
 import type { MetricsDefinitionEntity } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import type { ProfileColumn } from "$web-local/lib/types";
-import { CATEGORICALS } from "$web-local/lib/duckdb-data-types";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
+import { CATEGORICALS } from "@rilldata/web-local/lib/duckdb-data-types";
 import { ActionResponseFactory } from "../data-modeler-service/response/ActionResponseFactory";
 import { shallowCopy } from "../utils/shallowCopy";
 import { ExplorerSourceModelDoesntExist } from "../errors/ErrorMessages";

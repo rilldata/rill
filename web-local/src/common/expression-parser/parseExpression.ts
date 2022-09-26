@@ -1,7 +1,7 @@
 import { Expr, ExprBinary, ExprCall, parse } from "pgsql-ast-parser";
 import type { InvalidAggregate } from "./validateAggregate";
 import { validateAggregate } from "./validateAggregate";
-import type { ProfileColumn } from "$web-local/lib/types";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 
 export interface ParseExpressionError {
   message?: string;

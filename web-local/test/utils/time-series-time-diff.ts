@@ -1,4 +1,4 @@
-import { MICROS } from "$web-local/common/database-service/DatabaseColumnActions";
+import { MICROS } from "@rilldata/web-local/common/database-service/DatabaseColumnActions";
 
 const MinMonth = (MICROS.day / 1000) * 28;
 const MaxMonth = (MICROS.day / 1000) * 31;

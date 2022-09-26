@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   export let size = "1em";
   export let status: EntityStatus = EntityStatus.Idle;
   export let bg =

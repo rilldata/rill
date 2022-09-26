@@ -1,6 +1,6 @@
 import { goto } from "$app/navigation";
-import type { DerivedTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import type { PersistentModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { dataModelerService } from "../../application-state-stores/application-store";
 import {
   resetQuickStartDashboardOverlay,

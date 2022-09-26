@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
-  import { ServerConfig } from "$web-local/common/config/ServerConfig";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { ServerConfig } from "@rilldata/web-local/common/config/ServerConfig";
   import { setContext } from "svelte";
 
   export let config: RootConfig;

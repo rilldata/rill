@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import ContextButton from "./ContextButton.svelte";
   import ExpanderButton from "./ExpanderButton.svelte";
   import CaretDownIcon from "../icons/CaretDownIcon.svelte";

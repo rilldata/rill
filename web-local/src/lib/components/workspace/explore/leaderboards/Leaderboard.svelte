@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   /**
    * Leaderboard.svelte
@@ -7,9 +7,9 @@
    * This is the "implemented" feature of the leaderboard, meant to be used
    * in the application itself.
    */
-  import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

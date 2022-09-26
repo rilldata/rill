@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from "$web-local/lib/components/button";
-  import { Dialog } from "$web-local/lib/components/modal";
+  import { Button } from "@rilldata/web-local/lib/components/button";
+  import { Dialog } from "@rilldata/web-local/lib/components/modal";
   let replaceSource = false;
   let changeThing = false;
   let changeThingValue = "original change thing";

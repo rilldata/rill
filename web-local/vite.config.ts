@@ -27,7 +27,7 @@ const config = defineConfig({
       src: "/src", // trick to get absolute imports to work
       $common: "/src/common",
       $server: "/src/server",
-      "$web-local": "/src",
+      "@rilldata/web-local": "/src",
     },
   },
   server: {

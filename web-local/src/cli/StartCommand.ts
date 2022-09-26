@@ -1,10 +1,10 @@
 import { DataModelerCliCommand } from "./DataModelerCliCommand";
-import { DimensionsActions } from "$web-local/common/rill-developer-service/DimensionsActions";
-import { MeasuresActions } from "$web-local/common/rill-developer-service/MeasuresActions";
-import { MetricsDefinitionActions } from "$web-local/common/rill-developer-service/MetricsDefinitionActions";
-import { MetricsViewActions } from "$web-local/common/rill-developer-service/MetricsViewActions";
-import { RillDeveloperService } from "$web-local/common/rill-developer-service/RillDeveloperService";
-import { ExpressServer } from "$web-local/server/ExpressServer";
+import { DimensionsActions } from "@rilldata/web-local/common/rill-developer-service/DimensionsActions";
+import { MeasuresActions } from "@rilldata/web-local/common/rill-developer-service/MeasuresActions";
+import { MetricsDefinitionActions } from "@rilldata/web-local/common/rill-developer-service/MetricsDefinitionActions";
+import { MetricsViewActions } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+import { RillDeveloperService } from "@rilldata/web-local/common/rill-developer-service/RillDeveloperService";
+import { ExpressServer } from "@rilldata/web-local/server/ExpressServer";
 import { Command } from "commander";
 
 export class StartCommand extends DataModelerCliCommand {

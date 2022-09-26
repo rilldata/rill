@@ -1,10 +1,10 @@
-import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
-import { ActionErrorType } from "$web-local/common/data-modeler-service/response/ActionResponseMessage";
-import { asyncWait } from "$web-local/common/utils/waitUtils";
+import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+import { ActionErrorType } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponseMessage";
+import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import {
   extractFileExtension,
   extractTableName,
-} from "$web-local/lib/util/extract-table-name";
+} from "@rilldata/web-local/lib/util/extract-table-name";
 import { TestBase } from "@adityahegde/typescript-test-utils";
 import {
   CSVFileTestData,

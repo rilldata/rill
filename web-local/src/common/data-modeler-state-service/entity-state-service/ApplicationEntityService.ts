@@ -8,7 +8,7 @@ import {
   EntityType,
   StateType,
 } from "./EntityStateService";
-import { guidGenerator } from "$web-local/lib/util/guid";
+import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 
 export interface ActiveEntity {
   type: EntityType;

@@ -8,7 +8,11 @@
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
-  import { INTERVALS, STRING_LIKES, TIMESTAMPS } from "../../../duckdb-data-types";
+  import {
+    INTERVALS,
+    STRING_LIKES,
+    TIMESTAMPS,
+  } from "../../../duckdb-data-types";
   import { formatDataType } from "../../../util/formatters";
   import { createShiftClickAction } from "../../../util/shift-click-action";
   import type { VirtualizedTableConfig } from "../types";

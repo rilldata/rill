@@ -1,4 +1,4 @@
-import type { LeaderboardValues } from "$web-local/lib/application-state-stores/explorer-stores";
+import type { LeaderboardValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 
 const FuzzyGroupLargeThreshold = 500;
 const FuzzyGroupSmallThreshold = 0.25;

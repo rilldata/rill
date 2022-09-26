@@ -1,7 +1,7 @@
 <script>
   /** provides the formatting for data types */
   import { INTERVALS, NUMERICS, TIMESTAMPS } from "../../duckdb-data-types.ts";
-  import { formatDataType } from "$web-local/lib/util/formatters";
+  import { formatDataType } from "@rilldata/web-local/lib/util/formatters";
   import Interval from "./Interval.svelte";
   import Number from "./Number.svelte";
   import Timestamp from "./Timestamp.svelte";

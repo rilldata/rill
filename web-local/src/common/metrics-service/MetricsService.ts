@@ -9,10 +9,7 @@ import type { MetricsEventFactory } from "./MetricsEventFactory";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";
 import type { DataModelerStateService } from "../data-modeler-state-service/DataModelerStateService";
-import type {
-  CommonFields,
-  MetricsEvent,
-} from "./MetricsTypes";
+import type { CommonFields, MetricsEvent } from "./MetricsTypes";
 import type { BehaviourEventFactory } from "./BehaviourEventFactory";
 
 /**

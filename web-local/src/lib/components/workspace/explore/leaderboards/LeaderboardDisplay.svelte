@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
-  import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import { getMapFromArray } from "$web-local/common/utils/arrayUtils";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
   import {
     LeaderboardValue,
     MetricsExplorerEntity,

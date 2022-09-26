@@ -1,5 +1,5 @@
 import { goto } from "$app/navigation";
-import type { PersistentTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   dataModelerService,
   DuplicateActions,

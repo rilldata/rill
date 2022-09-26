@@ -1,10 +1,10 @@
 {
-  "name": "web-local",
+  "name": "@rilldata/rill",
   "version": "0.10.0",
   "type": "module",
   "scripts": {
     "dev": "ts-node-dev --quiet --project tsconfig.node.json dev.ts",
-    "build": "vite build && tsc --project tsconfig.node.json",
+    "build": "vite build && cp -R build/* ../build/ && tsc --project tsconfig.node.json",
     "prepack": "./build-tools/replace_package_type.sh module commonjs",
     "postpack": "./build-tools/replace_package_type.sh commonjs module",
     "postinstall": "node ./build-tools/post_install.cjs",

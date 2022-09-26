@@ -3,7 +3,7 @@ import {
   TimeGrain,
   TimeRangeName,
   TimeSeriesTimeRange,
-} from "$web-local/common/database-service/DatabaseTimeSeriesActions";
+} from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
 
 // TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
 export const getSelectableTimeRangeNames = (

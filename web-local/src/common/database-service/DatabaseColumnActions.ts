@@ -1,6 +1,6 @@
 import type { DatabaseMetadata } from "./DatabaseMetadata";
 import { sanitizeColumn } from "../utils/queryUtils";
-import { TIMESTAMPS } from "$web-local/lib/duckdb-data-types";
+import { TIMESTAMPS } from "@rilldata/web-local/lib/duckdb-data-types";
 import type {
   CategoricalSummary,
   NumericHistogramBin,
@@ -8,7 +8,7 @@ import type {
   NumericStatistics,
   NumericSummary,
   TimeRangeSummary,
-} from "$web-local/lib/types";
+} from "@rilldata/web-local/lib/types";
 import { DatabaseActions } from "./DatabaseActions";
 
 const TOP_K_COUNT = 50;

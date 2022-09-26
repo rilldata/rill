@@ -1,5 +1,5 @@
 <script>
-  import Portal from "$web-local/lib/components/Portal.svelte";
+  import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import { fade } from "svelte/transition";
 
   export let bg = "rgba(0,0,0,.8)";

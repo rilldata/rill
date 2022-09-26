@@ -1,5 +1,5 @@
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
 import { CSVFileTestData, TestDataColumns } from "../data/DataLoader.data";
 import { DATA_FOLDER } from "../data/generator/data-constants";
 import {
@@ -8,16 +8,19 @@ import {
   EntityStatus,
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { asyncWait, waitUntil } from "$web-local/common/utils/waitUtils";
-import type { PersistentTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import type { DerivedTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import type { PersistentModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type { DerivedModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { ProfileColumn } from "$web-local/lib/types";
-import type { ActiveEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import type { DatabaseService } from "$web-local/common/database-service/DatabaseService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  asyncWait,
+  waitUntil,
+} from "@rilldata/web-local/common/utils/waitUtils";
+import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
+import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { DatabaseService } from "@rilldata/web-local/common/database-service/DatabaseService";
 
 export class TestServer {
   constructor(

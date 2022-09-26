@@ -3,12 +3,15 @@ import { Command } from "commander";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { asyncWait, waitUntil } from "$web-local/common/utils/waitUtils";
-import { getTableNameFromFile } from "$web-local/lib/util/extract-table-name";
-import { cliConfirmation } from "$web-local/common/utils/cliConfirmation";
-import type { PersistentTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import {
+  asyncWait,
+  waitUntil,
+} from "@rilldata/web-local/common/utils/waitUtils";
+import { getTableNameFromFile } from "@rilldata/web-local/lib/util/extract-table-name";
+import { cliConfirmation } from "@rilldata/web-local/common/utils/cliConfirmation";
+import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 
 interface ImportTableCommandOptions {
   project?: string;

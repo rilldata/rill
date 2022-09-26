@@ -1,16 +1,16 @@
-import type { DataModelerService } from "$web-local/common/data-modeler-service/DataModelerService";
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
+import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
 import type { Command } from "commander";
-import type { SocketNotificationService } from "$web-local/common/socket/SocketNotificationService";
-import { ServerConfig } from "$web-local/common/config/ServerConfig";
-import { clientFactory } from "$web-local/common/clientFactory";
-import { isPortOpen } from "$web-local/common/utils/isPortOpen";
-import type { MetricsService } from "$web-local/common/metrics-service/MetricsService";
-import { RillDeveloper } from "$web-local/server/RillDeveloper";
-import { ProjectConfig } from "$web-local/common/config/ProjectConfig";
-import { LocalConfig } from "$web-local/common/config/LocalConfig";
+import type { SocketNotificationService } from "@rilldata/web-local/common/socket/SocketNotificationService";
+import { ServerConfig } from "@rilldata/web-local/common/config/ServerConfig";
+import { clientFactory } from "@rilldata/web-local/common/clientFactory";
+import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
+import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
+import { RillDeveloper } from "@rilldata/web-local/server/RillDeveloper";
+import { ProjectConfig } from "@rilldata/web-local/common/config/ProjectConfig";
+import { LocalConfig } from "@rilldata/web-local/common/config/LocalConfig";
 
 const DATABASE_NAME = "stage.db";
 

@@ -223,4 +223,4 @@ jobs:
             echo "Please specify the BUMP_TYPE from (major/minor/patch)";
             exit 1;
           fi
-        - npm run bump-version -- ${BUMP_TYPE}
+        - npm run bump-version -w web-local -- ${BUMP_TYPE}

@@ -1,7 +1,7 @@
-import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { MeasureDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import { ValidationState } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { getMessageFromParseError } from "$web-local/common/expression-parser/getMessageFromParseError";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { getMessageFromParseError } from "@rilldata/web-local/common/expression-parser/getMessageFromParseError";
 import { selectMeasureById } from "./measure-definition-selectors";
 import {
   addManyMeasures,

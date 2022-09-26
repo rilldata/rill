@@ -6,8 +6,8 @@ import {
   AdBidsColumnsTestData,
   AdImpressionColumnsTestData,
 } from "../data/DataLoader.data";
-import type { DerivedTableState } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-import type { PersistentTableState } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import type { DerivedTableState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+import type { PersistentTableState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import { CLI_COMMAND } from "../utils/getCliCommand";
 
 const execPromise = promisify(exec);

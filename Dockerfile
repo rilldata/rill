@@ -3,21 +3,23 @@ FROM rilldata/duckdb:0.4.0
 
 WORKDIR /app
 
-COPY package.json package-lock.json \
-    tsconfig.json tsconfig.node.json \
-    svelte.config.js vite.config.ts tailwind.config.cjs postcss.config.cjs .babelrc ./
+COPY package.json package-lock.json tsconfig.json ./
+COPY web-local/package.json web-local/tsconfig.json web-local/tsconfig.node.json \
+    web-local/svelte.config.js web-local/vite.config.ts \
+    web-local/tailwind.config.cjs web-local/postcss.config.cjs web-local/.babelrc web-local/
 
 COPY build-tools build-tools/
-COPY web-local/src src/
+COPY web-local/build-tools web-local/build-tools/
+COPY web-local/src web-local/src/
 
 RUN echo "Installing npm dependencies..." && \
     npm install -d
 
-COPY web-local/static static/
+COPY web-local/static web-local/static/
 RUN echo "Compiling the code..." && \
     npm run build
 
-RUN echo "CommonJS vodoo" && \
+RUN echo "CommonJS voodoo" && \
     /app/build-tools/replace_package_type.sh module commonjs
 
 RUN echo '#!/bin/bash\nnode dist/cli/data-modeler-cli.js "$@"' > /usr/bin/rill && \

@@ -8,7 +8,7 @@ import {
   EntityType,
   StateType,
 } from "./EntityStateService";
-import type { TableSourceType } from "$web-local/lib/types";
+import type { TableSourceType } from "@rilldata/web-local/lib/types";
 
 export interface PersistentTableEntity extends EntityRecord {
   type: EntityType.Table;

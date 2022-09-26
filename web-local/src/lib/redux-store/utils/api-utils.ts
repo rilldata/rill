@@ -3,9 +3,9 @@ import type {
   EntityRecord,
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { ActionCreatorWithPreparedPayload } from "@reduxjs/toolkit";
-import type { EntityRecordMapType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
+import type { EntityRecordMapType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import { fetchWrapper } from "../../util/fetchWrapper";
 import type { ValidationConfig } from "./validation-utils";
 import { validateEntity } from "./validation-utils";

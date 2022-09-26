@@ -1,13 +1,13 @@
 import "../../src/moduleAlias";
 import { FunctionalTestBase } from "../functional/FunctionalTestBase";
 import { execSync } from "node:child_process";
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
-import { StateConfig } from "$web-local/common/config/StateConfig";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
+import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 const PROFILING_TEST_FOLDER = "temp/profile";
 

@@ -1,8 +1,5 @@
 import type { MetricsEvent } from "./MetricsTypes";
-import type {
-  MetricsEventScreenName,
-  MetricsEventSpace,
-} from "./MetricsTypes";
+import type { MetricsEventScreenName, MetricsEventSpace } from "./MetricsTypes";
 
 export enum BehaviourEventAction {
   Navigate = "navigate",

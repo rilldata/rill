@@ -1,7 +1,7 @@
-import { parseExpression } from "$web-local/common/expression-parser/parseExpression";
-import { getMessageFromParseError } from "$web-local/common/expression-parser/getMessageFromParseError";
+import { parseExpression } from "@rilldata/web-local/common/expression-parser/parseExpression";
+import { getMessageFromParseError } from "@rilldata/web-local/common/expression-parser/getMessageFromParseError";
 import { TwoTableJoinQueryColumnsTestData } from "../data/ModelQuery.data";
-import type { ProfileColumn } from "$web-local/lib/types";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 
 describe("parseExpression", () => {
   describe("Valid Expression", () => {

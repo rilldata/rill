@@ -1,9 +1,9 @@
-import type { ActionResponse } from "$web-local/common/data-modeler-service/response/ActionResponse";
+import type { ActionResponse } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { RillRequestContext } from "$web-local/common/rill-developer-service/RillRequestContext";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { RillRequestContext } from "@rilldata/web-local/common/rill-developer-service/RillRequestContext";
 import { EntityController } from "./EntityController";
 import type { Request, Response, Router } from "express";
 

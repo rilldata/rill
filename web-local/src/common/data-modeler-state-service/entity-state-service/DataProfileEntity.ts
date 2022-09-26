@@ -3,7 +3,7 @@ import type {
   EntityState,
   EntityStateActionArg,
 } from "./EntityStateService";
-import type { ProfileColumn } from "$web-local/lib/types";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 
 export interface DataProfileEntity extends DerivedEntityRecord {
   profile?: ProfileColumn[];

@@ -1,9 +1,9 @@
-import { ApplicationStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import { ApplicationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import {
   EntityStatus,
   EntityType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { asyncWait } from "$web-local/common/utils/waitUtils";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import { TwoTableJoinQuery } from "../data/ModelQuery.data";
 import { EntityStatusTracker } from "../utils/EntityStatusTracker";
 import { FunctionalTestBase } from "./FunctionalTestBase";

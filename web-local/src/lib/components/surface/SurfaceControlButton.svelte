@@ -2,8 +2,8 @@
   /**
    * contains the placement and styling of the surface view buttons.
    */
-  import Tooltip from "$web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$web-local/lib/components/tooltip/TooltipContent.svelte";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   export let show = false;
   export let left = undefined;
   export let right = undefined;

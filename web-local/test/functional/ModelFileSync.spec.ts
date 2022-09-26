@@ -1,6 +1,6 @@
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import { StateConfig } from "$web-local/common/config/StateConfig";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
 import { expect } from "@playwright/test";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { execSync } from "node:child_process";
@@ -13,7 +13,7 @@ import {
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
 import { FunctionalTestBase } from "./FunctionalTestBase";
-import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
+import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 
 const SYNC_TEST_FOLDER = "temp/model-sync-test";
 const MODEL_FOLDER = `${SYNC_TEST_FOLDER}/models`;

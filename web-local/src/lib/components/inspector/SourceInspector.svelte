@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { DerivedTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { PersistentTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import { BehaviourEventMedium } from "$web-local/common/metrics-service/BehaviourEventTypes";
+  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "$web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import type {

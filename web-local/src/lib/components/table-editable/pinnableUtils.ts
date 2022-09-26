@@ -1,7 +1,4 @@
-import type {
-  ColumnConfig,
-  CellConfig,
-} from "./ColumnConfig";
+import type { ColumnConfig, CellConfig } from "./ColumnConfig";
 
 export function columnIsPinned(
   name,

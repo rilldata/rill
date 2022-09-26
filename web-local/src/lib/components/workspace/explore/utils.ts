@@ -1,4 +1,4 @@
-import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { ActiveValues } from "../../../application-state-stores/explorer-stores";
 
 // prepare the activeFilters to be sent to the server

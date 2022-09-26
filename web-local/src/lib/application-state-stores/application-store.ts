@@ -5,25 +5,25 @@
  */
 import type { Socket } from "socket.io";
 import { writable, Writable } from "svelte/store";
-import { clientFactory } from "$web-local/common/clientFactory";
-import { RootConfig } from "$web-local/common/config/RootConfig";
-import type { DataModelerSocketService } from "$web-local/common/socket/DataModelerSocketService";
+import { clientFactory } from "@rilldata/web-local/common/clientFactory";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import type { DataModelerSocketService } from "@rilldata/web-local/common/socket/DataModelerSocketService";
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
-} from "$web-local/common/socket/SocketInterfaces";
+} from "@rilldata/web-local/common/socket/SocketInterfaces";
 import type {
   EntityRecord,
   EntityState,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type {
   ApplicationEntity,
   ApplicationState,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 export interface AppStore<
   Entity extends EntityRecord = EntityRecord,

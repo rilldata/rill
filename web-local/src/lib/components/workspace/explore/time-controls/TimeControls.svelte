@@ -6,12 +6,12 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
   import type {
     TimeGrain,
     TimeRangeName,
     TimeSeriesTimeRange,
-  } from "$web-local/common/database-service/DatabaseTimeSeriesActions";
+  } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

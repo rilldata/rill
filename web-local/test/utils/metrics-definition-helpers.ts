@@ -1,12 +1,12 @@
 import type { InlineTestServer } from "./InlineTestServer";
-import { RillRequestContext } from "$web-local/common/rill-developer-service/RillRequestContext";
-import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import { RillRequestContext } from "@rilldata/web-local/common/rill-developer-service/RillRequestContext";
+import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { TestServer } from "./TestServer";
 import type {
   BasicMeasureDefinition,
   MeasureDefinitionEntity,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import { useTestModel, useTestTables } from "./useInlineTestServer";
 
 /**

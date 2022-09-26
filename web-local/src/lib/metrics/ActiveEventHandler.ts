@@ -1,6 +1,6 @@
-import type { MetricsService } from "$web-local/common/metrics-service/MetricsService";
-import type { CommonUserFields } from "$web-local/common/metrics-service/MetricsTypes";
-import type { RootConfig } from "$web-local/common/config/RootConfig";
+import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
+import type { CommonUserFields } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import { sendTelemetryEvent } from "./sendTelemetryEvent";
 
 export class ActiveEventHandler {

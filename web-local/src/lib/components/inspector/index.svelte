@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import {
     inspectorVisibilityTween,

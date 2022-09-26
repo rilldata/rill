@@ -1,6 +1,6 @@
-import type { TimeSeriesTimeRange } from "$web-local/common/database-service/DatabaseTimeSeriesActions";
-import type { MetricsViewTimeSeriesResponse } from "$web-local/common/rill-developer-service/MetricsViewActions";
-import type { PreviewRollupInterval } from "$web-local/lib/duckdb-data-types";
+import type { TimeSeriesTimeRange } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+import type { MetricsViewTimeSeriesResponse } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+import type { PreviewRollupInterval } from "@rilldata/web-local/lib/duckdb-data-types";
 import { END_DATE, START_DATE } from "../data/generator/data-constants";
 import { isTimestampDiffAccurate } from "./time-series-time-diff";
 

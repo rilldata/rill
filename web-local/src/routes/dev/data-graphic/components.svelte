@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Axis } from "$web-local/lib/components/data-graphic/guides";
-  import { SimpleDataGraphic } from "$web-local/lib/components/data-graphic/elements";
-  import type { AxisSide } from "$web-local/lib/components/data-graphic/guides/types";
+  import { Axis } from "@rilldata/web-local/lib/components/data-graphic/guides";
+  import { SimpleDataGraphic } from "@rilldata/web-local/lib/components/data-graphic/elements";
+  import type { AxisSide } from "@rilldata/web-local/lib/components/data-graphic/guides/types";
   const width = 132;
   const height = 132;
   const leftRight = 36;

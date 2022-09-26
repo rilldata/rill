@@ -1,13 +1,13 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/stores";
-  import { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     ApplicationStore,
     createStore,
     duplicateSourceName,
-  } from "$web-local/lib/application-state-stores/application-store";
-  import { config } from "$web-local/lib/application-state-stores/application-store.js";
+  } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { config } from "@rilldata/web-local/lib/application-state-stores/application-store.js";
   import {
     assetsVisible,
     assetVisibilityTween,
@@ -17,51 +17,51 @@
     layout,
     quickStartDashboardOverlay,
     SIDE_PAD,
-  } from "$web-local/lib/application-state-stores/layout-store";
+  } from "@rilldata/web-local/lib/application-state-stores/layout-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
-  } from "$web-local/lib/application-state-stores/model-stores";
+  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import {
     createDerivedModelStore,
     createPersistentModelStore,
-  } from "$web-local/lib/application-state-stores/model-stores";
-  import { createQueryHighlightStore } from "$web-local/lib/application-state-stores/query-highlight-store";
+  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import { createQueryHighlightStore } from "@rilldata/web-local/lib/application-state-stores/query-highlight-store";
   import type {
     DerivedTableStore,
     PersistentTableStore,
-  } from "$web-local/lib/application-state-stores/table-stores";
+  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import {
     createDerivedTableStore,
     createPersistentTableStore,
-  } from "$web-local/lib/application-state-stores/table-stores";
-  import HideLeftSidebar from "$web-local/lib/components/icons/HideLeftSidebar.svelte";
-  import HideRightSidebar from "$web-local/lib/components/icons/HideRightSidebar.svelte";
-  import MoreHorizontal from "$web-local/lib/components/icons/MoreHorizontal.svelte";
-  import SurfaceViewIcon from "$web-local/lib/components/icons/SurfaceView.svelte";
-  import DuplicateSource from "$web-local/lib/components/modal/DuplicateSource.svelte";
-  import notification from "$web-local/lib/components/notifications";
-  import NotificationCenter from "$web-local/lib/components/notifications/NotificationCenter.svelte";
-  import ExportingDataset from "$web-local/lib/components/overlay/ExportingDataset.svelte";
-  import FileDrop from "$web-local/lib/components/overlay/FileDrop.svelte";
-  import ImportingTable from "$web-local/lib/components/overlay/ImportingTable.svelte";
-  import PreparingImport from "$web-local/lib/components/overlay/PreparingImport.svelte";
-  import QuickStartDashboard from "$web-local/lib/components/overlay/QuickStartDashboard.svelte";
-  import SurfaceControlButton from "$web-local/lib/components/surface/SurfaceControlButton.svelte";
-  import ConfigProvider from "$web-local/lib/config/ConfigProvider.svelte";
-  import { initMetrics } from "$web-local/lib/metrics/initMetrics";
-  import { syncApplicationState } from "$web-local/lib/redux-store/application/application-apis";
+  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import HideLeftSidebar from "@rilldata/web-local/lib/components/icons/HideLeftSidebar.svelte";
+  import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
+  import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
+  import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
+  import DuplicateSource from "@rilldata/web-local/lib/components/modal/DuplicateSource.svelte";
+  import notification from "@rilldata/web-local/lib/components/notifications";
+  import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
+  import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
+  import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";
+  import ImportingTable from "@rilldata/web-local/lib/components/overlay/ImportingTable.svelte";
+  import PreparingImport from "@rilldata/web-local/lib/components/overlay/PreparingImport.svelte";
+  import QuickStartDashboard from "@rilldata/web-local/lib/components/overlay/QuickStartDashboard.svelte";
+  import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
+  import ConfigProvider from "@rilldata/web-local/lib/config/ConfigProvider.svelte";
+  import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { syncApplicationState } from "@rilldata/web-local/lib/redux-store/application/application-apis";
   import {
     createQueryClient,
     queryClient,
-  } from "$web-local/lib/svelte-query/globalQueryClient";
-  import type { ApplicationMetadata } from "$web-local/lib/types";
+  } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import type { ApplicationMetadata } from "@rilldata/web-local/lib/types";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount, setContext } from "svelte";
   import "../app.css";
   import "../fonts.css";
-  import AssetsSidebar from "$web-local/lib/components/assets/index.svelte";
-  import InspectorSidebar from "$web-local/lib/components/inspector/index.svelte";
+  import AssetsSidebar from "@rilldata/web-local/lib/components/assets/index.svelte";
+  import InspectorSidebar from "@rilldata/web-local/lib/components/inspector/index.svelte";
 
   let store;
   let queryHighlight = createQueryHighlightStore();

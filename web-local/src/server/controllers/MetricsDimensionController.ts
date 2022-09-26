@@ -2,10 +2,10 @@ import type { Request, Response, Router } from "express";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { EntityController } from "./EntityController";
-import type { ActionResponse } from "$web-local/common/data-modeler-service/response/ActionResponse";
-import type { RillRequestContext } from "$web-local/common/rill-developer-service/RillRequestContext";
+import type { ActionResponse } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+import type { RillRequestContext } from "@rilldata/web-local/common/rill-developer-service/RillRequestContext";
 
 export class MetricsDimensionController extends EntityController {
   protected static entityPath = "dimensions";

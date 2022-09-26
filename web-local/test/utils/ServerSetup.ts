@@ -3,12 +3,12 @@ import {
   TestSuiteSetup,
 } from "@adityahegde/typescript-test-utils";
 import terminate from "terminate/promise";
-import { isPortOpen } from "$web-local/common/utils/isPortOpen";
+import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
 import { CLI_COMMAND } from "./getCliCommand";
 import { exec } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { promisify } from "util";
-import { waitUntil } from "$web-local/common/utils/waitUtils";
+import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
 
 const execPromise = promisify(exec);
 

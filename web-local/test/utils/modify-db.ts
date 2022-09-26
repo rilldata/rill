@@ -1,6 +1,6 @@
 import "../../src/moduleAlias";
-import { DuckDBClient } from "$web-local/common/database-service/DuckDBClient";
-import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
+import { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDBClient";
+import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
 
 (async () => {
   const duckDbClient = DuckDBClient.getInstance(

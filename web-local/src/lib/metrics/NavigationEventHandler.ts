@@ -1,9 +1,9 @@
-import type { BehaviourEventMedium } from "$web-local/common/metrics-service/BehaviourEventTypes";
+import type { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
 import type {
   CommonUserFields,
   MetricsEventScreenName,
   MetricsEventSpace,
-} from "$web-local/common/metrics-service/MetricsTypes";
+} from "@rilldata/web-local/common/metrics-service/MetricsTypes";
 import { sendTelemetryEvent } from "./sendTelemetryEvent";
 
 export class NavigationEventHandler {

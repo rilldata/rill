@@ -5,8 +5,8 @@
   } from "../../application-state-stores/application-store";
   import { getContext } from "svelte";
 
-  import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
-  import type { PersistentModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import WorkspaceHeader from "./WorkspaceHeader.svelte";
 

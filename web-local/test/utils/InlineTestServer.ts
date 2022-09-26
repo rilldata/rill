@@ -1,12 +1,12 @@
 import { TestServer } from "./TestServer";
-import { RillDeveloper } from "$web-local/server/RillDeveloper";
-import type { RootConfig } from "$web-local/common/config/RootConfig";
-import type { RillDeveloperService } from "$web-local/common/rill-developer-service/RillDeveloperService";
+import { RillDeveloper } from "@rilldata/web-local/server/RillDeveloper";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import type { RillDeveloperService } from "@rilldata/web-local/common/rill-developer-service/RillDeveloperService";
 import {
   expressServerFactory,
   rillDeveloperServiceFactory,
-} from "$web-local/server/serverFactory";
-import type { ExpressServer } from "$web-local/server/ExpressServer";
+} from "@rilldata/web-local/server/serverFactory";
+import type { ExpressServer } from "@rilldata/web-local/server/ExpressServer";
 
 export class InlineTestServer extends TestServer {
   public readonly rillDeveloper: RillDeveloper;

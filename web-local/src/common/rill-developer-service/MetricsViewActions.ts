@@ -24,7 +24,7 @@ import type { MetricsDefinitionContext } from "./MetricsDefinitionActions";
 import { RillDeveloperActions } from "./RillDeveloperActions";
 import { RillRequestContext } from "./RillRequestContext";
 import { getMapFromArray } from "../utils/arrayUtils";
-import type { ActiveValues } from "$web-local/lib/application-state-stores/explorer-stores";
+import type { ActiveValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 
 export interface MetricsViewMetaResponse {
   id?: string;

@@ -1,4 +1,4 @@
-import type { DataModelerState } from "$web-local/lib/types";
+import type { DataModelerState } from "@rilldata/web-local/lib/types";
 import type { TableStateActions } from "./TableStateActions";
 import type { ModelStateActions } from "./ModelStateActions";
 import type { ProfileColumnStateActions } from "./ProfileColumnStateActions";

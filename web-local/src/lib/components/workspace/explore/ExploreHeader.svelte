@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { RootConfig } from "$web-local/common/config/RootConfig";
-  import { BehaviourEventMedium } from "$web-local/common/metrics-service/BehaviourEventTypes";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "$web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { Button } from "../../button";
   import MetricsIcon from "../../icons/Metrics.svelte";

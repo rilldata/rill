@@ -3,11 +3,11 @@
  * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
  */
 
-import type { RootConfig } from "$web-local/common/config/RootConfig";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type {
   MetricsViewTotalsRequest,
   MetricsViewTotalsResponse,
-} from "$web-local/common/rill-developer-service/MetricsViewActions";
+} from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import { fetchUrl } from "../fetch-url";
 import { useQuery } from "@sveltestack/svelte-query";
 

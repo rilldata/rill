@@ -1,12 +1,12 @@
 import type {
   ActiveEntity,
   ApplicationState,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { ApplicationStore } from "../../application-state-stores/application-store";
 import { get } from "svelte/store";
 import { store } from "../store-root";
 import { setApplicationActiveState } from "./application-slice";
-import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { bootstrapMetricsDefinition } from "../metrics-definition/bootstrapMetricsDefinition";
 
 export const syncApplicationState = (appStore: ApplicationStore) => {

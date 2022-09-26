@@ -7,10 +7,7 @@ and the menu closes.
   import { setContext } from "svelte";
 
   import { WithTogglableFloatingElement } from "../../floating-element";
-  import type {
-    Alignment,
-    Location,
-  } from "../../floating-element/types";
+  import type { Alignment, Location } from "../../floating-element/types";
   import { Menu, MenuItem } from "./";
 
   export let options = [];

@@ -4,8 +4,12 @@ import {
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DataProfileStateActionArg } from "../data-modeler-state-service/entity-state-service/DataProfileEntity";
 import { DataModelerActions } from "./DataModelerActions";
-import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "$web-local/lib/duckdb-data-types";
-import type { ProfileColumn } from "$web-local/lib/types";
+import {
+  CATEGORICALS,
+  NUMERICS,
+  TIMESTAMPS,
+} from "@rilldata/web-local/lib/duckdb-data-types";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 import {
   DatabaseActionQueuePriority,
   DatabaseProfilesFieldPriority,
@@ -13,7 +17,7 @@ import {
   getProfilePriority,
   ProfileMetadataPriorityMap,
 } from "../priority-action-queue/DatabaseActionQueuePriority";
-import { COLUMN_PROFILE_CONFIG } from "$web-local/lib/application-config";
+import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
 import type { PersistentModelEntity } from "../data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { PersistentTableEntity } from "../data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 

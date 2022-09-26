@@ -1,4 +1,4 @@
 import moduleAlias from "module-alias";
 moduleAlias.addAliases({
-  "$web-local": __dirname + "/",
+  "@rilldata/web-local": __dirname + "/",
 });

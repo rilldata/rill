@@ -1,8 +1,5 @@
 import { SOURCE_PREVIEW_COUNT } from "../constants";
-import {
-  ActionResponse,
-  ActionStatus,
-} from "./response/ActionResponse";
+import { ActionResponse, ActionStatus } from "./response/ActionResponse";
 import { ActionResponseFactory } from "./response/ActionResponseFactory";
 import type {
   DerivedTableEntity,
@@ -24,14 +21,14 @@ import {
   FILE_EXTENSION_TO_TABLE_TYPE,
   ProfileColumn,
   TableSourceType,
-} from "$web-local/lib/types";
+} from "@rilldata/web-local/lib/types";
 import {
   extractFileExtension,
   extractTableName,
   getTableNameFromFile,
   INVALID_CHARS,
   sanitizeEntityName,
-} from "$web-local/lib/util/extract-table-name";
+} from "@rilldata/web-local/lib/util/extract-table-name";
 import { existsSync } from "fs";
 import { DataModelerActions } from ".//DataModelerActions";
 

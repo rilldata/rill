@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { FileExportType } from "$web-local/common/data-modeler-service/ModelActions";
-  import { ActionStatus } from "$web-local/common/data-modeler-service/response/ActionResponse";
-  import type { DerivedModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import type { DerivedTableEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentModelEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { FileExportType } from "@rilldata/web-local/common/data-modeler-service/ModelActions";
+  import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
+  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { COLUMN_PROFILE_CONFIG } from "../../../../application-config";
   import {
     ApplicationStore,

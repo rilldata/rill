@@ -4,15 +4,18 @@
     GraphicContext,
     SimpleDataGraphic,
     Body,
-  } from "$web-local/lib/components/data-graphic/elements";
-  import { Axis } from "$web-local/lib/components/data-graphic/guides";
-  import { Line, Area } from "$web-local/lib/components/data-graphic/marks";
+  } from "@rilldata/web-local/lib/components/data-graphic/elements";
+  import { Axis } from "@rilldata/web-local/lib/components/data-graphic/guides";
+  import {
+    Line,
+    Area,
+  } from "@rilldata/web-local/lib/components/data-graphic/marks";
   import { makeTimeSeries } from "./_utils";
   import { cubicOut, elasticOut } from "svelte/easing";
   import {
     WithTween,
     WithSimpleLinearScale,
-  } from "$web-local/lib/components/data-graphic/functional-components";
+  } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
 
   const data1 = makeTimeSeries();
   const data2 = makeTimeSeries();

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RootConfig } from "$web-local/common/config/RootConfig";
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   /**
    * DimensionDisplay.svelte
@@ -7,7 +7,7 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

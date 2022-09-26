@@ -1,7 +1,7 @@
 import { StateActions } from "./StateActions";
-import { extractSourceTables } from "$web-local/lib/util/model-structure";
+import { extractSourceTables } from "@rilldata/web-local/lib/util/model-structure";
 import type { PersistentModelStateActionArg } from "./entity-state-service/PersistentModelEntityService";
-import type { ProfileColumn, SourceTable } from "$web-local/lib/types";
+import type { ProfileColumn, SourceTable } from "@rilldata/web-local/lib/types";
 import type { DerivedModelStateActionArg } from "./entity-state-service/DerivedModelEntityService";
 
 export interface NewModelParams {

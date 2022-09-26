@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { WithTween } from "../../../data-graphic/functional-components";
   import CrossIcon from "../../../icons/CrossIcon.svelte";
   import Spinner from "../../../Spinner.svelte";

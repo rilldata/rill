@@ -1,6 +1,6 @@
-import { ANY_TYPES, NUMERICS } from "$web-local/lib/duckdb-data-types";
+import { ANY_TYPES, NUMERICS } from "@rilldata/web-local/lib/duckdb-data-types";
 import type { ExprCall } from "pgsql-ast-parser";
-import type { ProfileColumn } from "$web-local/lib/types";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 
 // Taken from https://duckdb.org/docs/sql/aggregates
 export const AllowedAggregates: {

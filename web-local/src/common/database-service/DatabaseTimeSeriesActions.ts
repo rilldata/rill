@@ -9,8 +9,8 @@ import {
   getFilterFromFilters,
   normaliseMeasures,
 } from "./utils";
-import { PreviewRollupInterval } from "$web-local/lib/duckdb-data-types";
-import type { ActiveValues } from "$web-local/lib/application-state-stores/explorer-stores";
+import { PreviewRollupInterval } from "@rilldata/web-local/lib/duckdb-data-types";
+import type { ActiveValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 
 export type TimeSeriesValue = {
   ts: string;

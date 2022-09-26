@@ -1,5 +1,5 @@
 import { generateEntitySelectors } from "../utils/selector-utils";
-import type { MetricsDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { RillReduxState } from "../store-root";
 
 export const {

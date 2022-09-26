@@ -6,10 +6,7 @@
   import { getContext, onDestroy, onMount } from "svelte";
   import { extent } from "d3-array";
 
-  import {
-    lineFactory,
-    pathDoesNotDropToZero,
-  } from "../utils";
+  import { lineFactory, pathDoesNotDropToZero } from "../utils";
   import { guidGenerator } from "../../../util/guid";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";

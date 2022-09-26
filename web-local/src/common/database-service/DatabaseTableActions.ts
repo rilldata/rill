@@ -1,6 +1,6 @@
 import type { DatabaseMetadata } from "./DatabaseMetadata";
-import type { ProfileColumn } from "$web-local/lib/types";
-import { guidGenerator } from "$web-local/lib/util/guid";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
+import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { DatabaseActions } from "./DatabaseActions";
 
 export class DatabaseTableActions extends DatabaseActions {

@@ -1,11 +1,11 @@
-import type { DataModelerStateService } from "$web-local/common/data-modeler-state-service/DataModelerStateService";
-import type { EntityStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
+import type { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import {
   EntityType,
   StateType,
-} from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { SinonSandbox, SinonStub } from "sinon";
-import type { ApplicationStatus } from "$web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+import type { ApplicationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 
 export class EntityStatusTracker {
   private statusChangeOrder: Array<EntityStatus>;

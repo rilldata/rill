@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MetricsSourceSelectionError } from "$web-local/common/errors/ErrorMessages";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
   import { Callout } from "../../callout";
 

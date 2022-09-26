@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityType } from "$web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "../../application-state-stores/application-store";
   import Input from "../Input.svelte";
   import notifications from "./RenameEntityModal.svelte";

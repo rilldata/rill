@@ -1,13 +1,7 @@
-import {
-  createSlice,
-  createEntityAdapter,
-} from "../redux-toolkit-wrapper";
-import type { DimensionDefinitionEntity } from "$web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+import { createSlice, createEntityAdapter } from "../redux-toolkit-wrapper";
+import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import {
-  setFieldPrepare,
-  setFieldReducer,
-} from "../utils/slice-utils";
+import { setFieldPrepare, setFieldReducer } from "../utils/slice-utils";
 
 const dimensionDefAdapter = createEntityAdapter<DimensionDefinitionEntity>();
 

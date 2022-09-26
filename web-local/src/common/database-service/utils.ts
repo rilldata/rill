@@ -4,7 +4,7 @@ import {
 } from "../data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "./DatabaseTimeSeriesActions";
 import type { MetricsViewRequestFilter } from "../rill-developer-service/MetricsViewActions";
-import type { ActiveValues } from "$web-local/lib/application-state-stores/explorer-stores";
+import type { ActiveValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 
 export function getFilterFromFilters(filters: ActiveValues): string {
   return Object.keys(filters)

@@ -1,17 +1,8 @@
 import { MetricsEventFactory } from "./MetricsEventFactory";
-import type {
-  CommonFields,
-  CommonUserFields,
-} from "./MetricsTypes";
-import {
-  BehaviourEvent,
-  BehaviourEventAction,
-} from "./BehaviourEventTypes";
+import type { CommonFields, CommonUserFields } from "./MetricsTypes";
+import { BehaviourEvent, BehaviourEventAction } from "./BehaviourEventTypes";
 import type { BehaviourEventMedium } from "./BehaviourEventTypes";
-import type {
-  MetricsEventScreenName,
-  MetricsEventSpace,
-} from "./MetricsTypes";
+import type { MetricsEventScreenName, MetricsEventSpace } from "./MetricsTypes";
 
 export class BehaviourEventFactory extends MetricsEventFactory {
   public navigationEvent(
