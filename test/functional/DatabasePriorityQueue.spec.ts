@@ -82,17 +82,22 @@ export class DatabasePriorityQueueSpec extends FunctionalTestBase {
       "updateModelQuery",
       [model0.id, TwoTableJoinQuery]
     );
+
     await this.clientDataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
       model0.id,
     ]);
+
     await asyncWait(50);
+
     const [model1] = this.getModels("tableName", "model_0");
     const modelQueryTwoPromise = this.clientDataModelerService.dispatch(
       "updateModelQuery",
       [model1.id, SingleTableQuery]
     );
+
     await asyncWait(50);
+
     await this.clientDataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
       model1.id,

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
   import { EntityStatus } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import {
@@ -6,14 +7,17 @@
     metricsExplorerStore,
   } from "$lib/application-state-stores/explorer-stores";
   import { SelectMenu } from "$lib/components/menu";
-  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { getContext } from "svelte";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../Spinner.svelte";
 
   export let metricsDefId;
 
+  const config = getContext<RootConfig>("config");
+
   // query the `/meta` endpoint to get the valid measures
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   $: measures = $metaQuery.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
