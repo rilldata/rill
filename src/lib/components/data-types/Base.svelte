@@ -8,7 +8,7 @@
 
 <span class="{classes} {isNull ? `${nullColor} italic` : '{color}'}">
   {#if isNull}
-    ∅ null
+    null
   {:else}
     <slot />
   {/if}
