@@ -1,9 +1,10 @@
-import type { DatabaseConfig } from "$common/config/DatabaseConfig";
+import type { RootConfig } from "$common/config/RootConfig";
+import { getBinaryRuntimePath } from "$common/database-service/getBinaryRuntimePath";
 import { isPortOpen } from "$common/utils/isPortOpen";
 import { asyncWaitUntil } from "$common/utils/waitUtils";
 import fetch from "isomorphic-unfetch";
 import type { ChildProcess } from "node:child_process";
-import { spawn } from "node:child_process";
+import childProcess from "node:child_process";
 import { URL } from "url";
 
 /**
@@ -24,14 +25,14 @@ export class DuckDBClient {
   // duckdb doesn't work well with multiple connections to same db from same process
   // if we ever need to have different connections modify this to have a map of database to instance
   private static instance: DuckDBClient;
-  private constructor(private readonly databaseConfig: DatabaseConfig) {}
-  public static getInstance(databaseConfig: DatabaseConfig) {
-    if (!this.instance) this.instance = new DuckDBClient(databaseConfig);
+  private constructor(private readonly config: RootConfig) {}
+  public static getInstance(config: RootConfig) {
+    if (!this.instance) this.instance = new DuckDBClient(config);
     return this.instance;
   }
 
   public async init(): Promise<void> {
-    if (this.databaseConfig.skipDatabase) return;
+    if (this.config.database.skipDatabase) return;
     await this.spawnRuntime();
     await this.connectRuntime();
   }
@@ -71,7 +72,7 @@ export class DuckDBClient {
   }
 
   protected async spawnRuntime() {
-    if (!this.databaseConfig.spawnRuntime) {
+    if (!this.config.database.spawnRuntime) {
       return;
     }
 
@@ -81,7 +82,7 @@ export class DuckDBClient {
       return;
     }
 
-    const httpPort = this.databaseConfig.spawnRuntimePort;
+    const httpPort = this.config.database.spawnRuntimePort;
     const grpcPort = httpPort + 1000; // Hack to prevent port collision when spawning many runtimes
 
     if ((await isPortOpen(httpPort)) || (await isPortOpen(grpcPort))) {
@@ -91,21 +92,25 @@ export class DuckDBClient {
       return;
     }
 
-    this.runtimeProcess = spawn("./dist/runtime/runtime", [], {
-      env: {
-        ...process.env,
-        RILL_RUNTIME_ENV: "production",
-        RILL_RUNTIME_LOG_LEVEL: "warn",
-        RILL_RUNTIME_HTTP_PORT: httpPort.toString(),
-        RILL_RUNTIME_GRPC_PORT: grpcPort.toString(),
-      },
-      stdio: "inherit",
-      shell: true,
-    });
+    this.runtimeProcess = childProcess.spawn(
+      getBinaryRuntimePath(this.config.local.version),
+      [],
+      {
+        env: {
+          ...process.env,
+          RILL_RUNTIME_ENV: "production",
+          RILL_RUNTIME_LOG_LEVEL: "warn",
+          RILL_RUNTIME_HTTP_PORT: httpPort.toString(),
+          RILL_RUNTIME_GRPC_PORT: grpcPort.toString(),
+        },
+        stdio: "inherit",
+        shell: true,
+      }
+    );
     this.runtimeProcess.on("error", console.log);
 
     await asyncWaitUntil(() =>
-      isPortOpen(this.databaseConfig.spawnRuntimePort)
+      isPortOpen(this.config.database.spawnRuntimePort)
     );
   }
 
@@ -115,7 +120,7 @@ export class DuckDBClient {
       return;
     }
 
-    let databaseName = this.databaseConfig.databaseName;
+    let databaseName = this.config.database.databaseName;
     if (databaseName === ":memory:") {
       databaseName = "";
     }
@@ -141,7 +146,7 @@ export class DuckDBClient {
   }
 
   private async request(path: string, data: any): Promise<any> {
-    const url = new URL(path, this.databaseConfig.runtimeUrl).toString();
+    const url = new URL(path, this.config.database.runtimeUrl).toString();
 
     const res = await fetch(url, {
       method: "POST",

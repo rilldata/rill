@@ -1,13 +1,16 @@
 import "../../src/moduleAlias";
 import { DatabaseConfig } from "$common/config/DatabaseConfig";
+import { RootConfig } from "$common/config/RootConfig";
 import { DuckDBClient } from "$common/database-service/DuckDBClient";
 
 (async () => {
   const duckDbClient = DuckDBClient.getInstance(
-    new DatabaseConfig({
-      databaseName: process.argv[2],
-      spawnRuntime: false,
-      runtimeUrl: `http://localhost:8081`,
+    new RootConfig({
+      database: new DatabaseConfig({
+        databaseName: process.argv[2],
+        spawnRuntime: false,
+        runtimeUrl: `http://localhost:8081`,
+      }),
     })
   );
   await duckDbClient.init();
