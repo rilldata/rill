@@ -90,7 +90,7 @@ func TestPriorityQueue(t *testing.T) {
 	}
 
 	// give the queue plenty of time to fill up, then unpause
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
@@ -151,7 +151,7 @@ func TestCancel(t *testing.T) {
 	}
 
 	// give the queue plenty of time to fill up, then unpause
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
