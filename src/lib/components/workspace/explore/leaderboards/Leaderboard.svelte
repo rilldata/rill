@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
+
   /**
    * Leaderboard.svelte
    * -------------------------
@@ -35,7 +37,7 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "$lib/util/humanize-numbers";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import { getDisplayName } from "../utils";
   import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
@@ -57,12 +59,14 @@
 
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useMetaQuery(metricsDefId);
+  const config = getContext<RootConfig>("config");
+
+  $: metaQuery = useMetaQuery(config, metricsDefId);
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  $: dimensionQuery = useMetaDimension(metricsDefId, dimensionId);
+  $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
   $: dimension = $dimensionQuery?.data;
   let displayName: string;
@@ -70,6 +74,7 @@
   $: displayName = getDisplayName(dimension);
 
   $: measureQuery = useMetaMeasure(
+    config,
     metricsDefId,
     metricsExplorer?.leaderboardMeasureId
   );
@@ -77,6 +82,7 @@
   $: measure = $measureQuery?.data;
 
   $: mappedFiltersQuery = useMetaMappedFilters(
+    config,
     metricsDefId,
     metricsExplorer?.filters
   );
@@ -106,7 +112,7 @@
     $metaQuery?.isSuccess &&
     !$metaQuery?.isRefetching
   ) {
-    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
+    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: [measure.sqlName],
       limit: 15,
       offset: 0,

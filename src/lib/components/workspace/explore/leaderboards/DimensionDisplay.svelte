@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { RootConfig } from "$common/config/RootConfig";
+
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -23,18 +25,22 @@
   import { useTopListQuery } from "$lib/svelte-query/queries/metrics-views/top-list";
   import { useTotalsQuery } from "$lib/svelte-query/queries/metrics-views/totals";
   import { humanizeGroupByColumns } from "$lib/util/humanize-numbers";
+  import { getContext } from "svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
 
-  $: metaQuery = useMetaQuery(metricsDefId);
+  const config = getContext<RootConfig>("config");
 
-  $: dimensionQuery = useMetaDimension(metricsDefId, dimensionId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
+
+  $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
-  $: dimension = dimensionQuery?.data;
+  $: dimension = $dimensionQuery?.data;
 
   $: leaderboardMeasureId = metricsExplorer?.leaderboardMeasureId;
   $: leaderboardMeasureQuery = useMetaMeasure(
+    config,
     metricsDefId,
     metricsExplorer?.leaderboardMeasureId
   );
@@ -43,11 +49,13 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
   $: mappedFiltersQuery = useMetaMappedFilters(
+    config,
     metricsDefId,
     metricsExplorer?.filters
   );
 
   $: selectedMeasureNames = useMetaMeasureNames(
+    config,
     metricsDefId,
     metricsExplorer?.selectedMeasureIds
   );
@@ -72,7 +80,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    topListQuery = useTopListQuery(metricsDefId, dimensionId, {
+    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: $selectedMeasureNames.data,
       limit: 250,
       offset: 0,
@@ -97,7 +105,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(metricsDefId, {
+    totalsQuery = useTotalsQuery(config, metricsDefId, {
       measures: $selectedMeasureNames.data,
       time: {
         start: metricsExplorer.selectedTimeRange?.start,
@@ -122,7 +130,7 @@
   let columns = [];
   let measureNames = [];
 
-  $: if (!$topListQuery?.isFetching) {
+  $: if (!$topListQuery?.isFetching && dimension) {
     values = $topListQuery?.data?.data ?? [];
 
     /* FIX ME

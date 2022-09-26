@@ -3,6 +3,7 @@
  * autogenerate `svelte-query`-specific client code. One such tool is: https://orval.dev/guides/svelte-query
  */
 
+import type { RootConfig } from "$common/config/RootConfig";
 import type {
   MetricsViewTotalsRequest,
   MetricsViewTotalsResponse,
@@ -13,10 +14,16 @@ import { useQuery } from "@sveltestack/svelte-query";
 // POST /api/v1/metrics-views/{view-name}/totals
 
 export const getMetricsViewTotals = async (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTotalsRequest
 ): Promise<MetricsViewTotalsResponse> => {
-  return fetchUrl(`metrics-views/${metricViewId}/totals`, "POST", request);
+  return fetchUrl(
+    config.server.exploreUrl,
+    `metrics-views/${metricViewId}/totals`,
+    "POST",
+    request
+  );
 };
 
 export const TotalsId = `v1/metrics-view/totals`;
@@ -28,11 +35,13 @@ export const getTotalsQueryKey = (
 };
 
 export const useTotalsQuery = (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTotalsRequest
 ) => {
   const totalsQueryKey = getTotalsQueryKey(metricViewId, request);
-  const totalsQueryFn = () => getMetricsViewTotals(metricViewId, request);
+  const totalsQueryFn = () =>
+    getMetricsViewTotals(config, metricViewId, request);
 
   return useQuery<MetricsViewTotalsResponse, Error>(
     totalsQueryKey,

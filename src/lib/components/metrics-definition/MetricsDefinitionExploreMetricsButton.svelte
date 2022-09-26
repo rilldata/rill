@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { RootConfig } from "$common/config/RootConfig";
   import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -12,11 +13,14 @@
   import { navigationEvent } from "$lib/metrics/initMetrics";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
   import { useMetaQuery } from "$lib/svelte-query/queries/metrics-views/metadata";
+  import { getContext } from "svelte";
 
   export let metricsDefId: string;
 
+  const config = getContext<RootConfig>("config");
+
   // query the `/meta` endpoint to get the valid measures and dimensions
-  $: metaQuery = useMetaQuery(metricsDefId);
+  $: metaQuery = useMetaQuery(config, metricsDefId);
   $: measures = $metaQuery.data?.measures;
   $: dimensions = $metaQuery.data?.dimensions;
 

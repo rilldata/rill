@@ -1,10 +1,12 @@
+import { config } from "$lib/application-state-stores/application-store";
 import { getMetricsViewMetadata } from "$lib/svelte-query/queries/metrics-views/metadata";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   let metricsDefExists: boolean;
-  await getMetricsViewMetadata(params.id).then((meta) => {
+
+  await getMetricsViewMetadata(config, params.id).then((meta) => {
     if (meta.timeDimension !== undefined) {
       metricsDefExists = true;
     } else {

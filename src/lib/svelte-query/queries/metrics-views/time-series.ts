@@ -1,3 +1,4 @@
+import type { RootConfig } from "$common/config/RootConfig";
 import type {
   MetricsViewTimeSeriesRequest,
   MetricsViewTimeSeriesResponse,
@@ -8,10 +9,16 @@ import { useQuery } from "@sveltestack/svelte-query";
 // POST /api/v1/metrics-views/{view-name}/timeseries
 
 export const getMetricsViewTimeSeries = async (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTimeSeriesRequest
 ): Promise<MetricsViewTimeSeriesResponse> => {
-  return fetchUrl(`metrics-views/${metricViewId}/timeseries`, "POST", request);
+  return fetchUrl(
+    config.server.exploreUrl,
+    `metrics-views/${metricViewId}/timeseries`,
+    "POST",
+    request
+  );
 };
 
 export const TimeSeriesId = `v1/metrics-view/timeseries`;
@@ -24,12 +31,13 @@ export const getTimeSeriesQueryKey = (
 };
 
 export const useTimeSeriesQuery = (
+  config: RootConfig,
   metricViewId: string,
   request: MetricsViewTimeSeriesRequest
 ) => {
   const timeSeriesQueryKey = getTimeSeriesQueryKey(metricViewId, request);
   const timeSeriesQueryFn = () =>
-    getMetricsViewTimeSeries(metricViewId, request);
+    getMetricsViewTimeSeries(config, metricViewId, request);
   const timeSeriesQueryOptions = {
     staleTime: 1000 * 30,
     enabled: !!(metricViewId && request.measures && request.time),

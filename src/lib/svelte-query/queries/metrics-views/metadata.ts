@@ -1,3 +1,4 @@
+import type { RootConfig } from "$common/config/RootConfig";
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import type { MeasureDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type {
@@ -12,9 +13,14 @@ import type { UseQueryOptions } from "@sveltestack/svelte-query/dist/types";
 // GET /api/v1/metrics-views/{view-name}/meta
 
 export const getMetricsViewMetadata = async (
+  config: RootConfig,
   metricViewId: string
 ): Promise<MetricsViewMetaResponse> => {
-  const json = await fetchUrl(`metrics-views/${metricViewId}/meta`, "GET");
+  const json = await fetchUrl(
+    config.server.exploreUrl,
+    `metrics-views/${metricViewId}/meta`,
+    "GET"
+  );
   json.id = metricViewId;
   return json;
 };
@@ -26,11 +32,12 @@ export const getMetaQueryKey = (metricViewId: string) => {
 };
 
 export const useMetaQuery = <T = MetricsViewMetaResponse>(
+  config: RootConfig,
   metricViewId: string,
   selector?: (meta: MetricsViewMetaResponse) => T
 ) => {
   const metaQueryKey = getMetaQueryKey(metricViewId);
-  const metaQueryFn = () => getMetricsViewMetadata(metricViewId);
+  const metaQueryFn = () => getMetricsViewMetadata(config, metricViewId);
   const metaQueryOptions: UseQueryOptions<MetricsViewMetaResponse, Error, T> = {
     enabled: !!metricViewId,
     ...(selector ? { select: selector } : {}),
@@ -42,15 +49,20 @@ export const useMetaQuery = <T = MetricsViewMetaResponse>(
   );
 };
 
-export const useMetaMeasure = (metricViewId: string, measureId: string) =>
-  useMetaQuery<MeasureDefinitionEntity>(metricViewId, (meta) =>
+export const useMetaMeasure = (
+  config: RootConfig,
+  metricViewId: string,
+  measureId: string
+) =>
+  useMetaQuery<MeasureDefinitionEntity>(config, metricViewId, (meta) =>
     meta.measures?.find((measure) => measure.id === measureId)
   );
 export const useMetaMeasureNames = (
+  config: RootConfig,
   metricViewId: string,
   measureIds: Array<string>
 ) =>
-  useMetaQuery<Array<string>>(metricViewId, (meta) => {
+  useMetaQuery<Array<string>>(config, metricViewId, (meta) => {
     const measureIdMap = getMapFromArray(
       meta.measures ?? [],
       (measure) => measure.id
@@ -60,16 +72,21 @@ export const useMetaMeasureNames = (
     );
   });
 
-export const useMetaDimension = (metricViewId: string, dimensionId: string) =>
-  useMetaQuery<DimensionDefinitionEntity>(metricViewId, (meta) =>
+export const useMetaDimension = (
+  config: RootConfig,
+  metricViewId: string,
+  dimensionId: string
+) =>
+  useMetaQuery<DimensionDefinitionEntity>(config, metricViewId, (meta) =>
     meta.dimensions?.find((dimension) => dimension.id === dimensionId)
   );
 
 export const useMetaMappedFilters = (
+  config: RootConfig,
   metricViewId: string,
   filters: MetricsViewRequestFilter
 ) =>
-  useMetaQuery<MetricsViewRequestFilter>(metricViewId, (meta) => {
+  useMetaQuery<MetricsViewRequestFilter>(config, metricViewId, (meta) => {
     if (!filters) return undefined;
     const dimensionIdMap = getMapFromArray(
       meta.dimensions ?? [],
