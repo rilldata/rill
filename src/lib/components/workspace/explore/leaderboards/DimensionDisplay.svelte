@@ -36,7 +36,7 @@
 
   $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
-  $: dimension = dimensionQuery?.data;
+  $: dimension = $dimensionQuery?.data;
 
   $: leaderboardMeasureId = metricsExplorer?.leaderboardMeasureId;
   $: leaderboardMeasureQuery = useMetaMeasure(
@@ -130,7 +130,7 @@
   let columns = [];
   let measureNames = [];
 
-  $: if (!$topListQuery?.isFetching) {
+  $: if (!$topListQuery?.isFetching && dimension) {
     values = $topListQuery?.data?.data ?? [];
 
     /* FIX ME
