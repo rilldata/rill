@@ -5,9 +5,9 @@
     "sourceMap": false
   },
   "include": [
-    "**/*.d.ts",
-    "**/*.ts",
-    "**/*.svelte"
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "routes/**/*.svelte"
   ],
   "exclude": [
     "test/**",

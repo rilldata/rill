@@ -1,4 +1,4 @@
-import "../../../moduleAlias";
+import "../../../src/moduleAlias";
 import { DataGeneratorWorker } from "./DataGeneratorWorker";
 import workerpool from "workerpool";
 

@@ -4,7 +4,7 @@ FROM rilldata/duckdb:0.4.0
 WORKDIR /app
 
 COPY package.json package-lock.json \
-    tsconfig.json tsconfig.node.json tsconfig.build.json \
+    tsconfig.json tsconfig.node.json \
     svelte.config.js vite.config.ts tailwind.config.cjs postcss.config.cjs .babelrc ./
 
 COPY build-tools build-tools/

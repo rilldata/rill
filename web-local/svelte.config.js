@@ -12,9 +12,9 @@ const config = {
       fallback: "index.html",
     }),
     files: {
-      appTemplate: "app.html",
-      lib: "lib",
-      routes: "routes",
+      appTemplate: "src/app.html",
+      lib: "src/lib",
+      routes: "src/routes",
     },
     outDir: "../build",
   },

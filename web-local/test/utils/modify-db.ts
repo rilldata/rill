@@ -1,4 +1,4 @@
-import "../../moduleAlias";
+import "../../src/moduleAlias";
 import { DuckDBClient } from "$web-local/common/database-service/DuckDBClient";
 import { DatabaseConfig } from "$web-local/common/config/DatabaseConfig";
 
