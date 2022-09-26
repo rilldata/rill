@@ -9,7 +9,7 @@
 
 <div
   transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
-  class="fixed bottom-10 inset-x-0 mx-auto w-1/2 py-5 text-sm whitespace-normal
+  class="fixed bottom-10 left-1/2 -translate-x-1/2 max-w-4xl py-5 text-sm whitespace-normal
          text-slate-100 bg-slate-800 shadow-lg rounded-md flex flex-col gap-5"
 >
   <div class="flex flex-row items-center justify-between pl-6 pr-4">
