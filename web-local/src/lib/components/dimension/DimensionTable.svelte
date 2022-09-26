@@ -107,10 +107,12 @@ TableCells – the cell contents.
       });
     }
 
-    const estimateColumnSize = columns.map((column) => {
+    const estimateColumnSize = columns.map((column, i) => {
       /** if we are inferring column widths from the data,
        * let's utilize columnWidths, calculated above.
        */
+
+      if (i != 0) return DimensionTableConfig.defaultColumnWidth;
       const largestStringLength =
         (inferColumnWidthFromData
           ? columnWidths[column.name]
@@ -133,32 +135,15 @@ TableCells – the cell contents.
           ? DimensionTableConfig.minHeaderWidthWhenColumsAreSmall
           : headerWidth;
 
-      let hasUserDefinedColumnWidth =
-        $manuallyResizedColumns[column.name] !== undefined;
-
       return largestStringLength
-        ? /** the largest value for a column should be config.maxColumnWidth.
-           * the smallest value should either be the largestStringLength (which comes from the actual)
-           * table values, the header string, or the config.minColumnWidth.
-           */
-          Math.min(
-            /** Define the maximum column size. If the user has set the column width, go with that (meaning columns
-             * can be infinitely large if the user wants it). Otherwise, set a default width that is sensible.
-             */
-            hasUserDefinedColumnWidth
-              ? Infinity
-              : DimensionTableConfig.maxColumnWidth,
-            /** If user has set the column width, we'll go with that (as long as it is larger than minColumnWidth).
-             * If they haven't set it, we'll go with the effectiveHeaderWidth.
-             */
-            hasUserDefinedColumnWidth
-              ? $manuallyResizedColumns[column.name]
-              : Math.max(
-                  largestStringLength,
-                  effectiveHeaderWidth,
-                  /** All columns must be minColumnWidth regardless of user settings. */
-                  DimensionTableConfig.minColumnWidth
-                )
+        ? Math.min(
+            DimensionTableConfig.maxColumnWidth,
+            Math.max(
+              largestStringLength,
+              effectiveHeaderWidth,
+              /** All columns must be minColumnWidth regardless of user settings. */
+              DimensionTableConfig.minColumnWidth
+            )
           )
         : /** if there isn't a longet string length for some reason, let's go with a
            * default column width. We should not be in this state.

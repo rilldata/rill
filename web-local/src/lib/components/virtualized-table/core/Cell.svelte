@@ -19,6 +19,7 @@
   import BarAndLabel from "../../viz/BarAndLabel.svelte";
 
   const config: VirtualizedTableConfig = getContext("config");
+  const isDimensionTable = config.table === "DimensionTable";
 
   export let row;
   export let column;
@@ -66,12 +67,6 @@
     }
   }
 
-  /** Show left border for Dimension table 
-  /* using the information that dimension column 
-  /* cells have no formatting present
-  */
-  const leftBorder = config.table === "DimensionTable" && !formattedValue;
-
   $: barColor = rowSelected
     ? "bg-blue-300"
     : atLeastOneSelected
@@ -97,8 +92,7 @@
       z-9 
       text-ellipsis 
       whitespace-nowrap 
-      border-r border-b 
-      {leftBorder ? 'border-l' : ''}
+      {isDimensionTable ? '' : 'border-r border-b'}
       {activityStatus}
       "
     style:left="{column.start}px"
