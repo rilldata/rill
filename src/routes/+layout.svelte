@@ -40,7 +40,7 @@
   import MoreHorizontal from "$lib/components/icons/MoreHorizontal.svelte";
   import SurfaceViewIcon from "$lib/components/icons/SurfaceView.svelte";
   import DuplicateSource from "$lib/components/modal/DuplicateSource.svelte";
-  import notification from "$lib/components/notifications/";
+  import notificationStore from "$lib/components/notifications/";
   import NotificationCenter from "$lib/components/notifications/NotificationCenter.svelte";
   import ExportingDataset from "$lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "$lib/components/overlay/FileDrop.svelte";
@@ -81,7 +81,7 @@
     setContext(`rill:app:derived-table-store`, createDerivedTableStore());
     setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
     setContext(`rill:app:derived-model-store`, createDerivedModelStore());
-    notification.listenToSocket(store.socket);
+    notificationStore.listenToSocket(store.socket);
     syncApplicationState(store);
   }
 
