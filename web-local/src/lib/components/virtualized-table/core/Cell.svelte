@@ -135,7 +135,7 @@
           value={formattedValue || value}
           {type}
           customStyle={rowSelected
-            ? "font-bold"
+            ? "font-bold text-gray-800"
             : atLeastOneSelected
             ? "font-normal italic text-gray-400"
             : config.defaultFontWeightClass}
