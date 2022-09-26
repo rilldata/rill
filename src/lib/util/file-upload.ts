@@ -97,7 +97,7 @@ function reportFileErrors(invalidFiles: File[]) {
     message: `${invalidFiles.length} file${
       invalidFiles.length !== 1 ? "s are" : " is"
     } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
-    detail: "Only .csv and .parquet files are supported",
+    detail: "Only .parquet, .csv, and .tsv files are supported",
     options: {
       persisted: true,
     },
