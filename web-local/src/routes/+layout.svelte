@@ -40,7 +40,6 @@
   import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
   import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
   import DuplicateSource from "@rilldata/web-local/lib/components/modal/DuplicateSource.svelte";
-  import notification from "@rilldata/web-local/lib/components/notifications";
   import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
   import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";
@@ -62,6 +61,7 @@
   import "../fonts.css";
   import AssetsSidebar from "@rilldata/web-local/lib/components/assets/index.svelte";
   import InspectorSidebar from "@rilldata/web-local/lib/components/inspector/index.svelte";
+  import notificationStore from "@rilldata/web-local/lib/components/notifications/";
 
   let store;
   let queryHighlight = createQueryHighlightStore();
@@ -81,7 +81,7 @@
     setContext(`rill:app:derived-table-store`, createDerivedTableStore());
     setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
     setContext(`rill:app:derived-model-store`, createDerivedModelStore());
-    notification.listenToSocket(store.socket);
+    notificationStore.listenToSocket(store.socket);
     syncApplicationState(store);
   }
 

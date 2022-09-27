@@ -1,6 +1,6 @@
-import { writable, derived } from "svelte/store";
-import type { Readable } from "svelte/store";
 import type { Socket } from "socket.io";
+import type { Readable } from "svelte/store";
+import { derived, writable } from "svelte/store";
 
 const NOTIFICATION_TIMEOUT = 2000;
 
@@ -14,40 +14,45 @@ export interface NotificationStore extends Readable<object> {
 interface NotificationMessageArguments {
   message: string;
   type?: string;
-  options?: Options;
+  detail?: string;
+  options?: NotificationOptions;
 }
 
 interface NotificationMessage {
   id: string;
   type?: string;
   message: string;
-  options?: Options;
+  detail?: string;
+  options?: NotificationOptions;
 }
 
-interface Options {
+export interface NotificationOptions {
   width?: number;
+  persisted?: boolean;
 }
 
 export function createNotificationStore(): NotificationStore {
-  const _notification = writable({ id: undefined });
+  const _notification = writable({} as NotificationMessage);
   let timeout: ReturnType<typeof setTimeout>;
 
   function send({
     message,
     type = "default",
+    detail,
     options = {},
   }: NotificationMessageArguments): void {
     const notificationMessage: NotificationMessage = {
       id: id(),
-      type: type,
       message,
+      type,
+      detail,
       options,
     };
     _notification.set(notificationMessage);
   }
 
   function clear(): void {
-    _notification.set({ id: undefined });
+    _notification.set({} as NotificationMessage);
   }
 
   const notifications: Readable<object> = derived(
@@ -58,7 +63,7 @@ export function createNotificationStore(): NotificationStore {
       clearTimeout(timeout);
       set($notification);
       // if this is not the reset message, set the timer.
-      if ($notification.id) {
+      if ($notification.id && !$notification.options?.persisted) {
         timeout = setTimeout(clear, NOTIFICATION_TIMEOUT);
       }
     }
@@ -74,7 +79,9 @@ export function createNotificationStore(): NotificationStore {
       clear();
     },
     listenToSocket(s) {
-      s.on("notification", ({ message, type }) => send({ message, type }));
+      s.on("notification", ({ message, type, detail, options }) =>
+        send({ message, type, detail, options })
+      );
     },
   };
 }
