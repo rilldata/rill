@@ -1,1 +1,1 @@
-export const CLI_COMMAND = "npm run cli --";
+export const CLI_COMMAND = "RILL_EXTERNAL_RUNTIME=true npm run cli --";

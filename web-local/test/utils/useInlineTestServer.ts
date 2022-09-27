@@ -1,7 +1,4 @@
-import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
-import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
-import { ServerConfig } from "@rilldata/web-local/common/config/ServerConfig";
+import { getTestConfig } from "./getTestConfig";
 import { InlineTestServer } from "./InlineTestServer";
 import type { TestServer } from "./TestServer";
 
@@ -16,12 +13,11 @@ import type { TestServer } from "./TestServer";
  * TODO: auto assign port
  */
 export function useInlineTestServer(port: number) {
-  const config = new RootConfig({
-    database: new DatabaseConfig({ databaseName: ":memory:" }),
-    state: new StateConfig({ autoSync: false }),
-    server: new ServerConfig({ serverPort: port }),
-    projectFolder: "temp/test",
+  const config = getTestConfig("temp/test", {
+    socketPort: port,
+    autoSync: false,
   });
+
   const inlineServer = new InlineTestServer(config);
 
   beforeAll(async () => {

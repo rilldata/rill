@@ -1,13 +1,10 @@
 import { FunctionalTestBase } from "./FunctionalTestBase";
-import { execSync } from "node:child_process";
 import { dataModelerServiceFactory } from "@rilldata/web-local/server/serverFactory";
-import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
-import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
 import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
 import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import { TestBase } from "@adityahegde/typescript-test-utils";
+import { execSync } from "node:child_process";
 import { UserColumnsTestData } from "../data/DataLoader.data";
 import {
   SingleTableQuery,
@@ -15,6 +12,7 @@ import {
   TwoTableJoinQuery,
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
+import { getTestConfig } from "../utils/getTestConfig";
 import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 
 const SYNC_TEST_FOLDER = "temp/sync-test";
@@ -28,10 +26,7 @@ export class StateSyncServiceSpec extends FunctionalTestBase {
   public async setup(): Promise<void> {
     execSync(`rm -rf ${SYNC_TEST_FOLDER}/*`);
     execSync(`mkdir -p ${SYNC_TEST_FOLDER}`);
-    const config = new RootConfig({
-      database: new DatabaseConfig({ databaseName: ":memory:" }),
-      state: new StateConfig({ autoSync: true, syncInterval: 50 }),
-      projectFolder: SYNC_TEST_FOLDER,
+    const config = getTestConfig(SYNC_TEST_FOLDER, {
       profileWithUpdate: false,
     });
     await super.setup(config);

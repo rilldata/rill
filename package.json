@@ -18,6 +18,7 @@
     "assets": [
       "node_modules/**/*",
       "web-local/build/**/*",
+      "web-local/dist/runtime/*",
       "package.json",
       "web-local/package.json"
     ]

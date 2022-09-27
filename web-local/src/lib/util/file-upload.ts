@@ -152,7 +152,7 @@ async function getResponseFromModal(
   return new Promise((resolve) => {
     const unsub = duplicateSourceAction.subscribe((action) => {
       if (action !== DuplicateActions.None) {
-        unsub();
+        setTimeout(unsub);
         duplicateSourceAction.set(DuplicateActions.None);
         resolve(action);
       }

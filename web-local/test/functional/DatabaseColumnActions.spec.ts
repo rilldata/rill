@@ -1,6 +1,9 @@
-import { TestBase } from "@adityahegde/typescript-test-utils";
+import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
 import type { SinonSpy } from "sinon";
-import { numericHistograms } from "../data/HistogramSummary.data";
+import {
+  numericHistograms,
+  NumericHistogramTestCase,
+} from "../data/HistogramSummary.data";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 
 @FunctionalTestBase.Suite
@@ -35,10 +38,22 @@ export class DatabaseColumns extends FunctionalTestBase {
     ]);
   }
 
-  @TestBase.Test()
-  public async histogramsShouldComputeFromColumn() {
-    for (const item of numericHistograms) {
-      await this.testHistogramSummary(item.input, item.output);
-    }
+  public getHistogramSummaryData(): DataProviderData<
+    [NumericHistogramTestCase]
+  > {
+    return {
+      subData: numericHistograms.map((numericHistogram) => ({
+        title: numericHistogram.name,
+        args: [numericHistogram],
+      })),
+    };
+  }
+
+  @TestBase.Test("getHistogramSummaryData")
+  public async histogramsShouldComputeFromColumn({
+    input,
+    output,
+  }: NumericHistogramTestCase) {
+    await this.testHistogramSummary(input, output);
   }
 }

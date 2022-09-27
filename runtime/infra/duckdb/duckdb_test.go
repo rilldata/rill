@@ -58,6 +58,10 @@ func TestInformationSchemaLookup(t *testing.T) {
 }
 
 func TestPriorityQueue(t *testing.T) {
+	if testing.Short() {
+		t.Skip("duckdb: skipping test in short mode")
+	}
+
 	conn := prepareConn(t)
 	defer conn.Close()
 
@@ -90,7 +94,7 @@ func TestPriorityQueue(t *testing.T) {
 	}
 
 	// give the queue plenty of time to fill up, then unpause
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
@@ -103,6 +107,10 @@ func TestPriorityQueue(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("duckdb: skipping test in short mode")
+	}
+
 	conn := prepareConn(t)
 	defer conn.Close()
 
@@ -151,7 +159,7 @@ func TestCancel(t *testing.T) {
 	}
 
 	// give the queue plenty of time to fill up, then unpause
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
@@ -167,6 +175,10 @@ func TestCancel(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
+	if testing.Short() {
+		t.Skip("duckdb: skipping test in short mode")
+	}
+
 	conn := prepareConn(t)
 
 	// pause the priority worker to allow the queue to fill up
