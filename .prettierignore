@@ -35,6 +35,8 @@ Dockerfile
 Duckdb-Dockerfile
 README.md
 docs
+*.json
+*.cjs
 
 # Java SQL lib
 sql/

@@ -55,7 +55,7 @@ jobs:
         - npm run build
 
         - echo "Verify lint of the repo"
-        - npm run lint -- --quiet
+        - npm run lint -w web-local -- --quiet
 
         - echo "Run all tests"
         - npm run test
@@ -118,6 +118,10 @@ jobs:
 
         - echo "Build the entire application"
         - npm run build
+
+      # The main npm package is within a folder
+      before_deploy:
+        - cd web-local
 
       # Deploy will run npm test
       deploy:
@@ -223,4 +227,4 @@ jobs:
             echo "Please specify the BUMP_TYPE from (major/minor/patch)";
             exit 1;
           fi
-        - npm run bump-version -- ${BUMP_TYPE}
+        - npm run bump-version -w web-local -- ${BUMP_TYPE}

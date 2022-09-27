@@ -1,0 +1,10 @@
+/build
+/dist
+/.svelte-kit
+/temp
+/tmp
+/state
+/models
+*.db
+*.wal
+log
