@@ -10,8 +10,19 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+  import { getContext, onMount } from "svelte";
+  import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import type { DerivedModelStore } from "../../application-state-stores/model-stores";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import {
+    createMetricsDefsAndFocusApi,
+    deleteMetricsDefsApi,
+    fetchManyMetricsDefsApi,
+    validateSelectedSources,
+  } from "../../redux-store/metrics-definition/metrics-definition-apis";
+  import { getAllMetricsDefinitionsReadable } from "../../redux-store/metrics-definition/metrics-definition-readables";
+  import { store } from "../../redux-store/store-root";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "../column-profile/ContextButton.svelte";
@@ -24,17 +35,6 @@
   import { Divider, MenuItem } from "../menu";
   import MetricsDefinitionSummary from "../metrics-definition/MetricsDefinitionSummary.svelte";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import {
-    createMetricsDefsAndFocusApi,
-    deleteMetricsDefsApi,
-    fetchManyMetricsDefsApi,
-    validateSelectedSources,
-  } from "../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getAllMetricsDefinitionsReadable } from "../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../redux-store/store-root";
-  import { getContext, onMount } from "svelte";
-  import { slide } from "svelte/transition";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -57,11 +57,11 @@
     renameMetricsDefName = metricsDefName;
   };
 
-  const dispatchAddEmptyMetricsDef = () => {
+  const dispatchAddEmptyMetricsDef = async () => {
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    store.dispatch(createMetricsDefsAndFocusApi());
+    await store.dispatch(createMetricsDefsAndFocusApi());
   };
 
   const editModel = (sourceModelId: string) => {

@@ -12,11 +12,16 @@ export async function load({ params }) {
   try {
     const meta = await getMetricsViewMetadata(config, params.id);
 
-    // check to see if metrics definition exists
+    // check if metrics definition is defined
     if (meta.timeDimension !== undefined) {
       return {
         metricsDefId: params.id,
       };
+    }
+
+    // if metrics definition is not yet defined, redirect to the metrics definition page
+    if (meta.timeDimension === undefined) {
+      return redirect(307, `/dashboard/${params.id}/edit`);
     }
   } catch (err) {
     const invalidDashboardErrors = [

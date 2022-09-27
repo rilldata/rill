@@ -12,8 +12,8 @@ export async function load({ params }) {
   try {
     const meta = await getMetricsViewMetadata(config, params.id);
 
-    // check to see if metric definition exists
-    if (meta.timeDimension !== undefined) {
+    // if metric definition exists, go to component
+    if (meta) {
       return {
         metricsDefId: params.id,
       };
