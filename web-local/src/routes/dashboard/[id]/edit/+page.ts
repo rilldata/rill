@@ -2,19 +2,13 @@ import { config } from "@rilldata/web-local/lib/application-state-stores/applica
 import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
 import { error } from "@sveltejs/kit";
 import {
+  ExplorerSourceColumnDoesntExist,
   ExplorerSourceModelDoesntExist,
   ExplorerSourceModelIsInvalid,
-  ExplorerTimeDimensionDoesntExist,
 } from "../../../../common/errors/ErrorMessages";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  const invalidDashboardErrors = [
-    ExplorerSourceModelDoesntExist,
-    ExplorerSourceModelIsInvalid,
-    ExplorerTimeDimensionDoesntExist,
-  ];
-
   try {
     const meta = await getMetricsViewMetadata(config, params.id);
 
@@ -25,8 +19,18 @@ export async function load({ params }) {
       };
     }
   } catch (err) {
-    // the component will display invalid dashboard errors
-    if (invalidDashboardErrors.includes(err.message)) {
+    const invalidDashboardErrors = [
+      ExplorerSourceModelDoesntExist,
+      ExplorerSourceModelIsInvalid,
+      ExplorerSourceColumnDoesntExist,
+    ];
+
+    // any invalid dashboard error will be displayed by the component
+    if (
+      invalidDashboardErrors.some(
+        (errMsg) => errMsg.includes(err.message) || err.message.includes(errMsg)
+      )
+    ) {
       return {
         metricsDefId: params.id,
       };
