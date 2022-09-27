@@ -108,14 +108,14 @@
       class="p-6 "
     >
       <div
-        class="rounded border border-gray-200 border-2  overflow-auto  h-full  {!showPreview &&
+        class="rounded border border-gray-200 border-2 overflow-auto  h-full  {!showPreview &&
           'hidden'}"
         class:border={!!currentDerivedModel?.error}
         class:border-gray-300={!!currentDerivedModel?.error}
       >
         <div class="flex h-full flex-col">
           {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
-            <div class="relative flex-auto min-h-0">
+            <div class="relative flex-auto min-h-[108px]">
               {#if currentDerivedModel?.error}
                 <div
                   transition:fade={{ duration: 200 }}
@@ -139,7 +139,7 @@
           {#if currentDerivedModel?.error}
             <div
               transition:slide={{ duration: 200, easing }}
-              class="error m-3 font-bold p-2 text-gray-700"
+              class="error break-words m-3 font-bold p-2 text-gray-700"
             >
               {currentDerivedModel.error}
             </div>
