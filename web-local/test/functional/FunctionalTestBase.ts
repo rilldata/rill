@@ -29,7 +29,6 @@ import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import { RillDeveloper } from "@rilldata/web-local/server/RillDeveloper";
 
-
 @TestBase.TestLibrary(JestTestLibrary)
 export class FunctionalTestBase extends TestBase {
   protected clientDataModelerStateService: DataModelerStateService;

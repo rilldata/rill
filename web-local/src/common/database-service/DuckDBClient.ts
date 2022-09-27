@@ -7,7 +7,6 @@ import type { ChildProcess } from "node:child_process";
 import childProcess from "node:child_process";
 import { URL } from "url";
 
-
 /**
  * Spawns or connects to a runtime and uses it to proxy DuckDB queries.
  * Runtime and database details can be configured {@link DatabaseConfig}
