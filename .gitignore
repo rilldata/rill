@@ -7,8 +7,8 @@ node_modules
 .env
 .env.*
 server/__pycache__/*
-src/server/duckdb
-src/server/scratch/
+web-local/src/server/duckdb
+web-local/src/server/scratch/
 server/venv/
 tsc-tmp/
 export/
@@ -28,10 +28,10 @@ export/
 /state
 /models
 
-# temporary. check in generated data files
-!/test/data/*.parquet
-!/test/data/*.csv
-!/test/data/*.tsv
+# check in generated data files
+!/web-local/test/data/*.parquet
+!/web-local/test/data/*.csv
+!/web-local/test/data/*.tsv
 
 # generated content
 log
