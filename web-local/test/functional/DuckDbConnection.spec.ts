@@ -96,7 +96,9 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     this.assertTables(CLI_STATE_DUCKDB_FOLDER, ["AdBids", "Users"]);
   }
 
-  @FunctionalTestBase.Test()
+  // This test modifies the DB in a separate file.
+  // This needs a feature in runtime to close the opened instance to work.
+  // @FunctionalTestBase.Test()
   public async shouldUpdateProfilingData() {
     await execVerbose(
       `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +

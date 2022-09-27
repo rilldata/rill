@@ -96,7 +96,6 @@ export class CLISpec extends FunctionalTestBase {
     await execVerbose(
       `${CLI_COMMAND} import-source test/data/BrokenCSV.csv --name AdBids --force ${CLI_TEST_FOLDER_ARG}`
     );
-    console.log(".3.");
     // check to see if the sources are the same.
     persistentState = JSON.parse(
       readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
