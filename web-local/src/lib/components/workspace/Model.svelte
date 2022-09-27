@@ -139,7 +139,7 @@
           {#if currentDerivedModel?.error}
             <div
               transition:slide={{ duration: 200, easing }}
-              class="error border-2 border-gray-300 m-3 font-bold p-2 text-gray-700"
+              class="error m-3 font-bold p-2 text-gray-700"
             >
               {currentDerivedModel.error}
             </div>
