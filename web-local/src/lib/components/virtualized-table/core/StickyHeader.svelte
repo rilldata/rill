@@ -32,8 +32,8 @@
     : "border-b border-b-4 border-r border-r-1";
 
   const borderClassesInnerDiv = isDimensionTable
-    ? "border-b"
-    : "border border-gray-200 border-t-0 border-l-0 bg-gray-100";
+    ? ""
+    : "whitespace-nowrap border border-gray-200 border-t-0 border-l-0 bg-gray-100";
 
   const paddingVerticalTop = config.columnHeaderHeight <= 28 ? "py-1" : "py-2";
   const paddingVerticalLeft = config.rowHeight <= 28 ? "py-0.5" : "py-2";
@@ -63,7 +63,7 @@
 >
   <div
     class="
-    text-ellipsis overflow-hidden whitespace-nowrap
+    text-ellipsis overflow-hidden
     px-4
   {borderClassesInnerDiv}
   {position === 'top' && `${paddingVerticalTop} text-left`}

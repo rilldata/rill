@@ -79,15 +79,15 @@
            justify-stretch
            select-none
            over
-           gap-x-2
+           {isDimensionTable ? 'gap-x-1' : 'gap-x-2'}
            "
   >
     <Tooltip location="top" alignment="middle" distance={16}>
       <div
         class="
         grid
-        items-center cursor-pointer
-        {isSelected ? '' : 'w-full gap-x-2'}
+        items-center cursor-pointer w-full
+        {isSelected ? '' : 'gap-x-2'}
         "
         style:grid-template-columns={isDimensionTable
           ? ""
@@ -97,8 +97,11 @@
           <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         {/if}
         <span
-          class="text-ellipsis overflow-hidden whitespace-nowrap
-          {columnFontWeight} {isDimensionTable ? 'text-center' : ''}
+          class="text-ellipsis
+          {columnFontWeight}
+          {isDimensionTable
+            ? 'text-center break-words line-clamp-2'
+            : 'overflow-hidden whitespace-nowrap'}
           "
         >
           {name}
