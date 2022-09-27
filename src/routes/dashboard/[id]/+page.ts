@@ -1,29 +1,35 @@
 import { config } from "$lib/application-state-stores/application-store";
 import { getMetricsViewMetadata } from "$lib/svelte-query/queries/metrics-views/metadata";
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
+import {
+  ExplorerSourceModelDoesntExist,
+  ExplorerSourceModelIsInvalid,
+  ExplorerTimeDimensionDoesntExist,
+} from "../../../common/errors/ErrorMessages";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  let metricsDefExists: boolean;
+  const invalidDashboardErrors = [
+    ExplorerSourceModelDoesntExist,
+    ExplorerSourceModelIsInvalid,
+    ExplorerTimeDimensionDoesntExist,
+  ];
 
-  await getMetricsViewMetadata(config, params.id).then((meta) => {
+  try {
+    const meta = await getMetricsViewMetadata(config, params.id);
+
+    // check to see if metrics definition exists
     if (meta.timeDimension !== undefined) {
-      metricsDefExists = true;
-    } else {
-      metricsDefExists = false;
+      return {
+        metricsDefId: params.id,
+      };
     }
-  });
-
-  if (metricsDefExists) {
-    return {
-      metricsDefId: params.id,
-    };
+  } catch (err) {
+    // check to see if dashboard is valid
+    if (invalidDashboardErrors.includes(err.message)) {
+      throw redirect(307, `/dashboard/${params.id}/edit`);
+    }
   }
-
-  // TODO: determine when the dashboard is invalid, then redirect
-  // if (dashboardInvalid) {
-  //   throw redirect(307, `/dashboard/${params.id}/edit`);
-  // }
 
   throw error(404, "Dashboard not found");
 }
