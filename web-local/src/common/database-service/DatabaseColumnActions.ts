@@ -1,5 +1,3 @@
-import type { DatabaseMetadata } from "./DatabaseMetadata";
-import { sanitizeColumn } from "../utils/queryUtils";
 import { TIMESTAMPS } from "@rilldata/web-local/lib/duckdb-data-types";
 import type {
   CategoricalSummary,
@@ -9,7 +7,9 @@ import type {
   NumericSummary,
   TimeRangeSummary,
 } from "@rilldata/web-local/lib/types";
+import { sanitizeColumn } from "../utils/queryUtils";
 import { DatabaseActions } from "./DatabaseActions";
+import type { DatabaseMetadata } from "./DatabaseMetadata";
 
 const TOP_K_COUNT = 50;
 
@@ -78,9 +78,9 @@ export class DatabaseColumnActions extends DatabaseActions {
     const [results] = await this.databaseClient.execute<NumericStatistics>(`
             SELECT
                 min(${sanitizedColumnName}) as min,
-                reservoir_quantile(${sanitizedColumnName}, 0.25) as q25,
-                reservoir_quantile(${sanitizedColumnName}, 0.5)  as q50,
-                reservoir_quantile(${sanitizedColumnName}, 0.75) as q75,
+                approx_quantile(${sanitizedColumnName}, 0.25) as q25,
+                approx_quantile(${sanitizedColumnName}, 0.5)  as q50,
+                approx_quantile(${sanitizedColumnName}, 0.75) as q75,
                 max(${sanitizedColumnName}) as max,
                 avg(${sanitizedColumnName})::FLOAT as mean,
                 stddev_pop(${sanitizedColumnName}) as sd
