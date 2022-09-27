@@ -8,29 +8,16 @@
   ],
   "scripts": {
     "build": "npm run build -w web-local",
-    "build-vercel-pkg": "node dist/cli/build-vercel-pkg.js",
+    "build-vercel-pkg": "node web-local/dist/cli/build-vercel-pkg.js",
     "dev": "npm run dev -w web-local",
     "cli": "npm run cli -w web-local",
     "test": "npm run test -w web-local"
   },
-  "bin": {
-    "rill": "./dist/cli/data-modeler-cli.js"
-  },
-  "files": [
-    "dist",
-    "web-local/build-tools/post_install.cjs",
-    "build",
-    "web-local/static",
-    "package.json",
-    "package-lock.json",
-    "LICENSE.md",
-    "README.md"
-  ],
   "pkg": {
-    "scripts": "dist/**/*.js",
+    "scripts": "web-local/dist/**/*.js",
     "assets": [
       "node_modules/**/*",
-      "build/**/*",
+      "web-local/build/**/*",
       "package.json",
       "web-local/package.json"
     ]

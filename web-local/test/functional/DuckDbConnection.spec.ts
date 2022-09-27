@@ -52,7 +52,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     );
   }
 
-  // @FunctionalTestBase.Test()
+  @FunctionalTestBase.Test()
   public async shouldLoadTablesFromDB() {
     await execVerbose(
       `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
@@ -131,7 +131,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     );
   }
 
-  // @FunctionalTestBase.Test()
+  @FunctionalTestBase.Test()
   public async shouldCopyDBToLocalDB() {
     await execVerbose(
       `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +

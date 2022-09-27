@@ -11,12 +11,6 @@ const config = {
     adapter: adapter({
       fallback: "index.html",
     }),
-    files: {
-      appTemplate: "src/app.html",
-      lib: "src/lib",
-      routes: "src/routes",
-    },
-    outDir: "../build",
   },
 };
 

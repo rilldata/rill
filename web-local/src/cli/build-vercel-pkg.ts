@@ -3,7 +3,7 @@ import os from "node:os";
 import { execSync } from "node:child_process";
 
 const NodeJSVersion = "node16";
-const CLIPath = "dist/cli/data-modeler-cli.js";
+const CLIPath = "web-local/dist/cli/data-modeler-cli.js";
 
 const nodePlatform = os.platform();
 const cpuArch = os.arch();

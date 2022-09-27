@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "ts-node-dev --quiet --project tsconfig.node.json dev.ts",
-    "build": "vite build && cp -R build/* ../build/ && tsc --project tsconfig.node.json",
+    "build": "vite build && tsc --project tsconfig.node.json",
     "prepack": "./build-tools/replace_package_type.sh module commonjs",
     "postpack": "./build-tools/replace_package_type.sh commonjs module",
     "postinstall": "node ./build-tools/post_install.cjs",
@@ -27,6 +27,17 @@
     "bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
     "manual-publish": "./build-tools/npm_publish.sh"
   },
+  "bin": {
+    "rill": "./dist/cli/data-modeler-cli.js"
+  },
+  "files": [
+    "dist",
+    "build-tools/post_install.cjs",
+    "build",
+    "static",
+    "package.json",
+    "package-lock.json"
+  ],
   "devDependencies": {
     "@adityahegde/typescript-test-utils": "^1.3.2",
     "@babel/core": "^7.17.8",
