@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import { ActionStatus } from "../../../common/data-modeler-service/response/ActionResponse";
@@ -35,9 +33,13 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  let showPreview = true;
-  let currentModel: PersistentModelEntity;
-  let currentDerivedModel: DerivedModelEntity;
+  $: currentModel = $persistentModelStore?.entities
+    ? $persistentModelStore.entities.find((q) => q.id === modelId)
+    : undefined;
+
+  $: currentDerivedModel = $derivedModelStore?.entities
+    ? $derivedModelStore.entities.find((q) => q.id === modelId)
+    : undefined;
 
   const switchToModel = async (modelId) => {
     if (!modelId) return;
@@ -46,19 +48,14 @@
       EntityType.Model,
       modelId,
     ]);
-    currentModel = $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === modelId)
-      : undefined;
-
-    currentDerivedModel = $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === modelId)
-      : undefined;
   };
 
   $: switchToModel(modelId);
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
+
+  let showPreview = true;
 
   let titleInput = currentModel?.name;
   $: titleInput = currentModel?.name;
