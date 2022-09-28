@@ -67,19 +67,19 @@
     }
   };
 
-  const deleteModel = async (id: string) => {
+  const deleteModel = (id: string) => {
     const currentAssetIndex = $persistentModelStore?.entities?.findIndex(
       (entity) => entity.id === id
     );
 
-    await deleteModelApi(id);
-
-    if ($persistentModelStore.entities.length > 0) {
+    if ($persistentModelStore.entities.length > 1) {
       const priorModel = $persistentModelStore.entities[currentAssetIndex - 1];
       goto(`/model/${priorModel.id}`);
     } else {
       goto("/");
     }
+
+    deleteModelApi(id);
   };
 
   const quickStartMetrics = (derivedModel: DerivedModelEntity) => {
