@@ -10,7 +10,7 @@
     "build": "npm run build -w web-local",
     "build-vercel-pkg": "node web-local/dist/cli/build-vercel-pkg.js",
     "dev": "npm run dev -w web-local",
-    "cli": "npm run cli -w web-local",
+    "cli": "ts-node-dev --quiet --project web-local/tsconfig.node.json -- web-local/src/cli/data-modeler-cli.ts",
     "test": "npm run test -w web-local"
   },
   "pkg": {
