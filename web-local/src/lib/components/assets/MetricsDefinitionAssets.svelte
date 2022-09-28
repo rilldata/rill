@@ -103,7 +103,18 @@
     );
   };
 
-  const dispatchDeleteMetricsDef = (id: string) => {
+  const deleteMetricsDef = (id: string) => {
+    const currentAssetIndex = $metricsDefinitions.findIndex(
+      (entity) => entity.id === id
+    );
+
+    if ($metricsDefinitions.length > 1) {
+      const priorAsset = $metricsDefinitions[currentAssetIndex - 1];
+      goto(`/dashboard/${priorAsset.id}`);
+    } else {
+      goto("/");
+    }
+
     store.dispatch(deleteMetricsDefsApi(id));
   };
 
@@ -154,7 +165,6 @@
         active={$appStore?.activeEntity?.id === metricsDef.id}
         showRows={false}
         on:select={() => dispatchSetMetricsDefActive(metricsDef.id)}
-        on:delete={() => dispatchDeleteMetricsDef(metricsDef.id)}
         notExpandable={true}
       >
         <svelte:fragment slot="summary" let:containerWidth>
@@ -205,10 +215,7 @@
             </svelte:fragment>
             rename...</MenuItem
           >
-          <MenuItem
-            icon
-            on:select={() => dispatchDeleteMetricsDef(metricsDef.id)}
-          >
+          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef.id)}>
             <svelte:fragment slot="icon">
               <Cancel />
             </svelte:fragment>

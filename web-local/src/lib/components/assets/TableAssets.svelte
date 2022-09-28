@@ -8,12 +8,23 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getContext } from "svelte";
+  import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "../../application-state-stores/table-stores";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import {
+    autoCreateMetricsDefinitionForSource,
+    createModelForSource,
+    deleteSourceApi,
+  } from "../../redux-store/source/source-apis";
+  import { derivedProfileEntityHasTimestampColumn } from "../../redux-store/source/source-selectors";
+  import { uploadFilesWithDialog } from "../../util/file-upload";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
@@ -26,17 +37,6 @@
   import Source from "../icons/Source.svelte";
   import { Divider, MenuItem } from "../menu";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    createModelForSource,
-    deleteSourceApi,
-  } from "../../redux-store/source/source-apis";
-  import { derivedProfileEntityHasTimestampColumn } from "../../redux-store/source/source-selectors";
-  import { uploadFilesWithDialog } from "../../util/file-upload";
-  import { getContext } from "svelte";
-  import { flip } from "svelte/animate";
-  import { slide } from "svelte/transition";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
@@ -101,6 +101,21 @@
     }
   };
 
+  const deleteSource = (tableName: string) => {
+    const currentAssetIndex = $persistentTableStore.entities.findIndex(
+      (entity) => entity.tableName === tableName
+    );
+
+    if ($persistentTableStore.entities.length > 1) {
+      const priorAsset = $persistentTableStore.entities[currentAssetIndex - 1];
+      goto(`/source/${priorAsset.id}`);
+    } else {
+      goto("/");
+    }
+
+    deleteSourceApi(tableName);
+  };
+
   const createModel = (tableName: string) => {
     const previousActiveEntity = $rillAppStore?.activeEntity?.type;
 
@@ -156,7 +171,6 @@
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             active={entityIsActive}
-            on:delete={() => deleteSourceApi(tableName)}
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry
@@ -203,7 +217,7 @@
                 rename...
               </MenuItem>
               <!-- FIXME: this should pop up an "are you sure?" modal -->
-              <MenuItem icon on:select={() => deleteSourceApi(tableName)}>
+              <MenuItem icon on:select={() => deleteSource(tableName)}>
                 <svelte:fragment slot="icon">
                   <Cancel />
                 </svelte:fragment>

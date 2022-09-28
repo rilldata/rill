@@ -1,4 +1,3 @@
-import { DataModelerActions } from "./DataModelerActions";
 import type {
   ApplicationState,
   ApplicationStateActionArg,
@@ -9,6 +8,7 @@ import {
   EntityType,
   StateType,
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
+import type { PersistentModelStateActionArg } from "../data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import {
   DatabaseActionQueuePriority,
   DatabaseProfilesFieldPriority,
@@ -16,7 +16,7 @@ import {
   MetadataPriority,
   ProfileMetadataPriorityMap,
 } from "../priority-action-queue/DatabaseActionQueuePriority";
-import type { PersistentModelStateActionArg } from "../data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { DataModelerActions } from "./DataModelerActions";
 
 export class ApplicationActions extends DataModelerActions {
   @DataModelerActions.ApplicationAction()
@@ -28,28 +28,34 @@ export class ApplicationActions extends DataModelerActions {
     const currentActiveAsset = (
       stateService.getCurrentState() as ApplicationState
     ).activeEntity;
+
     // mark older model as inactive.
     if (
       currentActiveAsset?.type === EntityType.Model &&
       currentActiveAsset?.id
     ) {
-      const columns = this.getEntityColumns(
-        EntityType.Model,
-        currentActiveAsset.id
-      );
+      let columns;
+      try {
+        columns = this.getEntityColumns(
+          EntityType.Model,
+          currentActiveAsset.id
+        );
 
-      columns.forEach((column) => {
-        Object.values(MetadataPriority).forEach((priority) => {
-          this.databaseActionQueue.updatePriority(
-            currentActiveAsset.id + column + priority,
-            getProfilePriority(
-              DatabaseActionQueuePriority.InactiveModelProfile,
-              DatabaseProfilesFieldPriority.NonFocused,
-              ProfileMetadataPriorityMap[priority]
-            )
-          );
+        columns.forEach((column) => {
+          Object.values(MetadataPriority).forEach((priority) => {
+            this.databaseActionQueue.updatePriority(
+              currentActiveAsset.id + column + priority,
+              getProfilePriority(
+                DatabaseActionQueuePriority.InactiveModelProfile,
+                DatabaseProfilesFieldPriority.NonFocused,
+                ProfileMetadataPriorityMap[priority]
+              )
+            );
+          });
         });
-      });
+      } catch (e) {
+        // swallow error for now
+      }
     }
 
     // upgrade profile priority of newly selected asset

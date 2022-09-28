@@ -1,7 +1,9 @@
 <script lang="ts">
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../application-state-stores/application-store";
+  import { ActionStatus } from "../../../common/data-modeler-service/response/ActionResponse";
+  import { EntityType } from "../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { dataModelerService } from "../../application-state-stores/application-store";
   import {
     assetVisibilityTween,
     inspectorVisibilityTween,
@@ -10,20 +12,19 @@
     modelPreviewVisible,
     SIDE_PAD,
   } from "../../application-state-stores/layout-store";
-  import { drag } from "../../drag";
-  import Editor from "../Editor.svelte";
-
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "../../application-state-stores/model-stores";
+  import { drag } from "../../drag";
   import { updateModelQueryApi } from "../../redux-store/model/model-apis";
+  import Editor from "../Editor.svelte";
   import Portal from "../Portal.svelte";
   import { PreviewTable } from "../preview-table";
+  import WorkspaceHeader from "./WorkspaceHeader.svelte";
 
-  const store = getContext("rill:app:store") as ApplicationStore;
+  export let modelId;
+
   const queryHighlight = getContext("rill:app:query-highlight");
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -32,32 +33,63 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  let showPreview = true;
+  $: currentModel = $persistentModelStore?.entities
+    ? $persistentModelStore.entities.find((q) => q.id === modelId)
+    : undefined;
 
-  let currentModel: PersistentModelEntity;
-  $: activeEntityID = $store?.activeEntity?.id;
-  $: currentModel =
-    activeEntityID && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
-  let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel =
-    activeEntityID && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
+  $: currentDerivedModel = $derivedModelStore?.entities
+    ? $derivedModelStore.entities.find((q) => q.id === modelId)
+    : undefined;
+
+  const switchToModel = async (modelId) => {
+    if (!modelId) return;
+
+    await dataModelerService.dispatch("setActiveAsset", [
+      EntityType.Model,
+      modelId,
+    ]);
+  };
+
+  $: switchToModel(modelId);
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
+
+  let showPreview = true;
+
+  let titleInput = currentModel?.name;
+  $: titleInput = currentModel?.name;
+
+  function formatModelName(str) {
+    return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
+  }
+
+  // FIXME: this should eventually be a redux action dispatcher `onChangeAction`
+  const onChangeCallback = async (e) => {
+    if (currentModel?.id) {
+      const resp = await dataModelerService.dispatch("updateModelName", [
+        currentModel?.id,
+        formatModelName(e.target.value),
+      ]);
+      if (resp.status === ActionStatus.Failure) {
+        e.target.value = currentModel.name;
+      }
+    }
+  };
 </script>
 
 <svelte:window bind:innerHeight />
+
+<WorkspaceHeader
+  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
+/>
 
 <div class="editor-pane bg-gray-100">
   <div
     style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) *
       $layout.modelPreviewHeight}px - var(--header-height))"
   >
-    {#if $store && $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
+    {#if $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
       <div class="h-full grid p-5 pt-0 overflow-auto">
         {#key currentModel?.id}
           <Editor
