@@ -11,7 +11,6 @@
   import Editor from "../Editor.svelte";
   import { drag } from "../../drag";
   import { getContext } from "svelte";
-  import { cubicOut as easing } from "svelte/easing";
   import { slide } from "svelte/transition";
 
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
@@ -105,27 +104,36 @@
     <div
       style:height="{(1 - $modelPreviewVisibilityTween) *
         $layout.modelPreviewHeight}px"
-      class="p-6 "
+      class="p-6 grid"
+      style:grid-template-rows="{currentDerivedModel?.error ? "auto" : ""} auto"
     >
+      {#if currentDerivedModel?.error}
+        <div
+          transition:slide={{ duration: 200 }}
+          class="error break-words overflow-auto px-6 pb-3 mb-3 font-bold text-gray-700 sticky top-0 z-10 bg-gray-100"
+        >
+          {currentDerivedModel.error}
+        </div>
+      {/if}
       <div
-        class="rounded border border-gray-200 border-2  overflow-auto  h-full  {!showPreview &&
+        class="rounded border border-gray-200 border-2 overflow-auto h-full  {!showPreview &&
           'hidden'}"
         class:border={!!currentDerivedModel?.error}
         class:border-gray-300={!!currentDerivedModel?.error}
       >
-        {#if currentDerivedModel?.error}
+        {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
           <div
-            transition:slide={{ duration: 200, easing }}
-            class="error font-bold rounded-lg p-5 text-gray-700"
+            style="
+            {currentDerivedModel?.error ? 'filter: brightness(.9);' : ''}
+          "
+            class="relative h-full"
           >
-            {currentDerivedModel.error}
+            <PreviewTable
+              rows={currentDerivedModel.preview}
+              columnNames={currentDerivedModel.profile}
+              rowOverscanAmount={20}
+            />
           </div>
-        {:else if currentDerivedModel?.preview && currentDerivedModel?.profile}
-          <PreviewTable
-            rows={currentDerivedModel.preview}
-            columnNames={currentDerivedModel.profile}
-            rowOverscanAmount={20}
-          />
         {:else}
           <div
             class="grid items-center justify-center italic pt-3 text-gray-600"
