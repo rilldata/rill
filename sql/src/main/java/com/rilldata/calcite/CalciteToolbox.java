@@ -188,6 +188,17 @@ public class CalciteToolbox
     }
   }
 
+  /**
+   * Basically the algorithm should accomplish:
+   * 1. Compare statement set 1 (representing the existing state) and statement set 2 (representing the new state).
+   * 2. Create DROP statements for entities that either no longer exist in the new state or have their statement changed.
+   * 3. Add CREATE statements for entities that do not exist in the existing state.
+   *
+   * Right now the algorithm doesn't track name changes.
+   * The algorithm constructs a graph of dependencies between statements but doesn't use it for now. The dependency graph
+   * is required because if a dependency changes its dependant can have a statement unchanged but the entity should be
+   * recreated still.
+   */
   public static List<MigrationStep> inferMigrations(String newSql, String schema, SqlDialect sqlDialect)
       throws SqlParseException, JsonProcessingException
   {
