@@ -12,9 +12,8 @@ import { ParquetFileTestData } from "../data/DataLoader.data";
 import { DataModelerSocketServiceMock } from "./DataModelerSocketServiceMock";
 import { SocketServerMock } from "./SocketServerMock";
 import { DATA_FOLDER } from "../data/generator/data-constants";
-import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
-import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
+import { getTestConfig } from "../utils/getTestConfig";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import {
   EntityRecord,
   EntityStateService,
@@ -49,11 +48,10 @@ export class FunctionalTestBase extends TestBase {
 
     const config =
       configOverride ??
-      new RootConfig({
-        database: new DatabaseConfig({ databaseName: ":memory:" }),
-        state: new StateConfig({ autoSync: false }),
-        projectFolder: "temp/test",
+      getTestConfig("temp/test", {
+        autoSync: false,
       });
+
     this.rillDeveloper = RillDeveloper.getRillDeveloper(config);
     this.serverDataModelerStateService =
       this.rillDeveloper.dataModelerStateService;

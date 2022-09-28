@@ -1,10 +1,16 @@
-import "../../src/moduleAlias";
 import { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDBClient";
+import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
 
 (async () => {
   const duckDbClient = DuckDBClient.getInstance(
-    new DatabaseConfig({ databaseName: process.argv[2] })
+    new RootConfig({
+      database: new DatabaseConfig({
+        databaseName: process.argv[2],
+        spawnRuntime: false,
+        runtimeUrl: `http://localhost:8081`,
+      }),
+    })
   );
   await duckDbClient.init();
 
@@ -19,4 +25,6 @@ import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig
   await duckDbClient.execute(
     `CREATE OR REPLACE TEMPORARY VIEW FullTable AS (select * from AdBids b join Impressions i on b.id=i.id);`
   );
+
+  await duckDbClient.destroy();
 })();

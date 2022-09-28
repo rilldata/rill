@@ -17,7 +17,10 @@ export class ProfilingTest extends FunctionalTestBase {
     execSync(`mkdir -p ${PROFILING_TEST_FOLDER}`);
 
     const config = new RootConfig({
-      database: new DatabaseConfig({ databaseName: ":memory:" }),
+      database: new DatabaseConfig({
+        databaseName: ":memory:",
+        spawnRuntime: false,
+      }),
       state: new StateConfig({ autoSync: true, syncInterval: 50 }),
       projectFolder: PROFILING_TEST_FOLDER,
       profileWithUpdate: true,

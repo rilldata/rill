@@ -1,6 +1,3 @@
-import { DatabaseConfig } from "@rilldata/web-local/common/config/DatabaseConfig";
-import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import { StateConfig } from "@rilldata/web-local/common/config/StateConfig";
 import { expect } from "@playwright/test";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { execSync } from "node:child_process";
@@ -12,6 +9,7 @@ import {
   TwoTableJoinQuery,
   TwoTableJoinQueryColumnsTestData,
 } from "../data/ModelQuery.data";
+import { getTestConfig } from "../utils/getTestConfig";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 
@@ -24,14 +22,7 @@ const MODEL_1_FILE = `${MODEL_FOLDER}/model_1.sql`;
 export class ModelFileSyncSpec extends FunctionalTestBase {
   public async setup() {
     execSync(`rm -rf ${SYNC_TEST_FOLDER}`);
-    await super.setup(
-      new RootConfig({
-        database: new DatabaseConfig({ databaseName: ":memory:" }),
-        state: new StateConfig({ autoSync: true, syncInterval: 50 }),
-        projectFolder: SYNC_TEST_FOLDER,
-        profileWithUpdate: true,
-      })
-    );
+    await super.setup(getTestConfig(SYNC_TEST_FOLDER));
   }
 
   @FunctionalTestBase.BeforeSuite()

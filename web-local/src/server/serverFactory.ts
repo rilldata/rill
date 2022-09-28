@@ -50,7 +50,7 @@ try {
 }
 
 export function databaseServiceFactory(config: RootConfig) {
-  const duckDbClient = DuckDBClient.getInstance(config.database);
+  const duckDbClient = DuckDBClient.getInstance(config);
   return new DatabaseService(
     duckDbClient,
     [

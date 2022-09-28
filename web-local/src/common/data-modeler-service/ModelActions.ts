@@ -509,7 +509,7 @@ export class ModelActions extends DataModelerActions {
         [sanitizedQuery]
       );
     } catch (error) {
-      if (error.message !== "No statement to prepare!") {
+      if (!error.message?.endsWith("No statement to prepare!")) {
         return ActionResponseFactory.getModelQueryError(error.message);
       } else {
         this.dataModelerStateService.dispatch("clearModelProfile", [model.id]);

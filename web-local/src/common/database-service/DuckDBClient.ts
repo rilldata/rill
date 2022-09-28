@@ -1,28 +1,22 @@
-import duckdb from "duckdb";
-import type { DatabaseConfig } from "../config/DatabaseConfig";
-import { open } from "node:fs/promises";
-import type { FileHandle } from "node:fs/promises";
-import { readFileSync } from "fs";
-
-interface DuckDB {
-  // TODO: define concrete styles
-  all: (...args: Array<unknown>) => unknown;
-  exec: (...args: Array<unknown>) => unknown;
-  prepare: (...args: Array<unknown>) => unknown;
-}
-
-const DuckDBProfilingEnv = "RILL_QUERY_PROFILE_PATH";
-const DuckDBProfileFile = "./profile.log";
+import type { RootConfig } from "../config/RootConfig";
+import { getBinaryRuntimePath } from "./getBinaryRuntimePath";
+import { isPortOpen } from "../utils/isPortOpen";
+import { asyncWaitUntil } from "../utils/waitUtils";
+import fetch from "isomorphic-unfetch";
+import type { ChildProcess } from "node:child_process";
+import childProcess from "node:child_process";
+import { URL } from "url";
 
 /**
- * Runs a duckdb instance. Database name can be configured {@link DatabaseConfig}
+ * Spawns or connects to a runtime and uses it to proxy DuckDB queries.
+ * Runtime and database details can be configured {@link DatabaseConfig}
  *
- * There is only one db right now.
+ * There is only one runtime connection right now.
  * But in the future we can easily add an interface to this and have different implementations.
  */
 export class DuckDBClient {
-  protected db: DuckDB;
-  protected logFile: FileHandle;
+  protected runtimeProcess: ChildProcess;
+  protected instanceID: string;
 
   protected onCallback: () => void;
   protected offCallback: () => void;
@@ -31,60 +25,143 @@ export class DuckDBClient {
   // duckdb doesn't work well with multiple connections to same db from same process
   // if we ever need to have different connections modify this to have a map of database to instance
   private static instance: DuckDBClient;
-  private constructor(private readonly databaseConfig: DatabaseConfig) {}
-  public static getInstance(databaseConfig: DatabaseConfig) {
-    if (!this.instance) this.instance = new DuckDBClient(databaseConfig);
+  private constructor(private readonly config: RootConfig) {}
+  public static getInstance(config: RootConfig) {
+    if (!this.instance) this.instance = new DuckDBClient(config);
     return this.instance;
   }
 
   public async init(): Promise<void> {
-    if (this.databaseConfig.skipDatabase || this.db) return;
-    // we can later on swap this over to WASM and update data loader
-    this.db = new duckdb.Database(this.databaseConfig.databaseName);
-    this.db.exec("PRAGMA threads=32;PRAGMA log_query_path='./log';");
-    if (process.env[DuckDBProfilingEnv]) {
-      this.db.exec(
-        `PRAGMA enable_profiling;PRAGMA profile_output='${DuckDBProfileFile}';`
-      );
-      this.logFile = await open(process.env[DuckDBProfilingEnv], "a");
-    }
+    if (this.config.database.skipDatabase) return;
+    await this.spawnRuntime();
+    await this.connectRuntime();
   }
 
-  public execute<Row = Record<string, unknown>>(
+  public async destroy(): Promise<void> {
+    this.runtimeProcess?.kill();
+    this.runtimeProcess = undefined;
+    this.instanceID = undefined;
+  }
+
+  public async execute<Row = Record<string, unknown>>(
     query: string,
     log = false,
-    logProfile = true
+    dry_run = false
   ): Promise<Array<Row>> {
     this.onCallback?.();
     if (log) console.log(query);
-    return new Promise((resolve, reject) => {
-      try {
-        this.db.all(query, (err, res) => {
-          if (logProfile) this.appendProfileToFile();
-          if (err !== null) {
-            reject(err);
-          } else {
-            this.offCallback?.();
-            resolve(res);
-          }
-        });
-      } catch (err) {
-        if (log) console.error(err);
-        reject(err);
+
+    try {
+      const resp = await this.request(
+        `/v1/instances/${this.instanceID}/query/direct`,
+        {
+          sql: query,
+          priority: 0,
+          dry_run: dry_run,
+        }
+      );
+      return resp.data;
+    } catch (err) {
+      if (log) console.error(err);
+      throw err;
+    }
+  }
+
+  public async prepare(query: string): Promise<void> {
+    await this.execute(query, false, true);
+  }
+
+  protected async spawnRuntime() {
+    if (!this.config.database.spawnRuntime) {
+      return;
+    }
+
+    if (this.runtimeProcess) {
+      console.log("Already spawned runtime");
+      // do not throw error. this is the case when the same instance is reused
+      return;
+    }
+
+    const httpPort = this.config.database.spawnRuntimePort;
+    const grpcPort = httpPort + 1000; // Hack to prevent port collision when spawning many runtimes
+
+    if ((await isPortOpen(httpPort)) || (await isPortOpen(grpcPort))) {
+      // TODO: once isDev is merged, throw error when isDev=false
+      // throw Error(`Ports ${httpPort} or ${grpcPort} already in use.`);
+      console.warn(`Ports ${httpPort} or ${grpcPort} already in use.`);
+      return;
+    }
+
+    this.runtimeProcess = childProcess.spawn(
+      getBinaryRuntimePath(this.config.local.version),
+      [],
+      {
+        env: {
+          ...process.env,
+          RILL_RUNTIME_ENV: "production",
+          RILL_RUNTIME_LOG_LEVEL: "warn",
+          RILL_RUNTIME_HTTP_PORT: httpPort.toString(),
+          RILL_RUNTIME_GRPC_PORT: grpcPort.toString(),
+        },
+        stdio: "inherit",
+        shell: true,
       }
-    });
+    );
+    this.runtimeProcess.on("error", console.log);
+
+    await asyncWaitUntil(() =>
+      isPortOpen(this.config.database.spawnRuntimePort)
+    );
   }
 
-  public prepare(query: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db.prepare(query, (err, stmt) => {
-        if (err !== null) reject(err);
-        else resolve(stmt);
-      });
+  protected async connectRuntime() {
+    if (this.instanceID) {
+      console.log("Already connected to runtime");
+      return;
+    }
+
+    let databaseName = this.config.database.databaseName;
+    if (databaseName === ":memory:") {
+      databaseName = "";
+    }
+
+    const res = await this.request("/v1/instances", {
+      driver: "duckdb",
+      dsn: databaseName,
     });
+
+    this.instanceID = res["instanceId"];
+
+    await this.execute(`
+      INSTALL 'json';
+      INSTALL 'parquet';
+      LOAD 'json';
+      LOAD 'parquet';
+    `);
+
+    await this.execute(
+      "PRAGMA threads=32;PRAGMA log_query_path='./log';",
+      false
+    );
   }
 
-  private appendProfileToFile() {
-    this.logFile?.write(`${readFileSync(DuckDBProfileFile).toString()}\n\n`);
+  private async request(path: string, data: any): Promise<any> {
+    const url = new URL(path, this.config.database.runtimeUrl).toString();
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      const msg = json["message"];
+      throw new Error(msg);
+    }
+
+    return json;
   }
 }

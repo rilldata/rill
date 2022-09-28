@@ -17,7 +17,7 @@ import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
 import { assertBigNumber } from "../utils/time-series-helpers";
 import { useInlineTestServer } from "../utils/useInlineTestServer";
 
-describe("Metrics View", () => {
+describe("Metric View", () => {
   const { config, inlineServer } = useInlineTestServer(8083);
   let metricsDef: MetricsDefinitionEntity;
   let measures: Array<MeasureDefinitionEntity>;

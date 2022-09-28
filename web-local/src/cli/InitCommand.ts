@@ -93,6 +93,9 @@ export class InitCommand extends DataModelerCliCommand {
 
     if (copy) {
       copyFileSync(duckDbPath, `${projectPath}/stage.db`);
+      if (existsSync(`${duckDbPath}.wal`)) {
+        copyFileSync(`${duckDbPath}.wal`, `${projectPath}/stage.db.wal`);
+      }
       console.log(
         "Copied over the database files. Any changes in Rill Developer won't be reflected in the other database file."
       );

@@ -1,5 +1,4 @@
 import type { RootConfig } from "../config/RootConfig";
-import { DATABASE_POLLING_INTERVAL } from "../constants";
 import type { DataModelerService } from "../data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "../data-modeler-state-service/DataModelerStateService";
 import {
@@ -34,16 +33,15 @@ export class DuckDbConnection extends DataConnection {
 
     await this.dataModelerService.dispatch("loadModels", []);
 
-    this.syncTimer = setInterval(() => {
-      this.sync();
-    }, DATABASE_POLLING_INTERVAL);
+    // this.syncTimer = setInterval(() => {
+    //   this.sync();
+    // }, DATABASE_POLLING_INTERVAL);
   }
 
   public async sync(): Promise<void> {
     const tables = await this.duckDbClient.execute<{ table_name: string }>(
       "SELECT table_name FROM information_schema.tables " +
         "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW';",
-      false,
       false
     );
     const persistentTables = this.dataModelerStateService
@@ -57,6 +55,7 @@ export class DuckDbConnection extends DataConnection {
 
     for (const table of tables) {
       const tableName = table.table_name;
+      if (!tableName || tableName.endsWith("___")) continue;
       if (existingTables.has(tableName)) {
         await this.dataModelerService.dispatch("syncTable", [
           existingTables.get(tableName).id,

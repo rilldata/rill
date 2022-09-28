@@ -69,8 +69,8 @@ export class CLISpec extends FunctionalTestBase {
 
   @FunctionalTestBase.Test()
   public async shouldErrorIfSourceFileIsMalformed(): Promise<void> {
-    await execVerbose(`${CLI_COMMAND} init ${CLI_TEST_FOLDER}`);
-    await execVerbose(
+    await execPromise(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
+    await execPromise(
       `${CLI_COMMAND} import-source test/data/AdBids.parquet ${CLI_TEST_FOLDER_ARG}`
     );
     // import the broken dataset.
