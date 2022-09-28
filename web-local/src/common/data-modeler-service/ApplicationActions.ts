@@ -54,7 +54,7 @@ export class ApplicationActions extends DataModelerActions {
           });
         });
       } catch (e) {
-        console.error(e);
+        // swallow error for now
       }
     }
 
