@@ -48,11 +48,13 @@ export const sourceUpdated = async (persistentTableName: string) => {
  */
 export const createModelForSource = async (
   models: Array<PersistentModelEntity>,
-  sourceName: string
+  sourceName: string,
+  asynchronous: boolean
 ) => {
   const createdModelId = await createModelFromSourceAndGetId(
     models,
-    sourceName
+    sourceName,
+    asynchronous
   );
 
   goto(`/model/${createdModelId}`);
@@ -81,7 +83,12 @@ export const autoCreateMetricsDefinitionForSource = async (
       .profile?.filter((column) => TIMESTAMPS.has(column.type));
     if (!timestampColumns?.length) return;
     showQuickStartDashboardOverlay(sourceName, timestampColumns[0].name);
-    const modelId = await createModelFromSourceAndGetId(models, sourceName);
+    const asynchronous = false;
+    const modelId = await createModelFromSourceAndGetId(
+      models,
+      sourceName,
+      asynchronous
+    );
 
     createdMetricsId = await autoCreateMetricsDefinitionForModel(
       sourceName,
@@ -134,7 +141,8 @@ export const autoCreateMetricsDefinitionForModel = async (
  */
 const createModelFromSourceAndGetId = async (
   models: Array<PersistentModelEntity>,
-  sourceName: string
+  sourceName: string,
+  asynchronous: boolean
 ): Promise<string> => {
   // check existing models to avoid a name conflict
   const existingNames = models
@@ -150,6 +158,7 @@ const createModelFromSourceAndGetId = async (
     {
       name: nextName,
       query: `select * from ${sourceName}`,
+      asynchronous,
     },
   ]);
   return (response as unknown as { id: string }).id;

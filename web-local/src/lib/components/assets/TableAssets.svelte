@@ -65,7 +65,12 @@
   };
 
   const queryHandler = async (tableName: string) => {
-    await createModelForSource($persistentModelStore.entities, tableName);
+    const asynchronous = true;
+    await createModelForSource(
+      $persistentModelStore.entities,
+      tableName,
+      asynchronous
+    );
   };
 
   const quickStartMetrics = async (id: string, tableName: string) => {
@@ -118,18 +123,21 @@
 
   const createModel = (tableName: string) => {
     const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+    const asynchronous = true;
 
-    createModelForSource($persistentModelStore.entities, tableName).then(
-      (createdModelId) => {
-        navigationEvent.fireEvent(
-          createdModelId,
-          BehaviourEventMedium.Menu,
-          MetricsEventSpace.LeftPanel,
-          EntityTypeToScreenMap[previousActiveEntity],
-          MetricsEventScreenName.Model
-        );
-      }
-    );
+    createModelForSource(
+      $persistentModelStore.entities,
+      tableName,
+      asynchronous
+    ).then((createdModelId) => {
+      navigationEvent.fireEvent(
+        createdModelId,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[previousActiveEntity],
+        MetricsEventScreenName.Model
+      );
+    });
   };
 
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
