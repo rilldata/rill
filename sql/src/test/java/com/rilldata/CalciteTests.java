@@ -248,12 +248,9 @@ public class CalciteTests
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
 
         byte[] ast = calciteToolbox.getAST(actual);
-        //byte[] astWithType = calciteToolbox.getAST(actual, true);
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-          //SqlNodeProto sqlNodeProtoWithType = SqlNodeProto.parseFrom(astWithType);
           System.out.println(sqlNodeProto);
-          //System.out.println(sqlNodeProtoWithType);
         } catch (InvalidProtocolBufferException e) {
           throw new RuntimeException(e);
         }
