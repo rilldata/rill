@@ -25,7 +25,6 @@ export class ApplicationActions extends DataModelerActions {
     entityType: EntityType,
     entityId: string
   ) {
-    console.log("setActiveAsset", entityType, entityId);
     const currentActiveAsset = (
       stateService.getCurrentState() as ApplicationState
     ).activeEntity;
