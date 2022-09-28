@@ -11,7 +11,6 @@
   import Editor from "../Editor.svelte";
   import { drag } from "../../drag";
   import { getContext } from "svelte";
-  import { cubicOut as easing } from "svelte/easing";
   import { slide } from "svelte/transition";
 
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
