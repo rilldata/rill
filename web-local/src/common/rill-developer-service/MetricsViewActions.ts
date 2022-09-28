@@ -117,7 +117,10 @@ export class MetricsViewActions extends RillDeveloperActions {
     rillRequestContext: MetricsDefinitionContext,
     _: string
   ) {
-    if (!rillRequestContext.record?.sourceModelId) return;
+    if (!rillRequestContext.record?.sourceModelId)
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
 
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
