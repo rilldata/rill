@@ -1,17 +1,19 @@
 <script lang="ts">
-  import { Body } from "../../../data-graphic/elements";
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithTween } from "../../../data-graphic/functional-components";
-  import { Axis, Grid, PointLabel } from "../../../data-graphic/guides";
-  import { Area, Line } from "../../../data-graphic/marks";
+  import { extent } from "d3-array";
+  import { interpolateArray } from "d3-interpolate";
+  import { cubicOut } from "svelte/easing";
+  import { derived, get, writable } from "svelte/store";
+  import { fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
-  import { interpolateArray } from "d3-interpolate";
-  import { cubicOut } from "svelte/easing";
-  import { fly } from "svelte/transition";
+  import { Body } from "../../../data-graphic/elements";
+  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithTween } from "../../../data-graphic/functional-components";
+  import { Axis, Grid, PointLabel } from "../../../data-graphic/guides";
+  import { Area, Line } from "../../../data-graphic/marks";
 
   export let start;
   export let end;
@@ -54,6 +56,26 @@
 
   $: allZeros = dataCopy.every((di) => di[accessor] === 0);
   $: dataInDomain = dataCopy.some((di) => di.ts >= start && di.ts <= end);
+
+  $: [_, yMax] = extent(dataCopy, (d) => d[accessor]);
+
+  let yms = writable(yMax);
+  $: yms.set(yMax);
+  let prevValue = yMax;
+
+  function previousStoreValue(anotherStore) {
+    let previousValue = get(anotherStore);
+    return derived(anotherStore, ($currentValue, set) => {
+      set(previousValue);
+      previousValue = $currentValue;
+    });
+  }
+
+  const previousYMax = previousStoreValue(yms);
+  // if $prev < yMax, do something
+  // if $prev > yMax, do something else
+
+  // need to control xMin, xMax, yMin, yMax.
 </script>
 
 {#if key && dataCopy?.length}
@@ -62,16 +84,24 @@
       shareYScale={false}
       bind:mouseoverValue
       {yMin}
-      yMinTweenProps={{ duration: longTimeSeries ? 0 : allZeros ? 100 : 300 }}
-      yMaxTweenProps={{ duration: longTimeSeries ? 0 : allZeros ? 100 : 300 }}
+      {yMax}
+      yMinTweenProps={{
+        duration: longTimeSeries ? 0 : allZeros ? 100 : 300,
+        delay: 200,
+      }}
+      yMaxTweenProps={{
+        duration: longTimeSeries ? 0 : allZeros ? 100 : 300,
+        delay: 200,
+      }}
       let:xScale
     >
       <Body>
-        {#key key + longTimeSeriesKey}
+        {#key key + longTimeSeriesKey + $previousYMax > yMax}
           <!-- here, we switch hideCurrent before and after the transition, so
             in cases of the key updating, we can gracefully transition all kinds of
             interesting animations.
           -->
+          <text x={30} y={30}>{yMax} - {$previousYMax}</text>
           <g
             out:fly|local={{ duration: 500, y: 475 }}
             style:opacity={hideCurrent && !longTimeSeries ? 0.125 : 1}
@@ -94,6 +124,7 @@
                     ? 0
                     : 300
                   : 0,
+                delay: $previousYMax < yMax ? 500 : 0,
                 easing: cubicOut,
                 interpolate: interpolateArray,
               }}

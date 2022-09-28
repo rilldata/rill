@@ -3,29 +3,29 @@
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
   import type { MetricsViewTimeSeriesResponse } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { extent } from "d3-array";
+  import { getContext } from "svelte";
+  import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithBisector } from "../../../data-graphic/functional-components";
-  import { Axis } from "../../../data-graphic/guides";
-  import CrossIcon from "../../../icons/CrossIcon.svelte";
-  import Spinner from "../../../Spinner.svelte";
   import {
     useMetaMappedFilters,
     useMetaMeasureNames,
     useMetaQuery,
   } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { useTotalsQuery } from "../../../../svelte-query/queries/metrics-views/totals";
   import { useTimeSeriesQuery } from "../../../../svelte-query/queries/metrics-views/time-series";
+  import { useTotalsQuery } from "../../../../svelte-query/queries/metrics-views/totals";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { removeTimezoneOffset } from "../../../../util/formatters";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { extent } from "d3-array";
-  import { getContext } from "svelte";
-  import { fly } from "svelte/transition";
+  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithBisector } from "../../../data-graphic/functional-components";
+  import { Axis } from "../../../data-graphic/guides";
+  import CrossIcon from "../../../icons/CrossIcon.svelte";
+  import Spinner from "../../../Spinner.svelte";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { metricsExplorerStore } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
   import ExploreContainer from "@rilldata/web-local/lib/components/workspace/explore/ExploreContainer.svelte";
   import ExploreHeader from "@rilldata/web-local/lib/components/workspace/explore/ExploreHeader.svelte";
   import DimensionDisplay from "@rilldata/web-local/lib/components/workspace/explore/leaderboards/DimensionDisplay.svelte";
