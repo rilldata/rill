@@ -104,11 +104,10 @@
     <div
       style:height="{(1 - $modelPreviewVisibilityTween) *
         $layout.modelPreviewHeight}px"
-      class="p-6 grid"
-      style:grid-template-rows="auto {currentDerivedModel?.error ? "auto" : ""}"
+      class="p-6 "
     >
       <div
-        class="rounded border border-gray-200 border-2 overflow-auto h-full  {!showPreview &&
+        class="rounded border border-gray-200 border-2 overflow-auto h-full {!showPreview &&
           'hidden'}"
         class:border={!!currentDerivedModel?.error}
         class:border-gray-300={!!currentDerivedModel?.error}
@@ -133,15 +132,15 @@
             no columns selected
           </div>
         {/if}
-        {#if currentDerivedModel?.error}
-          <div
-            transition:slide={{ duration: 200 }}
-            class="error break-words overflow-auto p-6 mb-3 border-t-2 border-gray-300 font-bold text-gray-700 sticky bottom-0 z-10 bg-gray-100"
-          >
-            {currentDerivedModel.error}
-          </div>
-        {/if}
       </div>
+      {#if currentDerivedModel?.error}
+        <div
+          transition:slide={{ duration: 200 }}
+          class="error break-words overflow-auto p-6 mb-8 border-2 border-gray-300 font-bold text-gray-700  w-full sticky bottom-6 z-10 bg-gray-100"
+        >
+          {currentDerivedModel.error}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
