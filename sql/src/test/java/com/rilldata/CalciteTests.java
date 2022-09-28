@@ -1,11 +1,13 @@
 package com.rilldata;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.dialects.Dialects;
 import com.rilldata.calcite.models.SqlCreateMetricsView;
 import com.rilldata.calcite.models.SqlCreateSource;
 import com.rilldata.calcite.validators.CreateMetricsViewValidator;
 import com.rilldata.calcite.validators.CreateSourceValidator;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.Planner;
@@ -58,8 +60,8 @@ public class CalciteTests
   }
 
   @ParameterizedTest
-  @MethodSource("testCreateMetricParams")
-  public void testCreateMetric(String modelingQuery, int numDims, int numMeasures, Optional<String> parseExceptionMatch,
+  @MethodSource("testCreateMetricsViewParams")
+  public void testCreateMetricsView(String modelingQuery, int numDims, int numMeasures, Optional<String> parseExceptionMatch,
       Optional<String> validationExceptionMatch
   )
   {
@@ -90,6 +92,13 @@ public class CalciteTests
       Assertions.assertTrue(
           validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
     }
+    byte[] ast = calciteToolbox.getAST(sqlCreateMetricsView, false);
+    try {
+      SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+      System.out.println(sqlNodeProto);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @ParameterizedTest
@@ -104,6 +113,14 @@ public class CalciteTests
       parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
       CreateSourceValidator.validateConnector(sqlCreateSource);
+
+      byte[] ast = calciteToolbox.getAST(sqlCreateSource, false);
+      try {
+        SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+        System.out.println(sqlNodeProto);
+      } catch (InvalidProtocolBufferException e) {
+        throw new RuntimeException(e);
+      }
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
         throw new RuntimeException(e);
@@ -229,6 +246,14 @@ public class CalciteTests
         SqlNode expected = parseQuery(expectedQuery);
         exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+
+        byte[] ast = calciteToolbox.getAST(actual, false);
+        try {
+          SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+          System.out.println(sqlNodeProto);
+        } catch (InvalidProtocolBufferException e) {
+          throw new RuntimeException(e);
+        }
       }
     } catch (RuntimeException | ValidationException e) {
       if (exceptionMessage.isEmpty() || !e.getMessage().contains(exceptionMessage.get())) {
@@ -256,6 +281,14 @@ public class CalciteTests
         }
         exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+
+        byte[] ast = calciteToolbox.getAST(actual, false);
+        try {
+          SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+          System.out.println(sqlNodeProto);
+        } catch (InvalidProtocolBufferException e) {
+          throw new RuntimeException(e);
+        }
       }
     } catch (RuntimeException | ValidationException e) {
       if (exceptionMessage.isEmpty() || !e.getMessage().contains(exceptionMessage.get())) {
@@ -529,7 +562,7 @@ public class CalciteTests
     );
   }
 
-  private static Stream<Arguments> testCreateMetricParams()
+  private static Stream<Arguments> testCreateMetricsViewParams()
   {
     return Stream.of(
         Arguments.of("""
