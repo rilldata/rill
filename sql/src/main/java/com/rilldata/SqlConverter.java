@@ -27,12 +27,12 @@ public class SqlConverter
   {
     try {
       SqlCreateSource sqlCreateSource = calciteToolbox.createSource(sourceDef);
-      return calciteToolbox.getAST(sqlCreateSource, false);
+      return calciteToolbox.getAST(sqlCreateSource);
     } catch (Exception e) {
       e.printStackTrace(); // todo level-logging for native libraries?
       // in case of error returning an AST containing StringLiteral with error messages as the top most node
       return calciteToolbox.getAST(
-          SqlLiteral.createCharString(String.format("{'error': '%s'}", e.getMessage()), new SqlParserPos(0, 0)), false);
+          SqlLiteral.createCharString(String.format("{'error': '%s'}", e.getMessage()), new SqlParserPos(0, 0)));
     }
   }
 
@@ -40,12 +40,12 @@ public class SqlConverter
   {
     try {
       SqlCreateMetricsView sqlCreateMetricsView = calciteToolbox.createMetricsView(metricsViewDef);
-      return calciteToolbox.getAST(sqlCreateMetricsView, false);
+      return calciteToolbox.getAST(sqlCreateMetricsView);
     } catch (Exception e) {
       e.printStackTrace(); // todo level-logging for native libraries?
       // in case of error returning an AST containing StringLiteral with error messages as the top most node
       return calciteToolbox.getAST(
-          SqlLiteral.createCharString(String.format("{'error': '%s'}", e.getMessage()), new SqlParserPos(0, 0)), false);
+          SqlLiteral.createCharString(String.format("{'error': '%s'}", e.getMessage()), new SqlParserPos(0, 0)));
     }
   }
 }

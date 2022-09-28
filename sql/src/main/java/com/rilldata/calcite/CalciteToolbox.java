@@ -109,10 +109,10 @@ public class CalciteToolbox
     return getAST(sqlNode, planner, addTypeInfo);
   }
 
-  public byte[] getAST(SqlNode sqlNode, boolean addTypeInfo)
+  public byte[] getAST(SqlNode sqlNode)
   {
     Planner planner = getPlanner();
-    return getAST(sqlNode, planner, addTypeInfo);
+    return getAST(sqlNode, planner, false);
   }
 
   public byte[] getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)

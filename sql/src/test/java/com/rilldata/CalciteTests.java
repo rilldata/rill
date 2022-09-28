@@ -92,7 +92,7 @@ public class CalciteTests
       Assertions.assertTrue(
           validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
     }
-    byte[] ast = calciteToolbox.getAST(sqlCreateMetricsView, false);
+    byte[] ast = calciteToolbox.getAST(sqlCreateMetricsView);
     try {
       SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
       System.out.println(sqlNodeProto);
@@ -114,7 +114,7 @@ public class CalciteTests
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
       CreateSourceValidator.validateConnector(sqlCreateSource);
 
-      byte[] ast = calciteToolbox.getAST(sqlCreateSource, false);
+      byte[] ast = calciteToolbox.getAST(sqlCreateSource);
       try {
         SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
         System.out.println(sqlNodeProto);
@@ -247,10 +247,13 @@ public class CalciteTests
         exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
 
-        byte[] ast = calciteToolbox.getAST(actual, false);
+        byte[] ast = calciteToolbox.getAST(actual);
+        //byte[] astWithType = calciteToolbox.getAST(actual, true);
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+          //SqlNodeProto sqlNodeProtoWithType = SqlNodeProto.parseFrom(astWithType);
           System.out.println(sqlNodeProto);
+          //System.out.println(sqlNodeProtoWithType);
         } catch (InvalidProtocolBufferException e) {
           throw new RuntimeException(e);
         }
@@ -282,7 +285,7 @@ public class CalciteTests
         exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
 
-        byte[] ast = calciteToolbox.getAST(actual, false);
+        byte[] ast = calciteToolbox.getAST(actual);
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
           System.out.println(sqlNodeProto);
