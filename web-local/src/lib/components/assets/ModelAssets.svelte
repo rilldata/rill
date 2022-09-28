@@ -9,6 +9,8 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getContext } from "svelte";
+  import { slide } from "svelte/transition";
   import {
     ApplicationStore,
     dataModelerService,
@@ -17,6 +19,13 @@
     DerivedModelStore,
     PersistentModelStore,
   } from "../../application-state-stores/model-stores";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import { deleteModelApi } from "../../redux-store/model/model-apis";
+  import { autoCreateMetricsDefinitionForModel } from "../../redux-store/source/source-apis";
+  import {
+    derivedProfileEntityHasTimestampColumn,
+    selectTimestampColumnFromProfileEntity,
+  } from "../../redux-store/source/source-selectors";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
@@ -28,15 +37,6 @@
   import ModelIcon from "../icons/Model.svelte";
   import { Divider, MenuItem } from "../menu";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import { deleteModelApi } from "../../redux-store/model/model-apis";
-  import { autoCreateMetricsDefinitionForModel } from "../../redux-store/source/source-apis";
-  import {
-    derivedProfileEntityHasTimestampColumn,
-    selectTimestampColumnFromProfileEntity,
-  } from "../../redux-store/source/source-selectors";
-  import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -64,6 +64,21 @@
         EntityTypeToScreenMap[previousActiveEntity],
         MetricsEventScreenName.Model
       );
+    }
+  };
+
+  const deleteModel = async (id: string) => {
+    const currentAssetIndex = $persistentModelStore?.entities?.findIndex(
+      (entity) => entity.id === id
+    );
+
+    await deleteModelApi(id);
+
+    if ($persistentModelStore.entities.length > 0) {
+      const priorModel = $persistentModelStore.entities[currentAssetIndex - 1];
+      goto(`/model/${priorModel.id}`);
+    } else {
+      goto("/");
     }
   };
 
@@ -196,7 +211,7 @@
             </svelte:fragment>
             rename...</MenuItem
           >
-          <MenuItem icon on:select={() => deleteModelApi(id)}>
+          <MenuItem icon on:select={() => deleteModel(id)}>
             <svelte:fragment slot="icon">
               <Cancel />
             </svelte:fragment>
