@@ -1,14 +1,14 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import {
     assetsVisible,
     assetVisibilityTween,
     layout,
   } from "../../application-state-stores/layout-store";
+  import { drag } from "../../drag";
   import RillLogo from "../icons/RillLogo.svelte";
   import Spacer from "../icons/Spacer.svelte";
   import Portal from "../Portal.svelte";
-  import { drag } from "../../drag";
-  import { onMount } from "svelte";
   import Footer from "./Footer.svelte";
 
   import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
@@ -58,13 +58,13 @@
           class="grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center"
         >
           {#if mounted}
-            <a href="/web-local/static">
+            <a href="/">
               <RillLogo size="16px" iconOnly />
             </a>
           {:else}
             <Spacer size="16px" />
           {/if}
-          <a href="/web-local/static" class="font-bold">Rill Developer</a>
+          <a href="/" class="font-bold">Rill Developer</a>
         </h1>
       </header>
       <TableAssets />
