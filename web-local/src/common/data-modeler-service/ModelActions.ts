@@ -1,9 +1,9 @@
+import {
+  extractTableName,
+  sanitizeEntityName,
+} from "@rilldata/web-local/lib/util/extract-table-name";
+import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
 import { MODEL_PREVIEW_COUNT } from "../constants";
-import { DataModelerActions } from "./DataModelerActions";
-import type { ActionResponse } from "./response/ActionResponse";
-import { ActionStatus } from "./response/ActionResponse";
-import { ActionResponseFactory } from "./response/ActionResponseFactory";
-import { ActionErrorType } from "./response/ActionResponseMessage";
 import type { DerivedModelStateActionArg } from "../data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import {
   EntityStatus,
@@ -22,11 +22,11 @@ import {
   getNewDerivedModel,
   getNewModel,
 } from "../stateInstancesFactory";
-import {
-  extractTableName,
-  sanitizeEntityName,
-} from "@rilldata/web-local/lib/util/extract-table-name";
-import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
+import { DataModelerActions } from "./DataModelerActions";
+import type { ActionResponse } from "./response/ActionResponse";
+import { ActionStatus } from "./response/ActionResponse";
+import { ActionResponseFactory } from "./response/ActionResponseFactory";
+import { ActionErrorType } from "./response/ActionResponseMessage";
 
 export enum FileExportType {
   Parquet = "exportToParquet",
@@ -97,10 +97,17 @@ export class ModelActions extends DataModelerActions {
       params.at,
     ]);
     if (persistentModel.query) {
-      await this.dataModelerService.dispatch("updateModelQuery", [
-        persistentModel.id,
-        params.query,
-      ]);
+      if (params.asynchronous) {
+        this.dataModelerService.dispatch("updateModelQuery", [
+          persistentModel.id,
+          params.query,
+        ]);
+      } else {
+        await this.dataModelerService.dispatch("updateModelQuery", [
+          persistentModel.id,
+          params.query,
+        ]);
+      }
     }
     return persistentModel;
   }
