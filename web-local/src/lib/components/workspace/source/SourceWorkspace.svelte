@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
   import { getContext } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "../../../application-state-stores/application-store";
@@ -20,8 +18,12 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  let currentSource: PersistentTableEntity;
-  let currentDerivedSource: DerivedTableEntity;
+  $: currentSource = $persistentTableStore?.entities
+    ? $persistentTableStore.entities.find((q) => q.id === sourceId)
+    : undefined;
+  $: currentDerivedSource = $derivedTableStore?.entities
+    ? $derivedTableStore.entities.find((q) => q.id === sourceId)
+    : undefined;
 
   const switchToSource = async (sourceId: string) => {
     if (!sourceId) return;
@@ -30,14 +32,6 @@
       EntityType.Table,
       sourceId,
     ]);
-
-    currentSource = $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.id === sourceId)
-      : undefined;
-
-    currentDerivedSource = $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === sourceId)
-      : undefined;
   };
 
   $: switchToSource(sourceId);
