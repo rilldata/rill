@@ -38,11 +38,11 @@ writeFileSync(
     `"version": "${newVersion}",`
   )
 );
-console.log("Regenerating `package-lock.json`");
-execSyncToStdout(`npm install`);
+// console.log("Regenerating `package-lock.json`");
+// execSyncToStdout(`npm install`);
 
 console.log(`Pushing to ${branch}`);
-execSyncToStdout(`git add ${PACKAGE_JSON_FILE} ${PACKAGE_LOCK_JSON_FILE}`);
+execSyncToStdout(`git add ${PACKAGE_JSON_FILE}`);
 execSyncToStdout(
   `git commit -m "Bump version: v${currentVersion} -> v${newVersion}"`
 );
