@@ -1,4 +1,10 @@
-on: [push, pull_request]
+on:
+  push:
+    - paths:
+      - "**.go"
+  pull_request:
+    - paths:
+      - "**.go"
 name: Test Go code
 jobs:
   test:
