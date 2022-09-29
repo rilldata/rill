@@ -3,7 +3,7 @@
   import { interpolateArray } from "d3-interpolate";
   import { cubicOut } from "svelte/easing";
   import { derived, get, writable } from "svelte/store";
-  import { fly } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
     humanizeDataType,
@@ -58,16 +58,35 @@
   $: dataInDomain = dataCopy.some((di) => di.ts >= start && di.ts <= end);
 
   $: [_, yMax] = extent(dataCopy, (d) => d[accessor]);
+  $: [xMin, xMax] = extent(dataCopy, (d) => d.ts);
 
   let yms = writable(yMax);
   $: yms.set(yMax);
-  let prevValue = yMax;
+
+  let range = writable([xMin, xMax]);
+  $: range.set([xMin, xMax]);
 
   function previousStoreValue(anotherStore) {
     let previousValue = get(anotherStore);
     return derived(anotherStore, ($currentValue, set) => {
-      set(previousValue);
+      if (Array.isArray(previousValue)) {
+        set([...previousValue]);
+      } else if (typeof previousValue === "object" && previousValue !== null) {
+        set({ ...previousValue });
+      } else {
+        set(previousValue);
+      }
       previousValue = $currentValue;
+    });
+  }
+
+  function delayedStoreValue(anotherStore, downtimeMS = 500) {
+    let tm;
+    return derived(anotherStore, ($currentValue, set) => {
+      if (tm) clearTimeout(tm);
+      tm = setTimeout(() => {
+        set($currentValue);
+      }, downtimeMS);
     });
   }
 
@@ -76,6 +95,35 @@
   // if $prev > yMax, do something else
 
   // need to control xMin, xMax, yMin, yMax.
+
+  export function scaleVertical(
+    node: Element,
+    {
+      delay = 0,
+      duration = 400,
+      easing = cubicOut,
+      start = 0,
+      opacity = 0,
+    } = {}
+  ) {
+    const style = getComputedStyle(node);
+    const target_opacity = +style.opacity;
+    const transform = style.transform === "none" ? "" : style.transform;
+
+    const sd = 1 - start;
+    const od = target_opacity * (1 - opacity);
+
+    return {
+      delay,
+      duration,
+      easing,
+      css: (_t, u) => `
+    transform: ${transform} scaleY(${1 - sd * u});
+    transform-origin: 100% calc(100% - ${16}px);
+    opacity: ${target_opacity - od * u}
+  `,
+    };
+  }
 </script>
 
 {#if key && dataCopy?.length}
@@ -86,25 +134,31 @@
       {yMin}
       {yMax}
       yMinTweenProps={{
-        duration: longTimeSeries ? 0 : allZeros ? 100 : 300,
+        duration: longTimeSeries ? 0 : allZeros ? 100 : 500,
         delay: 200,
       }}
       yMaxTweenProps={{
-        duration: longTimeSeries ? 0 : allZeros ? 100 : 300,
-        delay: 200,
+        duration: longTimeSeries
+          ? 0
+          : allZeros
+          ? 100
+          : $previousYMax < yMax
+          ? 800
+          : 500,
+        delay: 0,
       }}
       let:xScale
     >
       <Body>
-        {#key key + longTimeSeriesKey + $previousYMax > yMax}
+        {#key key + longTimeSeriesKey + ($previousYMax > yMax)}
           <!-- here, we switch hideCurrent before and after the transition, so
             in cases of the key updating, we can gracefully transition all kinds of
             interesting animations.
           -->
           <text x={30} y={30}>{yMax} - {$previousYMax}</text>
           <g
-            out:fly|local={{ duration: 500, y: 475 }}
-            style:opacity={hideCurrent && !longTimeSeries ? 0.125 : 1}
+            in:scaleVertical={{ delay: $previousYMax > yMax ? 0 : 200 }}
+            out:fade={{ duration: $previousYMax > yMax ? 1200 : 300 }}
             style:transition="opacity 250ms"
             on:outrostart={() => {
               hideCurrent = true;
@@ -122,9 +176,9 @@
                   : !hideCurrent
                   ? allZeros
                     ? 0
-                    : 300
+                    : 400
                   : 0,
-                delay: $previousYMax < yMax ? 500 : 0,
+                delay: $previousYMax < yMax ? 300 : 0,
                 easing: cubicOut,
                 interpolate: interpolateArray,
               }}
