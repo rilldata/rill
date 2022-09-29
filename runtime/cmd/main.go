@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog"
@@ -16,6 +15,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/sql"
 
 	_ "github.com/rilldata/rill/runtime/infra/duckdb"
+	_ "github.com/rilldata/rill/runtime/metadata/postgres"
 	_ "github.com/rilldata/rill/runtime/metadata/sqlite"
 )
 
@@ -62,12 +62,8 @@ func main() {
 
 	// Migrate db
 	// TODO: Move to separate command and only auto-migrate in development
-	mig, err := migrate.NewWithSourceInstance("iofs", driver.Migrations(), fmt.Sprintf("%s://%s", conf.DatabaseDriver, conf.DatabaseURL))
+	err = db.Migrate(context.Background())
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Migrator failed to connect to DB")
-	}
-	err = mig.Up()
-	if err != nil && err != migrate.ErrNoChange {
 		logger.Fatal().Err(err).Msg("Failed to migrate DB")
 	}
 

@@ -1,25 +1,26 @@
-package sqlite
+package postgres
 
 import (
 	"context"
 	"fmt"
 
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/metadata"
-	_ "modernc.org/sqlite"
 )
 
 func init() {
-	metadata.Register("sqlite", driver{})
+	metadata.Register("postgres", driver{})
 }
 
 type driver struct{}
 
 func (d driver) Open(dsn string) (metadata.DB, error) {
-	db, err := sqlx.Connect("sqlite", dsn)
+	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
+
 	return &connection{db: db}, nil
 }
 

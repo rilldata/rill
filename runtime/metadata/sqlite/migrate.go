@@ -1,0 +1,92 @@
+package sqlite
+
+import (
+	"context"
+	"embed"
+	"fmt"
+	"path"
+	"strconv"
+	"strings"
+)
+
+// Embed migrations directory in the binary
+//
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
+
+// Name of the table that tracks migrations
+var migrationVersionTable = "runtime_migration_version"
+
+// Migrate runs migrations. Not safe for concurrent use.
+func (c *connection) Migrate(ctx context.Context) (err error) {
+	// Create migrationVersionTable if it doesn't exist
+	_, err = c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
+	if err != nil {
+		return err
+	}
+
+	// Set the version to 0 if table is empty
+	_, err = c.db.ExecContext(ctx, fmt.Sprintf("insert into %s(version) select 0 where 0=(select count(*) from %s)", migrationVersionTable, migrationVersionTable))
+	if err != nil {
+		return err
+	}
+
+	// Get version of latest migration
+	var currentVersion int
+	err = c.db.QueryRowContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&currentVersion)
+	if err != nil {
+		return err
+	}
+
+	// Iterate over migrations (sorted by filename)
+	files, err := migrationsFS.ReadDir("migrations")
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		// Extract version number from filename
+		version, err := strconv.Atoi(strings.TrimSuffix(file.Name(), ".sql"))
+		if err != nil {
+			return fmt.Errorf("unexpected migration filename: %s", file.Name())
+		}
+
+		// Skip migrations below current version
+		if version <= currentVersion {
+			continue
+		}
+
+		// Read SQL
+		sql, err := migrationsFS.ReadFile(path.Join("migrations", file.Name()))
+		if err != nil {
+			return err
+		}
+
+		// Start a transaction
+		tx, err := c.db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		// Run migration
+		_, err = tx.ExecContext(ctx, string(sql))
+		if err != nil {
+			return fmt.Errorf("failed to run migration '%s': %s", file.Name(), err.Error())
+		}
+
+		// Update migration version
+		_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
+		if err != nil {
+			return err
+		}
+
+		// Commit migration
+		err = tx.Commit()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
