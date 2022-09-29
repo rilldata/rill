@@ -5,6 +5,7 @@ import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
 
@@ -58,9 +59,10 @@ public class CalciteToolboxTest
             ]
           }
         """, PostgresqlSqlDialect.DEFAULT);
-    Assertions.assertEquals("DROP TABLE \"B\"", migrationSteps.get(0).ddl);
-    Assertions.assertEquals("CREATE VIEW \"A\" AS\nSELECT 'a' AS \"D\", 2 AS \"M\"", migrationSteps.get(1).ddl);
-    Assertions.assertEquals(2, migrationSteps.size());
+    assertThat(migrationSteps).extracting("type", "ddl").containsOnly(
+        tuple("ExecuteInfra", "DROP TABLE \"B\""),
+        tuple("ExecuteInfra", "CREATE VIEW \"A\" AS\nSELECT 'a' AS \"D\", 2 AS \"M\""),
+        tuple("InsertCatalog", "CREATE METRICS VIEW \"B\" DIMENSIONS \"D\" MEASURES COUNT(\"M\") FROM \"A\""));
   }
 
   @Test

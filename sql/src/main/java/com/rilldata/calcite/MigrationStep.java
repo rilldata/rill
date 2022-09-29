@@ -2,15 +2,22 @@ package com.rilldata.calcite;
 
 public class MigrationStep
 {
+  public String type;
   public String ddl;
 
-  public MigrationStep(String name, String type)
-  {
-    ddl = "DROP " + type + " " + name;
+  public static MigrationStep dropEntity(String name, String type) {
+    return new MigrationStep("DROP " + type + " " + name);
+  }
+
+  public static MigrationStep insertCatalog(String ddl) {
+    MigrationStep migrationStep = new MigrationStep(ddl);
+    migrationStep.type = "InsertCatalog";
+    return migrationStep;
   }
 
   public MigrationStep(String ddl)
   {
+    type = "ExecuteInfra";
     this.ddl = ddl;
   }
 }

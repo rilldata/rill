@@ -87,15 +87,10 @@ public class SqlCreateMetric extends SqlCreate
     writer.keyword("METRICS");
     writer.keyword("VIEW");
     name.unparse(writer, 0, 0);
-    writer.newlineAndIndent();
     writer.keyword("DIMENSIONS");
-    writer.newlineAndIndent();
     dimensions.unparse(writer, 0, 0);
-    writer.newlineAndIndent();
     writer.keyword("MEASURES");
-    writer.newlineAndIndent();
     measures.unparse(writer, 0, 0);
-    writer.newlineAndIndent();
     writer.keyword("FROM");
     from.unparse(writer, 0, 0);
   }

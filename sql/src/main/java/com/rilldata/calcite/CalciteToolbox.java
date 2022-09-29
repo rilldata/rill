@@ -182,8 +182,11 @@ public class CalciteToolbox
     {
       if (node instanceof SqlCreateTable) {
         return "TABLE";
-      } else if (node instanceof SqlCreateView)
+      } else if (node instanceof SqlCreateView) {
         return "VIEW";
+      } else if (node instanceof SqlCreateMetric) {
+        return "METRICS VIEW";
+      }
       return null;
     }
   }
@@ -208,9 +211,15 @@ public class CalciteToolbox
     createGraph(existing);
     Map<String, Statement> ast = toStatementsMap(node, sqlDialect);
     Set<String> seen = new HashSet<>();
-    List<MigrationStep> steps = existing.values().stream().filter(s -> s.getType() != null).map(s -> new MigrationStep(s.getName(), s.getType())).collect(
+    List<MigrationStep> steps = existing.values().stream().filter(s -> s.getType() != null).map(s -> MigrationStep.dropEntity(s.getName(), s.getType()) ).collect(
         Collectors.toList());
-    steps.addAll(ast.values().stream().filter(s -> s.ddl != null).map(s -> new MigrationStep(s.ddl)).collect(
+    steps.addAll(ast.values().stream().filter(s -> s.ddl != null).map(s -> {
+      if (s.getType().equals("METRICS VIEW")) {
+        return MigrationStep.insertCatalog(s.ddl);
+      } else {
+        return new MigrationStep(s.ddl);
+      }
+    }).collect(
         Collectors.toList()));
 
     for (Statement create : ast.values()) {
@@ -224,11 +233,6 @@ public class CalciteToolbox
       seen.add(create.getName());
     }
     return steps;
-  }
-
-  private void markDependentsChange(String name)
-  {
-
   }
 
   public String saveModel(String sql) throws SqlParseException, ValidationException
@@ -302,9 +306,15 @@ public class CalciteToolbox
       if (n instanceof SqlCreateTable t) {
         statement.name = t.name.toString();
         statement.ddl = n.toSqlString(sqlDialect).toString();
+        statement.node = n;
       } else if (n instanceof SqlCreateView v) {
         statement.name = v.name.toString();
         statement.ddl = n.toSqlString(sqlDialect).toString();
+        statement.node = n;
+      } else if (n instanceof SqlCreateMetric v) {
+        statement.name = v.name.toString();
+        statement.ddl = n.toSqlString(sqlDialect).toString();
+        statement.node = n;
       }
       return statement;
     }).collect(Collectors.toMap(Statement::getName, Function.identity(), (x, y) -> y, LinkedHashMap::new));
