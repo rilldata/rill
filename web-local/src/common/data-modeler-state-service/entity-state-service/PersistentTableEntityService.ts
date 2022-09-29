@@ -19,7 +19,9 @@ export interface PersistentTableEntity extends EntityRecord {
   tableName?: string;
 
   sourceType?: TableSourceType;
-  csvDelimiter?: string;
+  csvDelimiter?: string; // for TableSourceType.CSV
+  sql?: string; // for TableSourceType.SQL
+  sqlError?: string; // for TableSourceType.SQL
 }
 export type PersistentTableState = EntityState<PersistentTableEntity>;
 export type PersistentTableStateActionArg = EntityStateActionArg<

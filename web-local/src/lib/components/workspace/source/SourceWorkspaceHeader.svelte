@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { dataModelerService } from "../../../application-state-stores/application-store";
-
-  import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
-
-  import Source from "../../icons/Source.svelte";
   import { getContext } from "svelte";
+  import { dataModelerService } from "../../../application-state-stores/application-store";
+  import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
+  import { formatSourceType } from "../../../types";
+  import Source from "../../icons/Source.svelte";
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
 
   export let id;
@@ -31,6 +30,11 @@
   <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
     <svelte:fragment slot="icon">
       <Source />
+    </svelte:fragment>
+    <svelte:fragment slot="label">
+      <span class="text-gray-500 text-sm font-medium">
+        {formatSourceType(currentSource.sourceType)}</span
+      >
     </svelte:fragment>
   </WorkspaceHeader>
 </div>

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
@@ -11,7 +10,10 @@
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../application-state-stores/application-store";
+  import {
+    ApplicationStore,
+    dataModelerService,
+  } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -29,13 +31,14 @@
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
   import ContextButton from "../column-profile/ContextButton.svelte";
-  import AddIcon from "../icons/Add.svelte";
+  import { WithTogglableFloatingElement } from "../floating-element";
+  import Add from "../icons/Add.svelte";
   import Cancel from "../icons/Cancel.svelte";
   import EditIcon from "../icons/EditIcon.svelte";
   import Explore from "../icons/Explore.svelte";
   import Model from "../icons/Model.svelte";
   import Source from "../icons/Source.svelte";
-  import { Divider, MenuItem } from "../menu";
+  import { Divider, Menu, MenuItem } from "../menu";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
@@ -54,14 +57,29 @@
 
   let showTables = true;
 
+  let showCreateSourceMenu = false;
+
   let showRenameTableModal = false;
   let renameTableID = null;
   let renameTableName = null;
+
+  const toggleCreateSourceMenu = () => {
+    showCreateSourceMenu = !showCreateSourceMenu;
+  };
 
   const openRenameTableModal = (tableID: string, tableName: string) => {
     showRenameTableModal = true;
     renameTableID = tableID;
     renameTableName = tableName;
+  };
+
+  const addSQLSource = async () => {
+    const response = await dataModelerService.dispatch("addSQLSource", []);
+    goto(`/source/${response.data.id}`);
+    // if the tables are not visible in the assets list, show them.
+    if (!showTables) {
+      showTables = true;
+    }
   };
 
   const queryHandler = async (tableName: string) => {
@@ -153,13 +171,40 @@
     </h4>
   </CollapsibleSectionTitle>
 
-  <ContextButton
-    id={"create-table-button"}
-    tooltipText="import csv or parquet file as a source"
-    on:click={uploadFilesWithDialog}
+  <WithTogglableFloatingElement
+    location="right"
+    alignment="start"
+    distance={16}
+    bind:active={showCreateSourceMenu}
   >
-    <AddIcon />
-  </ContextButton>
+    <ContextButton
+      id={"create-table-button"}
+      tooltipText="import csv or parquet file as a source"
+      on:click={toggleCreateSourceMenu}
+    >
+      <Add />
+    </ContextButton>
+    <Menu
+      dark
+      on:click-outside={toggleCreateSourceMenu}
+      on:escape={toggleCreateSourceMenu}
+      on:item-select={toggleCreateSourceMenu}
+      slot="floating-element"
+    >
+      <MenuItem icon on:select={uploadFilesWithDialog}>
+        <svelte:fragment slot="icon">
+          <Source />
+        </svelte:fragment>
+        select local file
+      </MenuItem>
+      <MenuItem icon on:select={addSQLSource}>
+        <svelte:fragment slot="icon">
+          <Model />
+        </svelte:fragment>
+        use DuckDB SQL</MenuItem
+      >
+    </Menu>
+  </WithTogglableFloatingElement>
 </div>
 {#if showTables}
   <div class="pb-6" transition:slide|local={{ duration: 200 }}>

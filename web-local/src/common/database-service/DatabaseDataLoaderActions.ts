@@ -1,8 +1,9 @@
-import { DatabaseActions } from "./DatabaseActions";
 import { existsSync, mkdirSync } from "fs";
-import type { DatabaseMetadata } from "./DatabaseMetadata";
-import { ActionResponseFactory } from "../data-modeler-service/response/ActionResponseFactory";
 import type { ActionResponse } from "../data-modeler-service/response/ActionResponse";
+import { ActionResponseFactory } from "../data-modeler-service/response/ActionResponseFactory";
+import { DatabaseActions } from "./DatabaseActions";
+import type { DatabaseMetadata } from "./DatabaseMetadata";
+import { generateSqlForCSVImport } from "./utils";
 
 /**
  * Abstraction around loading data into duck db.
@@ -64,14 +65,32 @@ export class DatabaseDataLoaderActions extends DatabaseActions {
     tableName: string,
     delimiter: string
   ): Promise<ActionResponse> {
-    return this.createTableWithQuery(
-      metadata,
-      tableName,
-      `SELECT * FROM 
-        read_csv_auto('${csvFile}', header=true ${
-        delimiter ? `,delim='${delimiter}'` : ""
-      })`
-    );
+    const sql = generateSqlForCSVImport(csvFile, delimiter);
+    return this.createTableWithQuery(metadata, tableName, sql);
+  }
+
+  public async createTableFromSql(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    sql: string
+  ): Promise<ActionResponse> {
+    try {
+      // split the sql into multiple statements by semicolon
+      const statements = sql.split(";");
+
+      // remove the last statement if it is empty
+      if (statements[statements.length - 1].trim() === "") {
+        statements.pop();
+      }
+
+      // execute each statement
+      for (const statement of statements) {
+        await this.databaseClient.execute(statement, true);
+      }
+      return ActionResponseFactory.getSuccessResponse();
+    } catch (error) {
+      return ActionResponseFactory.getImportTableError(error);
+    }
   }
 
   public async getDestinationSize(
