@@ -1,4 +1,4 @@
-SqlCreate SqlCreateMetric(Span s, boolean replace) :
+SqlCreate SqlCreateMetricsView(Span s, boolean replace) :
 {
     final SqlIdentifier id;
     final List<SqlNode> dimList;
@@ -14,6 +14,6 @@ SqlCreate SqlCreateMetric(Span s, boolean replace) :
     measureList = SelectList()
     <FROM> from = FromClause()
     {
-        return new SqlCreateMetric(s.end(this), id, new SqlNodeList(dimList, Span.of(dimList).pos()), new SqlNodeList(measureList, Span.of(measureList).pos()), from);
+        return new SqlCreateMetricsView(s.end(this), id, new SqlNodeList(dimList, Span.of(dimList).pos()), new SqlNodeList(measureList, Span.of(measureList).pos()), from);
     }
 }

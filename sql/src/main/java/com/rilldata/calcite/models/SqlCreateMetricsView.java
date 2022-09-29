@@ -1,4 +1,4 @@
-package com.rilldata.calcite.extensions;
+package com.rilldata.calcite.models;
 
 import com.rilldata.calcite.generated.ParseException;
 import com.rilldata.calcite.visitors.SimpleIdentifierExtractor;
@@ -48,7 +48,7 @@ import java.util.Objects;
  * FROM clicks;
  * </pre>
  */
-public class SqlCreateMetric extends SqlCreate
+public class SqlCreateMetricsView extends SqlCreate
 {
   public final SqlIdentifier name;
   public final SqlNodeList dimensions;
@@ -61,9 +61,9 @@ public class SqlCreateMetric extends SqlCreate
       new SqlSpecialOperator("CREATE METRICS VIEW", SqlKind.OTHER_DDL);
 
   /**
-   * Creates a SqlCreateMetric.
+   * Creates a SqlCreateMetricsView.
    */
-  public SqlCreateMetric(SqlParserPos pos, SqlIdentifier name, SqlNodeList dimensions, SqlNodeList measures,
+  public SqlCreateMetricsView(SqlParserPos pos, SqlIdentifier name, SqlNodeList dimensions, SqlNodeList measures,
       SqlNode from
   ) throws ParseException
   {
