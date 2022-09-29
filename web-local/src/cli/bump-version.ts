@@ -8,7 +8,7 @@ const BUMP_TYPES = {
   patch: 1,
 };
 const PACKAGE_JSON_FILE = "./package.json";
-const PACKAGE_LOCK_JSON_FILE = "./package-lock.json";
+
 const execSyncToStdout = (cmd) => execSync(cmd, { stdio: "inherit" });
 
 const bumpType = process.argv[2];
