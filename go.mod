@@ -11,7 +11,6 @@ require (
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd
-	github.com/rs/zerolog v1.27.0
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
@@ -40,13 +39,12 @@ require (
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
@@ -66,6 +64,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
+	github.com/lib/pq v1.10.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
@@ -88,6 +87,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
+	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -106,6 +106,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gotest.tools/v3 v3.1.0 // indirect
 	modernc.org/cc/v3 v3.32.4 // indirect
 	modernc.org/ccgo/v3 v3.9.2 // indirect
 	modernc.org/libc v1.9.5 // indirect
@@ -117,11 +118,10 @@ require (
 )
 
 require (
-	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2 v2.0.0-20220505152843-58a406687f2d
-	github.com/grpc-ecosystem/go-grpc-middleware/providers/zerolog/v2 v2.0.0-rc.2.0.20220505152843-58a406687f2d
+	github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.2.0.20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
 	github.com/jmoiron/sqlx v1.3.5

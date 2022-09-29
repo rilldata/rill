@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/rs/zerolog"
+	"go.uber.org/zap"
 
 	"github.com/rilldata/rill/runtime/infra"
 	"github.com/rilldata/rill/runtime/metadata"
@@ -17,12 +17,12 @@ import (
 // It supports scale-out when no local infra drivers are registered (i.e. not DuckDB).
 type Runtime struct {
 	db        metadata.DB
-	logger    zerolog.Logger
+	logger    *zap.Logger
 	instances map[string]*Instance // Note: temporary hack for local POC
 }
 
 // New creates a Runtime
-func New(db metadata.DB, logger zerolog.Logger) *Runtime {
+func New(db metadata.DB, logger *zap.Logger) *Runtime {
 	return &Runtime{
 		db:        db,
 		logger:    logger,

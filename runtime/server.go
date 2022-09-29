@@ -7,12 +7,12 @@ import (
 
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
-	grpczerolog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zerolog/v2"
+	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/rs/zerolog"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,10 +30,10 @@ type Server struct {
 	proto.UnimplementedRuntimeServiceServer
 	opts    *ServerOptions
 	runtime *Runtime
-	logger  zerolog.Logger
+	logger  *zap.Logger
 }
 
-func NewServer(opts *ServerOptions, runtime *Runtime, logger zerolog.Logger) *Server {
+func NewServer(opts *ServerOptions, runtime *Runtime, logger *zap.Logger) *Server {
 	return &Server{
 		opts:    opts,
 		runtime: runtime,
@@ -50,18 +50,18 @@ func (s *Server) Serve(ctx context.Context) error {
 			grpc.ChainStreamInterceptor(
 				tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
 				metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-				logging.StreamServerInterceptor(grpczerolog.InterceptorLogger(s.logger)),
+				logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
 				recovery.StreamServerInterceptor(),
 			),
 			grpc.ChainUnaryInterceptor(
 				tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 				metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-				logging.UnaryServerInterceptor(grpczerolog.InterceptorLogger(s.logger)),
+				logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
 				recovery.UnaryServerInterceptor(),
 			),
 		)
 		proto.RegisterRuntimeServiceServer(server, s)
-		s.logger.Info().Int("port", s.opts.GRPCPort).Msg("Serving gRPC")
+		s.logger.Info("serving gRPC", zap.Int("port", s.opts.GRPCPort))
 		return graceful.ServeGRPC(cctx, server, s.opts.GRPCPort)
 	})
 
@@ -75,7 +75,7 @@ func (s *Server) Serve(ctx context.Context) error {
 			return err
 		}
 		server := &http.Server{Handler: mux}
-		s.logger.Info().Int("port", s.opts.HTTPPort).Msg("Serving HTTP")
+		s.logger.Info("serving HTTP", zap.Int("port", s.opts.GRPCPort))
 		return graceful.ServeHTTP(cctx, server, s.opts.HTTPPort)
 	})
 

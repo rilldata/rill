@@ -5,70 +5,74 @@ import (
 	"fmt"
 	"os"
 
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rs/zerolog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metadata"
-	"github.com/rilldata/rill/runtime/pkg/graceful"
-	_ "github.com/rilldata/rill/runtime/sql"
-
+	_ "github.com/rilldata/rill/runtime/infra/druid"
 	_ "github.com/rilldata/rill/runtime/infra/duckdb"
+	"github.com/rilldata/rill/runtime/metadata"
 	_ "github.com/rilldata/rill/runtime/metadata/postgres"
 	_ "github.com/rilldata/rill/runtime/metadata/sqlite"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
+	_ "github.com/rilldata/rill/runtime/sql"
 )
 
 type Config struct {
-	Env            string `default:"development"`
-	LogLevel       string `default:"info" split_words:"true"`
-	DatabaseDriver string `default:"sqlite"`
-	DatabaseURL    string `default:":memory:" split_words:"true"`
-	GRPCPort       int    `default:"9090" split_words:"true"`
-	HTTPPort       int    `default:"8080" split_words:"true"`
+	Env            string        `default:"development"`
+	LogLevel       zapcore.Level `default:"info" split_words:"true"`
+	DatabaseDriver string        `default:"sqlite"`
+	DatabaseURL    string        `default:":memory:" split_words:"true"`
+	GRPCPort       int           `default:"9090" split_words:"true"`
+	HTTPPort       int           `default:"8080" split_words:"true"`
 }
 
 func main() {
+	// Load .env
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Printf("Failed to load .env: %s", err.Error())
+		os.Exit(1)
+	}
+
 	// Init config
 	var conf Config
-	err := envconfig.Process("rill_runtime", &conf)
+	err = envconfig.Process("rill_runtime", &conf)
 	if err != nil {
 		fmt.Printf("Failed to load config: %s", err.Error())
 		os.Exit(1)
 	}
 
 	// Init logger
-	level, err := zerolog.ParseLevel(conf.LogLevel)
-	if err != nil {
-		fmt.Printf("Error parsing log level: %s", err.Error())
-		os.Exit(1)
-	}
-	var logger zerolog.Logger
+	var logger *zap.Logger
 	if conf.Env == "production" {
-		logger = zerolog.New(os.Stderr).Level(level)
+		logger, err = zap.NewProduction(zap.IncreaseLevel(conf.LogLevel))
 	} else {
-		logger = zerolog.New(zerolog.NewConsoleWriter()).Level(level)
+		logger, err = zap.NewDevelopment(zap.IncreaseLevel(conf.LogLevel))
+	}
+	if err != nil {
+		fmt.Printf("Error creating logger: %s", err.Error())
+		os.Exit(1)
 	}
 
 	// Init db
-	driver, ok := metadata.Drivers[conf.DatabaseDriver]
-	if !ok {
-		logger.Fatal().Msgf("Unknown db driver '%s'", conf.DatabaseDriver)
-	}
-	db, err := driver.Open(conf.DatabaseURL)
+	db, err := metadata.Open(conf.DatabaseDriver, conf.DatabaseURL)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to connect to DB")
+		logger.Fatal("error connecting to database", zap.Error(err))
 	}
 
-	// Migrate db
-	// TODO: Move to separate command and only auto-migrate in development
+	// Auto-run migrations
 	err = db.Migrate(context.Background())
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to migrate DB")
+		logger.Fatal("error migrating database", zap.Error(err))
 	}
 
-	// Init runtime and server
+	// Init runtime
 	rt := runtime.New(db, logger)
+
+	// Init server
 	opts := &runtime.ServerOptions{
 		GRPCPort: conf.GRPCPort,
 		HTTPPort: conf.HTTPPort,
@@ -79,8 +83,8 @@ func main() {
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 	err = server.Serve(ctx)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Server failed")
+		logger.Error("server crashed", zap.Error(err))
 	}
 
-	logger.Info().Msg("Server shutdown gracefully")
+	logger.Info("server shutdown gracefully")
 }
