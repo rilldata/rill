@@ -38,8 +38,6 @@ writeFileSync(
     `"version": "${newVersion}",`
   )
 );
-// console.log("Regenerating `package-lock.json`");
-// execSyncToStdout(`npm install`);
 
 console.log(`Pushing to ${branch}`);
 execSyncToStdout(`git add ${PACKAGE_JSON_FILE}`);
