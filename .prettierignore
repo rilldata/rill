@@ -4,14 +4,17 @@
 .idea/
 build/
 build-tools/
+cli/
 dist/
 node_modules/
 runtime/
 scripts/
+server-cloud/
 state/
 static/
 temp/
 
+.env
 *.sql
 *.csv
 *.tsv
@@ -32,6 +35,8 @@ Dockerfile
 Duckdb-Dockerfile
 README.md
 docs
+*.json
+*.cjs
 
 # Java SQL lib
 sql/

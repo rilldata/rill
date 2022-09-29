@@ -41,6 +41,7 @@ jobs:
         - cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
 
       script:
+        - set -e
         - echo "Running npm install"
         - npm install
 
@@ -54,7 +55,7 @@ jobs:
         - npm run build
 
         - echo "Verify lint of the repo"
-        - npm run lint -- --quiet
+        - npm run lint -w web-local -- --quiet
 
         - echo "Run all tests"
         - npm run test
@@ -85,7 +86,7 @@ jobs:
         - mvn -f sql/ clean test
 
     # Publish docker image on the merge to main branch
-    - stage: Publish
+    - stage: Release
       name: "Build & Publish docker"
       if: tag IS present
 
@@ -117,6 +118,10 @@ jobs:
 
         - echo "Build the entire application"
         - npm run build
+
+      # The main npm package is within a folder
+      before_deploy:
+        - cd web-local
 
       # Deploy will run npm test
       deploy:
@@ -201,3 +206,25 @@ jobs:
       install: *npm-install
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
+
+    - stage: Tag
+      name: "Cut a new Release"
+      if: tag IS NOT present AND type IN (api)
+      install: *npm-install
+      addons:
+        snaps:
+        - name: gh
+          channel: latest/stable
+      script:
+        - set -e
+        - git remote remove origin
+        - git remote add origin https://${GITHUB_TOKEN}@github.com/rilldata/rill-developer
+        - git fetch
+        - git checkout main
+        - git branch --set-upstream-to=origin/main main
+        - gh pr status
+        - if [[ -z ${BUMP_TYPE} ]]; then
+            echo "Please specify the BUMP_TYPE from (major/minor/patch)";
+            exit 1;
+          fi
+        - npm run bump-version -w web-local -- ${BUMP_TYPE}

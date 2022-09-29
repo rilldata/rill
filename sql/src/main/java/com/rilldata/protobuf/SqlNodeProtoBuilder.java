@@ -2,6 +2,7 @@ package com.rilldata.protobuf;
 
 import com.rilldata.protobuf.generated.BasicSqlTypeProto;
 import com.rilldata.protobuf.generated.CoercibilityProto;
+import com.rilldata.protobuf.generated.IntervalSqlTypeProto;
 import com.rilldata.protobuf.generated.RelCrossTypeProto;
 import com.rilldata.protobuf.generated.RelDataTypeFieldImplProto;
 import com.rilldata.protobuf.generated.RelDataTypeFieldProto;
@@ -11,7 +12,9 @@ import com.rilldata.protobuf.generated.SerializableCharsetProto;
 import com.rilldata.protobuf.generated.SqlBasicCallProto;
 import com.rilldata.protobuf.generated.SqlCharStringLiteralProto;
 import com.rilldata.protobuf.generated.SqlCollationProto;
+import com.rilldata.protobuf.generated.SqlDateLiteralProto;
 import com.rilldata.protobuf.generated.SqlIdentifierProto;
+import com.rilldata.protobuf.generated.SqlIntervalQualifierProto;
 import com.rilldata.protobuf.generated.SqlJoinProto;
 import com.rilldata.protobuf.generated.SqlKindProto;
 import com.rilldata.protobuf.generated.SqlLiteralProto;
@@ -22,10 +25,14 @@ import com.rilldata.protobuf.generated.SqlOperatorProto;
 import com.rilldata.protobuf.generated.SqlOrderByProto;
 import com.rilldata.protobuf.generated.SqlParserPosProto;
 import com.rilldata.protobuf.generated.SqlSelectProto;
+import com.rilldata.protobuf.generated.SqlTimeLiteralProto;
+import com.rilldata.protobuf.generated.SqlTimestampLiteralProto;
 import com.rilldata.protobuf.generated.SqlTypeNameProto;
 import com.rilldata.protobuf.generated.SqlWithItemProto;
 import com.rilldata.protobuf.generated.SqlWithProto;
 import com.rilldata.protobuf.generated.StructKindProto;
+import com.rilldata.protobuf.generated.TimeUnitRangeProto;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rel.type.RelCrossType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -35,7 +42,9 @@ import org.apache.calcite.rel.type.StructKind;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlCollation;
+import org.apache.calcite.sql.SqlDateLiteral;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -45,10 +54,13 @@ import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlTimeLiteral;
+import org.apache.calcite.sql.SqlTimestampLiteral;
 import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
+import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 
@@ -59,7 +71,7 @@ import java.util.List;
 /**
  * Run `mvn package` to generate the protobuf builder classes in target/generated-sources/annotations folder
  * It uses script - protoc-java.sh
- * */
+ */
 public class SqlNodeProtoBuilder
 {
   private final SqlNode sqlNode;
@@ -90,7 +102,9 @@ public class SqlNodeProtoBuilder
     // handle select list
     sqlSelectBuilder.setSelectList(handleSqlNodeList(sqlSelect.getSelectList()));
     // handle from
-    sqlSelectBuilder.setFrom(handleSqlNode(sqlSelect.getFrom()));
+    if (sqlSelect.getFrom() != null) {
+      sqlSelectBuilder.setFrom(handleSqlNode(sqlSelect.getFrom()));
+    }
     // handle where clause
     if (sqlSelect.getWhere() != null) {
       sqlSelectBuilder.setWhere(handleSqlNode(sqlSelect.getWhere()));
@@ -241,6 +255,9 @@ public class SqlNodeProtoBuilder
           .build();
     } else if (relDataType instanceof RelCrossType) {
       return RelDataTypeProto.newBuilder().setRelCrossTypeProto(handleRelCrossType((RelCrossType) relDataType)).build();
+    } else if (relDataType instanceof IntervalSqlType) {
+      return RelDataTypeProto.newBuilder().setIntervalSqlTypeProto(handleIntervalSqlType((IntervalSqlType) relDataType))
+          .build();
     }
     return null;
   }
@@ -307,6 +324,22 @@ public class SqlNodeProtoBuilder
     relDataTypeFieldImplProtoBuilder.setIndex(relDataTypeFieldImpl.getIndex());
     relDataTypeFieldImplProtoBuilder.setType(handleRelDataType(relDataTypeFieldImpl.getType()));
     return relDataTypeFieldImplProtoBuilder.build();
+  }
+
+  private IntervalSqlTypeProto handleIntervalSqlType(IntervalSqlType intervalSqlType)
+  {
+    IntervalSqlTypeProto.Builder intervalSqlTypeBuilder = IntervalSqlTypeProto.newBuilder();
+    // TODO handle intervalSqlTypeBuilder.setTypeSystem()
+    intervalSqlTypeBuilder.setIntervalQualifier(handleSqlIntervalQualifier(intervalSqlType.getIntervalQualifier()));
+    intervalSqlTypeBuilder.setTypeName(handleSqlTypeName(intervalSqlType.getSqlTypeName()));
+    intervalSqlTypeBuilder.setIsNullable(intervalSqlType.isNullable());
+    if (intervalSqlType.getFieldList() != null) {
+      for (RelDataTypeField relDataTypeField : intervalSqlType.getFieldList()) {
+        intervalSqlTypeBuilder.addFieldList(handleRelDataTypeFieldProto(relDataTypeField));
+      }
+    }
+    intervalSqlTypeBuilder.setDigest(intervalSqlType.getFullTypeString());
+    return intervalSqlTypeBuilder.build();
   }
 
   private SqlCollationProto handleSqlCollation(SqlCollation sqlCollation)
@@ -377,6 +410,15 @@ public class SqlNodeProtoBuilder
     } else if (sqlLiteral instanceof SqlCharStringLiteral) {
       return sqlLiteralProtoBuilder.setSqlCharStringLiteralProto(
           handleSqlCharStringLiteral((SqlCharStringLiteral) sqlLiteral)).build();
+    } else if (sqlLiteral instanceof SqlTimestampLiteral) {
+      return sqlLiteralProtoBuilder.setSqlTimestampLiteralProto(
+          handleSqlTimestampLiteral((SqlTimestampLiteral) sqlLiteral)).build();
+    } else if (sqlLiteral instanceof SqlDateLiteral) {
+      return sqlLiteralProtoBuilder.setSqlDateLiteralProto(
+          handleSqlDateLiteral((SqlDateLiteral) sqlLiteral)).build();
+    } else if (sqlLiteral instanceof SqlTimeLiteral) {
+      return sqlLiteralProtoBuilder.setSqlTimeLiteralProto(
+          handleSqlTimeLiteral((SqlTimeLiteral) sqlLiteral)).build();
     }
     sqlLiteralProtoBuilder.setValue(sqlLiteral.toValue());
     SqlTypeNameProto typeNameProto = handleSqlTypeName(sqlLiteral.getTypeName());
@@ -428,6 +470,63 @@ public class SqlNodeProtoBuilder
     }
   }
 
+  private SqlTimestampLiteralProto handleSqlTimestampLiteral(SqlTimestampLiteral sqlTimestampLiteral)
+  {
+    SqlTimestampLiteralProto.Builder sqlTimestampLiteralProtoBuilder = SqlTimestampLiteralProto.newBuilder();
+    sqlTimestampLiteralProtoBuilder.setPos(handleParserPos(sqlTimestampLiteral.getParserPosition()));
+    // TODO sqlTimestampLiteralProtoBuilder.setHasTimeZone() hasTimeZone is not visible
+    sqlTimestampLiteralProtoBuilder.setPrecision(sqlTimestampLiteral.getPrec());
+    sqlTimestampLiteralProtoBuilder.setTypeName(handleSqlTypeName(sqlTimestampLiteral.getTypeName()));
+    sqlTimestampLiteralProtoBuilder.setValue(sqlTimestampLiteral.getValue().toString());
+    RelDataType relDataType =
+        sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlTimestampLiteral) : null;
+    if (relDataType != null) {
+      sqlTimestampLiteralProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlTimestampLiteralProtoBuilder.build();
+  }
+
+  private SqlTimeLiteralProto handleSqlTimeLiteral(SqlTimeLiteral sqlTimeLiteral)
+  {
+    SqlTimeLiteralProto.Builder sqlTimeLiteralProtoBuilder = SqlTimeLiteralProto.newBuilder();
+    sqlTimeLiteralProtoBuilder.setPos(handleParserPos(sqlTimeLiteral.getParserPosition()));
+    sqlTimeLiteralProtoBuilder.setPrecision(sqlTimeLiteral.getPrec());
+    sqlTimeLiteralProtoBuilder.setTypeName(handleSqlTypeName(sqlTimeLiteral.getTypeName()));
+    sqlTimeLiteralProtoBuilder.setValue(sqlTimeLiteral.getValueAs(String.class));
+    RelDataType relDataType =
+        sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlTimeLiteral) : null;
+    if (relDataType != null) {
+      sqlTimeLiteralProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlTimeLiteralProtoBuilder.build();
+  }
+
+  private SqlDateLiteralProto handleSqlDateLiteral(SqlDateLiteral sqlDateLiteral)
+  {
+    SqlDateLiteralProto.Builder sqlDateLiteralProtoBuilder = SqlDateLiteralProto.newBuilder();
+    sqlDateLiteralProtoBuilder.setPos(handleParserPos(sqlDateLiteral.getParserPosition()));
+    sqlDateLiteralProtoBuilder.setPrecision(sqlDateLiteral.getPrec());
+    sqlDateLiteralProtoBuilder.setTypeName(handleSqlTypeName(sqlDateLiteral.getTypeName()));
+    sqlDateLiteralProtoBuilder.setValue(sqlDateLiteral.getValueAs(String.class));
+    RelDataType relDataType =
+        sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlDateLiteral) : null;
+    if (relDataType != null) {
+      sqlDateLiteralProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlDateLiteralProtoBuilder.build();
+  }
+
+  private SqlIntervalQualifierProto handleSqlIntervalQualifier(SqlIntervalQualifier sqlIntervalQualifier)
+  {
+    SqlIntervalQualifierProto.Builder sqlIntervalQualifierProtoBuilder = SqlIntervalQualifierProto.newBuilder();
+    sqlIntervalQualifierProtoBuilder.setPos(handleParserPos(sqlIntervalQualifier.getParserPosition()));
+    sqlIntervalQualifierProtoBuilder.setStartPrecision(sqlIntervalQualifier.getStartPrecisionPreservingDefault());
+    sqlIntervalQualifierProtoBuilder.setFractionalSecondPrecision(
+        sqlIntervalQualifier.getFractionalSecondPrecisionPreservingDefault());
+    sqlIntervalQualifierProtoBuilder.setTimeUnitRange(handleTimeUnitRange(sqlIntervalQualifier.timeUnitRange));
+    return sqlIntervalQualifierProtoBuilder.build();
+  }
+
   private SqlTypeNameProto handleSqlTypeName(SqlTypeName sqlTypeName)
   {
     return SqlTypeNameProto.valueOf(sqlTypeName.getClass().getSimpleName() + "Proto_" + sqlTypeName.name() + "_");
@@ -446,6 +545,11 @@ public class SqlNodeProtoBuilder
   private StructKindProto handleStructKind(StructKind structKind)
   {
     return StructKindProto.valueOf(structKind.getClass().getSimpleName() + "Proto_" + structKind.name() + "_");
+  }
+
+  private TimeUnitRangeProto handleTimeUnitRange(TimeUnitRange timeUnitRange)
+  {
+    return TimeUnitRangeProto.valueOf(timeUnitRange.getClass().getSimpleName() + "Proto_" + timeUnitRange.name() + "_");
   }
 
   private SqlParserPosProto handleParserPos(SqlParserPos pos)
@@ -474,6 +578,9 @@ public class SqlNodeProtoBuilder
       return SqlNodeProto.newBuilder().setSqlWithItemProto(handleSqlWithItem((SqlWithItem) sqlNode)).build();
     } else if (sqlNode instanceof SqlJoin) {
       return SqlNodeProto.newBuilder().setSqlJoinProto(handleSqlJoin((SqlJoin) sqlNode)).build();
+    } else if (sqlNode instanceof SqlIntervalQualifier) {
+      return SqlNodeProto.newBuilder()
+          .setSqlIntervalQualifierProto(handleSqlIntervalQualifier((SqlIntervalQualifier) sqlNode)).build();
     } else {
       return null;
     }

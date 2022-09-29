@@ -1,6 +1,7 @@
 package com.rilldata;
 
 import com.rilldata.calcite.CalciteToolbox;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 
 import javax.sql.DataSource;
@@ -13,20 +14,17 @@ public class SqlConverter
 
   public SqlConverter(String schema) throws SQLException
   {
-    calciteToolbox = new CalciteToolbox(new StaticSchemaProvider(schema),
-                                        PostgresqlSqlDialect.DEFAULT,
-                                        null
-    );
+    calciteToolbox = new CalciteToolbox(new StaticSchemaProvider(schema), null);
   }
 
   public void initialize(String ddl) throws SQLException
   {
   }
 
-  public String convert(String sql)
+  public String convert(String sql, SqlDialect sqlDialect)
   {
     try {
-      return calciteToolbox.getRunnableQuery(sql);
+      return calciteToolbox.getRunnableQuery(sql, sqlDialect);
     }
     catch (Exception e) {
       e.printStackTrace(); // todo level-logging for native libraries?
