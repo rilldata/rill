@@ -1,9 +1,9 @@
 on:
   push:
-    - paths:
+    paths:
       - "**.go"
   pull_request:
-    - paths:
+    paths:
       - "**.go"
 name: Test Go code
 jobs:
