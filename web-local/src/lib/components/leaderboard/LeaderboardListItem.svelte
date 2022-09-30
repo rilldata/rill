@@ -33,14 +33,7 @@
   on:focus={onHover}
   on:blur={onLeave}
   on:click
-  class="
-        block
-        flex 
-        flex-row
-        w-full
-        text-left
-        
-        transition-color"
+  class="block flex flex-row w-full text-left transition-color"
 >
   <div style:width="22px" style:height="22px" class="grid place-items-center">
     {#if isActive && !excluded}

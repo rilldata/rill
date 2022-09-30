@@ -35,7 +35,6 @@
     style:height="32px"
     style:flex="1"
     style:grid-template-columns="auto max-content"
-    class:font-semibold={!atLeastOneActive}
     class="
         pr-2
         grid justify-between items-center
@@ -45,10 +44,11 @@
         rounded-t
         bg-white
         text-gray-600
+        font-semibold
     "
     on:click
   >
-    <div class:text-gray-500={atLeastOneActive} class:italic={atLeastOneActive}>
+    <div>
       <Tooltip location="top" distance={16}>
         <div class="pl-2">{displayName}</div>
         <TooltipContent slot="tooltip-content">

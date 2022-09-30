@@ -187,7 +187,6 @@
 {#if topListQuery}
   <div
     style:width="315px"
-    style:margin="8px"
     on:mouseenter={() => {
       hovered = true;
     }}
