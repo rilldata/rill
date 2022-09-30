@@ -35,11 +35,15 @@
     createDerivedTableStore,
     createPersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+
+  import AssetsSidebar from "@rilldata/web-local/lib/components/assets/index.svelte";
   import HideLeftSidebar from "@rilldata/web-local/lib/components/icons/HideLeftSidebar.svelte";
   import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
   import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
   import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
+  import InspectorSidebar from "@rilldata/web-local/lib/components/inspector/index.svelte";
   import DuplicateSource from "@rilldata/web-local/lib/components/modal/DuplicateSource.svelte";
+  import notificationStore from "@rilldata/web-local/lib/components/notifications/";
   import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
   import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";
@@ -59,9 +63,6 @@
   import { getContext, onMount, setContext } from "svelte";
   import "../app.css";
   import "../fonts.css";
-  import AssetsSidebar from "@rilldata/web-local/lib/components/assets/index.svelte";
-  import InspectorSidebar from "@rilldata/web-local/lib/components/inspector/index.svelte";
-  import notificationStore from "@rilldata/web-local/lib/components/notifications/";
 
   let store;
   let queryHighlight = createQueryHighlightStore();
@@ -163,6 +164,9 @@
     let types = event.dataTransfer.types;
     return types && types.indexOf("Files") != -1;
   }
+
+  $: console.log($page.status);
+  $: hasNoError = $page.status < 400 ? 1 : 0;
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -221,12 +225,12 @@
         </SurfaceControlButton>
 
         <!-- inspector pane hide -->
-        {#if hasInspector}
+        {#if hasInspector && hasNoError}
           <SurfaceControlButton
             show={true}
             right="{($layout.inspectorWidth - 12 - 24) *
-              (1 - $inspectorVisibilityTween) +
-              12 * $inspectorVisibilityTween}px"
+              (1 - $inspectorVisibilityTween * hasNoError) +
+              12 * $inspectorVisibilityTween * hasNoError}px"
             on:click={() => {
               inspectorVisible.set(!$inspectorVisible);
             }}
@@ -258,10 +262,11 @@
           style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
           style:padding-right="{$inspectorVisibilityTween *
             SIDE_PAD *
+            hasNoError *
             (hasInspector ? 1 : 0)}px"
           style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
           style:top="0px"
-          style:right="{hasInspector
+          style:right="{hasInspector && hasNoError
             ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
             : 0}px"
         >
@@ -273,7 +278,7 @@
             on MetricsExplorer for now.
           Once we refactor how layout routing works, we will have a better solution to this.
       -->
-        {#if hasInspector}
+        {#if hasInspector && hasNoError}
           <div
             class="fixed"
             aria-hidden={!$inspectorVisible}
