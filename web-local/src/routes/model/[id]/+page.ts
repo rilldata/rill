@@ -8,8 +8,6 @@ import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  // TODO: Check to see if the modelId exists server-side
-
   const modelExists = await entityExists(
     dataModelerStateService.getEntityStateService(
       EntityType.Model,
