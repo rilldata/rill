@@ -10,7 +10,6 @@
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-local/lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-local/lib/components/tooltip/TooltipTitle.svelte";
-  import { slideRight } from "../../transitions";
 
   export let atLeastOneActive: boolean;
   export let displayName: string;
@@ -25,12 +24,20 @@
   $: otherFilterKey = filterKey === "include" ? "include" : "exclude";
 </script>
 
-<button
-  style:height="32px"
-  style:grid-template-columns="auto max-content"
-  class:font-semibold={!atLeastOneActive}
-  class="
-        pl-2 pr-2
+<div class="flex flex-row  items-center">
+  <div style:width="22px" style:height="22px" class="grid place-items-center">
+    {#if isFetching}
+      <Spinner size="16px" status={EntityStatus.Running} />
+    {/if}
+  </div>
+
+  <button
+    style:height="32px"
+    style:flex="1"
+    style:grid-template-columns="auto max-content"
+    class:font-semibold={!atLeastOneActive}
+    class="
+        pr-2
         grid justify-between items-center
         w-full
         border-b
@@ -39,60 +46,54 @@
         bg-white
         text-gray-600
     "
-  on:click
->
-  <div class:text-gray-500={atLeastOneActive} class:italic={atLeastOneActive}>
-    <Tooltip location="top" distance={16}>
-      <div class="flex flex-row gap-x-2 items-center">
-        {#if isFetching}
-          <div transition:slideRight|local={{ leftOffset: 8 }}>
-            <Spinner size="16px" status={EntityStatus.Running} />
-          </div>
-        {/if}
-        {displayName}
-      </div>
-      <TooltipContent slot="tooltip-content">
-        <TooltipTitle>
-          <svelte:fragment slot="name">
-            {displayName}
-          </svelte:fragment>
-          <svelte:fragment slot="description" />
-        </TooltipTitle>
-        <TooltipShortcutContainer>
-          <div>
-            {#if dimensionDescription}
-              {dimensionDescription}
-            {:else}
-              the leaderboard metrics for {displayName}
-            {/if}
-          </div>
-          <Shortcut />
-          <div>Expand leaderboard</div>
-          <Shortcut>Click</Shortcut>
-        </TooltipShortcutContainer>
-      </TooltipContent>
-    </Tooltip>
-  </div>
-  <div>
-    {#if hovered}
+    on:click
+  >
+    <div class:text-gray-500={atLeastOneActive} class:italic={atLeastOneActive}>
       <Tooltip location="top" distance={16}>
-        <div on:click|stopPropagation={toggleFilterExcludeMode}>
-          {#if filterExcludeMode}<FilterRemove
-              size="16px"
-            />{:else}<FilterInclude size="16px" />{/if}
-        </div>
+        <div class="pl-2">{displayName}</div>
         <TooltipContent slot="tooltip-content">
           <TooltipTitle>
             <svelte:fragment slot="name">
-              filter {filterKey} mode
+              {displayName}
             </svelte:fragment>
+            <svelte:fragment slot="description" />
           </TooltipTitle>
           <TooltipShortcutContainer>
-            <div>toggle {otherFilterKey} mode</div>
+            <div>
+              {#if dimensionDescription}
+                {dimensionDescription}
+              {:else}
+                the leaderboard metrics for {displayName}
+              {/if}
+            </div>
+            <Shortcut />
+            <div>Expand leaderboard</div>
             <Shortcut>Click</Shortcut>
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
-    {/if}
-  </div>
-</button>
+    </div>
+    <div>
+      {#if hovered}
+        <Tooltip location="top" distance={16}>
+          <div on:click|stopPropagation={toggleFilterExcludeMode}>
+            {#if filterExcludeMode}<FilterRemove
+                size="16px"
+              />{:else}<FilterInclude size="16px" />{/if}
+          </div>
+          <TooltipContent slot="tooltip-content">
+            <TooltipTitle>
+              <svelte:fragment slot="name">
+                filter {filterKey} mode
+              </svelte:fragment>
+            </TooltipTitle>
+            <TooltipShortcutContainer>
+              <div>toggle {otherFilterKey} mode</div>
+              <Shortcut>Click</Shortcut>
+            </TooltipShortcutContainer>
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+    </div>
+  </button>
+</div>
