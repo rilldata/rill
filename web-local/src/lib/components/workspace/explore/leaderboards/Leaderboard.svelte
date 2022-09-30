@@ -71,10 +71,8 @@
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
     metricsExplorer?.dimensionFilterExcludeMode.get(dimensionId) ?? false;
-  let filterKey: string;
+  let filterKey: "exclude" | "include";
   $: filterKey = filterExcludeMode ? "exclude" : "include";
-  let otherFilterKey: string;
-  $: otherFilterKey = filterExcludeMode ? "include" : "exclude";
 
   $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
@@ -205,68 +203,16 @@
     }}
   >
     <LeaderboardHeader
-      isActive={atLeastOneActive}
+      {atLeastOneActive}
+      isFetching={$topListQuery.isFetching}
+      {displayName}
+      {toggleFilterExcludeMode}
+      {filterExcludeMode}
+      {filterKey}
+      {hovered}
+      dimensionDescription={dimension?.description}
       on:click={() => selectDimension(dimensionId)}
-    >
-      <div
-        slot="title"
-        class:text-gray-500={atLeastOneActive}
-        class:italic={atLeastOneActive}
-      >
-        <Tooltip location="top" distance={16}>
-          <div class="flex flex-row gap-x-2 items-center">
-            {#if $topListQuery?.isFetching}
-              <div transition:slideRight|local={{ leftOffset: 8 }}>
-                <Spinner size="16px" status={EntityStatus.Running} />
-              </div>
-            {/if}
-            {displayName}
-          </div>
-          <TooltipContent slot="tooltip-content">
-            <TooltipTitle>
-              <svelte:fragment slot="name">
-                {displayName}
-              </svelte:fragment>
-              <svelte:fragment slot="description" />
-            </TooltipTitle>
-            <TooltipShortcutContainer>
-              <div>
-                {#if dimension?.description}
-                  {dimension.description}
-                {:else}
-                  the leaderboard metrics for {displayName}
-                {/if}
-              </div>
-              <Shortcut />
-              <div>Expand leaderboard</div>
-              <Shortcut>Click</Shortcut>
-            </TooltipShortcutContainer>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-      <div slot="right">
-        {#if hovered}
-          <Tooltip location="top" distance={16}>
-            <div on:click|stopPropagation={toggleFilterExcludeMode}>
-              {#if filterExcludeMode}<FilterRemove
-                  size="16px"
-                />{:else}<FilterInclude size="16px" />{/if}
-            </div>
-            <TooltipContent slot="tooltip-content">
-              <TooltipTitle>
-                <svelte:fragment slot="name">
-                  filter {filterKey} mode
-                </svelte:fragment>
-              </TooltipTitle>
-              <TooltipShortcutContainer>
-                <div>toggle {otherFilterKey} mode</div>
-                <Shortcut>Click</Shortcut>
-              </TooltipShortcutContainer>
-            </TooltipContent>
-          </Tooltip>
-        {/if}
-      </div>
-    </LeaderboardHeader>
+    />
 
     {#if values}
       <LeaderboardList>
