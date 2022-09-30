@@ -62,7 +62,7 @@
           <slot name="title" />
         </div>
       </div>
-      <div class="justify-self-end">
+      <div class="justify-self-end  overflow-hidden">
         <slot name="right" />
       </div>
     </div>
