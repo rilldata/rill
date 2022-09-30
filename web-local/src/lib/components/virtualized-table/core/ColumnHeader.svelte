@@ -100,7 +100,7 @@
           class="text-ellipsis
           {columnFontWeight}
           {isDimensionTable
-            ? 'text-center break-words line-clamp-2'
+            ? 'text-left break-words line-clamp-2'
             : 'overflow-hidden whitespace-nowrap'}
           "
         >
@@ -127,17 +127,17 @@
         </TooltipShortcutContainer>
       </TooltipContent>
     </Tooltip>
-    {#if isSelected}
-      {#if isSortingDesc}
-        <div in:fly={{ duration: 200, y: -8 }}>
-          <ArrowDown size="16px" />
-        </div>
-      {:else}
-        <div in:fly={{ duration: 200, y: 8 }}>
-          <ArrowDown transform="scale(1 -1)" size="16px" />
-        </div>
-      {/if}
+
+    {#if isSortingDesc}
+      <div in:fly={{ duration: 200, y: -8 }} style:opacity={isSelected ? 1 : 0}>
+        <ArrowDown size="16px" />
+      </div>
+    {:else}
+      <div in:fly={{ duration: 200, y: 8 }} style:opacity={isSelected ? 1 : 0}>
+        <ArrowDown transform="scale(1 -1)" size="16px" />
+      </div>
     {/if}
+
     {#if !noPin && showMore}
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
