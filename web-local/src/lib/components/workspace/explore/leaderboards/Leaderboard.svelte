@@ -41,7 +41,7 @@
   } from "../../../../util/humanize-numbers";
   import { createEventDispatcher, getContext } from "svelte";
   import { getDisplayName } from "../utils";
-  import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+  import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
@@ -68,13 +68,13 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  let filterMode: boolean;
-  $: filterMode =
-    metricsExplorer?.dimensionFilterMode.get(dimensionId) ?? false;
+  let filterExcludeMode: boolean;
+  $: filterExcludeMode =
+    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionId) ?? false;
   let filterKey: string;
-  $: filterKey = filterMode ? "exclude" : "include";
+  $: filterKey = filterExcludeMode ? "exclude" : "include";
   let otherFilterKey: string;
-  $: otherFilterKey = filterMode ? "include" : "exclude";
+  $: otherFilterKey = filterExcludeMode ? "include" : "exclude";
 
   $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
@@ -110,8 +110,8 @@
     });
   }
 
-  function toggleFilterMode() {
-    metricsExplorerStore.toggleFilterMode(metricsDefId, dimensionId);
+  function toggleFilterExcludeMode() {
+    metricsExplorerStore.toggleFilterExcludeMode(metricsDefId, dimensionId);
   }
 
   function selectDimension(dimensionId) {
@@ -247,10 +247,10 @@
       <div slot="right">
         {#if hovered}
           <Tooltip location="top" distance={16}>
-            <div on:click|stopPropagation={toggleFilterMode}>
-              {#if filterMode}<FilterRemove size="16px" />{:else}<FilterInclude
+            <div on:click|stopPropagation={toggleFilterExcludeMode}>
+              {#if filterExcludeMode}<FilterRemove
                   size="16px"
-                />{/if}
+                />{:else}<FilterInclude size="16px" />{/if}
             </div>
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
@@ -271,11 +271,11 @@
     {#if values}
       <LeaderboardList>
         <!-- place the leaderboard entries that are above the fold here -->
-        <LeaderboardEntrySet
+        <DimensionLeaderboardEntrySet
           loading={$topListQuery?.isFetching}
           values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
           {activeValues}
-          {filterMode}
+          {filterExcludeMode}
           {atLeastOneActive}
           {referenceValue}
           {isSummableMeasure}
@@ -284,11 +284,11 @@
         <!-- place the selected values that are not above the fold here -->
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
-          <LeaderboardEntrySet
+          <DimensionLeaderboardEntrySet
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
             {activeValues}
-            {filterMode}
+            {filterExcludeMode}
             {atLeastOneActive}
             {referenceValue}
             {isSummableMeasure}

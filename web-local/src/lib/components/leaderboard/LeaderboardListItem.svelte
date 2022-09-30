@@ -1,9 +1,14 @@
 <script lang="ts">
   import BarAndLabel from "../viz/BarAndLabel.svelte";
   import { fly, slide } from "svelte/transition";
+  import Spacer from "../icons/Spacer.svelte";
+  import Check from "../icons/Check.svelte";
+  import Cancel from "../icons/Cancel.svelte";
   export let value: number; // should be between 0 and 1.
   export let color = "bg-blue-200";
   export let isActive = false;
+  export let excluded = false;
+
   let hovered = false;
   const onHover = () => {
     hovered = true;
@@ -30,11 +35,22 @@
   on:click
   class="
         block
+        flex 
+        flex-row
         w-full
         text-left
         hover:bg-gray-100
         transition-color"
 >
+  <div style:width="22px" style:height="22px" class="grid place-items-center">
+    {#if isActive && !excluded}
+      <Check size="20px" />
+    {:else if isActive && excluded}
+      <Cancel size="20px" />
+    {:else}
+      <Spacer />
+    {/if}
+  </div>
   <BarAndLabel
     {color}
     {value}
@@ -49,11 +65,11 @@
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
-        <div class:font-bold={isActive}>
+        <div class:font-italic={isActive}>
           <slot name="title" />
         </div>
       </div>
-      <div class="justify-self-end" class:font-bold={isActive}>
+      <div class="justify-self-end">
         <slot name="right" />
       </div>
     </div>

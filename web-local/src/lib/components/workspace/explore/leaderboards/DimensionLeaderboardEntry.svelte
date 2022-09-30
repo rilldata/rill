@@ -18,6 +18,8 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
+  export let excluded = false;
+
   /** if this is a summable measure and there's a reference value, show measureValue / referenceValue.
    * This value is between 0-1 (in theroy!). If it is > 1, the BarAndLabel component shows teeth expressing
    * the value is > 100% of the reference.
@@ -38,8 +40,9 @@
   <LeaderboardListItem
     value={renderedBarValue}
     isActive={active}
+    {excluded}
     on:click
-    color={active ? "bg-blue-200" : "bg-gray-200"}
+    color={excluded ? "bg-gray-200" : "bg-blue-200"}
   >
     <!--
       title element
@@ -52,8 +55,9 @@
      -->
     <div
       class:text-gray-700={!atLeastOneActive && !loading}
-      class:text-gray-500={(atLeastOneActive && !active) || loading}
-      class:italic={atLeastOneActive && !active}
+      class:text-gray-500={excluded}
+      class:italic={excluded}
+      style:font-weight={excluded ? "normal" : "600"}
       class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
       slot="title"
     >
@@ -63,8 +67,9 @@
     <div class="leaderboard-list-item-right" slot="right">
       <!-- {#if !(atLeastOneActive && !active)} -->
       <div
-        class:text-gray-500={(!active && atLeastOneActive) || loading}
-        class:italic={!active && atLeastOneActive}
+        class:text-gray-500={excluded}
+        class:italic={excluded}
+        style:font-weight={excluded ? "normal" : "600"}
         in:fly={{ duration: 200, y: 4 }}
       >
         <slot name="right" />

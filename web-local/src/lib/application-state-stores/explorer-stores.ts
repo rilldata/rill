@@ -28,7 +28,7 @@ export interface MetricsExplorerEntity {
   filters: MetricsViewRequestFilter;
   // stores whether a dimension is in include/exclude filter mode
   // false/absence = include, true = exclude
-  dimensionFilterMode: Map<string, boolean>;
+  dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
   // user selected dimension
@@ -89,7 +89,7 @@ const metricViewReducers = {
           include: [],
           exclude: [],
         },
-        dimensionFilterMode: new Map(),
+        dimensionFilterExcludeMode: new Map(),
       })
     );
   },
@@ -120,7 +120,7 @@ const metricViewReducers = {
 
   toggleFilter(id: string, dimensionId: string, dimensionValue: string) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      const relevantFilterKey = metricsExplorer.dimensionFilterMode.get(
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
         dimensionId
       )
         ? "exclude"
@@ -165,10 +165,11 @@ const metricViewReducers = {
   /**
    * Toggle a dimension filter between include/exclude modes
    */
-  toggleFilterMode(id: string, dimensionId: string) {
+  toggleFilterExcludeMode(id: string, dimensionId: string) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      const exclude = metricsExplorer.dimensionFilterMode.get(dimensionId);
-      metricsExplorer.dimensionFilterMode.set(dimensionId, !exclude);
+      const exclude =
+        metricsExplorer.dimensionFilterExcludeMode.get(dimensionId);
+      metricsExplorer.dimensionFilterExcludeMode.set(dimensionId, !exclude);
 
       const relevantFilterKey = exclude ? "exclude" : "include";
       const otherFilterKey = exclude ? "include" : "exclude";
@@ -195,7 +196,7 @@ const metricViewReducers = {
     updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.filters.include = [];
       metricsExplorer.filters.exclude = [];
-      metricsExplorer.dimensionFilterMode.clear();
+      metricsExplorer.dimensionFilterExcludeMode.clear();
     });
   },
 
