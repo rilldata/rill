@@ -79,15 +79,15 @@
            justify-stretch
            select-none
            over
-           gap-x-2
+           {isDimensionTable ? 'gap-x-1' : 'gap-x-2'}
            "
   >
     <Tooltip location="top" alignment="middle" distance={16}>
       <div
         class="
         grid
-        items-center cursor-pointer
-        {isSelected ? '' : 'w-full gap-x-2'}
+        items-center cursor-pointer w-full
+        {isSelected ? '' : 'gap-x-2'}
         "
         style:grid-template-columns={isDimensionTable
           ? ""
@@ -97,8 +97,11 @@
           <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         {/if}
         <span
-          class="text-ellipsis overflow-hidden whitespace-nowrap
-          {columnFontWeight} {isDimensionTable ? 'text-center' : ''}
+          class="text-ellipsis
+          {columnFontWeight}
+          {isDimensionTable
+            ? 'text-left break-words line-clamp-2'
+            : 'overflow-hidden whitespace-nowrap'}
           "
         >
           {name}
@@ -124,17 +127,17 @@
         </TooltipShortcutContainer>
       </TooltipContent>
     </Tooltip>
-    {#if isSelected}
-      {#if isSortingDesc}
-        <div in:fly={{ duration: 200, y: -8 }}>
-          <ArrowDown size="16px" />
-        </div>
-      {:else}
-        <div in:fly={{ duration: 200, y: 8 }}>
-          <ArrowDown transform="scale(1 -1)" size="16px" />
-        </div>
-      {/if}
+
+    {#if isSortingDesc}
+      <div in:fly={{ duration: 200, y: -8 }} style:opacity={isSelected ? 1 : 0}>
+        <ArrowDown size="16px" />
+      </div>
+    {:else}
+      <div in:fly={{ duration: 200, y: 8 }} style:opacity={isSelected ? 1 : 0}>
+        <ArrowDown transform="scale(1 -1)" size="16px" />
+      </div>
     {/if}
+
     {#if !noPin && showMore}
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
