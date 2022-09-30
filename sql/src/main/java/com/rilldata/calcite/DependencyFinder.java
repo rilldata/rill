@@ -48,13 +48,11 @@ public class DependencyFinder extends SqlBasicVisitor<List<String>>
   @Override
   public List<String> visit(SqlCall node)
   {
-//      for (SqlNode node : s) {
     if (node instanceof SqlCreateView create) {
       visit(create.query);
     } else if (node instanceof SqlCreateTable create) {
       visit(create.query);
     }
-//      }
     return dependencies;
   }
 }
