@@ -8,10 +8,7 @@
    * in the application itself.
    */
   import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import FilterInclude from "@rilldata/web-local/lib/components/icons/FilterInclude.svelte";
-  import FilterRemove from "@rilldata/web-local/lib/components/icons/FilterRemove.svelte";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -20,12 +17,8 @@
   import LeaderboardHeader from "../../../leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
-  import Spinner from "../../../Spinner.svelte";
-  import Shortcut from "../../../tooltip/Shortcut.svelte";
   import Tooltip from "../../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
   import {
     useMetaDimension,
     useMetaMappedFilters,
@@ -33,7 +26,6 @@
     useMetaQuery,
   } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
-  import { slideRight } from "../../../../transitions";
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
