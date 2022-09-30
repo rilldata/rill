@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
+  import { createShiftClickAction } from "../../../util/shift-click-action";
   import { DataTypeIcon } from "../../data-types";
   import ArrowDown from "../../icons/ArrowDown.svelte";
   import Pin from "../../icons/Pin.svelte";
@@ -11,7 +12,6 @@
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
-  import { createShiftClickAction } from "../../../util/shift-click-action";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -97,7 +97,6 @@
           <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         {/if}
         <span
-          in:fly={{ y: 200, duration: 200 }}
           class="text-ellipsis overflow-hidden whitespace-nowrap
           {columnFontWeight} {isDimensionTable ? 'text-center' : ''}
           "
