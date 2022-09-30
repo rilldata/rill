@@ -165,7 +165,9 @@
     return types && types.indexOf("Files") != -1;
   }
 
-  $: console.log($page.status);
+  /** workaround for hiding inspector when there's a page error.
+   * We should refactor this inspector to work with a named slot instead of this current approach.
+   */
   $: hasNoError = $page.status < 400 ? 1 : 0;
 </script>
 
