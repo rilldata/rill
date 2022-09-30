@@ -16,7 +16,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import LeaderboardContainer from "../../../leaderboard/LeaderboardContainer.svelte";
+
   import LeaderboardHeader from "../../../leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
@@ -193,8 +193,9 @@
 </script>
 
 {#if topListQuery}
-  <LeaderboardContainer
-    focused={atLeastOneActive}
+  <div
+    style:width="315px"
+    style:margin="8px"
     on:mouseenter={() => {
       hovered = true;
     }}
@@ -268,5 +269,5 @@
         {/if}
       </LeaderboardList>
     {/if}
-  </LeaderboardContainer>
+  </div>
 {/if}
