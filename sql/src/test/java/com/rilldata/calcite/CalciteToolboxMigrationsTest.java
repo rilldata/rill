@@ -9,10 +9,26 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
 
-public class CalciteToolboxTest
+public class CalciteToolboxMigrationsTest
 {
   @Test
-  public void testMigrations() throws SqlParseException, JsonProcessingException
+  public void testNoChange() throws SqlParseException, JsonProcessingException
+  {
+    List<MigrationStep> migrationSteps = CalciteToolbox.inferMigrations("create view a as select 1", """
+          {
+            "entities": [
+              {
+                "name": "A",
+                "ddl": "create view a as select 1"
+              }
+            ]
+          }
+          """, PostgresqlSqlDialect.DEFAULT);
+    assertThat(migrationSteps).isEmpty();
+  }
+
+  @Test
+  public void testSingleEntityMigration() throws SqlParseException, JsonProcessingException
   {
     List<MigrationStep> migrationSteps = CalciteToolbox.inferMigrations("create view a as select 1", """
           {
@@ -65,6 +81,7 @@ public class CalciteToolboxTest
         tuple("InsertCatalog", "CREATE METRICS VIEW \"B\" DIMENSIONS \"D\" MEASURES COUNT(\"M\") FROM \"A\""));
   }
 
+
   @Test
   public void testMigrationsWithFullName() throws SqlParseException, JsonProcessingException
   {
@@ -89,7 +106,7 @@ public class CalciteToolboxTest
   }
 
   @Test
-  public void testMultipleMigrations() throws SqlParseException, JsonProcessingException
+  public void testMultipleNoChange() throws SqlParseException, JsonProcessingException
   {
     List<MigrationStep> migrationSteps = CalciteToolbox.inferMigrations("create table a (id int) ; create view b as select * from a", """
           {
@@ -117,9 +134,41 @@ public class CalciteToolboxTest
             ]
           }
           """, PostgresqlSqlDialect.DEFAULT);
+    assertThat(migrationSteps).isEmpty();
+  }
+
+  @Test
+  public void testMultipleMigrations() throws SqlParseException, JsonProcessingException
+  {
+    List<MigrationStep> migrationSteps = CalciteToolbox.inferMigrations("create table a (name varchar) ; create view names as select * from a", """
+          {
+            "entities": [
+              {
+                "name": "a",
+                "columns": [
+                  {
+                    "name": "id",
+                    "type": "int"
+                  }
+                ],
+                "ddl": "create table a (id int)"
+              },
+              {
+                "name": "b",
+                "columns": [
+                  {
+                    "name": "id",
+                    "type": "int"
+                  }
+                ],
+                "ddl": "create view b as select * from a"
+              }
+            ]
+          }
+          """, PostgresqlSqlDialect.DEFAULT);
     Assertions.assertEquals("DROP TABLE \"A\"", migrationSteps.get(0).ddl);
     Assertions.assertEquals("DROP VIEW \"B\"", migrationSteps.get(1).ddl);
-    Assertions.assertEquals("CREATE TABLE \"A\" (\"ID\" INTEGER)", migrationSteps.get(2).ddl);
-    Assertions.assertEquals("CREATE VIEW \"B\" AS\nSELECT *\nFROM \"A\"", migrationSteps.get(3).ddl);
+    Assertions.assertEquals("CREATE TABLE \"A\" (\"NAME\" VARCHAR)", migrationSteps.get(2).ddl);
+    Assertions.assertEquals("CREATE VIEW \"NAMES\" AS\nSELECT *\nFROM \"A\"", migrationSteps.get(3).ddl);
   }
 }

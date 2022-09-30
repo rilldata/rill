@@ -37,13 +37,13 @@ import org.apache.calcite.util.SourceStringReader;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -197,6 +197,18 @@ public class CalciteToolbox
    * 2. Create DROP statements for entities that either no longer exist in the new state or have their statement changed.
    * 3. Add CREATE statements for entities that do not exist in the existing state.
    *
+   * Simplistic algorithm steps:
+   *   for each statement in the new state:
+   *     if existingState.contains(statement):
+   *       existingStatement = existingState.remove(statement)
+   *       if statement != existingStatement:
+   *         add DROP
+   *         add CREATE
+   *     if !existingState.contains(statement):
+   *       add CREATE
+   *  for each statement in the existing state:
+   *    add DROP
+   *
    * Right now the algorithm doesn't track name changes.
    * The algorithm constructs a graph of dependencies between statements but doesn't use it for now. The dependency graph
    * is required because if a dependency changes its dependant can have a statement unchanged but the entity should be
@@ -207,32 +219,48 @@ public class CalciteToolbox
   {
     SqlNode node = parseStmts(newSql);
 
-    Map<String, Statement> existing = toStatementsMap(schema, sqlDialect);
-    createGraph(existing);
-    Map<String, Statement> ast = toStatementsMap(node, sqlDialect);
-    Set<String> seen = new HashSet<>();
-    List<MigrationStep> steps = existing.values().stream().filter(s -> s.getType() != null).map(s -> MigrationStep.dropEntity(s.getName(), s.getType()) ).collect(
-        Collectors.toList());
-    steps.addAll(ast.values().stream().filter(s -> s.ddl != null).map(s -> {
-      if (s.getType().equals("METRICS VIEW")) {
-        return MigrationStep.insertCatalog(s.ddl);
-      } else {
-        return new MigrationStep(s.ddl);
-      }
-    }).collect(
-        Collectors.toList()));
+    Map<String, Statement> existing = existingStatementsMap(schema, sqlDialect);
+    createGraph(existing); // todo use graph to track dependency changes
+    Map<String, Statement> ast = newToStatementsMap(node, sqlDialect);
 
+    List<MigrationStep> createSteps = new ArrayList<>();
+    List<MigrationStep> dropSteps = new ArrayList<>();
     for (Statement create : ast.values()) {
-      if (existing.keySet().contains(create.getName())) {
-        Statement migrateFrom = existing.get(create.name);
+      Statement migrateFrom = existing.get(create.name);
+      if (migrateFrom != null) {
         create.changed = !create.ddl.equals(migrateFrom.ddl);
         if (create.changed) {
-// todo         markDependentsChange(migrateFro);
+          dropSteps.add(MigrationStep.dropEntity(migrateFrom.name, migrateFrom.getType()));
+          if (create.getType().equals("METRICS VIEW")) {
+            createSteps.add(MigrationStep.insertCatalog(create.ddl));
+          } else {
+            createSteps.add(MigrationStep.fromDdl(create.ddl));
+          }
+        }
+        existing.remove(create.name); // remove from existing so that we can drop the rest
+      } else {
+        if (create.getType().equals("METRICS VIEW")) {
+          createSteps.add(MigrationStep.insertCatalog(create.ddl));
+        } else {
+          createSteps.add(MigrationStep.fromDdl(create.ddl));
         }
       }
-      seen.add(create.getName());
     }
-    return steps;
+    for (Statement drop : existing.values()) {
+      if (drop.ddl != null) { // skip entities that were not created by the system
+        dropSteps.add(MigrationStep.dropEntity(drop.name, drop.getType()));
+      }
+    }
+    int initialCapacity = dropSteps.size() + createSteps.size();
+    if (initialCapacity != 0) {
+      List<MigrationStep> steps = new ArrayList<>(initialCapacity);
+      String dropSql = dropSteps.stream().map(s -> s.ddl).collect(Collectors.joining(";"));
+      SqlNodeList sqlNode = (SqlNodeList) parseStmts(dropSql);
+      steps.addAll(sqlNode.stream().map(n -> n.toSqlString(sqlDialect).getSql()).map(s -> MigrationStep.fromDdl(s)).collect(Collectors.toList()));
+      steps.addAll(createSteps);
+      return steps;
+    }
+    return Collections.emptyList();
   }
 
   public String saveModel(String sql) throws SqlParseException, ValidationException
@@ -298,7 +326,7 @@ public class CalciteToolbox
     }
   }
 
-  private static Map<String, Statement> toStatementsMap(SqlNode node, SqlDialect sqlDialect)
+  private static Map<String, Statement> newToStatementsMap(SqlNode node, SqlDialect sqlDialect)
   {
     SqlNodeList list = (SqlNodeList) node;
     return list.stream().map(n -> {
@@ -320,7 +348,7 @@ public class CalciteToolbox
     }).collect(Collectors.toMap(Statement::getName, Function.identity(), (x, y) -> y, LinkedHashMap::new));
   }
 
-  private static Map<String, Statement> toStatementsMap(String str, SqlDialect dialect) throws JsonProcessingException
+  private static Map<String, Statement> existingStatementsMap(String str, SqlDialect dialect) throws JsonProcessingException
   {
     JsonSchema schema = getObjectMapper().readValue(str, JsonSchema.class);
     return schema.entities.stream().map(entity -> {
@@ -329,10 +357,11 @@ public class CalciteToolbox
       statement.ddl = entity.ddl;
       try {
         statement.node = parseStmt(statement.ddl);
+        statement.ddl = statement.node.toSqlString(dialect).toString();
         if (statement.node instanceof SqlCreateView view) {
-          statement.name = view.name.toSqlString(dialect).toString();
+          statement.name = view.name.toString();
         } else if (statement.node instanceof SqlCreateTable tableNode) {
-          statement.name = tableNode.name.toSqlString(dialect).toString();
+          statement.name = tableNode.name.toString();
         }
       }
       catch (SqlParseException e) {
