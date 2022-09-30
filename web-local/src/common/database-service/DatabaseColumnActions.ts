@@ -186,7 +186,7 @@ export class DatabaseColumnActions extends DatabaseActions {
       range: number;
     }>(
       `SELECT
-        reservoir_quantile(${sanitizedColumnName},0.75)-reservoir_quantile(${sanitizedColumnName},0.25) as IQR,
+        approx_quantile(${sanitizedColumnName},0.75)-approx_quantile(${sanitizedColumnName},0.25) as IQR,
         approx_count_distinct(${sanitizedColumnName}) as count,
         max(${sanitizedColumnName})-min(${sanitizedColumnName}) as range
       FROM ${tableName}`
