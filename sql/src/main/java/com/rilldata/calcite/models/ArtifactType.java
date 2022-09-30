@@ -2,5 +2,6 @@ package com.rilldata.calcite.models;
 
 public enum ArtifactType
 {
-  METRIC_VIEW
+  METRICS_VIEW,
+  SOURCE
 }

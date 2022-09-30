@@ -83,3 +83,10 @@ body {
   background-color: transparent;
   border-right: none;
 }
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

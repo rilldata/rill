@@ -1,13 +1,15 @@
 package com.rilldata.calcite;
 
 import com.rilldata.calcite.dialects.Dialects;
-import com.rilldata.calcite.extensions.SqlCreateMetric;
+import com.rilldata.calcite.models.SqlCreateMetricsView;
+import com.rilldata.calcite.models.SqlCreateSource;
 import com.rilldata.calcite.generated.RillSqlParserImpl;
 import com.rilldata.calcite.models.Artifact;
 import com.rilldata.calcite.models.ArtifactManager;
 import com.rilldata.calcite.models.ArtifactType;
 import com.rilldata.calcite.models.InMemoryArtifactManager;
 import com.rilldata.calcite.operators.RillOperatorTable;
+import com.rilldata.calcite.validators.CreateMetricsViewValidator;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -16,13 +18,9 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -102,19 +100,30 @@ public class CalciteToolbox
     return sql;
   }
 
-  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
+  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     // expand query if needed
     sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
+    return getAST(sqlNode, planner, addTypeInfo);
+  }
+
+  public byte[] getAST(SqlNode sqlNode)
+  {
+    Planner planner = getPlanner();
+    return getAST(sqlNode, planner, false);
+  }
+
+  public byte[] getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
+  {
     SqlValidator sqlValidator = null;
     if (addTypeInfo) {
       SqlNode toValidate = sqlNode.clone(sqlNode.getParserPosition());
-      planner.validate(toValidate);
       try {
+        planner.validate(toValidate);
         sqlValidator = getValidator((PlannerImpl) planner);
-      } catch (NoSuchFieldException | IllegalAccessException e) {
+      } catch (NoSuchFieldException | IllegalAccessException | ValidationException e) {
         throw new RuntimeException(e);
       }
     }
@@ -131,59 +140,33 @@ public class CalciteToolbox
     return (SqlValidator) validatorField.get(planner);
   }
 
-  public String saveModel(String sql) throws SqlParseException, ValidationException
+  public SqlCreateMetricsView createMetricsView(String sql) throws SqlParseException, ValidationException
   {
-    SqlCreateMetric sqlCreateMetric = parseModelingQuery(sql);
-    String metricViewString = validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
+    SqlCreateMetricsView sqlCreateMetricsView = (SqlCreateMetricsView) parseSql(sql);
+    String metricViewString = CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView,
+        Dialects.DUCKDB.getSqlDialect(), getPlanner()
+    );
     artifactManager.saveArtifact(
-        new Artifact(ArtifactType.METRIC_VIEW, sqlCreateMetric.name.getSimple(), metricViewString));
-    return metricViewString;
+        new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetricsView.name.getSimple(), metricViewString));
+    // if things are valid return the parsed SqlNode/AST
+    return sqlCreateMetricsView;
   }
 
-  public SqlCreateMetric parseModelingQuery(String sql) throws SqlParseException
+  public SqlCreateSource createSource(String sql) throws SqlParseException
+  {
+    SqlCreateSource sqlCreateSource = (SqlCreateSource) parseSql(sql);
+    String createSourceString = sqlCreateSource.toSqlString(Dialects.DUCKDB.getSqlDialect()).toString();
+    artifactManager.saveArtifact(
+        new Artifact(ArtifactType.SOURCE, sqlCreateSource.name.getSimple(), createSourceString));
+    // if things are valid return the parsed SqlNode/AST
+    return sqlCreateSource;
+  }
+
+  public SqlNode parseSql(String sql) throws SqlParseException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     planner.close();
-    return (SqlCreateMetric) sqlNode;
-  }
-
-  /**
-   * Validates create metrics view query by parsing and validating group by queries
-   * created from the dimensions and measures specified in the modeling query
-   */
-  public String validateModelingQuery(SqlCreateMetric sqlCreateMetric, SqlDialect sqlDialect)
-      throws SqlParseException, ValidationException
-  {
-    SqlNodeList dimensions = sqlCreateMetric.dimensions;
-    SqlNodeList groupByList = new SqlNodeList(SqlParserPos.ZERO);
-    for (int i = 1; i <= dimensions.size(); i++) {
-      groupByList.add(SqlLiteral.createExactNumeric(i + "", SqlParserPos.ZERO));
-    }
-    for (SqlNode measure : sqlCreateMetric.measures.getList()) {
-      Planner planner = getPlanner();
-      SqlNodeList selectList = new SqlNodeList(dimensions, SqlParserPos.ZERO);
-      selectList.add(measure);
-      SqlSelect groupBy = new SqlSelect(
-          SqlParserPos.ZERO,
-          SqlNodeList.EMPTY,
-          selectList,
-          sqlCreateMetric.from,
-          null,
-          groupByList,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null
-      );
-      String sqlString = groupBy.toSqlString(sqlDialect).toString();
-      SqlNode parsed = planner.parse(sqlString);
-      SqlNode validated = planner.validate(parsed);
-      planner.close();
-    }
-    // dimensions, measures and table are validated, return sql string to be stored in db
-    return sqlCreateMetric.toSqlString(sqlDialect).toString();
+    return sqlNode;
   }
 }

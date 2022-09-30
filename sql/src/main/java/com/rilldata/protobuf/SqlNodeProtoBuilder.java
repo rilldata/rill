@@ -1,5 +1,7 @@
 package com.rilldata.protobuf;
 
+import com.rilldata.calcite.models.SqlCreateMetricsView;
+import com.rilldata.calcite.models.SqlCreateSource;
 import com.rilldata.protobuf.generated.BasicSqlTypeProto;
 import com.rilldata.protobuf.generated.CoercibilityProto;
 import com.rilldata.protobuf.generated.IntervalSqlTypeProto;
@@ -9,9 +11,15 @@ import com.rilldata.protobuf.generated.RelDataTypeFieldProto;
 import com.rilldata.protobuf.generated.RelDataTypeProto;
 import com.rilldata.protobuf.generated.RelRecordTypeProto;
 import com.rilldata.protobuf.generated.SerializableCharsetProto;
+import com.rilldata.protobuf.generated.SqlAlienSystemTypeNameSpecProto;
 import com.rilldata.protobuf.generated.SqlBasicCallProto;
+import com.rilldata.protobuf.generated.SqlBasicTypeNameSpecProto;
 import com.rilldata.protobuf.generated.SqlCharStringLiteralProto;
 import com.rilldata.protobuf.generated.SqlCollationProto;
+import com.rilldata.protobuf.generated.SqlCollectionTypeNameSpecProto;
+import com.rilldata.protobuf.generated.SqlCreateMetricsViewProto;
+import com.rilldata.protobuf.generated.SqlCreateSourceProto;
+import com.rilldata.protobuf.generated.SqlDataTypeSpecProto;
 import com.rilldata.protobuf.generated.SqlDateLiteralProto;
 import com.rilldata.protobuf.generated.SqlIdentifierProto;
 import com.rilldata.protobuf.generated.SqlIntervalQualifierProto;
@@ -24,10 +32,13 @@ import com.rilldata.protobuf.generated.SqlNumericLiteralProto;
 import com.rilldata.protobuf.generated.SqlOperatorProto;
 import com.rilldata.protobuf.generated.SqlOrderByProto;
 import com.rilldata.protobuf.generated.SqlParserPosProto;
+import com.rilldata.protobuf.generated.SqlRowTypeNameSpecProto;
 import com.rilldata.protobuf.generated.SqlSelectProto;
 import com.rilldata.protobuf.generated.SqlTimeLiteralProto;
 import com.rilldata.protobuf.generated.SqlTimestampLiteralProto;
 import com.rilldata.protobuf.generated.SqlTypeNameProto;
+import com.rilldata.protobuf.generated.SqlTypeNameSpecProto;
+import com.rilldata.protobuf.generated.SqlUserDefinedTypeNameSpecProto;
 import com.rilldata.protobuf.generated.SqlWithItemProto;
 import com.rilldata.protobuf.generated.SqlWithProto;
 import com.rilldata.protobuf.generated.StructKindProto;
@@ -39,9 +50,13 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.rel.type.StructKind;
+import org.apache.calcite.sql.SqlAlienSystemTypeNameSpec;
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlCollation;
+import org.apache.calcite.sql.SqlCollectionTypeNameSpec;
+import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDateLiteral;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -53,9 +68,12 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOrderBy;
+import org.apache.calcite.sql.SqlRowTypeNameSpec;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlTimeLiteral;
 import org.apache.calcite.sql.SqlTimestampLiteral;
+import org.apache.calcite.sql.SqlTypeNameSpec;
+import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -69,8 +87,8 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * Run `mvn package` to generate the protobuf builder classes in target/generated-sources/annotations folder
- * It uses script - protoc-java.sh
+ * Run `mvn package` to generate the protobuf builder classes in target/generated-sources/annotations folder.
+ * It uses following script - protoc-java.sh
  */
 public class SqlNodeProtoBuilder
 {
@@ -461,11 +479,11 @@ public class SqlNodeProtoBuilder
         sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlCharStringLiteral) : null;
     if (relDataType == null) {
       return SqlCharStringLiteralProto.newBuilder().setTypeName(handleSqlTypeName(sqlCharStringLiteral.getTypeName()))
-          .setValue(sqlCharStringLiteral.getValueAs(String.class))
+          .setValue(sqlCharStringLiteral.toValue())
           .setPos(handleParserPos(sqlCharStringLiteral.getParserPosition())).build();
     } else {
       return SqlCharStringLiteralProto.newBuilder().setTypeName(handleSqlTypeName(sqlCharStringLiteral.getTypeName()))
-          .setValue(sqlCharStringLiteral.getValueAs(String.class)).setTypeInformation(handleRelDataType(relDataType))
+          .setValue(sqlCharStringLiteral.toValue()).setTypeInformation(handleRelDataType(relDataType))
           .setPos(handleParserPos(sqlCharStringLiteral.getParserPosition())).build();
     }
   }
@@ -477,7 +495,7 @@ public class SqlNodeProtoBuilder
     // TODO sqlTimestampLiteralProtoBuilder.setHasTimeZone() hasTimeZone is not visible
     sqlTimestampLiteralProtoBuilder.setPrecision(sqlTimestampLiteral.getPrec());
     sqlTimestampLiteralProtoBuilder.setTypeName(handleSqlTypeName(sqlTimestampLiteral.getTypeName()));
-    sqlTimestampLiteralProtoBuilder.setValue(sqlTimestampLiteral.getValue().toString());
+    sqlTimestampLiteralProtoBuilder.setValue(sqlTimestampLiteral.toFormattedString());
     RelDataType relDataType =
         sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlTimestampLiteral) : null;
     if (relDataType != null) {
@@ -492,7 +510,7 @@ public class SqlNodeProtoBuilder
     sqlTimeLiteralProtoBuilder.setPos(handleParserPos(sqlTimeLiteral.getParserPosition()));
     sqlTimeLiteralProtoBuilder.setPrecision(sqlTimeLiteral.getPrec());
     sqlTimeLiteralProtoBuilder.setTypeName(handleSqlTypeName(sqlTimeLiteral.getTypeName()));
-    sqlTimeLiteralProtoBuilder.setValue(sqlTimeLiteral.getValueAs(String.class));
+    sqlTimeLiteralProtoBuilder.setValue(sqlTimeLiteral.toFormattedString());
     RelDataType relDataType =
         sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlTimeLiteral) : null;
     if (relDataType != null) {
@@ -507,7 +525,7 @@ public class SqlNodeProtoBuilder
     sqlDateLiteralProtoBuilder.setPos(handleParserPos(sqlDateLiteral.getParserPosition()));
     sqlDateLiteralProtoBuilder.setPrecision(sqlDateLiteral.getPrec());
     sqlDateLiteralProtoBuilder.setTypeName(handleSqlTypeName(sqlDateLiteral.getTypeName()));
-    sqlDateLiteralProtoBuilder.setValue(sqlDateLiteral.getValueAs(String.class));
+    sqlDateLiteralProtoBuilder.setValue(sqlDateLiteral.toFormattedString());
     RelDataType relDataType =
         sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlDateLiteral) : null;
     if (relDataType != null) {
@@ -525,6 +543,148 @@ public class SqlNodeProtoBuilder
         sqlIntervalQualifier.getFractionalSecondPrecisionPreservingDefault());
     sqlIntervalQualifierProtoBuilder.setTimeUnitRange(handleTimeUnitRange(sqlIntervalQualifier.timeUnitRange));
     return sqlIntervalQualifierProtoBuilder.build();
+  }
+
+  private SqlDataTypeSpecProto handleSqlDataTypeSpec(SqlDataTypeSpec sqlDataTypeSpec)
+  {
+    SqlDataTypeSpecProto.Builder sqlDataTypeSpecProtoBuilder = SqlDataTypeSpecProto.newBuilder();
+    sqlDataTypeSpecProtoBuilder.setTypeNameSpec(handleSqlTypeNameSpec(sqlDataTypeSpec.getTypeNameSpec()));
+    // it has Java TimeZone has field, maybe we can just use the display name and set it
+    if (sqlDataTypeSpec.getNullable() != null) {
+      sqlDataTypeSpecProtoBuilder.setNullable(sqlDataTypeSpec.getNullable());
+    }
+    sqlDataTypeSpecProtoBuilder.setPos(handleParserPos(sqlDataTypeSpec.getParserPosition()));
+    RelDataType relDataType = sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlDataTypeSpec) : null;
+    if (relDataType != null) {
+      sqlDataTypeSpecProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlDataTypeSpecProtoBuilder.build();
+  }
+
+  private SqlTypeNameSpecProto handleSqlTypeNameSpec(SqlTypeNameSpec sqlTypeNameSpec)
+  {
+    SqlTypeNameSpecProto.Builder sqlTypeNameSpecProtoBuilder = SqlTypeNameSpecProto.newBuilder();
+    if (sqlTypeNameSpec instanceof SqlUserDefinedTypeNameSpec) {
+      sqlTypeNameSpecProtoBuilder.setSqlUserDefinedTypeNameSpecProto(
+          handleSqlUserDefinedTypeNameSpec((SqlUserDefinedTypeNameSpec) sqlTypeNameSpec));
+    } else if (sqlTypeNameSpec instanceof SqlRowTypeNameSpec) {
+      sqlTypeNameSpecProtoBuilder.setSqlRowTypeNameSpecProto(
+          handleSqlRowTypeNameSpec((SqlRowTypeNameSpec) sqlTypeNameSpec));
+    } else if (sqlTypeNameSpec instanceof SqlBasicTypeNameSpec) {
+      sqlTypeNameSpecProtoBuilder.setSqlBasicTypeNameSpecProto(
+          handleSqlBasicTypeNameSpec((SqlBasicTypeNameSpec) sqlTypeNameSpec));
+    } else if (sqlTypeNameSpec instanceof SqlCollectionTypeNameSpec) {
+      sqlTypeNameSpecProtoBuilder.setSqlCollectionTypeNameSpecProto(
+          handleSqlCollectionTypeNameSpec((SqlCollectionTypeNameSpec) sqlTypeNameSpec));
+    }
+    return sqlTypeNameSpecProtoBuilder.build();
+  }
+
+  private SqlUserDefinedTypeNameSpecProto handleSqlUserDefinedTypeNameSpec(
+      SqlUserDefinedTypeNameSpec sqlUserDefinedTypeNameSpec
+  )
+  {
+    SqlUserDefinedTypeNameSpecProto.Builder sqlUserDefinedTypeNameSpecProtoBuilder = SqlUserDefinedTypeNameSpecProto.newBuilder();
+    sqlUserDefinedTypeNameSpecProtoBuilder.setTypeName(handleSqlIdentifier(sqlUserDefinedTypeNameSpec.getTypeName()));
+    sqlUserDefinedTypeNameSpecProtoBuilder.setPos(handleParserPos(sqlUserDefinedTypeNameSpec.getParserPos()));
+    return sqlUserDefinedTypeNameSpecProtoBuilder.build();
+  }
+
+  private SqlRowTypeNameSpecProto handleSqlRowTypeNameSpec(SqlRowTypeNameSpec sqlRowTypeNameSpec)
+  {
+    SqlRowTypeNameSpecProto.Builder sqlRowTypeNameSpecProtoBuilder = SqlRowTypeNameSpecProto.newBuilder();
+    for (SqlIdentifier fieldName : sqlRowTypeNameSpec.getFieldNames()) {
+      sqlRowTypeNameSpecProtoBuilder.addFieldNames(handleSqlIdentifier(fieldName));
+    }
+    for (SqlDataTypeSpec fieldType : sqlRowTypeNameSpec.getFieldTypes()) {
+      sqlRowTypeNameSpecProtoBuilder.addFieldTypes(handleSqlDataTypeSpec(fieldType));
+    }
+    sqlRowTypeNameSpecProtoBuilder.setTypeName(handleSqlIdentifier(sqlRowTypeNameSpec.getTypeName()));
+    sqlRowTypeNameSpecProtoBuilder.setPos(handleParserPos(sqlRowTypeNameSpec.getParserPos()));
+    return sqlRowTypeNameSpecProtoBuilder.build();
+  }
+
+  private SqlBasicTypeNameSpecProto handleSqlBasicTypeNameSpec(SqlBasicTypeNameSpec sqlBasicTypeNameSpec)
+  {
+    SqlBasicTypeNameSpecProto.Builder sqlBasicTypeNameSpecProtoBuilder = SqlBasicTypeNameSpecProto.newBuilder();
+    if (sqlBasicTypeNameSpec instanceof SqlAlienSystemTypeNameSpec) {
+      sqlBasicTypeNameSpecProtoBuilder.setSqlAlienSystemTypeNameSpecProto(
+          handleSqlAlienSystemTypeNameSpec((SqlAlienSystemTypeNameSpec) sqlBasicTypeNameSpec));
+    } else {
+      // sqlTypeName does not have any getter in SqlBasicTypeNameSpec so ignoring it, name of sqlTypeName is set in typeName
+      sqlBasicTypeNameSpecProtoBuilder.setPrecision(sqlBasicTypeNameSpec.getPrecision());
+      sqlBasicTypeNameSpecProtoBuilder.setScale(sqlBasicTypeNameSpec.getScale());
+      if (sqlBasicTypeNameSpec.getCharSetName() != null) {
+        sqlBasicTypeNameSpecProtoBuilder.setCharSetName(sqlBasicTypeNameSpec.getCharSetName());
+      }
+      sqlBasicTypeNameSpecProtoBuilder.setTypeName(handleSqlIdentifier(sqlBasicTypeNameSpec.getTypeName()));
+      sqlBasicTypeNameSpecProtoBuilder.setPos(handleParserPos(sqlBasicTypeNameSpec.getParserPos()));
+    }
+    return sqlBasicTypeNameSpecProtoBuilder.build();
+  }
+
+  private SqlAlienSystemTypeNameSpecProto handleSqlAlienSystemTypeNameSpec(
+      SqlAlienSystemTypeNameSpec sqlAlienSystemTypeNameSpec
+  )
+  {
+    SqlAlienSystemTypeNameSpecProto.Builder sqlAlienSystemTypeNameSpecProtoBuilder = SqlAlienSystemTypeNameSpecProto.newBuilder();
+    // typeAlias is private in SqlAlienSystemTypeNameSpec so essentially SqlAlienSystemTypeNameSpec is same as SqlBasicTypeNameSpec
+    sqlAlienSystemTypeNameSpecProtoBuilder.setPrecision(sqlAlienSystemTypeNameSpec.getPrecision());
+    sqlAlienSystemTypeNameSpecProtoBuilder.setScale(sqlAlienSystemTypeNameSpec.getScale());
+    if (sqlAlienSystemTypeNameSpec.getCharSetName() != null) {
+      sqlAlienSystemTypeNameSpecProtoBuilder.setCharSetName(sqlAlienSystemTypeNameSpec.getCharSetName());
+    }
+    sqlAlienSystemTypeNameSpecProtoBuilder.setTypeName(handleSqlIdentifier(sqlAlienSystemTypeNameSpec.getTypeName()));
+    sqlAlienSystemTypeNameSpecProtoBuilder.setPos(handleParserPos(sqlAlienSystemTypeNameSpec.getParserPos()));
+    return sqlAlienSystemTypeNameSpecProtoBuilder.build();
+  }
+
+  private SqlCollectionTypeNameSpecProto handleSqlCollectionTypeNameSpec(
+      SqlCollectionTypeNameSpec sqlCollectionTypeNameSpec
+  )
+  {
+    SqlCollectionTypeNameSpecProto.Builder sqlCollectionTypeNameSpecProtoBuilder = SqlCollectionTypeNameSpecProto.newBuilder();
+    sqlCollectionTypeNameSpecProtoBuilder.setElementTypeName(
+        handleSqlTypeNameSpec(sqlCollectionTypeNameSpec.getElementTypeName()));
+    // collectionTypeName does not have any getter in SqlCollectionTypeNameSpec so ignoring it
+    sqlCollectionTypeNameSpecProtoBuilder.setTypeName(handleSqlIdentifier(sqlCollectionTypeNameSpec.getTypeName()));
+    sqlCollectionTypeNameSpecProtoBuilder.setPos(handleParserPos(sqlCollectionTypeNameSpec.getParserPos()));
+    return sqlCollectionTypeNameSpecProtoBuilder.build();
+  }
+
+  private SqlCreateSourceProto handleSqlCreateSource(SqlCreateSource sqlCreateSource)
+  {
+    SqlCreateSourceProto.Builder sqlCreateSourceProtoBuilder = SqlCreateSourceProto.newBuilder();
+    sqlCreateSourceProtoBuilder.setName(handleSqlIdentifier(sqlCreateSource.name));
+    sqlCreateSourceProtoBuilder.putAllProperties(sqlCreateSource.properties);
+    sqlCreateSourceProtoBuilder.setReplace(sqlCreateSource.getReplace());
+    sqlCreateSourceProtoBuilder.setIfNotExists(sqlCreateSource.ifNotExists);
+    sqlCreateSourceProtoBuilder.setOperator(handleSqlOperator(sqlCreateSource.getOperator()));
+    sqlCreateSourceProtoBuilder.setPos(handleParserPos(sqlCreateSource.getParserPosition()));
+    RelDataType relDataType =
+        sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlCreateSource) : null;
+    if (relDataType != null) {
+      sqlCreateSourceProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlCreateSourceProtoBuilder.build();
+  }
+
+  private SqlCreateMetricsViewProto handleSqlCreateMetricsView(SqlCreateMetricsView sqlCreateMetricsView)
+  {
+    SqlCreateMetricsViewProto.Builder sqlCreateMetricsViewProtoBuilder = SqlCreateMetricsViewProto.newBuilder();
+    sqlCreateMetricsViewProtoBuilder.setName(handleSqlIdentifier(sqlCreateMetricsView.name));
+    sqlCreateMetricsViewProtoBuilder.setDimensions(handleSqlNodeList(sqlCreateMetricsView.dimensions));
+    sqlCreateMetricsViewProtoBuilder.setMeasures(handleSqlNodeList(sqlCreateMetricsView.measures));
+    sqlCreateMetricsViewProtoBuilder.setFrom(handleSqlNode(sqlCreateMetricsView.from));
+    sqlCreateMetricsViewProtoBuilder.setReplace(sqlCreateMetricsView.getReplace());
+    sqlCreateMetricsViewProtoBuilder.setIfNotExists(sqlCreateMetricsView.ifNotExists);
+    sqlCreateMetricsViewProtoBuilder.setOperator(handleSqlOperator(sqlCreateMetricsView.getOperator()));
+    RelDataType relDataType =
+        sqlValidator != null ? sqlValidator.getValidatedNodeTypeIfKnown(sqlCreateMetricsView) : null;
+    if (relDataType != null) {
+      sqlCreateMetricsViewProtoBuilder.setTypeInformation(handleRelDataType(relDataType));
+    }
+    return sqlCreateMetricsViewProtoBuilder.build();
   }
 
   private SqlTypeNameProto handleSqlTypeName(SqlTypeName sqlTypeName)
@@ -581,6 +741,15 @@ public class SqlNodeProtoBuilder
     } else if (sqlNode instanceof SqlIntervalQualifier) {
       return SqlNodeProto.newBuilder()
           .setSqlIntervalQualifierProto(handleSqlIntervalQualifier((SqlIntervalQualifier) sqlNode)).build();
+    } else if (sqlNode instanceof SqlCreateSource) {
+      return SqlNodeProto.newBuilder()
+          .setSqlCreateSourceProto(handleSqlCreateSource((SqlCreateSource) sqlNode)).build();
+    } else if (sqlNode instanceof SqlCreateMetricsView) {
+      return SqlNodeProto.newBuilder()
+          .setSqlCreateMetricsViewProto(handleSqlCreateMetricsView((SqlCreateMetricsView) sqlNode)).build();
+    } else if (sqlNode instanceof SqlDataTypeSpec) {
+      return SqlNodeProto.newBuilder().setSqlDataTypeSpecProto(handleSqlDataTypeSpec((SqlDataTypeSpec) sqlNode))
+          .build();
     } else {
       return null;
     }
