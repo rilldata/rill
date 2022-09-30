@@ -39,7 +39,7 @@
         flex-row
         w-full
         text-left
-        hover:bg-gray-100
+        
         transition-color"
 >
   <div style:width="22px" style:height="22px" class="grid place-items-center">
@@ -59,7 +59,7 @@
     justify={false}
   >
     <div
-      class="grid leaderboard-entry items-center gap-x-3"
+      class="grid leaderboard-entry items-center gap-x-3 hover:bg-gray-100"
       style:height="22px"
     >
       <div
