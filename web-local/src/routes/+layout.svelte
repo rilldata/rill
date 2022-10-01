@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { RillDeveloperApplicationLayout } from "@rilldata/web-local/lib/layouts";
+  import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/layouts";
+  /** This function will initialize the existing node stores and will connect them
+   * to the Node server.
+   */
+  initializeNodeStoreContexts();
 </script>
 
-<RillDeveloperApplicationLayout>
-  <slot />
-</RillDeveloperApplicationLayout>
+<slot />

@@ -41,7 +41,6 @@
   import QuickStartDashboard from "@rilldata/web-local/lib/components/overlay/QuickStartDashboard.svelte";
   import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
   import ConfigProvider from "@rilldata/web-local/lib/config/ConfigProvider.svelte";
-  import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/layouts";
   import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
   import {
     createQueryClient,
@@ -49,10 +48,6 @@
   } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
-  /** This function will initialize the existing node stores and will connect them
-   * to the Node server.
-   */
-  initializeNodeStoreContexts();
   createQueryClient();
 
   onMount(() => {
