@@ -1,7 +1,8 @@
 import { get } from "svelte/store";
+import type { AppStore } from "../application-state-stores/application-store";
 
 /** a workaround for getting the client-side store in a page.ts file */
-export async function entityExists(store, id) {
+export async function entityExists(store: AppStore, id) {
   let r;
   const pr = new Promise((resolve) => {
     r = resolve;
@@ -12,8 +13,9 @@ export async function entityExists(store, id) {
     }
   });
   await pr;
+  const storeValue = get(store);
   const modelExists =
-    get(store)?.entities?.some((entity) => entity.id === id) || false;
+    storeValue?.entities?.some((entity) => entity.id === id) || false;
   unsubscribe();
   return modelExists;
 }

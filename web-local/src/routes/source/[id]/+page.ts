@@ -1,3 +1,4 @@
+import { browser } from "$app/environment";
 import {
   EntityType,
   StateType,
@@ -8,14 +9,16 @@ import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  // TODO: Check to see if the sourceId exists server-side
-  const sourceExists = await entityExists(
-    dataModelerStateService.getEntityStateService(
-      EntityType.Table,
-      StateType.Persistent
-    ).store,
-    params.id
-  );
+  let sourceExists = true;
+  if (browser) {
+    sourceExists = await entityExists(
+      dataModelerStateService.getEntityStateService(
+        EntityType.Table,
+        StateType.Persistent
+      ).store,
+      params.id
+    );
+  }
 
   if (sourceExists) {
     return {
@@ -23,6 +26,5 @@ export async function load({ params }) {
     };
   }
 
-  console.log("params", params);
   throw error(404, "Source not found");
 }

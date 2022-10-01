@@ -1,3 +1,4 @@
+import { browser } from "$app/environment";
 import {
   EntityType,
   StateType,
@@ -8,13 +9,16 @@ import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  const modelExists = await entityExists(
-    dataModelerStateService.getEntityStateService(
-      EntityType.Model,
-      StateType.Persistent
-    ).store,
-    params.id
-  );
+  let modelExists = true;
+  if (browser) {
+    modelExists = await entityExists(
+      dataModelerStateService.getEntityStateService(
+        EntityType.Model,
+        StateType.Persistent
+      ).store,
+      params.id
+    );
+  }
 
   if (modelExists) {
     return {
