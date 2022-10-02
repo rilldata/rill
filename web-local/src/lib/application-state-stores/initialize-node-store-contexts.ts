@@ -1,3 +1,4 @@
+/*global  RILL_VERSION, RILL_COMMIT */
 import { browser } from "$app/environment";
 import {
   createDerivedModelStore,
@@ -13,6 +14,12 @@ import {
   createPersistentTableStore,
 } from "../application-state-stores/table-stores";
 import { syncApplicationState } from "../redux-store/application/application-apis";
+
+/** determined by Vite's define option. */
+declare global {
+  const RILL_VERSION: string;
+  const RILL_COMMIT: string;
+}
 
 /** This function will initialize the existing node stores and will connect them
  * to the Node server. It is best used in various application layouts to ensure that all children of the layout
