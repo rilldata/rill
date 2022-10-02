@@ -23,12 +23,14 @@ export function initializeNodeStoreContexts() {
   let store;
   const queryHighlight = createQueryHighlightStore();
 
+  /** set build-specific metadata as a context.  */
   const applicationMetadata: ApplicationMetadata = {
     version: RILL_VERSION, // constant defined in svelte.config.js
     commitHash: RILL_COMMIT, // constant defined in svelte.config.js
   };
   setContext("rill:app:metadata", applicationMetadata);
 
+  /** Set the existing node stores, which are consumed through getContext within routes. */
   if (browser) {
     store = createStore();
     setContext("rill:app:store", store);
