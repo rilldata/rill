@@ -16,6 +16,7 @@ import {
   MetadataPriority,
   ProfileMetadataPriorityMap,
 } from "../priority-action-queue/DatabaseActionQueuePriority";
+import { getNextEntityId } from "../utils/getNextEntityId";
 import { DataModelerActions } from "./DataModelerActions";
 
 export class ApplicationActions extends DataModelerActions {
@@ -135,7 +136,7 @@ export class ApplicationActions extends DataModelerActions {
       applicationState.activeEntity?.id === entityId &&
       applicationState.activeEntity?.type === entityType
     ) {
-      const newEntityId = this.getNextEntityId(
+      const newEntityId = getNextEntityId(
         stateService.getCurrentState().entities,
         entityId
       );
@@ -163,19 +164,6 @@ export class ApplicationActions extends DataModelerActions {
       StateType.Derived,
       entityId,
     ]);
-  }
-
-  private getNextEntityId(
-    entities: Array<EntityRecord>,
-    entityId: string
-  ): string {
-    if (entities.length === 1) return undefined;
-    const idx = entities.findIndex((entity) => entity.id === entityId);
-    if (idx === 0) {
-      return entities[idx + 1].id;
-    } else {
-      return entities[idx - 1].id;
-    }
   }
 
   private getEntityColumns(entityType: EntityType, entityId: string) {

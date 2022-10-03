@@ -1,11 +1,11 @@
-import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
-import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
-import { error, redirect } from "@sveltejs/kit";
 import {
   ExplorerSourceColumnDoesntExist,
   ExplorerSourceModelDoesntExist,
   ExplorerSourceModelIsInvalid,
-} from "../../../common/errors/ErrorMessages";
+} from "@rilldata/web-local/common/errors/ErrorMessages";
+import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
+import { error, redirect } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {

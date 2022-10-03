@@ -1,6 +1,8 @@
 package com.rilldata;
 
 import com.rilldata.calcite.dialects.Dialects;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.tools.ValidationException;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -11,7 +13,7 @@ import java.sql.SQLException;
  **/
 public class SqlConverterMain
 {
-  public static void main(String[] args) throws SQLException, IOException
+  public static void main(String[] args) throws SQLException, IOException, ValidationException, SqlParseException
   {
     String s = new String(SqlConverterMain.class.getResourceAsStream("/schema.json").readAllBytes());
     SqlConverter sqlConverter = new SqlConverter(s);
