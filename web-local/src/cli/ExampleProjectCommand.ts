@@ -102,7 +102,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
       mkdirSync(`${project}/data`, {
         recursive: true,
       });
-      execSync(`mv -v "${project}/example-assets-0.6/data ${project}"`, {
+      execSync(`mv -v "${project}/example-assets-0.6/data" "${project}"`, {
         stdio: "inherit",
       });
     }
