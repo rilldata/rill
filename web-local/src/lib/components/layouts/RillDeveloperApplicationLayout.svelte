@@ -1,8 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import "@rilldata/web-local/app.css";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import "@rilldata/web-local/fonts.css";
   import {
     ApplicationStore,
     duplicateSourceName,
