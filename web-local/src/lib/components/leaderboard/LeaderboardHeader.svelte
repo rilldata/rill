@@ -21,7 +21,7 @@
   export let filterExcludeMode: boolean;
 
   let otherFilterKey: "exclude" | "include";
-  $: otherFilterKey = filterKey === "include" ? "include" : "exclude";
+  $: otherFilterKey = filterKey === "include" ? "exclude" : "include";
 </script>
 
 <div class="flex flex-row  items-center">
@@ -84,11 +84,11 @@
           <TooltipContent slot="tooltip-content">
             <TooltipTitle>
               <svelte:fragment slot="name">
-                filter {filterKey} mode
+                Output {filterKey}s selected values
               </svelte:fragment>
             </TooltipTitle>
             <TooltipShortcutContainer>
-              <div>toggle {otherFilterKey} mode</div>
+              <div>toggle to {otherFilterKey} values</div>
               <Shortcut>Click</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>

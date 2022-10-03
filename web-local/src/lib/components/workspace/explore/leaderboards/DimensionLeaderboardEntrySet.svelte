@@ -61,17 +61,17 @@ see more button
         {__formatted_value || value || "∅"}
       </svelte:fragment>
       <svelte:fragment slot="tooltip">
-        {#if !active}
-          {#if atLeastOneActive}
-            <div>include <span class="italic">{label}</span> in filter</div>
-          {:else}
-            <div>
-              filter {filterExcludeMode ? "out" : "on"}
-              <span class="italic">{label}</span>
-            </div>
-          {/if}
+        {#if atLeastOneActive}
+          <div>
+            {excluded ? "include" : "exclude"}
+            <span class="italic">{label}</span>
+            {excluded ? "in" : "from"} output
+          </div>
         {:else}
-          <div>remove <span class="italic">{label}</span> from filter</div>
+          <div>
+            filter {filterExcludeMode ? "out" : "on"}
+            <span class="italic">{label}</span>
+          </div>
         {/if}
       </svelte:fragment>
     </DimensionLeaderboardEntry>
