@@ -1,5 +1,6 @@
 package com.rilldata;
 
+import com.rilldata.calcite.dialects.Dialects;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.MigrationStep;
@@ -27,21 +28,53 @@ public class SqlConverterEntrypoint
     CCharPointer call(long size);
   }
 
-  @CEntryPoint(name="convert_sql")
-  public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql, CCharPointer schema)
+  @CEntryPoint(name = "convert_sql")
+  public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
+      CCharPointer schema, CCharPointer dialect
+  )
   {
     try {
+      String dialectString = CTypeConversion.toJavaString(dialect);
+      Dialects dialectEnum = Dialects.valueOf(dialectString.toUpperCase());
       String javaSchemaString = CTypeConversion.toJavaString(schema);
       SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
       String javaSqlString = CTypeConversion.toJavaString(sql);
-      String runnableQuery = sqlConverter.convert(javaSqlString);
+      String runnableQuery = sqlConverter.convert(javaSqlString, dialectEnum.getSqlDialect());
       if (runnableQuery == null) {
         return WordFactory.nullPointer();
       }
       return convertToCCharPointer(allocatorFn, runnableQuery);
     } catch (Exception e) {
+      e.printStackTrace(); // todo level-logging for native libraries?
+      return convertToCCharPointer(allocatorFn, String.format("{'error': '%s'}", e.getMessage()));
+    }
+  }
+
+  @CEntryPoint(name = "create_source")
+  public static byte[] createSource(IsolateThread thread, CCharPointer sourceDef, CCharPointer schema)
+  {
+    try {
+      String javaSchemaString = CTypeConversion.toJavaString(schema);
+      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String createSource = CTypeConversion.toJavaString(sourceDef);
+      return sqlConverter.createSource(createSource);
+    } catch (Exception e) {
       e.printStackTrace();
-      return WordFactory.nullPointer();
+      return null;
+    }
+  }
+
+  @CEntryPoint(name = "create_metrics_view")
+  public static byte[] createMetricsView(IsolateThread thread, CCharPointer metricsViewDef, CCharPointer schema)
+  {
+    try {
+      String javaSchemaString = CTypeConversion.toJavaString(schema);
+      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String createMetricsView = CTypeConversion.toJavaString(metricsViewDef);
+      return sqlConverter.createMetricsView(createMetricsView);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
     }
   }
 
@@ -67,7 +100,7 @@ public class SqlConverterEntrypoint
   private static CCharPointer convertToCCharPointer(AllocatorFn allocatorFn, String javaString)
   {
     byte[] b = javaString.getBytes();
-    CCharPointer a =  allocatorFn.call(b.length + 1);
+    CCharPointer a = allocatorFn.call(b.length + 1);
     for (int i = 0; i < b.length; i++) {
       a.write(i, b[i]);
     }

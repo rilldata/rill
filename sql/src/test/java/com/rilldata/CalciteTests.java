@@ -1,10 +1,15 @@
 package com.rilldata;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.CalciteToolbox;
-import com.rilldata.calcite.extensions.SqlCreateMetric;
+import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.calcite.models.SqlCreateMetricsView;
+import com.rilldata.calcite.models.SqlCreateSource;
+import com.rilldata.calcite.validators.CreateMetricsViewValidator;
+import com.rilldata.calcite.validators.CreateSourceValidator;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.dialect.H2SqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.ValidationException;
@@ -32,11 +37,7 @@ public class CalciteTests
   static void setUp() throws SQLException, ValidationException, SqlParseException
   {
     HsqlDbSchemaSupplier rootSchemaSupplier = new HsqlDbSchemaSupplier(Map.of("main", "PUBLIC"));
-    calciteToolbox = new CalciteToolbox(
-        rootSchemaSupplier,
-        H2SqlDialect.DEFAULT,
-        null
-    );
+    calciteToolbox = new CalciteToolbox(rootSchemaSupplier, null);
     DataSource dataSource = rootSchemaSupplier.getDataSource();
     try (Connection conn = dataSource.getConnection(); Statement statement = conn.createStatement()) {
       statement.executeUpdate(
@@ -57,34 +58,181 @@ public class CalciteTests
         COUNT(DISTINCT DIM1) AS M_DIST,
         AVG(DISTINCT MET1) AS M_AVG
         FROM MAIN.TEST""";
-    calciteToolbox.saveModel(modelingQuery);
+    calciteToolbox.createMetricsView(modelingQuery);
   }
 
   @ParameterizedTest
-  @MethodSource("testCreateMetricParams")
-  public void testCreateMetric(String modelingQuery, int numDims, int numMeasures, Optional<String> parseExceptionMatch,
+  @MethodSource("testCreateMetricsViewParams")
+  public void testCreateMetricsView(String modelingQuery, int numDims, int numMeasures, Optional<String> parseExceptionMatch,
       Optional<String> validationExceptionMatch
   )
   {
-    SqlCreateMetric sqlCreateMetric = null;
+    SqlCreateMetricsView sqlCreateMetricsView;
     try {
-      sqlCreateMetric = calciteToolbox.parseModelingQuery(modelingQuery);
+      sqlCreateMetricsView = (SqlCreateMetricsView) calciteToolbox.parseSql(modelingQuery);
+      parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
+      Assertions.assertTrue(parseExceptionMatch.isEmpty());
+    } catch (SqlParseException e) {
+      if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
+        e.printStackTrace();
+      }
+      Assertions.assertTrue(parseExceptionMatch.isPresent() && e.getMessage().contains(parseExceptionMatch.get()));
+      return; // found parse exception - test done - return now
+    }
+    Assertions.assertEquals(numDims, sqlCreateMetricsView.dimensions.size());
+    Assertions.assertEquals(numMeasures, sqlCreateMetricsView.measures.size());
+    try {
+      CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView, Dialects.DUCKDB.getSqlDialect(),
+          calciteToolbox.getPlanner()
+      );
+      validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
+      Assertions.assertTrue(validationExceptionMatch.isEmpty());
+    } catch (ValidationException e) {
+      if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
+        e.printStackTrace();
+      }
+      Assertions.assertTrue(
+          validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
+    }
+    byte[] ast = calciteToolbox.getAST(sqlCreateMetricsView);
+    try {
+      SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+      System.out.println(sqlNodeProto);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("testCreateSourceParams")
+  public void testCreateSource(String createSourceQuery, Optional<String> parseExceptionMatch,
+      Optional<String> validationExceptionMatch
+  )
+  {
+    SqlCreateSource sqlCreateSource;
+    try {
+      sqlCreateSource = (SqlCreateSource) calciteToolbox.parseSql(createSourceQuery);
+      parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
+      Assertions.assertTrue(parseExceptionMatch.isEmpty());
+      CreateSourceValidator.validateConnector(sqlCreateSource);
+
+      byte[] ast = calciteToolbox.getAST(sqlCreateSource);
+      try {
+        SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+        System.out.println(sqlNodeProto);
+      } catch (InvalidProtocolBufferException e) {
+        throw new RuntimeException(e);
+      }
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
         throw new RuntimeException(e);
       }
-    }
-    Assertions.assertEquals(numDims, sqlCreateMetric.dimensions.size());
-    Assertions.assertEquals(numMeasures, sqlCreateMetric.measures.size());
-    try {
-      calciteToolbox.validateModelingQuery(sqlCreateMetric);
-    } catch (SqlParseException e) {
-      throw new RuntimeException(e);
     } catch (ValidationException e) {
       if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
         throw new RuntimeException(e);
       }
     }
+  }
+
+  private static Stream<Arguments> testCreateSourceParams()
+  {
+    return Stream.of(
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv', // comments are ignored
+                    'FORMAT' = 'CSV'
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv', -- comments are ignored
+                    'FORMAT' = 'CSV'
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv',
+                    'FORMAT' = 'CSV', // extra comma
+                )""",
+            Optional.of("Encountered \" \")\" \") \"\""),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv' -- comments are ignored
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [format] not present or blank for s3 connector")
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv',
+                    'format' = '' -- empty
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [format] not present or blank for s3 connector")
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv',
+                    'format' = 'myformat'
+                )""",
+            Optional.empty(),
+            Optional.of("Format [myformat] not supported, supported formats are")
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    -- comments are ignored
+                    'prefix' = 's3://my_bucket/a.csv' -- comments are ignored
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [connector] not found for source [CLICKS_RAW]")
+        ),
+        // TODO this probably should pass
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3',
+                    'format' = 'csv',
+                    'prefix' = 's3://my_bucket/*.csv',
+                    'aws.access.key' = env('S3_ACCESS_KEY'),
+                    'aws.secret.key' = env('S3_SECRET_KEY')
+                )""",
+            Optional.of("Encountered \" <IDENTIFIER> \"env \"\""),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's4',
+                    'format' = 'csv',
+                    'prefix' = 's3://my_bucket/*.csv'
+                )""",
+            Optional.empty(),
+            Optional.of("No connector of type [s4] found for source [CLICKS_RAW]")
+        )
+    );
   }
 
   @ParameterizedTest
@@ -93,11 +241,61 @@ public class CalciteTests
       throws SqlParseException
   {
     try {
-      String resultantQuery = calciteToolbox.getRunnableQuery(query);
-      SqlNode actual = parseQuery(resultantQuery);
-      SqlNode expected = parseQuery(expandedQuery);
-      Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+      for (Dialects dialect : Dialects.values()) {
+        String resultantQuery = calciteToolbox.getRunnableQuery(query, dialect.getSqlDialect());
+        String expectedQuery = calciteToolbox.getRunnableQuery(expandedQuery, dialect.getSqlDialect());
+        SqlNode actual = parseQuery(resultantQuery);
+        SqlNode expected = parseQuery(expectedQuery);
+        exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
+        Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+
+        byte[] ast = calciteToolbox.getAST(actual);
+        try {
+          SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+          System.out.println(sqlNodeProto);
+        } catch (InvalidProtocolBufferException e) {
+          throw new RuntimeException(e);
+        }
+      }
     } catch (RuntimeException | ValidationException e) {
+      if (exceptionMessage.isEmpty() || !e.getMessage().contains(exceptionMessage.get())) {
+        e.printStackTrace();
+      }
+      Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("testOperatorsParams")
+  public void testOperators(String query, String expectedDuckDBQuery, String expectedDruidQuery,
+      Optional<String> exceptionMessage
+  ) throws SqlParseException
+  {
+    try {
+      for (Dialects dialect : Dialects.values()) {
+        String resultantQuery = calciteToolbox.getRunnableQuery(query, dialect.getSqlDialect());
+        SqlNode actual = parseQuery(resultantQuery);
+        SqlNode expected;
+        if (dialect.equals(Dialects.DUCKDB)) {
+          expected = parseQuery(expectedDuckDBQuery);
+        } else {
+          expected = parseQuery(expectedDruidQuery);
+        }
+        exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
+        Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
+
+        byte[] ast = calciteToolbox.getAST(actual);
+        try {
+          SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+          System.out.println(sqlNodeProto);
+        } catch (InvalidProtocolBufferException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    } catch (RuntimeException | ValidationException e) {
+      if (exceptionMessage.isEmpty() || !e.getMessage().contains(exceptionMessage.get())) {
+        e.printStackTrace();
+      }
       Assertions.assertTrue(exceptionMessage.isPresent() && e.getMessage().contains(exceptionMessage.get()));
     }
   }
@@ -183,7 +381,8 @@ public class CalciteTests
             Optional.empty()
         ),
         Arguments.of(
-            "SELECT DIM1 AS D1, M_DIST FROM METRICS_VIEW WHERE DIM1='something' ORDER BY D1 DESC LIMIT 5", // where clause works
+            "SELECT DIM1 AS D1, M_DIST FROM METRICS_VIEW WHERE DIM1='something' ORDER BY D1 DESC LIMIT 5",
+            // where clause works
             "SELECT DIM1 AS D1, COUNT(DISTINCT DIM1) AS M_DIST FROM MAIN.TEST WHERE DIM1='something' GROUP BY 1 ORDER BY D1 DESC LIMIT 5",
             Optional.empty()
         ),
@@ -243,7 +442,8 @@ public class CalciteTests
             Optional.of("Cannot specify columns along with *")
         ),
         Arguments.of(
-            "SELECT DIM1, DIM3, M_DIST, DIM4 FROM METRICS_VIEW", // cannot use column which was not present in metrics view
+            "SELECT DIM1, DIM3, M_DIST, DIM4 FROM METRICS_VIEW",
+            // cannot use column which was not present in metrics view
             "",
             Optional.of("Column [DIM4] not present in metrics view [METRICS_VIEW]")
         ),
@@ -270,13 +470,115 @@ public class CalciteTests
     );
   }
 
-  private static Stream<Arguments> testCreateMetricParams()
+  public static Stream<Arguments> testOperatorsParams()
+  {
+    return Stream.of(
+        Arguments.of(
+            "SELECT GREATEST(1,2)",
+            "SELECT GREATEST(1,2)",
+            "SELECT GREATEST(1,2)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT GREATEST(1,'a')",
+            "SELECT GREATEST(1,'a')",
+            "SELECT GREATEST(1,'a')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT GREATEST('ABC','DEF')",
+            "SELECT GREATEST('ABC', 'DEF')",
+            "SELECT GREATEST('ABC', 'DEF')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LEAST('ABC','DEF')",
+            "SELECT LEAST('ABC', 'DEF')",
+            "SELECT LEAST('ABC', 'DEF')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LEAST(1,'a', 100)",
+            "SELECT LEAST(1,'a', 100)",
+            "SELECT LEAST(1,'a', 100)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LOG(1)",
+            "SELECT LOG(1)",
+            "SELECT LOG(1)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LOG2(1)",
+            "SELECT LOG2(1)",
+            "SELECT LOG2(1)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT LOG2('ABC')",
+            "",
+            "",
+            Optional.of(
+                "Cannot apply 'LOG2' to arguments of type 'LOG2(<CHAR(3)>)'. Supported form(s): 'LOG2(<NUMERIC>)")
+        ),
+        Arguments.of(
+            "SELECT XOR(1,2)",
+            "SELECT XOR(1,2)",
+            "SELECT BITWISE_XOR(1,2)",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
+            "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
+            "SELECT DATE_TRUNC('year', TIMESTAMP '2022-08-01')",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', '2022-09-01')", // sql literal
+            "",
+            "",
+            Optional.of(
+                "Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <CHAR(10)>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
+        ),
+        // ideally DATE can be implicitly cast to TIMESTAMP so that this one passes
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', DATE '2022-08-01')", // druid only supports timestamp in date_trunc
+            "",
+            "",
+            Optional.of(
+                "Cannot apply 'DATE_TRUNC' to arguments of type 'DATE_TRUNC(<CHAR(4)>, <DATE>)'. Supported form(s): 'DATE_TRUNC(<CHARACTER>, <TIMESTAMP>)'")
+        ),
+        Arguments.of(
+            "SELECT DATE_TRUNC('year', CAST(DATE '2022-08-01' AS TIMESTAMP))", // date column
+            "SELECT DATE_TRUNC('year', CAST(DATE '2022-08-01' AS TIMESTAMP))",
+            "SELECT DATE_TRUNC('year', CAST(DATE '2022-08-01' AS TIMESTAMP))",
+            Optional.empty()
+        ),
+        Arguments.of(
+            "SELECT XOR(2)",
+            "",
+            "",
+            Optional.of("Invalid number of arguments to function 'XOR'")
+        ),
+        Arguments.of(
+            "SELECT XOR('ABC', 'DEF')",
+            "",
+            "",
+            Optional.of(
+                "Cannot apply 'XOR' to arguments of type 'XOR(<CHAR(3)>, <CHAR(3)>)'. Supported form(s): 'XOR(<INTEGER>, <INTEGER>)'")
+        )
+    );
+  }
+
+  private static Stream<Arguments> testCreateMetricsViewParams()
   {
     return Stream.of(
         Arguments.of("""
                 CREATE METRICS VIEW METRICS_VIEW
-                DIMENSIONS
+                DIMENSIONS // comments are ignored
                 DIM1, ceil("MET1") AS DIM3, DIM2
+                -- comments are ignored
                 MEASURES
                 COUNT(DISTINCT DIM1) AS M_DIST,
                 AVG(DISTINCT MET1) AS M_AVG
@@ -310,18 +612,29 @@ public class CalciteTests
             Optional.empty(),
             Optional.of("Expression 'time' is not being grouped")
         ),
-        // currently not all duckdb functions are supported, this should ideally pass
         Arguments.of("""
                 CREATE METRICS VIEW Test4
                 DIMENSIONS
-                DATE_TRUNC('year', "date"), current_timestamp AS CURR
+                DATE_TRUNC('year', CAST("date" AS TIMESTAMP)), current_timestamp AS CURR
+                MEASURES
+                COUNT(*) AS C_STAR
+                FROM MAIN.TEST""",
+            2,
+            1,
+            Optional.of("Please provide an alias for `DATE_TRUNC`('year', CAST(`date` AS TIMESTAMP))"),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE METRICS VIEW Test4
+                DIMENSIONS
+                DATE_TRUNC('year', CAST("date" AS TIMESTAMP)) AS "the-year", current_timestamp AS CURR
                 MEASURES
                 COUNT(*) AS C_STAR
                 FROM MAIN.TEST""",
             2,
             1,
             Optional.empty(),
-            Optional.of("No match found for function signature DATE_TRUNC(<CHARACTER>, <DATE>)")
+            Optional.empty()
         ),
         Arguments.of("""
                 CREATE METRICS VIEW Test5

@@ -61,3 +61,10 @@
   margin-right: 16px;
   width: 36px;
 }
+
+.tabs-container {
+  border-style: solid;
+  border-color: var(--ifm-toc-border-color);
+  border-radius: var(--ifm-global-radius);
+  padding: 0px 20px 20px 20px;
+}

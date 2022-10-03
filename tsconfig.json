@@ -1,4 +1,6 @@
 {
+  // TODO: SvelteKit recommends extending their config, but it currently triggers type import errors throughout application that we need to fix
+  // "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "moduleResolution": "node",
     "module": "es2020",
@@ -24,16 +26,16 @@
     "allowJs": true,
     "checkJs": true,
     "paths": {
-      "$lib": ["src/lib"],
-      "$lib/*": ["src/lib/*"],
-      "$common": ["src/common"],
-      "$common/*": ["src/common/*"],
-      "$cli": ["src/cli"],
-      "$cli/*": ["src/cli/*"],
-      "$server": ["src/server"],
-      "$server/*": ["src/server/*"]
+      "@rilldata/web-local/lib/*": ["web-local/src/lib/*"],
+      "@rilldata/web-local/common/*": ["web-local/src/common/*"],
+      "@rilldata/web-local/cli/*": ["web-local/src/cli/*"],
+      "@rilldata/web-local/server/*": ["web-local/src/server/*"]
     },
     "outDir": "dist"
   },
-  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.svelte", "test/**/*.ts"]
+  "include": [
+    "**/*.d.ts",
+    "**/*.ts",
+    "**/*.svelte",
+  ]
 }

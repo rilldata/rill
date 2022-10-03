@@ -1,0 +1,31 @@
+on:
+  push:
+    paths:
+      - "**.go"
+  pull_request:
+    paths:
+      - "**.go"
+name: Test Go code
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-go@v3
+      with:
+        go-version: 1.19.x
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Download librillsql
+      shell: bash
+      run: ./runtime/scripts/setup_sql.sh -f
+    - name: Go fmt
+      run: test -z $(gofmt -l .)
+    - name: Go test
+      run: go test -short -v ./...

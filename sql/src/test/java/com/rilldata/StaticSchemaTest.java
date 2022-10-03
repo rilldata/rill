@@ -1,6 +1,7 @@
 package com.rilldata;
 
 import com.rilldata.calcite.CalciteToolbox;
+import com.rilldata.calcite.dialects.Dialects;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.ValidationException;
@@ -16,10 +17,11 @@ public class StaticSchemaTest
   {
     CalciteToolbox calciteToolbox = new CalciteToolbox(
         new StaticSchemaProvider(new String(StaticSchemaTest.class.getResourceAsStream("/schema.json").readAllBytes())),
-        PostgresqlSqlDialect.DEFAULT,
         null
     );
-    String runnableQuery = calciteToolbox.getRunnableQuery("select \"name\" from \"main\".\"heroes\"");
+    String runnableQuery = calciteToolbox.getRunnableQuery("select \"name\" from \"main\".\"heroes\"",
+        Dialects.DUCKDB.getSqlDialect()
+    );
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("select"), "no select");
   }
 
@@ -28,23 +30,33 @@ public class StaticSchemaTest
   {
     CalciteToolbox calciteToolbox = new CalciteToolbox(
         new StaticSchemaProvider(new String(StaticSchemaTest.class.getResourceAsStream("/schema.json").readAllBytes())),
-        PostgresqlSqlDialect.DEFAULT,
         null
     );
 
-    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"id\") from \"main\".\"heroes\"");
+    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"name\") from \"main\".\"heroes\"",
+        Dialects.DUCKDB.getSqlDialect()
+    );
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("select"), "no select");
 
-    runnableQuery = calciteToolbox.getRunnableQuery("select \"power\" from \"main\".\"heroes\" where \"heroes\".\"power\" > 10000.001");
+    runnableQuery = calciteToolbox.getRunnableQuery(
+        "select \"power\" from \"main\".\"heroes\" where \"heroes\".\"power\" > 10000.001",
+        Dialects.DUCKDB.getSqlDialect()
+    );
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("select"), "no select");
 
-    runnableQuery = calciteToolbox.getRunnableQuery("insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100.001)");
+    runnableQuery = calciteToolbox.getRunnableQuery(
+        "insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100.001)",
+        Dialects.DUCKDB.getSqlDialect()
+    );
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("insert"), "no insert");
 
-    runnableQuery = calciteToolbox.getRunnableQuery("insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100000)");
+    runnableQuery = calciteToolbox.getRunnableQuery(
+        "insert into \"main\".\"heroes\" (\"id\", \"name\", \"power\") values (1, 'Superman', 100000)",
+        Dialects.DUCKDB.getSqlDialect()
+    );
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("insert"), "no insert");
   }
@@ -54,11 +66,12 @@ public class StaticSchemaTest
   {
     CalciteToolbox calciteToolbox = new CalciteToolbox(
         new StaticSchemaProvider(new String(StaticSchemaTest.class.getResourceAsStream("/schema.json").readAllBytes())),
-        PostgresqlSqlDialect.DEFAULT,
         null
     );
 
-    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"id\") from \"main\".\"heroes\"");
+    String runnableQuery = calciteToolbox.getRunnableQuery("select lower(\"name\") from \"main\".\"heroes\"",
+        Dialects.DUCKDB.getSqlDialect()
+    );
     System.out.println(runnableQuery);
     Assertions.assertTrue(runnableQuery.toLowerCase().contains("select"), "no select");
   }

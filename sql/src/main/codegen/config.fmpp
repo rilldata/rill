@@ -13,7 +13,8 @@ data: {
     # Example: "org.apache.calcite.sql.*", "java.util.List".
     imports: [
       "org.apache.calcite.sql.SqlCreate",
-      "com.rilldata.calcite.extensions.SqlCreateMetric"
+      "com.rilldata.calcite.models.SqlCreateMetricsView"
+      "com.rilldata.calcite.models.SqlCreateSource"
       "org.apache.calcite.schema.ColumnStrategy"
       "org.apache.calcite.sql.SqlDrop"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
@@ -46,7 +47,8 @@ data: {
     # Each must accept arguments "(SqlParserPos pos, boolean replace)".
     # Example: "SqlCreateForeignSchema".
     createStatementParserMethods: [
-      "SqlCreateMetric"
+      "SqlCreateMetricsView"
+      "SqlCreateSource"
       "SqlCreateMaterializedView"
       "SqlCreateTable"
       "SqlCreateView"
@@ -64,6 +66,7 @@ data: {
     # "dataTypeParserMethods".
     implementationFiles: [
       "create-metric.ftl"
+      "create-source.ftl"
     ]
   }
 }
