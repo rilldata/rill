@@ -101,14 +101,13 @@
     {/each}
   </div>
   <Footer>
-    <Button type="text" compact on:click={onCloseHandler}>Cancel</Button>
     <Button
-      type="primary"
+      type="secondary"
       compact
       disabled={currentlySelectedValues.every((value) =>
         candidateValues.includes(value)
       )}
-      on:click={onApplyHandler}>Apply</Button
+      on:click={onApplyHandler}><Check />Include</Button
     >
   </Footer>
 </Menu>
