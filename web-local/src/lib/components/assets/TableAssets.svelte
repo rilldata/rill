@@ -8,6 +8,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -106,14 +107,11 @@
     }
   };
 
-  const deleteSource = (tableName: string) => {
-    const currentAssetIndex = $persistentTableStore.entities.findIndex(
-      (entity) => entity.tableName === tableName
-    );
+  const deleteSource = (tableName: string, id: string) => {
+    const nextSourceId = getNextEntityId($persistentTableStore.entities, id);
 
-    if ($persistentTableStore.entities.length > 1) {
-      const priorAsset = $persistentTableStore.entities[currentAssetIndex - 1];
-      goto(`/source/${priorAsset.id}`);
+    if (nextSourceId) {
+      goto(`/source/${nextSourceId}`);
     } else {
       goto("/");
     }
@@ -225,7 +223,7 @@
                 rename...
               </MenuItem>
               <!-- FIXME: this should pop up an "are you sure?" modal -->
-              <MenuItem icon on:select={() => deleteSource(tableName)}>
+              <MenuItem icon on:select={() => deleteSource(tableName, id)}>
                 <svelte:fragment slot="icon">
                   <Cancel />
                 </svelte:fragment>
