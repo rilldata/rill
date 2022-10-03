@@ -128,6 +128,7 @@ The main feature-set component for dashboard filters
             typeLabel="dimension"
             name={`Exclude ${name}`}
             {selectedValues}
+            excludeMode
           >
             <svelte:fragment slot="body-tooltip-content">
               click to edit the the filters in this dimension

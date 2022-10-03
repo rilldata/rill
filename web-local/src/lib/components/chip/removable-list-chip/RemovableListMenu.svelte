@@ -1,8 +1,9 @@
-<script>
+<script type="ts">
   import { Button } from "@rilldata/web-local/lib/components/button";
 
   import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
   import Close from "@rilldata/web-local/lib/components/icons/Close.svelte";
+  import Cancel from "@rilldata/web-local/lib/components/icons/Cancel.svelte";
   import Spacer from "@rilldata/web-local/lib/components/icons/Spacer.svelte";
 
   import { Menu } from "@rilldata/web-local/lib/components/menu";
@@ -13,6 +14,7 @@
   import Footer from "./Footer.svelte";
 
   export let selectedValues;
+  export let excludeMode: boolean = false;
 
   const dispatch = createEventDispatcher();
 
@@ -62,7 +64,7 @@
 
   <MenuHeader>
     <svelte:fragment slot="title">Filters</svelte:fragment>
-    <svelte:fragment slot="right">
+    <!-- <svelte:fragment slot="right">
       <button
         class="hover:bg-gray-100  grid place-items-center"
         style:width="24px"
@@ -71,7 +73,7 @@
       >
         <Close size="16px" /></button
       >
-    </svelte:fragment>
+    </svelte:fragment> -->
   </MenuHeader>
 
   <Divider marginTop={1} marginBottom={1} />
@@ -86,10 +88,12 @@
         }}
       >
         <svelte:fragment slot="icon">
-          {#if candidateValues.includes(value)}
-            <Check />
+          {#if candidateValues.includes(value) && !excludeMode}
+            <Check size="20px" />
+          {:else if candidateValues.includes(value) && excludeMode}
+            <Cancel size="20px" />
           {:else}
-            <Spacer />
+            <Spacer size="20px" />
           {/if}
         </svelte:fragment>
         {#if value?.length > 240}

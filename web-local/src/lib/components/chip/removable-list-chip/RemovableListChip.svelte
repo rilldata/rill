@@ -26,6 +26,7 @@ are details left to the consumer of the component; this component should remain 
   export let selectedValues: string[];
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
+  export let excludeMode: boolean = false;
 
   const dispatch = createEventDispatcher();
 
@@ -80,6 +81,7 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
+    {excludeMode}
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
