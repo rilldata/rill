@@ -6,7 +6,6 @@ import com.rilldata.calcite.models.SqlCreateSource;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rilldata.calcite.extensions.SqlCreateMetric;
 import com.rilldata.calcite.generated.RillSqlParserImpl;
 import com.rilldata.calcite.models.Artifact;
 import com.rilldata.calcite.models.ArtifactManager;
@@ -196,7 +195,7 @@ public class CalciteToolbox
         return "TABLE";
       } else if (node instanceof SqlCreateView) {
         return "VIEW";
-      } else if (node instanceof SqlCreateMetric) {
+      } else if (node instanceof SqlCreateMetricsView) {
         return "METRICS VIEW";
       }
       return null;
@@ -326,7 +325,7 @@ public class CalciteToolbox
         statement.name = v.name.toString();
         statement.ddl = n.toSqlString(sqlDialect).toString();
         statement.node = n;
-      } else if (n instanceof SqlCreateMetric v) {
+      } else if (n instanceof SqlCreateMetricsView v) {
         statement.name = v.name.toString();
         statement.ddl = n.toSqlString(sqlDialect).toString();
         statement.node = n;
