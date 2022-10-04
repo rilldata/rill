@@ -37,4 +37,5 @@ jobs:
         shell: bash
         run: |
           cd sql
+          mvn test
           mvn package -Pnative-lib
