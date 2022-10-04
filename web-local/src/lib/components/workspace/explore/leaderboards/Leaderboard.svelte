@@ -195,7 +195,6 @@
     }}
   >
     <LeaderboardHeader
-      {atLeastOneActive}
       isFetching={$topListQuery.isFetching}
       {displayName}
       {toggleFilterExcludeMode}
