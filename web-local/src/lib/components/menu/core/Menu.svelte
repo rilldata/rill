@@ -18,6 +18,7 @@
   export let dark: boolean = undefined;
   export let maxWidth: string = undefined;
   export let minHeight: string = undefined;
+  export let maxHeight: string = undefined;
   export let paddingTop = 2;
   export let paddingBottom = 2;
   export let rounded = true;
@@ -125,6 +126,7 @@
 <div
   style:max-width={maxWidth}
   style:min-height={minHeight}
+  style:max-height={maxHeight}
   transition:fade|local={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;

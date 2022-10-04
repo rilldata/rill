@@ -1,23 +1,26 @@
 <script>
   import { Button } from "@rilldata/web-local/lib/components/button";
+  import { Search } from "@rilldata/web-local/lib/components/search";
 
   import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
-  import Close from "@rilldata/web-local/lib/components/icons/Close.svelte";
   import Spacer from "@rilldata/web-local/lib/components/icons/Spacer.svelte";
 
   import { Menu } from "@rilldata/web-local/lib/components/menu";
-  import Divider from "@rilldata/web-local/lib/components/menu/core/Divider.svelte";
-  import MenuHeader from "@rilldata/web-local/lib/components/menu/core/MenuHeader.svelte";
   import MenuItem from "@rilldata/web-local/lib/components/menu/core/MenuItem.svelte";
   import { createEventDispatcher, tick } from "svelte";
   import Footer from "./Footer.svelte";
 
   export let selectedValues;
+  let searchText = "";
 
   const dispatch = createEventDispatcher();
 
   function onCloseHandler() {
     dispatch("close");
+  }
+
+  function onSearch() {
+    console.log("Searching");
   }
 
   async function onApplyHandler() {
@@ -55,28 +58,17 @@
   paddingBottom={0}
   rounded={false}
   maxWidth="480px"
+  minHeight="150px"
+  maxHeight="400px"
   on:escape
   on:click-outside
 >
   <!-- the min-height is set to have about 3 entries in it -->
 
-  <MenuHeader>
-    <svelte:fragment slot="title">Filters</svelte:fragment>
-    <svelte:fragment slot="right">
-      <button
-        class="hover:bg-gray-100  grid place-items-center"
-        style:width="24px"
-        style:height="24px"
-        on:click={onCloseHandler}
-      >
-        <Close size="16px" /></button
-      >
-    </svelte:fragment>
-  </MenuHeader>
+  <Search bind:value={searchText} on:input={onSearch} />
 
-  <Divider marginTop={1} marginBottom={1} />
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
-  <div class="flex flex-col w-full pb-1">
+  <div class="flex flex-col overflow-auto w-full pb-1">
     {#each currentlySelectedValues as value}
       <MenuItem
         icon
@@ -107,7 +99,11 @@
       disabled={currentlySelectedValues.every((value) =>
         candidateValues.includes(value)
       )}
-      on:click={onApplyHandler}><Check />Include</Button
+      on:click={onApplyHandler}
     >
+      <Check />
+      <span class="font-semibold text-gray-800">Include</span>
+    </Button>
+    <div class="text-gray-600 italic">4 other values selected</div>
   </Footer>
 </Menu>
