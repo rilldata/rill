@@ -11,29 +11,31 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/rilldata/rill/runtime"
-	_ "github.com/rilldata/rill/runtime/infra/druid"
-	_ "github.com/rilldata/rill/runtime/infra/duckdb"
-	"github.com/rilldata/rill/runtime/metadata"
-	_ "github.com/rilldata/rill/runtime/metadata/postgres"
-	_ "github.com/rilldata/rill/runtime/metadata/sqlite"
+	"github.com/rilldata/rill/runtime/drivers"
+	_ "github.com/rilldata/rill/runtime/drivers/druid"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server"
 	_ "github.com/rilldata/rill/runtime/sql"
 )
 
 type Config struct {
 	Env            string        `default:"development"`
+	Port           int           `default:"8080"`
+	GRPCPort       int           `default:"9090" split_words:"true"`
 	LogLevel       zapcore.Level `default:"info" split_words:"true"`
 	DatabaseDriver string        `default:"sqlite"`
 	DatabaseURL    string        `default:":memory:" split_words:"true"`
-	GRPCPort       int           `default:"9090" split_words:"true"`
-	HTTPPort       int           `default:"8080" split_words:"true"`
 }
 
 func main() {
 	// Load .env
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Printf("Failed to load .env: %s", err.Error())
+		fmt.Printf("failed to load .env: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -41,7 +43,7 @@ func main() {
 	var conf Config
 	err = envconfig.Process("rill_runtime", &conf)
 	if err != nil {
-		fmt.Printf("Failed to load config: %s", err.Error())
+		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -53,31 +55,33 @@ func main() {
 		logger, err = zap.NewDevelopment(zap.IncreaseLevel(conf.LogLevel))
 	}
 	if err != nil {
-		fmt.Printf("Error creating logger: %s", err.Error())
+		fmt.Printf("error: failed to create logger: %s", err.Error())
 		os.Exit(1)
 	}
 
-	// Init db
-	db, err := metadata.Open(conf.DatabaseDriver, conf.DatabaseURL)
+	// Open metadata db connection
+	metadataDB, err := drivers.Open(conf.DatabaseDriver, conf.DatabaseURL)
 	if err != nil {
-		logger.Fatal("error connecting to database", zap.Error(err))
+		logger.Fatal("error: could not connect to metadata db", zap.Error(err))
 	}
-
-	// Auto-run migrations
-	err = db.Migrate(context.Background())
+	err = metadataDB.Migrate(context.Background())
 	if err != nil {
-		logger.Fatal("error migrating database", zap.Error(err))
+		logger.Fatal("error: metadata db migration", zap.Error(err))
+	}
+	_, ok := metadataDB.Registry()
+	if !ok {
+		logger.Fatal("error: metadata db is not a valid registry", zap.Error(err))
 	}
 
 	// Init runtime
-	rt := runtime.New(db, logger)
+	rt := runtime.New(metadataDB, logger)
 
 	// Init server
-	opts := &runtime.ServerOptions{
+	opts := &server.ServerOptions{
+		HTTPPort: conf.Port,
 		GRPCPort: conf.GRPCPort,
-		HTTPPort: conf.HTTPPort,
 	}
-	server := runtime.NewServer(opts, rt, logger)
+	server := server.NewServer(opts, rt, logger)
 
 	// Run server
 	ctx := graceful.WithCancelOnTerminate(context.Background())

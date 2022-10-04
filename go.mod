@@ -16,8 +16,8 @@ require (
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.uber.org/zap v1.17.0
 	google.golang.org/grpc v1.48.0
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	modernc.org/sqlite v1.10.6
-	src.techknowlogick.com/xgo v1.5.1-0.20220906164532-735bfdfb90d9
 )
 
 require (
@@ -42,6 +42,7 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
