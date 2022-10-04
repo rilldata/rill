@@ -28,15 +28,20 @@ jobs:
           java-version: "17"
           components: "native-image"
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          version: '21.5'
+#      - name: Install Protoc
+#        uses: arduino/setup-protoc@v1
+#        with:
+#          repo-token: ${{ secrets.GITHUB_TOKEN }}
+#          version: '21.5'
 
       - name: Build native library
         shell: bash
         run: |
           cd sql
+          PROTOC_ZIP=protoc-21.5-linux-x86_64.zip
+          curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v21.5/$PROTOC_ZIP
+          sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+          sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+          rm -f $PROTOC_ZIP
           mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn test 
           mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn package -Pnative-lib
