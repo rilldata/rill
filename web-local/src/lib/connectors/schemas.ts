@@ -1,0 +1,127 @@
+import * as yup from "yup";
+
+export interface ConnectorSpec {
+  name: string;
+  title: string;
+  description: string;
+  fields: {
+    [name: string]: {
+      type: string;
+      required: boolean;
+      label: string;
+      placeholder: string;
+    };
+  };
+}
+
+export const HTTP: ConnectorSpec = {
+  name: "http",
+  title: "HTTP(S)",
+  description: "Connect to an HTTP(S) endpoint",
+  fields: {
+    url: {
+      type: "text",
+      required: true,
+      label: "URL",
+      placeholder: "https://example.com/data.parquet",
+    },
+  },
+};
+
+export const HTTPYupSchema: yup.AnyObjectSchema = yup.object().shape({
+  url: yup.string().url().required(),
+});
+
+export const S3: ConnectorSpec = {
+  name: "s3",
+  title: "S3",
+  description:
+    "Connect to an S3 bucket. For private buckets, provide an access key or session token.",
+  fields: {
+    url: {
+      type: "text",
+      label: "URL",
+      placeholder: "s3://...",
+      required: true,
+    },
+    region: {
+      type: "text",
+      label: "Region",
+      placeholder: "us-east-1",
+      required: true,
+    },
+    accessKeyId: {
+      type: "text",
+      label: "Access key ID",
+      placeholder: "...",
+      required: false,
+    },
+    secretAccessKey: {
+      type: "text",
+      label: "Secret access key",
+      placeholder: "...",
+      required: false,
+    },
+    sessionToken: {
+      type: "text",
+      label: "Session token",
+      placeholder: "...",
+      required: false,
+    },
+  },
+};
+
+export const S3YupSchema: yup.AnyObjectSchema = yup.object().shape({
+  url: yup
+    .string()
+    .matches(/^s3:\/\//, "Must be an S3 URL")
+    .required(),
+  region: yup.string().required(),
+  sessionToken: yup.string(),
+  accessKeyId: yup.string(),
+  secretAccessKey: yup.string(),
+});
+
+export const GCS: ConnectorSpec = {
+  name: "gcs",
+  title: "GCS",
+  description:
+    "Connect to a GCS bucket. For private buckets, provide <a href=https://console.cloud.google.com/storage/settings;tab=interoperability target='_blank'>HMAC credentials</a>.",
+  fields: {
+    url: {
+      type: "text",
+      label: "URL",
+      placeholder: "gcs://...",
+      required: true,
+    },
+    region: {
+      type: "text",
+      label: "Region",
+      placeholder: "us-east-1",
+      required: true,
+    },
+    accessKeyId: {
+      type: "text",
+      label: "Access key ID",
+      placeholder: "...",
+      required: false,
+    },
+    secretAccessKey: {
+      type: "text",
+      label: "Secret access key",
+      placeholder: "...",
+      required: false,
+    },
+  },
+};
+
+export const GCSYupSchema = yup.object().shape({
+  url: yup
+    .string()
+    .matches(/^gcs:\/\//, "Must be a GCS URL")
+    .required(),
+  region: yup.string().required(),
+  sessionToken: yup.string(),
+  accessKeyId: yup.string(),
+  secretAccessKey: yup.string(),
+});

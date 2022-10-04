@@ -5,6 +5,7 @@
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
+  export let submitForm = false;
 
   const dispatch = createEventDispatcher();
 
@@ -51,6 +52,7 @@
 </script>
 
 <button
+  type={submitForm && "submit"}
   style:height={compact ? "auto" : "36px"}
   {disabled}
   class={buttonClasses({ type, compact, status })}

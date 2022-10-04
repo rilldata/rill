@@ -42,6 +42,10 @@ body {
   overscroll-behavior: none;
 }
 
+a {
+  @apply text-blue-500;
+}
+
 .stack-list > * + * {
   margin-top: var(--gap, 1rem);
 }

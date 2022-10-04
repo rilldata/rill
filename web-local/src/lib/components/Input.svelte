@@ -6,6 +6,7 @@
   export let label = "";
   export let error: string;
   export let value: string;
+  export let placeholder = "";
   export let claimFocusOnMount = false;
   let inputElement;
   if (claimFocusOnMount) {
@@ -18,11 +19,12 @@
 <label for={id} class="text-gray-600 pl-1 pb-1 block">{label}</label>
 <input
   bind:this={inputElement}
-  autocomplete="off"
-  type="text"
-  {id}
-  class="border border-gray-400 rounded px-1 py-2 cursor-pointer focus:outline-blue-500 w-full text-xs"
   bind:value
+  {id}
+  type="text"
+  {placeholder}
+  autocomplete="off"
+  class="border border-gray-400 rounded px-1 py-2 cursor-pointer focus:outline-blue-500 w-full text-xs"
 />
 {#if error}
   <div
