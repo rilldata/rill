@@ -74,7 +74,10 @@
       </h1>
     {/if}
   </div>
-  {#if showStatus}
-    <WorkspaceHeaderStatusSpinner />
-  {/if}
+  <div>
+    <slot name="right" />
+    {#if showStatus}
+      <WorkspaceHeaderStatusSpinner />
+    {/if}
+  </div>
 </header>

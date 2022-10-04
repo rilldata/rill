@@ -38,6 +38,7 @@
   import EditIcon from "../icons/EditIcon.svelte";
   import Explore from "../icons/Explore.svelte";
   import Model from "../icons/Model.svelte";
+  import RefreshIcon from "../icons/RefreshIcon.svelte";
   import Source from "../icons/Source.svelte";
   import { Divider, Menu, MenuItem } from "../menu";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
@@ -234,6 +235,18 @@
               />
             </svelte:fragment>
             <svelte:fragment slot="menu-items" let:toggleMenu>
+              <MenuItem
+                icon
+                on:select={() => {
+                  console.log("this will refresh the source");
+                }}
+              >
+                <svelte:fragment slot="icon">
+                  <RefreshIcon />
+                </svelte:fragment>
+                manually refresh source
+              </MenuItem>
+
               <MenuItem icon on:select={() => createModel(tableName)}>
                 <svelte:fragment slot="icon">
                   <Model />

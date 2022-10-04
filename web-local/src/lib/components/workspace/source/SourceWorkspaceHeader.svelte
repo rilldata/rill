@@ -3,7 +3,11 @@
   import { dataModelerService } from "../../../application-state-stores/application-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { formatSourceType } from "../../../types";
+  import { IconButton } from "../../button";
+  import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
+  import Tooltip from "../../tooltip/Tooltip.svelte";
+  import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import WorkspaceHeader from "../WorkspaceHeader.svelte";
 
   export let id;
@@ -23,10 +27,7 @@
   $: titleInput = currentSource?.name;
 </script>
 
-<div
-  class="grid gap-x-3 items-center pr-4"
-  style:grid-template-columns="auto max-content"
->
+<div class="grid  items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
     <svelte:fragment slot="icon">
       <Source />
@@ -35,6 +36,16 @@
       <span class="text-gray-500 text-sm font-medium">
         {formatSourceType(currentSource.sourceType)}</span
       >
+    </svelte:fragment>
+    <svelte:fragment slot="right">
+      <Tooltip location="bottom" distance={8}>
+        <IconButton>
+          <RefreshIcon />
+        </IconButton>
+        <TooltipContent slot="tooltip-content">
+          manually refresh the source data
+        </TooltipContent>
+      </Tooltip>
     </svelte:fragment>
   </WorkspaceHeader>
 </div>

@@ -108,7 +108,7 @@
   <div
     style:overflow="auto"
     style:height="100%"
-    class="m-3 border border-gray-300 rounded"
+    class="m-6 mt-0 border border-gray-300 rounded"
   >
     {#if currentDerivedSource}
       {#key currentDerivedSource.id}
