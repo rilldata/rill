@@ -64,7 +64,7 @@
           {:else}
             <Spacer size="16px" />
           {/if}
-          <a href="/" class="font-bold">Rill Developer</a>
+          <a href="/" class="font-bold text-black"> Rill Developer </a>
         </h1>
       </header>
       <TableAssets />
