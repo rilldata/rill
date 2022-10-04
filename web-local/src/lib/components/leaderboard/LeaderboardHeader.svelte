@@ -11,7 +11,6 @@
   import TooltipShortcutContainer from "@rilldata/web-local/lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-local/lib/components/tooltip/TooltipTitle.svelte";
 
-  export let atLeastOneActive: boolean;
   export let displayName: string;
   export let isFetching: boolean;
   export let toggleFilterExcludeMode: () => void;
