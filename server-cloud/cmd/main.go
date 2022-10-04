@@ -16,10 +16,15 @@ import (
 )
 
 type Config struct {
-	Env            string `default:"development"`
-	DatabaseDriver string `default:"postgres"`
-	DatabaseURL    string `split_words:"true"`
-	Port           int    `default:"8080" split_words:"true"`
+	Env               string `default:"development"`
+	DatabaseDriver    string `default:"postgres" split_words:"true"`
+	DatabaseURL       string `split_words:"true"`
+	Port              int    `default:"8080" split_words:"true"`
+	SessionsSecret    string `split_words:"true"`
+	Auth0ClientID     string `split_words:"true"`
+	Auth0ClientSecret string `split_words:"true"`
+	Auth0CallbackURL  string `split_words:"true"`
+	Auth0Domain       string `split_words:"true"`
 }
 
 func main() {
@@ -62,8 +67,20 @@ func main() {
 		logger.Fatal("error migrating database", zap.Error(err))
 	}
 
+	srvConf := server.Config{
+		Port:              conf.Port,
+		Auth0ClientID:     conf.Auth0ClientID,
+		Auth0ClientSecret: conf.Auth0ClientSecret,
+		Auth0CallbackURL:  conf.Auth0CallbackURL,
+		Auth0Domain:       conf.Auth0Domain,
+		SessionsSecret:    conf.SessionsSecret,
+	}
+
 	// Init server
-	server := server.New(logger, db)
+	server, err := server.New(logger, db, srvConf)
+	if err != nil {
+		logger.Fatal("error creating server", zap.Error(err))
+	}
 
 	// Run server
 	logger.Info("serving http", zap.Int("port", conf.Port))
