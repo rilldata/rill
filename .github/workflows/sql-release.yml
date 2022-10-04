@@ -50,6 +50,7 @@ jobs:
         shell: bash
         run: |
           cd sql
+          mvn test
           mvn package -Pnative-lib
       - name: Install zip on Windows
         if: matrix.os == 'windows'
