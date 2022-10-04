@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Tab from "@rilldata/web-local/lib/components/tab/Tab.svelte";
+  import TabGroup from "@rilldata/web-local/lib/components/tab/TabGroup.svelte";
   import ConnectorForm from "../../../lib/components/form/ConnectorForm.svelte";
   import {
     GCS,
@@ -37,16 +39,18 @@
   $: onChange(selectedConnector);
 </script>
 
-<div class="pb-6 flex flex-col gap-y-1">
-  <h1 class="text-lg py-4">Connector</h1>
-  {#each connectorOptions as option}
-    <label for={option.value} class="flex gap-x-3">
-      <input type="radio" bind:group={selectedConnector} value={option.value} />
-      {option.label}
-    </label>
-  {/each}
-</div>
+<TabGroup
+  on:select={(event) => {
+    selectedConnector = event.detail;
+  }}
+>
+  <Tab value={"S3"}>S3</Tab>
+  <Tab value={"GCS"}>GCS</Tab>
+  <Tab value={"HTTP"}>https</Tab>
+</TabGroup>
 
-{#key selectedConnector}
-  <ConnectorForm {sourceName} {connectorSpec} {yupSchema} />
-{/key}
+<div class="py-8">
+  {#key selectedConnector}
+    <ConnectorForm {sourceName} {connectorSpec} {yupSchema} />
+  {/key}
+</div>
