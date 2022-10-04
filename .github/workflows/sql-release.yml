@@ -1,7 +1,7 @@
 name: Release SQL shared library
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "sql-release-autoincrement"]
     paths:
       - ".github/workflows/sql-release.yml"
       - "sql/**"
@@ -23,6 +23,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v3
+      - name: Increment patch version
+        run: |
+          mvn validate -Pbump-patch
       - uses: graalvm/setup-graalvm@v1
         with:
           version: "22.1.0"
@@ -56,6 +59,12 @@ jobs:
         run: |
           rm sql/target/*.txt
           zip -j librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip sql/target/librillsql.* sql/target/graal_isolate.*
+      - name: Push version changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          default_author: github_actions
+          add: pom.xml
+          message: librillsql release v${{ steps.maven-version.outputs.version }}
       - name: Upload archive
         uses: google-github-actions/upload-cloud-storage@v0
         with:
