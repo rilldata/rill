@@ -26,7 +26,7 @@ jobs:
       - name: Increment patch version
         run: |
           cd sql
-          mvn validate -Pbump-patch
+          mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn validate -Pbump-patch
       - uses: graalvm/setup-graalvm@v1
         with:
           version: "22.1.0"
@@ -36,6 +36,7 @@ jobs:
         uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+          version: '21.5'
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
@@ -50,8 +51,8 @@ jobs:
         shell: bash
         run: |
           cd sql
-          mvn test
-          mvn package -Pnative-lib
+          mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn test
+          mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn package -Pnative-lib
       - name: Install zip on Windows
         if: matrix.os == 'windows'
         shell: bash
