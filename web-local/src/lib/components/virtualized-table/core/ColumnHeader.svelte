@@ -34,6 +34,9 @@
   $: isSortingDesc = true;
 
   $: isDimensionTable = config.table === "DimensionTable";
+  $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
+
+  $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
   $: columnFontWeight = isSelected
     ? "font-bold"
@@ -100,7 +103,7 @@
           class="text-ellipsis
           {columnFontWeight}
           {isDimensionTable
-            ? 'text-left break-words line-clamp-2'
+            ? `${textAlignment} break-words line-clamp-2`
             : 'overflow-hidden whitespace-nowrap'}
           "
         >
