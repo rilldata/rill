@@ -20,7 +20,7 @@
   }
 
   function onSearch() {
-    console.log("Searching");
+    dispatch("search", searchText);
   }
 
   async function onApplyHandler() {
@@ -68,29 +68,33 @@
   <Search bind:value={searchText} on:input={onSearch} />
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
-  <div class="flex flex-col overflow-auto w-full pb-1">
-    {#each currentlySelectedValues as value}
-      <MenuItem
-        icon
-        {value}
-        on:select={() => {
-          toggleValue(value);
-        }}
-      >
-        <svelte:fragment slot="icon">
-          {#if candidateValues.includes(value)}
-            <Check />
-          {:else}
-            <Spacer />
-          {/if}
-        </svelte:fragment>
-        {#if value?.length > 240}
-          {value.slice(0, 240)}...
-        {:else}
+  <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
+    {#if currentlySelectedValues.length}
+      {#each currentlySelectedValues as value}
+        <MenuItem
+          icon
           {value}
-        {/if}
-      </MenuItem>
-    {/each}
+          on:select={() => {
+            toggleValue(value);
+          }}
+        >
+          <svelte:fragment slot="icon">
+            {#if candidateValues.includes(value)}
+              <Check />
+            {:else}
+              <Spacer />
+            {/if}
+          </svelte:fragment>
+          {#if value?.length > 240}
+            {value.slice(0, 240)}...
+          {:else}
+            {value}
+          {/if}
+        </MenuItem>
+      {/each}
+    {:else}
+      <div class="italic text-gray-500 text-center">no results</div>
+    {/if}
   </div>
   <Footer>
     <Button

@@ -10,7 +10,7 @@
   const chipValues = [
     {
       name: "Country",
-      values: ["us", "de", "ca", "mx"],
+      values: [],
       typeLabel: "dimension",
     },
     {
@@ -49,6 +49,11 @@
     } else {
       actives[name] = [...actives[name], value];
     }
+  }
+
+  function searchDimension(name, value) {
+    if (value == "") return actives[name];
+    return ["usd", "inr", "jpy", "gbp"];
   }
 
   let activeChips = [...chipValues];
@@ -101,6 +106,9 @@
         }}
         on:select={(event) => {
           toggleActiveValue(name, event.detail);
+        }}
+        on:search={(event) => {
+          searchDimension(name, event.detail);
         }}
       >
         <svelte:fragment slot="remove-tooltip-content">
