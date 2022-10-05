@@ -33,11 +33,11 @@ jobs:
           version: "22.1.0"
           java-version: "17"
           components: "native-image"
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          version: '21.5'
+#      - name: Install Protoc
+#        uses: arduino/setup-protoc@v1
+#        with:
+#          repo-token: ${{ secrets.GITHUB_TOKEN }}
+#          version: '21.5'
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
