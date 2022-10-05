@@ -13,7 +13,14 @@
   let disabled = false;
 </script>
 
-<Dialog showCancel {disabled} on:cancel={() => dispatch("close")}>
+<Dialog
+  compact
+  showCancel
+  minHeight="600px"
+  location="top"
+  {disabled}
+  on:cancel={() => dispatch("close")}
+>
   <div slot="title">
     <TabGroup
       on:select={(event) => {

@@ -34,6 +34,7 @@
 </script>
 
 <TabGroup
+  variant="secondary"
   on:select={(event) => {
     selectedConnector = event.detail;
   }}

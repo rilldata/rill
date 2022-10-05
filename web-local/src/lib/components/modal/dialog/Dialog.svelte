@@ -1,8 +1,8 @@
 <script lang="ts">
   import IconButton from "../../button/IconButton.svelte";
 
-  import Close from "../../icons/Close.svelte";
   import { createEventDispatcher } from "svelte";
+  import Close from "../../icons/Close.svelte";
   import ModalContainer from "../ModalContainer.svelte";
   import DialogCTA from "./DialogCTA.svelte";
   import DialogFooter from "./DialogFooter.svelte";
@@ -11,6 +11,8 @@
   export let compact = false;
   export let showCancel = true;
   export let disabled = false;
+  export let location: "top" | "center" = "center";
+  export let minHeight: string = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -22,11 +24,17 @@
 </script>
 
 <ModalContainer on:cancel>
-  <div class="grid place-items-center w-screen h-screen">
+  <div
+    class:content-center={location === "center"}
+    class:content-start={location === "top"}
+    class="justify-center grid w-screen h-screen relative"
+  >
     <div
+      style:min-height={minHeight}
       class:min-width={minWidth}
       class="{minWidth ? '' : 'min-w-[400px]'} {containerClasses} rounded"
-      style:transform="translateY(-120px)"
+      style:transform={location === "center" && "translateY(-120px)"}
+      class:m-24={location === "top"}
     >
       <DialogHeader {compact}>
         <svelte:fragment slot="title"><slot name="title" /></svelte:fragment>

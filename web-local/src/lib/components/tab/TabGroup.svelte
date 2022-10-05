@@ -1,8 +1,17 @@
 <script lang="ts">
-  import { createEventDispatcher, setContext } from "svelte";
+  import {
+    createEventDispatcher,
+    onDestroy,
+    onMount,
+    setContext,
+  } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import { derived, writable } from "svelte/store";
+  import { derived, Readable, writable } from "svelte/store";
+
+  export let variant: "panel" | "secondary" = "panel";
+
+  let container;
 
   const selectedValue = writable(undefined);
   const dispatch = createEventDispatcher();
@@ -11,30 +20,68 @@
     selectedValue.set(element);
   }
 
+  // listen to whatever is the current $selectedValue.
+
   setContext("rill:app:tabgroup-callback", callback);
   setContext("rill:app:tabgroup-selected", selectedValue);
 
-  let movingElementRect = derived(selectedValue, ($element) => {
+  let movingElementRect: Readable<{
+    width: number;
+    left: number;
+    top: number;
+    height: number;
+  }> = derived(selectedValue, ($element, set) => {
     const r = $element?.getBoundingClientRect();
-    if (r) return { width: r.width, left: r.left, top: r.bottom };
+    if (r)
+      set({
+        width: r.width,
+        left: $element?.offsetLeft || 0,
+        top: $element?.offsetTop || 0,
+        height: r.height,
+      });
   });
 
   let tweenedMovingElement = tweened($movingElementRect, {
-    duration: 200,
+    duration: 120,
     easing: cubicOut,
   });
   $: tweenedMovingElement.set($movingElementRect);
+
+  let observer;
+  let elemBounds;
+  onMount(() => {
+    observer = new MutationObserver(() => {
+      elemBounds = container.getBoundingClientRect();
+    });
+    observer.observe(container, { childList: true });
+  });
+
+  onDestroy(() => {
+    observer.disconnect();
+  });
 </script>
 
-<div class="flex flex-row gap-x-4">
+<div
+  class="flex flex-row gap-x-4 relative"
+  bind:this={container}
+  style:height="40px"
+  style:padding-top="6px"
+>
   <slot />
-  {#if $selectedValue !== undefined && $tweenedMovingElement?.left}
+  {#if $selectedValue !== undefined && $tweenedMovingElement?.left !== undefined}
     <div
-      class="absolute rounded bg-gray-600"
+      class:opacity-20={variant === "secondary"}
+      class="absolute rounded bg-gray-600 z-10 pointer-events-none"
       style:left="{$tweenedMovingElement.left}px"
-      style:top="calc({$tweenedMovingElement.top}px - .25rem)"
+      style:top={variant === "panel"
+        ? `calc(${
+            $tweenedMovingElement.top + $tweenedMovingElement.height
+          }px - .25rem)`
+        : `${$tweenedMovingElement.top - 3}px`}
       style:width="{$tweenedMovingElement.width}px"
-      style:height=".25rem"
+      style:height={variant === "panel"
+        ? ".25rem"
+        : `calc(${$tweenedMovingElement.height}px)`}
     />
   {/if}
 </div>
