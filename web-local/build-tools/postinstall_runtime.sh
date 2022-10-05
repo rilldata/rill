@@ -30,8 +30,8 @@ else
 fi
 
 # Install runtime
-mkdir -p $OUTPUT_DIR
-cd $OUTPUT_DIR
+mkdir -p "$OUTPUT_DIR"
+cd "$OUTPUT_DIR"
 curl -Lso runtime.zip https://storage.googleapis.com/pkg.rilldata.com/runtime/releases/$RUNTIME_VERSION/runtime-$TARGET.zip
 unzip -q -o runtime.zip
 rm runtime.zip
