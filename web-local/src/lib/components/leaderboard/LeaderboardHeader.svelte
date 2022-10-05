@@ -10,6 +10,7 @@
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-local/lib/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-local/lib/components/tooltip/TooltipTitle.svelte";
+  import LeaderboardOptionsMenu from "./LeaderboardOptionsMenu.svelte";
 
   export let displayName: string;
   export let isFetching: boolean;
@@ -21,6 +22,10 @@
 
   let otherFilterKey: "exclude" | "include";
   $: otherFilterKey = filterKey === "include" ? "exclude" : "include";
+  $: console.log("hovered", hovered);
+
+  let optionsMenuActive = false;
+  $: console.log("optionsMenuActive", optionsMenuActive);
 </script>
 
 <div class="flex flex-row  items-center">
@@ -45,9 +50,8 @@
         text-gray-600
         font-semibold
     "
-    on:click
   >
-    <div>
+    <div on:click>
       <Tooltip location="top" distance={16}>
         <div class="pl-2">{displayName}</div>
         <TooltipContent slot="tooltip-content">
@@ -73,25 +77,12 @@
       </Tooltip>
     </div>
     <div>
-      {#if hovered}
-        <Tooltip location="top" distance={16}>
-          <div on:click|stopPropagation={toggleFilterExcludeMode}>
-            {#if filterExcludeMode}<FilterRemove
-                size="16px"
-              />{:else}<FilterInclude size="16px" />{/if}
-          </div>
-          <TooltipContent slot="tooltip-content">
-            <TooltipTitle>
-              <svelte:fragment slot="name">
-                Output {filterKey}s selected values
-              </svelte:fragment>
-            </TooltipTitle>
-            <TooltipShortcutContainer>
-              <div>toggle to {otherFilterKey} values</div>
-              <Shortcut>Click</Shortcut>
-            </TooltipShortcutContainer>
-          </TooltipContent>
-        </Tooltip>
+      {#if hovered || optionsMenuActive}
+        <LeaderboardOptionsMenu
+          bind:optionsMenuActive
+          {toggleFilterExcludeMode}
+          {filterExcludeMode}
+        />
       {/if}
     </div>
   </button>
