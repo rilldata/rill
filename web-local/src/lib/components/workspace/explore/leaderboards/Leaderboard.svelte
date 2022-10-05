@@ -187,12 +187,8 @@
 {#if topListQuery}
   <div
     style:width="315px"
-    on:mouseenter={() => {
-      hovered = true;
-    }}
-    on:mouseleave={() => {
-      hovered = false;
-    }}
+    on:mouseenter={() => (hovered = true)}
+    on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
       isFetching={$topListQuery.isFetching}
