@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
@@ -16,6 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/api"
@@ -44,6 +46,7 @@ func NewServer(opts *ServerOptions, runtime *runtime.Runtime, logger *zap.Logger
 	}
 }
 
+// Serve starts a gRPC server and a gRPC REST gateway server
 func (s *Server) Serve(ctx context.Context) error {
 	group, cctx := errgroup.WithContext(ctx)
 
@@ -83,4 +86,13 @@ func (s *Server) Serve(ctx context.Context) error {
 	})
 
 	return group.Wait()
+}
+
+// Ping implements RuntimeService
+func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingResponse, error) {
+	resp := &api.PingResponse{
+		Version: "dev",
+		Time:    timestamppb.New(time.Now()),
+	}
+	return resp, nil
 }

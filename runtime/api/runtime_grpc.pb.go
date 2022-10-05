@@ -22,12 +22,72 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RuntimeServiceClient interface {
+	// Ping returns information about the runtime
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	// ListRepos lists all the repos currently managed by the runtime
+	ListRepos(ctx context.Context, in *ListReposRequest, opts ...grpc.CallOption) (*ListReposResponse, error)
+	// GetRepo returns info about a specific repo
+	GetRepo(ctx context.Context, in *GetRepoRequest, opts ...grpc.CallOption) (*GetRepoResponse, error)
+	// CreateRepo creates a new repo. See the Repo message for an explanation of repos.
+	CreateRepo(ctx context.Context, in *CreateRepoRequest, opts ...grpc.CallOption) (*CreateRepoResponse, error)
+	// DeleteRepo deletes a repo
+	DeleteRepo(ctx context.Context, in *DeleteRepoRequest, opts ...grpc.CallOption) (*DeleteRepoResponse, error)
+	// ListRepoObjects lists all the objects (files) in a repo sorted by full path.
+	// It includes objects in nested "directories".
+	ListRepoObjects(ctx context.Context, in *ListRepoObjectsRequest, opts ...grpc.CallOption) (*ListRepoObjectsResponse, error)
+	// GetRepoObject returns the contents of a specific object (file) in a repo.
+	GetRepoObject(ctx context.Context, in *GetRepoObjectRequest, opts ...grpc.CallOption) (*GetRepoObjectResponse, error)
+	// PutRepoObject can be used to create, update, or delete an object (file) in a repo
+	PutRepoObject(ctx context.Context, in *PutRepoObjectRequest, opts ...grpc.CallOption) (*PutRepoObjectResponse, error)
+	// ListInstances lists all the instances currently managed by the runtime
+	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
+	// GetInstance returns information about a specific instance
+	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error)
+	// CreateInstance creates a new instance
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
+	// DeleteInstance deletes an instance
+	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
+	// ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
+	ListCatalogObjects(ctx context.Context, in *ListCatalogObjectsRequest, opts ...grpc.CallOption) (*ListCatalogObjectsResponse, error)
+	// GetCatalogObject returns information about a specific object in the catalog
+	GetCatalogObject(ctx context.Context, in *GetCatalogObjectRequest, opts ...grpc.CallOption) (*GetCatalogObjectResponse, error)
+	// TriggerRefresh triggers a refresh of a refreshable catalog object.
+	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
+	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
+	TriggerRefresh(ctx context.Context, in *TriggerRefreshRequest, opts ...grpc.CallOption) (*TriggerRefreshResponse, error)
+	// Migrate applies a full set of SQL artifacts (files containing CREATE statements) to the catalog/infra.
+	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
+	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
+	// artifacts will be deleted.
+	Migrate(ctx context.Context, in *MigrateRequest, opts ...grpc.CallOption) (*MigrateResponse, error)
+	// MigrateSingle applies a single `CREATE` statement.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateSingle(ctx context.Context, in *MigrateSingleRequest, opts ...grpc.CallOption) (*MigrateSingleResponse, error)
+	// MigrateDelete deletes a single object.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateDelete(ctx context.Context, in *MigrateDeleteRequest, opts ...grpc.CallOption) (*MigrateDeleteResponse, error)
+	// Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
+	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	// QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
+	// It bypasses Rill SQL and expects the query to use the underlying dialect.
 	QueryDirect(ctx context.Context, in *QueryDirectRequest, opts ...grpc.CallOption) (*QueryDirectResponse, error)
+	// MetricsViewMeta returns metadata about a metrics view.
+	// It's comparable to calling GetCatalogObject and will be deprecated in the future.
 	MetricsViewMeta(ctx context.Context, in *MetricsViewMetaRequest, opts ...grpc.CallOption) (*MetricsViewMetaResponse, error)
+	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
+	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
+	// It's a convenience API for querying a metrics view.
 	MetricsViewTimeSeries(ctx context.Context, in *MetricsViewTimeSeriesRequest, opts ...grpc.CallOption) (*MetricsViewTimeSeriesResponse, error)
+	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
+	// It's a convenience API for querying a metrics view.
+	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
+	// ListConnectors returns a description of all the connectors implemented in the runtime,
+	// including their schema and validation rules
+	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -47,9 +107,162 @@ func (c *runtimeServiceClient) Ping(ctx context.Context, in *PingRequest, opts .
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListRepos(ctx context.Context, in *ListReposRequest, opts ...grpc.CallOption) (*ListReposResponse, error) {
+	out := new(ListReposResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/ListRepos", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GetRepo(ctx context.Context, in *GetRepoRequest, opts ...grpc.CallOption) (*GetRepoResponse, error) {
+	out := new(GetRepoResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/GetRepo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) CreateRepo(ctx context.Context, in *CreateRepoRequest, opts ...grpc.CallOption) (*CreateRepoResponse, error) {
+	out := new(CreateRepoResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/CreateRepo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DeleteRepo(ctx context.Context, in *DeleteRepoRequest, opts ...grpc.CallOption) (*DeleteRepoResponse, error) {
+	out := new(DeleteRepoResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/DeleteRepo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListRepoObjects(ctx context.Context, in *ListRepoObjectsRequest, opts ...grpc.CallOption) (*ListRepoObjectsResponse, error) {
+	out := new(ListRepoObjectsResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/ListRepoObjects", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GetRepoObject(ctx context.Context, in *GetRepoObjectRequest, opts ...grpc.CallOption) (*GetRepoObjectResponse, error) {
+	out := new(GetRepoObjectResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/GetRepoObject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) PutRepoObject(ctx context.Context, in *PutRepoObjectRequest, opts ...grpc.CallOption) (*PutRepoObjectResponse, error) {
+	out := new(PutRepoObjectResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/PutRepoObject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error) {
+	out := new(ListInstancesResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/ListInstances", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error) {
+	out := new(GetInstanceResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/GetInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error) {
 	out := new(CreateInstanceResponse)
 	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/CreateInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error) {
+	out := new(DeleteInstanceResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/DeleteInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListCatalogObjects(ctx context.Context, in *ListCatalogObjectsRequest, opts ...grpc.CallOption) (*ListCatalogObjectsResponse, error) {
+	out := new(ListCatalogObjectsResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/ListCatalogObjects", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GetCatalogObject(ctx context.Context, in *GetCatalogObjectRequest, opts ...grpc.CallOption) (*GetCatalogObjectResponse, error) {
+	out := new(GetCatalogObjectResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/GetCatalogObject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) TriggerRefresh(ctx context.Context, in *TriggerRefreshRequest, opts ...grpc.CallOption) (*TriggerRefreshResponse, error) {
+	out := new(TriggerRefreshResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/TriggerRefresh", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) Migrate(ctx context.Context, in *MigrateRequest, opts ...grpc.CallOption) (*MigrateResponse, error) {
+	out := new(MigrateResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/Migrate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) MigrateSingle(ctx context.Context, in *MigrateSingleRequest, opts ...grpc.CallOption) (*MigrateSingleResponse, error) {
+	out := new(MigrateSingleResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/MigrateSingle", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) MigrateDelete(ctx context.Context, in *MigrateDeleteRequest, opts ...grpc.CallOption) (*MigrateDeleteResponse, error) {
+	out := new(MigrateDeleteResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/MigrateDelete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
+	out := new(QueryResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/Query", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -92,16 +305,94 @@ func (c *runtimeServiceClient) MetricsViewTimeSeries(ctx context.Context, in *Me
 	return out, nil
 }
 
+func (c *runtimeServiceClient) MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error) {
+	out := new(MetricsViewTotalsResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/MetricsViewTotals", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error) {
+	out := new(ListConnectorsResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/ListConnectors", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
 type RuntimeServiceServer interface {
+	// Ping returns information about the runtime
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	// ListRepos lists all the repos currently managed by the runtime
+	ListRepos(context.Context, *ListReposRequest) (*ListReposResponse, error)
+	// GetRepo returns info about a specific repo
+	GetRepo(context.Context, *GetRepoRequest) (*GetRepoResponse, error)
+	// CreateRepo creates a new repo. See the Repo message for an explanation of repos.
+	CreateRepo(context.Context, *CreateRepoRequest) (*CreateRepoResponse, error)
+	// DeleteRepo deletes a repo
+	DeleteRepo(context.Context, *DeleteRepoRequest) (*DeleteRepoResponse, error)
+	// ListRepoObjects lists all the objects (files) in a repo sorted by full path.
+	// It includes objects in nested "directories".
+	ListRepoObjects(context.Context, *ListRepoObjectsRequest) (*ListRepoObjectsResponse, error)
+	// GetRepoObject returns the contents of a specific object (file) in a repo.
+	GetRepoObject(context.Context, *GetRepoObjectRequest) (*GetRepoObjectResponse, error)
+	// PutRepoObject can be used to create, update, or delete an object (file) in a repo
+	PutRepoObject(context.Context, *PutRepoObjectRequest) (*PutRepoObjectResponse, error)
+	// ListInstances lists all the instances currently managed by the runtime
+	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
+	// GetInstance returns information about a specific instance
+	GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error)
+	// CreateInstance creates a new instance
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
+	// DeleteInstance deletes an instance
+	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
+	// ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
+	ListCatalogObjects(context.Context, *ListCatalogObjectsRequest) (*ListCatalogObjectsResponse, error)
+	// GetCatalogObject returns information about a specific object in the catalog
+	GetCatalogObject(context.Context, *GetCatalogObjectRequest) (*GetCatalogObjectResponse, error)
+	// TriggerRefresh triggers a refresh of a refreshable catalog object.
+	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
+	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
+	TriggerRefresh(context.Context, *TriggerRefreshRequest) (*TriggerRefreshResponse, error)
+	// Migrate applies a full set of SQL artifacts (files containing CREATE statements) to the catalog/infra.
+	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
+	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
+	// artifacts will be deleted.
+	Migrate(context.Context, *MigrateRequest) (*MigrateResponse, error)
+	// MigrateSingle applies a single `CREATE` statement.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateSingle(context.Context, *MigrateSingleRequest) (*MigrateSingleResponse, error)
+	// MigrateDelete deletes a single object.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateDelete(context.Context, *MigrateDeleteRequest) (*MigrateDeleteResponse, error)
+	// Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
+	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
+	// It bypasses Rill SQL and expects the query to use the underlying dialect.
 	QueryDirect(context.Context, *QueryDirectRequest) (*QueryDirectResponse, error)
+	// MetricsViewMeta returns metadata about a metrics view.
+	// It's comparable to calling GetCatalogObject and will be deprecated in the future.
 	MetricsViewMeta(context.Context, *MetricsViewMetaRequest) (*MetricsViewMetaResponse, error)
+	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
+	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
+	// It's a convenience API for querying a metrics view.
 	MetricsViewTimeSeries(context.Context, *MetricsViewTimeSeriesRequest) (*MetricsViewTimeSeriesResponse, error)
+	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
+	// It's a convenience API for querying a metrics view.
+	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
+	// ListConnectors returns a description of all the connectors implemented in the runtime,
+	// including their schema and validation rules
+	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -112,8 +403,59 @@ type UnimplementedRuntimeServiceServer struct {
 func (UnimplementedRuntimeServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
+func (UnimplementedRuntimeServiceServer) ListRepos(context.Context, *ListReposRequest) (*ListReposResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRepos not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetRepo(context.Context, *GetRepoRequest) (*GetRepoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRepo not implemented")
+}
+func (UnimplementedRuntimeServiceServer) CreateRepo(context.Context, *CreateRepoRequest) (*CreateRepoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRepo not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeleteRepo(context.Context, *DeleteRepoRequest) (*DeleteRepoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteRepo not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListRepoObjects(context.Context, *ListRepoObjectsRequest) (*ListRepoObjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRepoObjects not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetRepoObject(context.Context, *GetRepoObjectRequest) (*GetRepoObjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRepoObject not implemented")
+}
+func (UnimplementedRuntimeServiceServer) PutRepoObject(context.Context, *PutRepoObjectRequest) (*PutRepoObjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PutRepoObject not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInstance not implemented")
+}
 func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateInstance not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListCatalogObjects(context.Context, *ListCatalogObjectsRequest) (*ListCatalogObjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogObjects not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetCatalogObject(context.Context, *GetCatalogObjectRequest) (*GetCatalogObjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCatalogObject not implemented")
+}
+func (UnimplementedRuntimeServiceServer) TriggerRefresh(context.Context, *TriggerRefreshRequest) (*TriggerRefreshResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefresh not implemented")
+}
+func (UnimplementedRuntimeServiceServer) Migrate(context.Context, *MigrateRequest) (*MigrateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Migrate not implemented")
+}
+func (UnimplementedRuntimeServiceServer) MigrateSingle(context.Context, *MigrateSingleRequest) (*MigrateSingleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MigrateSingle not implemented")
+}
+func (UnimplementedRuntimeServiceServer) MigrateDelete(context.Context, *MigrateDeleteRequest) (*MigrateDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MigrateDelete not implemented")
+}
+func (UnimplementedRuntimeServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
 }
 func (UnimplementedRuntimeServiceServer) QueryDirect(context.Context, *QueryDirectRequest) (*QueryDirectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryDirect not implemented")
@@ -126,6 +468,12 @@ func (UnimplementedRuntimeServiceServer) MetricsViewToplist(context.Context, *Me
 }
 func (UnimplementedRuntimeServiceServer) MetricsViewTimeSeries(context.Context, *MetricsViewTimeSeriesRequest) (*MetricsViewTimeSeriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTimeSeries not implemented")
+}
+func (UnimplementedRuntimeServiceServer) MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTotals not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 
@@ -158,6 +506,168 @@ func _RuntimeService_Ping_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReposRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListRepos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/ListRepos",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListRepos(ctx, req.(*ListReposRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GetRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRepoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetRepo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/GetRepo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetRepo(ctx, req.(*GetRepoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_CreateRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRepoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).CreateRepo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/CreateRepo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).CreateRepo(ctx, req.(*CreateRepoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DeleteRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRepoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DeleteRepo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/DeleteRepo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DeleteRepo(ctx, req.(*DeleteRepoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListRepoObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRepoObjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListRepoObjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/ListRepoObjects",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListRepoObjects(ctx, req.(*ListRepoObjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GetRepoObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRepoObjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetRepoObject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/GetRepoObject",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetRepoObject(ctx, req.(*GetRepoObjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_PutRepoObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutRepoObjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).PutRepoObject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/PutRepoObject",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).PutRepoObject(ctx, req.(*PutRepoObjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListInstancesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/ListInstances",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListInstances(ctx, req.(*ListInstancesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GetInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/GetInstance",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetInstance(ctx, req.(*GetInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_CreateInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateInstanceRequest)
 	if err := dec(in); err != nil {
@@ -172,6 +682,150 @@ func _RuntimeService_CreateInstance_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).CreateInstance(ctx, req.(*CreateInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DeleteInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/DeleteInstance",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DeleteInstance(ctx, req.(*DeleteInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListCatalogObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCatalogObjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListCatalogObjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/ListCatalogObjects",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListCatalogObjects(ctx, req.(*ListCatalogObjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GetCatalogObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCatalogObjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetCatalogObject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/GetCatalogObject",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetCatalogObject(ctx, req.(*GetCatalogObjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_TriggerRefresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRefreshRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).TriggerRefresh(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/TriggerRefresh",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).TriggerRefresh(ctx, req.(*TriggerRefreshRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_Migrate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MigrateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).Migrate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/Migrate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).Migrate(ctx, req.(*MigrateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_MigrateSingle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MigrateSingleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).MigrateSingle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/MigrateSingle",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).MigrateSingle(ctx, req.(*MigrateSingleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_MigrateDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MigrateDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).MigrateDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/MigrateDelete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).MigrateDelete(ctx, req.(*MigrateDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).Query(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/Query",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).Query(ctx, req.(*QueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -248,6 +902,42 @@ func _RuntimeService_MetricsViewTimeSeries_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_MetricsViewTotals_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsViewTotalsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).MetricsViewTotals(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/MetricsViewTotals",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).MetricsViewTotals(ctx, req.(*MetricsViewTotalsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConnectorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListConnectors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/ListConnectors",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListConnectors(ctx, req.(*ListConnectorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -260,8 +950,76 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_Ping_Handler,
 		},
 		{
+			MethodName: "ListRepos",
+			Handler:    _RuntimeService_ListRepos_Handler,
+		},
+		{
+			MethodName: "GetRepo",
+			Handler:    _RuntimeService_GetRepo_Handler,
+		},
+		{
+			MethodName: "CreateRepo",
+			Handler:    _RuntimeService_CreateRepo_Handler,
+		},
+		{
+			MethodName: "DeleteRepo",
+			Handler:    _RuntimeService_DeleteRepo_Handler,
+		},
+		{
+			MethodName: "ListRepoObjects",
+			Handler:    _RuntimeService_ListRepoObjects_Handler,
+		},
+		{
+			MethodName: "GetRepoObject",
+			Handler:    _RuntimeService_GetRepoObject_Handler,
+		},
+		{
+			MethodName: "PutRepoObject",
+			Handler:    _RuntimeService_PutRepoObject_Handler,
+		},
+		{
+			MethodName: "ListInstances",
+			Handler:    _RuntimeService_ListInstances_Handler,
+		},
+		{
+			MethodName: "GetInstance",
+			Handler:    _RuntimeService_GetInstance_Handler,
+		},
+		{
 			MethodName: "CreateInstance",
 			Handler:    _RuntimeService_CreateInstance_Handler,
+		},
+		{
+			MethodName: "DeleteInstance",
+			Handler:    _RuntimeService_DeleteInstance_Handler,
+		},
+		{
+			MethodName: "ListCatalogObjects",
+			Handler:    _RuntimeService_ListCatalogObjects_Handler,
+		},
+		{
+			MethodName: "GetCatalogObject",
+			Handler:    _RuntimeService_GetCatalogObject_Handler,
+		},
+		{
+			MethodName: "TriggerRefresh",
+			Handler:    _RuntimeService_TriggerRefresh_Handler,
+		},
+		{
+			MethodName: "Migrate",
+			Handler:    _RuntimeService_Migrate_Handler,
+		},
+		{
+			MethodName: "MigrateSingle",
+			Handler:    _RuntimeService_MigrateSingle_Handler,
+		},
+		{
+			MethodName: "MigrateDelete",
+			Handler:    _RuntimeService_MigrateDelete_Handler,
+		},
+		{
+			MethodName: "Query",
+			Handler:    _RuntimeService_Query_Handler,
 		},
 		{
 			MethodName: "QueryDirect",
@@ -278,6 +1036,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewTimeSeries",
 			Handler:    _RuntimeService_MetricsViewTimeSeries_Handler,
+		},
+		{
+			MethodName: "MetricsViewTotals",
+			Handler:    _RuntimeService_MetricsViewTotals_Handler,
+		},
+		{
+			MethodName: "ListConnectors",
+			Handler:    _RuntimeService_ListConnectors_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -4,16 +4,91 @@ package runtime.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/rilldata/rill/runtime/api;api";
 
+// RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
+// It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
 service RuntimeService {
+  // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
       get: "/v1/ping"
     };
   }
 
+  // Repos
+
+  // ListRepos lists all the repos currently managed by the runtime
+  rpc ListRepos(ListReposRequest) returns (ListReposResponse) {
+    option (google.api.http) = {
+      get: "/v1/repos"
+    };
+  }
+
+  // GetRepo returns info about a specific repo
+  rpc GetRepo(GetRepoRequest) returns (GetRepoResponse) {
+    option (google.api.http) = {
+      get: "/v1/repos/{repo_id}"
+    };
+  }
+
+  // CreateRepo creates a new repo. See the Repo message for an explanation of repos.
+  rpc CreateRepo(CreateRepoRequest) returns (CreateRepoResponse) {
+    option (google.api.http) = {
+      post: "/v1/repos",
+      body: "*"
+    };
+  }
+
+  // DeleteRepo deletes a repo
+  rpc DeleteRepo(DeleteRepoRequest) returns (DeleteRepoResponse) {
+    option (google.api.http) = {
+      delete: "/v1/repos/{repo_id}"
+    };
+  }
+
+  // ListRepoObjects lists all the objects (files) in a repo sorted by full path. 
+  // It includes objects in nested "directories".
+  rpc ListRepoObjects(ListRepoObjectsRequest) returns (ListRepoObjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/repos/{repo_id}/objects"
+    };
+  }
+
+  // GetRepoObject returns the contents of a specific object (file) in a repo.
+  rpc GetRepoObject(GetRepoObjectRequest) returns (GetRepoObjectResponse) {
+    option (google.api.http) = {
+      get: "/v1/repos/{repo_id}/objects/-/{path}"
+    };
+  }
+
+  // PutRepoObject can be used to create, update, or delete an object (file) in a repo
+  rpc PutRepoObject(PutRepoObjectRequest) returns (PutRepoObjectResponse) {
+    option (google.api.http) = {
+      post: "/v1/repos/{repo_id}/objects/-/{path}",
+      body: "*"
+    };
+  }
+
+  // Instances
+
+  // ListInstances lists all the instances currently managed by the runtime
+  rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances"
+    };
+  }
+
+  // GetInstance returns information about a specific instance
+  rpc GetInstance(GetInstanceRequest) returns (GetInstanceResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}"
+    };
+  }
+
+  // CreateInstance creates a new instance
   rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse) {
     option (google.api.http) = {
       post: "/v1/instances",
@@ -21,6 +96,82 @@ service RuntimeService {
     };
   }
 
+  // DeleteInstance deletes an instance
+  rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
+    option (google.api.http) = {
+      delete: "/v1/instances/{instance_id}"
+    };
+  }
+
+  // Catalog
+
+  // ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
+  rpc ListCatalogObjects(ListCatalogObjectsRequest) returns (ListCatalogObjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/catalog"
+    };
+  }
+
+  // GetCatalogObject returns information about a specific object in the catalog
+  rpc GetCatalogObject(GetCatalogObjectRequest) returns (GetCatalogObjectResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/catalog/{name}"
+    };
+  }
+
+  // TriggerRefresh triggers a refresh of a refreshable catalog object.
+  // It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
+  // It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
+  rpc TriggerRefresh(TriggerRefreshRequest) returns (TriggerRefreshResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/catalog/{name}/refresh"
+    };
+  }
+
+  // Migrations
+
+  // Migrate applies a full set of SQL artifacts (files containing CREATE statements) to the catalog/infra.
+  // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
+  // the desired state expressed in the artifacts. Any existing objects not described in the submitted
+  // artifacts will be deleted.
+  rpc Migrate(MigrateRequest) returns (MigrateResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/migrate",
+      body: "*"
+    };
+  }
+
+  // MigrateSingle applies a single `CREATE` statement.
+  // It bypasses the reconciling migrations described in Migrate.
+  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+  rpc MigrateSingle(MigrateSingleRequest) returns (MigrateSingleResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/migrate/single",
+      body: "*"
+    };
+  }
+
+  // MigrateDelete deletes a single object.
+  // It bypasses the reconciling migrations described in Migrate.
+  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+  rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/v1/instances/{instance_id}/migrate/single"
+    };
+  }
+
+  // Queries
+
+  // Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
+  rpc Query(QueryRequest) returns (QueryResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query",
+      body: "*"
+    };
+  }
+
+  // QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
+  // It bypasses Rill SQL and expects the query to use the underlying dialect.
   rpc QueryDirect(QueryDirectRequest) returns (QueryDirectResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/query/direct",
@@ -28,13 +179,18 @@ service RuntimeService {
     };
   }
 
+  // Explore APIs
+
+  // MetricsViewMeta returns metadata about a metrics view.
+  // It's comparable to calling GetCatalogObject and will be deprecated in the future.
   rpc MetricsViewMeta(MetricsViewMetaRequest) returns (MetricsViewMetaResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/meta",
-      body: "*"
+      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/meta"
     };
   }
 
+  // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+  // It's a convenience API for querying a metrics view.
   rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/toplist/{dimension_name}",
@@ -42,53 +198,408 @@ service RuntimeService {
     };
   }
 
+  // MetricsViewTimeSeries returns time series for the measures in the metrics view.
+  // It's a convenience API for querying a metrics view.
   rpc MetricsViewTimeSeries(MetricsViewTimeSeriesRequest) returns (MetricsViewTimeSeriesResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/timeseries",
       body: "*"
     };
   }
+
+  // MetricsViewTotals returns totals over a time period for the measures in a metrics view.
+  // It's a convenience API for querying a metrics view.
+  rpc MetricsViewTotals(MetricsViewTotalsRequest) returns (MetricsViewTotalsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/totals",
+      body: "*"
+    };
+  }
+
+  // Connectors
+
+  // ListConnectors returns a description of all the connectors implemented in the runtime,
+  // including their schema and validation rules
+  rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
+    option (google.api.http) = {
+      get: "/v1/connectors/meta"
+    };
+  }
 }
 
+// Request message for RuntimeService.Ping
 message PingRequest {}
 
+// Response message for RuntimeService.Ping
 message PingResponse {
-  string message = 1;
+  // Runtime version
+  string version = 1;
+
+  // Runtime server time
+  google.protobuf.Timestamp time = 2;
 }
 
-message CreateInstanceRequest {
+// **********
+// Repos
+// **********
+
+// Repo represents a collection of file artifacts containing SQL statements.
+// It will usually by represented as a folder on disk, but may also be backed by a
+// database (for modelling in the cloud where no persistant file system is available).
+message Repo {
+  // UUID identifier
+  string repo_id = 1;
+  // Driver for persisting artifacts. Supports "file" and "postgres".
+  string driver = 2;
+  // DSN for driver. If the driver is "file", this should be the path to the root directory.
+  string dsn = 3;
+}
+
+// Request message for RuntimeService.ListRepos
+message ListReposRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+}
+
+// Response message for RuntimeService.ListRepos
+message ListReposResponse {
+  repeated Repo repos = 1;
+}
+
+// Request message for RuntimeService.GetRepo
+message GetRepoRequest {
+  string repo_id = 1;
+}
+
+// Response message for RuntimeService.GetRepo
+message GetRepoResponse {
+  Repo repo = 1;
+}
+
+// Request message for RuntimeService.CreateRepo
+message CreateRepoRequest {
   string driver = 1;
   string dsn = 2;
 }
 
-message CreateInstanceResponse {
+// Response message for RuntimeService.CreateRepo
+message CreateRepoResponse {
+  Repo repo = 1;
+}
+
+// Request message for RuntimeService.DeleteRepo
+message DeleteRepoRequest {
+  string repo_id = 1;
+}
+
+// Response message for RuntimeService.DeleteRepo
+message DeleteRepoResponse {}
+
+// Request message for RuntimeService.ListRepoObjects
+message ListRepoObjectsRequest {
+  string repo_id = 1;
+}
+
+// Response message for RuntimeService.ListRepoObjects
+message ListRepoObjectsResponse {
+  repeated string paths = 1;
+}
+
+// Request message for RuntimeService.GetRepoObjectRequest
+message GetRepoObjectRequest {
+  string repo_id = 1;
+  string path = 2;
+}
+
+// Reponse message for RuntimeService.GetRepoObjectResponse
+message GetRepoObjectResponse {
+  string blob = 1;
+}
+
+// Request message for RuntimeService.PutRepoObjectRequest
+message PutRepoObjectRequest {
+  string repo_id = 1;
+  string path = 2;
+  string blob = 3;
+  bool delete = 4;
+}
+
+// Response message for RuntimeService.PutRepoObjectRequest
+message PutRepoObjectResponse {}
+
+// **********
+// Instances
+// **********
+
+// Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).
+// Migrations and queries are issued against a specific instance. The concept of
+// instances enables multiple data projects to be served by one runtime.
+message Instance {
+  // Identifier (UUID)
+  string instance_id = 1;
+
+  // Name of OLAP infra driver ("druid" or "duckdb")
+  string driver = 2;
+
+  // DSN for connection to the OLAP infra 
+  string dsn = 3;
+
+  // Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
+  // Use it as an alternative to database schemas.
+  string object_prefix = 4;
+
+  // Indicates that the underlying infra may be manipulated directly by users.
+  // If true, the runtime will continuously poll the infra's information schema
+  // to discover tables not created through the runtime. They will be added to the
+  // catalog as UnmanagedTables.
+  bool exposed = 5;
+
+  // If true, the runtime will store the instance's catalog data (such as sources and metrics views)
+  // in the instance's OLAP datastore instead of in the runtime's metadata store. This is currently
+  // only supported for the duckdb driver.
+  bool embed_catalog = 6;
+}
+
+// Request message for RuntimeService.ListInstances
+message ListInstancesRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+}
+
+// Response message for RuntimeService.ListInstances
+message ListInstancesResponse {
+  repeated Instance instances = 1;
+}
+
+// Request message for RuntimeService.GetInstance
+message GetInstanceRequest {
   string instance_id = 1;
 }
 
-message QueryDirectRequest {
+// Response message for RuntimeService.GetInstance
+message GetInstanceResponse {
+  Instance instance = 1;
+}
+
+// Request message for RuntimeService.CreateInstance
+message CreateInstanceRequest {
+  // See message Instance for field descriptions
+  string driver = 2;
+  string dsn = 3;
+  string object_prefix = 4;
+  bool exposed = 5;
+  bool embed_catalog = 6;
+}
+
+// Response message for RuntimeService.CreateInstance
+message CreateInstanceResponse {
+  string instance_id = 1; // Temporary, for compatibility with local frontend
+  Instance instance = 2;
+}
+
+// Request message for RuntimeService.DeleteInstance
+message DeleteInstanceRequest {
   string instance_id = 1;
+}
+
+// Response message for RuntimeService.DeleteInstance
+message DeleteInstanceResponse {}
+
+// **********
+// Catalog
+// **********
+
+// CatalogObject represents an object stored in the catalog
+message CatalogObject {
+  oneof type {
+    Source source = 1;
+    MetricsView metrics_view = 2;
+    UnmanagedTable unmanaged_table = 3;
+  }
+}
+
+// Source represents a catalog object created using CREATE SOURCE
+message Source {
+  // Formatted SQL DDL for the source
+  string sql = 1;
+  // Name of the source
+  string name = 2;
+  // Connector used by the source
+  string connector = 3;
+  // Connector properties assigned in the source
+  google.protobuf.Struct properties = 4;
+}
+
+// MetricsView represents a catalog object created using CREATE METRICS VIEW
+message MetricsView {
+  // Dimensions are columns to filter and group by
+  message Dimension {
+    string name = 1;
+    string type = 2;
+    bool primary_time = 3;
+  }
+  // Measures are aggregated computed values
+  message Measure {
+    string name = 1;
+    string type = 2;
+    string description = 3;
+  }
+  // Formatted SQL DDL for the metrics view
+  string sql = 1;
+  // Name of the metrics view
+  string name = 2;
+  // Dimensions in the metrics view
+  repeated Dimension dimensions = 3;
+  // Measures in the metrics view
+  repeated Measure measures = 4;
+}
+
+// UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that
+// was NOT created through the runtime's migrations). The runtime periodically looks for
+// unmanaged tables in the database's information schema if the instance is created with exposed=true.
+message UnmanagedTable {
+  string name = 1;
+  bool view = 2;
+  repeated SchemaColumn schema = 3;
+}
+
+// Request message for RuntimeService.ListCatalogObjects
+message ListCatalogObjectsRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.ListCatalogObjects
+message ListCatalogObjectsResponse {
+  repeated CatalogObject objects = 1;
+}
+
+// Request message for RuntimeService.GetCatalogObject
+message GetCatalogObjectRequest {
+  string instance_id = 1;
+  string name = 2;
+}
+
+// Response message for RuntimeService.GetCatalogObject
+message GetCatalogObjectResponse {
+  CatalogObject object = 1;
+}
+
+// Request message for RuntimeService.TriggerRefresh
+message TriggerRefreshRequest {
+  string instance_id = 1;
+  string name = 2;
+}
+
+// Response message for RuntimeService.TriggerRefresh
+message TriggerRefreshResponse {}
+
+// **********
+// Migrations
+// **********
+
+// Request message for RuntimeService.Migrate
+message MigrateRequest {
+  // Instance to migrate
+  string instance_id = 1;
+  // Contents of files containing one or more SQL DDL statements
+  repeated string blobs = 2;
+  // If true, all catalog objects not present in blobs (except for unmanaged tables) will be deleted
+  bool drop_deleted = 3;
+}
+
+// Response message for RuntimeService.Migrate
+message MigrateResponse {}
+
+// Request message for RuntimeService.MigrateSingle
+message MigrateSingleRequest {
+  // Instance to migrate
+  string instance_id = 1;
+  // A CREATE statement
   string sql = 2;
+  // If true, will replace existing definitions with the same name
+  bool create_or_replace = 3;
+}
+
+// Response message for RuntimeService.MigrateSingle
+message MigrateSingleResponse {}
+
+// Request message for RuntimeService.MigrateDelete
+message MigrateDeleteRequest {
+  // Instance to migrate
+  string instance_id = 1;
+  // Name of object to drop
+  string name = 2;
+}
+
+// Response message for RuntimeService.MigrateDelete
+message MigrateDeleteResponse {}
+
+// **********
+// Queries
+// **********
+
+// Request message for RuntimeService.Query
+message QueryRequest {
+  // Instance to query
+  string instance_id = 1;
+  // SELECT statement
+  string sql = 2;
+  // Args to interpolate into the statement
   repeated google.protobuf.Value args = 3;
+  // Query priority (not supported by all backends)
   int64 priority = 4;
+  // If true, will only validate the query, not execute it
   bool dry_run = 5;
 }
 
-message QueryDirectResponse {
+// Response message for RuntimeService.Query
+message QueryResponse {
+  // Schema of result data
   repeated SchemaColumn meta = 1;
+  // Result data
   repeated google.protobuf.Struct data = 2;
 }
 
+// Request message for RuntimeService.QueryDirect
+message QueryDirectRequest {
+  // Instance to query
+  string instance_id = 1;
+  // SELECT statement
+  string sql = 2;
+  // Args to interpolate into the statement
+  repeated google.protobuf.Value args = 3;
+  // Query priority (not supported by all backends)
+  int64 priority = 4;
+  // If true, will only validate the query, not execute it
+  bool dry_run = 5;
+}
+
+// Response message for RuntimeService.QueryDirect
+message QueryDirectResponse {
+  // Schema of result data
+  repeated SchemaColumn meta = 1;
+  // Result data
+  repeated google.protobuf.Struct data = 2;
+}
+
+// **********
+// Explore APIs
+// **********
+
+// Request message for RuntimeService.MetricsViewMeta
 message MetricsViewMetaRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
 }
 
+// Response message for RuntimeService.MetricsViewMeta
 message MetricsViewMetaResponse {
   string metrics_view_name = 1;
-  repeated MetricsViewDimension dimensions = 2;
-  repeated MetricsViewMeasure measures = 3;
+  repeated MetricsView.Dimension dimensions = 2;
+  repeated MetricsView.Measure measures = 3;
 }
 
+// Request message for RuntimeService.MetricsViewToplist
 message MetricsViewToplistRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
@@ -102,11 +613,13 @@ message MetricsViewToplistRequest {
   MetricsViewFilter filter = 10;
 }
 
+// Response message for RuntimeService.MetricsViewToplist
 message MetricsViewToplistResponse {
   repeated SchemaColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
+// Request message for RuntimeService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
@@ -117,40 +630,96 @@ message MetricsViewTimeSeriesRequest {
   MetricsViewFilter filter = 7;
 }
 
+// Response message for RuntimeService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesResponse {
   repeated SchemaColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
-message SchemaColumn {
-  string name = 1;
-  string type = 2;
-  bool nullable = 3;
+// Request message for RuntimeService.MetricsViewTotals
+message MetricsViewTotalsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  repeated string measure_names = 3;
+  int64 time_start = 4;
+  int64 time_end = 5;
+  MetricsViewFilter filter = 7;
 }
 
-message MetricsViewDimension {
-  string name = 1;
-  string type = 2;
-  bool primary_time = 3;
+// Response message for RuntimeService.MetricsViewTotals
+message MetricsViewTotalsResponse {
+  repeated SchemaColumn meta = 1;
+  google.protobuf.Struct data = 2;
 }
 
-message MetricsViewMeasure {
-  string name = 1;
-  string type = 2;
-  string description = 3;
-}
-
+// Sort clause for metrics view requests
 message MetricsViewSort {
   string name = 1;
   bool ascending = 2;
 }
 
+// Filter clause for metrics view requests
 message MetricsViewFilter {
-  repeated MetricsViewFilterCond include = 1;
-  repeated MetricsViewFilterCond exclude = 2;
+  message Cond {
+    string name = 1;
+    repeated google.protobuf.Value values = 2;
+  }
+  repeated string match = 1;
+  repeated Cond include = 2;
+  repeated Cond exclude = 3;
 }
 
-message MetricsViewFilterCond {
+// **********
+// Connectors
+// **********
+
+// Connector represents a connector available in the runtime.
+// It should not be confused with a source.
+message Connector {
+  // Property represents one of the connector's config properties
+  message Property {
+    // Type represents the field type
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      TYPE_STRING = 1;
+      TYPE_NUMBER = 2;
+      TYPE_BOOLEAN = 3;
+    }
+    // The property key
+    string key = 1;
+    // Human readable description of the field
+    string description = 2;
+    // Placeholder value for use in UIs
+    string placeholder = 3;
+    // The type expected for this property
+    Type type = 4;
+    // Nullable is true if the field is optional
+    bool nullable = 5;
+  }
+  // Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
   string name = 1;
-  repeated google.protobuf.Value values = 2;
+  // Pretty display name for use in UIs
+  string display_name = 2;
+  // Human readable description of the connector
+  string description = 3;
+  // Properties accepted by the connector
+  repeated Property properties = 4;
+}
+
+// Request message for RuntimeService.ListConnectors
+message ListConnectorsRequest {}
+
+// Response message for RuntimeService.ListConnectors
+message ListConnectorsResponse {
+  repeated Connector connectors = 1;
+}
+
+// **********
+// Common messages
+// **********
+
+message SchemaColumn {
+  string name = 1;
+  string type = 2;
+  bool nullable = 3;
 }
