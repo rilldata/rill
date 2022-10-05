@@ -1,11 +1,10 @@
 name: Release SQL shared library
 on:
   push:
-    branches: ["main", "sql-release-autoincrement"]
+    branches: ["main"]
     paths:
       - ".github/workflows/sql-release.yml"
       - "sql/**"
-      - ".github/workflows/sql-test.yml"
 
 jobs:
   librillsql:
@@ -18,7 +17,7 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-#          - os: windows
+#          - os: windows todo fix windows builds, depends on setup-protoc action
 #            arch: amd64
 #            runner: windows-latest
     runs-on: ${{ matrix.runner }}
@@ -33,7 +32,7 @@ jobs:
           version: "22.1.0"
           java-version: "17"
           components: "native-image"
-#      - name: Install Protoc
+#      - name: Install Protoc todo monitor setup-protoc until they support 21.5
 #        uses: arduino/setup-protoc@v1
 #        with:
 #          repo-token: ${{ secrets.GITHUB_TOKEN }}

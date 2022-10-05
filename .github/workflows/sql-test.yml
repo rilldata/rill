@@ -16,7 +16,7 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-#          - os: windows
+#          - os: windows todo see sql-release.yml
 #            arch: amd64
 #            runner: windows-latest
     runs-on: ${{ matrix.runner }}
@@ -28,7 +28,7 @@ jobs:
           java-version: "17"
           components: "native-image"
 
-#      - name: Install Protoc
+#      - name: Install Protoc todo see sql-release.yml
 #        uses: arduino/setup-protoc@v1
 #        with:
 #          repo-token: ${{ secrets.GITHUB_TOKEN }}
