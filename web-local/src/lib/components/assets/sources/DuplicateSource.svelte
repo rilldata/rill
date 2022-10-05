@@ -18,6 +18,7 @@
 <Dialog
   showCancel
   on:cancel={onCancel}
+  on:click-outside={onCancel}
   on:primary-action={() => {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.KeepBoth;

@@ -76,6 +76,7 @@
   showCancel
   disabled={newAssetName === null || currentEntityName === newAssetName}
   on:cancel={resetVariablesAndCloseModal}
+  on:click-outside={resetVariablesAndCloseModal}
   on:primary-action={() => submitHandler(entityId, newAssetName)}
 >
   <svelte:fragment slot="title">Rename</svelte:fragment>

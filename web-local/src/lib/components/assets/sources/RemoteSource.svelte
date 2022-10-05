@@ -44,6 +44,8 @@
   <Tab value={"HTTP"}>https</Tab>
 </TabGroup>
 
-{#key selectedConnector}
-  <RemoteSourceForm {sourceName} {connectorSpec} {yupSchema} />
-{/key}
+<div class="pt-8">
+  {#key selectedConnector}
+    <RemoteSourceForm {sourceName} {connectorSpec} {yupSchema} />
+  {/key}
+</div>

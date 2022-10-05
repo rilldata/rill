@@ -23,16 +23,18 @@
     : "text-gray-800 bg-white";
 </script>
 
-<ModalContainer on:cancel>
+<ModalContainer on:cancel on:click-outside>
   <div
     class:content-center={location === "center"}
     class:content-start={location === "top"}
-    class="justify-center grid w-screen h-screen relative"
+    class="justify-center grid w-screen h-screen relative pointer-events-none"
   >
     <div
       style:min-height={minHeight}
       class:min-width={minWidth}
-      class="{minWidth ? '' : 'min-w-[400px]'} {containerClasses} rounded"
+      class="{minWidth
+        ? ''
+        : 'min-w-[400px]'} {containerClasses} rounded pointer-events-auto"
       style:transform={location === "center" && "translateY(-120px)"}
       class:m-24={location === "top"}
     >
