@@ -25,12 +25,12 @@
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import AssetsSidebar from "@rilldata/web-local/lib/components/assets/index.svelte";
+  import DuplicateSource from "@rilldata/web-local/lib/components/assets/sources/DuplicateSource.svelte";
   import HideLeftSidebar from "@rilldata/web-local/lib/components/icons/HideLeftSidebar.svelte";
   import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
   import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
   import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
   import InspectorSidebar from "@rilldata/web-local/lib/components/inspector/index.svelte";
-  import DuplicateSource from "@rilldata/web-local/lib/components/modal/DuplicateSource.svelte";
   import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
   import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";

@@ -11,9 +11,9 @@
   import Portal from "../Portal.svelte";
   import Footer from "./Footer.svelte";
 
-  import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
-  import ModelAssets from "./ModelAssets.svelte";
-  import TableAssets from "./TableAssets.svelte";
+  import MetricsDefinitionAssets from "./dashboards/MetricsDefinitionAssets.svelte";
+  import ModelAssets from "./models/ModelAssets.svelte";
+  import TableAssets from "./sources/TableAssets.svelte";
 
   let mounted = false;
   onMount(() => {

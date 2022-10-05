@@ -1,11 +1,11 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "../../application-state-stores/application-store";
-  import Input from "../Input.svelte";
-  import notifications from "./RenameEntityModal.svelte";
   import { updateMetricsDefsWrapperApi } from "../../redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "../../redux-store/store-root";
-  import { Dialog } from "./index";
+  import Input from "../Input.svelte";
+  import { Dialog } from "../modal/index";
+  import notifications from "../notifications";
   export let entityId = null;
 
   export let closeModal;
