@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { Button } from "@rilldata/web-local/lib/components/button";
   import { Search } from "@rilldata/web-local/lib/components/search";
 
@@ -10,7 +10,8 @@
   import { createEventDispatcher, tick } from "svelte";
   import Footer from "./Footer.svelte";
 
-  export let selectedValues;
+  export let selectedValues: string[];
+  export let searchedValues: string[] = [];
   let searchText = "";
 
   const dispatch = createEventDispatcher();
@@ -41,6 +42,11 @@
    */
   let currentlySelectedValues = [...selectedValues];
   let candidateValues = [...selectedValues];
+  let valuesToDisplay = [...selectedValues];
+
+  $: if (searchedValues.length) {
+    valuesToDisplay = [...searchedValues];
+  } else valuesToDisplay = [...selectedValues];
 
   function toggleValue(value) {
     if (candidateValues.includes(value)) {
@@ -69,11 +75,10 @@
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
-    {#if currentlySelectedValues.length}
-      {#each currentlySelectedValues as value}
+    {#if valuesToDisplay.length}
+      {#each valuesToDisplay as value}
         <MenuItem
           icon
-          {value}
           on:select={() => {
             toggleValue(value);
           }}
@@ -100,8 +105,8 @@
     <Button
       type="secondary"
       compact
-      disabled={currentlySelectedValues.every((value) =>
-        candidateValues.includes(value)
+      disabled={candidateValues.every((value) =>
+        currentlySelectedValues.includes(value)
       )}
       on:click={onApplyHandler}
     >

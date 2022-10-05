@@ -24,6 +24,8 @@ are details left to the consumer of the component; this component should remain 
 
   export let name: string;
   export let selectedValues: string[];
+  export let searchedValues: string[];
+
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
 
@@ -87,5 +89,6 @@ are details left to the consumer of the component; this component should remain 
     on:apply
     on:search
     {selectedValues}
+    {searchedValues}
   />
 </WithTogglableFloatingElement>

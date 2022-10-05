@@ -35,6 +35,7 @@
   ];
 
   let actives;
+  let searchedValues = {};
   function resetActives() {
     actives = chipValues.reduce((obj, v) => {
       obj[v.name] = v.values;
@@ -52,8 +53,11 @@
   }
 
   function searchDimension(name, value) {
-    if (value == "") return actives[name];
-    return ["usd", "inr", "jpy", "gbp"];
+    if (value == "") {
+      searchedValues[name] = [];
+    } else {
+      searchedValues[name] = ["ubuntu", "cent", "mac", "fedora"];
+    }
   }
 
   let activeChips = [...chipValues];
@@ -101,6 +105,7 @@
         {name}
         {typeLabel}
         selectedValues={actives[name]}
+        searchedValues={searchedValues[name]}
         on:remove={() => {
           activeChips = [...activeChips.filter((chip) => chip.name !== name)];
         }}

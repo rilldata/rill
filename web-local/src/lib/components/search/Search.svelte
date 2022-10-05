@@ -27,7 +27,6 @@
         rounded-sm focus:border-gray-300 
         block w-full pl-8 p-1 placeholder:italic"
       placeholder="Search"
-      required
       bind:value
       on:input
     />
