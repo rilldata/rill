@@ -52,6 +52,17 @@
               placeholder={attributes.placeholder}
             />
           {/if}
+          {#if attributes.type === "checkbox"}
+            <label for={name} class="flex items-center">
+              <input
+                id={name}
+                type="checkbox"
+                bind:checked={$form[name]}
+                class="h-5 w-5"
+              />
+              <span class="ml-2 text-sm">{label}</span>
+            </label>
+          {/if}
         </div>
       {/each}
     </div>

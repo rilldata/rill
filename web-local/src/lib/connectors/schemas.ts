@@ -25,11 +25,18 @@ export const HTTP: ConnectorSpec = {
       label: "URL",
       placeholder: "https://example.com/data.parquet",
     },
+    sample1MRows: {
+      type: "checkbox",
+      label: "Sample 1M rows",
+      placeholder: "",
+      required: true,
+    },
   },
 };
 
 export const HTTPYupSchema: yup.AnyObjectSchema = yup.object().shape({
   url: yup.string().url().required(),
+  sample1MRows: yup.boolean().required(),
 });
 
 export const S3: ConnectorSpec = {
@@ -68,6 +75,12 @@ export const S3: ConnectorSpec = {
       placeholder: "...",
       required: false,
     },
+    sample1MRows: {
+      type: "checkbox",
+      label: "Sample 1M rows",
+      placeholder: "",
+      required: true,
+    },
   },
 };
 
@@ -80,6 +93,7 @@ export const S3YupSchema: yup.AnyObjectSchema = yup.object().shape({
   sessionToken: yup.string(),
   accessKeyId: yup.string(),
   secretAccessKey: yup.string(),
+  sample1MRows: yup.boolean().required(),
 });
 
 export const GCS: ConnectorSpec = {
@@ -112,6 +126,12 @@ export const GCS: ConnectorSpec = {
       placeholder: "...",
       required: false,
     },
+    sample1MRows: {
+      type: "checkbox",
+      label: "Sample 1M rows",
+      placeholder: "",
+      required: true,
+    },
   },
 };
 
@@ -124,4 +144,5 @@ export const GCSYupSchema = yup.object().shape({
   sessionToken: yup.string(),
   accessKeyId: yup.string(),
   secretAccessKey: yup.string(),
+  sample1MRows: yup.boolean().required(),
 });
