@@ -10,9 +10,9 @@ jobs:
     strategy:
       matrix:
         include:
-#          - os: macos
-#            arch: amd64
-#            runner: macos-latest
+          - os: macos
+            arch: amd64
+            runner: macos-latest
           - os: linux
             arch: amd64
             runner: ubuntu-latest
@@ -38,7 +38,11 @@ jobs:
         shell: bash
         run: |
           cd sql
-          PROTOC_ZIP=protoc-21.5-linux-x86_64.zip
+          case "$OSTYPE" in
+            darwin*)  PROTOC_ZIP=protoc-21.5-osx-x86_64.zip ;;
+            linux*)   PROTOC_ZIP=protoc-21.5-linux-x86_64.zip ;;
+            msys*)    PROTOC_ZIP=protoc-21.5-win64.zip ;;
+          esac
           curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v21.5/$PROTOC_ZIP
           sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
           sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
