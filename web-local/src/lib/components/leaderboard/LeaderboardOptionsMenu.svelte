@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import { tick } from "svelte/internal";
-
   import OptionsButton from "../column-profile/ContextButton.svelte";
 
   import MoreIcon from "../icons/MoreHorizontal.svelte";
@@ -21,13 +18,6 @@
   $: console.log("optionsMenuActive inner", optionsMenuActive);
 </script>
 
-<!-- <div
-  style="position:absolute; top:50%; left:50%; width: 0px; height: 0px;"
-  on:mouseenter={menuContainerEnter}
-  on:mouseleave={menuContainerLeave}
-  class="bg-gray-200"
->
-  <div style="position:absolute; top:-8px; left:-8px"> -->
 <WithTogglableFloatingElement
   bind:active={optionsMenuActive}
   let:toggleFloatingElement
@@ -60,5 +50,3 @@
     {/if}
   </Menu>
 </WithTogglableFloatingElement>
-<!-- </div>
-</div> -->

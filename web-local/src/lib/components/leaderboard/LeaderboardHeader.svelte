@@ -1,9 +1,6 @@
 <script lang="ts">
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-  import FilterInclude from "@rilldata/web-local/lib/components/icons/FilterInclude.svelte";
-  import FilterRemove from "@rilldata/web-local/lib/components/icons/FilterRemove.svelte";
-
   import Spinner from "@rilldata/web-local/lib/components/Spinner.svelte";
   import Shortcut from "@rilldata/web-local/lib/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
