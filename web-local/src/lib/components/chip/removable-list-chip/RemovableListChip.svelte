@@ -27,7 +27,7 @@ are details left to the consumer of the component; this component should remain 
   export let selectedValues: string[];
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
-  export let excludeMode: boolean = false;
+  export let excludeMode = false;
   export let colors: ChipColors = defaultChipColors;
 
   const dispatch = createEventDispatcher();

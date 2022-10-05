@@ -2,7 +2,6 @@
   import { Button } from "@rilldata/web-local/lib/components/button";
 
   import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
-  import Close from "@rilldata/web-local/lib/components/icons/Close.svelte";
   import Cancel from "@rilldata/web-local/lib/components/icons/Cancel.svelte";
   import Spacer from "@rilldata/web-local/lib/components/icons/Spacer.svelte";
 
@@ -14,7 +13,7 @@
   import Footer from "./Footer.svelte";
 
   export let selectedValues;
-  export let excludeMode: boolean = false;
+  export let excludeMode = false;
 
   const dispatch = createEventDispatcher();
 
