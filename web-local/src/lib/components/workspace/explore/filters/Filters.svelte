@@ -85,6 +85,14 @@ The main feature-set component for dashboard filters
       );
     });
   }
+
+  const excludeChipColors = {
+    bgBaseColor: "bg-gray-100",
+    bgHoverColor: "bg-gray-200",
+    textColor: "text-gray-900",
+    bgActiveColor: "bg-gray-200",
+    ringColor: "ring-gray-400",
+  };
 </script>
 
 <section
@@ -129,6 +137,7 @@ The main feature-set component for dashboard filters
             name={`Exclude ${name}`}
             {selectedValues}
             excludeMode
+            colors={excludeChipColors}
           >
             <svelte:fragment slot="body-tooltip-content">
               click to edit the the filters in this dimension
@@ -145,7 +154,7 @@ The main feature-set component for dashboard filters
             bgHoverColor="bg-gray-100"
             textColor="text-gray-500"
             bgActiveColor="bg-gray-200"
-            ringOffsetColor="ring-offset-gray-400"
+            ringColor="ring-gray-400"
             on:click={clearAllFilters}
           >
             <svelte:fragment slot="icon"
