@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Portal from "../Portal.svelte";
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import { fly } from "svelte/transition";
+  import Portal from "../Portal.svelte";
   import Overlay from "./Overlay.svelte";
   const dispatch = createEventDispatcher();
   let modal;
@@ -85,7 +85,10 @@
     transition:fly={{ duration: 125, y: 4 }}
     bind:this={container}
     on:click={() => {
-      dispatch("cancel");
+      // TODO: This on:click would trigger a 'cancel' event on *every* click,
+      // but we only want to trigger it when the *background* is clicked.
+      // So it's commented out for now.
+      // dispatch("cancel");
     }}
   >
     <slot />

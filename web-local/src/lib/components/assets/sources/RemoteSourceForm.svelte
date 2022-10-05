@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createForm } from "svelte-forms-lib";
   import type * as yup from "yup";
-  import type { ConnectorSpec } from "../../connectors/schemas";
-  import Button from "../button/Button.svelte";
-  import Input from "../Input.svelte";
+  import type { ConnectorSpec } from "../../../connectors/schemas";
+  import Button from "../../button/Button.svelte";
+  import Input from "../../Input.svelte";
 
   export let sourceName: string;
   export let connectorSpec: ConnectorSpec;
