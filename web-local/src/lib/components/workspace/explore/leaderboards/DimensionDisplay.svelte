@@ -50,10 +50,10 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  let includeValues: MetricsViewDimensionValues;
-  $: includeValues = metricsExplorer?.filters.include;
-  $: dimensionIsIncluded =
-    includeValues.findIndex((v) => v.name === dimensionId) > -1;
+  let excludeValues: MetricsViewDimensionValues;
+  $: excludeValues = metricsExplorer?.filters.exclude;
+  $: console.log("excludeValues", excludeValues);
+  $: excludeMode = excludeValues.findIndex((v) => v.name === dimensionId) > -1;
 
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
@@ -69,10 +69,10 @@
 
   let selectedValues: Array<unknown>;
   $: selectedValues =
-    (dimensionIsIncluded
-      ? metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
+    (excludeMode
+      ? metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.id)
           ?.values
-      : metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.id)
+      : metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
           ?.values) ?? [];
 
   let topListQuery;
@@ -207,7 +207,12 @@
 
 {#if topListQuery}
   <DimensionContainer>
-    <DimensionHeader {metricsDefId} isFetching={$topListQuery?.isFetching} />
+    <DimensionHeader
+      {metricsDefId}
+      {dimensionId}
+      {excludeMode}
+      isFetching={$topListQuery?.isFetching}
+    />
 
     {#if values && columns.length}
       <DimensionTable
@@ -217,7 +222,7 @@
         {selectedValues}
         rows={values}
         {sortByColumn}
-        excludeMode={!dimensionIsIncluded}
+        {excludeMode}
       />
     {/if}
   </DimensionContainer>
