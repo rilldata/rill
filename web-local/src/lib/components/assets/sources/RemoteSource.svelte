@@ -9,7 +9,9 @@
     S3,
     S3YupSchema,
   } from "../../../connectors/schemas";
+  import { Button } from "../../button";
   import Input from "../../Input.svelte";
+  import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
   import Tab from "../../tab/Tab.svelte";
   import TabGroup from "../../tab/TabGroup.svelte";
 
@@ -62,50 +64,66 @@
   });
 </script>
 
-<TabGroup
-  variant="secondary"
-  on:select={(event) => {
-    selectedConnector = event.detail;
-  }}
->
-  <Tab value={"S3"}>S3</Tab>
-  <Tab value={"GCS"}>GCS</Tab>
-  <Tab value={"HTTP"}>https</Tab>
-</TabGroup>
+<div class="h-full flex flex-col">
+  <TabGroup
+    variant="secondary"
+    on:select={(event) => {
+      selectedConnector = event.detail;
+    }}
+  >
+    <Tab value={"S3"}>S3</Tab>
+    <Tab value={"GCS"}>GCS</Tab>
+    <Tab value={"HTTP"}>https</Tab>
+  </TabGroup>
 
-<div class="pt-8">
   {#key selectedConnector}
-    <h1>{connectorSpec.title}</h1>
-    <div>{@html connectorSpec.description}</div>
-    <form on:submit={handleSubmit} id="remote-source-{selectedConnector}-form">
-      <div class="py-4">
-        {#each Object.entries(connectorSpec.fields) as [name, attributes]}
-          {@const label =
-            attributes.label + (attributes.required ? "" : " (optional)")}
-          <div class="py-2">
-            {#if attributes.type === "text"}
-              <Input
-                id={name}
-                {label}
-                error={$errors[name]}
-                bind:value={$form[name]}
-                placeholder={attributes.placeholder}
-              />
-            {/if}
-            {#if attributes.type === "checkbox"}
-              <label for={name} class="flex items-center">
-                <input
+    <div class="pt-8 flex-grow overflow-y-auto">
+      <h1>{connectorSpec.title}</h1>
+      <div>{@html connectorSpec.description}</div>
+      <form
+        on:submit={handleSubmit}
+        id="remote-source-{selectedConnector}-form"
+      >
+        <div class="py-4">
+          {#each Object.entries(connectorSpec.fields) as [name, attributes]}
+            {@const label =
+              attributes.label + (attributes.required ? "" : " (optional)")}
+            <div class="py-2">
+              {#if attributes.type === "text"}
+                <Input
                   id={name}
-                  type="checkbox"
-                  bind:checked={$form[name]}
-                  class="h-5 w-5"
+                  {label}
+                  error={$errors[name]}
+                  bind:value={$form[name]}
+                  placeholder={attributes.placeholder}
                 />
-                <span class="ml-2 text-sm">{label}</span>
-              </label>
-            {/if}
-          </div>
-        {/each}
-      </div>
-    </form>
+              {/if}
+              {#if attributes.type === "checkbox"}
+                <label for={name} class="flex items-center">
+                  <input
+                    id={name}
+                    type="checkbox"
+                    bind:checked={$form[name]}
+                    class="h-5 w-5"
+                  />
+                  <span class="ml-2 text-sm">{label}</span>
+                </label>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </form>
+    </div>
+    <div class="">
+      <DialogFooter>
+        <Button
+          type="primary"
+          submitForm
+          form="remote-source-{selectedConnector}-form"
+        >
+          Add source
+        </Button>
+      </DialogFooter>
+    </div>
   {/key}
 </div>

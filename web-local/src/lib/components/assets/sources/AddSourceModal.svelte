@@ -2,7 +2,6 @@
   import Tab from "@rilldata/web-local/lib/components/tab/Tab.svelte";
   import TabGroup from "@rilldata/web-local/lib/components/tab/TabGroup.svelte";
   import { createEventDispatcher } from "svelte";
-  import { Button } from "../../button";
   import { Dialog } from "../../modal";
   import ExampleSource from "./ExampleSource.svelte";
   import LocalSource from "./LocalSource.svelte";
@@ -11,7 +10,6 @@
   const dispatch = createEventDispatcher();
 
   let selectedTab = "remote";
-  let remoteSourceSelectedConnector;
   let disabled = false;
 </script>
 
@@ -35,26 +33,11 @@
   </div>
   <svelte:fragment slot="body">
     {#if selectedTab === "remote"}
-      <RemoteSource
-        on:select-connector={(event) => {
-          remoteSourceSelectedConnector = event.detail;
-        }}
-      />
+      <RemoteSource />
     {:else if selectedTab === "local"}
       <LocalSource />
     {:else if selectedTab === "example"}
       <ExampleSource />
-    {/if}
-  </svelte:fragment>
-  <svelte:fragment slot="footer">
-    {#if selectedTab === "remote"}
-      <Button
-        type="primary"
-        submitForm
-        form="remote-source-{remoteSourceSelectedConnector}-form"
-      >
-        Add source
-      </Button>
     {/if}
   </svelte:fragment>
 </Dialog>
