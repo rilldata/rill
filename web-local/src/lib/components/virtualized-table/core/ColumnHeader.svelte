@@ -78,11 +78,10 @@
     }}
     class="
            flex
-           items-center
            justify-stretch
            select-none
            over
-           {isDimensionTable ? 'gap-x-1' : 'gap-x-2'}
+           {isDimensionTable ? '' : 'items-center gap-x-2'}
            "
   >
     <Tooltip location="top" alignment="middle" distance={16}>
@@ -131,13 +130,23 @@
       </TooltipContent>
     </Tooltip>
 
-    {#if isSortingDesc}
-      <div in:fly={{ duration: 200, y: -8 }} style:opacity={isSelected ? 1 : 0}>
-        <ArrowDown size="16px" />
-      </div>
-    {:else}
-      <div in:fly={{ duration: 200, y: 8 }} style:opacity={isSelected ? 1 : 0}>
-        <ArrowDown transform="scale(1 -1)" size="16px" />
+    {#if isDimensionTable}
+      <div class="mt-0.5">
+        {#if isSortingDesc}
+          <div
+            in:fly={{ duration: 200, y: -8 }}
+            style:opacity={isSelected ? 1 : 0}
+          >
+            <ArrowDown size="16px" />
+          </div>
+        {:else}
+          <div
+            in:fly={{ duration: 200, y: 8 }}
+            style:opacity={isSelected ? 1 : 0}
+          >
+            <ArrowDown transform="scale(1 -1)" size="16px" />
+          </div>
+        {/if}
       </div>
     {/if}
 
