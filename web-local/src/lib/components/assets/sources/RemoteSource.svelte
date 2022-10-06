@@ -78,7 +78,6 @@
 
   {#key selectedConnector}
     <div class="pt-8 flex-grow overflow-y-auto">
-      <h1>{connectorSpec.title}</h1>
       <div>{@html connectorSpec.description}</div>
       <form
         on:submit={handleSubmit}
