@@ -64,7 +64,7 @@ func (i *Isolate) Close() error {
 	return i.library.Close()
 }
 
-func (i *Isolate) ConvertSQL(sql string, schema string) string {
+func (i *Isolate) ConvertSQL(sql string, schema string, dialect string) string {
 	convertSql, err := i.library.FindFunc("convert_sql")
 	if err != nil {
 		panic(err)
@@ -78,7 +78,16 @@ func (i *Isolate) ConvertSQL(sql string, schema string) string {
 	cSchema := C.CString(schema)
 	defer C.free(unsafe.Pointer(cSchema))
 
-	res, _, _ := convertSql.Call(uintptr(unsafe.Pointer(thread)), uintptr(unsafe.Pointer(C.my_malloc)), uintptr(unsafe.Pointer(cSql)), uintptr(unsafe.Pointer(cSchema)))
+	cDialect := C.CString(dialect)
+	defer C.free(unsafe.Pointer(cDialect))
+
+	res, _, _ := convertSql.Call(
+		uintptr(unsafe.Pointer(thread)),
+		uintptr(unsafe.Pointer(C.my_malloc)),
+		uintptr(unsafe.Pointer(cSql)),
+		uintptr(unsafe.Pointer(cSchema)),
+		uintptr(unsafe.Pointer(cDialect)),
+	)
 	if res == 0 {
 		panic(fmt.Errorf("call to convert_sql failed"))
 	}
