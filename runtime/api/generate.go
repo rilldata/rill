@@ -1,3 +1,3 @@
 package api
 
-//go:generate make -C .. generate/proto
+//go:generate make -C .. generate.proto.api
