@@ -1,42 +1,51 @@
 <script lang="ts">
-  import IconButton from "../../button/IconButton.svelte";
-
   import { createEventDispatcher } from "svelte";
+  import IconButton from "../../button/IconButton.svelte";
   import Close from "../../icons/Close.svelte";
   import ModalContainer from "../ModalContainer.svelte";
   import DialogCTA from "./DialogCTA.svelte";
   import DialogFooter from "./DialogFooter.svelte";
   import DialogHeader from "./DialogHeader.svelte";
+
   export let dark = false;
-  export let compact = false;
+  export let compact = false; // refers to padding
+  export let size: "sm" | "md" | "lg" = "md";
+  export let yFixed = false;
   export let showCancel = true;
   export let disabled = false;
-  export let location: "top" | "center" = "center";
-  export let minHeight: string = undefined;
 
   const dispatch = createEventDispatcher();
-
-  export let minWidth: string = undefined;
 
   $: containerClasses = dark
     ? "text-white bg-gray-800"
     : "text-gray-800 bg-white";
+
+  $: xDimClasses =
+    size === "sm"
+      ? "w-1/2 md:w-1/3 xl:w-1/4 2xl:w-1/5"
+      : size === "md"
+      ? "w-2/3 md:w-1/2 xl:w-1/3 2xl:w-1/4"
+      : size === "lg"
+      ? "w-4/5 md:w-3/5 xl:w-1/2 2xl:w-1/3"
+      : "";
+
+  $: yDimClasses =
+    yFixed && size === "sm"
+      ? "h-1/3"
+      : size === "md"
+      ? "h-1/2"
+      : size === "lg"
+      ? "h-3/5"
+      : "";
 </script>
 
 <ModalContainer on:cancel on:click-outside>
   <div
-    class:content-center={location === "center"}
-    class:content-start={location === "top"}
-    class="justify-center grid w-screen h-screen relative pointer-events-none"
+    class="flex w-screen h-screen justify-center items-center relative pointer-events-none"
   >
     <div
-      style:min-height={minHeight}
-      class:min-width={minWidth}
-      class="{minWidth
-        ? ''
-        : 'min-w-[400px]'} {containerClasses} rounded pointer-events-auto"
-      style:transform={location === "center" && "translateY(-120px)"}
-      class:m-24={location === "top"}
+      class="{containerClasses} {xDimClasses} {yDimClasses} rounded pointer-events-auto flex flex-col"
+      style:transform={"translateY(-120px)"}
     >
       <DialogHeader {compact}>
         <svelte:fragment slot="title"><slot name="title" /></svelte:fragment>
@@ -56,7 +65,10 @@
         </div>
       </DialogHeader>
       <hr />
-      <div class={compact ? "px-4 py-8" : "px-7 pt-8 pb-16"}>
+      <div
+        class="overflow-y-auto flex-grow
+        {compact ? 'px-4 py-8' : 'px-7 pt-8 pb-16'}"
+      >
         <slot name="body" />
       </div>
       {#if $$slots.footer}

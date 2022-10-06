@@ -14,10 +14,9 @@
 </script>
 
 <Dialog
-  compact
+  yFixed
+  size="lg"
   showCancel
-  minHeight="600px"
-  location="top"
   {disabled}
   on:cancel={() => dispatch("close")}
 >

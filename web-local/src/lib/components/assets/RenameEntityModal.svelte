@@ -74,6 +74,7 @@
 <Dialog
   compact
   showCancel
+  size="sm"
   disabled={newAssetName === null || currentEntityName === newAssetName}
   on:cancel={resetVariablesAndCloseModal}
   on:click-outside={resetVariablesAndCloseModal}
