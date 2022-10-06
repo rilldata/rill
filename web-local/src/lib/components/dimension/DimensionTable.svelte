@@ -12,6 +12,7 @@ TableCells – the cell contents.
   import { DimensionTableConfig } from "./DimensionTableConfig";
   import ColumnHeaders from "../virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
+  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -44,6 +45,7 @@ TableCells – the cell contents.
   const HEADER_X_PAD = CHARACTER_X_PAD;
   const HEADER_FLEX_SPACING = 14;
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
+  const FILTER_COLUMN_WIDTH = DimensionTableConfig.indexWidth;
 
   $: dimensionName = columns[0]?.name;
   $: selectedIndex = activeValues
@@ -142,7 +144,7 @@ TableCells – the cell contents.
 
     /* Dimension column should expand to cover whole container */
     estimateColumnSize[0] = Math.max(
-      containerWidth - measureColumnSizeSum,
+      containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
       estimateColumnSize[0]
     );
 
@@ -155,6 +157,7 @@ TableCells – the cell contents.
         return estimateColumnSize[index];
       },
       overscan: columnOverscanAmount,
+      paddingStart: FILTER_COLUMN_WIDTH,
       initialOffset: colScrollOffset,
     });
   }
@@ -230,11 +233,19 @@ TableCells – the cell contents.
         <!-- ColumnHeaders -->
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
-          {columns}
           noPin={true}
           selectedColumn={sortByColumn}
+          {columns}
           on:click-column={handleColumnHeaderClick}
         />
+
+        <!-- Gutter for Include Exlude Filter -->
+        <DimensionFilterGutter
+          virtualRowItems={virtualRows}
+          totalHeight={virtualHeight}
+          {selectedIndex}
+        />
+
         <!-- VirtualTableBody -->
         <TableCells
           virtualColumnItems={virtualColumns}

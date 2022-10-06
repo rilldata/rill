@@ -109,7 +109,7 @@
       <button
         class="
           {config.rowHeight <= 28 ? 'py-1' : 'py-2'}
-          {isDimensionTable ? 'px-2' : 'px-4'}
+          {isDimensionTable ? '' : 'px-4'}
           text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap
           "
         use:shiftClickAction
