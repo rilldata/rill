@@ -14,6 +14,8 @@
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
   import Spinner from "../Spinner.svelte";
   import Spacer from "../icons/Spacer.svelte";
+  import Check from "../icons/Check.svelte";
+  import Cancel from "../icons/Cancel.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
@@ -52,7 +54,9 @@
 
     <Tooltip location="left" distance={16}>
       <Button type="secondary" on:click={toggleFilterMode} compact>
-        {#if excludeMode}exclude{:else}include{/if}
+        {#if excludeMode}<Check size="20px" /> Include{:else}<Cancel
+            size="20px"
+          /> Exclude{/if}
       </Button>
       <TooltipContent slot="tooltip-content">
         <TooltipTitle>

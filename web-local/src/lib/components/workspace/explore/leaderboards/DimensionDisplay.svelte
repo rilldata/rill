@@ -198,7 +198,7 @@
   }
 
   $: if (values) {
-    const measureFormatSpec = allMeasures.map((m) => {
+    const measureFormatSpec = allMeasures?.map((m) => {
       return { columnName: m.sqlName, formatPreset: m.formatPreset };
     });
     values = humanizeGroupByColumns(values, measureFormatSpec);
