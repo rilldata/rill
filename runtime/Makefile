@@ -19,7 +19,7 @@ clean:
 	rm -f main
 	rm -rf release
 
-generate/proto:
+generate.proto.api:
 	go install \
 		"google.golang.org/protobuf/cmd/protoc-gen-go" \
 		"google.golang.org/grpc/cmd/protoc-gen-go-grpc" \
@@ -31,6 +31,13 @@ generate/proto:
 		--grpc-gateway_out=api --grpc-gateway_opt=logtostderr=true --grpc-gateway_opt=paths=source_relative --grpc-gateway_opt=generate_unbound_methods=true \
 		--openapiv2_out=api --openapiv2_opt=logtostderr=true \
 		runtime.proto
+
+generate.proto.sql:
+	go install "google.golang.org/protobuf/cmd/protoc-gen-go"
+	protoc --proto_path=../sql/src/main/java/com/rilldata/protobuf \
+		--go_out=sql/pbast --go_opt=paths=source_relative \
+		--go_opt=MSqlNodeProto.proto=github.com/rilldata/rill/runtime/sql/pbast \
+		SqlNodeProto.proto
 
 release/darwin-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
