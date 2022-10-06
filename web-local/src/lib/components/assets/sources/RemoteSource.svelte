@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
+  import * as yup from "yup";
   import {
     GCS,
     GCSYupSchema,
@@ -15,16 +15,21 @@
   import Tab from "../../tab/Tab.svelte";
   import TabGroup from "../../tab/TabGroup.svelte";
 
-  const dispatch = createEventDispatcher();
-
-  let sourceName = "my_new_source";
-
   let selectedConnector = "S3";
   let connectorSpec = S3;
   let yupSchema = S3YupSchema;
 
+  function extendYupSchemaWithSourceName(yupSchema: yup.AnyObjectSchema) {
+    return yupSchema.concat(
+      yup.object().shape({
+        sourceName: yup.string().required(),
+      })
+    );
+  }
+
+  yupSchema = extendYupSchemaWithSourceName(yupSchema);
+
   function onConnectorChange(selectedConnector: string) {
-    dispatch("select-connector", selectedConnector);
     if (selectedConnector === "S3") {
       connectorSpec = S3;
       yupSchema = S3YupSchema;
@@ -35,6 +40,8 @@
       connectorSpec = HTTP;
       yupSchema = HTTPYupSchema;
     }
+
+    yupSchema = extendYupSchemaWithSourceName(yupSchema);
   }
 
   $: onConnectorChange(selectedConnector);
@@ -45,7 +52,7 @@
       .join(", ");
 
     return (
-      `CREATE SOURCE ${sourceName} WITH (connector = '${connectorSpec.name}', ` +
+      `CREATE SOURCE ${values.sourceName} WITH (connector = '${connectorSpec.name}', ` +
       compiledKeyValues +
       `)`
     );
@@ -84,6 +91,12 @@
         id="remote-source-{selectedConnector}-form"
       >
         <div class="py-4">
+          <Input
+            label="Source name"
+            bind:value={$form["sourceName"]}
+            error={$errors["sourceName"]}
+            placeholder="my_new_source"
+          />
           {#each Object.entries(connectorSpec.fields) as [name, attributes]}
             {@const label =
               attributes.label + (attributes.required ? "" : " (optional)")}
