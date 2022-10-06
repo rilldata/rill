@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import {
     GCS,
@@ -12,6 +13,8 @@
   import Tab from "../../tab/Tab.svelte";
   import TabGroup from "../../tab/TabGroup.svelte";
 
+  const dispatch = createEventDispatcher();
+
   let sourceName = "my_new_source";
 
   let selectedConnector = "S3";
@@ -19,6 +22,7 @@
   let yupSchema = S3YupSchema;
 
   function onConnectorChange(selectedConnector: string) {
+    dispatch("select-connector", selectedConnector);
     if (selectedConnector === "S3") {
       connectorSpec = S3;
       yupSchema = S3YupSchema;
@@ -73,7 +77,7 @@
   {#key selectedConnector}
     <h1>{connectorSpec.title}</h1>
     <div>{@html connectorSpec.description}</div>
-    <form on:submit={handleSubmit} id="{selectedConnector}-form">
+    <form on:submit={handleSubmit} id="remote-source-{selectedConnector}-form">
       <div class="py-4">
         {#each Object.entries(connectorSpec.fields) as [name, attributes]}
           {@const label =

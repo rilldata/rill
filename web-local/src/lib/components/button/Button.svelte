@@ -6,6 +6,7 @@
   export let disabled = false;
   export let compact = false;
   export let submitForm = false;
+  export let form = "";
 
   const dispatch = createEventDispatcher();
 
@@ -52,11 +53,12 @@
 </script>
 
 <button
-  type={submitForm && "submit"}
   style:height={compact ? "auto" : "36px"}
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}
+  type={submitForm && "submit"}
+  form={submitForm && form}
 >
   <slot />
 </button>
