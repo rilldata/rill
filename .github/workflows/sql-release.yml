@@ -17,22 +17,18 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-#          - os: windows todo fix windows builds, depends on setup-protoc action
+#          - os: windows todo fix windows builds, depends on setup-protoc action https://github.com/arduino/setup-protoc/issues/33
 #            arch: amd64
 #            runner: windows-latest
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v3
-      - name: Increment patch version
-        run: |
-          cd sql
-          mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn validate -Pbump-patch
       - uses: graalvm/setup-graalvm@v1
         with:
           version: "22.1.0"
           java-version: "17"
           components: "native-image"
-#      - name: Install Protoc todo monitor setup-protoc until they support 21.5
+#      - name: Install Protoc todo monitor setup-protoc until they support 21.5 https://github.com/arduino/setup-protoc/issues/33
 #        uses: arduino/setup-protoc@v1
 #        with:
 #          repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -71,12 +67,6 @@ jobs:
         run: |
           rm sql/target/*.txt
           zip -j librillsql-${{ matrix.os }}-${{ matrix.arch }}.zip sql/target/librillsql.* sql/target/graal_isolate.*
-      - name: Push version changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          default_author: github_actions
-          add: sql/pom.xml
-          message: librillsql release v${{ steps.maven-version.outputs.version }}
       - name: Upload archive
         uses: google-github-actions/upload-cloud-storage@v0
         with:
