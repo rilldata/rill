@@ -16,7 +16,7 @@
  * </script>
  */
 
-import { writable, get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { DEFAULT_COORDINATES } from "../constants";
 
 /** converts an event to a simplified object
@@ -66,6 +66,13 @@ interface ScrubActionFactoryArguments {
   endPredicate?: (event: Event) => boolean;
 }
 
+export interface PlotBounds {
+  plotLeft?: number;
+  plotRight?: number;
+  plotTop?: number;
+  plotBottom?: number;
+}
+
 interface ScrubAction {
   destroy: () => void;
 }
@@ -95,6 +102,12 @@ export function createScrubAction({
     stop: DEFAULT_COORDINATES,
   });
 
+  /** local plot bound state */
+  let _plotLeft = plotLeft;
+  let _plotRight = plotRight;
+  let _plotTop = plotTop;
+  let _plotBottom = plotBottom;
+
   const movement = writable({
     xMovement: 0,
     yMovement: 0,
@@ -104,8 +117,8 @@ export function createScrubAction({
 
   function setCoordinateBounds(event: MouseEvent) {
     return {
-      x: clamp(event.offsetX, plotLeft, plotRight),
-      y: clamp(event.offsetY, plotTop, plotBottom),
+      x: clamp(event.offsetX, _plotLeft, _plotRight),
+      y: clamp(event.offsetY, _plotTop, _plotBottom),
     };
   }
 
@@ -113,6 +126,12 @@ export function createScrubAction({
     coordinates,
     isScrubbing,
     movement,
+    updatePlotBounds(bounds: PlotBounds) {
+      if (bounds.plotLeft) _plotLeft = bounds.plotLeft;
+      if (bounds.plotRight) _plotRight = bounds.plotRight;
+      if (bounds.plotTop) _plotTop = bounds.plotTop;
+      if (bounds.plotBottom) _plotBottom = bounds.plotBottom;
+    },
     scrubAction(node: Node): ScrubAction {
       function reset() {
         coordinates.set({
