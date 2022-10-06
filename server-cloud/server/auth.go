@@ -27,16 +27,16 @@ type Authenticator struct {
 func newAuthenticator(c context.Context, conf Config) (*Authenticator, error) {
 	provider, err := oidc.NewProvider(
 		c,
-		"https://"+conf.Auth0Domain+"/",
+		"https://"+conf.AuthDomain+"/",
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	config := oauth2.Config{
-		ClientID:     conf.Auth0ClientID,
-		ClientSecret: conf.Auth0ClientSecret,
-		RedirectURL:  conf.Auth0CallbackURL,
+		ClientID:     conf.AuthClientID,
+		ClientSecret: conf.AuthClientSecret,
+		RedirectURL:  conf.AuthCallbackURL,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "profile"},
 	}
@@ -123,7 +123,7 @@ func (s *Server) callback(c echo.Context) error {
 }
 
 func (s *Server) logout(c echo.Context) error {
-	logoutUrl, err := url.Parse("https://" + s.conf.Auth0Domain + "/v2/logout")
+	logoutUrl, err := url.Parse("https://" + s.conf.AuthDomain + "/v2/logout")
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -140,7 +140,7 @@ func (s *Server) logout(c echo.Context) error {
 
 	parameters := url.Values{}
 	parameters.Add("returnTo", returnTo.String())
-	parameters.Add("client_id", s.conf.Auth0ClientID)
+	parameters.Add("client_id", s.conf.AuthClientID)
 	logoutUrl.RawQuery = parameters.Encode()
 
 	return c.Redirect(http.StatusTemporaryRedirect, logoutUrl.String())
