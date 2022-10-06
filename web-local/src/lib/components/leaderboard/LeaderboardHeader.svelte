@@ -19,10 +19,8 @@
 
   let otherFilterKey: "exclude" | "include";
   $: otherFilterKey = filterKey === "include" ? "exclude" : "include";
-  $: console.log("hovered", hovered);
 
   let optionsMenuActive = false;
-  $: console.log("optionsMenuActive", optionsMenuActive);
 </script>
 
 <div class="flex flex-row  items-center">
