@@ -572,6 +572,10 @@
                 "dropDeleted": {
                   "type": "boolean",
                   "title": "If true, all catalog objects not present in blobs (except for unmanaged tables) will be deleted"
+                },
+                "dryRun": {
+                  "type": "boolean",
+                  "title": "If true, will validate the SQL, but not actually execute the migrations"
                 }
               },
               "title": "Request message for RuntimeService.Migrate"
@@ -660,6 +664,10 @@
                 "createOrReplace": {
                   "type": "boolean",
                   "title": "If true, will replace existing definitions with the same name"
+                },
+                "dryRun": {
+                  "type": "boolean",
+                  "title": "If true, will validate the SQL, but not actually execute the migrations"
                 }
               },
               "title": "Request message for RuntimeService.MigrateSingle"
@@ -1116,6 +1124,9 @@
         },
         "primaryTime": {
           "type": "boolean"
+        },
+        "description": {
+          "type": "string"
         }
       },
       "title": "Dimensions are columns to filter and group by"
@@ -1422,6 +1433,10 @@
           "type": "string",
           "title": "Name of the metrics view"
         },
+        "fromObject": {
+          "type": "string",
+          "title": "Name of the source or model that the metrics view is based on"
+        },
         "dimensions": {
           "type": "array",
           "items": {
@@ -1467,6 +1482,9 @@
       "type": "object",
       "properties": {
         "metricsViewName": {
+          "type": "string"
+        },
+        "fromObject": {
           "type": "string"
         },
         "dimensions": {

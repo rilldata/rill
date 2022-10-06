@@ -437,6 +437,7 @@ message MetricsView {
     string name = 1;
     string type = 2;
     bool primary_time = 3;
+    string description = 4;
   }
   // Measures are aggregated computed values
   message Measure {
@@ -448,10 +449,12 @@ message MetricsView {
   string sql = 1;
   // Name of the metrics view
   string name = 2;
+  // Name of the source or model that the metrics view is based on
+  string from_object = 3;
   // Dimensions in the metrics view
-  repeated Dimension dimensions = 3;
+  repeated Dimension dimensions = 4;
   // Measures in the metrics view
-  repeated Measure measures = 4;
+  repeated Measure measures = 5;
 }
 
 // UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that
@@ -505,6 +508,8 @@ message MigrateRequest {
   repeated string blobs = 2;
   // If true, all catalog objects not present in blobs (except for unmanaged tables) will be deleted
   bool drop_deleted = 3;
+  // If true, will validate the SQL, but not actually execute the migrations
+  bool dry_run = 4;
 }
 
 // Response message for RuntimeService.Migrate
@@ -518,6 +523,8 @@ message MigrateSingleRequest {
   string sql = 2;
   // If true, will replace existing definitions with the same name
   bool create_or_replace = 3;
+  // If true, will validate the SQL, but not actually execute the migrations
+  bool dry_run = 4;
 }
 
 // Response message for RuntimeService.MigrateSingle
@@ -595,8 +602,9 @@ message MetricsViewMetaRequest {
 // Response message for RuntimeService.MetricsViewMeta
 message MetricsViewMetaResponse {
   string metrics_view_name = 1;
-  repeated MetricsView.Dimension dimensions = 2;
-  repeated MetricsView.Measure measures = 3;
+  string from_object = 2;
+  repeated MetricsView.Dimension dimensions = 3;
+  repeated MetricsView.Measure measures = 4;
 }
 
 // Request message for RuntimeService.MetricsViewToplist

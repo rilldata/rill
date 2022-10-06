@@ -28,6 +28,7 @@ export type RuntimeServiceQueryBody = {
 export type RuntimeServiceMigrateSingleBody = {
   sql?: string;
   createOrReplace?: boolean;
+  dryRun?: boolean;
 };
 
 export type RuntimeServiceMigrateDeleteParams = { name?: string };
@@ -35,6 +36,7 @@ export type RuntimeServiceMigrateDeleteParams = { name?: string };
 export type RuntimeServiceMigrateBody = {
   blobs?: string[];
   dropDeleted?: boolean;
+  dryRun?: boolean;
 };
 
 export type RuntimeServiceMetricsViewTotalsBody = {
@@ -173,6 +175,7 @@ export interface V1MetricsViewSort {
 
 export interface V1MetricsViewMetaResponse {
   metricsViewName?: string;
+  fromObject?: string;
   dimensions?: MetricsViewDimension[];
   measures?: MetricsViewMeasure[];
 }
@@ -186,6 +189,7 @@ export interface V1MetricsViewFilter {
 export interface V1MetricsView {
   sql?: string;
   name?: string;
+  fromObject?: string;
   dimensions?: MetricsViewDimension[];
   measures?: MetricsViewMeasure[];
 }
@@ -338,6 +342,7 @@ export interface MetricsViewDimension {
   name?: string;
   type?: string;
   primaryTime?: boolean;
+  description?: string;
 }
 
 export type ConnectorPropertyType =
