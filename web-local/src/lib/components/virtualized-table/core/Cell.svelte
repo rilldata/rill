@@ -31,6 +31,7 @@
   export let suppressTooltip = false;
   export let rowSelected = false;
   export let atLeastOneSelected = false;
+  export let excludeMode = false;
 
   let cellActive = false;
 
@@ -67,11 +68,14 @@
     }
   }
 
-  $: barColor = rowSelected
-    ? "bg-blue-300"
-    : atLeastOneSelected
-    ? "bg-blue-100"
-    : "bg-blue-200";
+  // Super important special case: if there is not at least one "active" (selected) value,
+  // we need to set *all* items to be included, because by default if a user has not
+  // selected any values, we assume they want all values included in all calculations.
+  $: excluded = atLeastOneSelected
+    ? (excludeMode && rowSelected) || (!excludeMode && !rowSelected)
+    : false;
+
+  $: barColor = excluded ? "bg-gray-200" : "bg-blue-200";
 
   let TOOLTIP_STRING_LIMIT = 200;
   $: tooltipValue =
@@ -128,11 +132,9 @@
         <FormattedDataType
           value={formattedValue || value}
           {type}
-          customStyle={rowSelected
-            ? "font-bold text-gray-800"
-            : atLeastOneSelected
+          customStyle={excluded
             ? "font-normal italic text-gray-400"
-            : config.defaultFontWeightClass}
+            : "font-bold text-gray-800"}
           inTable
         />
       </button>

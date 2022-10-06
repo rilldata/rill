@@ -27,6 +27,8 @@
   import { humanizeGroupByColumns } from "../../../../util/humanize-numbers";
   import { getContext } from "svelte";
 
+  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+
   export let metricsDefId: string;
   export let dimensionId: string;
 
@@ -48,6 +50,11 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
+  let includeValues: MetricsViewDimensionValues;
+  $: includeValues = metricsExplorer?.filters.include;
+  $: dimensionIsIncluded =
+    includeValues.findIndex((v) => v.name === dimensionId) > -1;
+
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
     metricsDefId,
@@ -60,10 +67,13 @@
     metricsExplorer?.selectedMeasureIds
   );
 
-  let activeValues: Array<unknown>;
-  $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
-      ?.values ?? [];
+  let selectedValues: Array<unknown>;
+  $: selectedValues =
+    (dimensionIsIncluded
+      ? metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
+          ?.values
+      : metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.id)
+          ?.values) ?? [];
 
   let topListQuery;
 
@@ -204,9 +214,10 @@
         on:select-item={(event) => onSelectItem(event)}
         on:sort={(event) => onSortByColumn(event)}
         {columns}
-        {activeValues}
+        {selectedValues}
         rows={values}
         {sortByColumn}
+        excludeMode={!dimensionIsIncluded}
       />
     {/if}
   </DimensionContainer>

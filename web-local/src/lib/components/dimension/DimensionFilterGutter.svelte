@@ -10,8 +10,7 @@
   export let totalHeight: number;
   export let virtualRowItems;
   export let selectedIndex = [];
-
-  let excluded = false;
+  export let excludeMode = false;
 </script>
 
 <div
@@ -27,9 +26,9 @@
       header={{ size: config.indexWidth, start: row.start }}
     >
       <div class="grid place-items-center">
-        {#if isSelected && !excluded}
+        {#if isSelected && !excludeMode}
           <Check size="20px" />
-        {:else if isSelected && excluded}
+        {:else if isSelected && excludeMode}
           <Cancel size="20px" />
         {:else}
           <Spacer />

@@ -18,8 +18,9 @@ TableCells – the cell contents.
 
   export let rows;
   export let columns: VirtualizedTableColumns[];
-  export let activeValues: Array<unknown> = [];
+  export let selectedValues: Array<unknown> = [];
   export let sortByColumn: string;
+  export let excludeMode = false;
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -48,7 +49,7 @@ TableCells – the cell contents.
   const FILTER_COLUMN_WIDTH = DimensionTableConfig.indexWidth;
 
   $: dimensionName = columns[0]?.name;
-  $: selectedIndex = activeValues
+  $: selectedIndex = selectedValues
     .map((label) => {
       return rows.findIndex((row) => row[dimensionName] === label);
     })
@@ -244,6 +245,7 @@ TableCells – the cell contents.
           virtualRowItems={virtualRows}
           totalHeight={virtualHeight}
           {selectedIndex}
+          {excludeMode}
         />
 
         <!-- VirtualTableBody -->
@@ -255,6 +257,7 @@ TableCells – the cell contents.
           {activeIndex}
           {selectedIndex}
           {scrolling}
+          {excludeMode}
           on:select-item={(event) => onSelectItem(event)}
           on:inspect={setActiveIndex}
         />
