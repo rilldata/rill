@@ -41,7 +41,7 @@
   {#if $assetsVisible}
     <Portal>
       <div
-        class="fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
+        class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
         style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
         use:drag={{ minSize: 300, maxSize: 500, side: "assetsWidth" }}
       />
