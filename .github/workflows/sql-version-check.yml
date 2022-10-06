@@ -19,6 +19,7 @@ jobs:
       - name: Increment patch version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # 'gh pr' is required because the checkout action does not checkout the PR branch (see https://github.com/actions/checkout/issues/124)
         run: |
           cd main_repo/sql
           MAIN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
