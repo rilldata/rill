@@ -11,8 +11,9 @@ func TestSanity(t *testing.T) {
 
 	sql := "select 1 as foo, 'hello' as bar"
 	schema := `{ "tables": [] }`
+	dialect := "duckdb"
 
-	res := isolate.ConvertSQL(sql, schema)
+	res := isolate.ConvertSQL(sql, schema, dialect)
 	require.Equal(t, `SELECT 1 AS "FOO", 'hello' AS "BAR"`, res)
 
 	err := isolate.Close()
