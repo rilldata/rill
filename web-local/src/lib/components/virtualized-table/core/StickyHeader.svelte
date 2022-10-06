@@ -64,12 +64,12 @@
   <div
     class="
     text-ellipsis overflow-hidden
-    px-4
-  {borderClassesInnerDiv}
-  {position === 'top' && `${paddingVerticalTop} text-left`}
-  {position === 'left' && paddingVerticalLeft}
-  {position === 'top-left' && `${paddingVerticalTop} text-center`}
-"
+    {isDimensionTable ? 'px-1' : 'px-4'}
+    {borderClassesInnerDiv}
+    {position === 'top' && `${paddingVerticalTop} text-left`}
+    {position === 'left' && paddingVerticalLeft}
+    {position === 'top-left' && `${paddingVerticalTop} text-center`}
+    "
   >
     <slot />
     {#if enableResize}
