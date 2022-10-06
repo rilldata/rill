@@ -148,6 +148,50 @@ public class CalciteTests
         Arguments.of("""
                 CREATE SOURCE clicks_raw
                 WITH (
+                    'connector' = 's3',, // extra commas are ignored
+                    'prefix' = 's3://my_bucket/a.csv', // comments are ignored
+                    'FORMAT' = 'CSV', // extra commas are ignored
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH ( 'connector' = 's3',, 'prefix' = 's3://my_bucket/a.csv', 'FORMAT' = 'CSV',)""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3' // missing comma
+                    'prefix' = 's3://my_bucket/a.csv',
+                    'FORMAT' = 'CSV',,,
+                )""",
+            Optional.of("Encountered \" \"=\" \"= \"\""),
+            Optional.empty()
+        ),
+        // This should not fail with parse exception, pasring should pass
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3'
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [prefix] not present or blank for s3 connector")
+        ),
+        // This should not fail with parse exception, pasring should pass
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3',
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [prefix] not present or blank for s3 connector")
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
                     -- comments are ignored
                     'connector' = 's3',
                     'prefix' = 's3://my_bucket/a.csv', -- comments are ignored
@@ -164,7 +208,7 @@ public class CalciteTests
                     'prefix' = 's3://my_bucket/a.csv',
                     'FORMAT' = 'CSV', // extra comma
                 )""",
-            Optional.of("Encountered \" \")\" \") \"\""),
+            Optional.empty(),
             Optional.empty()
         ),
         Arguments.of("""
@@ -229,6 +273,17 @@ public class CalciteTests
                 )""",
             Optional.empty(),
             Optional.of("No connector of type [s4] found for source [CLICKS_RAW]")
+        ),
+        // Parser can be improved to parse this as well, without quotes it is parsed as an identifier
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    'format' = 'csv',
+                    'prefix' = 's3://my_bucket/*.csv'
+                )""",
+            Optional.of("Encountered \" <IDENTIFIER> \"connector \""),
+            Optional.empty()
         )
     );
   }

@@ -20,16 +20,19 @@ Map<SqlNode, SqlNode> Properties() :
     SqlNode value;
 }
 {
-    key = StringLiteral() <EQ> value = StringLiteral()
-    {
-        props.put(key, value);
-    }
     (
-        <COMMA> key = StringLiteral() <EQ> value = StringLiteral()
+        key = StringLiteral() <EQ> value = StringLiteral()
         {
             props.put(key, value);
-        }
+        } <COMMA>
     )*
+    key = StringLiteral() <EQ> value = StringLiteral()
+    {
+      props.put(key, value);
+    }
+    (
+      <COMMA>
+    )?
     {
         return props;
     }
