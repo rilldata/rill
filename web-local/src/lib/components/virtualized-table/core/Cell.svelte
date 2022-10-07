@@ -96,7 +96,7 @@
       z-9 
       text-ellipsis 
       whitespace-nowrap 
-      {isDimensionTable ? '' : 'border-r border-b'}
+      {isDimensionTable ? 'pr-5' : 'border-r border-b'}
       {activityStatus}
       "
     style:left="{column.start}px"
