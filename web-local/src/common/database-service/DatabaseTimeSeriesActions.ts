@@ -1,3 +1,4 @@
+import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import type { BasicMeasureDefinition } from "../data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DatabaseActions } from "./DatabaseActions";
 import type { RollupInterval } from "./DatabaseColumnActions";
@@ -6,11 +7,10 @@ import type { DatabaseMetadata } from "./DatabaseMetadata";
 import {
   getCoalesceStatementsMeasures,
   getExpressionColumnsFromMeasures,
-  getFilterFromFilters,
+  getFilterFromMetricsViewFilters,
   normaliseMeasures,
 } from "./utils";
 import { PreviewRollupInterval } from "@rilldata/web-local/lib/duckdb-data-types";
-import type { ActiveValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 
 export type TimeSeriesValue = {
   ts: string;
@@ -113,7 +113,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       measures?: Array<BasicMeasureDefinition>;
       timestampColumn: string;
       timeRange?: TimeSeriesTimeRange;
-      filters?: ActiveValues;
+      filters?: MetricsViewRequestFilter;
       pixels?: number;
       sampleSize?: number;
     }
@@ -134,10 +134,8 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       timeGranularity = "week";
     }
 
-    const filter =
-      filters && Object.keys(filters).length > 0
-        ? " WHERE " + getFilterFromFilters(filters)
-        : "";
+    const filterCondition = getFilterFromMetricsViewFilters(filters);
+    const filter = filterCondition ? ` WHERE ${filterCondition}` : "";
 
     /**
      * Generate the rolled up time series as a temporary table and
