@@ -134,7 +134,9 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       timeGranularity = "week";
     }
 
-    const filterCondition = getFilterFromMetricsViewFilters(filters);
+    const filterCondition = filters
+      ? getFilterFromMetricsViewFilters(filters)
+      : "";
     const filter = filterCondition ? ` WHERE ${filterCondition}` : "";
 
     /**
