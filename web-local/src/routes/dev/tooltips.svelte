@@ -133,30 +133,29 @@
     >
       drag this one around 🚐
     </div>
-    <svelte:fragment slot="tooltip-content">
-      <!-- <TooltipContent> -->
-      <div
-        style="min-height: 300px; width: 300px;"
-        class="border border-2 border-black p-3 rounded backdrop-blur-md	"
-      >
-        This is a tooltip. It will follow our little 🚐 everywhere it goes.
-        Ignore the design; the <i>positioning semantics</i> are the important
-        part.
 
-        <SummaryAndHistogram
-          min={9508263}
-          qlow={21123818}
-          median={30627455}
-          mean={34851293}
-          qhigh={45410890}
-          max={52802608}
-          width={300}
-          height={65}
-          data={data01}
-          color="black"
-        />
-      </div>
-      <!-- </TooltipContent> -->
-    </svelte:fragment>
+    <!-- <TooltipContent> -->
+    <div
+      slot="tooltip-content"
+      style="min-height: 300px; width: 300px;"
+      class="border border-2 border-black p-3 rounded backdrop-blur-md	"
+    >
+      This is a tooltip. It will follow our little 🚐 everywhere it goes. Ignore
+      the design; the <i>positioning semantics</i> are the important part.
+
+      <SummaryAndHistogram
+        min={9508263}
+        qlow={21123818}
+        median={30627455}
+        mean={34851293}
+        qhigh={45410890}
+        max={52802608}
+        width={300}
+        height={65}
+        data={data01}
+        color="black"
+      />
+    </div>
+    <!-- </TooltipContent> -->
   </Tooltip>
 </div>

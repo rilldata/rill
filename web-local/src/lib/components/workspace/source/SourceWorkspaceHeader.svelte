@@ -29,8 +29,6 @@
   style:grid-template-columns="auto max-content"
 >
   <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
-    <svelte:fragment slot="icon">
-      <Source />
-    </svelte:fragment>
+    <Source slot="icon" />
   </WorkspaceHeader>
 </div>

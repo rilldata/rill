@@ -118,9 +118,7 @@ The main feature-set component for dashboard filters
             ringOffsetColor="ring-offset-gray-400"
             on:click={clearAllFilters}
           >
-            <svelte:fragment slot="icon"
-              ><FilterRemove size="16px" /></svelte:fragment
-            >
+            <FilterRemove slot="icon" size="16px" />
             <svelte:fragment slot="body">clear filters</svelte:fragment>
           </Chip>
         </div>
