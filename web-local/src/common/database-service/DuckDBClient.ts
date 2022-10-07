@@ -71,6 +71,10 @@ export class DuckDBClient {
     await this.execute(query, false, true);
   }
 
+  public async requestToInstance(path: string, data: any): Promise<any> {
+    return this.request(`/v1/instances/${this.instanceID}/${path}`, data);
+  }
+
   protected async spawnRuntime() {
     if (!this.config.database.spawnRuntime) {
       return;
