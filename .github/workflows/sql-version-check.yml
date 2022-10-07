@@ -3,13 +3,14 @@ on:
   pull_request_review:
     types:
       - submitted
+  pull_request:
     paths:
       - "sql/**"
       - ".github/workflows/sql-test.yml"
 jobs:
   version_increment:
     runs-on: ubuntu-latest
-    if: github.event.review.state == 'approved'
+    if: github.event.review.state == 'approved' || github.eventname = 'pull_request'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/checkout@v3
