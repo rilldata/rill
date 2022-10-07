@@ -39,22 +39,22 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection
-func (c *connection) Registry() (drivers.Registry, bool) {
+func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection
-func (c *connection) Catalog() (drivers.Catalog, bool) {
+func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection
-func (c *connection) Repo() (drivers.Repo, bool) {
+func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection
-func (c *connection) OLAP() (drivers.OLAP, bool) {
+func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return c, true
 }
 

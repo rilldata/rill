@@ -7,6 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testRepo(t *testing.T, registry drivers.Registry) {
+func testRepo(t *testing.T, registry drivers.RepoStore) {
 	require.True(t, true)
 }

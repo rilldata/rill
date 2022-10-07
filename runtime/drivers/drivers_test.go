@@ -46,16 +46,16 @@ func TestAll(t *testing.T) {
 
 			// Run applicable sub-tests
 			name := strings.ToTitle(driver)
-			if registry, ok := conn.Registry(); ok {
+			if registry, ok := conn.RegistryStore(); ok {
 				t.Run("Registry"+name, func(t *testing.T) { testRegistry(t, registry) })
 			}
-			if catalog, ok := conn.Catalog(); ok {
+			if catalog, ok := conn.CatalogStore(); ok {
 				t.Run("Catalog"+name, func(t *testing.T) { testCatalog(t, catalog) })
 			}
-			if repo, ok := conn.Repo(); ok {
+			if repo, ok := conn.RepoStore(); ok {
 				t.Run("Repo"+name, func(t *testing.T) { testRepo(t, repo) })
 			}
-			if olap, ok := conn.OLAP(); ok {
+			if olap, ok := conn.OLAPStore(); ok {
 				t.Run("OLAP"+name, func(t *testing.T) { testOLAP(t, olap) })
 			}
 

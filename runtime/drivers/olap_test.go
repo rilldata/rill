@@ -7,6 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testOLAP(t *testing.T, registry drivers.Registry) {
+func testOLAP(t *testing.T, olap drivers.OLAPStore) {
 	require.True(t, true)
 }
