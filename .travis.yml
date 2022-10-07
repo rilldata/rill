@@ -191,21 +191,21 @@ jobs:
       script: *build-vercel-pkg
       deploy: *deploy-vercel-pkg
 
-    - stage: Release
-      name: "Build & Publish Windows binary"
-      if: tag IS present OR type IN (cron)
-      os: windows
-      env:
-        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
+#     - stage: Release
+#       name: "Build & Publish Windows binary"
+#       if: tag IS present OR type IN (cron)
+#       os: windows
+#       env:
+#         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
-      before_install:
-        - echo "Installing python 3 and gcloud"
-        - choco install python3 gcloudsdk
-        - ./scripts/check_nightly.sh
+#       before_install:
+#         - echo "Installing python 3 and gcloud"
+#         - choco install python3 gcloudsdk
+#         - ./scripts/check_nightly.sh
 
-      install: *npm-install
-      script: *build-vercel-pkg
-      deploy: *deploy-vercel-pkg
+#       install: *npm-install
+#       script: *build-vercel-pkg
+#       deploy: *deploy-vercel-pkg
 
     - stage: Tag
       name: "Cut a new Release"
