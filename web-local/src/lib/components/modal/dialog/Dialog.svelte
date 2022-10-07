@@ -66,12 +66,15 @@
         </div>
       </DialogHeader>
       <hr />
-      <div
-        class="overflow-y-auto flex-grow
+      <slot />
+      {#if $$slots.body}
+        <div
+          class="overflow-y-auto flex-grow
         {compact ? 'px-4 py-8' : 'px-7 pt-8 pb-16'}"
-      >
-        <slot name="body" />
-      </div>
+        >
+          <slot name="body" />
+        </div>
+      {/if}
       {#if $$slots.footer}
         <DialogFooter>
           <slot name="footer" />

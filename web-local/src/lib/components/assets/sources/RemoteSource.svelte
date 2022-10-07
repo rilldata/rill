@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import {
@@ -18,6 +19,8 @@
   let selectedConnector = "S3";
   let connectorSpec = S3;
   let yupSchema = S3YupSchema;
+
+  const dispatch = createEventDispatcher();
 
   function extendYupSchemaWithSourceName(yupSchema: yup.AnyObjectSchema) {
     return yupSchema.concat(
@@ -72,7 +75,7 @@
 </script>
 
 <div class="h-full flex flex-col">
-  <div>
+  <div class="pt-4 px-4">
     <TabGroup
       variant="secondary"
       on:select={(event) => {
@@ -85,7 +88,7 @@
     </TabGroup>
   </div>
   {#key selectedConnector}
-    <div class="pt-8 flex-grow overflow-y-auto">
+    <div class="pt-4 px-4 flex-grow overflow-y-auto">
       <div>{@html connectorSpec.description}</div>
       <form
         on:submit={handleSubmit}
@@ -127,8 +130,16 @@
         </div>
       </form>
     </div>
-    <div class="">
+    <div class="bg-gray-100 border-t border-gray-300">
       <DialogFooter>
+        <Button
+          on:click={() => {
+            dispatch("cancel");
+          }}
+          type="text"
+        >
+          Cancel
+        </Button>
         <Button
           type="primary"
           submitForm

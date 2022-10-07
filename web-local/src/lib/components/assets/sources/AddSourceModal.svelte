@@ -34,13 +34,13 @@
       </TabGroup>
     </div>
   </div>
-  <svelte:fragment slot="body">
+  <div class="overflow-y-auto flex-grow">
     {#if selectedTab === "remote"}
-      <RemoteSource />
+      <RemoteSource on:cancel={() => dispatch("close")} />
     {:else if selectedTab === "local"}
       <LocalSource />
     {:else if selectedTab === "example"}
       <ExampleSource />
     {/if}
-  </svelte:fragment>
+  </div>
 </Dialog>
