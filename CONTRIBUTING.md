@@ -1,6 +1,6 @@
 # CONTRIBUTING
 
-This file should serve as an entrypoint for learning about and contributing to Rill Developer. 
+This file should serve as an entrypoint for learning about and contributing to Rill Developer.
 
 ## Development environment
 
@@ -27,7 +27,7 @@ Here's a high-level overview of the technologies we use for different parts of t
 
 ## Monorepo
 
-Rill uses a monorepo and you can expect to find all its code in this repository. This allows us to move faster as we can coordinate changes across multiple components in a single PR. It also gives people a single place to learn about the project and follow its development. 
+Rill uses a monorepo and you can expect to find all its code in this repository. This allows us to move faster as we can coordinate changes across multiple components in a single PR. It also gives people a single place to learn about the project and follow its development.
 
 We want the codebase to be easy to understand and contribute to. To achieve that, every directory that contains code of non-trivial complexity should include a `README.md` file that provides details about the module, such as its purpose, how to run and test it, links to relevant tutorials or docs, etc. Only the root `README.md` file should be considered user-facing.
 
