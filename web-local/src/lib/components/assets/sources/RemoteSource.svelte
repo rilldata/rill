@@ -87,20 +87,24 @@
       <Tab value={"HTTP"}>https</Tab>
     </TabGroup>
   </div>
+  <div class="p-4">
+    {@html connectorSpec.description}
+  </div>
   {#key selectedConnector}
-    <div class="pt-4 px-4 flex-grow overflow-y-auto">
-      <div>{@html connectorSpec.description}</div>
+    <div class="px-4 flex-grow overflow-y-auto">
       <form
         on:submit={handleSubmit}
         id="remote-source-{selectedConnector}-form"
       >
-        <div class="py-4">
-          <Input
-            label="Source name"
-            bind:value={$form["sourceName"]}
-            error={$errors["sourceName"]}
-            placeholder="my_new_source"
-          />
+        <div class="pb-2">
+          <div class="py-2">
+            <Input
+              label="Source name"
+              bind:value={$form["sourceName"]}
+              error={$errors["sourceName"]}
+              placeholder="my_new_source"
+            />
+          </div>
           {#each Object.entries(connectorSpec.fields) as [name, attributes]}
             {@const label =
               attributes.label + (attributes.required ? "" : " (optional)")}
