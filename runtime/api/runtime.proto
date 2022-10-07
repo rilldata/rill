@@ -257,13 +257,14 @@ message Repo {
 
 // Request message for RuntimeService.ListRepos
 message ListReposRequest {
-  uint64 limit = 1;
-  uint64 offset = 2;
+  int32 page_size = 1;
+  string page_token = 2;
 }
 
 // Response message for RuntimeService.ListRepos
 message ListReposResponse {
   repeated Repo repos = 1;
+  string next_page_token = 2;
 }
 
 // Request message for RuntimeService.GetRepo
@@ -362,13 +363,14 @@ message Instance {
 
 // Request message for RuntimeService.ListInstances
 message ListInstancesRequest {
-  uint64 limit = 1;
-  uint64 offset = 2;
+  int32 page_size = 1;
+  string page_token = 2;
 }
 
 // Response message for RuntimeService.ListInstances
 message ListInstancesResponse {
   repeated Instance instances = 1;
+  string next_page_token = 2;
 }
 
 // Request message for RuntimeService.GetInstance
@@ -695,14 +697,16 @@ message Connector {
     }
     // The property key
     string key = 1;
+    // Pretty name for the property
+    string display_name = 2;
     // Human readable description of the field
-    string description = 2;
+    string description = 3;
     // Placeholder value for use in UIs
-    string placeholder = 3;
+    string placeholder = 4;
     // The type expected for this property
-    Type type = 4;
+    Type type = 5;
     // Nullable is true if the field is optional
-    bool nullable = 5;
+    bool nullable = 6;
   }
   // Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
   string name = 1;
