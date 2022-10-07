@@ -179,9 +179,7 @@
             disabled={hasSourceError}
             on:select={() => editModel(metricsDef.sourceModelId)}
           >
-            <svelte:fragment slot="icon">
-              <Model />
-            </svelte:fragment>
+            <Model slot="icon" />
             edit model
             <svelte:fragment slot="description">
               {#if hasSourceError}
@@ -194,9 +192,7 @@
             disabled={hasSourceError}
             on:select={() => editMetrics(metricsDef.id)}
           >
-            <svelte:fragment slot="icon">
-              <MetricsIcon />
-            </svelte:fragment>
+            <MetricsIcon slot="icon" />
             edit metrics
           </MenuItem>
           <Divider />
@@ -208,15 +204,11 @@
                 metricsDef.metricDefLabel
               )}
           >
-            <svelte:fragment slot="icon">
-              <EditIcon />
-            </svelte:fragment>
+            <EditIcon slot="icon" />
             rename...</MenuItem
           >
           <MenuItem icon on:select={() => deleteMetricsDef(metricsDef.id)}>
-            <svelte:fragment slot="icon">
-              <Cancel />
-            </svelte:fragment>
+            <Cancel slot="icon" />
             delete</MenuItem
           >
         </svelte:fragment>
