@@ -13,7 +13,7 @@ import (
 
 func TestQuery(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.OLAP()
+	olap, _ := conn.OLAPStore()
 
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM foo"})
 	require.NoError(t, err)
@@ -32,7 +32,7 @@ func TestQuery(t *testing.T) {
 
 func TestInformationSchemaAll(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.OLAP()
+	olap, _ := conn.OLAPStore()
 
 	tables, err := olap.InformationSchema().All(context.Background())
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestInformationSchemaAll(t *testing.T) {
 
 func TestInformationSchemaLookup(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.OLAP()
+	olap, _ := conn.OLAPStore()
 	ctx := context.Background()
 
 	table, err := olap.InformationSchema().Lookup(ctx, "foo")
@@ -66,7 +66,7 @@ func TestPriorityQueue(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.OLAP()
+	olap, _ := conn.OLAPStore()
 	defer conn.Close()
 
 	// pause the priority worker to allow the queue to fill up
@@ -116,7 +116,7 @@ func TestCancel(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.OLAP()
+	olap, _ := conn.OLAPStore()
 	defer conn.Close()
 
 	// pause the priority worker to allow the queue to fill up
@@ -185,7 +185,7 @@ func TestClose(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.OLAP()
+	olap, _ := conn.OLAPStore()
 
 	// pause the priority worker to allow the queue to fill up
 	conn.(*connection).worker.Pause()
@@ -235,7 +235,7 @@ func prepareConn(t *testing.T) drivers.Connection {
 	conn, err := driver{}.Open("?access_mode=read_write")
 	require.NoError(t, err)
 
-	olap, ok := conn.OLAP()
+	olap, ok := conn.OLAPStore()
 	require.True(t, ok)
 
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{

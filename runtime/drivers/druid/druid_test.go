@@ -111,7 +111,7 @@ func TestDruid(t *testing.T) {
 	conn, err := driver{}.Open(avaticaURL)
 	require.NoError(t, err)
 
-	olap, ok := conn.OLAP()
+	olap, ok := conn.OLAPStore()
 	require.True(t, ok)
 
 	t.Run("count", func(t *testing.T) { testCount(t, olap) })
@@ -130,7 +130,7 @@ func testIngest(t *testing.T, coordinatorURL string) {
 	require.NoError(t, err)
 }
 
-func testCount(t *testing.T, olap drivers.OLAP) {
+func testCount(t *testing.T, olap drivers.OLAPStore) {
 	qry := fmt.Sprintf("SELECT count(*) FROM %s", testTable)
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: qry})
 	require.NoError(t, err)
@@ -143,7 +143,7 @@ func testCount(t *testing.T, olap drivers.OLAP) {
 	require.NoError(t, rows.Close())
 }
 
-func testMax(t *testing.T, olap drivers.OLAP) {
+func testMax(t *testing.T, olap drivers.OLAPStore) {
 	qry := fmt.Sprintf("SELECT max(id) FROM %s", testTable)
 	expectedValue := 16000
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: qry})
@@ -156,7 +156,7 @@ func testMax(t *testing.T, olap drivers.OLAP) {
 	require.NoError(t, rows.Close())
 }
 
-func testSchemaAll(t *testing.T, olap drivers.OLAP) {
+func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 	tables, err := olap.InformationSchema().All(context.Background())
 	require.NoError(t, err)
 
@@ -175,7 +175,7 @@ func testSchemaAll(t *testing.T, olap drivers.OLAP) {
 	require.Equal(t, "VARCHAR", tables[0].Columns[4].Type)
 }
 
-func testSchemaLookup(t *testing.T, olap drivers.OLAP) {
+func testSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	table, err := olap.InformationSchema().Lookup(ctx, testTable)
 	require.NoError(t, err)

@@ -3,9 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -65,17 +63,19 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 }
 
 func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*sqlx.Rows, error) {
-	id, err := uuid.Parse(instanceID)
+	registry, _ := s.metastore.RegistryStore()
+	inst, found := registry.FindInstance(ctx, instanceID)
+	if !found {
+		return nil, status.Error(codes.NotFound, "instance not found")
+	}
+
+	conn, err := drivers.Open(inst.Driver, inst.DSN)
 	if err != nil {
-		return nil, fmt.Errorf("invalid instance_id")
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
+	olap, _ := conn.OLAPStore()
 
-	instance := s.runtime.InstanceFromID(id)
-	if err = instance.Load(); err != nil {
-		return nil, err
-	}
-
-	return instance.Query(ctx, stmt)
+	return olap.Execute(ctx, stmt)
 }
 
 func rowsToMeta(rows *sqlx.Rows) ([]*api.SchemaColumn, error) {
