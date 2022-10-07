@@ -2,8 +2,11 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+
   import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
+  import { getContext } from "svelte";
 
   import type {
     MetricsViewDimensionValues,
@@ -14,6 +17,7 @@ The main feature-set component for dashboard filters
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
   import { Chip, ChipContainer, RemovableListChip } from "../../../chip";
   import Filter from "../../../icons/Filter.svelte";
   import FilterRemove from "../../../icons/FilterRemove.svelte";
@@ -22,6 +26,8 @@ The main feature-set component for dashboard filters
   import { fly } from "svelte/transition";
   import { getDisplayName } from "../utils";
   export let metricsDefId;
+
+  const config = getContext<RootConfig>("config");
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
@@ -40,6 +46,29 @@ The main feature-set component for dashboard filters
   function isFiltered(filters: MetricsViewRequestFilter): boolean {
     if (!filters) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
+  }
+
+  let topListQuery;
+
+  function searchDimension(name, dimensionId, value) {
+    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
+      measures: [],
+      limit: 10,
+      offset: 0,
+      sort: [],
+      time: {
+        start: metricsExplorer?.selectedTimeRange?.start,
+        end: metricsExplorer?.selectedTimeRange?.end,
+      },
+      filter: { include: [{ name, in: [], like: [value] }], exclude: [] },
+    });
+
+    console.log(topListQuery);
+  }
+
+  $: if (!$topListQuery?.isFetching) {
+    let someValues = $topListQuery?.data;
+    console.log(someValues);
   }
 
   $: hasFilters = isFiltered(metricsExplorer?.filters);
@@ -61,6 +90,7 @@ The main feature-set component for dashboard filters
       name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
       dimensionId: dimensionValues.name,
       selectedValues: dimensionValues.in,
+      searchedValues: [],
     }));
   }
 
@@ -91,14 +121,18 @@ The main feature-set component for dashboard filters
   </div>
   {#if currentDimensionFilters?.length}
     <ChipContainer>
-      {#each currentDimensionFilters as { name, dimensionId, selectedValues } (dimensionId)}
+      {#each currentDimensionFilters as { name, dimensionId, selectedValues, searchedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:remove={() => clearFilterForDimension(dimensionId)}
             on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
+            on:search={(event) => {
+              searchDimension(name, dimensionId, event.detail);
+            }}
             typeLabel="dimension"
             {name}
             {selectedValues}
+            {searchedValues}
           >
             <svelte:fragment slot="body-tooltip-content">
               click to edit the the filters in this dimension
