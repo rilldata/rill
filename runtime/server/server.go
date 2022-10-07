@@ -21,6 +21,7 @@ import (
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 )
 
@@ -31,19 +32,24 @@ type ServerOptions struct {
 
 type Server struct {
 	api.UnsafeRuntimeServiceServer
-	opts    *ServerOptions
-	runtime *runtime.Runtime
-	logger  *zap.Logger
+	opts      *ServerOptions
+	metastore drivers.Connection
+	logger    *zap.Logger
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
 
-func NewServer(opts *ServerOptions, runtime *runtime.Runtime, logger *zap.Logger) *Server {
-	return &Server{
-		opts:    opts,
-		runtime: runtime,
-		logger:  logger,
+func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Logger) (*Server, error) {
+	_, ok := metastore.RegistryStore()
+	if !ok {
+		return nil, fmt.Errorf("server metastore must be a valid registry")
 	}
+
+	return &Server{
+		opts:      opts,
+		metastore: metastore,
+		logger:    logger,
+	}, nil
 }
 
 // Serve starts a gRPC server and a gRPC REST gateway server
@@ -91,7 +97,7 @@ func (s *Server) Serve(ctx context.Context) error {
 // Ping implements RuntimeService
 func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingResponse, error) {
 	resp := &api.PingResponse{
-		Version: "dev",
+		Version: runtime.Version,
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
