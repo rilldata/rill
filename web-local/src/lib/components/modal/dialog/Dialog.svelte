@@ -30,13 +30,14 @@
       : "";
 
   $: yDimClasses =
-    yFixed && size === "sm"
+    yFixed &&
+    (size === "sm"
       ? "h-1/3"
       : size === "md"
       ? "h-1/2"
       : size === "lg"
       ? "h-3/5"
-      : "";
+      : "");
 </script>
 
 <ModalContainer on:cancel on:click-outside>
