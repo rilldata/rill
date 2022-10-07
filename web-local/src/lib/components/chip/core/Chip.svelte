@@ -15,7 +15,7 @@
   export let bgHoverColor = "bg-blue-100";
   export let textColor = "text-blue-900";
   export let bgActiveColor = bgHoverColor;
-  export let ringColor = "ring-offset-blue-500";
+  export let outlineColor = "outline-blue-400";
 
   /** if removable is true, these props control the tooltip positioning */
   export let removeButtonTooltipLocation = "bottom";
@@ -34,13 +34,13 @@
     grid gap-x-2 items-center pl-2 pr-4 py-1 rounded-2xl cursor-pointer
     {textColor}
     {bgBaseColor}
-    {ringColor}
+    {outlineColor}
     hover:{bgHoverColor}
     {active ? bgActiveColor : ''}
 
   "
-    class:ring-2={active}
-    class:ring-offset-2={active}
+    class:outline-2={active}
+    class:outline={active}
     style:grid-template-columns="{$$slots.icon || removable
       ? "max-content"
       : ""}

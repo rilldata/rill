@@ -3,7 +3,7 @@ export type ChipColors = {
   bgHoverColor: string;
   textColor: string;
   bgActiveColor: string;
-  ringColor: string;
+  outlineColor: string;
 };
 
 export const defaultChipColors: ChipColors = {
@@ -11,5 +11,5 @@ export const defaultChipColors: ChipColors = {
   bgHoverColor: "bg-blue-100",
   textColor: "text-blue-900",
   bgActiveColor: "bg-blue-100",
-  ringColor: "ring-blue-500",
+  outlineColor: "outline-blue-400",
 };

@@ -91,7 +91,7 @@ The main feature-set component for dashboard filters
     bgHoverColor: "bg-gray-200",
     textColor: "text-gray-900",
     bgActiveColor: "bg-gray-200",
-    ringColor: "ring-gray-400",
+    outlineColor: "outline-gray-400",
   };
 </script>
 
@@ -154,7 +154,7 @@ The main feature-set component for dashboard filters
             bgHoverColor="bg-gray-100"
             textColor="text-gray-500"
             bgActiveColor="bg-gray-200"
-            ringColor="ring-gray-400"
+            outlineColor="outline-gray-400"
             on:click={clearAllFilters}
           >
             <svelte:fragment slot="icon"
