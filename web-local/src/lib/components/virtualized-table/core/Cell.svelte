@@ -134,7 +134,7 @@
           {type}
           customStyle={excluded
             ? "font-normal italic text-gray-400"
-            : "font-bold text-gray-800"}
+            : "font-semibold text-gray-800"}
           inTable
         />
       </button>
