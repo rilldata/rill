@@ -13,21 +13,21 @@
    * The graph will contain an unsmoothed series (showing noise * abnormalities) by default, and
    * a smoothed series (showing the trend) if the time series merits it.
    */
-  import { onMount, setContext } from "svelte";
-  import { guidGenerator } from "../../../../util/guid";
-  import { spring } from "svelte/motion";
-  import { fly, fade } from "svelte/transition";
-  import { cubicOut as easing } from "svelte/easing";
-  import { scaleLinear } from "d3-scale";
+  import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
-  import { DEFAULT_COORDINATES } from "../../constants";
-  import { createScrubAction } from "../../actions/scrub-action-factory";
-  import { extent, bisector, max, min } from "d3-array";
-  import { outline } from "../../actions/outline";
-  import { removeTimezoneOffset } from "../../../../util/formatters";
-  import type { Interval } from "../../../../duckdb-data-types";
-  import { writable } from "svelte/store";
+  import { scaleLinear } from "d3-scale";
+  import { onMount, setContext } from "svelte";
+  import { cubicOut as easing } from "svelte/easing";
+  import { spring } from "svelte/motion";
   import type { Writable } from "svelte/store";
+  import { writable } from "svelte/store";
+  import { fade, fly } from "svelte/transition";
+  import type { Interval } from "../../../../duckdb-data-types";
+  import { removeTimezoneOffset } from "../../../../util/formatters";
+  import { guidGenerator } from "../../../../util/guid";
+  import { outline } from "../../actions/outline";
+  import { createScrubAction } from "../../actions/scrub-action-factory";
+  import { DEFAULT_COORDINATES } from "../../constants";
   import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
 
   import TimestampBound from "./TimestampBound.svelte";
@@ -140,6 +140,7 @@
     coordinates: zoomCoords,
     scrubAction,
     isScrubbing: isZooming,
+    updatePlotBounds: updatePlotBoundsForScrubber,
   } = createScrubAction({
     plotLeft: $plotConfig.plotLeft,
     plotRight: $plotConfig.plotRight,
@@ -154,16 +155,34 @@
    * This scroll action creates a scrolling event that will be used in the svg container.
    * The main requirement is this event does not have the shiftKey in use.
    */
-  const { scrubAction: scrollAction, isScrubbing: isScrolling } =
-    createScrubAction({
-      plotLeft: $plotConfig.plotLeft,
-      plotRight: $plotConfig.plotRight,
-      plotTop: $plotConfig.plotTop,
-      plotBottom: $plotConfig.plotBottom,
-      startPredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
-      movePredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
-      moveEventName: "scrolling",
-    });
+  const {
+    scrubAction: scrollAction,
+    isScrubbing: isScrolling,
+    updatePlotBounds: updatePlotBoundsForScrolling,
+  } = createScrubAction({
+    plotLeft: $plotConfig.plotLeft,
+    plotRight: $plotConfig.plotRight,
+    plotTop: $plotConfig.plotTop,
+    plotBottom: $plotConfig.plotBottom,
+    startPredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
+    movePredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
+    moveEventName: "scrolling",
+  });
+
+  /** update these plot bounds for scrolling and scrubbing, assuming they change. */
+  $: updatePlotBoundsForScrubber({
+    plotLeft: $plotConfig.plotLeft,
+    plotRight: $plotConfig.plotRight,
+    plotTop: $plotConfig.plotTop,
+    plotBottom: $plotConfig.plotBottom,
+  });
+
+  $: updatePlotBoundsForScrolling({
+    plotLeft: $plotConfig.plotLeft,
+    plotRight: $plotConfig.plotRight,
+    plotTop: $plotConfig.plotTop,
+    plotBottom: $plotConfig.plotBottom,
+  });
 
   let isZoomed = false;
 
