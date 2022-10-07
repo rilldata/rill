@@ -3,7 +3,6 @@
   import TabGroup from "@rilldata/web-local/lib/components/tab/TabGroup.svelte";
   import { createEventDispatcher } from "svelte";
   import { Dialog } from "../../modal";
-  import ExampleSource from "./ExampleSource.svelte";
   import LocalSource from "./LocalSource.svelte";
   import RemoteSource from "./RemoteSource.svelte";
 
@@ -30,7 +29,7 @@
       >
         <Tab value={"remote"}>Remote source</Tab>
         <Tab value={"local"}>Local source</Tab>
-        <Tab value={"example"}>Example source</Tab>
+        <!-- <Tab value={"example"}>Example source</Tab> -->
       </TabGroup>
     </div>
   </div>
@@ -39,8 +38,8 @@
       <RemoteSource on:cancel={() => dispatch("close")} />
     {:else if selectedTab === "local"}
       <LocalSource />
-    {:else if selectedTab === "example"}
-      <ExampleSource />
+      <!-- {:else if selectedTab === "example"}
+      <ExampleSource /> -->
     {/if}
   </div>
 </Dialog>
