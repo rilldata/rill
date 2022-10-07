@@ -17,9 +17,9 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-#          - os: windows todo fix windows builds, depends on setup-protoc action https://github.com/arduino/setup-protoc/issues/33
-#            arch: amd64
-#            runner: windows-latest
+          - os: windows
+            arch: amd64
+            runner: windows-latest
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v3
