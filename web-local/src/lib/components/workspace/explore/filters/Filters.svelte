@@ -60,7 +60,7 @@ The main feature-set component for dashboard filters
     currentDimensionFilters = values.map((dimensionValues) => ({
       name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
       dimensionId: dimensionValues.name,
-      selectedValues: dimensionValues.values,
+      selectedValues: dimensionValues.in,
     }));
   }
 

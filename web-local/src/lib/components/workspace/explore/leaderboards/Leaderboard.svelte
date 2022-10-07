@@ -90,7 +90,7 @@
   let activeValues: Array<unknown>;
   $: activeValues =
     metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
-      ?.values ?? [];
+      ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
   function setLeaderboardValues(values) {
@@ -114,7 +114,7 @@
   ) {
     topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: [measure.sqlName],
-      limit: 15,
+      limit: 250,
       offset: 0,
       sort: [
         {

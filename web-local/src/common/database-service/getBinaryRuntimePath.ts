@@ -33,5 +33,5 @@ export function getBinaryRuntimePath(version: string) {
     return newBinaryPath;
   }
 
-  return runtimeBinaryPath;
+  return runtimeBinaryPath.replace(/ /g, "\\ ");
 }

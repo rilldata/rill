@@ -95,11 +95,11 @@ export const useMetaMappedFilters = (
     return {
       include: filters.include.map((dimensionValues) => ({
         name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
-        values: dimensionValues.values,
+        in: dimensionValues.in,
       })),
       exclude: filters.exclude.map((dimensionValues) => ({
         name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
-        values: dimensionValues.values,
+        in: dimensionValues.in,
       })),
     };
   });

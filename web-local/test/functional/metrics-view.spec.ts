@@ -71,7 +71,7 @@ describe("Metric View", () => {
     }
   });
 
-  it.skip("Top list with multiple measures and sorting", async () => {
+  it("Top list with multiple measures and sorting", async () => {
     const dimension = dimensions[2];
     const request: MetricsViewTopListRequest = {
       measures: measures.map((measure) => measure.sqlName),

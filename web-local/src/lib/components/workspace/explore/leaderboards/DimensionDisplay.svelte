@@ -63,7 +63,7 @@
   let activeValues: Array<unknown>;
   $: activeValues =
     metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
-      ?.values ?? [];
+      ?.in ?? [];
 
   let topListQuery;
 
