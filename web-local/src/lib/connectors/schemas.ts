@@ -25,12 +25,12 @@ export const HTTP: ConnectorSpec = {
       label: "URL",
       placeholder: "https://example.com/data.parquet",
     },
-    sample1MRows: {
-      type: "checkbox",
-      label: "Sample 1M rows",
-      placeholder: "",
-      required: true,
-    },
+    // sample1MRows: {
+    //   type: "checkbox",
+    //   label: "Sample 1M rows",
+    //   placeholder: "",
+    //   required: true,
+    // },
   },
 };
 
@@ -75,12 +75,12 @@ export const S3: ConnectorSpec = {
       placeholder: "...",
       required: false,
     },
-    sample1MRows: {
-      type: "checkbox",
-      label: "Sample 1M rows",
-      placeholder: "",
-      required: true,
-    },
+    // sample1MRows: {
+    //   type: "checkbox",
+    //   label: "Sample 1M rows",
+    //   placeholder: "",
+    //   required: true,
+    // },
   },
 };
 
@@ -126,12 +126,12 @@ export const GCS: ConnectorSpec = {
       placeholder: "...",
       required: false,
     },
-    sample1MRows: {
-      type: "checkbox",
-      label: "Sample 1M rows",
-      placeholder: "",
-      required: true,
-    },
+    // sample1MRows: {
+    //   type: "checkbox",
+    //   label: "Sample 1M rows",
+    //   placeholder: "",
+    //   required: true,
+    // },
   },
 };
 
