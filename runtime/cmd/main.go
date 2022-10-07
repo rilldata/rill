@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -60,28 +59,24 @@ func main() {
 	}
 
 	// Open metadata db connection
-	metadataDB, err := drivers.Open(conf.DatabaseDriver, conf.DatabaseURL)
+	metastore, err := drivers.Open(conf.DatabaseDriver, conf.DatabaseURL)
 	if err != nil {
 		logger.Fatal("error: could not connect to metadata db", zap.Error(err))
 	}
-	err = metadataDB.Migrate(context.Background())
+	err = metastore.Migrate(context.Background())
 	if err != nil {
 		logger.Fatal("error: metadata db migration", zap.Error(err))
 	}
-	_, ok := metadataDB.Registry()
-	if !ok {
-		logger.Fatal("error: metadata db is not a valid registry", zap.Error(err))
-	}
-
-	// Init runtime
-	rt := runtime.New(metadataDB, logger)
 
 	// Init server
 	opts := &server.ServerOptions{
 		HTTPPort: conf.Port,
 		GRPCPort: conf.GRPCPort,
 	}
-	server := server.NewServer(opts, rt, logger)
+	server, err := server.NewServer(opts, metastore, logger)
+	if err != nil {
+		logger.Fatal("error: could not create server", zap.Error(err))
+	}
 
 	// Run server
 	ctx := graceful.WithCancelOnTerminate(context.Background())
