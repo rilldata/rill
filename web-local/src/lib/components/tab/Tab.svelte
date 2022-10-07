@@ -22,7 +22,7 @@
   aria-selected={selected}
   style:min-width="40px"
   class:font-bold={element === $selectedValue}
-  class="border-b-4 border-b-transparent px-4"
+  class="px-4 pb-0 mb-0"
   on:click={() => {
     callback(element, value);
   }}

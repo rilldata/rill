@@ -62,10 +62,9 @@
 </script>
 
 <div
-  class="flex flex-row gap-x-4 relative"
+  class="flex flex-row gap-x-4 relative items-stretch"
   bind:this={container}
   style:height="40px"
-  style:padding-top="6px"
 >
   <slot />
   {#if $selectedValue !== undefined && $tweenedMovingElement?.left !== undefined}
@@ -77,11 +76,11 @@
         ? `calc(${
             $tweenedMovingElement.top + $tweenedMovingElement.height
           }px - .25rem)`
-        : `${$tweenedMovingElement.top - 3}px`}
+        : `${$tweenedMovingElement.top}px`}
       style:width="{$tweenedMovingElement.width}px"
       style:height={variant === "panel"
         ? ".25rem"
-        : `calc(${$tweenedMovingElement.height}px)`}
+        : `${$tweenedMovingElement.height}px`}
     />
   {/if}
 </div>

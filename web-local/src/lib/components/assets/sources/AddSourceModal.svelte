@@ -17,19 +17,22 @@
   yFixed
   size="lg"
   showCancel
+  compact
   {disabled}
   on:cancel={() => dispatch("close")}
 >
   <div slot="title">
-    <TabGroup
-      on:select={(event) => {
-        selectedTab = event.detail;
-      }}
-    >
-      <Tab value={"remote"}>Remote source</Tab>
-      <Tab value={"local"}>Local source</Tab>
-      <Tab value={"example"}>Example source</Tab>
-    </TabGroup>
+    <div>
+      <TabGroup
+        on:select={(event) => {
+          selectedTab = event.detail;
+        }}
+      >
+        <Tab value={"remote"}>Remote source</Tab>
+        <Tab value={"local"}>Local source</Tab>
+        <Tab value={"example"}>Example source</Tab>
+      </TabGroup>
+    </div>
   </div>
   <svelte:fragment slot="body">
     {#if selectedTab === "remote"}

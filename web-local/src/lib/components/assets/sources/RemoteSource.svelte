@@ -72,17 +72,18 @@
 </script>
 
 <div class="h-full flex flex-col">
-  <TabGroup
-    variant="secondary"
-    on:select={(event) => {
-      selectedConnector = event.detail;
-    }}
-  >
-    <Tab value={"S3"}>S3</Tab>
-    <Tab value={"GCS"}>GCS</Tab>
-    <Tab value={"HTTP"}>https</Tab>
-  </TabGroup>
-
+  <div>
+    <TabGroup
+      variant="secondary"
+      on:select={(event) => {
+        selectedConnector = event.detail;
+      }}
+    >
+      <Tab value={"S3"}>S3</Tab>
+      <Tab value={"GCS"}>GCS</Tab>
+      <Tab value={"HTTP"}>https</Tab>
+    </TabGroup>
+  </div>
   {#key selectedConnector}
     <div class="pt-8 flex-grow overflow-y-auto">
       <div>{@html connectorSpec.description}</div>
