@@ -10,6 +10,7 @@
   export let columns: VirtualizedTableColumns[];
   export let scrolling = false;
   export let activeIndex: number;
+  export let excludeMode = false;
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -38,6 +39,7 @@
         {row}
         {column}
         {atLeastOneSelected}
+        {excludeMode}
         {...getCellProps(row, column)}
         on:inspect
         on:select-item

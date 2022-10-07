@@ -14,8 +14,6 @@
   export let optionsMenuActive = false;
 
   const optionsButtonId = guidGenerator();
-
-  $: console.log("optionsMenuActive inner", optionsMenuActive);
 </script>
 
 <WithTogglableFloatingElement

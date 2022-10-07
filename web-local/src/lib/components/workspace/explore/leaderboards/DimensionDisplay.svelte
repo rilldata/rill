@@ -27,6 +27,8 @@
   import { humanizeGroupByColumns } from "../../../../util/humanize-numbers";
   import { getContext } from "svelte";
 
+  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+
   export let metricsDefId: string;
   export let dimensionId: string;
 
@@ -48,6 +50,11 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
+  let excludeValues: MetricsViewDimensionValues;
+  $: excludeValues = metricsExplorer?.filters.exclude;
+  $: console.log("excludeValues", excludeValues);
+  $: excludeMode = excludeValues.findIndex((v) => v.name === dimensionId) > -1;
+
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
     metricsDefId,
@@ -60,10 +67,13 @@
     metricsExplorer?.selectedMeasureIds
   );
 
-  let activeValues: Array<unknown>;
-  $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
-      ?.values ?? [];
+  let selectedValues: Array<unknown>;
+  $: selectedValues =
+    (excludeMode
+      ? metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.id)
+          ?.values
+      : metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
+          ?.values) ?? [];
 
   let topListQuery;
 
@@ -188,7 +198,7 @@
   }
 
   $: if (values) {
-    const measureFormatSpec = allMeasures.map((m) => {
+    const measureFormatSpec = allMeasures?.map((m) => {
       return { columnName: m.sqlName, formatPreset: m.formatPreset };
     });
     values = humanizeGroupByColumns(values, measureFormatSpec);
@@ -197,16 +207,22 @@
 
 {#if topListQuery}
   <DimensionContainer>
-    <DimensionHeader {metricsDefId} isFetching={$topListQuery?.isFetching} />
+    <DimensionHeader
+      {metricsDefId}
+      {dimensionId}
+      {excludeMode}
+      isFetching={$topListQuery?.isFetching}
+    />
 
     {#if values && columns.length}
       <DimensionTable
         on:select-item={(event) => onSelectItem(event)}
         on:sort={(event) => onSortByColumn(event)}
         {columns}
-        {activeValues}
+        {selectedValues}
         rows={values}
         {sortByColumn}
+        {excludeMode}
       />
     {/if}
   </DimensionContainer>
