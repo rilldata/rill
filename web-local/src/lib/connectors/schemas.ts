@@ -10,6 +10,7 @@ export interface ConnectorSpec {
       required: boolean;
       label: string;
       placeholder: string;
+      hint?: string;
     };
   };
 }
@@ -17,7 +18,7 @@ export interface ConnectorSpec {
 export const HTTP: ConnectorSpec = {
   name: "http",
   title: "HTTP(S)",
-  description: "Connect to an HTTP(S) endpoint",
+  description: "Connect to a CSV or Parquet file via HTTP(S)",
   fields: {
     url: {
       type: "text",
@@ -43,13 +44,14 @@ export const S3: ConnectorSpec = {
   name: "s3",
   title: "S3",
   description:
-    "Connect to an S3 bucket. For private buckets, provide an access key or session token.",
+    "Connect to CSV or Parquet files in an S3 bucket. For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>.",
   fields: {
     url: {
       type: "text",
       label: "URL",
-      placeholder: "s3://...",
+      placeholder: "s3://bucket-name/path/to/file.csv",
       required: true,
+      hint: "Tip: use glob patterns to select multiple files",
     },
     region: {
       type: "text",
@@ -66,12 +68,6 @@ export const S3: ConnectorSpec = {
     secretAccessKey: {
       type: "text",
       label: "Secret access key",
-      placeholder: "...",
-      required: false,
-    },
-    sessionToken: {
-      type: "text",
-      label: "Session token",
       placeholder: "...",
       required: false,
     },
@@ -100,13 +96,14 @@ export const GCS: ConnectorSpec = {
   name: "gcs",
   title: "GCS",
   description:
-    "Connect to a GCS bucket. For private buckets, provide <a href=https://console.cloud.google.com/storage/settings;tab=interoperability target='_blank'>HMAC credentials</a>.",
+    "Connect to CSV or Parquet files in a GCS bucket. For private buckets, provide <a href=https://console.cloud.google.com/storage/settings;tab=interoperability target='_blank'>HMAC credentials</a>.",
   fields: {
     url: {
       type: "text",
       label: "URL",
-      placeholder: "gcs://...",
+      placeholder: "gcs://bucket-name/path/to/file.csv",
       required: true,
+      hint: "Tip: use glob patterns to select multiple files",
     },
     region: {
       type: "text",

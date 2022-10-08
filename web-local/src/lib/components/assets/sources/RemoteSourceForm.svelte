@@ -101,9 +101,10 @@
           <Input
             id={name}
             {label}
+            placeholder={attributes.placeholder}
+            hint={attributes.hint}
             error={$errors[name]}
             bind:value={$form[name]}
-            placeholder={attributes.placeholder}
           />
         {/if}
         {#if attributes.type === "checkbox"}
