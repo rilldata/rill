@@ -45,16 +45,19 @@ public class SqlConverterEntrypoint
   }
 
   @CEntryPoint(name = "get_ast")
-  public static byte[] createSource(IsolateThread thread, CCharPointer sourceDef, CCharPointer schema)
+  public static CCharPointer getAST(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
+      CCharPointer schema
+  )
   {
     try {
       String javaSchemaString = CTypeConversion.toJavaString(schema);
       SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
-      String createSource = CTypeConversion.toJavaString(sourceDef);
-      return sqlConverter.getAST(createSource);
+      String sqlString = CTypeConversion.toJavaString(sql);
+      byte[] ast = sqlConverter.getAST(sqlString);
+      return convertToCCharArrayPointer(allocatorFn, ast);
     } catch (Exception e) {
       e.printStackTrace();
-      return null;
+      return WordFactory.nullPointer();
     }
   }
 
@@ -66,6 +69,15 @@ public class SqlConverterEntrypoint
       a.write(i, b[i]);
     }
     a.write(b.length, (byte) 0);
+    return a;
+  }
+
+  private static CCharPointer convertToCCharArrayPointer(AllocatorFn allocatorFn, byte[] b)
+  {
+    CCharPointer a = allocatorFn.call(b.length);
+    for (int i = 0; i < b.length; i++) {
+      a.write(i, b[i]);
+    }
     return a;
   }
 }
