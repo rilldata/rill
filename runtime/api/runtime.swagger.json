@@ -1137,7 +1137,11 @@
         "name": {
           "type": "string"
         },
-        "values": {
+        "in": {
+          "type": "array",
+          "items": {}
+        },
+        "like": {
           "type": "array",
           "items": {}
         }
