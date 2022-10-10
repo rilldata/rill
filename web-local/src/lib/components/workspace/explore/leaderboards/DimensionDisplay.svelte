@@ -85,24 +85,22 @@
   ) {
     let fiterData = $mappedFiltersQuery.data;
 
-    if (searchText) {
-      let foundDimension = false;
-      fiterData["include"].forEach((filter) => {
-        if (filter.name == dimension?.dimensionColumn) {
-          filter.like = [`%${searchText}%`];
-          foundDimension = true;
-        }
-      });
-
-      if (!foundDimension) {
-        fiterData["include"] = [
-          {
-            name: dimension?.dimensionColumn,
-            in: [],
-            like: [`%${searchText}%`],
-          },
-        ];
+    let foundDimension = false;
+    fiterData["include"].forEach((filter) => {
+      if (filter.name == dimension?.dimensionColumn) {
+        filter.like = [`%${searchText}%`];
+        foundDimension = true;
       }
+    });
+
+    if (!foundDimension) {
+      fiterData["include"] = [
+        {
+          name: dimension?.dimensionColumn,
+          in: [],
+          like: [`%${searchText}%`],
+        },
+      ];
     }
 
     topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
