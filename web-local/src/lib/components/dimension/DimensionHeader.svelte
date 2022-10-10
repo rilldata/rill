@@ -1,13 +1,22 @@
 <script lang="ts">
   import { slideRight } from "../../transitions";
+  import { createEventDispatcher } from "svelte";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   import Back from "../icons/Back.svelte";
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
   import Spinner from "../Spinner.svelte";
+  import Search from "../search/Search.svelte";
 
   export let metricsDefId: string;
   export let isFetching: boolean;
+
+  const dispatch = createEventDispatcher();
+
+  let searchText = "";
+  function onSearch() {
+    dispatch("search", searchText);
+  }
 
   const goBackToLeaderboard = () => {
     metricsExplorerStore.setMetricDimensionId(metricsDefId, null);
@@ -29,4 +38,6 @@
       <span> All Dimensions </span>
     {/if}
   </button>
+
+  <Search autofocus={false} bind:value={searchText} on:input={onSearch} />
 </div>

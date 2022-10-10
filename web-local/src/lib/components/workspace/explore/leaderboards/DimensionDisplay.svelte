@@ -30,6 +30,8 @@
   export let metricsDefId: string;
   export let dimensionId: string;
 
+  let searchText = "";
+
   const config = getContext<RootConfig>("config");
 
   $: metaQuery = useMetaQuery(config, metricsDefId);
@@ -80,6 +82,24 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    let fiterData = $mappedFiltersQuery.data;
+
+    if (searchText) {
+      let foundDimension = false;
+      fiterData["include"].forEach((filter) => {
+        if (filter.name == dimension?.dimensionColumn) {
+          filter.like = [searchText];
+          foundDimension = true;
+        }
+      });
+
+      if (!foundDimension) {
+        fiterData["include"] = [
+          { name: dimension?.dimensionColumn, in: [], like: [searchText] },
+        ];
+      }
+    }
+
     topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: $selectedMeasureNames.data,
       limit: 250,
@@ -94,7 +114,7 @@
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-      filter: $mappedFiltersQuery.data,
+      filter: fiterData,
     });
   }
 
@@ -197,7 +217,13 @@
 
 {#if topListQuery}
   <DimensionContainer>
-    <DimensionHeader {metricsDefId} isFetching={$topListQuery?.isFetching} />
+    <DimensionHeader
+      {metricsDefId}
+      isFetching={$topListQuery?.isFetching}
+      on:search={(event) => {
+        searchText = event.detail;
+      }}
+    />
 
     {#if values && columns.length}
       <DimensionTable

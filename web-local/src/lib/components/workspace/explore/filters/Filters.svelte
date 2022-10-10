@@ -62,8 +62,6 @@ The main feature-set component for dashboard filters
       },
       filter: { include: [{ name, in: [], like: [value] }], exclude: [] },
     });
-
-    console.log(topListQuery);
   }
 
   $: if (!$topListQuery?.isFetching) {
@@ -86,12 +84,17 @@ The main feature-set component for dashboard filters
       $dimensions,
       (dimension) => dimension.id
     );
-    currentDimensionFilters = values.map((dimensionValues) => ({
-      name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
-      dimensionId: dimensionValues.name,
-      selectedValues: dimensionValues.in,
-      searchedValues: [],
-    }));
+
+    currentDimensionFilters = values.map((dimensionValues) => {
+      const name = getDisplayName(dimensionIdMap.get(dimensionValues.name));
+      return {
+        name,
+        dimensionId: dimensionValues.name,
+        selectedValues: dimensionValues.in,
+        searchTexts: [],
+        searchedValues: searchDimension(name, dimensionValues.name, "%NY%"),
+      };
+    });
   }
 
   function toggleDimensionValue(event, item) {
