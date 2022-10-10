@@ -126,7 +126,8 @@ require (
 )
 
 require (
-	github.com/google/uuid v1.3.0
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2 v2.0.0-20220505152843-58a406687f2d
