@@ -44,8 +44,6 @@ func testRegistryInstances(t *testing.T, reg drivers.RegistryStore) {
 	require.Equal(t, inst.ObjectPrefix, res.ObjectPrefix)
 	require.Equal(t, inst.Exposed, res.Exposed)
 	require.Equal(t, inst.EmbedCatalog, res.EmbedCatalog)
-	require.Equal(t, inst.CreatedOn.Round(time.Millisecond), res.CreatedOn.Round(time.Millisecond))
-	require.Equal(t, inst.UpdatedOn.Round(time.Millisecond), res.UpdatedOn.Round(time.Millisecond))
 
 	err = reg.CreateInstance(ctx, &drivers.Instance{Driver: "druid"})
 	require.NoError(t, err)
@@ -83,8 +81,6 @@ func testRegistryRepos(t *testing.T, reg drivers.RegistryStore) {
 	require.True(t, found)
 	require.Equal(t, rep.Driver, res.Driver)
 	require.Equal(t, rep.DSN, res.DSN)
-	require.Equal(t, rep.CreatedOn.Round(time.Millisecond), res.CreatedOn.Round(time.Millisecond))
-	require.Equal(t, rep.UpdatedOn.Round(time.Millisecond), res.UpdatedOn.Round(time.Millisecond))
 
 	err = reg.CreateRepo(ctx, &drivers.Repo{Driver: "postgres"})
 	require.NoError(t, err)
