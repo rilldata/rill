@@ -88,7 +88,10 @@ func (s *Server) ListRepoObjects(ctx context.Context, req *api.ListRepoObjectsRe
 	}
 
 	repoStore, _ := conn.RepoStore()
-	paths := repoStore.ListRecursive(ctx, repo.ID)
+	paths, err := repoStore.ListRecursive(ctx, repo.ID)
+	if err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
 
 	return &api.ListRepoObjectsResponse{Paths: paths}, nil
 }

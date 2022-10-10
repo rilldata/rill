@@ -2,6 +2,8 @@ package file
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -13,10 +15,16 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(dsn string) (drivers.Connection, error) {
-	return &connection{}, nil
+	c := &connection{root: dsn}
+	if err := c.checkRoot(); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
-type connection struct{}
+type connection struct {
+	root string
+}
 
 // Close implements drivers.Connection
 func (c *connection) Close() error {
@@ -35,7 +43,7 @@ func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 
 // Repo implements drivers.Connection
 func (c *connection) RepoStore() (drivers.RepoStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // OLAP implements drivers.Connection
@@ -51,4 +59,21 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 // MigrationStatus implements drivers.Connection
 func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
 	return 0, 0, nil
+}
+
+// checkPath checks that the connection's root is a valid directory
+func (c *connection) checkRoot() error {
+	info, err := os.Stat(c.root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("repo: directory does not exist at '%s'", c.root)
+		}
+		return err
+	}
+
+	if !info.IsDir() {
+		return fmt.Errorf("repo: file is not a directory '%s'", c.root)
+	}
+
+	return nil
 }

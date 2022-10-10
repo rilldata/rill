@@ -7,6 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testCatalog(t *testing.T, registry drivers.CatalogStore) {
+func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.True(t, true)
 }
