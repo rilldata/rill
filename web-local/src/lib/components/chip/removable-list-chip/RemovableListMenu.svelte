@@ -44,7 +44,7 @@
   let candidateValues = [...selectedValues];
   let valuesToDisplay = [...selectedValues];
 
-  $: if (searchedValues.length) {
+  $: if (searchText) {
     valuesToDisplay = [...searchedValues];
   } else valuesToDisplay = [...selectedValues];
 

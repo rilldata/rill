@@ -49,24 +49,45 @@ The main feature-set component for dashboard filters
   }
 
   let topListQuery;
+  let searchText = "";
+  let searchedValues = [];
+  let activeDimensionName;
+  let activeDimensionId;
 
-  function searchDimension(name, dimensionId, value) {
-    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
-      measures: [],
-      limit: 10,
-      offset: 0,
-      sort: [],
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-      filter: { include: [{ name, in: [], like: [value] }], exclude: [] },
-    });
+  $: if (activeDimensionName && activeDimensionId) {
+    if (searchText == "") {
+      searchedValues = [];
+    } else {
+      topListQuery = useTopListQuery(config, metricsDefId, activeDimensionId, {
+        measures: ["measure_0"], // Ideally should work with empty measures
+        limit: 15,
+        offset: 0,
+        sort: [],
+        time: {
+          start: metricsExplorer?.selectedTimeRange?.start,
+          end: metricsExplorer?.selectedTimeRange?.end,
+        },
+        filter: {
+          include: [
+            { name: activeDimensionName, in: [], like: [`%${searchText}%`] },
+          ],
+          exclude: [],
+        },
+      });
+    }
   }
 
-  $: if (!$topListQuery?.isFetching) {
-    let someValues = $topListQuery?.data;
-    console.log(someValues);
+  function setActiveDimension(name, dimensionId, value) {
+    activeDimensionName = name;
+    activeDimensionId = dimensionId;
+    searchText = value;
+  }
+
+  $: if (!$topListQuery?.isFetching && searchText != "") {
+    const topListData = $topListQuery?.data?.data ?? [];
+    searchedValues =
+      topListData.map((datum) => datum[activeDimensionName]) ?? [];
+    console.log(searchedValues);
   }
 
   $: hasFilters = isFiltered(metricsExplorer?.filters);
@@ -85,16 +106,12 @@ The main feature-set component for dashboard filters
       (dimension) => dimension.id
     );
 
-    currentDimensionFilters = values.map((dimensionValues) => {
-      const name = getDisplayName(dimensionIdMap.get(dimensionValues.name));
-      return {
-        name,
-        dimensionId: dimensionValues.name,
-        selectedValues: dimensionValues.in,
-        searchTexts: [],
-        searchedValues: searchDimension(name, dimensionValues.name, "%NY%"),
-      };
-    });
+    currentDimensionFilters = values.map((dimensionValues) => ({
+      name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
+      sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
+      dimensionId: dimensionValues.name,
+      selectedValues: dimensionValues.in,
+    }));
   }
 
   function toggleDimensionValue(event, item) {
@@ -124,13 +141,13 @@ The main feature-set component for dashboard filters
   </div>
   {#if currentDimensionFilters?.length}
     <ChipContainer>
-      {#each currentDimensionFilters as { name, dimensionId, selectedValues, searchedValues } (dimensionId)}
+      {#each currentDimensionFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:remove={() => clearFilterForDimension(dimensionId)}
             on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
             on:search={(event) => {
-              searchDimension(name, dimensionId, event.detail);
+              setActiveDimension(sqlName, dimensionId, event.detail);
             }}
             typeLabel="dimension"
             {name}

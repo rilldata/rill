@@ -56,7 +56,6 @@ export function getFilterFromMetricsViewFilters(
     "OR"
   );
 
-  console.log(filters.include, includeFilters);
   const excludeFilters = getFilterFromDimensionValuesFilter(
     filters.exclude,
     "NOT",
@@ -113,7 +112,6 @@ export function getWhereClauseFromFilters(
   prefix: string
 ) {
   const whereClauses = [];
-  console.log(metricViewFilters);
   if (
     metricViewFilters?.include?.length ||
     metricViewFilters?.exclude?.length
