@@ -53,7 +53,8 @@
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
     metricsDefId,
-    metricsExplorer?.filters
+    metricsExplorer?.filters,
+    dimensionId
   );
 
   $: selectedMeasureNames = useMetaMeasureNames(

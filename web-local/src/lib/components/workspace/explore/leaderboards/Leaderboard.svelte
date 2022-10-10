@@ -84,7 +84,8 @@
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
     metricsDefId,
-    metricsExplorer?.filters
+    metricsExplorer?.filters,
+    dimensionId
   );
 
   let activeValues: Array<unknown>;

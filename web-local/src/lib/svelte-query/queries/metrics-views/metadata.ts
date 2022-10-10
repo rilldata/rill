@@ -84,7 +84,8 @@ export const useMetaDimension = (
 export const useMetaMappedFilters = (
   config: RootConfig,
   metricViewId: string,
-  filters: MetricsViewRequestFilter
+  filters: MetricsViewRequestFilter,
+  dimensionId?: string
 ) =>
   useMetaQuery<MetricsViewRequestFilter>(config, metricViewId, (meta) => {
     if (!filters) return undefined;
@@ -93,13 +94,17 @@ export const useMetaMappedFilters = (
       (dimension) => dimension.id
     );
     return {
-      include: filters.include.map((dimensionValues) => ({
-        name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
-        in: dimensionValues.in,
-      })),
-      exclude: filters.exclude.map((dimensionValues) => ({
-        name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
-        in: dimensionValues.in,
-      })),
+      include: filters.include
+        .filter((dimensionValues) => dimensionId !== dimensionValues.name)
+        .map((dimensionValues) => ({
+          name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
+          in: dimensionValues.in,
+        })),
+      exclude: filters.exclude
+        .filter((dimensionValues) => dimensionId !== dimensionValues.name)
+        .map((dimensionValues) => ({
+          name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
+          in: dimensionValues.in,
+        })),
     };
   });
