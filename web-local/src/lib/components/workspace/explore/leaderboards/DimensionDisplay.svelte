@@ -88,14 +88,18 @@
       let foundDimension = false;
       fiterData["include"].forEach((filter) => {
         if (filter.name == dimension?.dimensionColumn) {
-          filter.like = [searchText];
+          filter.like = [`%${searchText}%`];
           foundDimension = true;
         }
       });
 
       if (!foundDimension) {
         fiterData["include"] = [
-          { name: dimension?.dimensionColumn, in: [], like: [searchText] },
+          {
+            name: dimension?.dimensionColumn,
+            in: [],
+            like: [`%${searchText}%`],
+          },
         ];
       }
     }
