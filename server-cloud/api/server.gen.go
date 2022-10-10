@@ -34,6 +34,14 @@ type Organization struct {
 	UpdatedOn   openapi_types.Date `json:"updated_on"`
 }
 
+// Permission defines model for Permission.
+type Permission struct {
+	CreatedOn openapi_types.Date `json:"created_on"`
+	Id        string             `json:"id"`
+	Name      string             `json:"name"`
+	UpdatedOn openapi_types.Date `json:"updated_on"`
+}
+
 // Project defines model for Project.
 type Project struct {
 	CreatedOn   openapi_types.Date `json:"created_on"`
@@ -41,6 +49,24 @@ type Project struct {
 	Id          string             `json:"id"`
 	Name        string             `json:"name"`
 	UpdatedOn   openapi_types.Date `json:"updated_on"`
+}
+
+// Role defines model for Role.
+type Role struct {
+	CreatedOn openapi_types.Date `json:"created_on"`
+	Id        string             `json:"id"`
+	Name      string             `json:"name"`
+	UpdatedOn openapi_types.Date `json:"updated_on"`
+}
+
+// User defines model for User.
+type User struct {
+	CreatedOn   openapi_types.Date `json:"created_on"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Name        string             `json:"name"`
+	UpdatedOn   openapi_types.Date `json:"updated_on"`
+	UserName    string             `json:"user_name"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -68,6 +94,58 @@ type CreateProjectJSONBody struct {
 	Name        string  `json:"name"`
 }
 
+// AddUserJSONBody defines parameters for AddUser.
+type AddUserJSONBody struct {
+	Name string `json:"name"`
+}
+
+// RemoveUserJSONBody defines parameters for RemoveUser.
+type RemoveUserJSONBody struct {
+	Name string `json:"name"`
+}
+
+// CreatePermissionJSONBody defines parameters for CreatePermission.
+type CreatePermissionJSONBody struct {
+	Name string `json:"name"`
+}
+
+// CreateRoleJSONBody defines parameters for CreateRole.
+type CreateRoleJSONBody struct {
+	Name string `json:"name"`
+}
+
+// AddPermissionJSONBody defines parameters for AddPermission.
+type AddPermissionJSONBody struct {
+	Name string `json:"name"`
+}
+
+// RemovePermissionJSONBody defines parameters for RemovePermission.
+type RemovePermissionJSONBody struct {
+	Name string `json:"name"`
+}
+
+// CreateUserJSONBody defines parameters for CreateUser.
+type CreateUserJSONBody struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+	UserName    string  `json:"user_name"`
+}
+
+// UpdateUserJSONBody defines parameters for UpdateUser.
+type UpdateUserJSONBody struct {
+	Description *string `json:"description,omitempty"`
+}
+
+// AssignRoleJSONBody defines parameters for AssignRole.
+type AssignRoleJSONBody struct {
+	Name string `json:"name"`
+}
+
+// RemoveRoleJSONBody defines parameters for RemoveRole.
+type RemoveRoleJSONBody struct {
+	Name string `json:"name"`
+}
+
 // CreateOrganizationJSONRequestBody defines body for CreateOrganization for application/json ContentType.
 type CreateOrganizationJSONRequestBody CreateOrganizationJSONBody
 
@@ -79,6 +157,36 @@ type UpdateProjectJSONRequestBody UpdateProjectJSONBody
 
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody CreateProjectJSONBody
+
+// AddUserJSONRequestBody defines body for AddUser for application/json ContentType.
+type AddUserJSONRequestBody AddUserJSONBody
+
+// RemoveUserJSONRequestBody defines body for RemoveUser for application/json ContentType.
+type RemoveUserJSONRequestBody RemoveUserJSONBody
+
+// CreatePermissionJSONRequestBody defines body for CreatePermission for application/json ContentType.
+type CreatePermissionJSONRequestBody CreatePermissionJSONBody
+
+// CreateRoleJSONRequestBody defines body for CreateRole for application/json ContentType.
+type CreateRoleJSONRequestBody CreateRoleJSONBody
+
+// AddPermissionJSONRequestBody defines body for AddPermission for application/json ContentType.
+type AddPermissionJSONRequestBody AddPermissionJSONBody
+
+// RemovePermissionJSONRequestBody defines body for RemovePermission for application/json ContentType.
+type RemovePermissionJSONRequestBody RemovePermissionJSONBody
+
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody CreateUserJSONBody
+
+// UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
+type UpdateUserJSONRequestBody UpdateUserJSONBody
+
+// AssignRoleJSONRequestBody defines body for AssignRole for application/json ContentType.
+type AssignRoleJSONRequestBody AssignRoleJSONBody
+
+// RemoveRoleJSONRequestBody defines body for RemoveRole for application/json ContentType.
+type RemoveRoleJSONRequestBody RemoveRoleJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -112,6 +220,72 @@ type ServerInterface interface {
 
 	// (POST /v1/organizations/{organization}/projects)
 	CreateProject(ctx echo.Context, organization string) error
+
+	// (GET /v1/organizations/{organization}/users)
+	ListUsers(ctx echo.Context, organization string) error
+
+	// (POST /v1/organizations/{organization}/users)
+	AddUser(ctx echo.Context, organization string) error
+
+	// (PUT /v1/organizations/{organization}/users)
+	RemoveUser(ctx echo.Context, organization string) error
+
+	// (GET /v1/permissions)
+	FindPermissions(ctx echo.Context) error
+
+	// (POST /v1/permissions)
+	CreatePermission(ctx echo.Context) error
+
+	// (DELETE /v1/permissions/{name})
+	DeletePermission(ctx echo.Context, name string) error
+
+	// (GET /v1/permissions/{name})
+	FindPermission(ctx echo.Context, name string) error
+
+	// (GET /v1/roles)
+	FindRoles(ctx echo.Context) error
+
+	// (POST /v1/roles)
+	CreateRole(ctx echo.Context) error
+
+	// (DELETE /v1/roles/{name})
+	DeleteRole(ctx echo.Context, name string) error
+
+	// (GET /v1/roles/{name})
+	FindRole(ctx echo.Context, name string) error
+
+	// (GET /v1/roles/{role}/permissions)
+	ListPermissions(ctx echo.Context, role string) error
+
+	// (POST /v1/roles/{role}/permissions)
+	AddPermission(ctx echo.Context, role string) error
+
+	// (PUT /v1/roles/{role}/permissions)
+	RemovePermission(ctx echo.Context, role string) error
+
+	// (GET /v1/users)
+	FindUsers(ctx echo.Context) error
+
+	// (POST /v1/users)
+	CreateUser(ctx echo.Context) error
+
+	// (DELETE /v1/users/{name})
+	DeleteUser(ctx echo.Context, name string) error
+
+	// (GET /v1/users/{name})
+	FindUser(ctx echo.Context, name string) error
+
+	// (PUT /v1/users/{name})
+	UpdateUser(ctx echo.Context, name string) error
+
+	// (GET /v1/users/{name}/roles)
+	ListRoles(ctx echo.Context, name string) error
+
+	// (POST /v1/users/{name}/roles)
+	AssignRole(ctx echo.Context, name string) error
+
+	// (PUT /v1/users/{name}/roles)
+	RemoveRole(ctx echo.Context, name string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -289,6 +463,316 @@ func (w *ServerInterfaceWrapper) CreateProject(ctx echo.Context) error {
 	return err
 }
 
+// ListUsers converts echo context to params.
+func (w *ServerInterfaceWrapper) ListUsers(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.ListUsers(ctx, organization)
+	return err
+}
+
+// AddUser converts echo context to params.
+func (w *ServerInterfaceWrapper) AddUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.AddUser(ctx, organization)
+	return err
+}
+
+// RemoveUser converts echo context to params.
+func (w *ServerInterfaceWrapper) RemoveUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "organization" -------------
+	var organization string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "organization", runtime.ParamLocationPath, ctx.Param("organization"), &organization)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter organization: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.RemoveUser(ctx, organization)
+	return err
+}
+
+// FindPermissions converts echo context to params.
+func (w *ServerInterfaceWrapper) FindPermissions(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindPermissions(ctx)
+	return err
+}
+
+// CreatePermission converts echo context to params.
+func (w *ServerInterfaceWrapper) CreatePermission(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CreatePermission(ctx)
+	return err
+}
+
+// DeletePermission converts echo context to params.
+func (w *ServerInterfaceWrapper) DeletePermission(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.DeletePermission(ctx, name)
+	return err
+}
+
+// FindPermission converts echo context to params.
+func (w *ServerInterfaceWrapper) FindPermission(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindPermission(ctx, name)
+	return err
+}
+
+// FindRoles converts echo context to params.
+func (w *ServerInterfaceWrapper) FindRoles(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindRoles(ctx)
+	return err
+}
+
+// CreateRole converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateRole(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CreateRole(ctx)
+	return err
+}
+
+// DeleteRole converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteRole(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.DeleteRole(ctx, name)
+	return err
+}
+
+// FindRole converts echo context to params.
+func (w *ServerInterfaceWrapper) FindRole(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindRole(ctx, name)
+	return err
+}
+
+// ListPermissions converts echo context to params.
+func (w *ServerInterfaceWrapper) ListPermissions(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "role" -------------
+	var role string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role", runtime.ParamLocationPath, ctx.Param("role"), &role)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter role: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.ListPermissions(ctx, role)
+	return err
+}
+
+// AddPermission converts echo context to params.
+func (w *ServerInterfaceWrapper) AddPermission(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "role" -------------
+	var role string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role", runtime.ParamLocationPath, ctx.Param("role"), &role)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter role: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.AddPermission(ctx, role)
+	return err
+}
+
+// RemovePermission converts echo context to params.
+func (w *ServerInterfaceWrapper) RemovePermission(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "role" -------------
+	var role string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role", runtime.ParamLocationPath, ctx.Param("role"), &role)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter role: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.RemovePermission(ctx, role)
+	return err
+}
+
+// FindUsers converts echo context to params.
+func (w *ServerInterfaceWrapper) FindUsers(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindUsers(ctx)
+	return err
+}
+
+// CreateUser converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateUser(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CreateUser(ctx)
+	return err
+}
+
+// DeleteUser converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.DeleteUser(ctx, name)
+	return err
+}
+
+// FindUser converts echo context to params.
+func (w *ServerInterfaceWrapper) FindUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FindUser(ctx, name)
+	return err
+}
+
+// UpdateUser converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UpdateUser(ctx, name)
+	return err
+}
+
+// ListRoles converts echo context to params.
+func (w *ServerInterfaceWrapper) ListRoles(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.ListRoles(ctx, name)
+	return err
+}
+
+// AssignRole converts echo context to params.
+func (w *ServerInterfaceWrapper) AssignRole(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.AssignRole(ctx, name)
+	return err
+}
+
+// RemoveRole converts echo context to params.
+func (w *ServerInterfaceWrapper) RemoveRole(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.RemoveRole(ctx, name)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -327,23 +811,50 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.PUT(baseURL+"/v1/organizations/:organization/project/:name", wrapper.UpdateProject)
 	router.GET(baseURL+"/v1/organizations/:organization/projects", wrapper.FindProjects)
 	router.POST(baseURL+"/v1/organizations/:organization/projects", wrapper.CreateProject)
+	router.GET(baseURL+"/v1/organizations/:organization/users", wrapper.ListUsers)
+	router.POST(baseURL+"/v1/organizations/:organization/users", wrapper.AddUser)
+	router.PUT(baseURL+"/v1/organizations/:organization/users", wrapper.RemoveUser)
+	router.GET(baseURL+"/v1/permissions", wrapper.FindPermissions)
+	router.POST(baseURL+"/v1/permissions", wrapper.CreatePermission)
+	router.DELETE(baseURL+"/v1/permissions/:name", wrapper.DeletePermission)
+	router.GET(baseURL+"/v1/permissions/:name", wrapper.FindPermission)
+	router.GET(baseURL+"/v1/roles", wrapper.FindRoles)
+	router.POST(baseURL+"/v1/roles", wrapper.CreateRole)
+	router.DELETE(baseURL+"/v1/roles/:name", wrapper.DeleteRole)
+	router.GET(baseURL+"/v1/roles/:name", wrapper.FindRole)
+	router.GET(baseURL+"/v1/roles/:role/permissions", wrapper.ListPermissions)
+	router.POST(baseURL+"/v1/roles/:role/permissions", wrapper.AddPermission)
+	router.PUT(baseURL+"/v1/roles/:role/permissions", wrapper.RemovePermission)
+	router.GET(baseURL+"/v1/users", wrapper.FindUsers)
+	router.POST(baseURL+"/v1/users", wrapper.CreateUser)
+	router.DELETE(baseURL+"/v1/users/:name", wrapper.DeleteUser)
+	router.GET(baseURL+"/v1/users/:name", wrapper.FindUser)
+	router.PUT(baseURL+"/v1/users/:name", wrapper.UpdateUser)
+	router.GET(baseURL+"/v1/users/:name/roles", wrapper.ListRoles)
+	router.POST(baseURL+"/v1/users/:name/roles", wrapper.AssignRole)
+	router.PUT(baseURL+"/v1/users/:name/roles", wrapper.RemoveRole)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xWQW/bPAz9Kx/47WjUaXvzbetWYLu06DbsUASDajGJClvSKLpAFvi/D5LiOE7c1UWa",
-	"YCnqk0TKFPn4HqEF5Ka0RqNmB9kCCJ012mHYfCIydLO0eENuNKNmvxTWFioXrIxO753R3ubyGZbCr94R",
-	"TiCD/9M2ehq9Lg1RofZfsvylvc0vLBmLxComkRsZ7p4YKgVDBkrz+RkkwHOLcYtTJKgTKNE5MQ2nl07H",
-	"pPQU/E2EvypFKCG7jTHb8+NVMHN3jzn7WFc0FVr9DgX2JEUoGOXP6FulJgVjm1lzeQISXU7KNrG2/Er2",
-	"mrUosddRWTn8+o3alYRl5GS9jE7QPkCuyYTlGxaetphXpHj+1dM3wnCHgpDeVzxrd5dNNl9+fIMl2X2k",
-	"6G3TmzFbCHpQemJCmYoL77lRRfHfRWEqn+kDkguwwenJ6GTkqzcWtbAKMjgPpgSs4FlIKH04Tc0ai4Nx",
-	"iqGDvn/B+FlCBpdKy6vOyaQ7CM5Go2fJXzGW7qk50FFYvcJCEIk5xOkgcSKqgh+LtMox7U6q8K81rqfU",
-	"i9DlztWREuj4g5HzZ5XZ1cFTxH6EwRuUDKd6ONc5xlRhvWOPhrdmx1bUyTYV04Wvs46wFci43amPwb7R",
-	"KStIlMhIDrLbBSivBU/4RsZZo+YuVsla3Zvwj3tx3JF8g2R2yHr+QV4kYKselL6H0XsgnPav+/r1S3l9",
-	"W6c2vhMGK7x5Vwxpstme28OanRzjrDh+ZF6Gwg0Oex04Rwf26x9dL9X3Z0ytv7+Rr5tDeyXJ+BCP7xW2",
-	"B313H0Rk47cH/f6kVNd/AgAA//9nMzaDMhIAAA==",
+	"H4sIAAAAAAAC/+xaX2+rNhT/KtPZHlFJ2zfeum6VNk1qla3aQxVVLpwkrsD2bFMpi/juV7YhhIY0pA0U",
+	"ktyXC7Zz7PP7nX8+dAkhTwRnyLSCYAkSleBMoX35XUoux/mIGQg508i0eSRCxDQkmnLmvyrOzJgK55gQ",
+	"8/SLxCkE8LNfSvfdrPKtVMjMPy//SbmbeRCSC5SaukOEPLJ7T7lMiIYAKNPXV+CBXgh0rzhDCZkHCSpF",
+	"ZnZ1Pqm0pGwGZieJ/6VUYgTBk5NZrp+shPGXVwy1kXUvZ4TR/62CNYeSSDRGz25udbSIaCxPVmzuQYQq",
+	"lFQUsjbmaVQ7zEiCtROpiJpv/053GkEu2VtXoyK0DpAHlAlV6hBwDEJdye3jmXoPxjzGkyD9UaEcNuMe",
+	"pArl8xZhdTCV6z8BmYngGKaS6sXfJpI7wF6QSJQ3qZ6Xb3fFuf/89x/I476R5GZLReZaC7CpgbIptzpQ",
+	"bcwPxjSOf7qNeWpO/YbShSK4vBhdjIziXCAjgkIA13bIA0H03B7If7v0+VpAt4MztN5tmLaDf0QQwB1l",
+	"0X1lpVfNiVej0V6ZkGpM1K6UWEk22QoLIiVZgEuUEU5JGuttklZn9KtJ2/5WcFWj6q1lubK1Mw9U+lce",
+	"LfZSs+oxu1ygmXnaVTU2V1mmZYrZFzlqTs0Xqci8TVP0l0bPzMEWo8ZNpn6z4++YEkSSBDVKBcHTEqjx",
+	"BWPwhRsHhTdXsfLW9H4P/6QWxy8aXyM361KfHtqFByKtQenRht6OcGrf77Pjd+X118wXroZs7OFFzdmE",
+	"ZL4Zt5uR7Q0xVgwfmcOYcIFDqwFncGAff+g6FO97RK2Pa+SHYlGrRjLpovheYdtp3d2Jk03OBf23upK5",
+	"W2/3o7+o0o92xfCdyHZOuvKgmyiy+w3DdwbkG47FdmqLMSb8Dc+89Za3PKCJVZ9/RwWwtq6TNF1+f+g4",
+	"U5cbn6BprcN+cANrfjNe52Dwna/v0aav9iB5jB+HmrFd0UWQsV+6ug0vdssTDCwO6gOaUONgkiM++DDS",
+	"tR695d38lzUqXMyVq1q47EZPlg7ap65F9+XQTbRv5vocdOcKq5Wr15m7IVRDH7eMTNgvWkZH1tRx1VDe",
+	"H/jWruVef0OT59byF8fUC7DG2Liuatzb6Xld1bUe/e/due+CLeNy/F/x2nLNHVdoU/QWV+hTvCxsrWeV",
+	"ojPW8i3qfKs/cBl75qt/t/Es+xEAAP//BcwHEkgyAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -1,98 +1,158 @@
 package server
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/deepmap/oapi-codegen/pkg/types"
 	"github.com/labstack/echo/v4"
 	"github.com/rilldata/rill/server-cloud/api"
-	"github.com/rilldata/rill/server-cloud/database"
+	"github.com/rilldata/rill/server-cloud/ent"
+	"github.com/rilldata/rill/server-cloud/ent/project"
 )
 
 // (GET /v1/organizations/{organization}/projects)
-func (s *Server) FindProjects(ctx echo.Context, organization string) error {
-	projs, err := s.db.FindProjects(ctx.Request().Context(), organization)
+func (s *Server) FindProjects(ctx echo.Context, orgName string) error {
+	organization, err := QueryOrganizationByName(ctx.Request().Context(), s.client, orgName)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
 	}
 
-	dtos := make([]*api.Project, len(projs))
-	for i, proj := range projs {
-		dtos[i] = projToDTO(proj)
+	projects, err := organization.QueryProjects().All(ctx.Request().Context())
+	if err != nil {
+		return fmt.Errorf("failed querying projects: %w", err)
+	}
+
+	dtos := make([]*api.Project, len(projects))
+	for i, project := range projects {
+		dtos[i] = projToDTO(project)
 	}
 
 	return ctx.JSON(http.StatusOK, dtos)
 }
 
 // (GET /v1/organizations/{organization}/project/{name})
-func (s *Server) FindProject(ctx echo.Context, organization string, name string) error {
-	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
+func (s *Server) FindProject(ctx echo.Context, orgName string, name string) error {
+	organization, err := QueryOrganizationByName(ctx.Request().Context(), s.client, orgName)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
 	}
-	return ctx.JSON(http.StatusOK, projToDTO(proj))
+
+	project, err := organization.QueryProjects().Where(project.NameEQ(name)).Only(ctx.Request().Context())
+	if err != nil {
+		return sendError(ctx, http.StatusBadRequest, err.Error())
+	}
+
+	return ctx.JSON(http.StatusOK, projToDTO(project))
 }
 
 // (POST /v1/organizations/{organization}/projects)
-func (s *Server) CreateProject(ctx echo.Context, organization string) error {
-	org, err := s.db.FindOrganizationByName(ctx.Request().Context(), organization)
-	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
-	}
-
+func (s *Server) CreateProject(ctx echo.Context, orgName string) error {
 	var dto api.CreateProjectJSONBody
-	err = ctx.Bind(&dto)
+	err := ctx.Bind(&dto)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, "invalid body format")
 	}
 
-	proj, err := s.db.CreateProject(ctx.Request().Context(), org.ID, dto.Name, stringFromPtr(dto.Description))
+	// Get the org from OrgName
+	organization, err := QueryOrganizationByName(ctx.Request().Context(), s.client, orgName)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
 	}
-	return ctx.JSON(http.StatusCreated, projToDTO(proj))
+
+	project, err := s.client.Project.
+		Create().
+		SetName(dto.Name).
+		SetDescription(*dto.Description).
+		SetOrganization(organization).
+		Save(ctx.Request().Context())
+	if err != nil {
+		return fmt.Errorf("failed creating Project: %w", err)
+	}
+
+	return ctx.JSON(http.StatusCreated, projToDTO(project))
 }
 
 // (DELETE /v1/organizations/{organization}/project/{name})
-func (s *Server) DeleteProject(ctx echo.Context, organization string, name string) error {
-	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
+func (s *Server) DeleteProject(ctx echo.Context, orgName string, name string) error {
+	project, err := QueryProjectByName(ctx.Request().Context(), s.client, name)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
 	}
 
-	err = s.db.DeleteProject(ctx.Request().Context(), proj.ID)
+	err = s.client.Project.DeleteOne(project).Exec(ctx.Request().Context())
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
 	}
-	return ctx.NoContent(http.StatusOK)
+
+	return ctx.JSON(http.StatusCreated, projToDTO(project))
 }
 
 // (PUT /v1/organizations/{organization}/project/{name})
-func (s *Server) UpdateProject(ctx echo.Context, organization string, name string) error {
+func (s *Server) UpdateProject(ctx echo.Context, orgName string, name string) error {
 	var dto api.UpdateProjectJSONBody
 	err := ctx.Bind(&dto)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, "invalid body format")
 	}
 
-	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
+	project, err := QueryProjectByName(ctx.Request().Context(), s.client, name)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
 	}
 
-	proj, err = s.db.UpdateProject(ctx.Request().Context(), proj.ID, stringFromPtr(dto.Description))
+	// Get the org from OrgName
+	org, err := QueryOrganizationByName(ctx.Request().Context(), s.client, orgName)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
 	}
-	return ctx.JSON(http.StatusOK, projToDTO(proj))
+
+	projectNew, err := s.client.Project.
+		UpdateOne(project).
+		// RemoveUsers(). //Do we need to removed edges in case of update?
+		// SetName(*dto.Name). // Can't set or udpate as its unique and immutable
+		SetDescription(*dto.Description).
+		SetOrganization(org).
+		Save(ctx.Request().Context())
+	if err != nil {
+		return fmt.Errorf("failed updating User: %w", err)
+	}
+
+	return ctx.JSON(http.StatusOK, projToDTO(projectNew))
 }
 
-func projToDTO(p *database.Project) *api.Project {
+func projToDTO(p *ent.Project) *api.Project {
 	return &api.Project{
-		Id:          p.ID,
+		Id:          fmt.Sprint(p.ID),
 		Name:        p.Name,
 		Description: stringToPtr(p.Description),
 		CreatedOn:   types.Date{Time: p.CreatedOn},
 		UpdatedOn:   types.Date{Time: p.CreatedOn},
 	}
+}
+
+func QueryProjects(ctx context.Context, client *ent.Client) ([]*ent.Project, error) {
+	p, err := client.Project.
+		Query().
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed querying Projects: %w", err)
+	}
+
+	return p, nil
+}
+
+func QueryProjectByName(ctx context.Context, client *ent.Client, name string) (*ent.Project, error) {
+	p, err := client.Project.
+		Query().
+		Where(project.NameEQ(name)).
+		// `Only` fails if no project found,
+		// or more than 1 project returned.
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed querying User: %w", err)
+	}
+
+	return p, nil
 }

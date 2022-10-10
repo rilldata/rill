@@ -93,6 +93,79 @@ paths:
         '200': {}
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /v1/organizations/{organization}/users:
+    get:
+      operationId: listUsers
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      operationId: addUser
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      operationId: removeUser
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
   /v1/organizations/{organization}/projects:
     get:
       operationId: findProjects
@@ -210,6 +283,369 @@ paths:
         '200': {}
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /v1/users:
+    get:
+      operationId: findUsers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - user_name
+              properties:
+                user_name:
+                  type: string
+                name: 
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/users/{name}:
+    get:
+      operationId: findUser
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      operationId: updateUser
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteUser
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/users/{name}/roles:
+    get:
+      operationId: listRoles
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      operationId: AssignRole
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      operationId: RemoveRole
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/roles:
+    get:
+      operationId: findRoles
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/roles/{name}:
+    get:
+      operationId: findRole
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteRole
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/roles/{role}/permissions:
+    get:
+      operationId: listPermissions
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      operationId: AddPermission
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      operationId: removePermission
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/permissions:
+    get:
+      operationId: findPermissions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      operationId: createPermission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name: 
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/permissions/{name}:
+    get:
+      operationId: findPermission
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deletePermission
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          $ref: "#/components/responses/ErrorResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -217,6 +653,29 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    User:
+      type: object
+      required:
+        - id
+        - user_name
+        - name
+        - created_on
+        - updated_on
+      properties:
+        id:
+          type: string
+        user_name:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        created_on:
+          type: string
+          format: date
+        updated_on:
+          type: string
+          format: date
     Organization:
       type: object
       required:
@@ -250,6 +709,42 @@ components:
         name:
           type: string
         description:
+          type: string
+        created_on:
+          type: string
+          format: date
+        updated_on:
+          type: string
+          format: date
+    Role:
+      type: object
+      required:
+        - id
+        - name
+        - created_on
+        - updated_on
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        created_on:
+          type: string
+          format: date
+        updated_on:
+          type: string
+          format: date
+    Permission:
+      type: object
+      required:
+        - id
+        - name
+        - created_on
+        - updated_on
+      properties:
+        id:
+          type: string
+        name:
           type: string
         created_on:
           type: string

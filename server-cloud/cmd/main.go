@@ -9,9 +9,11 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
+	_ "github.com/lib/pq"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/server-cloud/database"
 	_ "github.com/rilldata/rill/server-cloud/database/postgres"
+	"github.com/rilldata/rill/server-cloud/ent"
 	"github.com/rilldata/rill/server-cloud/server"
 )
 
@@ -61,6 +63,12 @@ func main() {
 		logger.Fatal("error connecting to database", zap.Error(err))
 	}
 
+	// Init ent Client
+	entClient, err := ent.Open(conf.DatabaseDriver, conf.DatabaseURL)
+	if err != nil {
+		logger.Fatal("failed opening connection to postgres: %v", zap.Error(err))
+	}
+
 	// Auto-run migrations (TODO: don't do this in production)
 	err = db.Migrate(context.Background())
 	if err != nil {
@@ -77,7 +85,7 @@ func main() {
 	}
 
 	// Init server
-	server, err := server.New(logger, db, srvConf)
+	server, err := server.New(logger, db, srvConf, entClient)
 	if err != nil {
 		logger.Fatal("error creating server", zap.Error(err))
 	}

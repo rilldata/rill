@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/mikespook/gorbac"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -21,13 +22,16 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/server-cloud/api"
 	"github.com/rilldata/rill/server-cloud/database"
+	"github.com/rilldata/rill/server-cloud/ent"
 )
 
 type Server struct {
-	logger *zap.Logger
-	db     database.DB
-	conf   Config
-	auth   *Authenticator
+	logger     *zap.Logger
+	db         database.DB
+	conf       Config
+	auth       *Authenticator
+	client     *ent.Client
+	authorizer *authorizer
 }
 type Config struct {
 	Port             int
@@ -38,17 +42,46 @@ type Config struct {
 	SessionsSecret   string
 }
 
-func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
+func New(logger *zap.Logger, db database.DB, conf Config, client *ent.Client) (*Server, error) {
 	auth, err := newAuthenticator(context.Background(), conf)
 	if err != nil {
 		return nil, err
 	}
 
+	users, _ := LoadUsers(context.Background(), client)
+	dbRoles, _ := LoadRoles(context.Background(), client)
+
+	rbac := gorbac.New()
+	permissions := make(gorbac.Permissions)
+
+	roles := dbRoles.(map[string][]string)
+	// Build roles and add them to goRBAC instance
+	for rid, pids := range roles {
+		role := gorbac.NewStdRole(rid)
+		for _, pid := range pids {
+			_, ok := permissions[pid]
+			if !ok {
+				permissions[pid] = gorbac.NewStdPermission(pid)
+			}
+			role.Assign(permissions[pid])
+		}
+		rbac.Add(role)
+	}
+
+	authorizer := &authorizer{users: users, rbac: rbac, permissions: permissions}
+
+	// Run the auto migration tool.
+	if err := client.Schema.Create(context.Background()); err != nil {
+		logger.Fatal("failed creating schema resources: %v", zap.Error(err))
+	}
+
 	return &Server{
-		logger: logger,
-		db:     db,
-		conf:   conf,
-		auth:   auth,
+		logger:     logger,
+		db:         db,
+		conf:       conf,
+		auth:       auth,
+		client:     client,
+		authorizer: authorizer,
 	}, nil
 }
 
@@ -128,7 +161,11 @@ func (s *Server) Serve(ctx context.Context, port int) error {
 	// 	return err
 	// }
 	// e.Use(oapimiddleware.OapiRequestValidator(spec))
-	api.RegisterHandlers(e, s)
+
+	// Adding basic Authentication check for every other routes in openAPI
+	// api.RegisterHandlers(e.Group("", IsAuthenticated), s)
+	api.RegisterHandlers(e.Group("", s.IsAuthorized), s)
+	// api.RegisterHandlers(e, s)
 
 	// Start serer
 	srv := &http.Server{
