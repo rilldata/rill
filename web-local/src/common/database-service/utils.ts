@@ -8,6 +8,11 @@ import type {
   MetricsViewRequestFilter,
 } from "../rill-developer-service/MetricsViewActions";
 
+function escapeFilterValue(value: unknown) {
+  if (typeof value !== "string") return value;
+  return value.replace(/'/g, "''");
+}
+
 function getFilterFromDimensionValuesFilter(
   dimensionValues: MetricsViewDimensionValues,
   prefix: "" | "NOT",
@@ -20,7 +25,7 @@ function getFilterFromDimensionValuesFilter(
       if (nonNullValues.length > 0) {
         conditions.push(
           `"${dimensionValue.name}" ${prefix} IN (${nonNullValues
-            .map((value) => `'${value}'`)
+            .map((value) => `'${escapeFilterValue(value)}'`)
             .join(",")}) `
         );
       }
@@ -30,7 +35,10 @@ function getFilterFromDimensionValuesFilter(
       if (dimensionValue.like?.length) {
         conditions.push(
           ...dimensionValue.like.map(
-            (value) => `"${dimensionValue.name}" ${prefix} ILIKE '${value}'`
+            (value) =>
+              `"${dimensionValue.name}" ${prefix} ILIKE '${escapeFilterValue(
+                value
+              )}'`
           )
         );
       }
