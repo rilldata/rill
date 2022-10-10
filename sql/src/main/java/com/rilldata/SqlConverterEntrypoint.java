@@ -44,28 +44,14 @@ public class SqlConverterEntrypoint
     }
   }
 
-  @CEntryPoint(name = "create_source")
+  @CEntryPoint(name = "get_ast")
   public static byte[] createSource(IsolateThread thread, CCharPointer sourceDef, CCharPointer schema)
   {
     try {
       String javaSchemaString = CTypeConversion.toJavaString(schema);
       SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
       String createSource = CTypeConversion.toJavaString(sourceDef);
-      return sqlConverter.createSource(createSource);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return null;
-    }
-  }
-
-  @CEntryPoint(name = "create_metrics_view")
-  public static byte[] createMetricsView(IsolateThread thread, CCharPointer metricsViewDef, CCharPointer schema)
-  {
-    try {
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
-      String createMetricsView = CTypeConversion.toJavaString(metricsViewDef);
-      return sqlConverter.createMetricsView(createMetricsView);
+      return sqlConverter.getAST(createSource);
     } catch (Exception e) {
       e.printStackTrace();
       return null;

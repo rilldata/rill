@@ -15,8 +15,10 @@ public class InMemoryArtifactManager implements ArtifactManager
     artifacts.computeIfAbsent(artifact.getType(), type -> new HashMap<>());
     Artifact existing = artifacts.get(artifact.getType()).putIfAbsent(artifact.getName().toLowerCase(), artifact);
     if (existing != null) {
-      throw new RuntimeException(
-          String.format("Artifact with name %s of type %s already exists", artifact.getName().toLowerCase(), artifact.getType()));
+      System.out.println(
+          String.format("Artifact with name %s of type %s already exists, overwriting!", artifact.getName().toLowerCase(),
+              artifact.getType()
+          ));
     }
   }
 
