@@ -3,7 +3,6 @@ package drivers_test
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,18 +44,17 @@ func TestAll(t *testing.T) {
 			require.Equal(t, desired, current)
 
 			// Run applicable sub-tests
-			name := strings.ToTitle(driver)
 			if registry, ok := conn.RegistryStore(); ok {
-				t.Run("Registry"+name, func(t *testing.T) { testRegistry(t, registry) })
+				t.Run("registry_"+driver, func(t *testing.T) { testRegistry(t, registry) })
 			}
 			if catalog, ok := conn.CatalogStore(); ok {
-				t.Run("Catalog"+name, func(t *testing.T) { testCatalog(t, catalog) })
+				t.Run("catalog_"+driver, func(t *testing.T) { testCatalog(t, catalog) })
 			}
 			if repo, ok := conn.RepoStore(); ok {
-				t.Run("Repo"+name, func(t *testing.T) { testRepo(t, repo) })
+				t.Run("repo_"+driver, func(t *testing.T) { testRepo(t, repo) })
 			}
 			if olap, ok := conn.OLAPStore(); ok {
-				t.Run("OLAP"+name, func(t *testing.T) { testOLAP(t, olap) })
+				t.Run("olap_"+driver, func(t *testing.T) { testOLAP(t, olap) })
 			}
 
 			// Close
