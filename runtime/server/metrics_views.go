@@ -12,7 +12,10 @@ import (
 )
 
 // MetricsViewMeta implements RuntimeService
-func (s *Server) MetricsViewMeta(ctx context.Context, req *api.MetricsViewMetaRequest) (*api.MetricsViewMetaResponse, error) {
+func (s *Server) MetricsViewMeta(
+	ctx context.Context,
+	req *api.MetricsViewMetaRequest,
+) (*api.MetricsViewMetaResponse, error) {
 	// NOTE: Mock implementation
 
 	dimensions := []*api.MetricsView_Dimension{
@@ -35,7 +38,10 @@ func (s *Server) MetricsViewMeta(ctx context.Context, req *api.MetricsViewMetaRe
 }
 
 // MetricsViewToplist implements RuntimeService
-func (s *Server) MetricsViewToplist(ctx context.Context, req *api.MetricsViewToplistRequest) (*api.MetricsViewToplistResponse, error) {
+func (s *Server) MetricsViewToplist(
+	ctx context.Context,
+	req *api.MetricsViewToplistRequest,
+) (*api.MetricsViewToplistResponse, error) {
 	// NOTE: Mock implementation
 
 	sql, args, err := buildMetricsTopListSql(req)
@@ -57,7 +63,10 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *api.MetricsViewTop
 }
 
 // MetricsViewTimeSeries implements RuntimeService
-func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsViewTimeSeriesRequest) (*api.MetricsViewTimeSeriesResponse, error) {
+func (s *Server) MetricsViewTimeSeries(
+	ctx context.Context,
+	req *api.MetricsViewTimeSeriesRequest,
+) (*api.MetricsViewTimeSeriesResponse, error) {
 	// NOTE: Partially mocked - timestamp column is hardcoded
 
 	sql, args, err := buildMetricsTimeSeriesSQL(req)
@@ -79,7 +88,10 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsView
 }
 
 // MetricsViewTotals implements RuntimeService
-func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTotalsRequest) (*api.MetricsViewTotalsResponse, error) {
+func (s *Server) MetricsViewTotals(
+	ctx context.Context,
+	req *api.MetricsViewTotalsRequest,
+) (*api.MetricsViewTotalsResponse, error) {
 	sql, args, err := buildMetricsTotalsSql(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
@@ -90,6 +102,10 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTota
 		return nil, err
 	}
 
+	if len(data) == 0 {
+		return nil, status.Errorf(codes.Internal, "no rows received from totals query")
+	}
+
 	resp := &api.MetricsViewTotalsResponse{
 		Meta: meta,
 		Data: data[0],
@@ -98,7 +114,12 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTota
 	return resp, nil
 }
 
-func (s *Server) runQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*api.SchemaColumn, []*structpb.Struct, error) {
+func (s *Server) runQuery(
+	ctx context.Context,
+	instanceId string,
+	sql string,
+	args []any,
+) ([]*api.SchemaColumn, []*structpb.Struct, error) {
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query: sql,
 		Args:  args,
@@ -139,8 +160,13 @@ func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest) (string, [
 		args = append(args, clauseArgs...)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s GROUP BY %s LIMIT 1000",
-		strings.Join(selectCols, ", "), req.MetricsViewName, whereClause, timeField)
+	sql := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s GROUP BY %s LIMIT 1000",
+		strings.Join(selectCols, ", "),
+		req.MetricsViewName,
+		whereClause,
+		timeField,
+	)
 	return sql, args, nil
 }
 
@@ -165,7 +191,8 @@ func buildMetricsTopListSql(req *api.MetricsViewToplistRequest) (string, []any, 
 	}
 
 	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s GROUP BY %s LIMIT %d",
-		strings.Join(selectCols, ", "), req.MetricsViewName, whereClause, req.DimensionName, req.Limit)
+		strings.Join(selectCols, ", "),
+		req.MetricsViewName, whereClause, req.DimensionName, req.Limit)
 	return sql, args, nil
 }
 
@@ -195,7 +222,7 @@ func buildFilterClauseForMetricsViewFilter(filter *api.MetricsViewFilter) (strin
 	var args []any
 
 	if filter != nil && filter.Include != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, "", "OR")
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, false)
 		if err != nil {
 			return "", nil, err
 		}
@@ -204,7 +231,7 @@ func buildFilterClauseForMetricsViewFilter(filter *api.MetricsViewFilter) (strin
 	}
 
 	if filter != nil && filter.Exclude != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, "NOT", "AND")
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, true)
 		if err != nil {
 			return "", nil, err
 		}
@@ -214,12 +241,13 @@ func buildFilterClauseForMetricsViewFilter(filter *api.MetricsViewFilter) (strin
 
 	return whereClause, args, nil
 }
-func buildFilterClauseForConditions(conds []*api.MetricsViewFilter_Cond, operatorPrefix string, conditionJoiner string) (string, []any, error) {
+
+func buildFilterClauseForConditions(conds []*api.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
 	clause := ""
 	var args []any
 
 	for _, cond := range conds {
-		condClause, condArgs, err := buildFilterClauseForCondition(cond, operatorPrefix, conditionJoiner)
+		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude)
 		if err != nil {
 			return "", nil, fmt.Errorf("filter error: %s", err.Error())
 		}
@@ -232,11 +260,22 @@ func buildFilterClauseForConditions(conds []*api.MetricsViewFilter_Cond, operato
 
 	return clause, args, nil
 }
-func buildFilterClauseForCondition(cond *api.MetricsViewFilter_Cond, operatorPrefix string, conditionJoiner string) (string, []any, error) {
+
+func buildFilterClauseForCondition(cond *api.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
 	var clauses []string
 	var args []any
 
-	if cond.In != nil && len(cond.In) > 0 {
+	var operatorPrefix string
+	var conditionJoiner string
+	if exclude {
+		operatorPrefix = "NOT"
+		conditionJoiner = "AND"
+	} else {
+		operatorPrefix = ""
+		conditionJoiner = "OR"
+	}
+
+	if len(cond.In) > 0 {
 		// null values should be added with IS NULL / IS NOT NULL
 		nullCount := 0
 		for _, val := range cond.In {
@@ -260,7 +299,7 @@ func buildFilterClauseForCondition(cond *api.MetricsViewFilter_Cond, operatorPre
 		}
 	}
 
-	if cond.Like != nil && len(cond.Like) > 0 {
+	if len(cond.Like) > 0 {
 		for _, val := range cond.Like {
 			arg, err := protobufValueToAny(val)
 			if err != nil {
@@ -272,9 +311,10 @@ func buildFilterClauseForCondition(cond *api.MetricsViewFilter_Cond, operatorPre
 		}
 	}
 
-	fmt.Println(clauses)
-
-	clause := fmt.Sprintf(" AND %s", strings.Join(clauses, conditionJoiner))
+	clause := ""
+	if len(clauses) > 0 {
+		clause = fmt.Sprintf(" AND %s", strings.Join(clauses, conditionJoiner))
+	}
 	return clause, args, nil
 }
 
