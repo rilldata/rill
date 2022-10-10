@@ -22,6 +22,7 @@
   export let paddingTop = 2;
   export let paddingBottom = 2;
   export let rounded = true;
+  export let focusOnMount = true;
   export let role = "menu";
   /** used for selector-style menus */
   export let multiselectable = false;
@@ -100,7 +101,7 @@
     $globalActiveMenu = menuID;
   });
 
-  $: if (!mounted) {
+  $: if (focusOnMount && !mounted) {
     $currentItem = $menuItems.find((item) => !item.disabled)?.id;
   }
 

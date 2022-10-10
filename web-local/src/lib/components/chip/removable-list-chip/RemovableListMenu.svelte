@@ -25,13 +25,7 @@
   }
 
   async function onApplyHandler() {
-    dispatch(
-      "apply",
-      /** get the original filters that are not left in the candidates */
-      currentlySelectedValues.filter(
-        (value) => !candidateValues.includes(value)
-      )
-    );
+    dispatch("apply", candidateValues);
     await tick();
     onCloseHandler();
   }
@@ -40,13 +34,16 @@
    * when the user unchecks a menu item, it still persists in the FilterMenu
    * until the user closes.
    */
-  let currentlySelectedValues = [...selectedValues];
-  let candidateValues = [...selectedValues];
+  let candidateValues = [];
   let valuesToDisplay = [...selectedValues];
 
   $: if (searchText) {
     valuesToDisplay = [...searchedValues];
   } else valuesToDisplay = [...selectedValues];
+
+  $: numSelectedNotInSearch = selectedValues.filter(
+    (v) => !valuesToDisplay.includes(v)
+  ).length;
 
   function toggleValue(value) {
     if (candidateValues.includes(value)) {
@@ -63,6 +60,7 @@
   paddingTop={1}
   paddingBottom={0}
   rounded={false}
+  focusOnMount={false}
   maxWidth="480px"
   minHeight="150px"
   maxHeight="400px"
@@ -79,12 +77,14 @@
       {#each valuesToDisplay as value}
         <MenuItem
           icon
+          animateSelect={false}
+          focusOnMount={false}
           on:select={() => {
             toggleValue(value);
           }}
         >
           <svelte:fragment slot="icon">
-            {#if candidateValues.includes(value)}
+            {#if selectedValues.includes(value) !== candidateValues.includes(value)}
               <Check />
             {:else}
               <Spacer />
@@ -98,21 +98,25 @@
         </MenuItem>
       {/each}
     {:else}
-      <div class="italic text-gray-500 text-center">no results</div>
+      <div class="mt-5 italic text-gray-500 text-center">no results</div>
     {/if}
   </div>
   <Footer>
     <Button
       type="secondary"
       compact
-      disabled={candidateValues.every((value) =>
-        currentlySelectedValues.includes(value)
-      )}
+      disabled={!candidateValues.length}
       on:click={onApplyHandler}
     >
       <Check />
       <span class="font-semibold text-gray-800">Include</span>
     </Button>
-    <div class="text-gray-600 italic">4 other values selected</div>
+    {#if numSelectedNotInSearch}
+      <div class="text-gray-600 italic">
+        {numSelectedNotInSearch} other value{numSelectedNotInSearch > 1
+          ? "s"
+          : ""} selected
+      </div>
+    {/if}
   </Footer>
 </Menu>

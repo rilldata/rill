@@ -87,7 +87,6 @@ The main feature-set component for dashboard filters
     const topListData = $topListQuery?.data?.data ?? [];
     searchedValues =
       topListData.map((datum) => datum[activeDimensionName]) ?? [];
-    console.log(searchedValues);
   }
 
   $: hasFilters = isFiltered(metricsExplorer?.filters);
