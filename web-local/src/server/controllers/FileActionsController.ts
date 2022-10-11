@@ -20,9 +20,6 @@ export class FileActionsController extends RillDeveloperController {
     router.post("/table-upload", (req: FileUploadRequest, res: Response) =>
       this.handleFileUpload(req, res)
     );
-    router.post("/create-table-with-sql", (req: Request, res: Response) =>
-      this.handleCreateTableWithSql(req, res)
-    );
     router.get("/export", async (req: Request, res: Response) =>
       this.handleFileExport(req, res)
     );
@@ -55,13 +52,6 @@ export class FileActionsController extends RillDeveloperController {
         ]);
       }
     });
-  }
-
-  private async handleCreateTableWithSql(req: Request, res: Response) {
-    const { sql, tableName } = req.body;
-    await EntityController.wrapAction(res, () =>
-      this.dataModelerService.dispatch("submitSourceSql", [tableName, sql])
-    );
   }
 
   private async handleFileExport(req: Request, res: Response) {

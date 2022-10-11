@@ -60,23 +60,9 @@ export interface Model extends ColumnarItem {
 export enum TableSourceType {
   ParquetFile,
   CSVFile,
-  DuckDB, // table is loaded from an existing duckdb table
-  SQL, // table is loaded from a SQL query (which could still reference CSV/Parquet files)
+  // table is loaded from an existing duckdb table
+  DuckDB,
 }
-
-export const formatSourceType = (sourceType: TableSourceType) => {
-  switch (sourceType) {
-    case TableSourceType.ParquetFile:
-      return "Parquet File";
-    case TableSourceType.CSVFile:
-      return "CSV File";
-    case TableSourceType.DuckDB:
-      return "DuckDB Table";
-    case TableSourceType.SQL:
-      return "SQL Query";
-  }
-};
-
 export const FILE_EXTENSION_TO_TABLE_TYPE = {
   parquet: TableSourceType.ParquetFile,
   csv: TableSourceType.CSVFile,

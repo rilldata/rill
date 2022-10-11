@@ -158,11 +158,3 @@ function normaliseTimeRange(timeRange: TimeSeriesTimeRange) {
   }
   return returnTimeRange;
 }
-
-export function generateSqlForCSVImport(csvFile: string, delimiter: string) {
-  return `CREATE TABLE ${
-    csvFile.split(".")[0]
-  } SELECT * FROM read_csv_auto('${csvFile}', header=true ${
-    delimiter ? `,delim='${delimiter}'` : ""
-  })`;
-}

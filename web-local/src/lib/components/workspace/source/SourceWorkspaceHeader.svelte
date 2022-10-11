@@ -2,7 +2,6 @@
   import { getContext } from "svelte";
   import { dataModelerService } from "../../../application-state-stores/application-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
-  import { formatSourceType } from "../../../types";
   import { IconButton } from "../../button";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
@@ -31,11 +30,6 @@
   <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
     <svelte:fragment slot="icon">
       <Source />
-    </svelte:fragment>
-    <svelte:fragment slot="label">
-      <span class="text-gray-500 text-sm font-medium">
-        {formatSourceType(currentSource.sourceType)}</span
-      >
     </svelte:fragment>
     <svelte:fragment slot="right">
       <Tooltip location="bottom" distance={8}>

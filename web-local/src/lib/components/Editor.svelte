@@ -56,12 +56,9 @@
   } from "@codemirror/view";
   import { createEventDispatcher, getContext, onMount } from "svelte";
   import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
-  import Button from "./button/Button.svelte";
 
   const dispatch = createEventDispatcher();
   export let content: string;
-  export let showSubmitButton = false;
-  export let canSubmit = true;
   export let editorHeight = 0;
   export let selections: any[] = [];
 
@@ -150,7 +147,7 @@
 
   let schema: { [table: string]: string[] };
   $: {
-    schema = $persistentTableStore?.entities.reduce(
+    schema = $persistentTableStore.entities.reduce(
       (acc, persistentTable: PersistentTableEntity) => {
         const derivedTable: DerivedTableEntity =
           $derivedTableStore.entities.find(
@@ -170,7 +167,7 @@
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob create table as",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob",
   });
 
   function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
@@ -336,22 +333,6 @@
   <div class="editor-container border h-full" bind:this={editorContainer}>
     <div bind:this={editorContainerComponent} />
   </div>
-  {#if showSubmitButton}
-    <div class="flex justify-end">
-      <Button
-        type="primary"
-        compact
-        disabled={!canSubmit}
-        on:click={() => {
-          dispatch("submit-query", {
-            content: latestContent,
-          });
-        }}
-      >
-        Submit
-      </Button>
-    </div>
-  {/if}
 </div>
 
 <style>

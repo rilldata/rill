@@ -69,8 +69,6 @@
             </div>
           </TooltipContent>
         </Tooltip>
-
-        <slot name="label" />
       </h1>
     {/if}
   </div>
