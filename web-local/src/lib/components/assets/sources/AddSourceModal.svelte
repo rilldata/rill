@@ -37,7 +37,7 @@
     {#if selectedTab === "remote"}
       <RemoteSource on:cancel={() => dispatch("close")} />
     {:else if selectedTab === "local"}
-      <LocalSource />
+      <LocalSource on:close />
       <!-- {:else if selectedTab === "example"}
       <ExampleSource /> -->
     {/if}
