@@ -54,7 +54,7 @@ public class SqlConverterEntrypoint
       SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
       String sqlString = CTypeConversion.toJavaString(sql);
       byte[] ast = sqlConverter.getAST(sqlString);
-      return convertToCCharArrayPointer(allocatorFn, ast);
+      return convertToCCharPointer(allocatorFn, ast);
     } catch (Exception e) {
       e.printStackTrace();
       return WordFactory.nullPointer();
@@ -63,21 +63,16 @@ public class SqlConverterEntrypoint
 
   private static CCharPointer convertToCCharPointer(AllocatorFn allocatorFn, String javaString)
   {
-    byte[] b = javaString.getBytes();
+    return convertToCCharPointer(allocatorFn, javaString.getBytes());
+  }
+
+  private static CCharPointer convertToCCharPointer(AllocatorFn allocatorFn, byte[] b)
+  {
     CCharPointer a = allocatorFn.call(b.length + 1);
     for (int i = 0; i < b.length; i++) {
       a.write(i, b[i]);
     }
     a.write(b.length, (byte) 0);
-    return a;
-  }
-
-  private static CCharPointer convertToCCharArrayPointer(AllocatorFn allocatorFn, byte[] b)
-  {
-    CCharPointer a = allocatorFn.call(b.length);
-    for (int i = 0; i < b.length; i++) {
-      a.write(i, b[i]);
-    }
     return a;
   }
 }
