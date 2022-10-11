@@ -44,7 +44,7 @@ export const S3: ConnectorSpec = {
   name: "s3",
   title: "S3",
   description:
-    "Connect to CSV or Parquet files in an S3 bucket. For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>.",
+    "Connect to CSV or Parquet files in an Amazon S3 bucket. For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>.",
   fields: {
     url: {
       type: "text",
@@ -55,7 +55,7 @@ export const S3: ConnectorSpec = {
     },
     region: {
       type: "text",
-      label: "Region",
+      label: "AWS region",
       placeholder: "us-east-1",
       required: true,
     },
@@ -96,7 +96,7 @@ export const GCS: ConnectorSpec = {
   name: "gcs",
   title: "GCS",
   description:
-    "Connect to CSV or Parquet files in a GCS bucket. For private buckets, provide <a href=https://console.cloud.google.com/storage/settings;tab=interoperability target='_blank'>HMAC credentials</a>.",
+    "Connect to CSV or Parquet files in a Google Cloud Storage bucket. For private buckets, provide <a href=https://console.cloud.google.com/storage/settings;tab=interoperability target='_blank'>HMAC credentials</a>.",
   fields: {
     url: {
       type: "text",
@@ -107,7 +107,7 @@ export const GCS: ConnectorSpec = {
     },
     region: {
       type: "text",
-      label: "Region",
+      label: "GCP region",
       placeholder: "us-east-1",
       required: true,
     },
