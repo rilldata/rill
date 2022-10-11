@@ -17,6 +17,7 @@ var Drivers = make(map[string]Driver)
 
 // Register registers a new driver
 func Register(name string, driver Driver) {
+	fmt.Println("Driver", name)
 	if Drivers[name] != nil {
 		panic(fmt.Errorf("already registered infra driver with name '%s'", name))
 	}

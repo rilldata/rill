@@ -3,7 +3,9 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/runtime/connectors/misc"
+	aws_s3 "github.com/rilldata/rill/runtime/connectors/aws-s3"
+	local_file "github.com/rilldata/rill/runtime/connectors/local-file"
+	"github.com/rilldata/rill/runtime/connectors/sources"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -161,26 +163,51 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func (c *connection) Ingest(
-	ctx context.Context, connectorName string,
-	options misc.ConnectorIngestOptions,
-) (*sqlx.Rows, error) {
-	if connectorName == "local-file" {
-		return c.ingestFromFile(ctx, options)
+func (c *connection) Ingest(ctx context.Context, source sources.Source, parsedOptions any) (bool, *sqlx.Rows, error) {
+	var supported bool
+	var rows *sqlx.Rows
+	var err error
+
+	switch source.Connector {
+	case sources.LocalFileConnectorName:
+		rows, err = c.ingestFromFile(ctx, source, parsedOptions)
+		supported = true
+	case sources.AWSS3ConnectorName:
+		rows, err = c.ingestFromS3Bucket(ctx, source, parsedOptions)
+		supported = true
 	}
 
-	if connectorName == "aws-s3" {
-		return nil, nil
-	}
-
-	return nil, nil
+	return supported, rows, err
 }
 
-func (c *connection) ingestFromFile(
-	ctx context.Context, options misc.ConnectorIngestOptions,
-) (*sqlx.Rows, error) {
+func (c *connection) ingestFromFile(ctx context.Context, source sources.Source, parsedOptions any) (*sqlx.Rows, error) {
+	localConfig := parsedOptions.(local_file.LocalFileConfig)
 	return c.Execute(ctx, &drivers.Statement{
-		Query: "CREATE OR REPLACE TABLE ? AS (SELECT * FROM '?')",
-		Args:  []any{options.GetPath(), options.GetSourceName()},
+		Query: "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
+		Args:  []any{source.Name, localConfig.Path},
+	})
+}
+
+func (c *connection) ingestFromS3Bucket(ctx context.Context, source sources.Source, parsedOptions any) (*sqlx.Rows, error) {
+	awsConfig := parsedOptions.(aws_s3.AWSS3Config)
+	// TODO: set aws settings these for the transaction only
+	c.Execute(ctx, &drivers.Statement{
+		Query: "SET s3_region=?;",
+		Args:  []any{awsConfig.AwsRegion},
+	})
+	if awsConfig.AwsKey != "" && awsConfig.AwsSecret != "" {
+		c.Execute(ctx, &drivers.Statement{
+			Query: "SET s3_access_key_id=?;SET s3_secret_access_key=?;",
+			Args:  []any{awsConfig.AwsKey, awsConfig.AwsSecret},
+		})
+	} else if awsConfig.AwsSession != "" {
+		c.Execute(ctx, &drivers.Statement{
+			Query: "SET s3_session_token=?;",
+			Args:  []any{awsConfig.AwsSession},
+		})
+	}
+	return c.Execute(ctx, &drivers.Statement{
+		Query: "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
+		Args:  []any{source.Name, awsConfig.Path},
 	})
 }

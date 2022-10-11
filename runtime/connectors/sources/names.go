@@ -1,4 +1,4 @@
-package misc
+package sources
 
 const LocalFileConnectorName = "local-file"
 

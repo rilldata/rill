@@ -2,7 +2,7 @@ package druid
 
 import (
 	"context"
-	"github.com/rilldata/rill/runtime/connectors/misc"
+	"github.com/rilldata/rill/runtime/connectors/sources"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -143,9 +143,6 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func (c *connection) Ingest(
-	ctx context.Context, connectorName string,
-	options misc.ConnectorIngestOptions,
-) (*sqlx.Rows, error) {
-	return nil, nil
+func (c *connection) Ingest(ctx context.Context, source sources.Source, parsedOptions any) (bool, *sqlx.Rows, error) {
+	return false, nil, nil
 }
