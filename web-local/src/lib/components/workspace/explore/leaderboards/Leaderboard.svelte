@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   /**
    * Leaderboard.svelte
@@ -193,7 +193,7 @@
     <LeaderboardHeader
       isFetching={$topListQuery.isFetching}
       {displayName}
-      {toggleFilterExcludeMode}
+      on:toggle-filter-exclude-mode={toggleFilterExcludeMode}
       {filterExcludeMode}
       {hovered}
       dimensionDescription={dimension?.description}

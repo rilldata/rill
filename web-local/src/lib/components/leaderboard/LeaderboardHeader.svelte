@@ -11,7 +11,6 @@
 
   export let displayName: string;
   export let isFetching: boolean;
-  export let toggleFilterExcludeMode: () => void;
   export let dimensionDescription: string;
   export let hovered: boolean;
 
@@ -72,7 +71,7 @@
       {#if hovered || optionsMenuActive}
         <LeaderboardOptionsMenu
           bind:optionsMenuActive
-          {toggleFilterExcludeMode}
+          on:toggle-filter-exclude-mode
           {filterExcludeMode}
         />
       {/if}
