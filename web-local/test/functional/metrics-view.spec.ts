@@ -2,6 +2,7 @@ import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-
 import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type {
+  MetricsViewRequestFilter,
   MetricsViewTopListRequest,
   MetricsViewTotalsRequest,
   MetricsViewTotalsResponse,
@@ -16,6 +17,21 @@ import { useBasicMetricsDefinition } from "../utils/metrics-definition-helpers";
 import { normaliseLeaderboardOrder } from "../utils/normaliseLeaderboardOrder";
 import { assertBigNumber } from "../utils/time-series-helpers";
 import { useInlineTestServer } from "../utils/useInlineTestServer";
+
+function excludeDimensionFilter(
+  filter: MetricsViewRequestFilter,
+  dimension: DimensionDefinitionEntity
+) {
+  if (!filter) return undefined;
+  return {
+    include: filter.include.filter(
+      (dimensionValues) => dimensionValues.name !== dimension.dimensionColumn
+    ),
+    exclude: filter.exclude.filter(
+      (dimensionValues) => dimensionValues.name !== dimension.dimensionColumn
+    ),
+  };
+}
 
 describe("Metric View", () => {
   const { config, inlineServer } = useInlineTestServer(8083);
@@ -43,7 +59,10 @@ describe("Metric View", () => {
           dimensions.map(async (dimension) => {
             const request: MetricsViewTopListRequest = {
               measures: [requestMeasures[0].sqlName],
-              filter: MetricsExplorerTest.filters,
+              filter: excludeDimensionFilter(
+                MetricsExplorerTest.filters,
+                dimension
+              ),
               time: {
                 start: MetricsExplorerTest.timeRange?.start,
                 end: MetricsExplorerTest.timeRange?.end,
