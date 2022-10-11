@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/runtime/connectors/misc"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -158,4 +159,28 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	}
 
 	return res, nil
+}
+
+func (c *connection) Ingest(
+	ctx context.Context, connectorName string,
+	options misc.ConnectorIngestOptions,
+) (*sqlx.Rows, error) {
+	if connectorName == "local-file" {
+		return c.ingestFromFile(ctx, options)
+	}
+
+	if connectorName == "aws-s3" {
+		return nil, nil
+	}
+
+	return nil, nil
+}
+
+func (c *connection) ingestFromFile(
+	ctx context.Context, options misc.ConnectorIngestOptions,
+) (*sqlx.Rows, error) {
+	return c.Execute(ctx, &drivers.Statement{
+		Query: "CREATE OR REPLACE TABLE ? AS (SELECT * FROM '?')",
+		Args:  []any{options.GetPath(), options.GetSourceName()},
+	})
 }

@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"github.com/rilldata/rill/runtime/connectors/misc"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -9,6 +10,7 @@ import (
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries
 type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*sqlx.Rows, error)
+	Ingest(ctx context.Context, connectorName string, options misc.ConnectorIngestOptions) (*sqlx.Rows, error)
 	InformationSchema() InformationSchema
 }
 
