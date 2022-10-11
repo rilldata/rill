@@ -203,7 +203,7 @@
                 <svelte:fragment slot="icon">
                   <RefreshIcon />
                 </svelte:fragment>
-                manually refresh source
+                refresh source data
               </MenuItem>
 
               <MenuItem icon on:select={() => createModel(tableName)}>

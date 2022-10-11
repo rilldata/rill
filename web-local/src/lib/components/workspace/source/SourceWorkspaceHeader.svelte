@@ -37,7 +37,7 @@
           <RefreshIcon />
         </IconButton>
         <TooltipContent slot="tooltip-content">
-          manually refresh the source data
+          refresh the source data
         </TooltipContent>
       </Tooltip>
     </svelte:fragment>
