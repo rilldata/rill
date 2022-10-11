@@ -10,6 +10,7 @@
   import Spinner from "../Spinner.svelte";
   import SearchBar from "../search/Search.svelte";
   import CrossIcon from "../icons/CrossIcon.svelte";
+  import Close from "../icons/Close.svelte";
 
   export let metricsDefId: string;
   export let isFetching: boolean;
@@ -29,7 +30,7 @@
 </script>
 
 <div
-  class="grid grid-auto-cols justify-between grid-flow-col items-end p-1 pb-3"
+  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
 >
   <button
     on:click={() => goBackToLeaderboard()}
@@ -57,8 +58,13 @@
         <span> Search </span>
       </div>
     {:else}
-      <SearchBar bind:value={searchText} on:input={onSearch} />
-      <CrossIcon on:click={() => (searchToggle = !searchToggle)} />
+      <div
+        transition:slideRight|local={{ leftOffset: 8 }}
+        class="flex items-center"
+      >
+        <SearchBar bind:value={searchText} on:input={onSearch} />
+        <Close on:click={() => (searchToggle = !searchToggle)} />
+      </div>
     {/if}
   </div>
 </div>
