@@ -3,19 +3,20 @@
   - center (text) – used primarily for label information
 -->
 <script>
-  import { slideRight } from "../../../transitions/index.ts";
+  import { slideRight } from "../../../transitions/index";
   import { createEventDispatcher } from "svelte";
   import RemoveChipButton from "./RemoveChipButton.svelte";
+  import { defaultChipColors } from "../chip-types";
 
   export let removable = false;
   export let active = false;
 
   /** color elements elements */
-  export let bgBaseColor = "bg-blue-50";
-  export let bgHoverColor = "bg-blue-100";
-  export let textColor = "text-blue-900";
-  export let bgActiveColor = bgHoverColor;
-  export let outlineColor = "outline-blue-400";
+  export let bgBaseColor = defaultChipColors.bgBaseColor;
+  export let bgHoverColor = defaultChipColors.bgHoverColor;
+  export let textColor = defaultChipColors.textColor;
+  export let bgActiveColor = defaultChipColors.bgActiveColor;
+  export let outlineColor = defaultChipColors.outlineColor;
 
   /** if removable is true, these props control the tooltip positioning */
   export let removeButtonTooltipLocation = "bottom";

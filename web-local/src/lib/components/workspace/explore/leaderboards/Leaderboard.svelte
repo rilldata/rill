@@ -195,7 +195,6 @@
       {displayName}
       {toggleFilterExcludeMode}
       {filterExcludeMode}
-      {filterKey}
       {hovered}
       dimensionDescription={dimension?.description}
       on:click={() => selectDimension(dimensionId)}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   /**
    * DimensionDisplay.svelte

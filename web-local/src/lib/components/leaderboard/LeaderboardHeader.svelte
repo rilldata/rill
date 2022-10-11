@@ -14,11 +14,8 @@
   export let toggleFilterExcludeMode: () => void;
   export let dimensionDescription: string;
   export let hovered: boolean;
-  export let filterKey: "exclude" | "include";
-  export let filterExcludeMode: boolean;
 
-  let otherFilterKey: "exclude" | "include";
-  $: otherFilterKey = filterKey === "include" ? "exclude" : "include";
+  export let filterExcludeMode: boolean;
 
   let optionsMenuActive = false;
 </script>

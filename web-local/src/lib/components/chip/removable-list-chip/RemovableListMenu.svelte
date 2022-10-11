@@ -63,16 +63,6 @@
 
   <MenuHeader>
     <svelte:fragment slot="title">Filters</svelte:fragment>
-    <!-- <svelte:fragment slot="right">
-      <button
-        class="hover:bg-gray-100  grid place-items-center"
-        style:width="24px"
-        style:height="24px"
-        on:click={onCloseHandler}
-      >
-        <Close size="16px" /></button
-      >
-    </svelte:fragment> -->
   </MenuHeader>
 
   <Divider marginTop={1} marginBottom={1} />
@@ -81,7 +71,6 @@
     {#each currentlySelectedValues as value}
       <MenuItem
         icon
-        {value}
         on:select={() => {
           toggleValue(value);
         }}
