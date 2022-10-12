@@ -36,7 +36,7 @@ func main() {
 
 	// Init config
 	var conf Config
-	err = envconfig.Process("rill_runtime", &conf)
+	err := envconfig.Process("rill_runtime", &conf)
 	if err != nil {
 		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)
