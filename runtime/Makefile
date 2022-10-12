@@ -1,16 +1,16 @@
 .PHONY: build
 build:
-	go generate sql
+	go generate ./sql
 	go build -o main ./cmd
 
 .PHONY: run
 run:
-	go generate sql
+	go generate ./sql
 	go run ./cmd
 
 .PHONY: test
 test:
-	go generate sql
+	go generate ./sql
 	go test ./...
 
 .PHONY: clean
@@ -42,21 +42,21 @@ generate.proto.sql:
 release/darwin-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
 	mkdir -p release
-	GOOS=darwin GOARCH=amd64 ./scripts/setup_sql.sh -f
+	GOOS=darwin GOARCH=amd64 go generate ./sql
 	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
 		go build -trimpath -o release/darwin-amd64 ./cmd
 
 release/darwin-arm64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
 	mkdir -p release
-	GOOS=darwin GOARCH=arm64 ./scripts/setup_sql.sh -f
+	GOOS=darwin GOARCH=arm64 go generate ./sql
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
 		go build -trimpath -o release/darwin-arm64 ./cmd
 
 release/linux-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "linux" ]; then echo "Error: must run build on linux"; false; fi
 	mkdir -p release
-	GOOS=linux GOARCH=amd64 ./scripts/setup_sql.sh -f
+	GOOS=linux GOARCH=amd64 go generate ./sql
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
 		go build -trimpath -o release/linux-amd64 ./cmd
 
