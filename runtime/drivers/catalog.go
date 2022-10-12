@@ -26,6 +26,6 @@ type CatalogObject struct {
 	Name      string
 	Type      string
 	SQL       string
-	CreatedOn time.Time
-	UpdatedOn time.Time
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
 }

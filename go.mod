@@ -13,6 +13,7 @@ require (
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
@@ -76,7 +77,6 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/sys/mount v0.2.0 // indirect
 	github.com/moby/sys/mountinfo v0.5.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
@@ -127,7 +127,7 @@ require (
 
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2 v2.0.0-20220505152843-58a406687f2d
@@ -143,4 +143,4 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
-replace github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd => github.com/begelundmuller/go-duckdb v0.0.0-20220913095727-6db9d135dc34
+replace github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd => github.com/marcboeker/go-duckdb v1.0.1-0.20221009193300-2ea1151b93b8

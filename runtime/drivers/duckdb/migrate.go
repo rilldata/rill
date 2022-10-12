@@ -15,11 +15,17 @@ import (
 var migrationsFS embed.FS
 
 // Name of the table that tracks migrations
-var migrationVersionTable = "rill_migration_version"
+var migrationVersionTable = "rill.migration_version"
 
 // Migrate implements drivers.Connection.
 // Migrate for DuckDB may not be safe for concurrent use.
 func (c *connection) Migrate(ctx context.Context) (err error) {
+	// Create rill schema if it doens't exist
+	_, err = c.db.ExecContext(ctx, "create schema if not exists rill")
+	if err != nil {
+		return err
+	}
+
 	// Create migrationVersionTable if it doesn't exist
 	_, err = c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
 	if err != nil {
@@ -77,7 +83,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 		}
 
 		// Update migration version
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
+		_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=?", migrationVersionTable), version)
 		if err != nil {
 			return err
 		}
