@@ -30,6 +30,7 @@
     style:height="32px"
     style:flex="1"
     style:grid-template-columns="auto max-content"
+    style="max-width: calc(100% - 22px);"
     class="
         pr-2
         grid justify-between items-center
@@ -40,11 +41,14 @@
         bg-white
         text-gray-600
         font-semibold
+        truncate
     "
   >
     <div on:click>
       <Tooltip location="top" distance={16}>
-        <div class="pl-2">{displayName}</div>
+        <div class="pl-2 truncate" style="max-width: calc(315px - 60px);">
+          {displayName}
+        </div>
         <TooltipContent slot="tooltip-content">
           <TooltipTitle>
             <svelte:fragment slot="name">
