@@ -334,7 +334,7 @@ public class CalciteTests
             Optional.empty(),
             Optional.of("No connector of type [s4] found for source [CLICKS_RAW]")
         ),
-        // Parser can be improved to parse this as well, without quotes it is parsed as an identifier
+        // without quotes property key is parsed as an identifier
         Arguments.of("""
                 CREATE SOURCE clicks_raw
                 WITH (
@@ -342,7 +342,166 @@ public class CalciteTests
                     'format' = 'csv',
                     'prefix' = 's3://my_bucket/*.csv'
                 )""",
-            Optional.of("Encountered \" <IDENTIFIER> \"connector \""),
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    'format' = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        // property needs to be a simple identifier
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector.source = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                )""",
+            Optional.of("""
+                Encountered " "." ". "" at line 3, column 14.
+                Was expecting:
+                    "=" ..."""),
+            Optional.empty()
+        ),
+        // parsing will pass but validation will fail because required property "connector" is missing
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector$source = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                )""",
+            Optional.empty(),
+            Optional.of("Required property [connector] not found for source [CLICKS_RAW]")
+        ),
+        // property value needs to be quoted
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    key123 = value123
+                )""",
+            Optional.of("Encountered \" <IDENTIFIER> \"value123 \"\""),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    key123 = 'value123'
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    key = '123'
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    '123' = '123'
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        // if the proper key contains special characters, it needs to be quoted
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    a123@ = '123'
+                )""",
+            Optional.of("Lexical error at line 6, column 9.  Encountered: \"@\""),
+            Optional.empty()
+        ),
+        // if the proper key contains special characters, it needs to be quoted
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    'a123@' = '123'
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        // if the proper key contains only numbers, it needs to be quoted
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    123 = '123'
+                )""",
+            Optional.of("Encountered \" <UNSIGNED_INTEGER_LITERAL> \"123 \"\""),
+            Optional.empty()
+        ),
+        // if the proper key contains only numbers, it needs to be quoted
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    '123' = '123'
+                )""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    connector = 's3',
+                    format = 'csv',
+                    prefix = 's3://my_bucket/*.csv',
+                    a@123 = '123'
+                )""",
+            Optional.of("Lexical error at line 6, column 6.  Encountered: \"@\""),
             Optional.empty()
         )
     );

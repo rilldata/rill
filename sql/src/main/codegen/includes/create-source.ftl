@@ -23,13 +23,13 @@ Map<SqlNode, SqlNode> Properties() :
     SqlNode value;
 }
 {
-    key = StringLiteral() <EQ> value = StringLiteral()
+    (LOOKAHEAD(StringLiteral()) key = StringLiteral() | key = SimpleIdentifier())  <EQ> value = StringLiteral()
     {
       props.put(key, value);
     }
     (
       LOOKAHEAD(2)
-      <COMMA> key = StringLiteral() <EQ> value = StringLiteral()
+      <COMMA> (LOOKAHEAD(StringLiteral()) key = StringLiteral() | key = SimpleIdentifier()) <EQ> value = StringLiteral()
       {
           props.put(key, value);
       }
