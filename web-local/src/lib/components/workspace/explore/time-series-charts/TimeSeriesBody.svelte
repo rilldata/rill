@@ -1,9 +1,9 @@
 <script lang="ts">
   import { extent } from "d3-array";
   import { interpolateArray } from "d3-interpolate";
-  import { cubicOut } from "svelte/easing";
+  import { cubicOut, linear } from "svelte/easing";
   import { derived, get, writable } from "svelte/store";
-  import { fade, fly } from "svelte/transition";
+  import { fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
     humanizeDataType,
@@ -124,6 +124,28 @@
   `,
     };
   }
+  function fadeGray(
+    node: Element,
+    { delay = 0, duration = 400, easing = linear, amount = 1 } = {}
+  ) {
+    const o = +getComputedStyle(node).opacity;
+
+    return {
+      delay,
+      duration,
+      easing,
+      css: (t) => `
+    opacity: ${t * o};
+    filter: grayscale(${t * 100 * amount}%);
+    `,
+    };
+  }
+
+  /** Tweening parameters */
+  $: newValuesSmaller = $previousYMax > yMax;
+  $: diffRatio = Math.abs((yMax - $previousYMax) / yMax);
+  let crossThreshold = guidGenerator();
+  $: if (diffRatio > 0.5) crossThreshold = guidGenerator();
 </script>
 
 {#if key && dataCopy?.length}
@@ -131,7 +153,7 @@
     <SimpleDataGraphic
       shareYScale={false}
       bind:mouseoverValue
-      {yMin}
+      yMin={yMin > 0 ? 0 : yMin}
       {yMax}
       yMinTweenProps={{
         duration: longTimeSeries ? 0 : allZeros ? 100 : 500,
@@ -150,15 +172,22 @@
       let:xScale
     >
       <Body>
-        {#key key + longTimeSeriesKey + ($previousYMax > yMax)}
+        {#key key + longTimeSeriesKey + crossThreshold}
           <!-- here, we switch hideCurrent before and after the transition, so
             in cases of the key updating, we can gracefully transition all kinds of
             interesting animations.
           -->
-          <text x={30} y={30}>{yMax} - {$previousYMax}</text>
           <g
-            in:scaleVertical={{ delay: $previousYMax > yMax ? 0 : 200 }}
-            out:fade={{ duration: $previousYMax > yMax ? 1200 : 300 }}
+            in:scaleVertical={{
+              duration: 400,
+              delay: $previousYMax > yMax ? 0 : 400,
+              start: $previousYMax > yMax ? 2 : 2,
+            }}
+            out:scaleVertical={{
+              duration: 800, //$previousYMax > yMax ? 1200 : 300,
+              delay: $previousYMax > yMax ? 800 : 0,
+              start: $previousYMax > yMax ? 0 : 1.5,
+            }}
             style:transition="opacity 250ms"
             on:outrostart={() => {
               hideCurrent = true;
