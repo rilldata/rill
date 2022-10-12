@@ -15,7 +15,3 @@ func GetTestServer(dsn string) (*server.Server, error) {
 
 	return server.NewServer(nil, metastore, nil)
 }
-
-func GetDuckdbDriver(dsn string) (drivers.Connection, error) {
-	return drivers.Open("duckdb", dsn)
-}

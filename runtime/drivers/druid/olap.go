@@ -2,9 +2,9 @@ package druid
 
 import (
 	"context"
-	"github.com/rilldata/rill/runtime/connectors/sources"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 

@@ -4,16 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jmoiron/sqlx"
+	"reflect"
+
 	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
-	"reflect"
 )
 
 // ErrNotFound indicates the resource wasn't found
 var ErrNotFound = errors.New("connector: not found")
-
-const propertyTagName = "key"
 
 var Connectors = make(map[string]Connector)
 
@@ -33,7 +31,7 @@ func Create(name string) (Connector, error) {
 
 // Connector interface abstract all interactions with a remote/local connection
 type Connector interface {
-	Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) (*sqlx.Rows, error)
+	Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) error
 	Validate(source sources.Source) error
 	Spec() []sources.Property
 }

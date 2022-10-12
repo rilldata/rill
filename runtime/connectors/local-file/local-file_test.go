@@ -1,34 +1,31 @@
-package local_file_test
+package file_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
-	test_utils "github.com/rilldata/rill/runtime/test-utils"
-	"os"
-	"path/filepath"
-	"testing"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
-var curPath, _ = os.Getwd()
-var TestFilesPath = filepath.Join(curPath, "/../../../web-local/test/data/")
-
 func TestLocalFileConnector(t *testing.T) {
-	duckdb, err := test_utils.GetDuckdbDriver("stage.db")
+	duckdb, err := drivers.Open("duckdb", t.TempDir()+"stage.db")
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer duckdb.Close()
 	olap, _ := duckdb.OLAPStore()
 
 	connector, _ := connectors.Create(sources.LocalFileConnectorName)
 
-	_, err = connector.Ingest(context.Background(), sources.Source{
+	err = connector.Ingest(context.Background(), sources.Source{
 		Name:         "AdBids",
 		Connector:    sources.LocalFileConnectorName,
 		SamplePolicy: sources.SamplePolicy{},
 		Properties: map[string]any{
-			"path": TestFilesPath + "/AdBids.csv",
+			"path": "../../../web-local/test/data/AdBids.csv",
 		},
 	}, olap)
 	if err != nil {

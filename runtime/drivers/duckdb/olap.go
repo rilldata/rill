@@ -3,11 +3,11 @@ package duckdb
 import (
 	"context"
 	"fmt"
+
+	"github.com/jmoiron/sqlx"
 	aws_s3 "github.com/rilldata/rill/runtime/connectors/aws-s3"
 	local_file "github.com/rilldata/rill/runtime/connectors/local-file"
 	"github.com/rilldata/rill/runtime/connectors/sources"
-
-	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"
 )
@@ -181,33 +181,34 @@ func (c *connection) Ingest(ctx context.Context, source sources.Source, parsedOp
 }
 
 func (c *connection) ingestFromFile(ctx context.Context, source sources.Source, parsedOptions any) (*sqlx.Rows, error) {
-	localConfig := parsedOptions.(local_file.LocalFileConfig)
+	conf := parsedOptions.(local_file.LocalFileConfig)
 	return c.Execute(ctx, &drivers.Statement{
-		Query: "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
-		Args:  []any{source.Name, localConfig.Path},
+		Query:    "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
+		Args:     []any{source.Name, conf.Path},
+		Priority: 0,
 	})
 }
 
 func (c *connection) ingestFromS3Bucket(ctx context.Context, source sources.Source, parsedOptions any) (*sqlx.Rows, error) {
-	awsConfig := parsedOptions.(aws_s3.AWSS3Config)
+	conf := parsedOptions.(aws_s3.AWSS3Config)
+
 	// TODO: set aws settings these for the transaction only
-	c.Execute(ctx, &drivers.Statement{
-		Query: "SET s3_region=?;",
-		Args:  []any{awsConfig.AwsRegion},
-	})
-	if awsConfig.AwsKey != "" && awsConfig.AwsSecret != "" {
-		c.Execute(ctx, &drivers.Statement{
-			Query: "SET s3_access_key_id=?;SET s3_secret_access_key=?;",
-			Args:  []any{awsConfig.AwsKey, awsConfig.AwsSecret},
-		})
-	} else if awsConfig.AwsSession != "" {
-		c.Execute(ctx, &drivers.Statement{
-			Query: "SET s3_session_token=?;",
-			Args:  []any{awsConfig.AwsSession},
-		})
+	query := "SET s3_region=?;"
+	args := []any{conf.AwsRegion}
+
+	if conf.AwsKey != "" && conf.AwsSecret != "" {
+		query += "SET s3_access_key_id=?;SET s3_secret_access_key=?;"
+		args = append(args, conf.AwsKey, conf.AwsSecret)
+	} else if conf.AwsSession != "" {
+		query += "SET s3_session_token=?;"
+		args = append(args, conf.AwsSession)
 	}
+
+	query += "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?);"
+	args = append(args, source.Name, conf.Path)
+
 	return c.Execute(ctx, &drivers.Statement{
-		Query: "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
-		Args:  []any{source.Name, awsConfig.Path},
+		Query: query,
+		Args:  args,
 	})
 }

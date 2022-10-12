@@ -1,9 +1,9 @@
-package aws_s3
+package s3
 
 import (
 	"context"
 	"errors"
-	"github.com/jmoiron/sqlx"
+
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/sources"
@@ -15,7 +15,7 @@ var spec = []sources.Property{
 		Key:         "path",
 		DisplayName: "Path",
 		Description: "Path to file on the disk.",
-		Placeholder: "/path/to/file",
+		Placeholder: "s3://<bucket>/<file>",
 		Type:        api.Connector_Property_TYPE_STRING,
 		Required:    true,
 	},
@@ -62,33 +62,10 @@ var spec = []sources.Property{
 }
 
 func init() {
-	connectors.Register(sources.AWSS3ConnectorName, awsS3Connector{})
+	connectors.Register(sources.AWSS3ConnectorName, connector{})
 }
 
-type awsS3Connector struct{}
-
-func (c awsS3Connector) Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) (*sqlx.Rows, error) {
-	var awsS3Config AWSS3Config
-	err := connectors.ValidatePropertiesAndExtract(source, c.Spec(), &awsS3Config)
-	if err != nil {
-		return nil, err
-	}
-
-	supported, rows, err := olap.Ingest(ctx, source, awsS3Config)
-	if supported {
-		return rows, err
-	}
-	// TODO: download the file and ingest as local file
-	return nil, errors.New("OLAP doesnt support s3 file")
-}
-
-func (c awsS3Connector) Validate(source sources.Source) error {
-	return nil
-}
-
-func (c awsS3Connector) Spec() []sources.Property {
-	return spec
-}
+type connector struct{}
 
 type AWSS3Config struct {
 	Path       string `key:"path"`
@@ -97,4 +74,27 @@ type AWSS3Config struct {
 	AwsKey     string `key:"aws.access.key"`
 	AwsSecret  string `key:"aws.access.secret"`
 	AwsSession string `key:"aws.access.session"`
+}
+
+func (c connector) Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) error {
+	var conf AWSS3Config
+	err := connectors.ValidatePropertiesAndExtract(source, c.Spec(), &conf)
+	if err != nil {
+		return err
+	}
+
+	supported, _, err := olap.Ingest(ctx, source, conf)
+	if supported {
+		return err
+	}
+	// TODO: download the file and ingest as local file
+	return errors.New("OLAP doesnt support s3 file")
+}
+
+func (c connector) Validate(source sources.Source) error {
+	return nil
+}
+
+func (c connector) Spec() []sources.Property {
+	return spec
 }

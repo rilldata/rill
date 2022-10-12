@@ -1,9 +1,9 @@
-package local_file
+package file
 
 import (
 	"context"
 	"errors"
-	"github.com/jmoiron/sqlx"
+
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/sources"
@@ -38,35 +38,35 @@ var spec = []sources.Property{
 }
 
 func init() {
-	connectors.Register(sources.LocalFileConnectorName, localFileConnector{})
-}
-
-type localFileConnector struct{}
-
-func (c localFileConnector) Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) (*sqlx.Rows, error) {
-	var localFileConfig LocalFileConfig
-	err := connectors.ValidatePropertiesAndExtract(source, c.Spec(), &localFileConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	supported, rows, err := olap.Ingest(ctx, source, localFileConfig)
-	if supported {
-		return rows, err
-	}
-	return nil, errors.New("OLAP doesnt support local file")
-}
-
-func (c localFileConnector) Validate(source sources.Source) error {
-	return nil
-}
-
-func (c localFileConnector) Spec() []sources.Property {
-	return spec
+	connectors.Register(sources.LocalFileConnectorName, connector{})
 }
 
 type LocalFileConfig struct {
 	Path      string `key:"path"`
 	Format    string `key:"format"`
 	Delimiter string `key:"path"`
+}
+
+type connector struct{}
+
+func (c connector) Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) error {
+	var localFileConfig LocalFileConfig
+	err := connectors.ValidatePropertiesAndExtract(source, c.Spec(), &localFileConfig)
+	if err != nil {
+		return err
+	}
+
+	supported, _, err := olap.Ingest(ctx, source, localFileConfig)
+	if supported {
+		return err
+	}
+	return errors.New("OLAP doesnt support local file")
+}
+
+func (c connector) Validate(source sources.Source) error {
+	return nil
+}
+
+func (c connector) Spec() []sources.Property {
+	return spec
 }
