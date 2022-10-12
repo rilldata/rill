@@ -71,6 +71,10 @@ export class DuckDBClient {
     await this.execute(query, false, true);
   }
 
+  public async requestToInstance(path: string, data: any): Promise<any> {
+    return this.request(`/v1/instances/${this.instanceID}/${path}`, data);
+  }
+
   protected async spawnRuntime() {
     if (!this.config.database.spawnRuntime) {
       return;
@@ -128,6 +132,8 @@ export class DuckDBClient {
     const res = await this.request("/v1/instances", {
       driver: "duckdb",
       dsn: databaseName,
+      exposed: true,
+      embed_catalog: true,
     });
 
     this.instanceID = res["instanceId"];

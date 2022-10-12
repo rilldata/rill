@@ -5,86 +5,86 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rs/zerolog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metadata"
+	"github.com/rilldata/rill/runtime/drivers"
+	_ "github.com/rilldata/rill/runtime/drivers/druid"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server"
 	_ "github.com/rilldata/rill/runtime/sql"
-
-	_ "github.com/rilldata/rill/runtime/infra/duckdb"
-	_ "github.com/rilldata/rill/runtime/metadata/sqlite"
 )
 
 type Config struct {
-	Env            string `default:"development"`
-	LogLevel       string `default:"info" split_words:"true"`
-	DatabaseDriver string `default:"sqlite"`
-	DatabaseURL    string `default:":memory:" split_words:"true"`
-	GRPCPort       int    `default:"9090" split_words:"true"`
-	HTTPPort       int    `default:"8080" split_words:"true"`
+	Env            string        `default:"development"`
+	Port           int           `default:"8080"`
+	GRPCPort       int           `default:"9090" split_words:"true"`
+	LogLevel       zapcore.Level `default:"info" split_words:"true"`
+	DatabaseDriver string        `default:"sqlite"`
+	DatabaseURL    string        `default:":memory:" split_words:"true"`
 }
 
 func main() {
+	// Load .env
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Printf("failed to load .env: %s", err.Error())
+		os.Exit(1)
+	}
+
 	// Init config
 	var conf Config
-	err := envconfig.Process("rill_runtime", &conf)
+	err = envconfig.Process("rill_runtime", &conf)
 	if err != nil {
-		fmt.Printf("Failed to load config: %s", err.Error())
+		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)
 	}
 
 	// Init logger
-	level, err := zerolog.ParseLevel(conf.LogLevel)
+	var logger *zap.Logger
+	if conf.Env == "production" {
+		logger, err = zap.NewProduction(zap.IncreaseLevel(conf.LogLevel))
+	} else {
+		logger, err = zap.NewDevelopment(zap.IncreaseLevel(conf.LogLevel))
+	}
 	if err != nil {
-		fmt.Printf("Error parsing log level: %s", err.Error())
+		fmt.Printf("error: failed to create logger: %s", err.Error())
 		os.Exit(1)
 	}
-	var logger zerolog.Logger
-	if conf.Env == "production" {
-		logger = zerolog.New(os.Stderr).Level(level)
-	} else {
-		logger = zerolog.New(zerolog.NewConsoleWriter()).Level(level)
-	}
 
-	// Init db
-	driver, ok := metadata.Drivers[conf.DatabaseDriver]
-	if !ok {
-		logger.Fatal().Msgf("Unknown db driver '%s'", conf.DatabaseDriver)
-	}
-	db, err := driver.Open(conf.DatabaseURL)
+	// Open metadata db connection
+	metastore, err := drivers.Open(conf.DatabaseDriver, conf.DatabaseURL)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to connect to DB")
+		logger.Fatal("error: could not connect to metadata db", zap.Error(err))
 	}
-
-	// Migrate db
-	// TODO: Move to separate command and only auto-migrate in development
-	mig, err := migrate.NewWithSourceInstance("iofs", driver.Migrations(), fmt.Sprintf("%s://%s", conf.DatabaseDriver, conf.DatabaseURL))
+	err = metastore.Migrate(context.Background())
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Migrator failed to connect to DB")
-	}
-	err = mig.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		logger.Fatal().Err(err).Msg("Failed to migrate DB")
+		logger.Fatal("error: metadata db migration", zap.Error(err))
 	}
 
-	// Init runtime and server
-	rt := runtime.New(db, logger)
-	opts := &runtime.ServerOptions{
-		GRPCPort: conf.GRPCPort,
-		HTTPPort: conf.HTTPPort,
+	// Init server
+	opts := &server.ServerOptions{
+		HTTPPort:            conf.Port,
+		GRPCPort:            conf.GRPCPort,
+		ConnectionCacheSize: 100,
 	}
-	server := runtime.NewServer(opts, rt, logger)
+	server, err := server.NewServer(opts, metastore, logger)
+	if err != nil {
+		logger.Fatal("error: could not create server", zap.Error(err))
+	}
 
 	// Run server
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 	err = server.Serve(ctx)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Server failed")
+		logger.Error("server crashed", zap.Error(err))
 	}
 
-	logger.Info().Msg("Server shutdown gracefully")
+	logger.Info("server shutdown gracefully")
 }
