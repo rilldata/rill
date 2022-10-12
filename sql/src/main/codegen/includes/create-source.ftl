@@ -5,9 +5,12 @@ SqlCreateSource SqlCreateSource(Span s, boolean replace) :
 }
 {
     <SOURCE> id = SimpleIdentifier()
-    <WITH> <LPAREN>
-    map = Properties()
-    <RPAREN>
+    <WITH>
+    (
+      <LPAREN> map = Properties() <RPAREN>
+    |
+      map = Properties()
+    )
     {
       return new SqlCreateSource(s.end(this), id, map);
     }

@@ -171,6 +171,46 @@ public class CalciteTests
             Optional.empty(),
             Optional.empty()
         ),
+        // Paranthesis are optional
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH 'connector' = 's3', 'prefix' = 's3://my_bucket/a.csv', 'FORMAT' = 'CSV'""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH
+                'connector' = 's3',
+                'prefix' = 's3://my_bucket/a.csv',
+                'FORMAT' = 'CSV'""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH 'connector' = 's3', 'prefix' = 's3://my_bucket/a.csv', 'FORMAT' = 'CSV',""",
+            Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH ('connector' = 's3', 'prefix' = 's3://my_bucket/a.csv', 'FORMAT' = 'CSV',""",
+            Optional.of("""
+                Encountered "<EOF>" at line 2, column 78.
+                Was expecting:
+                    ")" ..."""),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH 'connector' = 's3', 'prefix' = 's3://my_bucket/a.csv', 'FORMAT' = 'CSV',)""",
+            Optional.of("""
+                Encountered " ")" ") "" at line 2, column 78.
+                Was expecting:
+                    <EOF>"""),
+            Optional.empty()
+        ),
         Arguments.of("""
                 CREATE SOURCE clicks_raw
                 WITH (
