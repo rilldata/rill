@@ -83,10 +83,11 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let filterData = $mappedFiltersQuery.data;
+    let filterData = JSON.parse(JSON.stringify($mappedFiltersQuery.data));
 
-    let foundDimension = false;
     if (searchText !== "") {
+      let foundDimension = false;
+
       filterData["include"].forEach((filter) => {
         if (filter.name == dimension?.dimensionColumn) {
           filter.like = [`%${searchText}%`];
@@ -95,19 +96,14 @@
       });
 
       if (!foundDimension) {
-        filterData["include"] = [
-          {
-            name: dimension?.dimensionColumn,
-            in: [],
-            like: [`%${searchText}%`],
-          },
-        ];
+        filterData["include"].push({
+          name: dimension?.dimensionColumn,
+          in: [],
+          like: [`%${searchText}%`],
+        });
       }
     } else {
-      filterData["include"] = filterData["include"].filter((f) => {
-        f.in.length;
-      });
-
+      filterData["include"] = filterData["include"].filter((f) => f.in.length);
       filterData["include"].forEach((f) => {
         delete f.like;
       });
