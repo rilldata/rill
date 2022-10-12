@@ -23,7 +23,7 @@ import (
 
 type Config struct {
 	Env            string        `default:"development"`
-	Port           int           `default:"8080"`
+	HTTPPort       int           `default:"8080" split_words:"true"`
 	GRPCPort       int           `default:"9090" split_words:"true"`
 	LogLevel       zapcore.Level `default:"info" split_words:"true"`
 	DatabaseDriver string        `default:"sqlite"`
@@ -66,7 +66,7 @@ func main() {
 
 	// Init server
 	opts := &server.ServerOptions{
-		HTTPPort:            conf.Port,
+		HTTPPort:            conf.HTTPPort,
 		GRPCPort:            conf.GRPCPort,
 		ConnectionCacheSize: 100,
 	}

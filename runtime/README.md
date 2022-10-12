@@ -36,7 +36,7 @@ The runtime server is configured using environment variables parsed in `runtime/
 
 ```bash
 RILL_RUNTIME_ENV="development"
-RILL_RUNTIME_PORT="8080"
+RILL_RUNTIME_HTTP_PORT="8080"
 RILL_RUNTIME_GRPC_PORT="9090"
 RILL_RUNTIME_LOG_LEVEL="info"
 RILL_RUNTIME_DATABASE_DRIVER="sqlite"
