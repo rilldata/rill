@@ -95,7 +95,7 @@ public class CalciteTests
     Assertions.assertEquals(numMeasures, sqlCreateMetricsView.measures.size());
     try {
       SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-      System.out.println(sqlNodeProto);
+      Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
     } catch (InvalidProtocolBufferException e) {
       throw new RuntimeException(e);
     }
@@ -131,7 +131,7 @@ public class CalciteTests
     }
     try {
       SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-      System.out.println(sqlNodeProto);
+      Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
     } catch (InvalidProtocolBufferException e) {
       throw new RuntimeException(e);
     }
@@ -255,7 +255,7 @@ public class CalciteTests
         byte[] ast = calciteToolbox.getAST(actual);
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-          System.out.println(sqlNodeProto);
+          Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
         } catch (InvalidProtocolBufferException e) {
           throw new RuntimeException(e);
         }
@@ -290,7 +290,7 @@ public class CalciteTests
         byte[] ast = calciteToolbox.getAST(actual);
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-          System.out.println(sqlNodeProto);
+          Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
         } catch (InvalidProtocolBufferException e) {
           throw new RuntimeException(e);
         }
