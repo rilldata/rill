@@ -29,18 +29,18 @@ const sidebars = {
     },
     {
       type: 'doc',
-      id: 'defining-metrics',
-      label: 'Defining Metrics',
-    },
-    {
-      type: 'category',
-      label: 'SQL Dialects',
-      items: ['sqldialects/duck-sql'],
+      id: 'cli',
+      label: 'CLI Documentation',
     },
     {
       type: 'doc',
-      id: 'cli',
-      label: 'CLI Documentation',
+      id: 'sql-dialect',
+      label: 'SQL Dialect',
+    },
+    {
+      type: 'doc',
+      id: 'defining-metrics',
+      label: 'Defining Metrics',
     },
     {
       type: 'doc',

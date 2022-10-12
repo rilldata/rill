@@ -4,6 +4,7 @@
   "type": "module",
   "workspaces": [
     "web-cloud",
+    "web-common",
     "web-local"
   ],
   "scripts": {

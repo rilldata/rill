@@ -8,7 +8,5 @@
 <Dialog>
   <svelte:fragment slot="title">Export error</svelte:fragment>
   <svelte:fragment slot="body">{exportErrorMessage}</svelte:fragment>
-  <svelte:fragment slot="footer">
-    <Button type="text">close</Button>
-  </svelte:fragment>
+  <Button slot="footer" type="text">close</Button>
 </Dialog>

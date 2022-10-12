@@ -24,10 +24,10 @@ fi
 
 # Get output name
 TARGET=macos-arm64
-VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl sql)
+VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -f sql)
 
 # Run native build and create archive
-mvn package -Pnative-lib
+mvn package -Pnative-lib -f sql
 rm sql/target/*.txt
 zip -j librillsql-$TARGET.zip sql/target/librillsql.* sql/target/graal_isolate.*
 

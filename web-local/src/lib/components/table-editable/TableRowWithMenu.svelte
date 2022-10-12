@@ -81,7 +81,7 @@
               slot="floating-element"
             >
               <MenuItem icon on:select={() => dispatch("delete")}>
-                <svelte:fragment slot="icon"><Cancel /></svelte:fragment>
+                <Cancel slot="icon" />
                 delete row</MenuItem
               >
             </Menu>

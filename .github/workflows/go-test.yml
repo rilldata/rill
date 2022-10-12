@@ -24,7 +24,7 @@ jobs:
           ${{ runner.os }}-go-
     - name: Download librillsql
       shell: bash
-      run: ./runtime/scripts/setup_sql.sh -f
+      run: go generate ./runtime/sql
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test
