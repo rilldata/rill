@@ -1,9 +1,9 @@
 <script lang="ts">
   import { extent } from "d3-array";
   import { interpolateArray } from "d3-interpolate";
-  import { cubicOut, linear } from "svelte/easing";
+  import { cubicOut } from "svelte/easing";
   import { derived, get, writable } from "svelte/store";
-  import { fly } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
     humanizeDataType,
@@ -124,28 +124,26 @@
   `,
     };
   }
-  function fadeGray(
-    node: Element,
-    { delay = 0, duration = 400, easing = linear, amount = 1 } = {}
-  ) {
-    const o = +getComputedStyle(node).opacity;
-
-    return {
-      delay,
-      duration,
-      easing,
-      css: (t) => `
-    opacity: ${t * o};
-    filter: grayscale(${t * 100 * amount}%);
-    `,
-    };
-  }
 
   /** Tweening parameters */
-  $: newValuesSmaller = $previousYMax > yMax;
   $: diffRatio = Math.abs((yMax - $previousYMax) / yMax);
   let crossThreshold = guidGenerator();
   $: if (diffRatio > 0.5) crossThreshold = guidGenerator();
+
+  $: yMinTweenProps = {
+    duration: longTimeSeries ? 0 : allZeros ? 100 : 500,
+    delay: 200,
+  };
+  $: yMaxTweenProps = {
+    duration: longTimeSeries
+      ? 0
+      : allZeros
+      ? 100
+      : $previousYMax < yMax
+      ? 800
+      : 500,
+    delay: 0,
+  };
 </script>
 
 {#if key && dataCopy?.length}
@@ -155,21 +153,8 @@
       bind:mouseoverValue
       yMin={yMin > 0 ? 0 : yMin}
       {yMax}
-      yMinTweenProps={{
-        duration: longTimeSeries ? 0 : allZeros ? 100 : 500,
-        delay: 200,
-      }}
-      yMaxTweenProps={{
-        duration: longTimeSeries
-          ? 0
-          : allZeros
-          ? 100
-          : $previousYMax < yMax
-          ? 800
-          : 500,
-        delay: 0,
-      }}
-      let:xScale
+      {yMinTweenProps}
+      {yMaxTweenProps}
     >
       <Body>
         {#key key + longTimeSeriesKey + crossThreshold}
@@ -178,14 +163,14 @@
             interesting animations.
           -->
           <g
-            in:scaleVertical={{
-              duration: 400,
-              delay: $previousYMax > yMax ? 0 : 400,
-              start: $previousYMax > yMax ? 2 : 2,
+            in:fade={{
+              duration: 0,
+              // delay: $previousYMax > yMax ? 0 : 400,
+              // start: $previousYMax > yMax ? 2 : 1,
             }}
-            out:scaleVertical={{
-              duration: 800, //$previousYMax > yMax ? 1200 : 300,
-              delay: $previousYMax > yMax ? 800 : 0,
+            out:fade={{
+              duration: 400, //$previousYMax > yMax ? 1200 : 300,
+              // delay: $previousYMax > yMax ? 800 : 0,
               start: $previousYMax > yMax ? 0 : 1.5,
             }}
             style:transition="opacity 250ms"
