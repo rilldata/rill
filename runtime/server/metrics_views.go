@@ -3,12 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
-	"strings"
 )
 
 // MetricsViewMeta implements RuntimeService

@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"time"
 )
 
 // CatalogStore is implemented by drivers capable of storing catalog info for a specific instance
@@ -16,13 +17,15 @@ type CatalogStore interface {
 // Constants representing different kinds of catalog objects
 const (
 	CatalogObjectTypeSource         string = "source"
-	CatalogObjectTypeMetricsView    string = "metrics view"
-	CatalogObjectTypeUnmanagedTable string = "unmanaged table"
+	CatalogObjectTypeMetricsView    string = "metrics_view"
+	CatalogObjectTypeUnmanagedTable string = "unmanaged_table"
 )
 
 // CatalogObject represents one object in the catalog, such as a source
 type CatalogObject struct {
-	Name string
-	Type string
-	Blob string
+	Name      string
+	Type      string
+	SQL       string
+	CreatedOn time.Time
+	UpdatedOn time.Time
 }
