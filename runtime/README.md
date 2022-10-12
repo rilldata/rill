@@ -50,3 +50,43 @@ To add a new endpoint:
 2. Re-generate gRPC and OpenAPI interfaces by running `go generate ./runtime/api`
 3. Copy the new handler signature from the `RuntimeServiceServer` interface in `runtime/api/runtime_grpc_pb.go`
 4. Paste the handler signature and implement it in a file in `./runtime/server`
+
+## Example: Creating an instance and ingesting a source
+
+```bash
+# Start runtime
+go run ./runtime/cmd/main.go
+
+# Create instance (copy the resulting instance ID into the following queries)
+curl --request POST --url http://localhost:8080/v1/instances --header 'Content-Type: application/json' --data '{ "driver": "duckdb", "dsn": "test.db?access_mode=read_write", "exposed": true, "embed_catalog": true }'
+
+# Create table
+curl --request POST  --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "create table foo(x int)"}'
+
+# Insert data into table
+curl --request POST  --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "insert into foo(x) values (10,), (20,), (30,)"}'
+
+# Query data
+curl --request POST  --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "select * from foo"}'
+
+# Get available connectors
+curl --request GET   --url http://localhost:8080/v1/connectors/meta
+
+# Create a source
+curl --request POST  --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/migrate/single  --header 'Content-Type: application/json'  --data "{\"sql\": \"create source bar with connector = 'file', path = './web-local/test/data/AdBids.csv' \"}"
+
+# Select from source
+curl --request POST  --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "select * from bar limit 100"}'
+
+# Get info about all sources in catalog
+curl --request GET   --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/catalog
+
+# Get info about source named "bar" in catalog
+curl --request GET   --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/catalog/bar
+
+# Refresh source named "bar"
+curl --request POST --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/catalog/bar/refresh
+
+# Delete source named "bar"
+curl --request POST  --url http://localhost:8080/v1/instances/47098c62-0a02-4f27-9e33-4a6511ca5304/migrate/single/delete  --header 'Content-Type: application/json'  --data '{ "name": "bar"}'
+```
