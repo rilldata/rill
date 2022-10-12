@@ -174,7 +174,7 @@
         entityType={EntityType.Model}
         on:select={() => viewModel(id)}
         cardinality={tableSummaryProps.cardinality}
-        name={tableSummaryProps.name}
+        name={tableSummaryProps.name.split(".")[0]}
         sizeInBytes={tableSummaryProps.sizeInBytes}
         active={tableSummaryProps.active}
       >

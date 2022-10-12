@@ -30,12 +30,12 @@ type Server struct {
 	auth   *Authenticator
 }
 type Config struct {
-	Port              int
-	Auth0ClientID     string
-	Auth0ClientSecret string
-	Auth0CallbackURL  string
-	Auth0Domain       string
-	SessionsSecret    string
+	Port             int
+	AuthDomain       string
+	AuthClientID     string
+	AuthClientSecret string
+	AuthCallbackURL  string
+	SessionsSecret   string
 }
 
 func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {

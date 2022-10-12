@@ -16,15 +16,15 @@ import (
 )
 
 type Config struct {
-	Env               string `default:"development"`
-	DatabaseDriver    string `default:"postgres" split_words:"true"`
-	DatabaseURL       string `split_words:"true"`
-	Port              int    `default:"8080" split_words:"true"`
-	SessionsSecret    string `split_words:"true"`
-	Auth0ClientID     string `split_words:"true"`
-	Auth0ClientSecret string `split_words:"true"`
-	Auth0CallbackURL  string `split_words:"true"`
-	Auth0Domain       string `split_words:"true"`
+	Env              string `default:"development"`
+	DatabaseDriver   string `default:"postgres" split_words:"true"`
+	DatabaseURL      string `split_words:"true"`
+	Port             int    `default:"8080" split_words:"true"`
+	SessionsSecret   string `split_words:"true"`
+	AuthDomain       string `split_words:"true"`
+	AuthClientID     string `split_words:"true"`
+	AuthClientSecret string `split_words:"true"`
+	AuthCallbackURL  string `split_words:"true"`
 }
 
 func main() {
@@ -68,12 +68,12 @@ func main() {
 	}
 
 	srvConf := server.Config{
-		Port:              conf.Port,
-		Auth0ClientID:     conf.Auth0ClientID,
-		Auth0ClientSecret: conf.Auth0ClientSecret,
-		Auth0CallbackURL:  conf.Auth0CallbackURL,
-		Auth0Domain:       conf.Auth0Domain,
-		SessionsSecret:    conf.SessionsSecret,
+		Port:             conf.Port,
+		AuthDomain:       conf.AuthDomain,
+		AuthClientID:     conf.AuthClientID,
+		AuthClientSecret: conf.AuthClientSecret,
+		AuthCallbackURL:  conf.AuthCallbackURL,
+		SessionsSecret:   conf.SessionsSecret,
 	}
 
 	// Init server
