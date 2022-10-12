@@ -9,7 +9,7 @@ export type ChipColors = {
 export const defaultChipColors: ChipColors = {
   bgBaseColor: "bg-blue-50",
   bgHoverColor: "bg-blue-100",
-  textColor: "text-blue-900",
+  textColor: "text-blue-800",
   bgActiveColor: "bg-blue-100",
   outlineColor: "outline-blue-400",
 };
