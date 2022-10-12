@@ -92,7 +92,7 @@ export class DatabaseTableActions extends DatabaseActions {
     try {
       await this.databaseClient.execute(`DROP TABLE tbl_${guid};`);
     } catch (err) {
-      console.error(err);
+      // no-op
     }
     return tableDef;
   }

@@ -5,7 +5,7 @@ import { StartCommand } from "./StartCommand";
 import { Command } from "commander";
 import { execSync } from "node:child_process";
 import Os from "os";
-import { existsSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
 
 function isWindows() {
   return Os.platform() === "win32";
@@ -35,7 +35,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
     console.log("Downloading dataset for example project...");
     execSync(
       `curl -s http://pkg.rilldata.com/rill-developer-example/example-assets-0.6.zip ` +
-        `--output ${project}/example-assets-0.6.zip`,
+        `--output "${project}/example-assets-0.6.zip"`,
       { stdio: "inherit" }
     );
     if (isWindows()) {
@@ -48,7 +48,7 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
       );
     } else {
       execSync(
-        `unzip -o ${project}/example-assets-0.6.zip ` + `-d ${project}/`,
+        `unzip -o "${project}/example-assets-0.6.zip" ` + `-d "${project}/"`,
         {
           stdio: "inherit",
         }
@@ -87,27 +87,33 @@ export class ExampleProjectCommand extends DataModelerCliCommand {
     );
 
     console.log("Importing example SQL transformations into the project...");
-    execSync(`mv -v ${project}/example-assets-0.6/models/* ${project}/models`, {
-      stdio: "inherit",
-    });
+    // this will handle escaping the folder
+    readdirSync(`${project}/example-assets-0.6/models/`).forEach(
+      (modelFile) =>
+        modelFile.endsWith(".sql") &&
+        copyFileSync(
+          `${project}/example-assets-0.6/models/${modelFile}`,
+          `${project}/models/${modelFile}`
+        )
+    );
 
     console.log("Cleaning up the project...");
     if (!existsSync(`${project}/data`)) {
-      execSync(`mkdir -p ${project}/data`, {
-        stdio: "inherit",
+      mkdirSync(`${project}/data`, {
+        recursive: true,
       });
-      execSync(`mv -v ${project}/example-assets-0.6/data ${project}`, {
+      execSync(`mv -v "${project}/example-assets-0.6/data" "${project}"`, {
         stdio: "inherit",
       });
     }
 
-    execSync(`rm -rf ${project}/example-assets-0.6`, {
+    execSync(`rm -rf "${project}/example-assets-0.6"`, {
       stdio: "inherit",
     });
-    execSync(`rm -rf ${project}/example-assets-0.6.zip`, {
+    execSync(`rm -rf "${project}/example-assets-0.6.zip"`, {
       stdio: "inherit",
     });
-    execSync(`rm -rf ${project}/__MACOSX`, {
+    execSync(`rm -rf "${project}/__MACOSX"`, {
       stdio: "inherit",
     });
 

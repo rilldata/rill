@@ -9,6 +9,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
@@ -104,13 +105,10 @@
   };
 
   const deleteMetricsDef = (id: string) => {
-    const currentAssetIndex = $metricsDefinitions.findIndex(
-      (entity) => entity.id === id
-    );
+    const nextMetricsDefId = getNextEntityId($metricsDefinitions, id);
 
-    if ($metricsDefinitions.length > 1) {
-      const priorAsset = $metricsDefinitions[currentAssetIndex - 1];
-      goto(`/dashboard/${priorAsset.id}`);
+    if (nextMetricsDefId) {
+      goto(`/dashboard/${nextMetricsDefId}`);
     } else {
       goto("/");
     }

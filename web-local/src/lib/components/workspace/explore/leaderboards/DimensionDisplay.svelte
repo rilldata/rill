@@ -199,7 +199,7 @@
   <DimensionContainer>
     <DimensionHeader {metricsDefId} isFetching={$topListQuery?.isFetching} />
 
-    {#if values}
+    {#if values && columns.length}
       <DimensionTable
         on:select-item={(event) => onSelectItem(event)}
         on:sort={(event) => onSortByColumn(event)}

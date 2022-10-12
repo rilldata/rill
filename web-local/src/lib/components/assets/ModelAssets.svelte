@@ -9,6 +9,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import {
@@ -68,13 +69,10 @@
   };
 
   const deleteModel = (id: string) => {
-    const currentAssetIndex = $persistentModelStore?.entities?.findIndex(
-      (entity) => entity.id === id
-    );
+    const nextModelId = getNextEntityId($persistentModelStore.entities, id);
 
-    if ($persistentModelStore.entities.length > 1) {
-      const priorModel = $persistentModelStore.entities[currentAssetIndex - 1];
-      goto(`/model/${priorModel.id}`);
+    if (nextModelId) {
+      goto(`/model/${nextModelId}`);
     } else {
       goto("/");
     }
@@ -176,7 +174,7 @@
         entityType={EntityType.Model}
         on:select={() => viewModel(id)}
         cardinality={tableSummaryProps.cardinality}
-        name={tableSummaryProps.name}
+        name={tableSummaryProps.name.split(".")[0]}
         sizeInBytes={tableSummaryProps.sizeInBytes}
         active={tableSummaryProps.active}
       >

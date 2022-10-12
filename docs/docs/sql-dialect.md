@@ -1,5 +1,5 @@
 ---
-description: Data transformations in Rill Developer are powered by duckDB and their dialect of SQL.
+description: Data transformations in Rill Developer are powered by DuckDB and their dialect of SQL.
 ---
 
 # DuckSQL
