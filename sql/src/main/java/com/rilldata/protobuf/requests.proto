@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package sql.v1;
+
+// *******************************
+// RPC for calling into librillsql
+// *******************************
+
+// enum Dialect {
+    // DIALECT_DRUID = 0;
+    // DIALECT_DUCKDB = 1;
+// }
+
+message Request {
+    // oneof request {
+        ParseRequest parse_request = 1;
+        // UnparseRequest unparse_request = 2;
+        // TranspileRequest transpile_request = 3;
+        // ApplyRequest apply_request = 4;
+    // }
+}
+
+// message Response {
+    // oneof response {
+        // ParseResponse parse_response = 1;
+        // UnparseResponse unparse_response = 2;
+        // TranspileResponse transpile_response = 3;
+        // ApplyResponse apply_response = 4;
+    // }
+// }
+
+message ParseRequest {
+    string sql = 1;
+}

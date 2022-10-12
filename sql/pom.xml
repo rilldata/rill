@@ -307,7 +307,7 @@
         <version>3.1.0</version>
         <executions>
           <execution>
-            <id>Generate protobuf classes</id>
+            <id>Generate protobuf AST classes</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>exec</goal>
@@ -319,6 +319,22 @@
                 <argument>SqlNodeProto.proto</argument> <!-- proto file name -->
                 <argument>${project.build.sourceDirectory}/com/rilldata/protobuf/</argument> <!-- input dir -->
                 <argument>${project.build.directory}/generated-sources/annotations/</argument> <!-- output dir -->
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>Generate protobuf request classes</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>bash</executable>
+              <arguments>
+                <argument>${project.basedir}/scripts/protoc-java.sh</argument>
+                <argument>requests.proto</argument> <!-- proto file name -->
+                <argument>${project.build.sourceDirectory}/com/rilldata/protobuf/</argument> <!-- input dir -->
+                <argument>${project.build.directory}/generated-sources/annotations2/</argument> <!-- output dir -->
               </arguments>
             </configuration>
           </execution>

@@ -1,6 +1,7 @@
 .PHONY: build
 build:
 	go generate ./sql
+	protoc --go_out=./sql ../sql/src/java/com/rilldata/protobuf/*.proto
 	go build -o main ./cmd
 
 .PHONY: run
