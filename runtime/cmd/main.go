@@ -23,7 +23,7 @@ import (
 
 type Config struct {
 	Env            string        `default:"development"`
-	Port           int           `default:"8080"`
+	HTTPPort       int           `default:"8080" split_words:"true"`
 	GRPCPort       int           `default:"9090" split_words:"true"`
 	LogLevel       zapcore.Level `default:"info" split_words:"true"`
 	DatabaseDriver string        `default:"sqlite"`
@@ -31,16 +31,12 @@ type Config struct {
 }
 
 func main() {
-	// Load .env
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Printf("failed to load .env: %s", err.Error())
-		os.Exit(1)
-	}
+	// Load .env (note: fails silently if .env has errors)
+	godotenv.Load()
 
 	// Init config
 	var conf Config
-	err = envconfig.Process("rill_runtime", &conf)
+	err := envconfig.Process("rill_runtime", &conf)
 	if err != nil {
 		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)
@@ -70,7 +66,7 @@ func main() {
 
 	// Init server
 	opts := &server.ServerOptions{
-		HTTPPort:            conf.Port,
+		HTTPPort:            conf.HTTPPort,
 		GRPCPort:            conf.GRPCPort,
 		ConnectionCacheSize: 100,
 	}
