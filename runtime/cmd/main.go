@@ -31,12 +31,8 @@ type Config struct {
 }
 
 func main() {
-	// Load .env
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Printf("failed to load .env: %s", err.Error())
-		os.Exit(1)
-	}
+	// Load .env (note: fails silently if .env has errors)
+	godotenv.Load()
 
 	// Init config
 	var conf Config
