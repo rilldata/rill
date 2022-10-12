@@ -9,7 +9,10 @@ export type RuntimeServicePutRepoObjectBody = {
   delete?: boolean;
 };
 
-export type RuntimeServiceListReposParams = { limit?: string; offset?: string };
+export type RuntimeServiceListReposParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
 
 export type RuntimeServiceQueryDirectBody = {
   sql?: string;
@@ -25,13 +28,15 @@ export type RuntimeServiceQueryBody = {
   dryRun?: boolean;
 };
 
+export type RuntimeServiceMigrateDeleteBody = {
+  name?: string;
+};
+
 export type RuntimeServiceMigrateSingleBody = {
   sql?: string;
   createOrReplace?: boolean;
   dryRun?: boolean;
 };
-
-export type RuntimeServiceMigrateDeleteParams = { name?: string };
 
 export type RuntimeServiceMigrateBody = {
   blobs?: string[];
@@ -65,8 +70,8 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
 };
 
 export type RuntimeServiceListInstancesParams = {
-  limit?: string;
-  offset?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export interface V1TriggerRefreshResponse {
@@ -196,6 +201,7 @@ export interface V1MetricsView {
 
 export interface V1ListReposResponse {
   repos?: V1Repo[];
+  nextPageToken?: string;
 }
 
 export interface V1ListRepoObjectsResponse {
@@ -204,6 +210,7 @@ export interface V1ListRepoObjectsResponse {
 
 export interface V1ListInstancesResponse {
   instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export interface V1ListConnectorsResponse {
@@ -335,7 +342,8 @@ export interface MetricsViewMeasure {
 
 export interface MetricsViewFilterCond {
   name?: string;
-  values?: unknown[];
+  in?: unknown[];
+  like?: unknown[];
 }
 
 export interface MetricsViewDimension {
@@ -358,6 +366,7 @@ export const ConnectorPropertyType = {
 
 export interface ConnectorProperty {
   key?: string;
+  displayName?: string;
   description?: string;
   placeholder?: string;
   type?: ConnectorPropertyType;

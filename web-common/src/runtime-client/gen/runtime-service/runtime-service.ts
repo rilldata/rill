@@ -34,10 +34,10 @@ import type {
   RuntimeServiceMetricsViewTotalsBody,
   V1MigrateResponse,
   RuntimeServiceMigrateBody,
-  V1MigrateDeleteResponse,
-  RuntimeServiceMigrateDeleteParams,
   V1MigrateSingleResponse,
   RuntimeServiceMigrateSingleBody,
+  V1MigrateDeleteResponse,
+  RuntimeServiceMigrateDeleteBody,
   V1QueryResponse,
   RuntimeServiceQueryBody,
   V1QueryDirectResponse,
@@ -851,57 +851,6 @@ export const useRuntimeServiceMigrate = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary MigrateDelete deletes a single object.
-It bypasses the reconciling migrations described in Migrate.
-We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
- */
-export const runtimeServiceMigrateDelete = (
-  instanceId: string,
-  params?: RuntimeServiceMigrateDeleteParams
-) => {
-  return httpClient<V1MigrateDeleteResponse>({
-    url: `/v1/instances/${instanceId}/migrate/single`,
-    method: "delete",
-    params,
-  });
-};
-
-export type RuntimeServiceMigrateDeleteMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>
->;
-
-export type RuntimeServiceMigrateDeleteMutationError = RpcStatus;
-
-export const useRuntimeServiceMigrateDelete = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
-    TError,
-    { instanceId: string; params?: RuntimeServiceMigrateDeleteParams },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
-    { instanceId: string; params?: RuntimeServiceMigrateDeleteParams }
-  > = (props) => {
-    const { instanceId, params } = props ?? {};
-
-    return runtimeServiceMigrateDelete(instanceId, params);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
-    TError,
-    { instanceId: string; params?: RuntimeServiceMigrateDeleteParams },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary MigrateSingle applies a single `CREATE` statement.
 It bypasses the reconciling migrations described in Migrate.
 We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
@@ -951,6 +900,59 @@ export const useRuntimeServiceMigrateSingle = <
     Awaited<ReturnType<typeof runtimeServiceMigrateSingle>>,
     TError,
     { instanceId: string; data: RuntimeServiceMigrateSingleBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary MigrateDelete deletes a single object.
+It bypasses the reconciling migrations described in Migrate.
+We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+ */
+export const runtimeServiceMigrateDelete = (
+  instanceId: string,
+  runtimeServiceMigrateDeleteBody: RuntimeServiceMigrateDeleteBody
+) => {
+  return httpClient<V1MigrateDeleteResponse>({
+    url: `/v1/instances/${instanceId}/migrate/single/delete`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceMigrateDeleteBody,
+  });
+};
+
+export type RuntimeServiceMigrateDeleteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>
+>;
+export type RuntimeServiceMigrateDeleteMutationBody =
+  RuntimeServiceMigrateDeleteBody;
+export type RuntimeServiceMigrateDeleteMutationError = RpcStatus;
+
+export const useRuntimeServiceMigrateDelete = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceMigrateDeleteBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
+    { instanceId: string; data: RuntimeServiceMigrateDeleteBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceMigrateDelete(instanceId, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceMigrateDeleteBody },
     TContext
   >(mutationFn, mutationOptions);
 };
