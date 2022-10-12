@@ -1,8 +1,6 @@
 package duckdb
 
 import (
-	"context"
-
 	"github.com/jmoiron/sqlx"
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -56,14 +54,4 @@ func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 // OLAP implements drivers.Connection
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return c, true
-}
-
-// Migrate implements drivers.Connection
-func (c *connection) Migrate(ctx context.Context) (err error) {
-	return nil
-}
-
-// MigrationStatus implements drivers.Connection
-func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
-	return 0, 0, nil
 }

@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mitchellh/mapstructure"
-	aws_s3 "github.com/rilldata/rill/runtime/connectors/aws-s3"
-	local_file "github.com/rilldata/rill/runtime/connectors/local-file"
-	"github.com/rilldata/rill/runtime/connectors/sources"
+	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/connectors/file"
+	"github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"
 )
@@ -164,60 +163,83 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func (c *connection) Ingest(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
-	var rows *sqlx.Rows
-	var err error
+func (c *connection) Ingest(ctx context.Context, source *connectors.Source) error {
+	err := source.Validate()
+	if err != nil {
+		return err
+	}
 
+	// Driver-specific overrides
 	switch source.Connector {
-	case sources.LocalFileConnectorName:
-		rows, err = c.ingestFromFile(ctx, source)
-	case sources.AWSS3ConnectorName:
-		rows, err = c.ingestFromS3Bucket(ctx, source)
-	default:
-		err = drivers.ErrUnsupportedConnector
+	case "file":
+		return c.ingestFile(ctx, source)
+	case "s3":
+		return c.ingestS3(ctx, source)
 	}
 
-	return rows, err
+	// TODO: Use generic connectors.Consume when it's implemented
+	return drivers.ErrUnsupportedConnector
 }
 
-func (c *connection) ingestFromFile(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
-	var conf local_file.LocalFileConfig
-	err := mapstructure.Decode(source.Properties, &conf)
+func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) error {
+	conf, err := file.ParseConfig(source.Properties)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return c.Execute(ctx, &drivers.Statement{
-		Query:    "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
-		Args:     []any{source.Name, conf.Path},
-		Priority: 0,
-	})
+	// Not using query args since not quite sure about behaviour of injecting table names that way.
+	// Also, it's a source, so the caller can be trusted.
+
+	from := fmt.Sprintf("'%s'", conf.Path)
+	if conf.Format == "csv" && conf.CSVDelimiter != "" {
+		from = fmt.Sprintf("read_csv_auto('%s', delim='%s')", conf.Path, conf.CSVDelimiter)
+	}
+
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
+
+	rows, err := c.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	if err != nil {
+		return err
+	}
+	if err = rows.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (c *connection) ingestFromS3Bucket(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
-	var conf aws_s3.AWSS3Config
-	err := mapstructure.Decode(source.Properties, conf)
+func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) error {
+	conf, err := s3.ParseConfig(source.Properties)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// TODO: set aws settings these for the transaction only
-	query := "SET s3_region=?;"
-	args := []any{conf.AwsRegion}
+	// TODO: set AWS settings for the transaction only
 
-	if conf.AwsKey != "" && conf.AwsSecret != "" {
-		query += "SET s3_access_key_id=?;SET s3_secret_access_key=?;"
-		args = append(args, conf.AwsKey, conf.AwsSecret)
-	} else if conf.AwsSession != "" {
-		query += "SET s3_session_token=?;"
-		args = append(args, conf.AwsSession)
+	args := []any{conf.AWSRegion}
+	qry := "SET s3_region=?;"
+
+	if conf.AWSKey != "" && conf.AWSSecret != "" {
+		qry += "SET s3_access_key_id=?;SET s3_secret_access_key=?;"
+		args = append(args, conf.AWSKey, conf.AWSSecret)
+	} else if conf.AWSSession != "" {
+		qry += "SET s3_session_token=?;"
+		args = append(args, conf.AWSSession)
 	}
 
-	query += "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?);"
-	args = append(args, source.Name, conf.Path)
+	qry += fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path)
 
-	return c.Execute(ctx, &drivers.Statement{
-		Query: query,
-		Args:  args,
+	rows, err := c.Execute(ctx, &drivers.Statement{
+		Query:    qry,
+		Args:     args,
+		Priority: 1,
 	})
+	if err != nil {
+		return err
+	}
+	if err = rows.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }
