@@ -70,8 +70,9 @@ func main() {
 
 	// Init server
 	opts := &server.ServerOptions{
-		HTTPPort: conf.Port,
-		GRPCPort: conf.GRPCPort,
+		HTTPPort:            conf.Port,
+		GRPCPort:            conf.GRPCPort,
+		ConnectionCacheSize: 100,
 	}
 	server, err := server.NewServer(opts, metastore, logger)
 	if err != nil {

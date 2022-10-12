@@ -91,7 +91,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	}
 
 	// Get olap
-	conn, err := drivers.Open(inst.Driver, inst.DSN)
+	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -115,7 +115,7 @@ func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drive
 		return catalog, nil
 	}
 
-	conn, err := drivers.Open(inst.Driver, inst.DSN)
+	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, err
 	}

@@ -69,7 +69,7 @@ func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Sta
 		return nil, status.Error(codes.NotFound, "instance not found")
 	}
 
-	conn, err := drivers.Open(inst.Driver, inst.DSN)
+	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}

@@ -44,7 +44,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 	}
 
 	// Get olap
-	conn, err := drivers.Open(inst.Driver, inst.DSN)
+	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -99,7 +99,7 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 	switch obj.Type {
 	case drivers.CatalogObjectTypeSource:
 		// Get OLAP
-		conn, err := drivers.Open(inst.Driver, inst.DSN)
+		conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
 		}

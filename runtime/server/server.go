@@ -26,8 +26,9 @@ import (
 )
 
 type ServerOptions struct {
-	HTTPPort int
-	GRPCPort int
+	HTTPPort            int
+	GRPCPort            int
+	ConnectionCacheSize int
 }
 
 type Server struct {
@@ -35,6 +36,7 @@ type Server struct {
 	opts      *ServerOptions
 	metastore drivers.Connection
 	logger    *zap.Logger
+	cache     *connectionCache
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
@@ -49,6 +51,7 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 		opts:      opts,
 		metastore: metastore,
 		logger:    logger,
+		cache:     newConnectionCache(opts.ConnectionCacheSize),
 	}, nil
 }
 

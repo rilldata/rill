@@ -8,6 +8,7 @@ require (
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/getkin/kin-openapi v0.100.0
 	github.com/gorilla/sessions v1.2.1
+	github.com/hashicorp/golang-lru v0.5.1
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo-contrib v0.13.0
