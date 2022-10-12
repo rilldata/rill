@@ -148,17 +148,37 @@ public class CalciteTests
         Arguments.of("""
                 CREATE SOURCE clicks_raw
                 WITH (
-                    'connector' = 's3',, // extra commas are ignored
+                    'connector' = 's3',
                     'prefix' = 's3://my_bucket/a.csv', // comments are ignored
-                    'FORMAT' = 'CSV', // extra commas are ignored
+                    'FORMAT' = 'CSV', // extra comma at the is ignored
                 )""",
             Optional.empty(),
             Optional.empty()
         ),
         Arguments.of("""
                 CREATE SOURCE clicks_raw
-                WITH ( 'connector' = 's3',, 'prefix' = 's3://my_bucket/a.csv', 'FORMAT' = 'CSV',)""",
+                WITH (
+                    'connector' = 's3',
+                    'prefix' = 's3://my_bucket/a.csv', // comments are ignored
+                    'FORMAT' = 'CSV',, // extra commas
+                )""",
+            Optional.of("Encountered \" \",\" \", \"\""),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH ( 'connector' = 's3', 'prefix' = 's3://my_bucket/a.csv', 'FORMAT' = 'CSV',)""",
             Optional.empty(),
+            Optional.empty()
+        ),
+        Arguments.of("""
+                CREATE SOURCE clicks_raw
+                WITH (
+                    'connector' = 's3',, // extra comma
+                    'prefix' = 's3://my_bucket/a.csv', // comments are ignored
+                    'FORMAT' = 'CSV', // extra comma at the is ignored
+                )""",
+            Optional.of("Encountered \" \",\" \", \"\""),
             Optional.empty()
         ),
         Arguments.of("""
@@ -166,12 +186,12 @@ public class CalciteTests
                 WITH (
                     'connector' = 's3' // missing comma
                     'prefix' = 's3://my_bucket/a.csv',
-                    'FORMAT' = 'CSV',,,
+                    'FORMAT' = 'CSV',
                 )""",
             Optional.of("Encountered \" \"=\" \"= \"\""),
             Optional.empty()
         ),
-        // This should not fail with parse exception, pasring should pass
+        // This should not fail with parse exception, parsing should pass
         Arguments.of("""
                 CREATE SOURCE clicks_raw
                 WITH (
