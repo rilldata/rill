@@ -178,23 +178,23 @@
         sizeInBytes={tableSummaryProps.sizeInBytes}
         active={tableSummaryProps.active}
       >
-        <svelte:fragment slot="summary" let:containerWidth>
-          <ColumnProfileNavEntry
-            indentLevel={1}
-            {containerWidth}
-            cardinality={tableSummaryProps.cardinality}
-            profile={tableSummaryProps.profile}
-            head={tableSummaryProps.head}
-            entityId={id}
-          />
-        </svelte:fragment>
+        <ColumnProfileNavEntry
+          let:containerWidth
+          slot="summary"
+          indentLevel={1}
+          {containerWidth}
+          cardinality={tableSummaryProps.cardinality}
+          profile={tableSummaryProps.profile}
+          head={tableSummaryProps.head}
+          entityId={id}
+        />
         <svelte:fragment slot="menu-items">
           <MenuItem
             disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
             icon
             on:select={() => quickStartMetrics(derivedModel)}
           >
-            <svelte:fragment slot="icon"><Explore /></svelte:fragment>
+            <Explore slot="icon" />
             autogenerate dashboard
             <svelte:fragment slot="description">
               {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
@@ -204,17 +204,13 @@
           </MenuItem>
           <Divider />
           <MenuItem icon on:select={() => openRenameModelModal(id, modelName)}>
-            <svelte:fragment slot="icon">
-              <EditIcon />
-            </svelte:fragment>
-            rename...</MenuItem
-          >
+            <EditIcon slot="icon" />
+            rename...
+          </MenuItem>
           <MenuItem icon on:select={() => deleteModel(id)}>
-            <svelte:fragment slot="icon">
-              <Cancel />
-            </svelte:fragment>
-            delete</MenuItem
-          >
+            <Cancel slot="icon" />
+            delete
+          </MenuItem>
         </svelte:fragment>
       </CollapsibleTableSummary>
     {/each}

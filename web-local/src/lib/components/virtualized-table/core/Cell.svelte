@@ -140,9 +140,7 @@
   </div>
   <TooltipContent slot="tooltip-content" maxWidth="360px">
     <TooltipTitle>
-      <svelte:fragment slot="name">
-        <FormattedDataType value={tooltipValue} {type} dark />
-      </svelte:fragment>
+      <FormattedDataType slot="name" value={tooltipValue} {type} dark />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>

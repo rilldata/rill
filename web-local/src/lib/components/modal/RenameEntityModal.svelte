@@ -79,19 +79,18 @@
   on:primary-action={() => submitHandler(entityId, newAssetName)}
 >
   <svelte:fragment slot="title">Rename</svelte:fragment>
-  <svelte:fragment slot="body">
-    <form
-      autocomplete="off"
-      on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
-    >
-      <Input
-        claimFocusOnMount
-        id="{entityLabel}-name"
-        label="{entityLabel} name"
-        bind:value={newAssetName}
-        {error}
-      />
-    </form>
-  </svelte:fragment>
+  <form
+    slot="body"
+    autocomplete="off"
+    on:submit|preventDefault={() => submitHandler(entityId, newAssetName)}
+  >
+    <Input
+      claimFocusOnMount
+      id="{entityLabel}-name"
+      label="{entityLabel} name"
+      bind:value={newAssetName}
+      {error}
+    />
+  </form>
   <svelte:fragment slot="primary-action-body">Change Name</svelte:fragment>
 </Dialog>

@@ -245,16 +245,16 @@
             cardinality={currentDerivedTable?.cardinality ?? 0}
             active={currentTable?.id === activeEntityID}
           >
-            <svelte:fragment slot="summary" let:containerWidth>
-              <ColumnProfileNavEntry
-                entityId={currentTable.id}
-                indentLevel={0}
-                {containerWidth}
-                cardinality={currentDerivedTable?.cardinality ?? 0}
-                profile={currentDerivedTable?.profile ?? []}
-                head={currentDerivedTable?.preview ?? []}
-              />
-            </svelte:fragment>
+            <ColumnProfileNavEntry
+              slot="summary"
+              let:containerWidth
+              entityId={currentTable.id}
+              indentLevel={0}
+              {containerWidth}
+              cardinality={currentDerivedTable?.cardinality ?? 0}
+              profile={currentDerivedTable?.profile ?? []}
+              head={currentDerivedTable?.preview ?? []}
+            />
           </CollapsibleTableSummary>
         </div>
       {/if}

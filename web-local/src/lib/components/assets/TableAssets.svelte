@@ -178,21 +178,19 @@
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             active={entityIsActive}
           >
-            <svelte:fragment slot="summary" let:containerWidth>
-              <ColumnProfileNavEntry
-                indentLevel={1}
-                {containerWidth}
-                cardinality={derivedTable?.cardinality ?? 0}
-                profile={derivedTable?.profile ?? []}
-                head={derivedTable?.preview ?? []}
-                entityId={id}
-              />
-            </svelte:fragment>
+            <ColumnProfileNavEntry
+              slot="summary"
+              let:containerWidth
+              indentLevel={1}
+              {containerWidth}
+              cardinality={derivedTable?.cardinality ?? 0}
+              profile={derivedTable?.profile ?? []}
+              head={derivedTable?.preview ?? []}
+              entityId={id}
+            />
             <svelte:fragment slot="menu-items" let:toggleMenu>
               <MenuItem icon on:select={() => createModel(tableName)}>
-                <svelte:fragment slot="icon">
-                  <Model />
-                </svelte:fragment>
+                <Model slot="icon" />
                 create new model
               </MenuItem>
 
@@ -201,7 +199,7 @@
                 icon
                 on:select={() => quickStartMetrics(id, tableName)}
               >
-                <svelte:fragment slot="icon"><Explore /></svelte:fragment>
+                <Explore slot="icon" />
                 autogenerate dashboard
                 <svelte:fragment slot="description">
                   {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
@@ -217,16 +215,13 @@
                   openRenameTableModal(id, tableName);
                 }}
               >
-                <svelte:fragment slot="icon">
-                  <EditIcon />
-                </svelte:fragment>
+                <EditIcon slot="icon" />
+
                 rename...
               </MenuItem>
               <!-- FIXME: this should pop up an "are you sure?" modal -->
               <MenuItem icon on:select={() => deleteSource(tableName, id)}>
-                <svelte:fragment slot="icon">
-                  <Cancel />
-                </svelte:fragment>
+                <Cancel slot="icon" />
                 delete</MenuItem
               >
             </svelte:fragment>

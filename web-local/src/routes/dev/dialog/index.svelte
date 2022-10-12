@@ -28,14 +28,15 @@
       <svelte:fragment slot="body"
         >This action will replace all existing measures and dimensions.</svelte:fragment
       >
-      <svelte:fragment slot="footer">
-        <div class="flex flex-row gap-x-3 justify-items-end justify-end">
-          <Button on:click={() => (replaceSource = false)} type="text"
-            >cancel</Button
-          >
-          <Button type="primary">Update source</Button>
-        </div>
-      </svelte:fragment>
+      <div
+        slot="footer"
+        class="flex flex-row gap-x-3 justify-items-end justify-end"
+      >
+        <Button on:click={() => (replaceSource = false)} type="text"
+          >cancel</Button
+        >
+        <Button type="primary">Update source</Button>
+      </div>
     </Dialog>
   {/if}
 
@@ -58,14 +59,15 @@
         />
         {changeThingValue}
       </svelte:fragment>
-      <svelte:fragment slot="footer">
-        <div class="flex flex-row gap-x-3 justify-items-end justify-end">
-          <Button on:click={() => (changeThing = false)} type="text"
-            >cancel</Button
-          >
-          <Button type="primary">Update name</Button>
-        </div>
-      </svelte:fragment>
+      <div
+        slot="footer"
+        class="flex flex-row gap-x-3 justify-items-end justify-end"
+      >
+        <Button on:click={() => (changeThing = false)} type="text"
+          >cancel</Button
+        >
+        <Button type="primary">Update name</Button>
+      </div>
     </Dialog>
   {/if}
 </div>
