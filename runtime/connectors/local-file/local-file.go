@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -16,7 +15,7 @@ var spec = []sources.Property{
 		DisplayName: "Path",
 		Description: "Path to file on the disk.",
 		Placeholder: "/path/to/file",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    true,
 	},
 	{
@@ -24,7 +23,7 @@ var spec = []sources.Property{
 		DisplayName: "Format",
 		Description: "Either CSV or Parquet. Inferred if not set.",
 		Placeholder: "csv",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    false,
 	},
 	{
@@ -32,7 +31,7 @@ var spec = []sources.Property{
 		DisplayName: "Delimiter",
 		Description: "Forced delimiter for csv file.",
 		Placeholder: ",",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    false,
 	},
 }
@@ -50,14 +49,13 @@ type LocalFileConfig struct {
 type connector struct{}
 
 func (c connector) Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) error {
-	var localFileConfig LocalFileConfig
-	err := connectors.ValidatePropertiesAndExtract(source, c.Spec(), &localFileConfig)
+	err := connectors.Validate(source)
 	if err != nil {
 		return err
 	}
 
-	supported, _, err := olap.Ingest(ctx, source, localFileConfig)
-	if supported {
+	_, err = olap.Ingest(ctx, source)
+	if err != nil && err != drivers.ErrUnsupportedConnector {
 		return err
 	}
 	return errors.New("OLAP doesnt support local file")

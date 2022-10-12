@@ -2,15 +2,16 @@ package drivers
 
 import (
 	"context"
-	"github.com/rilldata/rill/runtime/connectors/sources"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/rilldata/rill/runtime/connectors/sources"
 )
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries
 type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*sqlx.Rows, error)
-	Ingest(ctx context.Context, source sources.Source, parsedOptions any) (bool, *sqlx.Rows, error)
+	Ingest(ctx context.Context, source sources.Source) (*sqlx.Rows, error)
 	InformationSchema() InformationSchema
 }
 
@@ -43,3 +44,5 @@ type Column struct {
 	Type     string
 	Nullable bool
 }
+
+var ErrUnsupportedConnector = errors.New("connector unsupported for this olap")

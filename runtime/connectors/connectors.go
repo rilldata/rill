@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -22,7 +21,7 @@ func Register(name string, connector Connector) {
 	Connectors[name] = connector
 }
 
-func Create(name string) (Connector, error) {
+func Get(name string) (Connector, error) {
 	if Connectors[name] == nil {
 		return nil, ErrNotFound
 	}
@@ -36,12 +35,23 @@ type Connector interface {
 	Spec() []sources.Property
 }
 
-func ValidatePropertiesAndExtract(source sources.Source, spec []sources.Property, targetStruct interface{}) error {
-	structType := reflect.TypeOf(targetStruct).Elem()
-	structValue := reflect.ValueOf(targetStruct).Elem()
+func Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) error {
+	connector, err := Get(source.Connector)
+	if err != nil {
+		return err
+	}
+
+	return connector.Ingest(ctx, source, olap)
+}
+
+func Validate(source sources.Source) error {
+	connector, err := Get(source.Connector)
+	if err != nil {
+		return err
+	}
 
 	// TODO: assumes order of fields in spec and struct is same. match them by iterating fields in structType
-	for propIdx, prop := range spec {
+	for _, prop := range connector.Spec() {
 		if source.Properties[prop.Key] == nil {
 			if prop.Required {
 				// TODO: better error object
@@ -50,17 +60,41 @@ func ValidatePropertiesAndExtract(source sources.Source, spec []sources.Property
 			continue
 		}
 
-		structField := structType.Field(propIdx)
-		structFieldValue := structValue.FieldByName(structField.Name)
-
-		propertyValue := reflect.ValueOf(source.Properties[prop.Key])
-
-		if structFieldValue.Type() != propertyValue.Type() {
+		if !validateType(source.Properties[prop.Key], prop) {
 			return errors.New(fmt.Sprintf("mismatch type for %s in properties", prop.Key))
 		}
-
-		structFieldValue.Set(propertyValue)
 	}
 
 	return nil
+}
+
+func validateType(value any, property sources.Property) bool {
+	switch value.(type) {
+	case string:
+		return property.Type == sources.StringPropertyType
+
+	case int:
+		return property.Type == sources.NumberPropertyType
+	case byte:
+		return property.Type == sources.NumberPropertyType
+
+	case int8:
+		return property.Type == sources.NumberPropertyType
+	case int16:
+		return property.Type == sources.NumberPropertyType
+	case int32:
+		return property.Type == sources.NumberPropertyType
+	case int64:
+		return property.Type == sources.NumberPropertyType
+
+	case float32:
+		return property.Type == sources.NumberPropertyType
+	case float64:
+		return property.Type == sources.NumberPropertyType
+
+	case bool:
+		return property.Type == sources.BooleanPropertyType
+	}
+
+	return false
 }

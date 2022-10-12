@@ -1,7 +1,5 @@
 package sources
 
-import "github.com/rilldata/rill/runtime/api"
-
 type Source struct {
 	Name         string
 	Connector    string
@@ -14,9 +12,17 @@ type Property struct {
 	DisplayName string
 	Description string
 	Placeholder string
-	Type        api.Connector_Property_Type // TODO: whats wrong with this?
+	Type        PropertyType // TODO: whats wrong with this?
 	Required    bool
 }
+
+type PropertyType int
+
+const (
+	StringPropertyType  PropertyType = 1
+	NumberPropertyType               = 2
+	BooleanPropertyType              = 3
+)
 
 type SamplePolicy struct {
 	Strategy string

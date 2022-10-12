@@ -143,6 +143,6 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func (c *connection) Ingest(ctx context.Context, source sources.Source, parsedOptions any) (bool, *sqlx.Rows, error) {
-	return false, nil, nil
+func (c *connection) Ingest(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
+	return nil, drivers.ErrUnsupportedConnector
 }

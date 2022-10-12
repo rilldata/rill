@@ -18,9 +18,7 @@ func TestLocalFileConnector(t *testing.T) {
 	defer duckdb.Close()
 	olap, _ := duckdb.OLAPStore()
 
-	connector, _ := connectors.Create(sources.LocalFileConnectorName)
-
-	err = connector.Ingest(context.Background(), sources.Source{
+	err = connectors.Ingest(context.Background(), sources.Source{
 		Name:         "AdBids",
 		Connector:    sources.LocalFileConnectorName,
 		SamplePolicy: sources.SamplePolicy{},

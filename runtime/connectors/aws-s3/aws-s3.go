@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -16,7 +15,7 @@ var spec = []sources.Property{
 		DisplayName: "Path",
 		Description: "Path to file on the disk.",
 		Placeholder: "s3://<bucket>/<file>",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    true,
 	},
 	{
@@ -24,7 +23,7 @@ var spec = []sources.Property{
 		DisplayName: "Format",
 		Description: "Either CSV or Parquet. Inferred if not set.",
 		Placeholder: "csv",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    false,
 	},
 	{
@@ -32,7 +31,7 @@ var spec = []sources.Property{
 		DisplayName: "AWS Region for the bucket.",
 		Description: "",
 		Placeholder: "",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    true,
 	},
 	{
@@ -40,7 +39,7 @@ var spec = []sources.Property{
 		DisplayName: "AWS Access Key",
 		Description: "",
 		Placeholder: "",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    false,
 	},
 	{
@@ -48,7 +47,7 @@ var spec = []sources.Property{
 		DisplayName: "AWS Access Secret",
 		Description: "",
 		Placeholder: "",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    false,
 	},
 	{
@@ -56,7 +55,7 @@ var spec = []sources.Property{
 		DisplayName: "AWS Access Session Token",
 		Description: "",
 		Placeholder: "",
-		Type:        api.Connector_Property_TYPE_STRING,
+		Type:        sources.StringPropertyType,
 		Required:    false,
 	},
 }
@@ -77,14 +76,13 @@ type AWSS3Config struct {
 }
 
 func (c connector) Ingest(ctx context.Context, source sources.Source, olap drivers.OLAPStore) error {
-	var conf AWSS3Config
-	err := connectors.ValidatePropertiesAndExtract(source, c.Spec(), &conf)
+	err := connectors.Validate(source)
 	if err != nil {
 		return err
 	}
 
-	supported, _, err := olap.Ingest(ctx, source, conf)
-	if supported {
+	_, err = olap.Ingest(ctx, source)
+	if err != nil && err != drivers.ErrUnsupportedConnector {
 		return err
 	}
 	// TODO: download the file and ingest as local file

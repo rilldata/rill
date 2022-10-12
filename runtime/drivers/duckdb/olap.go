@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	aws_s3 "github.com/rilldata/rill/runtime/connectors/aws-s3"
 	local_file "github.com/rilldata/rill/runtime/connectors/local-file"
 	"github.com/rilldata/rill/runtime/connectors/sources"
@@ -163,25 +164,29 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func (c *connection) Ingest(ctx context.Context, source sources.Source, parsedOptions any) (bool, *sqlx.Rows, error) {
-	var supported bool
+func (c *connection) Ingest(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
 	var rows *sqlx.Rows
 	var err error
 
 	switch source.Connector {
 	case sources.LocalFileConnectorName:
-		rows, err = c.ingestFromFile(ctx, source, parsedOptions)
-		supported = true
+		rows, err = c.ingestFromFile(ctx, source)
 	case sources.AWSS3ConnectorName:
-		rows, err = c.ingestFromS3Bucket(ctx, source, parsedOptions)
-		supported = true
+		rows, err = c.ingestFromS3Bucket(ctx, source)
+	default:
+		err = drivers.ErrUnsupportedConnector
 	}
 
-	return supported, rows, err
+	return rows, err
 }
 
-func (c *connection) ingestFromFile(ctx context.Context, source sources.Source, parsedOptions any) (*sqlx.Rows, error) {
-	conf := parsedOptions.(local_file.LocalFileConfig)
+func (c *connection) ingestFromFile(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
+	var conf local_file.LocalFileConfig
+	err := mapstructure.Decode(source.Properties, &conf)
+	if err != nil {
+		return nil, err
+	}
+
 	return c.Execute(ctx, &drivers.Statement{
 		Query:    "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
 		Args:     []any{source.Name, conf.Path},
@@ -189,8 +194,12 @@ func (c *connection) ingestFromFile(ctx context.Context, source sources.Source, 
 	})
 }
 
-func (c *connection) ingestFromS3Bucket(ctx context.Context, source sources.Source, parsedOptions any) (*sqlx.Rows, error) {
-	conf := parsedOptions.(aws_s3.AWSS3Config)
+func (c *connection) ingestFromS3Bucket(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
+	var conf aws_s3.AWSS3Config
+	err := mapstructure.Decode(source.Properties, conf)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO: set aws settings these for the transaction only
 	query := "SET s3_region=?;"
