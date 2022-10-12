@@ -40,13 +40,13 @@
   >
     {#if filterExcludeMode}
       <MenuItem icon on:select={toggleFilterExcludeMode}>
-        <Cancel slot="icon" size="20px" />
-        Output excludes selections, click to include
+        <Check slot="icon" size="20px" />
+        click to include selected values
       </MenuItem>
     {:else}
       <MenuItem icon on:select={toggleFilterExcludeMode}>
-        <Check slot="icon" size="20px" />
-        Output includes selections, click to exclude
+        <Cancel slot="icon" size="20px" />
+        click to exclude selected values
       </MenuItem>
     {/if}
   </Menu>
