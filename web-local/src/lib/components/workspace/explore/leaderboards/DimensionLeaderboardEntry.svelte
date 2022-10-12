@@ -57,7 +57,7 @@
       class:text-gray-700={!atLeastOneActive && !loading}
       class:text-gray-500={excluded}
       class:italic={excluded}
-      style:font-weight={excluded ? "normal" : "600"}
+      style:font-weight={excluded ? "normal" : "500"}
       class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
       slot="title"
     >
@@ -69,7 +69,7 @@
       <div
         class:text-gray-500={excluded}
         class:italic={excluded}
-        style:font-weight={excluded ? "normal" : "600"}
+        style:font-weight={excluded ? "normal" : "500"}
         in:fly={{ duration: 200, y: 4 }}
       >
         <slot name="right" />
