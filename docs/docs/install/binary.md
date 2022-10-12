@@ -9,7 +9,7 @@ curl -s https://cdn.rilldata.com/install.sh | bash
 
 Nightly build:
 ```
-curl -s [https://cdn.rilldata.com/install.sh](https://cdn.rilldata.com/install.sh) | bash -s -- --nightly
+curl -s https://cdn.rilldata.com/install.sh | bash -s -- --nightly
 ```
 
 We don’t have nightly builds for M1 Mac (arm64). Instead, you will be using Apples’s Rosetta 2 emulation. You might notice a performance difference compared to our releases.
