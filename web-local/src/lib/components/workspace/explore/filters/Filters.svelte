@@ -54,6 +54,8 @@ The main feature-set component for dashboard filters
   let activeDimensionName;
   let activeDimensionId;
 
+  $: addNull = "null".includes(searchText);
+
   $: if (activeDimensionName && activeDimensionId) {
     if (searchText == "") {
       searchedValues = [];
@@ -69,7 +71,11 @@ The main feature-set component for dashboard filters
         },
         filter: {
           include: [
-            { name: activeDimensionName, in: [], like: [`%${searchText}%`] },
+            {
+              name: activeDimensionName,
+              in: addNull ? [null] : [],
+              like: [`%${searchText}%`],
+            },
           ],
           exclude: [],
         },
