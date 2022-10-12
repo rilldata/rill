@@ -52,7 +52,9 @@
 
   let excludeValues: MetricsViewDimensionValues;
   $: excludeValues = metricsExplorer?.filters.exclude;
-  $: excludeMode = excludeValues.findIndex((v) => v.name === dimensionId) > -1;
+
+  $: excludeMode =
+    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionId) ?? false;
 
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
