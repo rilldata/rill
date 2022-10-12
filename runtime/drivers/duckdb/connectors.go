@@ -63,22 +63,18 @@ func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) er
 
 	// TODO: set AWS settings for the transaction only
 
-	args := []any{conf.AWSRegion}
-	qry := "SET s3_region=?;"
+	qry := fmt.Sprintf("SET s3_region='%s';", conf.AWSRegion)
 
 	if conf.AWSKey != "" && conf.AWSSecret != "" {
-		qry += "SET s3_access_key_id=?;SET s3_secret_access_key=?;"
-		args = append(args, conf.AWSKey, conf.AWSSecret)
+		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.AWSKey, conf.AWSSecret)
 	} else if conf.AWSSession != "" {
-		qry += "SET s3_session_token=?;"
-		args = append(args, conf.AWSSession)
+		qry += fmt.Sprintf("SET s3_session_token='%s';", conf.AWSSession)
 	}
 
 	qry += fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path)
 
 	rows, err := c.Execute(ctx, &drivers.Statement{
 		Query:    qry,
-		Args:     args,
 		Priority: 1,
 	})
 	if err != nil {
