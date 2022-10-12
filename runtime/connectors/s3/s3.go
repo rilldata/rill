@@ -9,46 +9,50 @@ func init() {
 	connectors.Register("s3", connector{})
 }
 
-var spec = []connectors.PropertySchema{
-	{
-		Key:         "path",
-		DisplayName: "Path",
-		Description: "Path to file on the disk.",
-		Placeholder: "s3://<bucket>/<file>",
-		Type:        connectors.StringPropertyType,
-		Required:    true,
-	},
-	{
-		Key:         "aws.region",
-		DisplayName: "AWS Region",
-		Description: "AWS Region for the bucket.",
-		Placeholder: "us-east-1",
-		Type:        connectors.StringPropertyType,
-		Required:    true,
-	},
-	{
-		Key:         "aws.access.key",
-		DisplayName: "AWS Access Key",
-		Description: "",
-		Placeholder: "",
-		Type:        connectors.StringPropertyType,
-		Required:    false,
-	},
-	{
-		Key:         "aws.access.secret",
-		DisplayName: "AWS Access Secret",
-		Description: "",
-		Placeholder: "",
-		Type:        connectors.StringPropertyType,
-		Required:    false,
-	},
-	{
-		Key:         "aws.access.session",
-		DisplayName: "AWS Access Session Token",
-		Description: "A session token is an alternative to an access key/secret pair",
-		Placeholder: "",
-		Type:        connectors.StringPropertyType,
-		Required:    false,
+var spec = connectors.Spec{
+	DisplayName: "S3",
+	Description: "Connector for AWS S3",
+	Properties: []connectors.PropertySchema{
+		{
+			Key:         "path",
+			DisplayName: "Path",
+			Description: "Path to file on the disk.",
+			Placeholder: "s3://<bucket>/<file>",
+			Type:        connectors.StringPropertyType,
+			Required:    true,
+		},
+		{
+			Key:         "aws.region",
+			DisplayName: "AWS Region",
+			Description: "AWS Region for the bucket.",
+			Placeholder: "us-east-1",
+			Type:        connectors.StringPropertyType,
+			Required:    true,
+		},
+		{
+			Key:         "aws.access.key",
+			DisplayName: "AWS Access Key",
+			Description: "",
+			Placeholder: "",
+			Type:        connectors.StringPropertyType,
+			Required:    false,
+		},
+		{
+			Key:         "aws.access.secret",
+			DisplayName: "AWS Access Secret",
+			Description: "",
+			Placeholder: "",
+			Type:        connectors.StringPropertyType,
+			Required:    false,
+		},
+		{
+			Key:         "aws.access.session",
+			DisplayName: "AWS Access Session Token",
+			Description: "A session token is an alternative to an access key/secret pair",
+			Placeholder: "",
+			Type:        connectors.StringPropertyType,
+			Required:    false,
+		},
 	},
 }
 
@@ -71,6 +75,6 @@ func ParseConfig(props map[string]any) (*Config, error) {
 
 type connector struct{}
 
-func (c connector) Spec() []connectors.PropertySchema {
+func (c connector) Spec() connectors.Spec {
 	return spec
 }

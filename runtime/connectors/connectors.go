@@ -17,7 +17,7 @@ func Register(name string, connector Connector) {
 
 // Connector is a driver for ingesting data from an external system
 type Connector interface {
-	Spec() []PropertySchema
+	Spec() Spec
 
 	// TODO: Add method that extracts a source and outputs a schema and buffered
 	// iterator for data in it. For consumption by a drivers.OLAPStore. Also consider
@@ -25,8 +25,14 @@ type Connector interface {
 	// Consume(ctx context.Context, source Source) error
 }
 
+// Spec provides metadata about a connector and the properties it supports.
+type Spec struct {
+	DisplayName string
+	Description string
+	Properties  []PropertySchema
+}
+
 // PropertySchema provides the schema for a property supported by a connector.
-// It's used to provide metadata about a connector.
 type PropertySchema struct {
 	Key         string
 	Type        PropertySchemaType
@@ -83,7 +89,7 @@ func (s *Source) Validate() error {
 		return fmt.Errorf("connector: not found")
 	}
 
-	for _, propSchema := range connector.Spec() {
+	for _, propSchema := range connector.Spec().Properties {
 		val, ok := s.Properties[propSchema.Key]
 		if !ok {
 			if propSchema.Required {

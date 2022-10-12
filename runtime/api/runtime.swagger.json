@@ -59,18 +59,17 @@
         },
         "parameters": [
           {
-            "name": "limit",
+            "name": "pageSize",
             "in": "query",
             "required": false,
-            "type": "string",
-            "format": "uint64"
+            "type": "integer",
+            "format": "int32"
           },
           {
-            "name": "offset",
+            "name": "pageToken",
             "in": "query",
             "required": false,
-            "type": "string",
-            "format": "uint64"
+            "type": "string"
           }
         ],
         "tags": [
@@ -844,18 +843,17 @@
         },
         "parameters": [
           {
-            "name": "limit",
+            "name": "pageSize",
             "in": "query",
             "required": false,
-            "type": "string",
-            "format": "uint64"
+            "type": "integer",
+            "format": "int32"
           },
           {
-            "name": "offset",
+            "name": "pageToken",
             "in": "query",
             "required": false,
-            "type": "string",
-            "format": "uint64"
+            "type": "string"
           }
         ],
         "tags": [
@@ -1082,6 +1080,10 @@
         "key": {
           "type": "string",
           "title": "The property key"
+        },
+        "displayName": {
+          "type": "string",
+          "title": "Pretty name for the property"
         },
         "description": {
           "type": "string",
@@ -1398,6 +1400,9 @@
           "items": {
             "$ref": "#/definitions/v1Instance"
           }
+        },
+        "nextPageToken": {
+          "type": "string"
         }
       },
       "title": "Response message for RuntimeService.ListInstances"
@@ -1422,6 +1427,9 @@
           "items": {
             "$ref": "#/definitions/v1Repo"
           }
+        },
+        "nextPageToken": {
+          "type": "string"
         }
       },
       "title": "Response message for RuntimeService.ListRepos"

@@ -11,30 +11,34 @@ func init() {
 	connectors.Register("file", connector{})
 }
 
-var spec = []connectors.PropertySchema{
-	{
-		Key:         "path",
-		Type:        connectors.StringPropertyType,
-		Required:    true,
-		DisplayName: "Path",
-		Description: "Path to file on the disk.",
-		Placeholder: "/path/to/file",
-	},
-	{
-		Key:         "format",
-		Type:        connectors.StringPropertyType,
-		Required:    false,
-		DisplayName: "Format",
-		Description: "Either CSV or Parquet. Inferred if not set.",
-		Placeholder: "csv",
-	},
-	{
-		Key:         "csv.delimiter",
-		Type:        connectors.StringPropertyType,
-		Required:    false,
-		DisplayName: "CSV Delimiter",
-		Description: "Force delimiter for a CSV file.",
-		Placeholder: ",",
+var spec = connectors.Spec{
+	DisplayName: "File",
+	Description: "Connector for files",
+	Properties: []connectors.PropertySchema{
+		{
+			Key:         "path",
+			Type:        connectors.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path or URL to file",
+			Placeholder: "/path/to/file",
+		},
+		{
+			Key:         "format",
+			Type:        connectors.StringPropertyType,
+			Required:    false,
+			DisplayName: "Format",
+			Description: "Either CSV or Parquet. Inferred if not set.",
+			Placeholder: "csv",
+		},
+		{
+			Key:         "csv.delimiter",
+			Type:        connectors.StringPropertyType,
+			Required:    false,
+			DisplayName: "CSV Delimiter",
+			Description: "Force delimiter for a CSV file.",
+			Placeholder: ",",
+		},
 	},
 }
 
@@ -60,6 +64,6 @@ func ParseConfig(props map[string]any) (*Config, error) {
 
 type connector struct{}
 
-func (c connector) Spec() []connectors.PropertySchema {
+func (c connector) Spec() connectors.Spec {
 	return spec
 }
