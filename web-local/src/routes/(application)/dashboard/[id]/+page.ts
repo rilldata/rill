@@ -7,6 +7,8 @@ import { config } from "@rilldata/web-local/lib/application-state-stores/applica
 import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
 import { error, redirect } from "@sveltejs/kit";
 
+export const ssr = false;
+
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   try {

@@ -8,6 +8,7 @@ import { entityExists } from "@rilldata/web-local/lib/util/entity-exists";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
+export const ssr = false;
 export async function load({ params }) {
   let sourceExists = true;
   if (browser) {
@@ -19,7 +20,6 @@ export async function load({ params }) {
       params.id
     );
   }
-
   if (sourceExists) {
     return {
       sourceId: params.id,

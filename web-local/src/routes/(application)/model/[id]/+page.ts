@@ -7,6 +7,8 @@ import { dataModelerStateService } from "@rilldata/web-local/lib/application-sta
 import { entityExists } from "@rilldata/web-local/lib/util/entity-exists";
 import { error } from "@sveltejs/kit";
 
+export const ssr = false;
+
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   let modelExists = true;
