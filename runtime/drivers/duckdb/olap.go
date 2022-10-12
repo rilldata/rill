@@ -5,6 +5,10 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
+	aws_s3 "github.com/rilldata/rill/runtime/connectors/aws-s3"
+	local_file "github.com/rilldata/rill/runtime/connectors/local-file"
+	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"
 )
@@ -158,4 +162,62 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	}
 
 	return res, nil
+}
+
+func (c *connection) Ingest(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
+	var rows *sqlx.Rows
+	var err error
+
+	switch source.Connector {
+	case sources.LocalFileConnectorName:
+		rows, err = c.ingestFromFile(ctx, source)
+	case sources.AWSS3ConnectorName:
+		rows, err = c.ingestFromS3Bucket(ctx, source)
+	default:
+		err = drivers.ErrUnsupportedConnector
+	}
+
+	return rows, err
+}
+
+func (c *connection) ingestFromFile(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
+	var conf local_file.LocalFileConfig
+	err := mapstructure.Decode(source.Properties, &conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Execute(ctx, &drivers.Statement{
+		Query:    "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?)",
+		Args:     []any{source.Name, conf.Path},
+		Priority: 0,
+	})
+}
+
+func (c *connection) ingestFromS3Bucket(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
+	var conf aws_s3.AWSS3Config
+	err := mapstructure.Decode(source.Properties, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: set aws settings these for the transaction only
+	query := "SET s3_region=?;"
+	args := []any{conf.AwsRegion}
+
+	if conf.AwsKey != "" && conf.AwsSecret != "" {
+		query += "SET s3_access_key_id=?;SET s3_secret_access_key=?;"
+		args = append(args, conf.AwsKey, conf.AwsSecret)
+	} else if conf.AwsSession != "" {
+		query += "SET s3_session_token=?;"
+		args = append(args, conf.AwsSession)
+	}
+
+	query += "CREATE OR REPLACE TABLE ? AS (SELECT * FROM ?);"
+	args = append(args, source.Name, conf.Path)
+
+	return c.Execute(ctx, &drivers.Statement{
+		Query: query,
+		Args:  args,
+	})
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/rilldata/rill/runtime/connectors/sources"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -140,4 +141,8 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	}
 
 	return res, nil
+}
+
+func (c *connection) Ingest(ctx context.Context, source sources.Source) (*sqlx.Rows, error) {
+	return nil, drivers.ErrUnsupportedConnector
 }
