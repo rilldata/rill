@@ -587,43 +587,6 @@
       }
     },
     "/v1/instances/{instanceId}/migrate/single": {
-      "delete": {
-        "summary": "MigrateDelete deletes a single object.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
-        "operationId": "RuntimeService_MigrateDelete",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1MigrateDeleteResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "instanceId",
-            "description": "Instance to migrate",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "description": "Name of object to drop",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "RuntimeService"
-        ]
-      },
       "post": {
         "summary": "MigrateSingle applies a single `CREATE` statement.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
         "operationId": "RuntimeService_MigrateSingle",
@@ -670,6 +633,53 @@
                 }
               },
               "title": "Request message for RuntimeService.MigrateSingle"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/migrate/single/delete": {
+      "post": {
+        "summary": "MigrateDelete deletes a single object.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
+        "operationId": "RuntimeService_MigrateDelete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MigrateDeleteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "description": "Instance to migrate",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "title": "Name of object to drop"
+                }
+              },
+              "title": "Request message for RuntimeService.MigrateDelete"
             }
           }
         ],

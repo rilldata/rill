@@ -156,7 +156,8 @@ service RuntimeService {
   // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
   rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
     option (google.api.http) = {
-      delete: "/v1/instances/{instance_id}/migrate/single"
+      post: "/v1/instances/{instance_id}/migrate/single/delete",
+      body: "*"
     };
   }
 

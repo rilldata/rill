@@ -941,13 +941,17 @@ func local_request_RuntimeService_MigrateSingle_0(ctx context.Context, marshaler
 
 }
 
-var (
-	filter_RuntimeService_MigrateDelete_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
 func request_RuntimeService_MigrateDelete_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq MigrateDeleteRequest
 	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	var (
 		val string
@@ -964,13 +968,6 @@ func request_RuntimeService_MigrateDelete_0(ctx context.Context, marshaler runti
 	protoReq.InstanceId, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "instance_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_MigrateDelete_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.MigrateDelete(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -982,6 +979,14 @@ func local_request_RuntimeService_MigrateDelete_0(ctx context.Context, marshaler
 	var protoReq MigrateDeleteRequest
 	var metadata runtime.ServerMetadata
 
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	var (
 		val string
 		ok  bool
@@ -997,13 +1002,6 @@ func local_request_RuntimeService_MigrateDelete_0(ctx context.Context, marshaler
 	protoReq.InstanceId, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "instance_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_MigrateDelete_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.MigrateDelete(ctx, &protoReq)
@@ -1935,14 +1933,14 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("DELETE", pattern_RuntimeService_MigrateDelete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RuntimeService_MigrateDelete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/runtime.v1.RuntimeService/MigrateDelete", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/migrate/single"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/runtime.v1.RuntimeService/MigrateDelete", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/migrate/single/delete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2525,12 +2523,12 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("DELETE", pattern_RuntimeService_MigrateDelete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RuntimeService_MigrateDelete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/runtime.v1.RuntimeService/MigrateDelete", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/migrate/single"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/runtime.v1.RuntimeService/MigrateDelete", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/migrate/single/delete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2731,7 +2729,7 @@ var (
 
 	pattern_RuntimeService_MigrateSingle_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "instances", "instance_id", "migrate", "single"}, ""))
 
-	pattern_RuntimeService_MigrateDelete_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "instances", "instance_id", "migrate", "single"}, ""))
+	pattern_RuntimeService_MigrateDelete_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5}, []string{"v1", "instances", "instance_id", "migrate", "single", "delete"}, ""))
 
 	pattern_RuntimeService_Query_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "instances", "instance_id", "query"}, ""))
 
