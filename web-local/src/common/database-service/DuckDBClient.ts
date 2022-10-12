@@ -132,6 +132,8 @@ export class DuckDBClient {
     const res = await this.request("/v1/instances", {
       driver: "duckdb",
       dsn: databaseName,
+      exposed: true,
+      embed_catalog: true,
     });
 
     this.instanceID = res["instanceId"];
