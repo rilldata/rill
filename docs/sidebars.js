@@ -43,6 +43,11 @@ const sidebars = {
       label: 'CLI Documentation',
     },
     {
+      type: 'doc',
+      id: 'importing-data',
+      label: 'Importing Data',
+    },
+    {
       type: 'category',
       label: 'Contributors',
       items: ['contributors/development', 'contributors/guidelines', 'contributors/local-testing'],
