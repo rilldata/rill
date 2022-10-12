@@ -19,6 +19,23 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 		return nil, err
 	}
 
+	bootQueries := []string{
+		"INSTALL 'json'",
+		"LOAD 'json'",
+		"INSTALL 'parquet'",
+		"LOAD 'parquet'",
+		"INSTALL 'httpfs'",
+		"LOAD 'httpfs'",
+		"SET max_expression_depth TO 250",
+	}
+
+	for _, qry := range bootQueries {
+		_, err = db.Exec(qry)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	conn := &connection{db: db}
 	conn.worker = priorityworker.New(conn.executeQuery)
 
