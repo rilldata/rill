@@ -83,24 +83,34 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let fiterData = $mappedFiltersQuery.data;
+    let filterData = $mappedFiltersQuery.data;
 
     let foundDimension = false;
-    fiterData["include"].forEach((filter) => {
-      if (filter.name == dimension?.dimensionColumn) {
-        filter.like = [`%${searchText}%`];
-        foundDimension = true;
-      }
-    });
+    if (searchText !== "") {
+      filterData["include"].forEach((filter) => {
+        if (filter.name == dimension?.dimensionColumn) {
+          filter.like = [`%${searchText}%`];
+          foundDimension = true;
+        }
+      });
 
-    if (!foundDimension) {
-      fiterData["include"] = [
-        {
-          name: dimension?.dimensionColumn,
-          in: [],
-          like: [`%${searchText}%`],
-        },
-      ];
+      if (!foundDimension) {
+        filterData["include"] = [
+          {
+            name: dimension?.dimensionColumn,
+            in: [],
+            like: [`%${searchText}%`],
+          },
+        ];
+      }
+    } else {
+      filterData["include"] = filterData["include"].filter((f) => {
+        f.in.length;
+      });
+
+      filterData["include"].forEach((f) => {
+        delete f.like;
+      });
     }
 
     topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
@@ -117,7 +127,7 @@
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-      filter: fiterData,
+      filter: filterData,
     });
   }
 
