@@ -31,6 +31,7 @@
   export let dimensionId: string;
 
   let searchText = "";
+  $: addNull = "null".includes(searchText);
 
   const config = getContext<RootConfig>("config");
 
@@ -92,13 +93,14 @@
         if (filter.name == dimension?.dimensionColumn) {
           filter.like = [`%${searchText}%`];
           foundDimension = true;
+          if (addNull) filter.in.push(null);
         }
       });
 
       if (!foundDimension) {
         filterData["include"].push({
           name: dimension?.dimensionColumn,
-          in: [],
+          in: addNull ? [null] : [],
           like: [`%${searchText}%`],
         });
       }
