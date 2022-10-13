@@ -235,18 +235,25 @@ TableCells – the cell contents.
           selectedColumn={sortByColumn}
           on:click-column={handleColumnHeaderClick}
         />
-        <!-- VirtualTableBody -->
-        <TableCells
-          virtualColumnItems={virtualColumns}
-          virtualRowItems={virtualRows}
-          {rows}
-          {columns}
-          {activeIndex}
-          {selectedIndex}
-          {scrolling}
-          on:select-item={(event) => onSelectItem(event)}
-          on:inspect={setActiveIndex}
-        />
+
+        {#if rows.length}
+          <!-- VirtualTableBody -->
+          <TableCells
+            virtualColumnItems={virtualColumns}
+            virtualRowItems={virtualRows}
+            {rows}
+            {columns}
+            {activeIndex}
+            {selectedIndex}
+            {scrolling}
+            on:select-item={(event) => onSelectItem(event)}
+            on:inspect={setActiveIndex}
+          />
+        {:else}
+          <div class="flex italic text-gray-500 justify-center mt-[30vh]">
+            No results to show
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

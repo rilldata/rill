@@ -123,6 +123,11 @@
     let types = event.dataTransfer.types;
     return types && types.indexOf("Files") != -1;
   }
+
+  /** workaround for hiding inspector when there's a page error.
+   * We should refactor this inspector to work with a named slot instead of this current approach.
+   */
+  $: hasNoError = $page.status < 400 ? 1 : 0;
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -181,12 +186,12 @@
         </SurfaceControlButton>
 
         <!-- inspector pane hide -->
-        {#if hasInspector}
+        {#if hasInspector && hasNoError}
           <SurfaceControlButton
             show={true}
             right="{($layout.inspectorWidth - 12 - 24) *
-              (1 - $inspectorVisibilityTween) +
-              12 * $inspectorVisibilityTween}px"
+              (1 - $inspectorVisibilityTween * hasNoError) +
+              12 * $inspectorVisibilityTween * hasNoError}px"
             on:click={() => {
               inspectorVisible.set(!$inspectorVisible);
             }}
@@ -218,10 +223,11 @@
           style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
           style:padding-right="{$inspectorVisibilityTween *
             SIDE_PAD *
+            hasNoError *
             (hasInspector ? 1 : 0)}px"
           style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
           style:top="0px"
-          style:right="{hasInspector
+          style:right="{hasInspector && hasNoError
             ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
             : 0}px"
         >
@@ -233,7 +239,7 @@
             on MetricsExplorer for now.
           Once we refactor how layout routing works, we will have a better solution to this.
       -->
-        {#if hasInspector}
+        {#if hasInspector && hasNoError}
           <div
             class="fixed"
             aria-hidden={!$inspectorVisible}

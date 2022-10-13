@@ -32,9 +32,7 @@
   style:grid-template-columns="auto max-content"
 >
   <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
-    <svelte:fragment slot="icon">
-      <MetricsIcon />
-    </svelte:fragment>
+    <MetricsIcon slot="icon" />
   </WorkspaceHeader>
 
   {#if !metricsSourceSelectionError}

@@ -3,7 +3,9 @@
   "version": "0.10.0",
   "type": "module",
   "workspaces": [
+    "runtime",
     "web-cloud",
+    "web-common",
     "web-local"
   ],
   "scripts": {

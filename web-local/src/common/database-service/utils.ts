@@ -3,29 +3,48 @@ import {
   getFallbackMeasureName,
 } from "../data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { TimeSeriesTimeRange } from "./DatabaseTimeSeriesActions";
-import type { MetricsViewRequestFilter } from "../rill-developer-service/MetricsViewActions";
-import type { ActiveValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
+import type {
+  MetricsViewDimensionValues,
+  MetricsViewRequestFilter,
+} from "../rill-developer-service/MetricsViewActions";
 
-export function getFilterFromFilters(filters: ActiveValues): string {
-  return Object.keys(filters)
-    .map((field) => {
-      return (
-        "(" +
-        filters[field]
-          .map(([value, filterType]) => {
-            if (value == null) {
-              return filterType
-                ? `"${field}" IS NULL`
-                : `"${field}" IS NOT NULL`;
-            } else {
-              return filterType
-                ? `"${field}" = '${value}'`
-                : `"${field}" != '${value}'`;
-            }
-          })
-          .join(" OR ") +
-        ")"
-      );
+function escapeFilterValue(value: unknown) {
+  if (typeof value !== "string") return value;
+  return value.replace(/'/g, "''");
+}
+
+function getFilterFromDimensionValuesFilter(
+  dimensionValues: MetricsViewDimensionValues,
+  prefix: "" | "NOT",
+  dimensionJoiner: "AND" | "OR"
+) {
+  return dimensionValues
+    .map((dimensionValue) => {
+      const nonNullValues = dimensionValue.in.filter((value) => value !== null);
+      const conditions = [];
+      if (nonNullValues.length > 0) {
+        conditions.push(
+          `"${dimensionValue.name}" ${prefix} IN (${nonNullValues
+            .map((value) => `'${escapeFilterValue(value)}'`)
+            .join(",")}) `
+        );
+      }
+      if (nonNullValues.length < dimensionValue.in.length) {
+        conditions.push(`"${dimensionValue.name}" IS ${prefix} NULL`);
+      }
+      if (dimensionValue.like?.length) {
+        conditions.push(
+          ...dimensionValue.like.map(
+            (value) =>
+              `"${dimensionValue.name}" ${prefix} ILIKE '${escapeFilterValue(
+                value
+              )}'`
+          )
+        );
+      }
+      return conditions.length > 0
+        ? `(${conditions.join(` ${dimensionJoiner} `)})`
+        : "";
     })
     .join(" AND ");
 }
@@ -33,31 +52,17 @@ export function getFilterFromFilters(filters: ActiveValues): string {
 export function getFilterFromMetricsViewFilters(
   filters: MetricsViewRequestFilter
 ): string {
-  const includeFilters = filters.include
-    .map((dimensionValues) =>
-      dimensionValues.values
-        .map((value) =>
-          value === null
-            ? `"${dimensionValues.name}" IS NULL`
-            : `"${dimensionValues.name}" = '${value}'`
-        )
-        .join(" OR ")
-    )
-    .map((filter) => `(${filter})`)
-    .join(" AND ");
+  const includeFilters = getFilterFromDimensionValuesFilter(
+    filters.include,
+    "",
+    "OR"
+  );
 
-  const excludeFilters = filters.exclude
-    .map((dimensionValues) =>
-      dimensionValues.values
-        .map((value) =>
-          value === null
-            ? `"${dimensionValues.name}" IS NOT NULL`
-            : `"${dimensionValues.name}" != '${value}'`
-        )
-        .join(" OR ")
-    )
-    .map((filter) => `(${filter})`)
-    .join(" AND ");
+  const excludeFilters = getFilterFromDimensionValuesFilter(
+    filters.exclude,
+    "NOT",
+    "AND"
+  );
   return [includeFilters, excludeFilters].filter(Boolean).join(" AND ");
 }
 
@@ -101,7 +106,6 @@ export function getCoalesceStatementsMeasures(
     .join(", ");
 }
 
-// TODO: remove ActiveValues once all uses have been moved
 export function getWhereClauseFromFilters(
   metricViewFilters: MetricsViewRequestFilter,
   timestampColumn: string,

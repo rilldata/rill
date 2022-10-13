@@ -29,12 +29,8 @@
 </svelte:head>
 
 <ExploreContainer let:columns>
-  <svelte:fragment slot="header">
-    <ExploreHeader {metricsDefId} />
-  </svelte:fragment>
-  <svelte:fragment slot="metrics">
-    <MetricsTimeSeriesCharts {metricsDefId} />
-  </svelte:fragment>
+  <ExploreHeader slot="header" {metricsDefId} />
+  <MetricsTimeSeriesCharts slot="metrics" {metricsDefId} />
   <svelte:fragment slot="leaderboards">
     {#if selectedDimensionId}
       <DimensionDisplay {metricsDefId} dimensionId={selectedDimensionId} />

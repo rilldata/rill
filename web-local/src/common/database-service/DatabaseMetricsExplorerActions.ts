@@ -43,14 +43,8 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
   ) {
     limit ??= 15;
 
-    // remove filters for this specific dimension.
-    const isolatedFilters: MetricsViewRequestFilter = {
-      include: filters?.include.filter((filter) => filter.name !== column),
-      exclude: filters?.exclude.filter((filter) => filter.name !== column),
-    };
-
     const whereClause = getWhereClauseFromFilters(
-      isolatedFilters,
+      filters,
       timestampColumn,
       timeRange,
       "WHERE"

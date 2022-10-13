@@ -5,9 +5,12 @@ SqlCreateSource SqlCreateSource(Span s, boolean replace) :
 }
 {
     <SOURCE> id = SimpleIdentifier()
-    <WITH> <LPAREN>
-    map = Properties()
-    <RPAREN>
+    <WITH>
+    (
+      <LPAREN> map = Properties() <RPAREN>
+    |
+      map = Properties()
+    )
     {
       return new SqlCreateSource(s.end(this), id, map);
     }
@@ -20,16 +23,18 @@ Map<SqlNode, SqlNode> Properties() :
     SqlNode value;
 }
 {
-    key = StringLiteral() <EQ> value = StringLiteral()
+    (LOOKAHEAD(StringLiteral()) key = StringLiteral() | key = SimpleIdentifier())  <EQ> value = StringLiteral()
     {
-        props.put(key, value);
+      props.put(key, value);
     }
     (
-        <COMMA> key = StringLiteral() <EQ> value = StringLiteral()
-        {
-            props.put(key, value);
-        }
+      LOOKAHEAD(2)
+      <COMMA> (LOOKAHEAD(StringLiteral()) key = StringLiteral() | key = SimpleIdentifier()) <EQ> value = StringLiteral()
+      {
+          props.put(key, value);
+      }
     )*
+    [<COMMA>]
     {
         return props;
     }
