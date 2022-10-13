@@ -30,6 +30,9 @@
   export let metricsDefId: string;
   export let dimensionId: string;
 
+  let searchText = "";
+  $: addNull = "null".includes(searchText);
+
   const config = getContext<RootConfig>("config");
 
   $: metaQuery = useMetaQuery(config, metricsDefId);
@@ -51,7 +54,8 @@
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
     metricsDefId,
-    metricsExplorer?.filters
+    metricsExplorer?.filters,
+    dimensionId
   );
 
   $: selectedMeasureNames = useMetaMeasureNames(
@@ -63,7 +67,7 @@
   let activeValues: Array<unknown>;
   $: activeValues =
     metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
-      ?.values ?? [];
+      ?.in ?? [];
 
   let topListQuery;
 
@@ -80,6 +84,33 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    let filterData = JSON.parse(JSON.stringify($mappedFiltersQuery.data));
+
+    if (searchText !== "") {
+      let foundDimension = false;
+
+      filterData["include"].forEach((filter) => {
+        if (filter.name == dimension?.dimensionColumn) {
+          filter.like = [`%${searchText}%`];
+          foundDimension = true;
+          if (addNull) filter.in.push(null);
+        }
+      });
+
+      if (!foundDimension) {
+        filterData["include"].push({
+          name: dimension?.dimensionColumn,
+          in: addNull ? [null] : [],
+          like: [`%${searchText}%`],
+        });
+      }
+    } else {
+      filterData["include"] = filterData["include"].filter((f) => f.in.length);
+      filterData["include"].forEach((f) => {
+        delete f.like;
+      });
+    }
+
     topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: $selectedMeasureNames.data,
       limit: 250,
@@ -94,7 +125,7 @@
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-      filter: $mappedFiltersQuery.data,
+      filter: filterData,
     });
   }
 
@@ -197,7 +228,13 @@
 
 {#if topListQuery}
   <DimensionContainer>
-    <DimensionHeader {metricsDefId} isFetching={$topListQuery?.isFetching} />
+    <DimensionHeader
+      {metricsDefId}
+      isFetching={$topListQuery?.isFetching}
+      on:search={(event) => {
+        searchText = event.detail;
+      }}
+    />
 
     {#if values && columns.length}
       <DimensionTable
