@@ -32,6 +32,7 @@ jobs:
         uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+          version: '3.20.3'
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
@@ -46,6 +47,7 @@ jobs:
         shell: bash
         run: |
           cd sql
+          mvn test 
           mvn package -Pnative-lib
       - name: Install zip on Windows
         if: matrix.os == 'windows'

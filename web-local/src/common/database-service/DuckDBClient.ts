@@ -15,16 +15,16 @@ import { getBinaryRuntimePath } from "./getBinaryRuntimePath";
  * But in the future we can easily add an interface to this and have different implementations.
  */
 export class DuckDBClient {
-  protected runtimeProcess: ChildProcess;
-  protected instanceID: string;
-
-  protected onCallback: () => void;
-  protected offCallback: () => void;
-
   // this is a singleton class because
   // duckdb doesn't work well with multiple connections to same db from same process
   // if we ever need to have different connections modify this to have a map of database to instance
   private static instance: DuckDBClient;
+  protected runtimeProcess: ChildProcess;
+  protected instanceID: string;
+  protected onCallback: () => void;
+
+  protected offCallback: () => void;
+
   private constructor(private readonly config: RootConfig) {}
   public static getInstance(config: RootConfig) {
     if (!this.instance) this.instance = new DuckDBClient(config);

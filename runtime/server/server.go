@@ -89,7 +89,8 @@ func (s *Server) Serve(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		server := &http.Server{Handler: mux}
+		handler := cors(mux)
+		server := &http.Server{Handler: handler}
 		s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))
 		return graceful.ServeHTTP(cctx, server, s.opts.HTTPPort)
 	})
@@ -104,4 +105,19 @@ func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingRespo
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
+}
+
+func cors(h http.Handler) http.Handler {
+	// TODO: Hack for local - not production-ready
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
+				w.Header().Set("Access-Control-Allow-Headers", "*")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
 }

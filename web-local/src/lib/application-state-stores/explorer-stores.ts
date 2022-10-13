@@ -124,30 +124,30 @@ const metricViewReducers = {
       if (existingDimensionIndex === -1) {
         metricsExplorer.filters.include.push({
           name: dimensionId,
-          values: [dimensionValue],
+          in: [dimensionValue],
         });
         return;
       }
 
       const existingIncludeIndex =
-        metricsExplorer.filters.include[existingDimensionIndex].values.indexOf(
+        metricsExplorer.filters.include[existingDimensionIndex].in.indexOf(
           dimensionValue
         ) ?? -1;
 
       // add the value if it doesn't exist, remove the value if it does exist
       if (existingIncludeIndex === -1) {
-        metricsExplorer.filters.include[existingDimensionIndex].values.push(
+        metricsExplorer.filters.include[existingDimensionIndex].in.push(
           dimensionValue
         );
       } else {
-        metricsExplorer.filters.include[existingDimensionIndex].values.splice(
+        metricsExplorer.filters.include[existingDimensionIndex].in.splice(
           existingIncludeIndex,
           1
         );
         // remove the entry for dimension if no values are selected.
         if (
-          metricsExplorer.filters.include[existingDimensionIndex].values
-            .length === 0
+          metricsExplorer.filters.include[existingDimensionIndex].in.length ===
+          0
         ) {
           metricsExplorer.filters.include.splice(existingDimensionIndex, 1);
         }

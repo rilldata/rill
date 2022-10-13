@@ -19,3 +19,17 @@ func TestSanity(t *testing.T) {
 	err := isolate.Close()
 	require.NoError(t, err)
 }
+
+func TestSanityGetAST(t *testing.T) {
+	isolate := NewIsolate()
+
+	sql := "select 1 as foo, 'hello' as bar"
+	schema := `{ "tables": [] }`
+
+	res := isolate.getAST(sql, schema)
+	println(res)
+	println(len(res))
+
+	err := isolate.Close()
+	require.NoError(t, err)
+}
