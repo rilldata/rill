@@ -44,37 +44,30 @@ public class SqlConverterEntrypoint
     }
   }
 
-  @CEntryPoint(name = "create_source")
-  public static byte[] createSource(IsolateThread thread, CCharPointer sourceDef, CCharPointer schema)
+  @CEntryPoint(name = "get_ast")
+  public static CCharPointer getAST(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
+      CCharPointer schema
+  )
   {
     try {
       String javaSchemaString = CTypeConversion.toJavaString(schema);
       SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
-      String createSource = CTypeConversion.toJavaString(sourceDef);
-      return sqlConverter.createSource(createSource);
+      String sqlString = CTypeConversion.toJavaString(sql);
+      byte[] ast = sqlConverter.getAST(sqlString);
+      return convertToCCharPointer(allocatorFn, ast);
     } catch (Exception e) {
       e.printStackTrace();
-      return null;
-    }
-  }
-
-  @CEntryPoint(name = "create_metrics_view")
-  public static byte[] createMetricsView(IsolateThread thread, CCharPointer metricsViewDef, CCharPointer schema)
-  {
-    try {
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
-      String createMetricsView = CTypeConversion.toJavaString(metricsViewDef);
-      return sqlConverter.createMetricsView(createMetricsView);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return null;
+      return WordFactory.nullPointer();
     }
   }
 
   private static CCharPointer convertToCCharPointer(AllocatorFn allocatorFn, String javaString)
   {
-    byte[] b = javaString.getBytes();
+    return convertToCCharPointer(allocatorFn, javaString.getBytes());
+  }
+
+  private static CCharPointer convertToCCharPointer(AllocatorFn allocatorFn, byte[] b)
+  {
     CCharPointer a = allocatorFn.call(b.length + 1);
     for (int i = 0; i < b.length; i++) {
       a.write(i, b[i]);

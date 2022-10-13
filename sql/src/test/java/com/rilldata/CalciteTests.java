@@ -5,8 +5,6 @@ import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.dialects.Dialects;
 import com.rilldata.calcite.models.SqlCreateMetricsView;
 import com.rilldata.calcite.models.SqlCreateSource;
-import com.rilldata.calcite.validators.CreateMetricsViewValidator;
-import com.rilldata.calcite.validators.CreateSourceValidator;
 import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -56,46 +54,48 @@ public class CalciteTests
         COUNT(DISTINCT DIM1) AS M_DIST,
         AVG(DISTINCT MET1) AS M_AVG
         FROM MAIN.TEST""";
-    calciteToolbox.createMetricsView(modelingQuery);
+    // this will effectively save the model until we start getting it from schema
+    calciteToolbox.getAST(modelingQuery, false);
   }
 
   @ParameterizedTest
   @MethodSource("testCreateMetricsViewParams")
-  public void testCreateMetricsView(String modelingQuery, int numDims, int numMeasures, Optional<String> parseExceptionMatch,
-      Optional<String> validationExceptionMatch
+  public void testCreateMetricsView(String modelingQuery, int numDims, int numMeasures,
+      Optional<String> parseExceptionMatch, Optional<String> validationExceptionMatch
   )
   {
     SqlCreateMetricsView sqlCreateMetricsView;
+    byte[] ast;
     try {
-      sqlCreateMetricsView = (SqlCreateMetricsView) calciteToolbox.parseSql(modelingQuery);
+      ast = calciteToolbox.getAST(modelingQuery, false);
       parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
+      validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
+      Assertions.assertTrue(validationExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
         e.printStackTrace();
       }
       Assertions.assertTrue(parseExceptionMatch.isPresent() && e.getMessage().contains(parseExceptionMatch.get()));
       return; // found parse exception - test done - return now
-    }
-    Assertions.assertEquals(numDims, sqlCreateMetricsView.dimensions.size());
-    Assertions.assertEquals(numMeasures, sqlCreateMetricsView.measures.size());
-    try {
-      CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView, Dialects.DUCKDB.getSqlDialect(),
-          calciteToolbox.getPlanner()
-      );
-      validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
-      Assertions.assertTrue(validationExceptionMatch.isEmpty());
     } catch (ValidationException e) {
       if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
         e.printStackTrace();
       }
       Assertions.assertTrue(
           validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
+      return; // found validation exception - test done - return now
     }
-    byte[] ast = calciteToolbox.getAST(sqlCreateMetricsView);
+    try {
+      sqlCreateMetricsView = (SqlCreateMetricsView) calciteToolbox.parseValidatedSql(modelingQuery);
+    } catch (SqlParseException e) {
+      throw new RuntimeException(e);
+    }
+    Assertions.assertEquals(numDims, sqlCreateMetricsView.dimensions.size());
+    Assertions.assertEquals(numMeasures, sqlCreateMetricsView.measures.size());
     try {
       SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-      System.out.println(sqlNodeProto);
+      Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
     } catch (InvalidProtocolBufferException e) {
       throw new RuntimeException(e);
     }
@@ -108,27 +108,32 @@ public class CalciteTests
   )
   {
     SqlCreateSource sqlCreateSource;
+    byte[] ast;
     try {
-      sqlCreateSource = (SqlCreateSource) calciteToolbox.parseSql(createSourceQuery);
+      ast = calciteToolbox.getAST(createSourceQuery, false);
       parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
-      CreateSourceValidator.validateConnector(sqlCreateSource);
-
-      byte[] ast = calciteToolbox.getAST(sqlCreateSource);
-      try {
-        SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-        System.out.println(sqlNodeProto);
-      } catch (InvalidProtocolBufferException e) {
-        throw new RuntimeException(e);
-      }
+      validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
+      Assertions.assertTrue(validationExceptionMatch.isEmpty());
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
-        throw new RuntimeException(e);
+        e.printStackTrace();
       }
+      Assertions.assertTrue(parseExceptionMatch.isPresent() && e.getMessage().contains(parseExceptionMatch.get()));
+      return; // found parse exception - test done - return now
     } catch (ValidationException e) {
       if (validationExceptionMatch.isEmpty() || !e.getMessage().contains(validationExceptionMatch.get())) {
-        throw new RuntimeException(e);
+        e.printStackTrace();
       }
+      Assertions.assertTrue(
+          validationExceptionMatch.isPresent() && e.getMessage().contains(validationExceptionMatch.get()));
+      return; // found validation exception - test done - return now
+    }
+    try {
+      SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
+      Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -524,7 +529,7 @@ public class CalciteTests
         byte[] ast = calciteToolbox.getAST(actual);
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-          System.out.println(sqlNodeProto);
+          Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
         } catch (InvalidProtocolBufferException e) {
           throw new RuntimeException(e);
         }
@@ -559,7 +564,7 @@ public class CalciteTests
         byte[] ast = calciteToolbox.getAST(actual);
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
-          System.out.println(sqlNodeProto);
+          Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
         } catch (InvalidProtocolBufferException e) {
           throw new RuntimeException(e);
         }
