@@ -5,8 +5,6 @@
 
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
-  import { Button } from "../button";
-
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import TooltipTitle from "../tooltip/TooltipTitle.svelte";
