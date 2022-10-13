@@ -41,7 +41,7 @@ export class DuckDbConnection extends DataConnection {
   public async sync(): Promise<void> {
     const tables = await this.duckDbClient.execute<{ table_name: string }>(
       "SELECT table_name FROM information_schema.tables " +
-        "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW';",
+        "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW' AND table_schema != 'rill';",
       false
     );
     const persistentTables = this.dataModelerStateService

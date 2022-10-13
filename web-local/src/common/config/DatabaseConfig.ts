@@ -31,7 +31,7 @@ export class DatabaseConfig extends Config<DatabaseConfig> {
         this.spawnRuntime = false;
       }
     } catch (err) {
-      console.error(err);
+      // no-op
     }
     if (!this.runtimeUrl) {
       this.runtimeUrl = `http://localhost:${this.spawnRuntimePort}`;
