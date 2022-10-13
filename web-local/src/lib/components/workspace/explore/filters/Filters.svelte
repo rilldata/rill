@@ -32,15 +32,20 @@ The main feature-set component for dashboard filters
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
-  // TODO: handle exclude filters
-  let values: MetricsViewDimensionValues;
-  $: values = metricsExplorer?.filters.include;
+  let includeValues: MetricsViewDimensionValues;
+  $: includeValues = metricsExplorer?.filters.include;
+  let excludeValues: MetricsViewDimensionValues;
+  $: excludeValues = metricsExplorer?.filters.exclude;
 
   let dimensions: Readable<DimensionDefinitionEntity[]>;
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
 
-  function clearFilterForDimension(dimensionId) {
-    metricsExplorerStore.clearFilterForDimension(metricsDefId, dimensionId);
+  function clearFilterForDimension(dimensionId, include: boolean) {
+    metricsExplorerStore.clearFilterForDimension(
+      metricsDefId,
+      dimensionId,
+      include
+    );
   }
 
   function isFiltered(filters: MetricsViewRequestFilter): boolean {
@@ -106,14 +111,20 @@ The main feature-set component for dashboard filters
   }
 
   /** prune the values and prepare for for templating */
-  let currentDimensionFilters = [];
-  $: if (values) {
+  let currentDimensionIncludeFilters = [];
+  let currentDimensionExcludeFilters = [];
+  $: if (includeValues && excludeValues) {
     const dimensionIdMap = getMapFromArray(
       $dimensions,
       (dimension) => dimension.id
     );
-
-    currentDimensionFilters = values.map((dimensionValues) => ({
+    currentDimensionIncludeFilters = includeValues.map((dimensionValues) => ({
+      name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
+      sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
+      dimensionId: dimensionValues.name,
+      selectedValues: dimensionValues.in,
+    }));
+    currentDimensionExcludeFilters = excludeValues.map((dimensionValues) => ({
       name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
       sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
       dimensionId: dimensionValues.name,
@@ -121,15 +132,24 @@ The main feature-set component for dashboard filters
     }));
   }
 
-  function toggleDimensionValue(event, item) {
+  function toggleDimensionValue(event, item, include: boolean) {
     event.detail.forEach((dimensionValue) => {
       metricsExplorerStore.toggleFilter(
         metricsDefId,
         item.dimensionId,
-        dimensionValue
+        dimensionValue,
+        include
       );
     });
   }
+
+  const excludeChipColors = {
+    bgBaseColor: "bg-gray-100",
+    bgHoverColor: "bg-gray-200",
+    textColor: "text-gray-900",
+    bgActiveColor: "bg-gray-200",
+    outlineColor: "outline-gray-400",
+  };
 </script>
 
 <section
@@ -146,13 +166,14 @@ The main feature-set component for dashboard filters
   >
     <Filter size="16px" />
   </div>
-  {#if currentDimensionFilters?.length}
+  {#if currentDimensionIncludeFilters?.length || currentDimensionExcludeFilters?.length}
     <ChipContainer>
-      {#each currentDimensionFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
+      {#each currentDimensionIncludeFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
-            on:remove={() => clearFilterForDimension(dimensionId)}
-            on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
+            on:remove={() => clearFilterForDimension(dimensionId, true)}
+            on:apply={(event) =>
+              toggleDimensionValue(event, { dimensionId }, true)}
             on:search={(event) => {
               setActiveDimension(sqlName, dimensionId, event.detail);
             }}
@@ -160,6 +181,28 @@ The main feature-set component for dashboard filters
             {name}
             {selectedValues}
             {searchedValues}
+          >
+            <svelte:fragment slot="body-tooltip-content">
+              click to edit the the filters in this dimension
+            </svelte:fragment>
+          </RemovableListChip>
+        </div>
+      {/each}
+      {#each currentDimensionExcludeFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
+        <div animate:flip={{ duration: 200 }}>
+          <RemovableListChip
+            on:remove={() => clearFilterForDimension(dimensionId, false)}
+            on:apply={(event) =>
+              toggleDimensionValue(event, { dimensionId }, false)}
+            on:search={(event) => {
+              setActiveDimension(sqlName, dimensionId, event.detail);
+            }}
+            typeLabel="dimension"
+            name={`Exclude ${name}`}
+            {selectedValues}
+            {searchedValues}
+            excludeMode
+            colors={excludeChipColors}
           >
             <svelte:fragment slot="body-tooltip-content">
               click to edit the the filters in this dimension
@@ -176,7 +219,7 @@ The main feature-set component for dashboard filters
             bgHoverColor="bg-gray-100"
             textColor="text-gray-500"
             bgActiveColor="bg-gray-200"
-            ringOffsetColor="ring-offset-gray-400"
+            outlineColor="outline-gray-400"
             on:click={clearAllFilters}
           >
             <FilterRemove slot="icon" size="16px" />
@@ -185,7 +228,7 @@ The main feature-set component for dashboard filters
         </div>
       {/if}
     </ChipContainer>
-  {:else if currentDimensionFilters?.length === 0}
+  {:else if currentDimensionIncludeFilters?.length === 0 && currentDimensionExcludeFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
       class="italic text-gray-400  grid items-center"

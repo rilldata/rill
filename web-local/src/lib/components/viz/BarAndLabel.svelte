@@ -31,6 +31,7 @@
   style:background-color={showBackground
     ? "hsla(217,5%, 90%, .25)"
     : "hsl(217, 0%, 100%, .25)"}
+  style:flex="1"
 >
   <div
     class="pl-2 pr-2 text-right overflow-x-hidden "
