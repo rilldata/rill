@@ -42,7 +42,9 @@ function getFilterFromDimensionValuesFilter(
           )
         );
       }
-      return conditions.join(` ${dimensionJoiner} `);
+      return conditions.length > 0
+        ? `(${conditions.join(` ${dimensionJoiner} `)})`
+        : "";
     })
     .join(" AND ");
 }
@@ -104,7 +106,6 @@ export function getCoalesceStatementsMeasures(
     .join(", ");
 }
 
-// TODO: remove ActiveValues once all uses have been moved
 export function getWhereClauseFromFilters(
   metricViewFilters: MetricsViewRequestFilter,
   timestampColumn: string,
