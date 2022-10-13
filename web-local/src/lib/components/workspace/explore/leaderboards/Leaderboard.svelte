@@ -84,13 +84,14 @@
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
     metricsDefId,
-    metricsExplorer?.filters
+    metricsExplorer?.filters,
+    dimensionId
   );
 
   let activeValues: Array<unknown>;
   $: activeValues =
     metricsExplorer?.filters[filterKey]?.find((d) => d.name === dimension?.id)
-      ?.values ?? [];
+      ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
   function setLeaderboardValues(values) {

@@ -133,14 +133,13 @@ const metricViewReducers = {
       if (dimensionEntryIndex >= 0) {
         if (
           removeIfExists(
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]
-              .values,
+            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in,
             (value) => value === dimensionValue
           )
         ) {
           if (
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]
-              .values.length === 0
+            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in
+              .length === 0
           ) {
             metricsExplorer.filters[relevantFilterKey].splice(
               dimensionEntryIndex,
@@ -150,13 +149,13 @@ const metricViewReducers = {
           return;
         }
 
-        metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].values.push(dimensionValue);
+        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
+          dimensionValue
+        );
       } else {
         metricsExplorer.filters[relevantFilterKey].push({
           name: dimensionId,
-          values: [dimensionValue],
+          in: [dimensionValue],
         });
       }
     });

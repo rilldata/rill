@@ -1,4 +1,3 @@
-import type { ActiveValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 import { ActionResponseFactory } from "../data-modeler-service/response/ActionResponseFactory";
 import type { DimensionDefinitionEntity } from "../data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
 import {
@@ -47,7 +46,8 @@ export interface MetricsViewRequestTimeRange {
 }
 export interface MetricsViewDimensionValue {
   name: string;
-  values: Array<unknown>;
+  in: Array<unknown>;
+  like?: Array<unknown>;
 }
 export type MetricsViewDimensionValues = Array<MetricsViewDimensionValue>;
 export interface MetricsViewRequestFilter {
@@ -91,23 +91,6 @@ export interface MetricsViewTotalsRequest {
 export interface MetricsViewTotalsResponse {
   meta: Array<{ name: string; type: string }>;
   data: Record<string, number>;
-}
-
-function convertToActiveValues(
-  filters: MetricsViewRequestFilter
-): ActiveValues {
-  if (!filters) return {};
-  const activeValues: ActiveValues = {};
-  filters.include.forEach((value) => {
-    activeValues[value.name] = value.values.map((val) => [val, true]);
-  });
-  filters.exclude.forEach((value) => {
-    activeValues[value.name] ??= [];
-    activeValues[value.name].push(
-      ...(value.values.map((val) => [val, false]) as Array<[unknown, boolean]>)
-    );
-  });
-  return activeValues;
 }
 
 /**
@@ -187,7 +170,7 @@ export class MetricsViewActions extends RillDeveloperActions {
             rillRequestContext.record,
             request.measures
           ),
-          filters: convertToActiveValues(request.filter),
+          filters: request.filter,
           timeRange: {
             ...request.time,
             interval: request.time.granularity,

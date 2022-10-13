@@ -76,16 +76,15 @@
   <div class="mt-24" />
   <Tooltip alignment="left">
     <div style:width="max-content">position</div>
-    <svelte:fragment slot="tooltip-content">
-      <div class="bg-black text-white p-5">another element</div>
-    </svelte:fragment>
+
+    <div slot="tooltip-content" class="bg-black text-white p-5">
+      another element
+    </div>
   </Tooltip>
 
   <Tooltip alignment="left" bind:active={showTooltip} distance={16}>
     <button class="bg-red-500 text-white p-3 rounded">position</button>
-    <svelte:fragment slot="tooltip-content">
-      <TooltipContent>another element</TooltipContent>
-    </svelte:fragment>
+    <TooltipContent slot="tooltip-content">another element</TooltipContent>
   </Tooltip>
 
   <p>
@@ -100,11 +99,12 @@
     treatise on the theory of
     <Tooltip>
       <span class="font-bold"> ethics, </span>
-      <svelte:fragment slot="tooltip-content">
-        <div class="bg-black text-white p-5">another element!</div>
-      </svelte:fragment></Tooltip
-    > very popular during the Renaissance. The first line of Lorem Ipsum, "Lorem
-    ipsum dolor sit amet..", comes from a line in section 1.10.32.
+      <div slot="tooltip-content" class="bg-black text-white p-5">
+        another element!
+      </div>
+    </Tooltip>
+    very popular during the Renaissance. The first line of Lorem Ipsum, "Lorem ipsum
+    dolor sit amet..", comes from a line in section 1.10.32.
   </p>
 
   <div class="m-12">
@@ -133,30 +133,29 @@
     >
       drag this one around 🚐
     </div>
-    <svelte:fragment slot="tooltip-content">
-      <!-- <TooltipContent> -->
-      <div
-        style="min-height: 300px; width: 300px;"
-        class="border border-2 border-black p-3 rounded backdrop-blur-md	"
-      >
-        This is a tooltip. It will follow our little 🚐 everywhere it goes.
-        Ignore the design; the <i>positioning semantics</i> are the important
-        part.
 
-        <SummaryAndHistogram
-          min={9508263}
-          qlow={21123818}
-          median={30627455}
-          mean={34851293}
-          qhigh={45410890}
-          max={52802608}
-          width={300}
-          height={65}
-          data={data01}
-          color="black"
-        />
-      </div>
-      <!-- </TooltipContent> -->
-    </svelte:fragment>
+    <!-- <TooltipContent> -->
+    <div
+      slot="tooltip-content"
+      style="min-height: 300px; width: 300px;"
+      class="border border-2 border-black p-3 rounded backdrop-blur-md	"
+    >
+      This is a tooltip. It will follow our little 🚐 everywhere it goes. Ignore
+      the design; the <i>positioning semantics</i> are the important part.
+
+      <SummaryAndHistogram
+        min={9508263}
+        qlow={21123818}
+        median={30627455}
+        mean={34851293}
+        qhigh={45410890}
+        max={52802608}
+        width={300}
+        height={65}
+        data={data01}
+        color="black"
+      />
+    </div>
+    <!-- </TooltipContent> -->
   </Tooltip>
 </div>

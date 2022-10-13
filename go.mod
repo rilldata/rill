@@ -8,20 +8,21 @@ require (
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/getkin/kin-openapi v0.100.0
 	github.com/gorilla/sessions v1.2.1
+	github.com/hashicorp/golang-lru v0.5.1
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd
-	github.com/rs/zerolog v1.27.0
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094
 	google.golang.org/grpc v1.48.0
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	modernc.org/sqlite v1.10.6
-	src.techknowlogick.com/xgo v1.5.1-0.20220906164532-735bfdfb90d9
 )
 
 require (
@@ -43,14 +44,14 @@ require (
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
@@ -77,7 +78,6 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/sys/mount v0.2.0 // indirect
 	github.com/moby/sys/mountinfo v0.5.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
@@ -94,6 +94,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
+	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -114,6 +115,7 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gotest.tools/v3 v3.1.0 // indirect
 	modernc.org/cc/v3 v3.32.4 // indirect
 	modernc.org/ccgo/v3 v3.9.2 // indirect
 	modernc.org/libc v1.9.5 // indirect
@@ -125,11 +127,11 @@ require (
 )
 
 require (
-	github.com/golang-migrate/migrate/v4 v4.15.2
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2 v2.0.0-20220505152843-58a406687f2d
-	github.com/grpc-ecosystem/go-grpc-middleware/providers/zerolog/v2 v2.0.0-rc.2.0.20220505152843-58a406687f2d
+	github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2 v2.0.0-20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.2.0.20220505152843-58a406687f2d
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
 	github.com/jmoiron/sqlx v1.3.5
@@ -142,4 +144,4 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
-replace github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd => github.com/begelundmuller/go-duckdb v0.0.0-20220913095727-6db9d135dc34
+replace github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd => github.com/begelundmuller/go-duckdb v0.0.0-20221012193634-2203bdc2ee6e

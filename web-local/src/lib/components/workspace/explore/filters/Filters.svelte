@@ -2,8 +2,11 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
+  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+
   import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { flip } from "svelte/animate";
+  import { getContext } from "svelte";
 
   import type {
     MetricsViewDimensionValues,
@@ -14,6 +17,7 @@ The main feature-set component for dashboard filters
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
   import { Chip, ChipContainer, RemovableListChip } from "../../../chip";
   import Filter from "../../../icons/Filter.svelte";
   import FilterRemove from "../../../icons/FilterRemove.svelte";
@@ -22,6 +26,8 @@ The main feature-set component for dashboard filters
   import { fly } from "svelte/transition";
   import { getDisplayName } from "../utils";
   export let metricsDefId;
+
+  const config = getContext<RootConfig>("config");
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
@@ -47,6 +53,55 @@ The main feature-set component for dashboard filters
     return filters.include.length > 0 || filters.exclude.length > 0;
   }
 
+  let topListQuery;
+  let searchText = "";
+  let searchedValues = [];
+  let activeDimensionName;
+  let activeDimensionId;
+
+  $: addNull = "null".includes(searchText);
+
+  $: if (activeDimensionName && activeDimensionId) {
+    if (searchText == "") {
+      searchedValues = [];
+    } else {
+      // Use topList API to fetch the dimension names
+      // We prune the measure values and use the dimension labels for the filter
+      topListQuery = useTopListQuery(config, metricsDefId, activeDimensionId, {
+        measures: ["measure_0"], // Ideally should work with empty measures
+        limit: 15,
+        offset: 0,
+        sort: [],
+        time: {
+          start: metricsExplorer?.selectedTimeRange?.start,
+          end: metricsExplorer?.selectedTimeRange?.end,
+        },
+        filter: {
+          include: [
+            {
+              name: activeDimensionName,
+              in: addNull ? [null] : [],
+              like: [`%${searchText}%`],
+            },
+          ],
+          exclude: [],
+        },
+      });
+    }
+  }
+
+  function setActiveDimension(name, dimensionId, value) {
+    activeDimensionName = name;
+    activeDimensionId = dimensionId;
+    searchText = value;
+  }
+
+  $: if (!$topListQuery?.isFetching && searchText != "") {
+    const topListData = $topListQuery?.data?.data ?? [];
+    searchedValues =
+      topListData.map((datum) => datum[activeDimensionName]) ?? [];
+  }
+
   $: hasFilters = isFiltered(metricsExplorer?.filters);
 
   function clearAllFilters() {
@@ -65,13 +120,15 @@ The main feature-set component for dashboard filters
     );
     currentDimensionIncludeFilters = includeValues.map((dimensionValues) => ({
       name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
+      sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
       dimensionId: dimensionValues.name,
-      selectedValues: dimensionValues.values,
+      selectedValues: dimensionValues.in,
     }));
     currentDimensionExcludeFilters = excludeValues.map((dimensionValues) => ({
       name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
+      sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
       dimensionId: dimensionValues.name,
-      selectedValues: dimensionValues.values,
+      selectedValues: dimensionValues.in,
     }));
   }
 
@@ -111,15 +168,19 @@ The main feature-set component for dashboard filters
   </div>
   {#if currentDimensionIncludeFilters?.length || currentDimensionExcludeFilters?.length}
     <ChipContainer>
-      {#each currentDimensionIncludeFilters as { name, dimensionId, selectedValues } (dimensionId)}
+      {#each currentDimensionIncludeFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:remove={() => clearFilterForDimension(dimensionId, true)}
             on:apply={(event) =>
               toggleDimensionValue(event, { dimensionId }, true)}
+            on:search={(event) => {
+              setActiveDimension(sqlName, dimensionId, event.detail);
+            }}
             typeLabel="dimension"
             {name}
             {selectedValues}
+            {searchedValues}
           >
             <svelte:fragment slot="body-tooltip-content">
               click to edit the the filters in this dimension
@@ -127,15 +188,19 @@ The main feature-set component for dashboard filters
           </RemovableListChip>
         </div>
       {/each}
-      {#each currentDimensionExcludeFilters as { name, dimensionId, selectedValues } (dimensionId)}
+      {#each currentDimensionExcludeFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:remove={() => clearFilterForDimension(dimensionId, false)}
             on:apply={(event) =>
               toggleDimensionValue(event, { dimensionId }, false)}
+            on:search={(event) => {
+              setActiveDimension(sqlName, dimensionId, event.detail);
+            }}
             typeLabel="dimension"
             name={`Exclude ${name}`}
             {selectedValues}
+            {searchedValues}
             excludeMode
             colors={excludeChipColors}
           >
@@ -157,9 +222,7 @@ The main feature-set component for dashboard filters
             outlineColor="outline-gray-400"
             on:click={clearAllFilters}
           >
-            <svelte:fragment slot="icon"
-              ><FilterRemove size="16px" /></svelte:fragment
-            >
+            <FilterRemove slot="icon" size="16px" />
             <svelte:fragment slot="body">clear filters</svelte:fragment>
           </Chip>
         </div>

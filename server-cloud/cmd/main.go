@@ -28,16 +28,12 @@ type Config struct {
 }
 
 func main() {
-	// Load .env
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Printf("Failed to load .env: %s", err.Error())
-		os.Exit(1)
-	}
+	// Load .env (note: fails silently if .env has errors)
+	godotenv.Load()
 
 	// Init config
 	var conf Config
-	err = envconfig.Process("rill_cloud", &conf)
+	err := envconfig.Process("rill_cloud", &conf)
 	if err != nil {
 		fmt.Printf("Failed to load config: %s", err.Error())
 		os.Exit(1)

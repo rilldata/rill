@@ -11,6 +11,7 @@
   export let role = "menuitem";
   export let selected = false;
   export let animateSelect = true;
+  export let focusOnMount = true;
   export let disabled = false;
 
   const dispatch = createEventDispatcher();
@@ -25,7 +26,7 @@
     // add to the menu's ids. This will enable us to use keybindings.
     itemID = $menuItems.length;
     $menuItems = [...$menuItems, { id: itemID, disabled }];
-    if ($currentItem === undefined) {
+    if (focusOnMount && $currentItem === undefined) {
       $currentItem = itemID;
     }
   });

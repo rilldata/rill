@@ -10,7 +10,7 @@
   const chipValues = [
     {
       name: "Country",
-      values: ["us", "de", "ca", "mx"],
+      values: [],
       typeLabel: "dimension",
     },
     {
@@ -35,6 +35,7 @@
   ];
 
   let actives;
+  let searchedValues = {};
   function resetActives() {
     actives = chipValues.reduce((obj, v) => {
       obj[v.name] = v.values;
@@ -48,6 +49,14 @@
       actives[name] = [...actives[name].filter((v) => v !== value)];
     } else {
       actives[name] = [...actives[name], value];
+    }
+  }
+
+  function searchDimension(name, value) {
+    if (value == "") {
+      searchedValues[name] = [];
+    } else {
+      searchedValues[name] = ["ubuntu", "cent", "mac", "fedora"];
     }
   }
 
@@ -96,11 +105,15 @@
         {name}
         {typeLabel}
         selectedValues={actives[name]}
+        searchedValues={searchedValues[name]}
         on:remove={() => {
           activeChips = [...activeChips.filter((chip) => chip.name !== name)];
         }}
         on:select={(event) => {
           toggleActiveValue(name, event.detail);
+        }}
+        on:search={(event) => {
+          searchDimension(name, event.detail);
         }}
       >
         <svelte:fragment slot="remove-tooltip-content">

@@ -45,14 +45,12 @@ You can create and augment your own projects in Rill Developer using the [CLI](h
 rill init
 rill import-source /path/to/data_1.parquet
 rill start
-
 ```
 
 or try our example:
 
 ```
 rill init-example
-
 ```
 
 <!-- (Please note that the command `rill init-example` is temporarily unavailable on Windows.) -->

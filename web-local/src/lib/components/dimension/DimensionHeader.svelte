@@ -1,5 +1,8 @@
 <script lang="ts">
   import { slideRight } from "../../transitions";
+  import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
+
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   import { Button } from "../button";
@@ -11,11 +14,14 @@
   import Shortcut from "../tooltip/Shortcut.svelte";
 
   import Back from "../icons/Back.svelte";
+  import Search from "../icons/Search.svelte";
+
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
   import Spinner from "../Spinner.svelte";
-  import Spacer from "../icons/Spacer.svelte";
   import Check from "../icons/Check.svelte";
   import Cancel from "../icons/Cancel.svelte";
+  import SearchBar from "../search/Search.svelte";
+  import Close from "../icons/Close.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
@@ -24,6 +30,21 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
+
+  let searchToggle = false;
+
+  const dispatch = createEventDispatcher();
+
+  let searchText = "";
+  function onSearch() {
+    dispatch("search", searchText);
+  }
+
+  function closeSearchBar() {
+    searchText = "";
+    searchToggle = !searchToggle;
+    onSearch();
+  }
 
   const goBackToLeaderboard = () => {
     metricsExplorerStore.setMetricDimensionId(metricsDefId, null);
@@ -34,24 +55,25 @@
 </script>
 
 <div
-  class="grid justify-start items-center pb-3"
-  style:grid-template-columns="24px calc(100% - 24px)"
+  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
+  style:height="50px"
 >
-  <div transition:slideRight|local={{ leftOffset: 8 }}>
-    {#if isFetching}
-      <Spinner size="16px" status={EntityStatus.Running} />
-    {:else}
-      <Spacer size="16px" />
-    {/if}
-  </div>
-  <div
-    class="grid justify-between items-center"
-    style:grid-template-columns="auto max-content"
+  <button
+    on:click={() => goBackToLeaderboard()}
+    class="flex flex-row items-center"
+    style:grid-column-gap=".4rem"
   >
-    <Button type="secondary" on:click={goBackToLeaderboard} compact>
-      <Back size="16px" />All Dimensions
-    </Button>
+    {#if isFetching}
+      <div transition:slideRight|local={{ leftOffset: 8 }}>
+        <Spinner size="16px" status={EntityStatus.Running} />
+      </div>
+    {:else}
+      <Back size="16px" />
+      <span> All Dimensions </span>
+    {/if}
+  </button>
 
+  <div class="flex items-center" style:grid-column-gap=".4rem">
     <Tooltip location="left" distance={16}>
       <Button type="secondary" on:click={toggleFilterMode} compact>
         {#if excludeMode}<Check size="20px" /> Include{:else}<Cancel
@@ -70,5 +92,28 @@
         </TooltipShortcutContainer>
       </TooltipContent>
     </Tooltip>
+
+    {#if !searchToggle}
+      <div
+        class="flex items-center"
+        in:fly={{ x: 10, duration: 300 }}
+        style:grid-column-gap=".4rem"
+        style:cursor="pointer"
+        on:click={() => (searchToggle = !searchToggle)}
+      >
+        <Search size="16px" />
+        <span> Search </span>
+      </div>
+    {:else}
+      <div
+        transition:slideRight|local={{ leftOffset: 8 }}
+        class="flex items-center"
+      >
+        <SearchBar bind:value={searchText} on:input={onSearch} />
+        <span style:cursor="pointer" on:click={() => closeSearchBar()}>
+          <Close />
+        </span>
+      </div>
+    {/if}
   </div>
 </div>

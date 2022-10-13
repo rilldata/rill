@@ -1,0 +1,7 @@
+CREATE TABLE rill.catalog (
+	name TEXT PRIMARY KEY,
+	type TEXT NOT NULL,
+	sql TEXT NOT NULL,
+	created_on TIMESTAMPTZ NOT NULL,
+	updated_on TIMESTAMPTZ NOT NULL
+);
