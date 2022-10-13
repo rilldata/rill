@@ -60,6 +60,8 @@ The main feature-set component for dashboard filters
     if (searchText == "") {
       searchedValues = [];
     } else {
+      // Use topList API to fetch the dimension names
+      // We prune the measure values and use the dimension labels for the filter
       topListQuery = useTopListQuery(config, metricsDefId, activeDimensionId, {
         measures: ["measure_0"], // Ideally should work with empty measures
         limit: 15,
