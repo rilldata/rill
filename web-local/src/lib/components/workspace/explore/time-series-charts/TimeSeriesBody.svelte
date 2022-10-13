@@ -1,7 +1,8 @@
 <script lang="ts">
   import { extent } from "d3-array";
   import { interpolateArray } from "d3-interpolate";
-  import { cubicOut } from "svelte/easing";
+  import { cubicOut, linear } from "svelte/easing";
+  import { tweened } from "svelte/motion";
   import { derived, get, writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
@@ -128,6 +129,16 @@
   /** Tweening parameters */
   $: diffRatio = Math.abs((yMax - $previousYMax) / yMax);
   let crossThreshold = guidGenerator();
+
+  // design notes:
+  // keep it a second or less
+  // think about fixing the axes from being jarring
+  const scaleTweenDuration = 600;
+  const fadeDuration = 700;
+  const fadeTweenDuration = 50;
+  const lineTweenDuration = 300;
+  const lineTweenDelay = 700;
+
   $: if (diffRatio > 0.5) crossThreshold = guidGenerator();
 
   $: yMinTweenProps = {
@@ -140,10 +151,21 @@
       : allZeros
       ? 100
       : $previousYMax < yMax
-      ? 800
-      : 500,
+      ? scaleTweenDuration
+      : scaleTweenDuration + lineTweenDuration,
     delay: 0,
+    easing: linear,
   };
+
+  let opacityTween = tweened(1, { duration: fadeTweenDuration });
+  let opacityTweenTimeout;
+  $: if (yMax) {
+    if (opacityTweenTimeout) clearTimeout(opacityTweenTimeout);
+    setTimeout(() => {
+      opacityTween.set(1);
+    }, fadeDuration);
+    opacityTween.set(0.3);
+  }
 </script>
 
 {#if key && dataCopy?.length}
@@ -155,23 +177,33 @@
       {yMax}
       {yMinTweenProps}
       {yMaxTweenProps}
+      xMinTweenProps={{
+        duration: 800,
+        delay: 400,
+      }}
+      xMaxTweenProps={{
+        duration: 800,
+        delay: 400,
+      }}
     >
       <Body>
-        {#key key + longTimeSeriesKey + crossThreshold}
+        {#key key}
           <!-- here, we switch hideCurrent before and after the transition, so
             in cases of the key updating, we can gracefully transition all kinds of
             interesting animations.
           -->
           <g
+            opacity={$opacityTween}
+            filter="grayscale({(1 - $opacityTween) * 100}%)"
             in:fade={{
-              duration: 0,
-              // delay: $previousYMax > yMax ? 0 : 400,
-              // start: $previousYMax > yMax ? 2 : 1,
+              duration: 400,
+              delay: 0,
+              start: 0,
             }}
             out:fade={{
-              duration: 400, //$previousYMax > yMax ? 1200 : 300,
-              // delay: $previousYMax > yMax ? 800 : 0,
-              start: $previousYMax > yMax ? 0 : 1.5,
+              duration: 400,
+              delay: 0,
+              start: 0,
             }}
             style:transition="opacity 250ms"
             on:outrostart={() => {
@@ -190,15 +222,17 @@
                   : !hideCurrent
                   ? allZeros
                     ? 0
-                    : 400
+                    : lineTweenDuration
                   : 0,
-                delay: $previousYMax < yMax ? 300 : 0,
+                delay: $previousYMax < yMax ? lineTweenDelay : 0,
                 easing: cubicOut,
                 interpolate: interpolateArray,
               }}
             >
               <Area data={tweenedData} yAccessor={accessor} xAccessor="ts" />
-              <Line data={tweenedData} yAccessor={accessor} xAccessor="ts" />
+              <g style:opacity={$opacityTween}>
+                <Line data={tweenedData} yAccessor={accessor} xAccessor="ts" />
+              </g>
             </WithTween>
           </g>
         {/key}
