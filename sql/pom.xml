@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.rilldata</groupId>
   <artifactId>sql</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.1</version>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
@@ -26,7 +26,7 @@
     <junit.version>5.8.1</junit.version>
     <reflections.version>0.10.2</reflections.version>
     <hsqldb.version>2.3.4</hsqldb.version>
-    <protobuf.version>3.21.5</protobuf.version>
+    <protobuf.version>3.20.3</protobuf.version>
     <druid.sql.version>0.23.0</druid.sql.version>
   </properties>
   <dependencies>
@@ -119,8 +119,10 @@
         <version>${compiler-plugin.version}</version>
         <configuration>
           <compilerArgs>
-            <arg>-parameters</arg>
+            <arg>-parameters --enable-preview</arg>
           </compilerArgs>
+          <source>17</source>
+          <target>17</target>
         </configuration>
       </plugin>
       <plugin>
@@ -286,6 +288,12 @@
               </sources>
             </configuration>
           </execution>
+          <execution>
+            <id>parse-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
+          </execution>
         </executions>
       </plugin>
       <!-- Custom parser generation done -->
@@ -295,6 +303,7 @@
       <plugin>
         <artifactId>exec-maven-plugin</artifactId>
         <groupId>org.codehaus.mojo</groupId>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>Generate protobuf classes</id>
@@ -333,6 +342,33 @@
     </plugins>
   </build>
   <profiles>
+    <profile>
+      <id>bump-patch</id>
+      <activation>
+        <property>
+          <name>bumpPatch</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>set</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
+                  <newVersion>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.nextIncrementalVersion}</newVersion>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>native-lib</id>
       <build>
