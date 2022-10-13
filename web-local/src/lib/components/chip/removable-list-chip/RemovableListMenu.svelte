@@ -90,7 +90,7 @@
             {#if selectedValues.includes(value) !== candidateValues.includes(value) && !excludeMode}
               <Check />
             {:else if selectedValues.includes(value) !== candidateValues.includes(value) && excludeMode}
-              <Cancel size="20px" />
+              <Cancel />
             {:else}
               <Spacer />
             {/if}
@@ -113,8 +113,14 @@
       disabled={!candidateValues.length}
       on:click={onApplyHandler}
     >
-      <Check />
-      <span class="font-semibold text-gray-800">Include</span>
+      {#if excludeMode}
+        <Cancel />
+      {:else}
+        <Check />
+      {/if}
+      <span class="font-semibold text-gray-800">
+        {excludeMode ? "Exclude" : "Include"}
+      </span>
     </Button>
     {#if numSelectedNotInSearch}
       <div class="text-gray-600 italic">

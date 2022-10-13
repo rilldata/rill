@@ -73,13 +73,21 @@
     {/if}
   </button>
 
-  <div class="flex items-center" style:grid-column-gap=".4rem">
+  <div
+    class="flex items-center"
+    style:grid-column-gap=".4rem"
+    style:cursor="pointer"
+  >
     <Tooltip location="left" distance={16}>
-      <Button type="secondary" on:click={toggleFilterMode} compact>
+      <div
+        class="flex items-center mr-3"
+        style:grid-column-gap=".2rem"
+        on:click={toggleFilterMode}
+      >
         {#if excludeMode}<Check size="20px" /> Include{:else}<Cancel
             size="20px"
           /> Exclude{/if}
-      </Button>
+      </div>
       <TooltipContent slot="tooltip-content">
         <TooltipTitle>
           <svelte:fragment slot="name">
@@ -97,8 +105,7 @@
       <div
         class="flex items-center"
         in:fly={{ x: 10, duration: 300 }}
-        style:grid-column-gap=".4rem"
-        style:cursor="pointer"
+        style:grid-column-gap=".2rem"
         on:click={() => (searchToggle = !searchToggle)}
       >
         <Search size="16px" />
