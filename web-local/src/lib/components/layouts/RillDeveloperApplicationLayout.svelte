@@ -4,6 +4,7 @@
   import {
     ApplicationStore,
     duplicateSourceName,
+    runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { config } from "@rilldata/web-local/lib/application-state-stores/application-store.js";
   import {
@@ -46,9 +47,19 @@
   } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
+  import { runtimeServiceListInstances } from "web-common/src/runtime-client";
   createQueryClient();
 
-  onMount(() => {
+  onMount(async () => {
+    const resp = await runtimeServiceListInstances();
+
+    // we automatically create an instance w/ the local DuckDB runtime
+    const localInstance = resp.instances.find(
+      (instance) => instance.dsn === ".././stage.db"
+    );
+
+    runtimeStore.set({ instanceId: localInstance.instanceId });
+
     initMetrics();
   });
 
