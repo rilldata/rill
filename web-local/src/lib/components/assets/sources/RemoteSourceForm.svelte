@@ -8,11 +8,13 @@
     V1Connector,
   } from "web-common/src/runtime-client";
   import type * as yup from "yup";
+  import { EntityStatus } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { getYupSchema } from "../../../connectors/schemas";
   import { Button } from "../../button";
   import Input from "../../Input.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
+  import Spinner from "../../Spinner.svelte";
 
   export let connector: V1Connector;
 
@@ -121,7 +123,15 @@
           </div>
         </div>
       {/if}
-      <Button type="primary" submitForm form="remote-source-{connector}-form">
+      {#if $createSource.isLoading}
+        <Spinner status={EntityStatus.Running} size="20px" />
+      {/if}
+      <Button
+        type="primary"
+        submitForm
+        form="remote-source-{connector}-form"
+        disabled={$createSource.isLoading}
+      >
         Add source
       </Button>
     </div>
