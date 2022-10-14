@@ -1,10 +1,9 @@
 on:
-  push:
-    paths:
-      - "**.go"
   pull_request:
     paths:
+      - ".github/workflows/go-test.yml"
       - "**.go"
+      - "go.mod"
 name: Test Go code
 jobs:
   test:
