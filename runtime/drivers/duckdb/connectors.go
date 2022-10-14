@@ -70,11 +70,20 @@ func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) er
 	} else if conf.AWSSession != "" {
 		qry += fmt.Sprintf("SET s3_session_token='%s';", conf.AWSSession)
 	}
-
-	qry += fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path)
-
 	rows, err := c.Execute(ctx, &drivers.Statement{
 		Query:    qry,
+		Priority: 1,
+	})
+	if err != nil {
+		return err
+	}
+	if err = rows.Close(); err != nil {
+		return err
+	}
+
+	// TODO: we need to fix the issue of no error returned for the last query in a multi query request
+	rows, err = c.Execute(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path),
 		Priority: 1,
 	})
 	if err != nil {
