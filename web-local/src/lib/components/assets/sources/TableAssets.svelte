@@ -11,7 +11,9 @@
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
+  import { useRuntimeServiceTriggerRefresh } from "web-common/src/runtime-client";
   import type { ApplicationStore } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -144,6 +146,26 @@
     });
   };
 
+  const runtimeInstanceId = $runtimeStore.instanceId;
+  const refreshSource = useRuntimeServiceTriggerRefresh();
+
+  const onRefreshSource = (tableName: string) => {
+    $refreshSource.mutate(
+      {
+        instanceId: runtimeInstanceId,
+        name: tableName,
+      },
+      {
+        onError: (error) => {
+          console.error(error);
+        },
+        onSuccess: () => {
+          console.log("source refreshed successfully");
+        },
+      }
+    );
+  };
+
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
 </script>
 
@@ -182,6 +204,7 @@
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             active={entityIsActive}
+            loading={$refreshSource.isLoading}
           >
             <ColumnProfileNavEntry
               slot="summary"
@@ -194,18 +217,6 @@
               entityId={id}
             />
             <svelte:fragment slot="menu-items" let:toggleMenu>
-              <MenuItem
-                icon
-                on:select={() => {
-                  console.log("this will refresh the source");
-                }}
-              >
-                <svelte:fragment slot="icon">
-                  <RefreshIcon />
-                </svelte:fragment>
-                refresh source data
-              </MenuItem>
-
               <MenuItem icon on:select={() => createModel(tableName)}>
                 <Model slot="icon" />
                 create new model
@@ -223,6 +234,13 @@
                     requires a timestamp column
                   {/if}
                 </svelte:fragment>
+              </MenuItem>
+
+              <MenuItem icon on:select={() => onRefreshSource(tableName)}>
+                <svelte:fragment slot="icon">
+                  <RefreshIcon />
+                </svelte:fragment>
+                refresh source data
               </MenuItem>
 
               <Divider />

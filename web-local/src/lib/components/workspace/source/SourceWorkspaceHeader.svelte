@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { dataModelerService } from "../../../application-state-stores/application-store";
+  import { useRuntimeServiceTriggerRefresh } from "web-common/src/runtime-client";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { IconButton } from "../../button";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
@@ -24,6 +28,26 @@
   };
 
   $: titleInput = currentSource?.name;
+
+  const runtimeInstanceId = $runtimeStore.instanceId;
+  const refreshSource = useRuntimeServiceTriggerRefresh();
+
+  const onRefreshClick = (tableName: string) => {
+    $refreshSource.mutate(
+      {
+        instanceId: runtimeInstanceId,
+        name: tableName,
+      },
+      {
+        onError: (error) => {
+          console.error(error);
+        },
+        onSuccess: () => {
+          console.log("source refreshed successfully");
+        },
+      }
+    );
+  };
 </script>
 
 <div class="grid  items-center" style:grid-template-columns="auto max-content">
@@ -33,9 +57,13 @@
     </svelte:fragment>
     <svelte:fragment slot="right">
       <Tooltip location="bottom" distance={8}>
-        <IconButton>
-          <RefreshIcon />
-        </IconButton>
+        {#if $refreshSource.isLoading}
+          Refreshing...
+        {:else}
+          <IconButton on:click={() => onRefreshClick(currentSource.tableName)}>
+            <RefreshIcon />
+          </IconButton>
+        {/if}
         <TooltipContent slot="tooltip-content">
           refresh the source data
         </TooltipContent>
