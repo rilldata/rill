@@ -1,3 +1,4 @@
+import { DATABASE_POLLING_INTERVAL } from "@rilldata/web-local/common/constants";
 import type { RootConfig } from "../config/RootConfig";
 import type { DataModelerService } from "../data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "../data-modeler-state-service/DataModelerStateService";
@@ -33,9 +34,9 @@ export class DuckDbConnection extends DataConnection {
 
     await this.dataModelerService.dispatch("loadModels", []);
 
-    // this.syncTimer = setInterval(() => {
-    //   this.sync();
-    // }, DATABASE_POLLING_INTERVAL);
+    this.syncTimer = setInterval(() => {
+      this.sync();
+    }, DATABASE_POLLING_INTERVAL);
   }
 
   public async sync(): Promise<void> {

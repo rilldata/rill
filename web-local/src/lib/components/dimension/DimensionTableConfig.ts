@@ -7,7 +7,7 @@ export const DimensionTableConfig: VirtualizedTableConfig = {
   minHeaderWidthWhenColumsAreSmall: 160,
   rowHeight: 24,
   columnHeaderHeight: 28,
-  indexWidth: 60,
+  indexWidth: 24,
   columnHeaderFontWeightClass: "font-normal",
   defaultFontWeightClass: "font-normal",
   table: "DimensionTable",

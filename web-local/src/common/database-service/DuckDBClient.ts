@@ -60,6 +60,7 @@ export class DuckDBClient {
           dry_run: dry_run,
         }
       );
+      if (log) console.log(resp.data);
       return resp.data;
     } catch (err) {
       if (log) console.error(err);

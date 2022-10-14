@@ -28,7 +28,9 @@
   }
 
   const borderClassesOuterDiv = isDimensionTable
-    ? "border-b"
+    ? position === "left"
+      ? ""
+      : "border-b"
     : "border-b border-b-4 border-r border-r-1";
 
   const borderClassesInnerDiv = isDimensionTable

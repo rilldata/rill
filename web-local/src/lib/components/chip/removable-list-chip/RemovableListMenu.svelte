@@ -3,6 +3,7 @@
   import { Search } from "@rilldata/web-local/lib/components/search";
 
   import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
+  import Cancel from "@rilldata/web-local/lib/components/icons/Cancel.svelte";
   import Spacer from "@rilldata/web-local/lib/components/icons/Spacer.svelte";
 
   import { Menu } from "@rilldata/web-local/lib/components/menu";
@@ -12,6 +13,8 @@
 
   export let selectedValues: string[];
   export let searchedValues: string[] = [];
+  export let excludeMode = false;
+
   let searchText = "";
 
   const dispatch = createEventDispatcher();
@@ -84,8 +87,10 @@
           }}
         >
           <svelte:fragment slot="icon">
-            {#if selectedValues.includes(value) !== candidateValues.includes(value)}
+            {#if selectedValues.includes(value) !== candidateValues.includes(value) && !excludeMode}
               <Check />
+            {:else if selectedValues.includes(value) !== candidateValues.includes(value) && excludeMode}
+              <Cancel />
             {:else}
               <Spacer />
             {/if}
@@ -108,8 +113,14 @@
       disabled={!candidateValues.length}
       on:click={onApplyHandler}
     >
-      <Check />
-      <span class="font-semibold text-gray-800">Include</span>
+      {#if excludeMode}
+        <Cancel />
+      {:else}
+        <Check />
+      {/if}
+      <span class="font-semibold text-gray-800">
+        {excludeMode ? "Exclude" : "Include"}
+      </span>
     </Button>
     {#if numSelectedNotInSearch}
       <div class="text-gray-600 italic">

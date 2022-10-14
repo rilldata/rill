@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   /**
    * Leaderboard.svelte
@@ -8,22 +8,17 @@
    * in the application itself.
    */
   import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import LeaderboardContainer from "../../../leaderboard/LeaderboardContainer.svelte";
+
   import LeaderboardHeader from "../../../leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
-  import Spinner from "../../../Spinner.svelte";
-  import Shortcut from "../../../tooltip/Shortcut.svelte";
   import Tooltip from "../../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
   import {
     useMetaDimension,
     useMetaMappedFilters,
@@ -31,7 +26,6 @@
     useMetaQuery,
   } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
-  import { slideRight } from "../../../../transitions";
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
@@ -39,7 +33,7 @@
   } from "../../../../util/humanize-numbers";
   import { createEventDispatcher, getContext } from "svelte";
   import { getDisplayName } from "../utils";
-  import LeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+  import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
@@ -66,6 +60,12 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
+  let filterExcludeMode: boolean;
+  $: filterExcludeMode =
+    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionId) ?? false;
+  let filterKey: "exclude" | "include";
+  $: filterKey = filterExcludeMode ? "exclude" : "include";
+
   $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
   let dimension: DimensionDefinitionEntity;
   $: dimension = $dimensionQuery?.data;
@@ -90,7 +90,7 @@
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
+    metricsExplorer?.filters[filterKey]?.find((d) => d.name === dimension?.id)
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
@@ -99,6 +99,10 @@
       dimensionId,
       values,
     });
+  }
+
+  function toggleFilterExcludeMode() {
+    metricsExplorerStore.toggleFilterExcludeMode(metricsDefId, dimensionId);
   }
 
   function selectDimension(dimensionId) {
@@ -177,59 +181,34 @@
     .sort((a, b) => {
       return b.value - a.value;
     });
+
+  let hovered: boolean;
 </script>
 
 {#if topListQuery}
-  <LeaderboardContainer focused={atLeastOneActive}>
+  <div
+    style:width="315px"
+    on:mouseenter={() => (hovered = true)}
+    on:mouseleave={() => (hovered = false)}
+  >
     <LeaderboardHeader
-      isActive={atLeastOneActive}
+      isFetching={$topListQuery.isFetching}
+      {displayName}
+      on:toggle-filter-exclude-mode={toggleFilterExcludeMode}
+      {filterExcludeMode}
+      {hovered}
+      dimensionDescription={dimension?.description}
       on:click={() => selectDimension(dimensionId)}
-    >
-      <div
-        slot="title"
-        class:text-gray-500={atLeastOneActive}
-        class:italic={atLeastOneActive}
-      >
-        <Tooltip location="top" distance={16}>
-          <div class="flex flex-row gap-x-2 items-center">
-            {#if $topListQuery?.isFetching}
-              <div transition:slideRight|local={{ leftOffset: 8 }}>
-                <Spinner size="16px" status={EntityStatus.Running} />
-              </div>
-            {/if}
-            {displayName}
-          </div>
-          <TooltipContent slot="tooltip-content">
-            <TooltipTitle>
-              <svelte:fragment slot="name">
-                {displayName}
-              </svelte:fragment>
-              <svelte:fragment slot="description" />
-            </TooltipTitle>
-            <TooltipShortcutContainer>
-              <div>
-                {#if dimension?.description}
-                  {dimension.description}
-                {:else}
-                  the leaderboard metrics for {displayName}
-                {/if}
-              </div>
-              <Shortcut />
-              <div>Expand leaderboard</div>
-              <Shortcut>Click</Shortcut>
-            </TooltipShortcutContainer>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </LeaderboardHeader>
+    />
 
     {#if values}
       <LeaderboardList>
         <!-- place the leaderboard entries that are above the fold here -->
-        <LeaderboardEntrySet
+        <DimensionLeaderboardEntrySet
           loading={$topListQuery?.isFetching}
           values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
           {activeValues}
+          {filterExcludeMode}
           {atLeastOneActive}
           {referenceValue}
           {isSummableMeasure}
@@ -238,10 +217,11 @@
         <!-- place the selected values that are not above the fold here -->
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
-          <LeaderboardEntrySet
+          <DimensionLeaderboardEntrySet
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
             {activeValues}
+            {filterExcludeMode}
             {atLeastOneActive}
             {referenceValue}
             {isSummableMeasure}
@@ -275,5 +255,5 @@
         {/if}
       </LeaderboardList>
     {/if}
-  </LeaderboardContainer>
+  </div>
 {/if}

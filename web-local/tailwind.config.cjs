@@ -8,4 +8,7 @@ module.exports = {
     extend: {},
   },
   plugins: [],
+  safelist: [
+    'text-blue-800', // needed for blue text in filter pills
+  ]
 };
