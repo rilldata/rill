@@ -12,13 +12,15 @@ TableCells – the cell contents.
   import { DimensionTableConfig } from "./DimensionTableConfig";
   import ColumnHeaders from "../virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
+  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let rows;
   export let columns: VirtualizedTableColumns[];
-  export let activeValues: Array<unknown> = [];
+  export let selectedValues: Array<unknown> = [];
   export let sortByColumn: string;
+  export let excludeMode = false;
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -44,9 +46,10 @@ TableCells – the cell contents.
   const HEADER_X_PAD = CHARACTER_X_PAD;
   const HEADER_FLEX_SPACING = 14;
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
+  const FILTER_COLUMN_WIDTH = DimensionTableConfig.indexWidth;
 
   $: dimensionName = columns[0]?.name;
-  $: selectedIndex = activeValues
+  $: selectedIndex = selectedValues
     .map((label) => {
       return rows.findIndex((row) => row[dimensionName] === label);
     })
@@ -142,7 +145,7 @@ TableCells – the cell contents.
 
     /* Dimension column should expand to cover whole container */
     estimateColumnSize[0] = Math.max(
-      containerWidth - measureColumnSizeSum,
+      containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
       estimateColumnSize[0]
     );
 
@@ -155,6 +158,7 @@ TableCells – the cell contents.
         return estimateColumnSize[index];
       },
       overscan: columnOverscanAmount,
+      paddingStart: FILTER_COLUMN_WIDTH,
       initialOffset: colScrollOffset,
     });
   }
@@ -230,23 +234,37 @@ TableCells – the cell contents.
         <!-- ColumnHeaders -->
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
-          {columns}
           noPin={true}
           selectedColumn={sortByColumn}
+          {columns}
           on:click-column={handleColumnHeaderClick}
         />
-        <!-- VirtualTableBody -->
-        <TableCells
-          virtualColumnItems={virtualColumns}
-          virtualRowItems={virtualRows}
-          {rows}
-          {columns}
-          {activeIndex}
-          {selectedIndex}
-          {scrolling}
-          on:select-item={(event) => onSelectItem(event)}
-          on:inspect={setActiveIndex}
-        />
+
+        {#if rows.length}
+          <!-- Gutter for Include Exlude Filter -->
+          <DimensionFilterGutter
+            virtualRowItems={virtualRows}
+            totalHeight={virtualHeight}
+            {selectedIndex}
+            {excludeMode}
+          />
+          <!-- VirtualTableBody -->
+          <TableCells
+            virtualColumnItems={virtualColumns}
+            virtualRowItems={virtualRows}
+            {rows}
+            {columns}
+            {activeIndex}
+            {selectedIndex}
+            {scrolling}
+            on:select-item={(event) => onSelectItem(event)}
+            on:inspect={setActiveIndex}
+          />
+        {:else}
+          <div class="flex italic text-gray-500 justify-center mt-[30vh]">
+            No results to show
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

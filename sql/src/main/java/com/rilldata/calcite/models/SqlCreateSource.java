@@ -30,10 +30,18 @@ public class SqlCreateSource extends SqlCreate
     this.name = name;
     this.properties = new HashMap<>();
     for (Map.Entry<SqlNode, SqlNode> entry : properties.entrySet()) {
-      String key = ((SqlLiteral) entry.getKey()).toValue();
+      String key;
+      if (entry.getKey() instanceof SqlIdentifier keyIdentifier) {
+        if (!keyIdentifier.isSimple()) {
+          throw new ParseException(String.format("Invalid property key [%s], must be a simple string", keyIdentifier));
+        }
+        key = keyIdentifier.getSimple();
+      } else {
+        key = ((SqlLiteral) entry.getKey()).toValue();
+      }
       String value = ((SqlLiteral) entry.getValue()).toValue();
       if (key == null || value == null) {
-        throw new ParseException(String.format("Either key or value is null for property %s", entry));
+        throw new ParseException(String.format("Either key or value is null for property [%s]", entry));
       }
       this.properties.put(key.toLowerCase(), value.toLowerCase());
     }

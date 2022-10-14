@@ -10,6 +10,7 @@ import com.rilldata.calcite.models.ArtifactType;
 import com.rilldata.calcite.models.InMemoryArtifactManager;
 import com.rilldata.calcite.operators.RillOperatorTable;
 import com.rilldata.calcite.validators.CreateMetricsViewValidator;
+import com.rilldata.calcite.validators.CreateSourceValidator;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -100,12 +101,23 @@ public class CalciteToolbox
     return sql;
   }
 
-  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException
+  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
-    // expand query if needed
-    sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
+    if (sqlNode instanceof SqlCreateMetricsView sqlCreateMetricsView) {
+      String metricViewString = CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView,
+          Dialects.DUCKDB.getSqlDialect(), getPlanner()
+      );
+      artifactManager.saveArtifact(
+          new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetricsView.name.getSimple(), metricViewString));
+    } else if (sqlNode instanceof SqlCreateSource sqlCreateSource) {
+      CreateSourceValidator.validateConnector(sqlCreateSource);
+      String createSourceString = sqlCreateSource.toSqlString(Dialects.DUCKDB.getSqlDialect()).toString();
+      artifactManager.saveArtifact(
+          new Artifact(ArtifactType.SOURCE, sqlCreateSource.name.getSimple(), createSourceString));
+
+    }
     return getAST(sqlNode, planner, addTypeInfo);
   }
 
@@ -115,6 +127,10 @@ public class CalciteToolbox
     return getAST(sqlNode, planner, false);
   }
 
+  /**
+   * If addTypeInfo is true then the same planner passed here should have been used to parse the sql
+   * otherwise the sql validation will fail which is required to get type info
+   * */
   public byte[] getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
   {
     SqlValidator sqlValidator = null;
@@ -140,29 +156,7 @@ public class CalciteToolbox
     return (SqlValidator) validatorField.get(planner);
   }
 
-  public SqlCreateMetricsView createMetricsView(String sql) throws SqlParseException, ValidationException
-  {
-    SqlCreateMetricsView sqlCreateMetricsView = (SqlCreateMetricsView) parseSql(sql);
-    String metricViewString = CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView,
-        Dialects.DUCKDB.getSqlDialect(), getPlanner()
-    );
-    artifactManager.saveArtifact(
-        new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetricsView.name.getSimple(), metricViewString));
-    // if things are valid return the parsed SqlNode/AST
-    return sqlCreateMetricsView;
-  }
-
-  public SqlCreateSource createSource(String sql) throws SqlParseException
-  {
-    SqlCreateSource sqlCreateSource = (SqlCreateSource) parseSql(sql);
-    String createSourceString = sqlCreateSource.toSqlString(Dialects.DUCKDB.getSqlDialect()).toString();
-    artifactManager.saveArtifact(
-        new Artifact(ArtifactType.SOURCE, sqlCreateSource.name.getSimple(), createSourceString));
-    // if things are valid return the parsed SqlNode/AST
-    return sqlCreateSource;
-  }
-
-  public SqlNode parseSql(String sql) throws SqlParseException
+  public SqlNode parseValidatedSql(String sql) throws SqlParseException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);

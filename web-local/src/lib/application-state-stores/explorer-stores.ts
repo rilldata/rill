@@ -26,6 +26,9 @@ export interface MetricsExplorerEntity {
   // this is used to show leaderboard values
   leaderboardMeasureId: string;
   filters: MetricsViewRequestFilter;
+  // stores whether a dimension is in include/exclude filter mode
+  // false/absence = include, true = exclude
+  dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
   // user selected dimension
@@ -86,6 +89,7 @@ const metricViewReducers = {
           include: [],
           exclude: [],
         },
+        dimensionFilterExcludeMode: new Map(),
       })
     );
   },
@@ -116,42 +120,74 @@ const metricViewReducers = {
 
   toggleFilter(id: string, dimensionId: string, dimensionValue: string) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      const existingDimensionIndex = metricsExplorer.filters.include.findIndex(
-        (dimensionValues) => dimensionValues.name === dimensionId
-      );
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+        dimensionId
+      )
+        ? "exclude"
+        : "include";
 
-      // if entry for dimension doesnt exist, add it
-      if (existingDimensionIndex === -1) {
-        metricsExplorer.filters.include.push({
-          name: dimensionId,
-          values: [dimensionValue],
-        });
-        return;
-      }
+      const dimensionEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionId);
 
-      const existingIncludeIndex =
-        metricsExplorer.filters.include[existingDimensionIndex].values.indexOf(
-          dimensionValue
-        ) ?? -1;
+      if (dimensionEntryIndex >= 0) {
+        if (
+          removeIfExists(
+            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in,
+            (value) => value === dimensionValue
+          )
+        ) {
+          if (
+            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in
+              .length === 0
+          ) {
+            metricsExplorer.filters[relevantFilterKey].splice(
+              dimensionEntryIndex,
+              1
+            );
+          }
+          return;
+        }
 
-      // add the value if it doesn't exist, remove the value if it does exist
-      if (existingIncludeIndex === -1) {
-        metricsExplorer.filters.include[existingDimensionIndex].values.push(
+        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
           dimensionValue
         );
       } else {
-        metricsExplorer.filters.include[existingDimensionIndex].values.splice(
-          existingIncludeIndex,
-          1
-        );
-        // remove the entry for dimension if no values are selected.
-        if (
-          metricsExplorer.filters.include[existingDimensionIndex].values
-            .length === 0
-        ) {
-          metricsExplorer.filters.include.splice(existingDimensionIndex, 1);
-        }
+        metricsExplorer.filters[relevantFilterKey].push({
+          name: dimensionId,
+          in: [dimensionValue],
+        });
       }
+    });
+  },
+
+  /**
+   * Toggle a dimension filter between include/exclude modes
+   */
+  toggleFilterExcludeMode(id: string, dimensionId: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      const exclude =
+        metricsExplorer.dimensionFilterExcludeMode.get(dimensionId);
+      metricsExplorer.dimensionFilterExcludeMode.set(dimensionId, !exclude);
+
+      const relevantFilterKey = exclude ? "exclude" : "include";
+      const otherFilterKey = exclude ? "include" : "exclude";
+
+      const otherFilterEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionId);
+      // if relevant filter is not present then return
+      if (otherFilterEntryIndex === -1) return;
+
+      // push relevant filters to other filter
+      metricsExplorer.filters[otherFilterKey].push(
+        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex]
+      );
+      // remove entry from relevant filter
+      metricsExplorer.filters[relevantFilterKey].splice(
+        otherFilterEntryIndex,
+        1
+      );
     });
   },
 
@@ -159,18 +195,52 @@ const metricViewReducers = {
     updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.filters.include = [];
       metricsExplorer.filters.exclude = [];
+      metricsExplorer.dimensionFilterExcludeMode.clear();
     });
   },
 
-  clearFilterForDimension(id: string, dimensionId: string) {
+  clearFilterForDimension(id: string, dimensionId: string, include: boolean) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
-      removeIfExists(
-        metricsExplorer.filters.include,
-        (dimensionValues) => dimensionValues.name === dimensionId
+      if (include) {
+        removeIfExists(
+          metricsExplorer.filters.include,
+          (dimensionValues) => dimensionValues.name === dimensionId
+        );
+      } else {
+        removeIfExists(
+          metricsExplorer.filters.exclude,
+          (dimensionValues) => dimensionValues.name === dimensionId
+        );
+      }
+    });
+  },
+
+  /**
+   * Toggle a dimension filter between include/exclude modes
+   */
+  toggleFilterMode(id: string, dimensionId: string) {
+    updateMetricsExplorerById(id, (metricsExplorer) => {
+      const exclude =
+        metricsExplorer.dimensionFilterExcludeMode.get(dimensionId);
+      metricsExplorer.dimensionFilterExcludeMode.set(dimensionId, !exclude);
+
+      const relevantFilterKey = exclude ? "exclude" : "include";
+      const otherFilterKey = exclude ? "include" : "exclude";
+
+      const otherFilterEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionId);
+      // if relevant filter is not present then return
+      if (otherFilterEntryIndex === -1) return;
+
+      // push relevant filters to other filter
+      metricsExplorer.filters[otherFilterKey].push(
+        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex]
       );
-      removeIfExists(
-        metricsExplorer.filters.exclude,
-        (dimensionValues) => dimensionValues.name === dimensionId
+      // remove entry from relevant filter
+      metricsExplorer.filters[relevantFilterKey].splice(
+        otherFilterEntryIndex,
+        1
       );
     });
   },
