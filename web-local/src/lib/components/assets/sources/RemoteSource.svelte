@@ -10,12 +10,14 @@
   let selectedConnector: V1Connector;
 
   const connectors = useRuntimeServiceListConnectors({
-    // remove local "file" connector
     query: {
+      // arrange connectors in the way we would like to display them
       select: (data) => {
         data.connectors =
           data.connectors &&
-          data.connectors.filter((connector) => connector.name !== "file");
+          data.connectors
+            .filter((connector) => connector.name !== "file")
+            .sort();
         return data;
       },
     },
