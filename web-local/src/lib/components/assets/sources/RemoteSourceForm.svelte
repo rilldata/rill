@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { goto } from "$app/navigation";
+  import { createEventDispatcher, getContext } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import {
@@ -10,6 +11,7 @@
   import type * as yup from "yup";
   import { EntityStatus } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "../../../application-state-stores/application-store";
+  import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { getYupSchema } from "../../../connectors/schemas";
   import { Button } from "../../button";
   import Input from "../../Input.svelte";
@@ -20,6 +22,12 @@
 
   const runtimeInstanceId = $runtimeStore.instanceId;
   const createSource = useRuntimeServiceMigrateSingle();
+
+  const persistentTableStore = getContext(
+    "rill:app:persistent-table-store"
+  ) as PersistentTableStore;
+  let waitingToNavigateToNewSource = false;
+  const numTablesBeforeSubmit = $persistentTableStore.entities.length;
 
   const dispatch = createEventDispatcher();
 
@@ -59,7 +67,19 @@
             data: { sql },
           },
           {
-            onSuccess: () => {
+            onSuccess: async () => {
+              waitingToNavigateToNewSource = true;
+              let numTables = numTablesBeforeSubmit;
+              // poll the Node backend until it has picked up the new table in DuckDB
+              while (numTables === numTablesBeforeSubmit) {
+                numTables = $persistentTableStore.entities.length;
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+              }
+
+              const newSource = $persistentTableStore.entities.find(
+                (entity) => entity.name === values.sourceName
+              );
+              goto(`/source/${newSource.id}`);
               dispatch("close");
             },
           }
@@ -123,14 +143,14 @@
           </div>
         </div>
       {/if}
-      {#if $createSource.isLoading}
+      {#if $createSource.isLoading || waitingToNavigateToNewSource}
         <Spinner status={EntityStatus.Running} size="20px" />
       {/if}
       <Button
         type="primary"
         submitForm
         form="remote-source-{connector}-form"
-        disabled={$createSource.isLoading}
+        disabled={$createSource.isLoading || waitingToNavigateToNewSource}
       >
         Add source
       </Button>
