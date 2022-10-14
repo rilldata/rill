@@ -16,13 +16,11 @@
 
   const getCellProps = (row, column) => {
     const value = rows[row.index][columns[column.index]?.name];
-
     return {
       value,
       formattedValue:
         rows[row.index]["__formatted_" + columns[column.index]?.name],
       type: columns[column.index]?.type,
-      rowActive: activeIndex === row?.index,
       suppressTooltip: scrolling,
       barValue: columns[column.index]?.total
         ? value / columns[column.index]?.total
@@ -35,11 +33,13 @@
 {#each virtualColumnItems as column (column.key)}
   <Row>
     {#each virtualRowItems as row (`${row.key}-${column.key}`)}
+      {@const rowActive = activeIndex === row?.index}
       <Cell
         {row}
         {column}
         {atLeastOneSelected}
         {excludeMode}
+        {rowActive}
         {...getCellProps(row, column)}
         on:inspect
         on:select-item
