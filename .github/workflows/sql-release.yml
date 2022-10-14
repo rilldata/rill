@@ -2,7 +2,7 @@ name: Release SQL shared library
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ["main", "update-go-duckdb"]
     paths:
       - ".github/workflows/sql-release.yml"
       - "sql/**"
