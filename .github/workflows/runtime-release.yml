@@ -4,6 +4,7 @@ on:
     branches: ["main"]
     paths:
       - ".github/workflows/runtime-release.yml"
+      - "go.mod"
       - "runtime/**"
 jobs:
   release:
