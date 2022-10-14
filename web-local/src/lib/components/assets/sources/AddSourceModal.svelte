@@ -35,7 +35,7 @@
   </div>
   <div class="overflow-y-auto flex-grow">
     {#if selectedTab === "remote"}
-      <RemoteSource on:cancel={() => dispatch("close")} />
+      <RemoteSource on:cancel={() => dispatch("close")} on:close />
     {:else if selectedTab === "local"}
       <LocalSource on:close />
       <!-- {:else if selectedTab === "example"}

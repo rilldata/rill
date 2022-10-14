@@ -1,4 +1,33 @@
+import type { V1Connector } from "web-common/src/runtime-client";
 import * as yup from "yup";
+
+export function getYupSchema(connector: V1Connector) {
+  switch (connector.name) {
+    case "s3":
+      return yup.object().shape({
+        bucket: yup.string().required(),
+        path: yup.string().required(),
+        accessKey: yup.string().required(),
+        secretKey: yup.string().required(),
+      });
+    case "gcs":
+      return yup.object().shape({
+        bucket: yup.string().required(),
+        path: yup.string().required(),
+        credentials: yup.string().required(),
+      });
+    default:
+      throw new Error(`Unknown connector: ${connector.name}`);
+  }
+}
+
+// function extendYupSchemaWithSourceName(yupSchema: yup.AnyObjectSchema) {
+//   return yupSchema.concat(
+//     yup.object().shape({
+//       sourceName: yup.string().required(),
+//     })
+//   );
+// }
 
 export interface ConnectorSpec {
   name: string;

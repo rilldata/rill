@@ -1,24 +1,26 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
-  import * as yup from "yup";
   import {
-    ConnectorSpec,
-    GCS,
-    GCSYupSchema,
-    HTTP,
-    HTTPYupSchema,
-    S3,
-    S3YupSchema,
-  } from "../../../connectors/schemas";
+    ConnectorPropertyType,
+    useRuntimeServiceMigrateSingle,
+    V1Connector,
+  } from "web-common/src/runtime-client";
+  import type * as yup from "yup";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { getYupSchema } from "../../../connectors/schemas";
   import { Button } from "../../button";
   import Input from "../../Input.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
 
-  export let connector;
-  export let connectorDescription = "";
+  export let connector: V1Connector;
 
-  let connectorSpec: ConnectorSpec;
+  const runtimeInstanceId = $runtimeStore.instanceId;
+  const createSource = useRuntimeServiceMigrateSingle();
+
+  const dispatch = createEventDispatcher();
+
   let yupSchema: yup.AnyObjectSchema;
 
   // state from svelte-forms-lib
@@ -26,56 +28,40 @@
   let errors: Writable<Record<never, string>>;
   let handleSubmit: (event: Event) => any;
 
-  function extendYupSchemaWithSourceName(yupSchema: yup.AnyObjectSchema) {
-    return yupSchema.concat(
-      yup.object().shape({
-        sourceName: yup.string().required(),
-      })
-    );
-  }
-
   function compileCreateSourceSql(values) {
     const compiledKeyValues = Object.entries(values)
-      .map(([key, value]) => `${key}='${value}'`)
+      .filter(([key]) => key !== "sourceName")
+      .map(([key, value]) => `'${key}'='${value}'`)
       .join(", ");
 
     return (
-      `CREATE SOURCE ${values.sourceName} WITH (connector = '${connectorSpec.name}', ` +
+      `CREATE SOURCE ${values.sourceName} WITH (connector = '${connector.name}', ` +
       compiledKeyValues +
       `)`
     );
   }
 
-  function onConnectorChange(connector: string) {
-    switch (connector) {
-      case "S3":
-        connectorSpec = S3;
-        yupSchema = S3YupSchema;
-        break;
-      case "GCS":
-        connectorSpec = GCS;
-        yupSchema = GCSYupSchema;
-        break;
-      case "HTTP":
-        connectorSpec = HTTP;
-        yupSchema = HTTPYupSchema;
-        break;
-      default:
-        throw new Error("Unknown connector");
-    }
-
-    yupSchema = extendYupSchemaWithSourceName(yupSchema);
-    connectorDescription = connectorSpec.description;
+  function onConnectorChange(connector: V1Connector) {
+    yupSchema = getYupSchema(connector);
 
     ({ form, errors, handleSubmit } = createForm({
       // TODO: initialValues should come from SQL asset and be reactive to asset modifications
       initialValues: {},
-      validationSchema: yupSchema,
+      // validationSchema: yupSchema, // removing temporarily, as it's preventing form submission
       onSubmit: (values) => {
         const sql = compileCreateSourceSql(values);
-        // TODO: dispatch sql to SQL editor
-        // TODO: submit sql to backend
-        alert(sql);
+        // TODO: call runtime/repo.put() to create source artifact
+        $createSource.mutate(
+          {
+            instanceId: runtimeInstanceId,
+            data: { sql },
+          },
+          {
+            onSuccess: () => {
+              dispatch("close");
+            },
+          }
+        );
       },
     }));
   }
@@ -84,7 +70,10 @@
 </script>
 
 <div class="px-4 flex-grow overflow-y-auto pb-2">
-  <form on:submit={handleSubmit} id="remote-source-{connector}-form">
+  <form
+    on:submit|preventDefault={handleSubmit}
+    id="remote-source-{connector}-form"
+  >
     <div class="py-2">
       <Input
         label="Source name"
@@ -93,26 +82,26 @@
         placeholder="my_new_source"
       />
     </div>
-    {#each Object.entries(connectorSpec.fields) as [name, attributes]}
+    {#each connector.properties as property}
       {@const label =
-        attributes.label + (attributes.required ? "" : " (optional)")}
+        property.displayName + (property.nullable ? " (optional)" : "")}
       <div class="py-2">
-        {#if attributes.type === "text"}
+        {#if property.type === ConnectorPropertyType.TYPE_STRING}
           <Input
-            id={name}
+            id={property.key}
             {label}
-            placeholder={attributes.placeholder}
-            hint={attributes.hint}
-            error={$errors[name]}
-            bind:value={$form[name]}
+            placeholder={property.placeholder}
+            hint={property.hint}
+            error={$errors[property.key]}
+            bind:value={$form[property.key]}
           />
         {/if}
-        {#if attributes.type === "checkbox"}
-          <label for={name} class="flex items-center">
+        {#if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
+          <label for={property.key} class="flex items-center">
             <input
-              id={name}
+              id={property.key}
               type="checkbox"
-              bind:checked={$form[name]}
+              bind:checked={$form[property.key]}
               class="h-5 w-5"
             />
             <span class="ml-2 text-sm">{label}</span>
@@ -124,8 +113,17 @@
 </div>
 <div class="bg-gray-100 border-t border-gray-300">
   <DialogFooter>
-    <Button type="primary" submitForm form="remote-source-{connector}-form">
-      Add source
-    </Button>
+    <div class="flex items-center space-x-2">
+      {#if $createSource.isError}
+        <div class="flex-grow">
+          <div class="text-red-500 text-sm">
+            {$createSource.error?.response?.data?.message}
+          </div>
+        </div>
+      {/if}
+      <Button type="primary" submitForm form="remote-source-{connector}-form">
+        Add source
+      </Button>
+    </div>
   </DialogFooter>
 </div>
