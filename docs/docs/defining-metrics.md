@@ -35,7 +35,7 @@ Strings representing dates are not supported, but you may be able to [`CAST`](ht
 ### Measures
 Measures are numeric aggregates of columns from your data model, and power the line charts that you see in Rill.
 
-A measure must be defined with a [DuckSQL](./sqldialects/duck-sql.md) aggregation function over columns from your data model, or a mathematical expression built with one or more such aggregates.
+A measure must be defined with a [DuckSQL](./sql-dialect.md) aggregation function over columns from your data model, or a mathematical expression built with one or more such aggregates.
 
 For example, if you have a table of sales events with columns including a timestamp for the sales date, the sales price, and customer id, you could calculate the following metrics per time period with these expressions:
 * number of sales: `COUNT(*)` (note that this would be equivalent to counting the total number of rows for any column, e.g. `COUNT(sales_date)`)
