@@ -2,7 +2,7 @@
 set -e
 
 # Version of librillsql to download
-RILLSQL_VERSION="0.1.0-SNAPSHOT"
+RILLSQL_VERSION="0.1.1"
 
 # Get platform details
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
