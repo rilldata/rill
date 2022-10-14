@@ -13,7 +13,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
-	github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd
+	github.com/marcboeker/go-duckdb v1.0.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.8.0
@@ -143,5 +143,3 @@ require (
 	google.golang.org/genproto v0.0.0-20220616135557-88e70c0c3a90
 	google.golang.org/protobuf v1.28.1
 )
-
-replace github.com/marcboeker/go-duckdb v0.0.0-20220729093220-bd4fd323ccbd => github.com/begelundmuller/go-duckdb v0.0.0-20221012193634-2203bdc2ee6e
