@@ -11,19 +11,20 @@ func init() {
 
 var spec = connectors.Spec{
 	DisplayName: "S3",
-	Description: "Connector for AWS S3",
+	Description: "Connect to CSV or Parquet files in an Amazon S3 bucket. For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>.",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
 			DisplayName: "Path",
 			Description: "Path to file on the disk.",
-			Placeholder: "s3://<bucket>/<file>",
+			Placeholder: "s3://bucket-name/path/to/file.csv",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
+			Hint:        "Tip: use glob patterns to select multiple files",
 		},
 		{
 			Key:         "aws.region",
-			DisplayName: "AWS Region",
+			DisplayName: "AWS region",
 			Description: "AWS Region for the bucket.",
 			Placeholder: "us-east-1",
 			Type:        connectors.StringPropertyType,
@@ -31,25 +32,17 @@ var spec = connectors.Spec{
 		},
 		{
 			Key:         "aws.access.key",
-			DisplayName: "AWS Access Key",
+			DisplayName: "AWS access key",
 			Description: "",
-			Placeholder: "",
+			Placeholder: "...",
 			Type:        connectors.StringPropertyType,
 			Required:    false,
 		},
 		{
 			Key:         "aws.access.secret",
-			DisplayName: "AWS Access Secret",
+			DisplayName: "AWS access secret",
 			Description: "",
-			Placeholder: "",
-			Type:        connectors.StringPropertyType,
-			Required:    false,
-		},
-		{
-			Key:         "aws.access.session",
-			DisplayName: "AWS Access Session Token",
-			Description: "A session token is an alternative to an access key/secret pair",
-			Placeholder: "",
+			Placeholder: "...",
 			Type:        connectors.StringPropertyType,
 			Required:    false,
 		},
