@@ -14,11 +14,7 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
 
-  import LeaderboardHeader from "../../../leaderboard/LeaderboardHeader.svelte";
-  import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
-  import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import {
     useMetaDimension,
     useMetaMappedFilters,
@@ -31,7 +27,11 @@
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "../../../../util/humanize-numbers";
-  import { createEventDispatcher, getContext } from "svelte";
+  import LeaderboardHeader from "../../../leaderboard/LeaderboardHeader.svelte";
+  import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
+  import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
+  import Tooltip from "../../../tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
   import { getDisplayName } from "../utils";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
@@ -234,17 +234,17 @@
             {$topListQuery?.error}
           </div>
         {:else if values.length === 0}
-          <div class="p-1 italic text-gray-500">no available values</div>
+          <div class="p-1 italic ui-copy-disabled">no available values</div>
         {/if}
 
         {#if values.length > slice}
           <Tooltip location="right">
             <LeaderboardListItem
               value={0}
-              color="bg-gray-100"
+              color="=ui-label"
               on:click={() => selectDimension(dimensionId)}
             >
-              <div class="italic text-gray-500" slot="title">
+              <div class="italic ui-copy-label" slot="title">
                 (Expand Table)
               </div>
             </LeaderboardListItem>

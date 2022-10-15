@@ -1,15 +1,15 @@
 export type ChipColors = {
-  bgBaseColor: string;
-  bgHoverColor: string;
-  textColor: string;
-  bgActiveColor: string;
-  outlineColor: string;
+  bgBaseClass: string;
+  bgHoverClass: string;
+  textClass: string;
+  bgActiveClass: string;
+  outlineClass: string;
 };
 
 export const defaultChipColors: ChipColors = {
-  bgBaseColor: "bg-blue-50",
-  bgHoverColor: "bg-blue-100",
-  textColor: "text-blue-800",
-  bgActiveColor: "bg-blue-100",
-  outlineColor: "outline-blue-400",
+  bgBaseClass: "bg-blue-50 dark:bg-blue-800",
+  bgHoverClass: "bg-blue-100 dark:bg-blue-800",
+  textClass: "text-blue-800 dark:bg-blue-50",
+  bgActiveClass: "bg-blue-100 dark:bg-blue-700",
+  outlineClass: "outline-blue-400 dark:outline-blue-500",
 };

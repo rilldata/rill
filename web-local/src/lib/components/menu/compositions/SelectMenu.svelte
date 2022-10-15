@@ -7,8 +7,8 @@ A slot is provided to change the text within the button.
 
 -->
 <script lang="ts">
-  import type { Alignment, Location } from "../../floating-element/types";
   import { createEventDispatcher, setContext } from "svelte";
+  import type { Alignment, Location } from "../../floating-element/types";
   import { SelectButton, WithSelectMenu } from "../index";
 
   export let options;

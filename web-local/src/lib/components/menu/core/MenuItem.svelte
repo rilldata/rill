@@ -106,8 +106,16 @@
   }
 
   $: textColor = dark
-    ? `${disabled ? "text-gray-400" : "text-white focus:bg-gray-600"}`
-    : `${disabled ? "text-gray-600" : "text-gray-900 focus:bg-gray-200"}`;
+    ? `${
+        disabled
+          ? "ui-copy-disabled"
+          : "ui-copy-disabled focus:bg-gray-600 dark:focus:bg-gray-600"
+      }`
+    : `${
+        disabled
+          ? "ui-copy-disabled"
+          : "text-gray-900 ui-copy focus:bg-gray-200 focus:dark:bg-gray-600"
+      }`;
 </script>
 
 <button

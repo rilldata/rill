@@ -1,8 +1,8 @@
-<section class="grid items-stretch leaderboard-layout bg-white">
+<section class="grid items-stretch leaderboard-layout surface">
   <div class="explore-header">
     <slot name="header" />
   </div>
-  <hr class="pb-3 pt-1" />
+  <hr class="pb-3 pt-1 ui-divider" />
   <div class="explore-metrics pl-8 pb-8">
     <slot name="metrics" />
   </div>

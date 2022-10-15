@@ -1,11 +1,11 @@
 <script lang="ts">
-  import BarAndLabel from "../viz/BarAndLabel.svelte";
   import { fly, slide } from "svelte/transition";
-  import Spacer from "../icons/Spacer.svelte";
-  import Check from "../icons/Check.svelte";
   import Cancel from "../icons/Cancel.svelte";
+  import Check from "../icons/Check.svelte";
+  import Spacer from "../icons/Spacer.svelte";
+  import BarAndLabel from "../viz/BarAndLabel.svelte";
   export let value: number; // should be between 0 and 1.
-  export let color = "bg-blue-200";
+  export let color = "bg-blue-200 dark:bg-blue-600";
   export let isActive = false;
   export let excluded = false;
 
@@ -35,7 +35,11 @@
   on:click
   class="block flex flex-row w-full text-left transition-color"
 >
-  <div style:width="22px" style:height="22px" class="grid place-items-center">
+  <div
+    style:width="22px"
+    style:height="22px"
+    class="grid place-items-center hover:bg-gray-100 hover:dark:bg-gray-600"
+  >
     {#if isActive && !excluded}
       <Check size="20px" />
     {:else if isActive && excluded}
@@ -52,7 +56,7 @@
     justify={false}
   >
     <div
-      class="grid leaderboard-entry items-center gap-x-3 hover:bg-gray-100"
+      class="grid leaderboard-entry items-center gap-x-3"
       style:height="22px"
     >
       <div

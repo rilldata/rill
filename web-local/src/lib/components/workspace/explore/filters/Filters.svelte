@@ -5,25 +5,25 @@ The main feature-set component for dashboard filters
   import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import { flip } from "svelte/animate";
   import { getContext } from "svelte";
+  import { flip } from "svelte/animate";
 
   import type {
     MetricsViewDimensionValues,
     MetricsViewRequestFilter,
   } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+  import type { Readable } from "svelte/store";
+  import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import { getDimensionsByMetricsId } from "../../../../redux-store/dimension-definition/dimension-definition-readables";
   import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
   import { Chip, ChipContainer, RemovableListChip } from "../../../chip";
   import Filter from "../../../icons/Filter.svelte";
   import FilterRemove from "../../../icons/FilterRemove.svelte";
-  import { getDimensionsByMetricsId } from "../../../../redux-store/dimension-definition/dimension-definition-readables";
-  import type { Readable } from "svelte/store";
-  import { fly } from "svelte/transition";
   import { getDisplayName } from "../utils";
   export let metricsDefId;
 
@@ -144,11 +144,11 @@ The main feature-set component for dashboard filters
   }
 
   const excludeChipColors = {
-    bgBaseColor: "bg-gray-100",
-    bgHoverColor: "bg-gray-200",
-    textColor: "text-gray-900",
-    bgActiveColor: "bg-gray-200",
-    outlineColor: "outline-gray-400",
+    bgBaseClass: "bg-gray-100 dark:bg-gray-700",
+    bgHoverClass: "bg-gray-200 dark:bg-gray-600",
+    textClass: "text-gray-900 dark:ui-copy",
+    bgActiveClass: "bg-gray-200 dark:bg-gray-600",
+    outlineClass: "outline-gray-400 dark:outline-gray-500",
   };
 </script>
 
@@ -161,8 +161,8 @@ The main feature-set component for dashboard filters
     style:width="24px"
     style:height="24px"
     class="grid place-items-center"
-    class:text-gray-400={!hasFilters}
-    class:text-gray-600={hasFilters}
+    class:ui-copy-inactive={!hasFilters}
+    class:ui-copy={hasFilters}
   >
     <Filter size="16px" />
   </div>
@@ -215,11 +215,11 @@ The main feature-set component for dashboard filters
       {#if hasFilters}
         <div class="ml-auto">
           <Chip
-            bgBaseColor="bg-white"
-            bgHoverColor="bg-gray-100"
-            textColor="text-gray-500"
-            bgActiveColor="bg-gray-200"
-            outlineColor="outline-gray-400"
+            bgBaseClass="surface"
+            bgHoverClass="bg-gray-100 dark:bg-gray-700"
+            textClass="ui-copy-inactive"
+            bgActiveClass="bg-gray-200 dark:bg-gray-600"
+            outlineClass="outline-gray-400"
             on:click={clearAllFilters}
           >
             <FilterRemove slot="icon" size="16px" />
@@ -231,7 +231,7 @@ The main feature-set component for dashboard filters
   {:else if currentDimensionIncludeFilters?.length === 0 && currentDimensionExcludeFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
-      class="italic text-gray-400  grid items-center"
+      class="italic ui-copy-disabled grid items-center"
       style:min-height="26px"
     >
       no filters selected

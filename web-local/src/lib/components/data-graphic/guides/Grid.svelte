@@ -15,11 +15,11 @@
   export let showX = true;
   export let showY = true;
 
-  export let xColor = "rgba(0,0,0,.3)";
+  export let xColor = "stroke-gray-300 dark:stroke-gray-600";
   export let xAlpha = 1;
   export let xDashArray = "1,1";
   export let xThickness = 1;
-  export let yColor = "rgba(0,0,0,.3)";
+  export let yColor = "stroke-gray-300 dark:stroke-gray-600";
   export let yAlpha = 1;
   export let yDashArray = "1,1";
   export let yThickness = 1;
@@ -52,7 +52,7 @@
         x2={$xScale(tick)}
         y1={$config.bodyTop}
         y2={$config.bodyBottom}
-        stroke={xColor}
+        class={xColor}
         stroke-width={xThickness}
         stroke-dasharray={xDashArray}
         opacity={xAlpha}
@@ -66,7 +66,7 @@
         y2={$yScale(tick)}
         x1={$config.bodyLeft}
         x2={$config.bodyRight}
-        stroke={yColor}
+        class={yColor}
         stroke-width={yThickness}
         stroke-dasharray={yDashArray}
         opacity={yAlpha}
