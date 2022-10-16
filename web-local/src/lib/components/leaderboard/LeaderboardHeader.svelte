@@ -39,7 +39,7 @@
         border-gray-200
         rounded-t
         surface
-        ui-copy-label
+        ui-copy-muted
         font-semibold
         truncate
     "

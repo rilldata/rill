@@ -24,9 +24,16 @@
   <section>
     <h2>UI Color Classes</h2>
     <div>
-      {#each [".ui-copy", ".ui-copy-label", ".ui-copy-inactive", ".ui-copy-disabled"] as cl}
-        <div style:font-size="24px" class={cl}>{cl}</div>
+      {#each [".ui-copy", ".ui-copy-muted", ".ui-copy-inactive", ".ui-copy-disabled"] as cl}
+        <div style:font-size="24px" class={cl.slice(1)}>{cl}</div>
       {/each}
+    </div>
+    <div class="dark">
+      <div class="surface">
+        {#each [".ui-copy", ".ui-copy-muted", ".ui-copy-inactive", ".ui-copy-disabled"] as cl}
+          <div style:font-size="24px" class={cl.slice(1)}>{cl} (dark)</div>
+        {/each}
+      </div>
     </div>
   </section>
 </main>

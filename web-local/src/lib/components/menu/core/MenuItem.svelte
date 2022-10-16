@@ -165,14 +165,14 @@
       <slot {focused} />
     </div>
     <div
-      class:ui-copy-label={!disabled}
+      class:ui-copy-muted={!disabled}
       class:ui-copy-disabled={disabled}
       style:font-size="11px"
     >
       <slot name="description" />
     </div>
   </div>
-  <div class="text-right ui-copy-label">
+  <div class="text-right ui-copy-muted">
     <slot name="right" {focused} />
   </div>
 </button>

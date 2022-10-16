@@ -244,7 +244,7 @@
               color="=ui-label"
               on:click={() => selectDimension(dimensionId)}
             >
-              <div class="italic ui-copy-label" slot="title">
+              <div class="italic ui-copy-muted slot="title">
                 (Expand Table)
               </div>
             </LeaderboardListItem>

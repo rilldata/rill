@@ -72,7 +72,7 @@
 <div>
   {#if measures && options.length && selection}
     <div
-      class="flex flex-row items-center ui-copy-label"
+      class="flex flex-row items-center ui-copy-muted"
       style:grid-column-gap=".4rem"
       in:send={{ key: "leaderboard-metric" }}
     >
