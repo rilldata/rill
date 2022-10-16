@@ -16,14 +16,14 @@
 
 <form class="flex items-center">
   <div class="relative w-full px-1 mb-1">
-    <div class="flex absolute inset-y-0 items-center pl-2">
+    <div class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon">
       <Search />
     </div>
     <input
       bind:this={ref}
       type="text"
       autocomplete="off"
-      class="outline-none bg-gray-100 border border-gray-200
+      class="outline-none bg-gray-100 surface-impression border border-gray-200 dark:border-gray-400
         rounded-sm focus:border-gray-300 
         block w-full pl-8 p-1 placeholder:italic"
       placeholder="Search"

@@ -2,14 +2,14 @@
   import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { getContext } from "svelte";
+  import { crossfade, fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../application-state-stores/explorer-stores";
-  import { SelectMenu } from "../menu";
   import { useMetaQuery } from "../../svelte-query/queries/metrics-views/metadata";
-  import { getContext } from "svelte";
-  import { crossfade, fly } from "svelte/transition";
+  import { SelectMenu } from "../menu";
   import Spinner from "../Spinner.svelte";
 
   export let metricsDefId;
@@ -72,7 +72,7 @@
 <div>
   {#if measures && options.length && selection}
     <div
-      class="flex flex-row items-center"
+      class="flex flex-row items-center ui-copy-label"
       style:grid-column-gap=".4rem"
       in:send={{ key: "leaderboard-metric" }}
     >

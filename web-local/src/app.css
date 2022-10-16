@@ -16,7 +16,7 @@
   }
 
   .surface-impression {
-    @apply dark:bg-gray-900;
+    @apply bg-gray-100 dark:bg-gray-900;
   }
 
   .surface-focus {
@@ -27,29 +27,24 @@
     @apply bg-gray-50 dark:bg-transparent;
   }
 
-  .ui-copy-primary {
-    @apply text-gray-700 dark:text-white;
-  }
-
   .ui-copy {
-    @apply ui-copy-primary;
+    @apply text-gray-700 dark:text-white;
   }
 
   .ui-copy-label {
     @apply text-gray-600 dark:text-gray-200;
   }
 
-  /** is this a good class name? */
-  .ui-copy-deemphasized {
-    @apply text-gray-300 dark:text-gray-500;
-  }
-
   .ui-copy-icon {
     @apply ui-copy-label;
   }
 
+  .ui-copy-icon-inactive {
+    @apply text-gray-400 dark:text-gray-500;
+  }
+
   .ui-copy-inactive {
-    @apply text-gray-500 dark:text-gray-300;
+    @apply text-gray-500 dark:text-gray-400;
   }
 
   .ui-copy-disabled {

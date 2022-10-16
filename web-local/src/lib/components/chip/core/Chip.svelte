@@ -34,11 +34,10 @@
     class="
     grid gap-x-2 items-center pl-2 pr-4 py-1 rounded-2xl cursor-pointer
     {textClass}
-    {bgBaseClass}
-    {outlineClass}
-    {bgHoverClass}
+    {bgBaseClass} 
+    {outlineClass} 
+    {bgHoverClass} 
     {active ? bgActiveClass : ''}
-
   "
     class:outline-2={active}
     class:outline={active}
@@ -50,6 +49,7 @@
     <!-- a cancelable element, e.g. filter buttons -->
     {#if removable}
       <RemoveChipButton
+        {textClass}
         tooltipLocation={removeButtonTooltipLocation}
         tooltipAlignment={removeButtonTooltipAlignment}
         tooltipDistance={removeButtonTooltipDistance}

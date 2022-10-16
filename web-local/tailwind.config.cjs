@@ -1,6 +1,6 @@
 module.exports = {
   /** Once we have applied dark styling to all UI elements, remove this line */
-  //darkMode: 'class',
+  darkMode: 'class',
   content: [
     "./**/*.html",
     "./**/*.svelte",

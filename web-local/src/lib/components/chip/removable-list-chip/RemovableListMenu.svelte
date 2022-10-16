@@ -2,8 +2,8 @@
   import { Button } from "@rilldata/web-local/lib/components/button";
   import { Search } from "@rilldata/web-local/lib/components/search";
 
-  import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
   import Cancel from "@rilldata/web-local/lib/components/icons/Cancel.svelte";
+  import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-local/lib/components/icons/Spacer.svelte";
 
   import { Menu } from "@rilldata/web-local/lib/components/menu";
@@ -103,7 +103,7 @@
         </MenuItem>
       {/each}
     {:else}
-      <div class="mt-5 italic text-gray-500 text-center">no results</div>
+      <div class="mt-5 ui-copy-disabled text-center">no results</div>
     {/if}
   </div>
   <Footer>
@@ -118,12 +118,12 @@
       {:else}
         <Check />
       {/if}
-      <span class="font-semibold text-gray-800">
+      <span class="font-semibold ui-copy">
         {excludeMode ? "Exclude" : "Include"}
       </span>
     </Button>
     {#if numSelectedNotInSearch}
-      <div class="text-gray-600 italic">
+      <div class="ui-label italic">
         {numSelectedNotInSearch} other value{numSelectedNotInSearch > 1
           ? "s"
           : ""} selected

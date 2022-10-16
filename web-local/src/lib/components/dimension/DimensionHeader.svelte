@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { slideRight } from "../../transitions";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
+  import { slideRight } from "../../transitions";
 
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
+  import Shortcut from "../tooltip/Shortcut.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
-  import Shortcut from "../tooltip/Shortcut.svelte";
+  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
 
   import Back from "../icons/Back.svelte";
   import Search from "../icons/Search.svelte";
 
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
-  import Spinner from "../Spinner.svelte";
-  import Check from "../icons/Check.svelte";
   import Cancel from "../icons/Cancel.svelte";
-  import SearchBar from "../search/Search.svelte";
+  import Check from "../icons/Check.svelte";
   import Close from "../icons/Close.svelte";
+  import SearchBar from "../search/Search.svelte";
+  import Spinner from "../Spinner.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
@@ -66,7 +66,9 @@
         <Spinner size="16px" status={EntityStatus.Running} />
       </div>
     {:else}
-      <Back size="16px" />
+      <span class="ui-copy-icon">
+        <Back size="16px" />
+      </span>
       <span> All Dimensions </span>
     {/if}
   </button>
@@ -78,7 +80,7 @@
   >
     <Tooltip location="left" distance={16}>
       <div
-        class="flex items-center mr-3"
+        class="flex items-center mr-3 ui-copy-icon"
         style:grid-column-gap=".2rem"
         on:click={toggleFilterMode}
       >
@@ -101,7 +103,7 @@
 
     {#if !searchToggle}
       <div
-        class="flex items-center"
+        class="flex items-center ui-copy-icon"
         in:fly={{ x: 10, duration: 300 }}
         style:grid-column-gap=".2rem"
         on:click={() => (searchToggle = !searchToggle)}
@@ -115,7 +117,11 @@
         class="flex items-center"
       >
         <SearchBar bind:value={searchText} on:input={onSearch} />
-        <span style:cursor="pointer" on:click={() => closeSearchBar()}>
+        <span
+          class="ui-copy-icon"
+          style:cursor="pointer"
+          on:click={() => closeSearchBar()}
+        >
           <Close />
         </span>
       </div>

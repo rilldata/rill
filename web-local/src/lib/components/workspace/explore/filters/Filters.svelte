@@ -146,7 +146,7 @@ The main feature-set component for dashboard filters
   const excludeChipColors = {
     bgBaseClass: "bg-gray-100 dark:bg-gray-700",
     bgHoverClass: "bg-gray-200 dark:bg-gray-600",
-    textClass: "text-gray-900 dark:ui-copy",
+    textClass: "ui-copy",
     bgActiveClass: "bg-gray-200 dark:bg-gray-600",
     outlineClass: "outline-gray-400 dark:outline-gray-500",
   };
@@ -161,8 +161,8 @@ The main feature-set component for dashboard filters
     style:width="24px"
     style:height="24px"
     class="grid place-items-center"
-    class:ui-copy-inactive={!hasFilters}
-    class:ui-copy={hasFilters}
+    class:ui-copy-icon-inactive={!hasFilters}
+    class:ui-copy-icon={hasFilters}
   >
     <Filter size="16px" />
   </div>
@@ -216,13 +216,15 @@ The main feature-set component for dashboard filters
         <div class="ml-auto">
           <Chip
             bgBaseClass="surface"
-            bgHoverClass="bg-gray-100 dark:bg-gray-700"
-            textClass="ui-copy-inactive"
+            bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
+            textClass="text-gray-400 hover:text-gray-500 dark:text-gray-500"
             bgActiveClass="bg-gray-200 dark:bg-gray-600"
             outlineClass="outline-gray-400"
             on:click={clearAllFilters}
           >
-            <FilterRemove slot="icon" size="16px" />
+            <span slot="icon" class="ui-copy-icon-inactive">
+              <FilterRemove size="16px" />
+            </span>
             <svelte:fragment slot="body">clear filters</svelte:fragment>
           </Chip>
         </div>
