@@ -30,7 +30,7 @@
       {description}
     </TooltipContent>
   </Tooltip>
-  <div style:font-size="1.5rem" style:font-weight="light" class="ui-copy-muted>
+  <div style:font-size="1.5rem" style:font-weight="light" class="ui-copy-muted">
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
     override this by filling the slot in the consuming component. -->
     <slot name="value">
