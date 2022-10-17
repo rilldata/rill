@@ -5,6 +5,7 @@
   export let value = 0;
   export let color;
   export let showBackground = true;
+  export let customBackgroundColor = undefined;
   export let justify: string | boolean = "end"; // or left
   export let tweenParameters: BarAndLabelTweenParameterOptions<number> = {
     duration: 500,
@@ -28,7 +29,9 @@
     text-right grid items-center 
     {justify ? `justify-${justify}` : ''} 
     {justify ? `justify-items-${justify}` : ''} relative w-full"
-  style:background-color={showBackground
+  style:background-color={customBackgroundColor
+    ? customBackgroundColor
+    : showBackground
     ? "hsla(217,5%, 90%, .25)"
     : "hsl(217, 0%, 100%, .25)"}
   style:flex="1"
