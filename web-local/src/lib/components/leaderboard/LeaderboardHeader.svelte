@@ -27,6 +27,7 @@
   </div>
 
   <button
+    on:click|self
     style:height="32px"
     style:flex="1"
     style:grid-template-columns="auto max-content"
@@ -44,7 +45,7 @@
         truncate
     "
   >
-    <div on:click>
+    <div>
       <Tooltip location="top" distance={16}>
         <div class="pl-2 truncate" style="max-width: calc(315px - 60px);">
           {displayName}

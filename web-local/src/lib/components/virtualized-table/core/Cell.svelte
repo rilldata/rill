@@ -107,6 +107,7 @@
     style:height="{row.size}px"
   >
     <BarAndLabel
+      customBackgroundColor="rgba(0,0,0,0)"
       showBackground={false}
       justify="left"
       value={barValue}

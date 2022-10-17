@@ -69,7 +69,7 @@
   h2,
   h3,
   h4 {
-    @apply font-bold ui-copy;
+    @apply font-bold;
   }
 }
 

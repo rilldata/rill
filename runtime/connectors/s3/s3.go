@@ -57,11 +57,11 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path       string `key:"path"`
-	AWSRegion  string `key:"aws.region"`
-	AWSKey     string `key:"aws.access.key"`
-	AWSSecret  string `key:"aws.access.secret"`
-	AWSSession string `key:"aws.access.session"`
+	Path       string `mapstructure:"path"`
+	AWSRegion  string `mapstructure:"aws.region"`
+	AWSKey     string `mapstructure:"aws.access.key"`
+	AWSSecret  string `mapstructure:"aws.access.secret"`
+	AWSSession string `mapstructure:"aws.access.session"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
