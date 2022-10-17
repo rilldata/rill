@@ -40,6 +40,7 @@ type PropertySchema struct {
 	DisplayName string
 	Description string
 	Placeholder string
+	Hint        string
 }
 
 // PropertySchemaType is an enum of types supported for connector properties.

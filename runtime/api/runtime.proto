@@ -709,6 +709,8 @@ message Connector {
     Type type = 5;
     // Nullable is true if the field is optional
     bool nullable = 6;
+    // Additional textual explanation for use in UIs
+    string hint = 7;
   }
   // Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
   string name = 1;

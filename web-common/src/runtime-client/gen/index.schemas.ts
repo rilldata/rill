@@ -371,4 +371,5 @@ export interface ConnectorProperty {
   placeholder?: string;
   type?: ConnectorPropertyType;
   nullable?: boolean;
+  hint?: string;
 }

@@ -1110,6 +1110,10 @@
         "nullable": {
           "type": "boolean",
           "title": "Nullable is true if the field is optional"
+        },
+        "hint": {
+          "type": "string",
+          "title": "Additional textual explanation for use in UIs"
         }
       },
       "title": "Property represents one of the connector's config properties"

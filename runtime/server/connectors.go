@@ -36,6 +36,7 @@ func (s *Server) ListConnectors(ctx context.Context, req *api.ListConnectorsRequ
 				Placeholder: propSchema.Placeholder,
 				Type:        t,
 				Nullable:    !propSchema.Required,
+				Hint:        propSchema.Hint,
 			}
 		}
 
