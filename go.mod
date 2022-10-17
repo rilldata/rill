@@ -143,3 +143,5 @@ require (
 	google.golang.org/genproto v0.0.0-20220616135557-88e70c0c3a90
 	google.golang.org/protobuf v1.28.1
 )
+
+replace github.com/marcboeker/go-duckdb v1.0.3 => github.com/begelundmuller/go-duckdb v0.0.0-20221017134940-ad5d464b6a1a
