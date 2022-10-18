@@ -3,6 +3,10 @@ import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { DatabaseActions } from "./DatabaseActions";
 
+function escapeColumn(columnName: string): string {
+  return columnName.replace(/"/g, "'");
+}
+
 export class DatabaseTableActions extends DatabaseActions {
   public async createViewOfQuery(
     metadata: DatabaseMetadata,
@@ -38,34 +42,6 @@ export class DatabaseTableActions extends DatabaseActions {
       false
     );
     return cardinality.count;
-  }
-
-  private async getMinAndMaxStringLengthsOfAllColumns(
-    table: string,
-    columns: ProfileColumn[]
-  ) {
-    /** get columns */
-    // template in the column mins and maxes.
-    // treat categoricals a little differently; all they have is length.
-    const minAndMax = columns
-      .map(
-        (column) => `min(length("${column.name}")) as "min_${column.name}", 
-        max(length("${column.name}")) as "max_${column.name}"`
-      )
-      .join(", ");
-    const largestStrings = columns
-      .map(
-        (column) => `
-      CASE WHEN "min_${column.name}" > "max_${column.name}" THEN "min_${column.name}" ELSE "max_${column.name}" END AS "${column.name}"
-    `
-      )
-      .join(",");
-    return (
-      await this.databaseClient.execute(`
-      WITH strings AS (SELECT ${minAndMax} from "${table}")
-      SELECT ${largestStrings} from strings;
-    `)
-    )[0];
   }
 
   public async getProfileColumns(
@@ -119,5 +95,40 @@ export class DatabaseTableActions extends DatabaseActions {
     tableName: string
   ): Promise<void> {
     await this.databaseClient.execute(`DROP TABLE ${tableName}`);
+  }
+
+  private async getMinAndMaxStringLengthsOfAllColumns(
+    table: string,
+    columns: ProfileColumn[]
+  ) {
+    /** get columns */
+    // template in the column mins and maxes.
+    // treat categoricals a little differently; all they have is length.
+    const minAndMax = columns
+      .map((column) => {
+        const escapedColumn = escapeColumn(column.name);
+        return (
+          `min(length('${column.name}')) as "min_${escapedColumn}",` +
+          `max(length('${column.name}')) as "max_${escapedColumn}"`
+        );
+      })
+      .join(", ");
+    const largestStrings = columns
+      .map((column) => {
+        const escapedColumn = escapeColumn(column.name);
+        return (
+          `CASE WHEN "min_${escapedColumn}" > "max_${escapedColumn}" THEN "min_${escapedColumn}" ` +
+          `ELSE "max_${escapedColumn}" END AS "${escapedColumn}"`
+        );
+      })
+      .join(",");
+    return (
+      await this.databaseClient.execute(
+        `
+      WITH strings AS (SELECT ${minAndMax} from "${table}")
+      SELECT ${largestStrings} from strings;
+    `
+      )
+    )[0];
   }
 }

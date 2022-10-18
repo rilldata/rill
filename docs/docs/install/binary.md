@@ -1,8 +1,8 @@
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Using a Rill binary
-Our binary script is the fastest path to installing Rill Developer. Use this command to get started:
+# How to install a Rill binary
+Our install script is the fastest way to download Rill Developer and make it a globally accessible binary:
 ```
 curl -s https://cdn.rilldata.com/install.sh | bash
 ```
@@ -12,10 +12,9 @@ Nightly build:
 curl -s https://cdn.rilldata.com/install.sh | bash -s -- --nightly
 ```
 
-We don’t have nightly builds for M1 Mac (arm64). Instead, you will be using Apples’s Rosetta 2 emulation. You might notice a performance difference compared to our releases.
+Nightly builds for M1 Mac (arm64) use [Apples’s Rosetta emulator](https://support.apple.com/en-us/HT211861), which may be less performant than native weekly builds. 
 
-
-Alternatively you can manually download the latest binary that is relevant for your OS and architecture:
+Alternatively, you can manually download the latest binary that is relevant for your OS and architecture.
 
 <Tabs >
   <TabItem label="MacOS" value="mac">
@@ -26,11 +25,12 @@ Alternatively you can manually download the latest binary that is relevant for y
 ## Safely open Rill on your Mac
 If you see a warning when opening the rill macos-arm64 binary you need to change the permissions to make it executable and remove it from Apple Developer identification quarantine.
 ```
-cd downloads
+cd ~/Downloads
 chmod a+x rill
 xattr -d com.apple.quarantine ./rill
 ```
-
+Unlike the script-based installation, a manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.  
+    
   </TabItem>
   <TabItem label="Windows" value="win">
 
@@ -53,14 +53,7 @@ If you see a warning "SmartScreen protected an unrecognized app from starting," 
 
 [linux-x64](https://cdn.rilldata.com/rill/latest/linux-x64/rill) (~180mb)
 
+Unlike the script-based installation, a manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.  
+
   </TabItem>
 </Tabs>
-
-## Nuance for manually download binaries
-Installing the Rill binary manually doesn't give you the ablity to use Rill globally. Instead, you should open the terminal and `cd` to the directory where the application is located. You can now use Rill's [CLI](../cli.md) commands as expected.
-```
-cd downloads
-rill init
-rill import-source /path/to/data_1.parquet
-rill start
-```
