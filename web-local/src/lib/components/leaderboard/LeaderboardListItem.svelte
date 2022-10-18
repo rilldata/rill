@@ -35,11 +35,7 @@
   on:click
   class="block flex flex-row w-full text-left transition-color"
 >
-  <div
-    style:width="22px"
-    style:height="22px"
-    class="grid place-items-center hover:bg-gray-100 hover:dark:bg-gray-600"
-  >
+  <div style:width="22px" style:height="22px" class="grid place-items-center">
     {#if isActive && !excluded}
       <Check size="20px" />
     {:else if isActive && excluded}
@@ -51,6 +47,7 @@
   <BarAndLabel
     {color}
     {value}
+    showHover
     showBackground={false}
     tweenParameters={{ duration: 200 }}
     justify={false}

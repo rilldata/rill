@@ -136,7 +136,7 @@
           value={formattedValue || value}
           {type}
           customStyle={excluded
-            ? "font-normal ui-copy-disabled"
+            ? "font-normal ui-copy-disabled-faint"
             : "font-medium ui-copy"}
           inTable
         />
