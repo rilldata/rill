@@ -111,7 +111,7 @@
         {#if property.type === ConnectorPropertyType.TYPE_STRING}
           <Input
             id={property.key}
-            {label}
+            label={property.displayName}
             placeholder={property.placeholder}
             hint={property.hint}
             error={$errors[property.key]}
