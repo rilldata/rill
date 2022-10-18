@@ -13,6 +13,8 @@ import (
 	"unsafe"
 
 	"github.com/rilldata/rill/runtime/pkg/sharedlibrary"
+	"github.com/rilldata/rill/runtime/sql/requests"
+	"google.golang.org/protobuf/proto"
 )
 
 type Isolate struct {
@@ -64,8 +66,34 @@ func (i *Isolate) Close() error {
 	return i.library.Close()
 }
 
-// func (i *Isolate) request(request Requests.Request) Requests.Response {
-// }
+func (i *Isolate) request(request *requests.Request) *requests.Response {
+	f, err := i.library.FindFunc("request")
+	if err != nil {
+		panic(err)
+	}
+
+	thread := i.attachThread()
+
+	bytes, _ := proto.Marshal(request)
+	cBytes := C.CString(string(bytes))
+	defer C.free(unsafe.Pointer(cBytes))
+	res, _, _ := f.Call(
+		uintptr(unsafe.Pointer(thread)),
+		uintptr(unsafe.Pointer(C.my_malloc)),
+		uintptr(unsafe.Pointer(cBytes)),
+	)
+	if res == 0 {
+		panic(fmt.Errorf("call to request failed"))
+	}
+
+	goRes := C.GoString((*C.char)(unsafe.Pointer(res)))
+	C.free(unsafe.Pointer(res))
+
+	var response requests.Response
+	proto.Unmarshal([]byte(goRes), &response)
+
+	return &response
+}
 
 func (i *Isolate) ConvertSQL(sql string, schema string, dialect string) string {
 	convertSql, err := i.library.FindFunc("convert_sql")
