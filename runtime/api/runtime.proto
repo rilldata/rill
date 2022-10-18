@@ -419,6 +419,7 @@ message CatalogObject {
     MetricsView metrics_view = 2;
     UnmanagedTable unmanaged_table = 3;
   }
+  google.protobuf.Timestamp refreshed_on = 4;
 }
 
 // Source represents a catalog object created using CREATE SOURCE

@@ -1224,6 +1224,10 @@
         },
         "unmanagedTable": {
           "$ref": "#/definitions/v1UnmanagedTable"
+        },
+        "refreshedOn": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "title": "CatalogObject represents an object stored in the catalog"

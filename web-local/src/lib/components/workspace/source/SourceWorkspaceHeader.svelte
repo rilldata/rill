@@ -1,11 +1,16 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { useRuntimeServiceTriggerRefresh } from "web-common/src/runtime-client";
+  import {
+    getRuntimeServiceGetCatalogObjectQueryKey,
+    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceTriggerRefresh,
+  } from "web-common/src/runtime-client";
   import {
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import { IconButton } from "../../button";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
@@ -32,6 +37,11 @@
   const runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSource = useRuntimeServiceTriggerRefresh();
 
+  $: getSource = useRuntimeServiceGetCatalogObject(
+    runtimeInstanceId,
+    currentSource?.tableName
+  );
+
   const onRefreshClick = (tableName: string) => {
     $refreshSource.mutate(
       {
@@ -43,11 +53,21 @@
           console.error(error);
         },
         onSuccess: () => {
+          const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+            runtimeInstanceId,
+            tableName
+          );
+          queryClient.invalidateQueries(queryKey);
           console.log("source refreshed successfully");
         },
       }
     );
   };
+
+  function formatRefreshedOn(refreshedOn: string) {
+    const date = new Date(refreshedOn);
+    return date.toLocaleString();
+  }
 </script>
 
 <div class="grid  items-center" style:grid-template-columns="auto max-content">
@@ -56,18 +76,27 @@
       <Source />
     </svelte:fragment>
     <svelte:fragment slot="right">
-      <Tooltip location="bottom" distance={8}>
-        {#if $refreshSource.isLoading}
-          Refreshing...
-        {:else}
-          <IconButton on:click={() => onRefreshClick(currentSource.tableName)}>
-            <RefreshIcon />
-          </IconButton>
-        {/if}
-        <TooltipContent slot="tooltip-content">
-          refresh the source data
-        </TooltipContent>
-      </Tooltip>
+      {#if $refreshSource.isLoading}
+        Refreshing...
+      {:else}
+        <div class="flex items-center">
+          <div>
+            {#if $getSource.isSuccess}
+              {formatRefreshedOn($getSource.data?.object?.refreshedOn)}
+            {/if}
+          </div>
+          <Tooltip location="bottom" distance={8}>
+            <IconButton
+              on:click={() => onRefreshClick(currentSource.tableName)}
+            >
+              <RefreshIcon />
+            </IconButton>
+            <TooltipContent slot="tooltip-content">
+              refresh the source data
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      {/if}
     </svelte:fragment>
   </WorkspaceHeader>
 </div>

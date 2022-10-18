@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -58,9 +59,10 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 
 	// Save definition
 	obj = &drivers.CatalogObject{
-		Name: source.Name,
-		Type: drivers.CatalogObjectTypeSource,
-		SQL:  req.Sql,
+		Name:        source.Name,
+		Type:        drivers.CatalogObjectTypeSource,
+		SQL:         req.Sql,
+		RefreshedOn: time.Now(),
 	}
 	if found {
 		err = catalog.UpdateObject(ctx, req.InstanceId, obj)

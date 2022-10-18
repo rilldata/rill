@@ -33,10 +33,11 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, sql, created_on, updated_on) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO rill.catalog(name, type, sql, refreshed_on, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?)",
 		obj.Name,
 		obj.Type,
 		obj.SQL,
+		now,
 		now,
 		now,
 	)
@@ -44,6 +45,7 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 		return err
 	}
 	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
+	obj.RefreshedOn = now
 	obj.CreatedOn = now
 	obj.UpdatedOn = now
 	return nil
@@ -53,9 +55,10 @@ func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, sql = ?, updated_on = ? WHERE name = ?",
+		"UPDATE rill.catalog SET type = ?, sql = ?, refreshed_on = ?, updated_on = ? WHERE name = ?",
 		obj.Type,
 		obj.SQL,
+		obj.RefreshedOn,
 		now,
 		obj.Name,
 	)

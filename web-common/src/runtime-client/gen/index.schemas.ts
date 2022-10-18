@@ -305,6 +305,7 @@ export interface V1CatalogObject {
   source?: V1Source;
   metricsView?: V1MetricsView;
   unmanagedTable?: V1UnmanagedTable;
+  refreshedOn?: string;
 }
 
 export interface RpcStatus {
