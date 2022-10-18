@@ -1,7 +1,6 @@
 .PHONY: build
 build:
 	go generate ./sql
-	protoc --go_out=./sql ../sql/src/java/com/rilldata/protobuf/*.proto
 	go build -o main ./cmd
 
 .PHONY: run
@@ -39,6 +38,12 @@ generate.proto.sql:
 		--go_out=sql/pbast --go_opt=paths=source_relative \
 		--go_opt=MSqlNodeProto.proto=github.com/rilldata/rill/runtime/sql/pbast \
 		SqlNodeProto.proto
+
+	protoc --proto_path=../sql/src/main/java/com/rilldata/protobuf \
+		--go_out=sql/requests --go_opt=paths=source_relative \
+		--go_opt=Mrequests.proto=github.com/rilldata/rill/runtime/sql/requests \
+		requests.proto
+
 
 release/darwin-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi

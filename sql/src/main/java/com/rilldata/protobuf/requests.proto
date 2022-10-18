@@ -20,15 +20,23 @@ message Request {
     // }
 }
 
-// message Response {
+ message Response {
     // oneof response {
-        // ParseResponse parse_response = 1;
+         ParseResponse parse_response = 1;
         // UnparseResponse unparse_response = 2;
         // TranspileResponse transpile_response = 3;
         // ApplyResponse apply_response = 4;
     // }
-// }
+   Error error = 5;
+ }
 
 message ParseRequest {
-    string sql = 1;
+  string sql = 1;
+}
+message Error {
+  string message = 1;
+}
+
+message ParseResponse {
+  string sql = 1;
 }

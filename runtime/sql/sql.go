@@ -64,6 +64,9 @@ func (i *Isolate) Close() error {
 	return i.library.Close()
 }
 
+// func (i *Isolate) request(request Requests.Request) Requests.Response {
+// }
+
 func (i *Isolate) ConvertSQL(sql string, schema string, dialect string) string {
 	convertSql, err := i.library.FindFunc("convert_sql")
 	if err != nil {

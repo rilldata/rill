@@ -1,5 +1,6 @@
 package com.rilldata;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
@@ -8,6 +9,7 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
+import sql.v1.Requests;
 
 /**
  * This class contains an entry point (a function callable from a native executable, ie C/Go executable).
@@ -20,6 +22,43 @@ public class SqlConverterEntrypoint
   {
     @InvokeCFunctionPointer
     CCharPointer call(long size);
+  }
+
+  @CEntryPoint(name = "request")
+  public static CCharPointer processRequest(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer request) {
+    String s = CTypeConversion.toJavaString(request);
+
+    try {
+      Requests.Request r = Requests.Request.parseFrom(s.getBytes());
+      Requests.ParseRequest parseRequest = r.getParseRequest();
+      if (parseRequest.isInitialized()) {
+        String sql = parseRequest.getSql();
+        System.out.println(sql);
+//        String dialect = parseRequest.getDialect();
+//        String result = sqlConverter.convert(sql, Dialects.valueOf(dialect));
+        byte[] bytes = Requests.Response
+            .newBuilder()
+            .setParseResponse(Requests.ParseResponse.newBuilder()
+                                  .setSql("SELECT 1")
+                                                    .build())
+            .build()
+            .toByteArray();
+        return convertToCCharPointer(allocatorFn, new String(bytes));
+      }
+      Requests.Response build = Requests.Response
+          .newBuilder()
+          .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
+          .build();
+      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+    }
+    catch (InvalidProtocolBufferException e) {
+      e.printStackTrace();
+      Requests.Response build = Requests.Response
+          .newBuilder()
+          .setError(Requests.Error.newBuilder().setMessage("Invalid request" + e.getMessage()).build())
+          .build();
+      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+    }
   }
 
   @CEntryPoint(name = "convert_sql")
