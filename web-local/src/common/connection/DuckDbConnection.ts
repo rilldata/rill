@@ -28,7 +28,7 @@ export class DuckDbConnection extends DataConnection {
   }
 
   public async init(): Promise<void> {
-    if (this.config.database.databaseName === ":memory:") return;
+    if (this.config.database.databaseName === "") return;
 
     await this.sync();
 

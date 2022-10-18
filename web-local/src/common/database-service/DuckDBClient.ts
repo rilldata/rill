@@ -107,6 +107,8 @@ export class DuckDBClient {
           RILL_RUNTIME_LOG_LEVEL: "warn",
           RILL_RUNTIME_HTTP_PORT: httpPort.toString(),
           RILL_RUNTIME_GRPC_PORT: grpcPort.toString(),
+          RILL_RUNTIME_LOCAL_MODE: "true",
+          RILL_RUNTIME_OLAP_DATABASE_URL: this.config.database.databaseName,
         },
         stdio: "inherit",
         shell: true,
@@ -125,19 +127,21 @@ export class DuckDBClient {
       return;
     }
 
-    let databaseName = this.config.database.databaseName;
-    if (databaseName === ":memory:") {
-      databaseName = "";
+    // swap this setting once we update RUNTIME_VERSION with the runtime that support default connection
+    // we need explicit instances only in testing later on
+    if (!process.env.RILL_DEFAULT_CONNECTION) {
+      // will mainly be used in tests
+      const res = await this.request("/v1/instances", {
+        driver: "duckdb",
+        dsn: this.config.database.databaseName,
+        exposed: true,
+        embed_catalog: true,
+      });
+
+      this.instanceID = res["instanceId"];
+    } else {
+      this.instanceID = "default";
     }
-
-    const res = await this.request("/v1/instances", {
-      driver: "duckdb",
-      dsn: databaseName,
-      exposed: true,
-      embed_catalog: true,
-    });
-
-    this.instanceID = res["instanceId"];
 
     await this.execute(`
       INSTALL 'json';

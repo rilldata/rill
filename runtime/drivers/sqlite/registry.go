@@ -34,7 +34,12 @@ func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Inst
 
 // CreateInstance implements drivers.RegistryStore
 func (c *connection) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
-	id := uuid.NewString()
+	var id string
+	if inst.ID != "" {
+		id = inst.ID
+	} else {
+		id = uuid.NewString()
+	}
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,

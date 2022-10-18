@@ -75,6 +75,42 @@ func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequ
 	}, nil
 }
 
+func CreateLocalInstance(s *Server, driver string, dsn string) error {
+	inst := &drivers.Instance{
+		ID:           "default",
+		Driver:       driver,
+		DSN:          dsn,
+		Exposed:      true,
+		EmbedCatalog: true,
+	}
+
+	// Check that it's a valid driver for OLAP
+	conn, err := drivers.Open(inst.Driver, inst.DSN)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	_, ok := conn.OLAPStore()
+	if !ok {
+		return status.Error(codes.InvalidArgument, "not a valid OLAP driver")
+	}
+
+	// Check that it's a driver that supports embedded catalogs
+	if inst.EmbedCatalog {
+		_, ok := conn.CatalogStore()
+		if !ok {
+			return status.Error(codes.InvalidArgument, "driver does not support embedded catalogs")
+		}
+	}
+
+	registry, _ := s.metastore.RegistryStore()
+	err = registry.CreateInstance(context.Background(), inst)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return nil
+}
+
 // DeleteInstance implements RuntimeService
 func (s *Server) DeleteInstance(ctx context.Context, req *api.DeleteInstanceRequest) (*api.DeleteInstanceResponse, error) {
 	registry, _ := s.metastore.RegistryStore()

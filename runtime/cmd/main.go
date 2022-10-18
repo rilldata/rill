@@ -22,12 +22,14 @@ import (
 )
 
 type Config struct {
-	Env            string        `default:"development"`
-	HTTPPort       int           `default:"8080" split_words:"true"`
-	GRPCPort       int           `default:"9090" split_words:"true"`
-	LogLevel       zapcore.Level `default:"info" split_words:"true"`
-	DatabaseDriver string        `default:"sqlite"`
-	DatabaseURL    string        `default:":memory:" split_words:"true"`
+	Env             string        `default:"development"`
+	HTTPPort        int           `default:"8080" split_words:"true"`
+	GRPCPort        int           `default:"9090" split_words:"true"`
+	LogLevel        zapcore.Level `default:"info" split_words:"true"`
+	DatabaseDriver  string        `default:"sqlite"`
+	DatabaseURL     string        `default:":memory:" split_words:"true"`
+	LocalMode       bool          `default:"false" split_words:"true"`
+	OLAPDatabaseUrl string        `default:"stage.db" split_words:"true"`
 }
 
 func main() {
@@ -70,14 +72,21 @@ func main() {
 		GRPCPort:            conf.GRPCPort,
 		ConnectionCacheSize: 100,
 	}
-	server, err := server.NewServer(opts, metastore, logger)
+	s, err := server.NewServer(opts, metastore, logger)
 	if err != nil {
 		logger.Fatal("error: could not create server", zap.Error(err))
 	}
 
+	if conf.LocalMode {
+		err = server.CreateLocalInstance(s, "duckdb", conf.OLAPDatabaseUrl)
+		if err != nil {
+			logger.Error("failed to create default instance", zap.Error(err))
+		}
+	}
+
 	// Run server
 	ctx := graceful.WithCancelOnTerminate(context.Background())
-	err = server.Serve(ctx)
+	err = s.Serve(ctx)
 	if err != nil {
 		logger.Error("server crashed", zap.Error(err))
 	}
