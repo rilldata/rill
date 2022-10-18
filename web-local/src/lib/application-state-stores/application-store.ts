@@ -67,6 +67,8 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
 
 export const duplicateSourceName: Writable<string> = writable(null);
 
-export const runtimeStore = writable({
+export const runtimeStore = writable<{
+  instanceId: string;
+}>({
   instanceId: null,
 });

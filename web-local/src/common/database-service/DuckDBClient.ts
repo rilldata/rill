@@ -76,6 +76,10 @@ export class DuckDBClient {
     return this.request(`/v1/instances/${this.instanceID}/${path}`, data);
   }
 
+  public getInstanceId(): string {
+    return this.instanceID;
+  }
+
   protected async spawnRuntime() {
     if (!this.config.database.spawnRuntime) {
       return;
