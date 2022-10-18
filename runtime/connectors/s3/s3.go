@@ -15,7 +15,7 @@ var spec = connectors.Spec{
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
-			DisplayName: "Path",
+			DisplayName: "S3 URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "s3://bucket-name/path/to/file.csv",
 			Type:        connectors.StringPropertyType,
