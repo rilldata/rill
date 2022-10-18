@@ -14,6 +14,7 @@
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { getYupSchema } from "../../../connectors/schemas";
   import { Button } from "../../button";
+  import AlertTriangle from "../../icons/AlertTriangle.svelte";
   import Input from "../../Input.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
   import Spinner from "../../Spinner.svelte";
@@ -91,6 +92,17 @@
   $: onConnectorChange(connector);
 </script>
 
+{#if $createSource.isError}
+  <div
+    class="mx-4 my-2 p-2 flex bg-red-200 border-red-500 border-2 rounded text-red-800"
+  >
+    <AlertTriangle size="16px" />
+    <p class="ml-2">
+      {$createSource.error?.response?.data?.message}
+    </p>
+  </div>
+{/if}
+
 <div class="px-4 flex-grow overflow-y-auto pb-2">
   <form
     on:submit|preventDefault={handleSubmit}
@@ -136,13 +148,6 @@
 <div class="bg-gray-100 border-t border-gray-300">
   <DialogFooter>
     <div class="flex items-center space-x-2">
-      {#if $createSource.isError}
-        <div class="flex-grow">
-          <div class="text-red-500 text-sm">
-            {$createSource.error?.response?.data?.message}
-          </div>
-        </div>
-      {/if}
       {#if $createSource.isLoading || waitingToNavigateToNewSource}
         <Spinner status={EntityStatus.Running} size="20px" />
       {/if}
