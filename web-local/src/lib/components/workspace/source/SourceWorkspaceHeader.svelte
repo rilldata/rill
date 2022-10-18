@@ -52,7 +52,13 @@
         onError: (error) => {
           console.error(error);
         },
-        onSuccess: () => {
+        onSuccess: async () => {
+          // invalidate the data preview
+          await dataModelerService.dispatch("collectTableInfo", [
+            currentSource.id,
+          ]);
+
+          // invalidate the "refreshed_on" time
           const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
             runtimeInstanceId,
             tableName
