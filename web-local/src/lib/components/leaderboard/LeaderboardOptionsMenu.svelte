@@ -21,7 +21,12 @@
   bind:active={optionsMenuActive}
   let:toggleFloatingElement
 >
-  <IconButton on:click={toggleFloatingElement}>
+  <IconButton
+    on:click={(e) => {
+      e.stopPropagation();
+      toggleFloatingElement();
+    }}
+  >
     <Tooltip location="right" distance={8} suppress={optionsMenuActive}>
       <MoreIcon />
       <TooltipContent slot="tooltip-content">leaderboard options</TooltipContent
