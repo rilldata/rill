@@ -45,22 +45,17 @@
     createQueryClient,
     queryClient,
   } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
-  import { runtimeServiceListInstances } from "web-common/src/runtime-client";
   createQueryClient();
 
   onMount(async () => {
-    const resp = await runtimeServiceListInstances();
+    const instanceId = await fetchWrapper("v1/runtime/instance-id", "GET");
 
-    // we automatically create an instance w/ the local DuckDB runtime
-    const localInstance = resp.instances.find(
-      (instance) => instance.dsn === ".././stage.db"
-    );
+    runtimeStore.set({ instanceId });
 
-    runtimeStore.set({ instanceId: localInstance.instanceId });
-
-    initMetrics();
+    return initMetrics();
   });
 
   let dbRunState = "disconnected";
@@ -168,23 +163,23 @@
 
       <div
         class="index-body absolute w-screen h-screen bg-gray-100"
-        on:drop|preventDefault|stopPropagation
-        on:drag|preventDefault|stopPropagation
         on:dragenter|preventDefault|stopPropagation
+        on:dragleave|preventDefault|stopPropagation
         on:dragover|preventDefault|stopPropagation={(e) => {
           if (isEventWithFiles(e)) showDropOverlay = true;
         }}
-        on:dragleave|preventDefault|stopPropagation
+        on:drag|preventDefault|stopPropagation
+        on:drop|preventDefault|stopPropagation
       >
         <!-- left assets pane expansion button -->
         <!-- make this the first element to select with tab by placing it first.-->
         <SurfaceControlButton
-          show={true}
           left="{($layout.assetsWidth - 12 - 24) * (1 - $assetVisibilityTween) +
             12 * $assetVisibilityTween}px"
           on:click={() => {
             assetsVisible.set(!$assetsVisible);
           }}
+          show={true}
         >
           {#if $assetsVisible}
             <HideLeftSidebar size="20px" />
@@ -220,8 +215,8 @@
         <!-- assets sidebar component -->
         <!-- this is where we handle navigation -->
         <div
-          class="box-border	 assets fixed"
           aria-hidden={!$assetsVisible}
+          class="box-border	 assets fixed"
           style:left="{-$assetVisibilityTween * $layout.assetsWidth}px"
         >
           <AssetsSidebar />
@@ -231,16 +226,16 @@
         <div
           class="box-border fixed {views[activeEntityType]?.bg ||
             'bg-gray-100'}"
+          style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
           style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
           style:padding-right="{$inspectorVisibilityTween *
             SIDE_PAD *
             hasNoError *
             (hasInspector ? 1 : 0)}px"
-          style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
-          style:top="0px"
           style:right="{hasInspector && hasNoError
             ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
             : 0}px"
+          style:top="0px"
         >
           <slot />
         </div>
