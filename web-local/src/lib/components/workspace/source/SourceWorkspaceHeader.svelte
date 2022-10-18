@@ -66,7 +66,13 @@
 
   function formatRefreshedOn(refreshedOn: string) {
     const date = new Date(refreshedOn);
-    return date.toLocaleString();
+    return date.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
   }
 </script>
 
@@ -80,19 +86,24 @@
         Refreshing...
       {:else}
         <div class="flex items-center">
-          <div>
-            {#if $getSource.isSuccess}
-              {formatRefreshedOn($getSource.data?.object?.refreshedOn)}
-            {/if}
-          </div>
+          {#if $getSource.isSuccess}
+            <Tooltip location="bottom" distance={8}>
+              <div class="text-xs">
+                {formatRefreshedOn($getSource.data?.object?.refreshedOn)}
+              </div>
+              <TooltipContent slot="tooltip-content"
+                >Time the data was last imported</TooltipContent
+              >
+            </Tooltip>
+          {/if}
           <Tooltip location="bottom" distance={8}>
             <IconButton
               on:click={() => onRefreshClick(currentSource.tableName)}
             >
-              <RefreshIcon />
+              <RefreshIcon size="16px" />
             </IconButton>
             <TooltipContent slot="tooltip-content">
-              refresh the source data
+              Refresh the source data
             </TooltipContent>
           </Tooltip>
         </div>
