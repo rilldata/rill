@@ -217,12 +217,12 @@ The main feature-set component for dashboard filters
           <Chip
             bgBaseClass="surface"
             bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
-            textClass="text-gray-400 hover:text-gray-500 dark:text-gray-500"
+            textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
             bgActiveClass="bg-gray-200 dark:bg-gray-600"
             outlineClass="outline-gray-400"
             on:click={clearAllFilters}
           >
-            <span slot="icon" class="ui-copy-icon-inactive">
+            <span slot="icon" class="ui-copy-disabled-faint">
               <FilterRemove size="16px" />
             </span>
             <svelte:fragment slot="body">clear filters</svelte:fragment>
