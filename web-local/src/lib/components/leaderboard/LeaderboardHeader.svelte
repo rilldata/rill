@@ -27,7 +27,7 @@
   </div>
 
   <button
-    on:click|self
+    on:click
     style:height="32px"
     style:flex="1"
     style:grid-template-columns="auto max-content"
