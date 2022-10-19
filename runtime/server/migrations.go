@@ -47,8 +47,11 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 
 	// Get existing object with name and check it's a source
 	existingObj, existingFound := catalog.FindObject(ctx, req.InstanceId, source.Name)
+	if existingFound && !req.CreateOrReplace {
+		return nil, status.Errorf(codes.InvalidArgument, "an existing object with name '%s' already exists (consider setting `create_or_replace=true`)", existingObj.Name)
+	}
 	if existingFound && existingObj.Type != drivers.CatalogObjectTypeSource {
-		return nil, status.Errorf(codes.FailedPrecondition, "an object of type '%s' already exists with name '%s'", existingObj.Type, existingObj.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "an object of type '%s' already exists with name '%s'", existingObj.Type, existingObj.Name)
 	}
 
 	// Get object to rename and check it's a valid rename op
@@ -58,16 +61,16 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 	if req.RenameFrom != "" {
 		// Check that we're not renaming to a name that's already taken
 		if existingFound {
-			return nil, status.Errorf(codes.FailedPrecondition, "cannot rename '%s' to '%s' because a source with that name already exists", req.RenameFrom, source.Name)
+			return nil, status.Errorf(codes.InvalidArgument, "cannot rename '%s' to '%s' because a source with that name already exists", req.RenameFrom, source.Name)
 		}
 
 		// Get the object to rename
 		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.RenameFrom))
 		if !renameFound {
-			return nil, status.Errorf(codes.FailedPrecondition, "could not find existing object named '%s' to rename", req.RenameFrom)
+			return nil, status.Errorf(codes.InvalidArgument, "could not find existing object named '%s' to rename", req.RenameFrom)
 		}
 		if renameObj.Type != drivers.CatalogObjectTypeSource {
-			return nil, status.Errorf(codes.FailedPrecondition, "cannot rename object '%s' because it is not a source", req.RenameFrom)
+			return nil, status.Errorf(codes.InvalidArgument, "cannot rename object '%s' because it is not a source", req.RenameFrom)
 		}
 
 		// Check whether the properties for the new object are different (i.e. whether to re-ingest or just rename)
@@ -76,6 +79,11 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 			return nil, status.Errorf(codes.Internal, "could not parse existing sql: %s", err.Error())
 		}
 		renameAndReingest = !source.PropertiesEquals(renameSource)
+	}
+
+	// Stop execution now if it's just a dry run
+	if req.DryRun {
+		return &api.MigrateSingleResponse{}, nil
 	}
 
 	// Create the object to save
@@ -90,7 +98,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		// Just ingest and save object
 		err := olap.Ingest(ctx, source)
 		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
@@ -101,7 +109,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		// Reingest and then update object
 		err := olap.Ingest(ctx, source)
 		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		err = catalog.UpdateObject(ctx, req.InstanceId, newObj)
@@ -129,7 +137,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		// Reingest and save object, then drop old
 		err := olap.Ingest(ctx, source)
 		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
