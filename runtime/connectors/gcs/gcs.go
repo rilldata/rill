@@ -17,13 +17,13 @@ var spec = connectors.Spec{
 			Key:         "path",
 			DisplayName: "Path",
 			Description: "Path to file on the disk.",
-			Placeholder: "gcs://bucket-name/path/to/file.csv",
+			Placeholder: "gs://bucket-name/path/to/file.csv",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
 			Hint:        "Tip: use glob patterns to select multiple files",
 		},
 		{
-			Key:         "gcs.region",
+			Key:         "gcp.region",
 			DisplayName: "GCP region",
 			Description: "GCP Region for the bucket.",
 			Placeholder: "us-east-1",
@@ -58,7 +58,7 @@ type Config struct {
 
 func ParseConfig(props map[string]any) (*Config, error) {
 	conf := &Config{}
-	err := mapstructure.Decode(props, &conf)
+	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
 	}

@@ -19,20 +19,30 @@ import { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDB
     })
   );
   await duckdb.init();
-  await duckdb.execute("SET enable_profiling=QUERY_TREE");
 
   console.log(
     await duckdb.requestToInstance("migrate/single", {
       sql:
-        "create source s3test with connector = 's3', path = 's3://datasets-epg/yammerevents.parquet'," +
-        // WARNING: DO NOT CHECK IN KEY AND SECRET
-        "'aws.region' = 'us-east-1', 'aws.access.key' = '', 'aws.access.secret' = ''  ",
+        "create source AdBidsS3 with connector = 's3', path = 's3://rill-developer.rilldata.io/AdBids.csv'," +
+        "'aws.region' = 'us-east-1'",
+    })
+  );
+  console.log(
+    await duckdb.requestToInstance("query/direct", {
+      sql: "select * from AdBidsS3 limit 5",
     })
   );
 
   console.log(
+    await duckdb.requestToInstance("migrate/single", {
+      sql:
+        "create source AdBidsGS with connector = 'gcs', path = 's3://scratch.rilldata.com/rill-developer/AdBids.csv'," +
+        "'gcp.region' = 'us-east-1'",
+    })
+  );
+  console.log(
     await duckdb.requestToInstance("query/direct", {
-      sql: "select * from s3test limit 5",
+      sql: "select * from AdBidsGS limit 5",
     })
   );
 })();
