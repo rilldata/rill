@@ -67,7 +67,7 @@ func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) er
 
 	// TODO: set AWS settings for the transaction only
 
-	qry := fmt.Sprintf("SET s3_region='%s';", conf.AWSRegion)
+	qry := fmt.Sprintf("SET s3_endpoint='s3.amazonaws.com';SET s3_region='%s';", conf.AWSRegion)
 
 	if conf.AWSKey != "" && conf.AWSSecret != "" {
 		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.AWSKey, conf.AWSSecret)
@@ -110,7 +110,7 @@ func (c *connection) ingestGCS(ctx context.Context, source *connectors.Source) e
 
 	// TODO: set AWS settings for the transaction only
 
-	qry := fmt.Sprintf("SET s3_region='%s';", conf.GCPRegion)
+	qry := fmt.Sprintf("SET s3_endpoint='storage.googleapis.com';SET s3_region='%s';", conf.GCPRegion)
 
 	if conf.GCPKey != "" && conf.GCPSecret != "" {
 		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.GCPKey, conf.GCPSecret)

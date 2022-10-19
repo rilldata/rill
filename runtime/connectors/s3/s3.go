@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"github.com/kelseyhightower/envconfig"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 )
@@ -50,16 +51,20 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path       string `mapstructure:"path"`
-	AWSRegion  string `mapstructure:"aws.region"`
-	AWSKey     string `mapstructure:"aws.access.key"`
-	AWSSecret  string `mapstructure:"aws.access.secret"`
-	AWSSession string `mapstructure:"aws.access.session"`
+	Path       string `mapstructure:"path" ignored:"true"`
+	AWSRegion  string `mapstructure:"aws.region" envconfig:"AWS_DEFAULT_REGION"`
+	AWSKey     string `mapstructure:"aws.access.key" envconfig:"AWS_ACCESS_KEY_ID"`
+	AWSSecret  string `mapstructure:"aws.access.secret" envconfig:"AWS_SECRET_ACCESS_KEY"`
+	AWSSession string `mapstructure:"aws.access.session" ignored:"true"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
 	conf := &Config{}
-	err := mapstructure.Decode(props, &conf)
+	err := envconfig.Process("aws", conf)
+	if err != nil {
+		return nil, err
+	}
+	err = mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
 	}
