@@ -34,7 +34,7 @@
 
   $: titleInput = currentSource?.name;
 
-  const runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSource = useRuntimeServiceTriggerRefresh();
 
   $: getSource = useRuntimeServiceGetCatalogObject(

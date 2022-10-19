@@ -146,7 +146,7 @@
     });
   };
 
-  const runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSource = useRuntimeServiceTriggerRefresh();
 
   const onRefreshSource = (tableName: string) => {

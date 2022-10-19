@@ -21,7 +21,7 @@
 
   export let connector: V1Connector;
 
-  const runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtimeStore.instanceId;
   const createSource = useRuntimeServiceMigrateSingle();
 
   const persistentTableStore = getContext(
