@@ -1,7 +1,6 @@
 package gcs
 
 import (
-	"github.com/kelseyhightower/envconfig"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 )
@@ -51,19 +50,15 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path      string `key:"path" ignored:"true"`
-	GCPRegion string `key:"gcp.region" envconfig:"GCP_DEFAULT_REGION"`
-	GCPKey    string `key:"gcp.access.key" envconfig:"GCP_ACCESS_KEY_ID"`
-	GCPSecret string `key:"gcp.access.secret" envconfig:"GCP_SECRET_ACCESS_KEY"`
+	Path      string `key:"path"`
+	GCPRegion string `key:"gcp.region"`
+	GCPKey    string `key:"gcp.access.key"`
+	GCPSecret string `key:"gcp.access.secret"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
 	conf := &Config{}
-	err := envconfig.Process("gcp", conf)
-	if err != nil {
-		return nil, err
-	}
-	err = mapstructure.Decode(props, conf)
+	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
 	}
