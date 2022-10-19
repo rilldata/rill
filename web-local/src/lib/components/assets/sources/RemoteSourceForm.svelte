@@ -9,15 +9,14 @@
     V1Connector,
   } from "web-common/src/runtime-client";
   import type * as yup from "yup";
-  import { EntityStatus } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { getYupSchema } from "../../../connectors/schemas";
   import { Button } from "../../button";
   import AlertTriangle from "../../icons/AlertTriangle.svelte";
   import Input from "../../Input.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
-  import Spinner from "../../Spinner.svelte";
 
   export let connector: V1Connector;
 
@@ -27,7 +26,6 @@
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
-  let waitingToNavigateToNewSource = false;
   const numTablesBeforeSubmit = $persistentTableStore.entities.length;
 
   const dispatch = createEventDispatcher();
@@ -60,6 +58,7 @@
       initialValues: {},
       // validationSchema: yupSchema, // removing temporarily, as it's preventing form submission
       onSubmit: (values) => {
+        overlay.set({ title: `Importing ${values.sourceName}` });
         const sql = compileCreateSourceSql(values);
         // TODO: call runtime/repo.put() to create source artifact
         $createSource.mutate(
@@ -69,7 +68,6 @@
           },
           {
             onSuccess: async () => {
-              waitingToNavigateToNewSource = true;
               let numTables = numTablesBeforeSubmit;
               // poll the Node backend until it has picked up the new table in DuckDB
               while (numTables === numTablesBeforeSubmit) {
@@ -82,6 +80,11 @@
               );
               goto(`/source/${newSource.id}`);
               dispatch("close");
+              overlay.set(null);
+            },
+            onError: (error) => {
+              console.error(error);
+              overlay.set(null);
             },
           }
         );
@@ -148,14 +151,11 @@
 <div class="bg-gray-100 border-t border-gray-300">
   <DialogFooter>
     <div class="flex items-center space-x-2">
-      {#if $createSource.isLoading || waitingToNavigateToNewSource}
-        <Spinner status={EntityStatus.Running} size="20px" />
-      {/if}
       <Button
         type="primary"
         submitForm
         form="remote-source-{connector}-form"
-        disabled={$createSource.isLoading || waitingToNavigateToNewSource}
+        disabled={$createSource.isLoading}
       >
         Add source
       </Button>
