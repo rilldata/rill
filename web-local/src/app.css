@@ -2,6 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .surface-bg {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  .surface {
+    @apply bg-white dark:bg-gray-800;
+  }
+
+  .surface-secondary {
+    @apply bg-gray-100 dark:bg-gray-700;
+  }
+
+  .surface-impression {
+    @apply bg-gray-100 dark:bg-gray-900;
+  }
+
+  .surface-focus {
+    @apply bg-gray-200 dark:bg-gray-600;
+  }
+
+  .surface-faint {
+    @apply bg-gray-50 dark:bg-transparent;
+  }
+
+  .ui-copy {
+    @apply text-gray-700 dark:text-white;
+  }
+
+  .ui-copy-muted {
+    @apply text-gray-600 dark:text-gray-200;
+  }
+
+  .ui-copy-icon {
+    @apply ui-copy-muted;
+  }
+
+  .ui-copy-icon-inactive {
+    @apply text-gray-500 dark:text-gray-500;
+  }
+
+  .ui-copy-inactive {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+
+  .ui-copy-disabled {
+    @apply ui-copy-inactive italic;
+  }
+
+  /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
+  .ui-copy-disabled-faint {
+    @apply text-gray-400 dark:text-gray-400;
+  }
+
+  .ui-divider {
+    @apply border-gray-300 dark:border-gray-600;
+  }
+
+  .ui-divider-faint {
+    @apply border-gray-200 dark:border-gray-600;
+  }
+
+  .ui-divider-strong {
+    @apply border-gray-400 dark:border-gray-500;
+  }
+}
+
 @layer base {
   h1,
   h2,
@@ -12,7 +79,11 @@
 }
 
 html {
-  @apply bg-gray-400;
+  @apply surface-bg ui-copy;
+}
+
+a, button {
+  @apply ui-copy;
 }
 
 body {

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import BarAndLabel from "../viz/BarAndLabel.svelte";
   import { fly, slide } from "svelte/transition";
-  import Spacer from "../icons/Spacer.svelte";
-  import Check from "../icons/Check.svelte";
   import Cancel from "../icons/Cancel.svelte";
+  import Check from "../icons/Check.svelte";
+  import Spacer from "../icons/Spacer.svelte";
+  import BarAndLabel from "../viz/BarAndLabel.svelte";
   export let value: number; // should be between 0 and 1.
-  export let color = "bg-blue-200";
+  export let color = "bg-blue-200 dark:bg-blue-600";
   export let isActive = false;
   export let excluded = false;
 
@@ -47,12 +47,13 @@
   <BarAndLabel
     {color}
     {value}
+    showHover
     showBackground={false}
     tweenParameters={{ duration: 200 }}
     justify={false}
   >
     <div
-      class="grid leaderboard-entry items-center gap-x-3 hover:bg-gray-100"
+      class="grid leaderboard-entry items-center gap-x-3"
       style:height="22px"
     >
       <div

@@ -2,12 +2,12 @@
 This component will draw an axis on the specified side.
 -->
 <script lang="ts">
-  import { getContext } from "svelte";
   import { timeFormat } from "d3-time-format";
+  import { getContext } from "svelte";
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
-  import type { AxisSide } from "./types";
   import { getTicks } from "../utils";
+  import type { AxisSide } from "./types";
 
   export let side: AxisSide = "left";
   export let format: (arg0: number | Date) => string | number = undefined;
@@ -19,7 +19,7 @@ This component will draw an axis on the specified side.
   export let fontSize: number = undefined;
   export let placement = "middle";
 
-  export let labelColor = "rgb(100,100,100)";
+  export let labelColor = "fill-gray-600 dark: fill-gray-400";
 
   // superlabel properties
   export let superlabel = false;
@@ -189,20 +189,19 @@ This component will draw an axis on the specified side.
       dy={dy(side)}
       text-anchor={textAnchor}
       font-size={innerFontSize}
-      fill={labelColor}
+      class={labelColor}
     >
       {formatterFunction(tick)}
     </text>
     {#if showTicks}
       <!-- tick mark -->
       <line
-        class="stroke-gray-400"
+        class="stroke-gray-400 dark:stroke-gray-600"
         x1={tickPlacement.x1}
         x2={tickPlacement.x2}
         y1={tickPlacement.y1}
         y2={tickPlacement.y2}
         font-size={innerFontSize}
-        stroke="black"
       />
     {/if}
     {#if superLabelFormatter && shouldPlaceSuperLabel(superLabelFormatter(tick), i)}
@@ -216,7 +215,7 @@ This component will draw an axis on the specified side.
           : -18}
         text-anchor="start"
         font-size={innerFontSize}
-        fill={labelColor}
+        class={labelColor}
       >
         {superLabelFormatter(tick)}
       </text>

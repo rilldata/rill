@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { TimeGrain } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../../../icons/CaretDownIcon.svelte";
   import WithSelectMenu from "../../../menu/wrappers/WithSelectMenu.svelte";
-  import { createEventDispatcher } from "svelte";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
   export let selectedTimeGrain: TimeGrain;
@@ -37,7 +37,7 @@
     let:active
   >
     <button
-      class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
+      class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 transition-tranform duration-100"
       on:click={toggleMenu}
     >
       <span class="font-bold"

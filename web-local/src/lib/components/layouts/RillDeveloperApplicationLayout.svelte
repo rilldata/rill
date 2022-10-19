@@ -115,7 +115,7 @@
       bg: "bg-gray-100",
     },
     MetricsExplorer: {
-      bg: "bg-white",
+      bg: "surface",
     },
   };
 

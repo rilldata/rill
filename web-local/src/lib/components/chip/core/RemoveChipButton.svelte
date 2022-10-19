@@ -1,14 +1,16 @@
 <script lang="ts">
   import CancelCircle from "../../icons/CancelCircle.svelte";
 
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import { createEventDispatcher, getContext } from "svelte";
   import type { Writable } from "svelte/store";
+  import Tooltip from "../../tooltip/Tooltip.svelte";
+  import TooltipContent from "../../tooltip/TooltipContent.svelte";
+  import type { defaultChipColors } from "../chip-types";
 
   export let tooltipLocation = "bottom";
   export let tooltipAlignment = "start";
   export let tooltipDistance = 12;
+  export let textClass = defaultChipColors.textClass;
 
   const tooltipSuppression = getContext(
     "rill:app:childRequestedTooltipSuppression"
@@ -29,6 +31,7 @@
   distance={tooltipDistance}
 >
   <button
+    class={textClass}
     on:mouseover={focusOnRemove}
     on:focus={focusOnRemove}
     on:mouseleave={blurOnRemove}
