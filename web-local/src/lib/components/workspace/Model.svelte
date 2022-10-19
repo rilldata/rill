@@ -136,10 +136,10 @@
     <div
       style:height="{(1 - $modelPreviewVisibilityTween) *
         $layout.modelPreviewHeight}px"
-      class="p-6 "
+      class="p-6 flex flex-col gap-6"
     >
       <div
-        class="rounded border border-gray-200 border-2 overflow-auto h-full {!showPreview &&
+        class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"
         class:border={!!currentDerivedModel?.error}
         class:border-gray-300={!!currentDerivedModel?.error}
@@ -168,7 +168,7 @@
       {#if currentDerivedModel?.error}
         <div
           transition:slide={{ duration: 200 }}
-          class="error break-words overflow-auto p-6 mb-8 border-2 border-gray-300 font-bold text-gray-700  w-full sticky bottom-6 z-10 bg-gray-100"
+          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700  w-full shrink-0 z-10 bg-gray-100"
         >
           {currentDerivedModel.error}
         </div>
