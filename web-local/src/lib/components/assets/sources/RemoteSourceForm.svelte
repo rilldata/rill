@@ -37,6 +37,8 @@
   let errors: Writable<Record<never, string>>;
   let handleSubmit: (event: Event) => any;
 
+  let waitingOnSourceImport = false;
+
   function compileCreateSourceSql(values) {
     const compiledKeyValues = Object.entries(values)
       .filter(([key]) => key !== "sourceName")
@@ -68,6 +70,7 @@
           },
           {
             onSuccess: async () => {
+              waitingOnSourceImport = true;
               let numTables = numTablesBeforeSubmit;
               // poll the Node backend until it has picked up the new table in DuckDB
               while (numTables === numTablesBeforeSubmit) {
@@ -78,6 +81,8 @@
               const newSource = $persistentTableStore.entities.find(
                 (entity) => entity.name === values.sourceName
               );
+
+              waitingOnSourceImport = false;
               goto(`/source/${newSource.id}`);
               dispatch("close");
               overlay.set(null);
@@ -155,7 +160,7 @@
         type="primary"
         submitForm
         form="remote-source-{connector}-form"
-        disabled={$createSource.isLoading}
+        disabled={$createSource.isLoading || waitingOnSourceImport}
       >
         Add source
       </Button>
