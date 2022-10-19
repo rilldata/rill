@@ -287,7 +287,7 @@
               <sources>
                 <source>src/generated-sources/</source>
                 <source>${project.build.directory}/generated-sources/annotations</source>
-                <source>${project.build.directory}/generated-sources/requests.proto</source>
+                <source>${project.build.directory}/generated-sources/requests</source>
               </sources>
             </configuration>
           </execution>
@@ -336,7 +336,7 @@
                 <argument>${project.basedir}/scripts/protoc-java.sh</argument>
                 <argument>requests.proto</argument> <!-- proto file name -->
                 <argument>${project.build.sourceDirectory}/com/rilldata/protobuf/</argument> <!-- input dir -->
-                <argument>${project.build.directory}/generated-sources/requests.proto/</argument> <!-- output dir -->
+                <argument>${project.build.directory}/generated-sources/requests/</argument> <!-- output dir -->
               </arguments>
             </configuration>
           </execution>

@@ -21,19 +21,24 @@ func TestSanity(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestProtobufEndpoint(t *testing.T) {
+func TestTranspile(t *testing.T) {
 	isolate := NewIsolate()
 
 	sql := "select 1 as foo, 'hello' as bar"
 
 	r := requests.Request{
-		ParseRequest: &requests.ParseRequest{
-			Sql: sql,
+		Request: &requests.Request_TranspileRequest{
+			TranspileRequest: &requests.TranspileRequest{
+				Sql:     sql,
+				Dialect: requests.Dialect_DUCKDB,
+				Schema:  `{ "tables": [] }`,
+			},
 		},
 	}
+
 	res := isolate.request(&r)
 
-	require.Equal(t, `SELECT 1`, (*res).ParseResponse.Sql)
+	require.Equal(t, `SELECT 1 AS "FOO", 'hello' AS "BAR"`, (*res).GetTranspileResponse().Sql)
 
 	err := isolate.Close()
 	require.NoError(t, err)

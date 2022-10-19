@@ -1,42 +1,54 @@
 syntax = "proto3";
+import "SqlNodeProto.proto";
 
-package sql.v1;
+package com.rilldata.protobuf.generated;
 
 // *******************************
 // RPC for calling into librillsql
 // *******************************
 
-// enum Dialect {
-    // DIALECT_DRUID = 0;
-    // DIALECT_DUCKDB = 1;
-// }
+enum Dialect {
+    DRUID = 0;
+    DUCKDB = 1;
+}
 
 message Request {
-    // oneof request {
+    oneof request {
         ParseRequest parse_request = 1;
         // UnparseRequest unparse_request = 2;
-        // TranspileRequest transpile_request = 3;
+        TranspileRequest transpile_request = 3;
         // ApplyRequest apply_request = 4;
-    // }
+    }
 }
 
  message Response {
-    // oneof response {
-         ParseResponse parse_response = 1;
+    oneof response {
+        ParseResponse parse_response = 1;
         // UnparseResponse unparse_response = 2;
-        // TranspileResponse transpile_response = 3;
+        TranspileResponse transpile_response = 3;
         // ApplyResponse apply_response = 4;
-    // }
+    }
    Error error = 5;
  }
 
 message ParseRequest {
   string sql = 1;
+  string schema = 2;
 }
+message TranspileRequest {
+  string sql = 1;
+  Dialect dialect = 2;
+  string schema = 3;
+}
+
 message Error {
   string message = 1;
 }
 
 message ParseResponse {
+  SqlNodeProto ast = 1;
+}
+
+message TranspileResponse {
   string sql = 1;
 }

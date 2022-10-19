@@ -44,6 +44,7 @@ generate.proto.sql.requests:
 	protoc --proto_path=../sql/src/main/java/com/rilldata/protobuf \
 		--go_out=sql/requests --go_opt=paths=source_relative \
 		--go_opt=Mrequests.proto=github.com/rilldata/rill/runtime/sql/requests \
+		--go_opt=MSqlNodeProto.proto=github.com/rilldata/rill/runtime/sql/pbast \
 		requests.proto
 
 release/darwin-amd64:

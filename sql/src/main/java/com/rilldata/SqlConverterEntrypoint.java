@@ -2,6 +2,7 @@ package com.rilldata;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
+import org.apache.calcite.sql.SqlDialect;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -9,19 +10,40 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
-import sql.v1.Requests;
+import com.rilldata.protobuf.generated.Requests;
+import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 
 /**
  * This class contains an entry point (a function callable from a native executable, ie C/Go executable).
  */
 public class SqlConverterEntrypoint
 {
-  private static SqlConverter sqlConverter;
+//  private static SqlConverter sqlConverter;
 
   interface AllocatorFn extends CFunctionPointer
   {
     @InvokeCFunctionPointer
     CCharPointer call(long size);
+  }
+
+  public static Requests.Response transpile(Requests.Request r) {
+    Requests.TranspileRequest transpileRequest = r.getTranspileRequest();
+    String sql = transpileRequest.getSql();
+    Requests.Dialect dialect = transpileRequest.getDialect();
+    try {
+      SqlConverter sqlConverter = new SqlConverter(transpileRequest.getSchema());
+      String transpiledSql = sqlConverter.convert(sql, Dialects.valueOf(dialect.name()).getSqlDialect());
+      return Requests.Response
+          .newBuilder()
+          .setTranspileResponse(Requests.TranspileResponse.newBuilder().setSql(transpiledSql).build())
+          .build();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return Requests.Response
+          .newBuilder()
+          .setError(Requests.Error.newBuilder().setMessage(e.toString()).build())
+          .build();
+    }
   }
 
   @CEntryPoint(name = "request")
@@ -30,20 +52,14 @@ public class SqlConverterEntrypoint
 
     try {
       Requests.Request r = Requests.Request.parseFrom(s.getBytes());
-      Requests.ParseRequest parseRequest = r.getParseRequest();
-      if (parseRequest.isInitialized()) {
+      if (r.hasParseRequest()) {
+        Requests.ParseRequest parseRequest = r.getParseRequest();
         String sql = parseRequest.getSql();
-        System.out.println(sql);
-//        String dialect = parseRequest.getDialect();
-//        String result = sqlConverter.convert(sql, Dialects.valueOf(dialect));
-        byte[] bytes = Requests.Response
-            .newBuilder()
-            .setParseResponse(Requests.ParseResponse.newBuilder()
-                                  .setSql("SELECT 1")
-                                                    .build())
-            .build()
-            .toByteArray();
+        SqlConverter sqlConverter = new SqlConverter(parseRequest.getSchema());
+        byte[] bytes = sqlConverter.getAST(sql);
         return convertToCCharPointer(allocatorFn, new String(bytes));
+      } else if (r.hasTranspileRequest()) {
+          return convertToCCharPointer(allocatorFn, transpile(r).toByteArray());
       }
       Requests.Response build = Requests.Response
           .newBuilder()
