@@ -9,6 +9,7 @@ package sql
 // void*(*my_malloc)(size_t) = malloc;
 import "C"
 import (
+	b64 "encoding/base64"
 	"fmt"
 	"unsafe"
 
@@ -75,7 +76,9 @@ func (i *Isolate) request(request *requests.Request) *requests.Response {
 	thread := i.attachThread()
 
 	bytes, _ := proto.Marshal(request)
-	cBytes := C.CString(string(bytes))
+	b64request := b64.StdEncoding.EncodeToString(bytes)
+
+	cBytes := C.CString(b64request)
 	defer C.free(unsafe.Pointer(cBytes))
 	res, _, _ := f.Call(
 		uintptr(unsafe.Pointer(thread)),
@@ -86,11 +89,12 @@ func (i *Isolate) request(request *requests.Request) *requests.Response {
 		panic(fmt.Errorf("call to request failed"))
 	}
 
-	goRes := C.GoString((*C.char)(unsafe.Pointer(res)))
+	b64response := C.GoString((*C.char)(unsafe.Pointer(res)))
 	C.free(unsafe.Pointer(res))
 
 	var response requests.Response
-	proto.Unmarshal([]byte(goRes), &response)
+	decodedResponse, _ := b64.StdEncoding.DecodeString(b64response)
+	proto.Unmarshal(decodedResponse, &response)
 
 	return &response
 }

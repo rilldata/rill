@@ -12,6 +12,10 @@ import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 import com.rilldata.protobuf.generated.Requests;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
+import org.hsqldb.types.Charset;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 /**
  * This class contains an entry point (a function callable from a native executable, ie C/Go executable).
@@ -48,18 +52,22 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "request")
   public static CCharPointer processRequest(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer request) {
-    String s = CTypeConversion.toJavaString(request);
+    String b64String = CTypeConversion.toJavaString(request);
+    byte[] decoded = Base64.getDecoder().decode(b64String);
 
     try {
-      Requests.Request r = Requests.Request.parseFrom(s.getBytes());
+      Requests.Request r = Requests.Request.parseFrom(decoded);
       if (r.hasParseRequest()) {
         Requests.ParseRequest parseRequest = r.getParseRequest();
         String sql = parseRequest.getSql();
         SqlConverter sqlConverter = new SqlConverter(parseRequest.getSchema());
         byte[] bytes = sqlConverter.getAST(sql);
-        return convertToCCharPointer(allocatorFn, new String(bytes));
+        byte[] b64response = Base64.getEncoder().encode(bytes);
+        return convertToCCharPointer(allocatorFn, b64response);
       } else if (r.hasTranspileRequest()) {
-          return convertToCCharPointer(allocatorFn, transpile(r).toByteArray());
+          byte[] response = transpile(r).toByteArray();
+          byte[] b64response = Base64.getEncoder().encode(response);
+          return convertToCCharPointer(allocatorFn, b64response);
       }
       Requests.Response build = Requests.Response
           .newBuilder()
