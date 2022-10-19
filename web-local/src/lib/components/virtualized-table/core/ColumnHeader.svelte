@@ -131,7 +131,7 @@
     </Tooltip>
 
     {#if isDimensionTable}
-      <div class="mt-0.5">
+      <div class="mt-0.5 ui-copy-icon">
         {#if isSortingDesc}
           <div
             in:fly={{ duration: 200, y: -8 }}

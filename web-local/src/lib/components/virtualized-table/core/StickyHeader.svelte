@@ -3,8 +3,7 @@
 
   import { createEventDispatcher, getContext } from "svelte";
 
-  import type { HeaderPosition } from "../types";
-  import type { VirtualizedTableConfig } from "../types";
+  import type { HeaderPosition, VirtualizedTableConfig } from "../types";
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -61,10 +60,11 @@
     ? config.rowHeight
     : config.columnHeaderHeight}px"
   class="{positionClasses}
-   bg-white text-left {borderClassesOuterDiv}"
+   surface text-left {borderClassesOuterDiv}"
 >
   <div
     class="
+    ui-copy
     text-ellipsis overflow-hidden
     {isDimensionTable ? 'px-1' : 'px-4'}
     {borderClassesInnerDiv}

@@ -39,8 +39,8 @@
         border-b
         border-gray-200
         rounded-t
-        bg-white
-        text-gray-600
+        surface
+        ui-copy-muted
         font-semibold
         truncate
     "

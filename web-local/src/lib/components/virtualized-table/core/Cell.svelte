@@ -1,5 +1,12 @@
 <script lang="ts">
   import { createEventDispatcher, getContext } from "svelte";
+  import {
+    INTERVALS,
+    STRING_LIKES,
+    TIMESTAMPS,
+  } from "../../../duckdb-data-types";
+  import { formatDataType } from "../../../util/formatters";
+  import { createShiftClickAction } from "../../../util/shift-click-action";
   import { FormattedDataType } from "../../data-types";
   import notificationStore from "../../notifications";
   import Shortcut from "../../tooltip/Shortcut.svelte";
@@ -8,15 +15,8 @@
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
-  import {
-    INTERVALS,
-    STRING_LIKES,
-    TIMESTAMPS,
-  } from "../../../duckdb-data-types";
-  import { formatDataType } from "../../../util/formatters";
-  import { createShiftClickAction } from "../../../util/shift-click-action";
-  import type { VirtualizedTableConfig } from "../types";
   import BarAndLabel from "../../viz/BarAndLabel.svelte";
+  import type { VirtualizedTableConfig } from "../types";
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -60,11 +60,11 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      activityStatus = "bg-gray-200";
+      activityStatus = "bg-gray-200 dark:bg-gray-600";
     } else if (rowActive && !cellActive) {
-      activityStatus = "bg-gray-100";
+      activityStatus = "bg-gray-100 dark:bg-gray-700";
     } else {
-      activityStatus = "bg-white";
+      activityStatus = "surface";
     }
   }
 
@@ -75,7 +75,9 @@
     ? (excludeMode && rowSelected) || (!excludeMode && !rowSelected)
     : false;
 
-  $: barColor = excluded ? "bg-gray-200" : "bg-blue-200";
+  $: barColor = excluded
+    ? "bg-gray-200 dark:bg-gray-700"
+    : "bg-blue-200 dark:bg-blue-700";
 
   let TOOLTIP_STRING_LIMIT = 200;
   $: tooltipValue =
@@ -134,8 +136,8 @@
           value={formattedValue || value}
           {type}
           customStyle={excluded
-            ? "font-normal italic text-gray-400"
-            : "font-medium text-gray-800"}
+            ? "font-normal ui-copy-disabled-faint"
+            : "font-medium ui-copy"}
           inTable
         />
       </button>
