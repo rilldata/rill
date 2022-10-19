@@ -9,6 +9,7 @@
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
+  import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
   import { IconButton } from "../../button";
@@ -43,6 +44,7 @@
   );
 
   const onRefreshClick = (tableName: string) => {
+    overlay.set({ title: `Importing ${tableName}` });
     $refreshSource.mutate(
       {
         instanceId: runtimeInstanceId,
@@ -51,12 +53,11 @@
       {
         onError: (error) => {
           console.error(error);
+          overlay.set(null);
         },
         onSuccess: async () => {
-          // invalidate the data preview
-          await dataModelerService.dispatch("collectTableInfo", [
-            currentSource.id,
-          ]);
+          // invalidate the data preview (async)
+          dataModelerService.dispatch("collectTableInfo", [currentSource.id]);
 
           // invalidate the "refreshed_on" time
           const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
@@ -64,7 +65,7 @@
             tableName
           );
           queryClient.invalidateQueries(queryKey);
-          console.log("source refreshed successfully");
+          overlay.set(null);
         },
       }
     );

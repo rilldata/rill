@@ -14,6 +14,7 @@
     inspectorVisibilityTween,
     inspectorVisible,
     layout,
+    overlay,
     quickStartDashboardOverlay,
     SIDE_PAD,
   } from "@rilldata/web-local/lib/application-state-stores/layout-store";
@@ -48,6 +49,7 @@
   import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
+  import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
   createQueryClient();
 
   onMount(async () => {
@@ -155,6 +157,14 @@
         />
       {:else if showDropOverlay}
         <FileDrop bind:showDropOverlay />
+      {:else if $overlay !== null}
+        <BlockingOverlayContainer
+          bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+        >
+          <div slot="title">
+            <span class="font-bold">{$overlay.title}</span>
+          </div>
+        </BlockingOverlayContainer>
       {/if}
 
       {#if $duplicateSourceName !== null}

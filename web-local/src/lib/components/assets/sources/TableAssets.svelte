@@ -11,9 +11,16 @@
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import { useRuntimeServiceTriggerRefresh } from "web-common/src/runtime-client";
-  import type { ApplicationStore } from "../../../application-state-stores/application-store";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
+  import {
+    getRuntimeServiceGetCatalogObjectQueryKey,
+    useRuntimeServiceTriggerRefresh,
+  } from "web-common/src/runtime-client";
+  import {
+    ApplicationStore,
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
+  import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -26,6 +33,7 @@
     deleteSourceApi,
   } from "../../../redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "../../../redux-store/source/source-selectors";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../../column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
@@ -149,7 +157,8 @@
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSource = useRuntimeServiceTriggerRefresh();
 
-  const onRefreshSource = (tableName: string) => {
+  const onRefreshSource = (id: string, tableName: string) => {
+    overlay.set({ title: `Importing ${tableName}` });
     $refreshSource.mutate(
       {
         instanceId: runtimeInstanceId,
@@ -158,9 +167,19 @@
       {
         onError: (error) => {
           console.error(error);
+          overlay.set(null);
         },
         onSuccess: () => {
-          console.log("source refreshed successfully");
+          // invalidate the data preview (async)
+          dataModelerService.dispatch("collectTableInfo", [id]);
+
+          // invalidate the "refreshed_on" time
+          const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+            runtimeInstanceId,
+            tableName
+          );
+          queryClient.invalidateQueries(queryKey);
+          overlay.set(null);
         },
       }
     );
@@ -236,7 +255,7 @@
                 </svelte:fragment>
               </MenuItem>
 
-              <MenuItem icon on:select={() => onRefreshSource(tableName)}>
+              <MenuItem icon on:select={() => onRefreshSource(id, tableName)}>
                 <svelte:fragment slot="icon">
                   <RefreshIcon />
                 </svelte:fragment>

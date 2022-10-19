@@ -70,3 +70,9 @@ export function resetQuickStartDashboardOverlay() {
     timeDimension: "",
   });
 }
+
+interface Overlay {
+  title: string;
+}
+
+export const overlay = writable<Overlay>(null);
