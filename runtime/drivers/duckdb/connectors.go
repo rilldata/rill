@@ -59,37 +59,12 @@ func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) 
 }
 
 func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) error {
-	fmt.Println("ingestS3 called")
-	conf, err := s3.ParseConfig(source.Properties)
+	filename, err := s3.Consume(ctx, source)
 	if err != nil {
 		return err
 	}
-
-	// TODO: set AWS settings for the transaction only
-
-	qry := fmt.Sprintf("SET s3_endpoint='s3.amazonaws.com';SET s3_region='%s';", conf.AWSRegion)
-
-	if conf.AWSKey != "" && conf.AWSSecret != "" {
-		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.AWSKey, conf.AWSSecret)
-	} else if conf.AWSSession != "" {
-		qry += fmt.Sprintf("SET s3_session_token='%s';", conf.AWSSession)
-	}
-
 	rows, err := c.Execute(ctx, &drivers.Statement{
-		Query:    qry,
-		Priority: 1,
-	})
-
-	if err != nil {
-		return err
-	}
-	if err = rows.Close(); err != nil {
-		return err
-	}
-
-	// TODO: we need to fix the issue of no error returned for the last query in a multi query request
-	rows, err = c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path),
+		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, filename),
 		Priority: 1,
 	})
 	if err != nil {
@@ -103,35 +78,12 @@ func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) er
 }
 
 func (c *connection) ingestGCS(ctx context.Context, source *connectors.Source) error {
-	conf, err := gcs.ParseConfig(source.Properties)
+	filename, err := gcs.Consume(ctx, source)
 	if err != nil {
 		return err
 	}
-
-	// TODO: set AWS settings for the transaction only
-
-	qry := fmt.Sprintf("SET s3_endpoint='storage.googleapis.com';SET s3_region='%s';", conf.GCPRegion)
-
-	if conf.GCPKey != "" && conf.GCPSecret != "" {
-		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.GCPKey, conf.GCPSecret)
-	}
-
-	qry += fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path)
-
 	rows, err := c.Execute(ctx, &drivers.Statement{
-		Query:    qry,
-		Priority: 1,
-	})
-	if err != nil {
-		return err
-	}
-	if err = rows.Close(); err != nil {
-		return err
-	}
-
-	// TODO: we need to fix the issue of no error returned for the last query in a multi query request
-	rows, err = c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path),
+		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, filename),
 		Priority: 1,
 	})
 	if err != nil {
@@ -143,3 +95,89 @@ func (c *connection) ingestGCS(ctx context.Context, source *connectors.Source) e
 
 	return nil
 }
+
+//func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) error {
+//	fmt.Println("ingestS3 called")
+//	conf, err := s3.ParseConfig(source.Properties)
+//	if err != nil {
+//		return err
+//	}
+//
+//	// TODO: set AWS settings for the transaction only
+//
+//	qry := fmt.Sprintf("SET s3_endpoint='s3.amazonaws.com';SET s3_region='%s';", conf.AWSRegion)
+//
+//	if conf.AWSKey != "" && conf.AWSSecret != "" {
+//		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.AWSKey, conf.AWSSecret)
+//	} else if conf.AWSSession != "" {
+//		qry += fmt.Sprintf("SET s3_session_token='%s';", conf.AWSSession)
+//	}
+//
+//	rows, err := c.Execute(ctx, &drivers.Statement{
+//		Query:    qry,
+//		Priority: 1,
+//	})
+//
+//	if err != nil {
+//		return err
+//	}
+//	if err = rows.Close(); err != nil {
+//		return err
+//	}
+//
+//	// TODO: we need to fix the issue of no error returned for the last query in a multi query request
+//	rows, err = c.Execute(ctx, &drivers.Statement{
+//		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path),
+//		Priority: 1,
+//	})
+//	if err != nil {
+//		return err
+//	}
+//	if err = rows.Close(); err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}
+
+//func (c *connection) ingestGCS(ctx context.Context, source *connectors.Source) error {
+//	conf, err := gcs.ParseConfig(source.Properties)
+//	if err != nil {
+//		return err
+//	}
+//
+//	// TODO: set AWS settings for the transaction only
+//
+//	qry := fmt.Sprintf("SET s3_endpoint='storage.googleapis.com';SET s3_region='%s';", conf.GCPRegion)
+//
+//	if conf.GCPKey != "" && conf.GCPSecret != "" {
+//		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.GCPKey, conf.GCPSecret)
+//	}
+//
+//	qry += fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path)
+//
+//	rows, err := c.Execute(ctx, &drivers.Statement{
+//		Query:    qry,
+//		Priority: 1,
+//	})
+//	if err != nil {
+//		return err
+//	}
+//	if err = rows.Close(); err != nil {
+//		return err
+//	}
+//
+//	// TODO: we need to fix the issue of no error returned for the last query in a multi query request
+//	rows, err = c.Execute(ctx, &drivers.Statement{
+//		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path),
+//		Priority: 1,
+//	})
+//	if err != nil {
+//		return err
+//	}
+//	if err = rows.Close(); err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}

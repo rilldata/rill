@@ -1,6 +1,14 @@
 package gcs
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"net/url"
+	"os"
+	"strings"
+
+	"cloud.google.com/go/storage"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 )
@@ -69,4 +77,45 @@ type connector struct{}
 
 func (c connector) Spec() connectors.Spec {
 	return spec
+}
+
+// Consume will eventually be added to the interface
+func Consume(ctx context.Context, source *connectors.Source) (string, error) {
+	conf, _ := ParseConfig(source.Properties)
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("storage.NewClient: %v", err)
+	}
+	defer client.Close()
+
+	bucket, object, filename, err := getGcsUrlParts(conf.Path)
+
+	f, err := os.Create(filename)
+	if err != nil {
+		return "", fmt.Errorf("os.Create: %v", err)
+	}
+
+	rc, err := client.Bucket(bucket).Object(object).NewReader(ctx)
+	if err != nil {
+		return "", fmt.Errorf("Object(%q).NewReader: %v", object, err)
+	}
+	defer rc.Close()
+
+	if _, err := io.Copy(f, rc); err != nil {
+		return "", fmt.Errorf("io.Copy: %v", err)
+	}
+
+	return filename, nil
+}
+
+func getGcsUrlParts(path string) (string, string, string, error) {
+	u, err := url.Parse(path)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	p := strings.Split(u.Path, "/")
+
+	return u.Host, strings.Replace(u.Path, "/", "", 1), p[len(p)-1], nil
 }

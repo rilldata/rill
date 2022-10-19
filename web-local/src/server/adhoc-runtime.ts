@@ -36,7 +36,7 @@ import { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDB
   console.log(
     await duckdb.requestToInstance("migrate/single", {
       sql:
-        "create source AdBidsGS with connector = 'gcs', path = 's3://scratch.rilldata.com/rill-developer/AdBids.csv'," +
+        "create source AdBidsGS with connector = 'gcs', path = 'gs://scratch.rilldata.com/rill-developer/AdBids.csv'," +
         "'gcp.region' = 'us-east-1'",
     })
   );
