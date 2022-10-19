@@ -88,42 +88,56 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-// Consume will eventually be added to the interface
-func Consume(ctx context.Context, source *connectors.Source) (string, error) {
-	conf, _ := ParseConfig(source.Properties)
+func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source, callback func(filename string) error) error {
+	conf, err := ParseConfig(source.Properties)
+	if err != nil {
+		return fmt.Errorf("failed to parse config: %v", err)
+	}
 
 	// The session the S3 Downloader will use
-	sess := session.Must(session.NewSession(&aws.Config{
+	sess, err := session.NewSession(&aws.Config{
 		Region:      &conf.AWSRegion,
 		Credentials: getAwsCredentials(conf),
-	}))
+	})
+	if err != nil {
+		return fmt.Errorf("failed to start session: %v", err)
+	}
 
 	// Create a downloader with the session and default options
 	downloader := s3manager.NewDownloader(sess)
 
-	bucket, key, filename, err := getAwsUrlParts(conf.Path)
+	bucket, key, extension, err := getAwsUrlParts(conf.Path)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
 	}
 
-	filename = os.ExpandEnv(fmt.Sprintf("$TMPDIR%s", filename))
-	// Create a file to write the S3 Object contents to.
-	f, err := os.Create(filename)
+	f, err := os.CreateTemp(
+		os.TempDir(),
+		fmt.Sprintf("%s*.%s", source.Name, extension),
+	)
 	if err != nil {
-		return "", fmt.Errorf("failed to create file %q, %v", filename, err)
+		return fmt.Errorf("os.Create: %v", err)
 	}
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
 
-	// Write the contents of S3 Object to the file
-	n, err := downloader.Download(f, &s3.GetObjectInput{
+	// Write the contents of S3 Object to the f
+	_, err = downloader.Download(f, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to download file, %v", err)
+		return fmt.Errorf("failed to download f, %v", err)
 	}
-	fmt.Printf("file downloaded, %d bytes\n", n)
 
-	return filename, nil
+	err = callback(f.Name())
+	if err != nil {
+		return fmt.Errorf("failed to ingest f, %v", err)
+	}
+
+	return nil
 }
 
 func getAwsCredentials(conf *Config) *credentials.Credentials {
@@ -146,7 +160,7 @@ func getAwsUrlParts(path string) (string, string, string, error) {
 		return "", "", "", err
 	}
 
-	p := strings.Split(u.Path, "/")
+	p := strings.Split(u.Path, ".")
 
 	return u.Host, u.Path, p[len(p)-1], nil
 }
