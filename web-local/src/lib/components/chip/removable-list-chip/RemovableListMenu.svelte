@@ -8,7 +8,7 @@
 
   import { Menu } from "@rilldata/web-local/lib/components/menu";
   import MenuItem from "@rilldata/web-local/lib/components/menu/core/MenuItem.svelte";
-  import { createEventDispatcher, tick } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import Footer from "./Footer.svelte";
 
   export let selectedValues: string[];
@@ -19,20 +19,12 @@
 
   const dispatch = createEventDispatcher();
 
-  function onCloseHandler() {
-    dispatch("close");
-  }
-
   function onSearch() {
     dispatch("search", searchText);
   }
 
   function onToggleHandler() {
-    console.log("Dispaf");
     dispatch("toggle");
-    console.log("Dispaf2");
-
-    // onCloseHandler();
   }
 
   /** On instantiation, only take the exact current selectedValues, so that
@@ -108,13 +100,13 @@
   </div>
   <Footer>
     <Button type="secondary" compact on:click={onToggleHandler}>
-      {#if excludeMode}
+      {#if !excludeMode}
         <Cancel />
       {:else}
         <Check />
       {/if}
       <span class="font-semibold ui-copy">
-        {excludeMode ? "Exclude" : "Include"}
+        {excludeMode ? "Toggle Include" : "Toggle Exclude"}
       </span>
     </Button>
     {#if numSelectedNotInSearch}
