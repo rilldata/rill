@@ -5,6 +5,7 @@
   import type { Writable } from "svelte/store";
   import {
     ConnectorPropertyType,
+    RpcStatus,
     useRuntimeServiceMigrateSingle,
     V1Connector,
   } from "web-common/src/runtime-client";
@@ -98,6 +99,18 @@
   }
 
   $: onConnectorChange(connector);
+
+  function humanReadableErrorMessage(error: RpcStatus) {
+    // TODO: the error response type does not match the type defined in the API
+    switch (error.response.data.code) {
+      // gRPC error codes: https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
+      case 3:
+        // InvalidArgument
+        return error.response.data.message;
+      default:
+        return "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";
+    }
+  }
 </script>
 
 {#if $createSource.isError}
@@ -106,7 +119,7 @@
   >
     <AlertTriangle size="16px" />
     <p class="ml-2">
-      {$createSource.error?.response?.data?.message}
+      {@html humanReadableErrorMessage($createSource.error)}
     </p>
   </div>
 {/if}
