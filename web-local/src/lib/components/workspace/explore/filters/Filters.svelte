@@ -132,15 +132,17 @@ The main feature-set component for dashboard filters
     }));
   }
 
-  function toggleDimensionValue(event, item, include: boolean) {
-    event.detail.forEach((dimensionValue) => {
-      metricsExplorerStore.toggleFilter(
-        metricsDefId,
-        item.dimensionId,
-        dimensionValue,
-        include
-      );
-    });
+  function toggleDimensionValue(event, item) {
+    metricsExplorerStore.toggleFilter(
+      metricsDefId,
+      item.dimensionId,
+      event.detail
+    );
+  }
+
+  function togglerFilterMode(dimensionId) {
+    console.log("toggle");
+    metricsExplorerStore.toggleFilterExcludeMode(metricsDefId, dimensionId);
   }
 
   const excludeChipColors = {
@@ -171,9 +173,12 @@ The main feature-set component for dashboard filters
       {#each currentDimensionIncludeFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
+            on:toggle={() => {
+              console.log("hello?");
+              // togglerFilterMode(dimensionId);
+            }}
             on:remove={() => clearFilterForDimension(dimensionId, true)}
-            on:apply={(event) =>
-              toggleDimensionValue(event, { dimensionId }, true)}
+            on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
             on:search={(event) => {
               setActiveDimension(sqlName, dimensionId, event.detail);
             }}
@@ -192,8 +197,8 @@ The main feature-set component for dashboard filters
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:remove={() => clearFilterForDimension(dimensionId, false)}
-            on:apply={(event) =>
-              toggleDimensionValue(event, { dimensionId }, false)}
+            on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
+            on:toggle={() => togglerFilterMode(dimensionId)}
             on:search={(event) => {
               setActiveDimension(sqlName, dimensionId, event.detail);
             }}
