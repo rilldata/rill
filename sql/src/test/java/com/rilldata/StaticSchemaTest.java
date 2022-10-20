@@ -2,7 +2,6 @@ package com.rilldata;
 
 import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.dialects.Dialects;
-import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.ValidationException;
 import org.junit.jupiter.api.Assertions;

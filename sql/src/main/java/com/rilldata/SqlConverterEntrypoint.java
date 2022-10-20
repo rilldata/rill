@@ -24,14 +24,14 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "convert_sql")
   public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema, CCharPointer dialect
+      CCharPointer catalog, CCharPointer dialect
   )
   {
     try {
       String dialectString = CTypeConversion.toJavaString(dialect);
       Dialects dialectEnum = Dialects.valueOf(dialectString.toUpperCase());
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String javaSqlString = CTypeConversion.toJavaString(sql);
       String runnableQuery = sqlConverter.convert(javaSqlString, dialectEnum.getSqlDialect());
       if (runnableQuery == null) {
@@ -46,12 +46,12 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "get_ast")
   public static CCharPointer getAST(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema
+      CCharPointer catalog
   )
   {
     try {
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String sqlString = CTypeConversion.toJavaString(sql);
       byte[] ast = sqlConverter.getAST(sqlString);
       return convertToCCharPointer(allocatorFn, ast);
