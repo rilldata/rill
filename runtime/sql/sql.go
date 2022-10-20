@@ -14,7 +14,7 @@ import (
 	"unsafe"
 
 	"github.com/rilldata/rill/runtime/pkg/sharedlibrary"
-	"github.com/rilldata/rill/runtime/sql/requests"
+	"github.com/rilldata/rill/runtime/sql/rpc"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -67,7 +67,7 @@ func (i *Isolate) Close() error {
 	return i.library.Close()
 }
 
-func (i *Isolate) request(request *requests.Request) *requests.Response {
+func (i *Isolate) request(request *rpc.Request) *rpc.Response {
 	f, err := i.library.FindFunc("request")
 	if err != nil {
 		panic(err)
@@ -92,7 +92,7 @@ func (i *Isolate) request(request *requests.Request) *requests.Response {
 	b64response := C.GoString((*C.char)(unsafe.Pointer(res)))
 	C.free(unsafe.Pointer(res))
 
-	var response requests.Response
+	var response rpc.Response
 	decodedResponse, _ := b64.StdEncoding.DecodeString(b64response)
 	proto.Unmarshal(decodedResponse, &response)
 

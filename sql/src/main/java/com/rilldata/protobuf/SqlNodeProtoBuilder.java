@@ -88,7 +88,7 @@ import java.util.List;
 
 /**
  * Run `mvn package` to generate the protobuf builder classes in target/generated-sources/annotations folder.
- * It uses following script - protoc-java.sh
+ * It uses following script - proto-gen.sh
  */
 public class SqlNodeProtoBuilder
 {

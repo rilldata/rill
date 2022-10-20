@@ -1,7 +1,7 @@
 syntax = "proto3";
-import "SqlNodeProto.proto";
-
-package com.rilldata.protobuf.generated;
+option java_package = "com.rilldata.protobuf.generated";
+import "sql/src/main/proto/ast.proto";
+package rill.sql.v1;
 
 // *******************************
 // RPC for calling into librillsql
