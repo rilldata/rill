@@ -1,16 +1,16 @@
 .PHONY: build
 build:
-	go generate ./sql
+	go generate ./sql/...
 	go build -o main ./cmd
 
 .PHONY: run
 run:
-	go generate ./sql
+	go generate ./sql/...
 	go run ./cmd
 
 .PHONY: test
 test:
-	go generate ./sql
+	go generate ./sql/...
 	go test ./...
 
 .PHONY: clean
@@ -32,12 +32,20 @@ generate.proto.api:
 		--openapiv2_out=api --openapiv2_opt=logtostderr=true \
 		runtime.proto
 
-generate.proto.sql:
+generate.proto.sql.ast:
 	go install "google.golang.org/protobuf/cmd/protoc-gen-go"
 	protoc --proto_path=../sql/src/main/java/com/rilldata/protobuf \
 		--go_out=sql/pbast --go_opt=paths=source_relative \
 		--go_opt=MSqlNodeProto.proto=github.com/rilldata/rill/runtime/sql/pbast \
 		SqlNodeProto.proto
+
+generate.proto.sql.requests:
+	go install "google.golang.org/protobuf/cmd/protoc-gen-go"
+	protoc --proto_path=../sql/src/main/java/com/rilldata/protobuf \
+		--go_out=sql/requests --go_opt=paths=source_relative \
+		--go_opt=Mrequests.proto=github.com/rilldata/rill/runtime/sql/requests \
+		--go_opt=MSqlNodeProto.proto=github.com/rilldata/rill/runtime/sql/pbast \
+		requests.proto
 
 release/darwin-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi

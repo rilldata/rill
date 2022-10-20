@@ -110,11 +110,17 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFile(ctx context.Context, source *Source, callback func(filename string) error) error {
-	connector, ok := Connectors[source.Connector]
-	if !ok {
-		return fmt.Errorf("connector: not found")
+func (s *Source) PropertiesEquals(o *Source) bool {
+	if len(s.Properties) != len(o.Properties) {
+		return false
 	}
 
-	return connector.ConsumeAsFile(ctx, source, callback)
+	for k1, v1 := range s.Properties {
+		v2, ok := o.Properties[k1]
+		if !ok || v1 != v2 {
+			return false
+		}
+	}
+
+	return true
 }
