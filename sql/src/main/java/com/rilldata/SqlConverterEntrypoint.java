@@ -8,12 +8,15 @@ import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
 import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
+import org.graalvm.nativeimage.c.type.CIntPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
+import org.graalvm.nativeimage.c.type.VoidPointer;
 import org.graalvm.word.WordFactory;
 import com.rilldata.protobuf.generated.Requests;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.hsqldb.types.Charset;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -50,39 +53,56 @@ public class SqlConverterEntrypoint
     }
   }
 
-  @CEntryPoint(name = "request")
-  public static CCharPointer processRequest(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer request) {
-    String b64String = CTypeConversion.toJavaString(request);
-    byte[] decoded = Base64.getDecoder().decode(b64String);
+  @CEntryPoint(name = "processPbRequest")
+  public static CCharPointer processPbRequest(
+      IsolateThread thread,
+      AllocatorFn allocatorFn,
+      VoidPointer request,
+      int inSize,
+      CIntPointer outSize
+  ) {
+    ByteBuffer buf = CTypeConversion.asByteBuffer(request, inSize);
+    byte[] arr = new byte[buf.limit()];
+    buf.get(arr);
+    byte[] out = processPbBytes(arr);
+    CCharPointer charPointer = convertToCCharPointer2(allocatorFn, out);
+    outSize.write(out.length);
+    return charPointer;
+  }
 
+  public static byte[] processPbBytes(byte[] in) {
     try {
-      Requests.Request r = Requests.Request.parseFrom(decoded);
+      Requests.Request r = Requests.Request.parseFrom(in);
       if (r.hasParseRequest()) {
         Requests.ParseRequest parseRequest = r.getParseRequest();
         String sql = parseRequest.getSql();
         SqlConverter sqlConverter = new SqlConverter(parseRequest.getSchema());
-        byte[] bytes = sqlConverter.getAST(sql);
-        byte[] b64response = Base64.getEncoder().encode(bytes);
-        return convertToCCharPointer(allocatorFn, b64response);
+        return sqlConverter.getAST(sql);
       } else if (r.hasTranspileRequest()) {
-          byte[] response = transpile(r).toByteArray();
-          byte[] b64response = Base64.getEncoder().encode(response);
-          return convertToCCharPointer(allocatorFn, b64response);
+        return transpile(r).toByteArray();
       }
-      Requests.Response build = Requests.Response
+      return Requests.Response
           .newBuilder()
           .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
-          .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+          .build().toByteArray();
     }
     catch (InvalidProtocolBufferException e) {
       e.printStackTrace();
-      Requests.Response build = Requests.Response
+      return Requests.Response
           .newBuilder()
           .setError(Requests.Error.newBuilder().setMessage("Invalid request" + e.getMessage()).build())
-          .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+          .build().toByteArray();
     }
+  }
+
+  @CEntryPoint(name = "request")
+  public static CCharPointer processBase64Request(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer request)
+  {
+    String b64String = CTypeConversion.toJavaString(request);
+    byte[] decoded = Base64.getDecoder().decode(b64String);
+    byte[] out = processPbBytes(decoded);
+    byte[] b64response = Base64.getEncoder().encode(out);
+    return convertToCCharPointer(allocatorFn, new String(b64response));
   }
 
   @CEntryPoint(name = "convert_sql")
@@ -136,6 +156,15 @@ public class SqlConverterEntrypoint
       a.write(i, b[i]);
     }
     a.write(b.length, (byte) 0);
+    return a;
+  }
+
+  private static CCharPointer convertToCCharPointer2(AllocatorFn allocatorFn, byte[] b)
+  {
+    CCharPointer a = allocatorFn.call(b.length + 1);
+    for (int i = 0; i < b.length; i++) {
+      a.write(i, b[i]);
+    }
     return a;
   }
 }

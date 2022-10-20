@@ -7,6 +7,9 @@ package sql
 // #include <stdlib.h>
 // #include <librillsql.h>
 // void*(*my_malloc)(size_t) = malloc;
+// void* processPbRequestT(graal_isolatethread_t* thread, void* request, int requestSize, int* resultSize) {
+//  return processPbRequest(thread, malloc, request, requestSize, resultSize);
+// }
 import "C"
 import (
 	b64 "encoding/base64"
@@ -65,6 +68,30 @@ func (i *Isolate) Close() error {
 	}
 
 	return i.library.Close()
+}
+
+func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response {
+	thread := i.attachThread()
+
+	bytes, _ := proto.Marshal(request)
+	cBytes := C.CBytes(bytes)
+	defer C.free(cBytes)
+	var resultSize C.int
+
+	cResult := C.processPbRequestT(
+		thread,
+		cBytes,
+		C.int(len(bytes)),
+		&resultSize,
+	)
+	defer C.free(unsafe.Pointer(cResult))
+
+	goResultBytes := C.GoBytes(cResult, resultSize)
+
+	var response requests.Response
+	proto.Unmarshal(goResultBytes, &response)
+
+	return &response
 }
 
 func (i *Isolate) request(request *requests.Request) *requests.Response {
