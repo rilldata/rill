@@ -46,7 +46,7 @@
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
   import { Divider, MenuItem } from "../../menu";
-  import RenameEntityModal from "../RenameEntityModal.svelte";
+  import RenameAssetModal from "../RenameAssetModal.svelte";
   import AddSourceModal from "./AddSourceModal.svelte";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
@@ -306,7 +306,7 @@
     />
   {/if}
   {#if showRenameTableModal}
-    <RenameEntityModal
+    <RenameAssetModal
       entityType={EntityType.Table}
       closeModal={() => (showRenameTableModal = false)}
       entityId={renameTableID}
