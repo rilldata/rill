@@ -13,6 +13,7 @@
   import { slide } from "svelte/transition";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    useRuntimeServiceMigrateDelete,
     useRuntimeServiceTriggerRefresh,
   } from "web-common/src/runtime-client";
   import {
@@ -30,7 +31,6 @@
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
-    deleteSourceApi,
   } from "../../../redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "../../../redux-store/source/source-selectors";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
@@ -123,16 +123,27 @@
     }
   };
 
-  const deleteSource = (tableName: string, id: string) => {
+  const deleteSource = useRuntimeServiceMigrateDelete();
+
+  const handleDeleteSource = (tableName: string, id: string) => {
     const nextSourceId = getNextEntityId($persistentTableStore.entities, id);
-
-    if (nextSourceId) {
-      goto(`/source/${nextSourceId}`);
-    } else {
-      goto("/");
-    }
-
-    deleteSourceApi(tableName);
+    $deleteSource.mutate(
+      {
+        instanceId: runtimeInstanceId,
+        data: {
+          name: tableName,
+        },
+      },
+      {
+        onSuccess: () => {
+          if (nextSourceId) {
+            goto(`/source/${nextSourceId}`);
+          } else {
+            goto("/");
+          }
+        },
+      }
+    );
   };
 
   const createModel = (tableName: string) => {
@@ -274,7 +285,10 @@
                 rename...
               </MenuItem>
               <!-- FIXME: this should pop up an "are you sure?" modal -->
-              <MenuItem icon on:select={() => deleteSource(tableName, id)}>
+              <MenuItem
+                icon
+                on:select={() => handleDeleteSource(tableName, id)}
+              >
                 <Cancel slot="icon" />
                 delete</MenuItem
               >
@@ -296,7 +310,7 @@
       entityType={EntityType.Table}
       closeModal={() => (showRenameTableModal = false)}
       entityId={renameTableID}
-      currentEntityName={renameTableName}
+      currentAssetName={renameTableName}
     />
   {/if}
 {/if}
