@@ -60,14 +60,14 @@ service RuntimeService {
   // GetRepoObject returns the contents of a specific object (file) in a repo.
   rpc GetRepoObject(GetRepoObjectRequest) returns (GetRepoObjectResponse) {
     option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/objects/-/{path}"
+      get: "/v1/repos/{repo_id}/objects/-/{path=**}"
     };
   }
 
   // PutRepoObject can be used to create, update, or delete an object (file) in a repo
   rpc PutRepoObject(PutRepoObjectRequest) returns (PutRepoObjectResponse) {
     option (google.api.http) = {
-      post: "/v1/repos/{repo_id}/objects/-/{path}",
+      post: "/v1/repos/{repo_id}/objects/-/{path=**}",
       body: "*"
     };
   }

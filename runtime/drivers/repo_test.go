@@ -17,16 +17,16 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	require.NoError(t, err)
 	require.Len(t, paths, 0)
 
-	err = repo.Put(ctx, repoID, "foo.sql", "hello world")
+	err = repo.PutBlob(ctx, repoID, "foo.sql", "hello world")
 	require.NoError(t, err)
-	err = repo.Put(ctx, repoID, "/bar.sql", "hello world")
+	err = repo.PutBlob(ctx, repoID, "/bar.sql", "hello world")
 	require.NoError(t, err)
 
 	paths, err = repo.ListRecursive(ctx, repoID)
 	require.NoError(t, err)
 	require.Equal(t, []string{"/bar.sql", "/foo.sql"}, paths)
 
-	err = repo.Put(ctx, repoID, "deeply/nested/foo.sql", "hello world")
+	err = repo.PutBlob(ctx, repoID, "deeply/nested/foo.sql", "hello world")
 	require.NoError(t, err)
 
 	paths, err = repo.ListRecursive(ctx, repoID)
@@ -47,7 +47,7 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	require.NoError(t, err)
 	require.Equal(t, "hello world", blob)
 
-	err = repo.Put(ctx, repoID, "bar.sql", "bar bar bar")
+	err = repo.PutBlob(ctx, repoID, "bar.sql", "bar bar bar")
 	require.NoError(t, err)
 
 	blob, err = repo.Get(ctx, repoID, "bar.sql")

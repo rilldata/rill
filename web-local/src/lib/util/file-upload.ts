@@ -1,10 +1,13 @@
 import { goto } from "$app/navigation";
 import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import { get } from "svelte/store";
 import {
+  config,
   dataModelerService,
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
+  runtimeStore,
 } from "../application-state-stores/application-store";
 import { importOverlayVisible } from "../application-state-stores/layout-store";
 import notifications from "../components/notifications";
@@ -14,7 +17,7 @@ import {
   extractFileExtension,
   getTableNameFromFile,
 } from "./extract-table-name";
-import { fetchWrapper } from "./fetchWrapper";
+import { fetchWrapper, fetchWrapperDirect } from "./fetchWrapper";
 
 /**
  * uploadTableFiles
@@ -22,7 +25,11 @@ import { fetchWrapper } from "./fetchWrapper";
  * Attempts to upload all files passed in.
  * Will return the list of files that are not valid.
  */
-export function uploadTableFiles(files, apiBase: string) {
+function uploadTableFiles(
+  files,
+  duplicateValidator: (name: string) => boolean,
+  incrementedNameGetter: (name: string) => string
+) {
   const invalidFiles = [];
   const validFiles = [];
 
@@ -35,51 +42,57 @@ export function uploadTableFiles(files, apiBase: string) {
     }
   });
 
-  validFiles.forEach((validFile) => validateFile(validFile, apiBase));
+  validFiles.forEach((validFile) =>
+    validateFile(validFile, duplicateValidator, incrementedNameGetter)
+  );
   return invalidFiles;
 }
 
-export async function validateFile(file: File, apiBase: string) {
-  const tableUploadURL = `${apiBase}/table-upload`;
-  const tableValidateURL = `${apiBase}/validate-table`;
+async function validateFile(
+  file: File,
+  duplicateValidator: (name: string) => boolean,
+  incrementedNameGetter: (name: string) => string
+) {
+  const tableUploadURL = `${config.database.runtimeUrl}/v1/repos/${
+    get(runtimeStore).repoId
+  }/objects/file`;
 
   const currentTableName = getTableNameFromFile(file.name);
 
   try {
-    const validateResp = await fetchWrapper(
-      tableValidateURL + `?tableName=${currentTableName}`,
-      "GET"
-    );
-    if (validateResp.isDuplicate) {
+    const isDuplicate = duplicateValidator(currentTableName);
+    if (isDuplicate) {
       const userResponse = await getResponseFromModal(currentTableName);
       if (userResponse == DuplicateActions.Cancel) {
         return;
       } else if (userResponse == DuplicateActions.KeepBoth) {
-        await uploadFile(file, tableUploadURL, validateResp.name);
+        await uploadFile(
+          file,
+          tableUploadURL,
+          incrementedNameGetter(currentTableName)
+        );
       } else if (userResponse == DuplicateActions.Overwrite) {
-        await uploadFile(file, tableUploadURL);
+        await uploadFile(file, tableUploadURL, currentTableName);
       }
     } else {
-      await uploadFile(file, tableUploadURL);
+      await uploadFile(file, tableUploadURL, currentTableName);
     }
   } catch (err) {
     console.error(err);
   }
 }
 
-export async function uploadFile(file: File, url: string, tableName?: string) {
+async function uploadFile(file: File, url: string, tableName?: string) {
   importOverlayVisible.set(true);
 
   const formData = new FormData();
   formData.append("file", file);
-
-  if (tableName) {
-    formData.append("tableName", tableName);
-  }
+  formData.append("instanceId", get(runtimeStore).instanceId);
+  formData.append("tableName", tableName);
 
   try {
-    const persistentTable: PersistentTableEntity = await fetchWrapper(
-      url,
+    const persistentTable: PersistentTableEntity = await fetchWrapperDirect(
+      `${url}/-/${file.name}`,
       "POST",
       formData,
       {}
@@ -109,10 +122,18 @@ function reportFileErrors(invalidFiles: File[]) {
 /** Handles the uploading of the datasets. Any invalid files will be reported
  * through reportFileErrors.
  */
-export function handleFileUploads(filesArray: File[]) {
+function handleFileUploads(
+  filesArray: File[],
+  duplicateValidator: (name: string) => boolean,
+  incrementedNameGetter: (name: string) => string
+) {
   let invalidFiles = [];
   if (filesArray) {
-    invalidFiles = uploadTableFiles(filesArray, "file");
+    invalidFiles = uploadTableFiles(
+      filesArray,
+      duplicateValidator,
+      incrementedNameGetter
+    );
   }
   if (invalidFiles.length) {
     importOverlayVisible.set(false);
@@ -121,26 +142,39 @@ export function handleFileUploads(filesArray: File[]) {
 }
 
 /** a drag and drop callback to kick off a source table import */
-export function onSourceDrop(e: DragEvent) {
+export function onSourceDrop(
+  e: DragEvent,
+  duplicateValidator: (name: string) => boolean,
+  incrementedNameGetter: (name: string) => string
+) {
   const files = e?.dataTransfer?.files;
   if (files) {
-    handleFileUploads(Array.from(files));
+    handleFileUploads(
+      Array.from(files),
+      duplicateValidator,
+      incrementedNameGetter
+    );
   }
 }
 
-/** an event callback when a source table file is chosen manually */
-export function onManualSourceUpload(e: Event) {
-  const files = (<HTMLInputElement>e.target)?.files as FileList;
-  if (files) {
-    handleFileUploads(Array.from(files));
-  }
-}
-
-export async function uploadFilesWithDialog() {
+export async function uploadFilesWithDialog(
+  duplicateValidator: (name: string) => boolean,
+  incrementedNameGetter: (name: string) => string
+) {
   const input = document.createElement("input");
   input.multiple = true;
   input.type = "file";
-  input.onchange = onManualSourceUpload;
+  /** an event callback when a source table file is chosen manually */
+  input.onchange = (e: Event) => {
+    const files = (<HTMLInputElement>e.target)?.files as FileList;
+    if (files) {
+      handleFileUploads(
+        Array.from(files),
+        duplicateValidator,
+        incrementedNameGetter
+      );
+    }
+  };
   input.click();
 }
 

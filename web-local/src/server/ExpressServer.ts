@@ -114,10 +114,15 @@ export class ExpressServer {
     // TODO: This should be replaced by a better assignment of instance id once nodejs server is replaced completely bu runtime
     this.app.get("/api/v1/runtime/instance-id", (req: Request, res: Response) =>
       res.json({
-        data: this.dataModelerService
-          .getDatabaseService()
-          .getDatabaseClient()
-          .getInstanceId(),
+        data: {
+          instanceId: this.dataModelerService
+            .getDatabaseService()
+            .getDatabaseClient()
+            .getInstanceId(),
+          repoId: this.dataModelerService
+            .getStateService()
+            .getApplicationState().repoId,
+        },
       })
     );
   }

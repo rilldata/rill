@@ -2,6 +2,10 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"path"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -132,12 +136,65 @@ func (s *Server) PutRepoObject(ctx context.Context, req *api.PutRepoObjectReques
 	}
 
 	repoStore, _ := conn.RepoStore()
-	err = repoStore.Put(ctx, repo.ID, req.Path, req.Blob)
+	err = repoStore.PutBlob(ctx, repo.ID, req.Path, req.Blob)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &api.PutRepoObjectResponse{}, nil
+}
+
+func (s *Server) PutRepoObjectFromHTTPRequest(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	ctx := context.Background()
+	if err := req.ParseForm(); err != nil {
+		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	registry, _ := s.metastore.RegistryStore()
+	repo, found := registry.FindRepo(ctx, pathParams["repo_id"])
+	if !found {
+		http.Error(w, "repo not found", http.StatusBadRequest)
+		return
+	}
+
+	conn, err := drivers.Open(repo.Driver, repo.DSN)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to open driver: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	f, _, err := req.FormFile("file")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to parse file in request: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	filePath := path.Join("data", pathParams["path"])
+	repoStore, _ := conn.RepoStore()
+	err = repoStore.PutReader(ctx, repo.ID, filePath, f)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to write file: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	res, err := s.MigrateSingle(ctx, &api.MigrateSingleRequest{
+		InstanceId: req.PostForm["instanceId"][0],
+		Sql: fmt.Sprintf(
+			"CREATE SOURCE %s with connector = 'file', path = '%s'",
+			req.PostForm["tableName"][0],
+			path.Join(repo.DSN, filePath),
+		),
+		CreateOrReplace: true,
+		DryRun:          false,
+	})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to migrate source: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
 }
 
 func repoToPB(repo *drivers.Repo) *api.Repo {
