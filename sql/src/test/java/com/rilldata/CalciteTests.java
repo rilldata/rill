@@ -523,13 +523,14 @@ public class CalciteTests
   }
 
   @Test
-  public void testQuery() throws SqlParseException, ValidationException
+  public void testSimpleQuery() throws SqlParseException, ValidationException
   {
-    String query1 = "select 1 as foo, "
-        + "'hello' as bar, h1.\"id\", h1.\"power\", h2.\"name\" "
-        + "from main.heroes h1 join main.heroes h2 on h1.\"id\" = h2.\"id\"";
-    String resultantQuery = calciteToolbox.getRunnableQuery(query1, Dialects.DUCKDB.getSqlDialect());
-    System.out.println(resultantQuery);
+    String query = "select 1 as foo, "
+        + "'hello' as bar, h1.id, h1.\"power\", h2.name "
+        + "from main.heroes h1 join main.heroes h2 on h1.id = h2.id";
+    for (Dialects dialect : Dialects.values()) {
+      calciteToolbox.getRunnableQuery(query, dialect.getSqlDialect());
+    }
   }
 
   @ParameterizedTest
