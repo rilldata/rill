@@ -67,7 +67,7 @@ public class CalciteTests
     SqlCreateMetricsView sqlCreateMetricsView;
     byte[] ast;
     try {
-      ast = calciteToolbox.getAST(modelingQuery, false);
+      ast = calciteToolbox.getAST(modelingQuery, false).toByteArray();
       parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
       validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
@@ -110,7 +110,7 @@ public class CalciteTests
     SqlCreateSource sqlCreateSource;
     byte[] ast;
     try {
-      ast = calciteToolbox.getAST(createSourceQuery, false);
+      ast = calciteToolbox.getAST(createSourceQuery, false).toByteArray();
       parseExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
       validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
@@ -526,7 +526,7 @@ public class CalciteTests
         exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
 
-        byte[] ast = calciteToolbox.getAST(actual);
+        byte[] ast = calciteToolbox.getAST(actual).toByteArray();
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
           Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
@@ -561,7 +561,7 @@ public class CalciteTests
         exceptionMessage.ifPresent(s -> System.out.println("Expected following exception : " + s));
         Assertions.assertTrue(exceptionMessage.isEmpty() && SqlNode.equalDeep(actual, expected, Litmus.IGNORE));
 
-        byte[] ast = calciteToolbox.getAST(actual);
+        byte[] ast = calciteToolbox.getAST(actual).toByteArray();
         try {
           SqlNodeProto sqlNodeProto = SqlNodeProto.parseFrom(ast);
           Assertions.assertTrue(sqlNodeProto.toString().length() > 0);
