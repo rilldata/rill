@@ -34,18 +34,18 @@ generate.proto.api:
 
 generate.proto.sql.ast:
 	go install "google.golang.org/protobuf/cmd/protoc-gen-go"
-	protoc --proto_path=../sql/src/main/java/com/rilldata/protobuf \
-		--go_out=sql/pbast --go_opt=paths=source_relative \
-		--go_opt=MSqlNodeProto.proto=github.com/rilldata/rill/runtime/sql/pbast \
-		SqlNodeProto.proto
+	protoc --proto_path=.. \
+		--go_out=.. --go_opt=module=github.com/rilldata/rill \
+		--go_opt=Msql/src/main/proto/ast.proto=github.com/rilldata/rill/runtime/sql/ast \
+		sql/src/main/proto/ast.proto
 
-generate.proto.sql.requests:
+generate.proto.sql.rpc:
 	go install "google.golang.org/protobuf/cmd/protoc-gen-go"
-	protoc --proto_path=../sql/src/main/java/com/rilldata/protobuf \
-		--go_out=sql/requests --go_opt=paths=source_relative \
-		--go_opt=Mrequests.proto=github.com/rilldata/rill/runtime/sql/requests \
-		--go_opt=MSqlNodeProto.proto=github.com/rilldata/rill/runtime/sql/pbast \
-		requests.proto
+	protoc --proto_path=.. \
+		--go_out=.. --go_opt=module=github.com/rilldata/rill \
+		--go_opt=Msql/src/main/proto/requests.proto=github.com/rilldata/rill/runtime/sql/rpc \
+		--go_opt=Msql/src/main/proto/ast.proto=github.com/rilldata/rill/runtime/sql/ast \
+		sql/src/main/proto/requests.proto
 
 release/darwin-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
