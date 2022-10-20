@@ -20,15 +20,12 @@
   }
 </script>
 
-<div class="flex flex-row items-center pl-1 pb-1 block gap-x-1 text-gray-600">
-  <label for={id}>{label}</label>
+<div class="flex flex-row items-center pl-1 pb-1 gap-x-1">
+  <label for={id} class="text-gray-600">{label}</label>
   {#if hint}
     <Tooltip location="right" alignment="middle" distance={8}>
-      <button
-        class="bg-transparent grid grid-flow-col gap-2 items-center p-0 pr-1 border-transparent hover:border-slate-200"
-        style="max-width: 100%;"
-      >
-        <InfoCircle size="16px" />
+      <button class="text-gray-500" style="transform:translateY(-.5px)">
+        <InfoCircle size="13px" />
       </button>
       <TooltipContent slot="tooltip-content">
         {@html hint}

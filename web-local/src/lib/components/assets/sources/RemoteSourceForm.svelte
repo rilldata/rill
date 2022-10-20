@@ -115,7 +115,7 @@
 
 {#if $createSource.isError}
   <div
-    class="mx-4 my-2 p-2 flex bg-red-200 border-red-500 border-2 rounded text-red-800"
+    class="mx-4 my-2 p-2 flex bg-red-100 border-red-300 border-2 rounded text-red-800"
   >
     <AlertTriangle size="16px" />
     <p class="ml-2">
