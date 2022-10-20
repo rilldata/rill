@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.rilldata</groupId>
   <artifactId>sql</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
@@ -286,6 +286,8 @@
             <configuration>
               <sources>
                 <source>src/generated-sources/</source>
+                <source>${project.build.directory}/generated-sources/annotations</source>
+                <source>${project.build.directory}/generated-sources/requests</source>
               </sources>
             </configuration>
           </execution>
@@ -307,7 +309,7 @@
         <version>3.1.0</version>
         <executions>
           <execution>
-            <id>Generate protobuf classes</id>
+            <id>Generate protobuf AST classes</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>exec</goal>
@@ -319,6 +321,22 @@
                 <argument>SqlNodeProto.proto</argument> <!-- proto file name -->
                 <argument>${project.build.sourceDirectory}/com/rilldata/protobuf/</argument> <!-- input dir -->
                 <argument>${project.build.directory}/generated-sources/annotations/</argument> <!-- output dir -->
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>Generate protobuf request classes</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>bash</executable>
+              <arguments>
+                <argument>${project.basedir}/scripts/protoc-java.sh</argument>
+                <argument>requests.proto</argument> <!-- proto file name -->
+                <argument>${project.build.sourceDirectory}/com/rilldata/protobuf/</argument> <!-- input dir -->
+                <argument>${project.build.directory}/generated-sources/requests/</argument> <!-- output dir -->
               </arguments>
             </configuration>
           </execution>
