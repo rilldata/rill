@@ -94,14 +94,11 @@
       {:else}
         <div class="flex items-center">
           {#if $getSource.isSuccess}
-            <Tooltip location="bottom" distance={8}>
-              <div class="text-xs">
-                {formatRefreshedOn($getSource.data?.object?.refreshedOn)}
-              </div>
-              <TooltipContent slot="tooltip-content"
-                >Time the data was last imported</TooltipContent
-              >
-            </Tooltip>
+            <div class="text-xs">
+              Last import: {formatRefreshedOn(
+                $getSource.data?.object?.refreshedOn
+              )}
+            </div>
           {/if}
           <Tooltip location="bottom" distance={8}>
             <IconButton
