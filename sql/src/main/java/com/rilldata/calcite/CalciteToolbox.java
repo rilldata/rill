@@ -13,6 +13,7 @@ import com.rilldata.calcite.validators.CreateMetricsViewValidator;
 import com.rilldata.calcite.validators.CreateSourceValidator;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.plan.Context;
@@ -101,7 +102,7 @@ public class CalciteToolbox
     return sql;
   }
 
-  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
+  public SqlNodeProto getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
@@ -121,7 +122,7 @@ public class CalciteToolbox
     return getAST(sqlNode, planner, addTypeInfo);
   }
 
-  public byte[] getAST(SqlNode sqlNode)
+  public SqlNodeProto getAST(SqlNode sqlNode)
   {
     Planner planner = getPlanner();
     return getAST(sqlNode, planner, false);
@@ -131,7 +132,7 @@ public class CalciteToolbox
    * If addTypeInfo is true then the same planner passed here should have been used to parse the sql
    * otherwise the sql validation will fail which is required to get type info
    * */
-  public byte[] getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
+  public SqlNodeProto getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
   {
     SqlValidator sqlValidator = null;
     if (addTypeInfo) {
@@ -144,9 +145,9 @@ public class CalciteToolbox
       }
     }
     SqlNodeProtoBuilder sqlNodeProtoBuilder = new SqlNodeProtoBuilder(sqlNode, sqlValidator);
-    byte[] bytes = sqlNodeProtoBuilder.getProto();
+    SqlNodeProto sqlNodeProto = sqlNodeProtoBuilder.getSqlNodeProto();
     planner.close();
-    return bytes;
+    return sqlNodeProto;
   }
 
   public SqlValidator getValidator(PlannerImpl planner) throws NoSuchFieldException, IllegalAccessException

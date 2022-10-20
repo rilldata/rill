@@ -2,7 +2,7 @@ package com.rilldata;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
-import org.apache.calcite.sql.SqlDialect;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -11,10 +11,9 @@ import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 import com.rilldata.protobuf.generated.Requests;
-import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
-import org.hsqldb.types.Charset;
 
-import java.nio.charset.StandardCharsets;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Base64;
 
 /**
@@ -42,10 +41,9 @@ public class SqlConverterEntrypoint
           .setTranspileResponse(Requests.TranspileResponse.newBuilder().setSql(transpiledSql).build())
           .build();
     } catch (Exception e) {
-      e.printStackTrace();
       return Requests.Response
           .newBuilder()
-          .setError(Requests.Error.newBuilder().setMessage(e.toString()).build())
+          .setError(Requests.Error.newBuilder().setMessage(stackTraceToString(e)).build())
           .build();
     }
   }
@@ -61,8 +59,20 @@ public class SqlConverterEntrypoint
         Requests.ParseRequest parseRequest = r.getParseRequest();
         String sql = parseRequest.getSql();
         SqlConverter sqlConverter = new SqlConverter(parseRequest.getSchema());
-        byte[] bytes = sqlConverter.getAST(sql);
-        byte[] b64response = Base64.getEncoder().encode(bytes);
+        Requests.Response response;
+        try {
+          SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql);
+          response = Requests.Response
+              .newBuilder()
+              .setParseResponse(Requests.ParseResponse.newBuilder().setAst(sqlNodeProto).build())
+              .build();
+        } catch (Exception e) {
+          response = Requests.Response
+              .newBuilder()
+              .setError(Requests.Error.newBuilder().setMessage(stackTraceToString(e)).build())
+              .build();
+        }
+        byte[] b64response = Base64.getEncoder().encode(response.toByteArray());
         return convertToCCharPointer(allocatorFn, b64response);
       } else if (r.hasTranspileRequest()) {
           byte[] response = transpile(r).toByteArray();
@@ -76,10 +86,9 @@ public class SqlConverterEntrypoint
       return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
     }
     catch (InvalidProtocolBufferException e) {
-      e.printStackTrace();
       Requests.Response build = Requests.Response
           .newBuilder()
-          .setError(Requests.Error.newBuilder().setMessage("Invalid request" + e.getMessage()).build())
+          .setError(Requests.Error.newBuilder().setMessage("Invalid request " + stackTraceToString(e)).build())
           .build();
       return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
     }
@@ -116,8 +125,8 @@ public class SqlConverterEntrypoint
       String javaSchemaString = CTypeConversion.toJavaString(schema);
       SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
       String sqlString = CTypeConversion.toJavaString(sql);
-      byte[] ast = sqlConverter.getAST(sqlString);
-      return convertToCCharPointer(allocatorFn, ast);
+      SqlNodeProto ast = sqlConverter.getAST(sqlString);
+      return convertToCCharPointer(allocatorFn, ast.toByteArray());
     } catch (Exception e) {
       e.printStackTrace();
       return WordFactory.nullPointer();
@@ -137,5 +146,13 @@ public class SqlConverterEntrypoint
     }
     a.write(b.length, (byte) 0);
     return a;
+  }
+
+  private static String stackTraceToString(Exception e)
+  {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    return sw.toString();
   }
 }

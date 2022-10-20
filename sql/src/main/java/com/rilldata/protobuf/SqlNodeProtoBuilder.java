@@ -104,8 +104,13 @@ public class SqlNodeProtoBuilder
 
   public byte[] getProto()
   {
-    SqlNodeProto sqlNodeProto = handleSqlNode(sqlNode);
+    SqlNodeProto sqlNodeProto = getSqlNodeProto();
     return sqlNodeProto.toByteArray();
+  }
+
+  public SqlNodeProto getSqlNodeProto()
+  {
+    return handleSqlNode(sqlNode);
   }
 
   private SqlSelectProto handleSqlSelect(SqlSelect sqlSelect)
