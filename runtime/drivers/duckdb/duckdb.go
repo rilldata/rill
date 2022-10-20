@@ -19,6 +19,11 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 		return nil, err
 	}
 
+	// database/sql has a built-in connection pool, but DuckDB loads extensions on a per-connection basis.
+	// So we allow only one open connection at a time. In the future, we may instead consider using db.Conn()
+	// and building our own connection pool to work around DuckDB's idiosyncracies.
+	db.SetMaxOpenConns(1)
+
 	bootQueries := []string{
 		"INSTALL 'json'",
 		"LOAD 'json'",

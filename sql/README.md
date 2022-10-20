@@ -44,3 +44,20 @@ It can be necessary to run the target application more than once with different 
 for a better coverage of dynamic accesses. In case native-image compiler will start to complain or native-executable will produce
 exceptions about unknown classes then Tracing Agent can help to identify new configuration entries and merge them to the existing 
 configuration.
+
+## Releasing for macOS on arm64
+
+Github Actions do not currently support arm64 runners and GraalVM does not support cross-compilation from amd64 to arm64. In the future, we may set up a self-hosted runner, but for now, we deal with this problem by releasing directly from a local machine.
+
+The prerequisites for releasing a new version of `librillsql` from your local are:
+
+- Must run on an ARM Mac
+- Must run from repo root
+- Must have gsutil (Google Cloud SDK) installed and authenticated
+- Must have upload access to the pkg.rilldata.com bucket
+
+Given the above, you can release by running:
+
+```sh
+./sql/scripts/release-macos-arm64.sh 
+```
