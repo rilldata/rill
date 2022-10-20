@@ -6,15 +6,15 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getContext } from "svelte";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
-  import { Button } from "../../button";
-  import MetricsIcon from "../../icons/Metrics.svelte";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
   import { invalidateMetricsViewData } from "../../../svelte-query/queries/metrics-views/invalidation";
   import { useMetaQuery } from "../../../svelte-query/queries/metrics-views/metadata";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getContext } from "svelte";
+  import { Button } from "../../button";
+  import MetricsIcon from "../../icons/Metrics.svelte";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
@@ -61,7 +61,7 @@
   <div class="flex justify-between w-full pt-3 pl-1 pr-4">
     <!-- title element -->
     <h1 style:line-height="1.1">
-      <div class="pl-4 pt-1 text-gray-700" style:font-size="24px">
+      <div class="pl-4 pt-1" style:font-size="24px">
         {#if $metricsDefinition}
           {$metricsDefinition?.metricDefLabel}
         {/if}
@@ -77,7 +77,7 @@
     </div>
   </div>
   <!-- bottom row -->
-  <div class="px-2">
+  <div class="px-2 pt-1">
     <TimeControls {metricsDefId} />
     {#key metricsDefId}
       <Filters {metricsDefId} />

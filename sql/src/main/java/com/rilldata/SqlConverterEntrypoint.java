@@ -11,7 +11,6 @@ import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 import com.rilldata.protobuf.generated.Requests;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Base64;

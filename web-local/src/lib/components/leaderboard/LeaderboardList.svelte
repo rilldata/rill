@@ -2,7 +2,7 @@
   class="
         rounded-b
         border-gray-200
-        bg-white
+        surface
         text-gray-800
         "
 >

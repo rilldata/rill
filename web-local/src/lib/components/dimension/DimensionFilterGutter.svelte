@@ -1,10 +1,10 @@
 <script lang="ts">
   import { getContext } from "svelte";
+  import Cancel from "../icons/Cancel.svelte";
+  import Check from "../icons/Check.svelte";
+  import Spacer from "../icons/Spacer.svelte";
   import StickyHeader from "../virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableConfig } from "../virtualized-table/types";
-  import Check from "../icons/Check.svelte";
-  import Cancel from "../icons/Cancel.svelte";
-  import Spacer from "../icons/Spacer.svelte";
 
   const config: VirtualizedTableConfig = getContext("config");
   export let totalHeight: number;
