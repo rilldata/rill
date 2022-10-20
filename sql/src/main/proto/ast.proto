@@ -1,6 +1,7 @@
 syntax = "proto3";
 option java_multiple_files = true;
-package com.rilldata.protobuf.generated;
+option java_package = "com.rilldata.protobuf.generated";
+package rill.sql.v1;
 
 // Java Class: org.apache.calcite.rel.type.RelDataType
 message RelDataTypeProto {
