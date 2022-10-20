@@ -19,7 +19,7 @@ export function getYupSchema(connector: V1Connector) {
         sourceName: yup.string().required("Source name is required"),
         path: yup
           .string()
-          .matches(/^s3:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
+          .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
           .required("GS URI is required"),
       });
     default:
