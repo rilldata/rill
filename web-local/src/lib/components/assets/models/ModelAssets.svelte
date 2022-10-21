@@ -37,7 +37,7 @@
   import Explore from "../../icons/Explore.svelte";
   import ModelIcon from "../../icons/Model.svelte";
   import { Divider, MenuItem } from "../../menu";
-  import RenameEntityModal from "../RenameEntityModal.svelte";
+  import RenameAssetModal from "../RenameAssetModal.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -216,11 +216,11 @@
     {/each}
   </div>
   {#if showRenameModelModal}
-    <RenameEntityModal
+    <RenameAssetModal
       entityType={EntityType.Model}
       closeModal={() => (showRenameModelModal = false)}
       entityId={renameModelID}
-      currentEntityName={renameModelName.replace(".sql", "")}
+      currentAssetName={renameModelName.replace(".sql", "")}
     />
   {/if}
 {/if}

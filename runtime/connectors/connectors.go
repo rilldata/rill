@@ -118,3 +118,18 @@ func ConsumeAsFile(ctx context.Context, source *Source, callback func(filename s
 
 	return connector.ConsumeAsFile(ctx, source, callback)
 }
+
+func (s *Source) PropertiesEquals(o *Source) bool {
+	if len(s.Properties) != len(o.Properties) {
+		return false
+	}
+
+	for k1, v1 := range s.Properties {
+		v2, ok := o.Properties[k1]
+		if !ok || v1 != v2 {
+			return false
+		}
+	}
+
+	return true
+}

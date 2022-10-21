@@ -13,10 +13,14 @@
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
-  import { getYupSchema } from "../../../connectors/schemas";
+  import {
+    fromYupFriendlyKey,
+    getYupSchema,
+    toYupFriendlyKey,
+  } from "../../../connectors/schemas";
   import { Button } from "../../button";
-  import AlertTriangle from "../../icons/AlertTriangle.svelte";
-  import Input from "../../Input.svelte";
+  import Input from "../../forms/Input.svelte";
+  import SubmissionError from "../../forms/SubmissionError.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
 
   export let connector: V1Connector;
@@ -58,16 +62,25 @@
 
     ({ form, errors, handleSubmit } = createForm({
       // TODO: initialValues should come from SQL asset and be reactive to asset modifications
-      initialValues: {},
-      // validationSchema: yupSchema, // removing temporarily, as it's preventing form submission
+      initialValues: {
+        sourceName: "", // avoids `values.sourceName` warning
+      },
+      validationSchema: yupSchema,
       onSubmit: (values) => {
         overlay.set({ title: `Importing ${values.sourceName}` });
-        const sql = compileCreateSourceSql(values);
+        const formValues = Object.fromEntries(
+          Object.entries(values).map(([key, value]) => [
+            fromYupFriendlyKey(key),
+            value,
+          ])
+        );
+
+        const sql = compileCreateSourceSql(formValues);
         // TODO: call runtime/repo.put() to create source artifact
         $createSource.mutate(
           {
             instanceId: runtimeInstanceId,
-            data: { sql },
+            data: { sql, createOrReplace: false },
           },
           {
             onSuccess: async () => {
@@ -114,13 +127,8 @@
 </script>
 
 {#if $createSource.isError}
-  <div
-    class="mx-4 my-2 p-2 flex bg-red-100 border-red-300 border-2 rounded text-red-800"
-  >
-    <AlertTriangle size="16px" />
-    <p class="ml-2">
-      {@html humanReadableErrorMessage($createSource.error)}
-    </p>
+  <div class="mx-4">
+    <SubmissionError message={humanReadableErrorMessage($createSource.error)} />
   </div>
 {/if}
 
@@ -147,8 +155,8 @@
             label={property.displayName}
             placeholder={property.placeholder}
             hint={property.hint}
-            error={$errors[property.key]}
-            bind:value={$form[property.key]}
+            error={$errors[toYupFriendlyKey(property.key)]}
+            bind:value={$form[toYupFriendlyKey(property.key)]}
           />
         {/if}
         {#if property.type === ConnectorPropertyType.TYPE_BOOLEAN}

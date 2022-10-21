@@ -34,8 +34,11 @@ export type RuntimeServiceMigrateDeleteBody = {
 
 export type RuntimeServiceMigrateSingleBody = {
   sql?: string;
-  createOrReplace?: boolean;
   dryRun?: boolean;
+  createOrReplace?: boolean;
+  /** If provided, will attempt to rename an existing object and only recompute if necessary.
+NOTE: very questionable semantics here. */
+  renameFrom?: string;
 };
 
 export type RuntimeServiceMigrateBody = {

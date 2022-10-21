@@ -19,49 +19,49 @@ func init() {
 
 var spec = connectors.Spec{
 	DisplayName: "GCS",
-	Description: "Connect to CSV or Parquet files in a Google Cloud Storage bucket. For private buckets, provide <a href=https://console.cloud.google.com/storage/settings;tab=interoperability target='_blank'>HMAC credentials</a>.",
+	Description: "Connect to CSV or Parquet files in a Google Cloud Storage bucket.<br/><br/>For private buckets, first set your <a href=https://cloud.google.com/docs/authentication/application-default-credentials target=_blank>application default credentials</a>, which Rill will detect and use for authentication. One way to set these credentials is by running this CLI command: <code>gcloud auth application-default login</code>.",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
-			DisplayName: "Path",
+			DisplayName: "GS URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "gs://bucket-name/path/to/file.csv",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
 			Hint:        "Tip: use glob patterns to select multiple files",
 		},
-		{
-			Key:         "gcp.region",
-			DisplayName: "GCP region",
-			Description: "GCP Region for the bucket.",
-			Placeholder: "us-east-1",
-			Type:        connectors.StringPropertyType,
-			Required:    true,
-		},
-		{
-			Key:         "gcp.access.key",
-			DisplayName: "GCP access Key",
-			Description: "",
-			Placeholder: "...",
-			Type:        connectors.StringPropertyType,
-			Required:    false,
-		},
-		{
-			Key:         "gcp.access.secret",
-			DisplayName: "GCP access secret",
-			Description: "",
-			Placeholder: "...",
-			Type:        connectors.StringPropertyType,
-			Required:    false,
-		},
+		// {
+		// 	Key:         "gcp.region",
+		// 	DisplayName: "GCP region",
+		// 	Description: "GCP Region for the bucket.",
+		// 	Placeholder: "us-east-1",
+		// 	Type:        connectors.StringPropertyType,
+		// 	Required:    true,
+		// },
+		// {
+		// 	Key:         "gcp.access.key",
+		// 	DisplayName: "GCP access Key",
+		// 	Description: "",
+		// 	Placeholder: "...",
+		// 	Type:        connectors.StringPropertyType,
+		// 	Required:    false,
+		// },
+		// {
+		// 	Key:         "gcp.access.secret",
+		// 	DisplayName: "GCP access secret",
+		// 	Description: "",
+		// 	Placeholder: "...",
+		// 	Type:        connectors.StringPropertyType,
+		// 	Required:    false,
+		// },
 	},
 }
 
 type Config struct {
-	Path      string `key:"path"`
-	GCPRegion string `key:"gcp.region"`
-	GCPKey    string `key:"gcp.access.key"`
-	GCPSecret string `key:"gcp.access.secret"`
+	Path string `key:"path"`
+	// GCPRegion string `key:"gcp.region"`
+	// GCPKey    string `key:"gcp.access.key"`
+	// GCPSecret string `key:"gcp.access.secret"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {

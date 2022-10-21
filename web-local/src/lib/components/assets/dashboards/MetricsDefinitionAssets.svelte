@@ -35,7 +35,7 @@
   import Model from "../../icons/Model.svelte";
   import { Divider, MenuItem } from "../../menu";
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
-  import RenameEntityModal from "../RenameEntityModal.svelte";
+  import RenameAssetModal from "../RenameAssetModal.svelte";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -216,11 +216,11 @@
     {/each}
   </div>
   {#if showRenameMetricsDefinitionModal}
-    <RenameEntityModal
+    <RenameAssetModal
       entityType={EntityType.MetricsDefinition}
       closeModal={() => (showRenameMetricsDefinitionModal = false)}
       entityId={renameMetricsDefId}
-      currentEntityName={renameMetricsDefName}
+      currentAssetName={renameMetricsDefName}
     />
   {/if}
 {/if}
