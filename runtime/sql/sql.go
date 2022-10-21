@@ -1,15 +1,12 @@
 package sql
 
 // #cgo darwin amd64 CFLAGS: -I${SRCDIR}/deps/darwin_amd64
-// #cgo darwin arm64 CFLAGS: -I${SRCDIR}/deps/darwin_arm64
 // #cgo linux amd64 CFLAGS: -I${SRCDIR}/deps/linux_amd64
 // #cgo windows amd64 CFLAGS: -I${SRCDIR}/deps/windows_amd64
 // #include <stdlib.h>
 // #include <librillsql.h>
 // void*(*my_malloc)(size_t) = malloc;
-// void* processPbRequestT(graal_isolatethread_t* thread, void* request, int requestSize, int* resultSize) {
-//  return processPbRequest(thread, malloc, request, requestSize, resultSize);
-// }
+// typedef void* void_pointer;
 import "C"
 import (
 	b64 "encoding/base64"
@@ -71,6 +68,11 @@ func (i *Isolate) Close() error {
 }
 
 func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response {
+	f, err := i.library.FindFunc("processPbRequest")
+	if err != nil {
+		panic(err)
+	}
+
 	thread := i.attachThread()
 
 	bytes, _ := proto.Marshal(request)
@@ -78,13 +80,23 @@ func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response 
 	defer C.free(cBytes)
 	var resultSize C.int
 
-	cResult := C.processPbRequestT(
-		thread,
-		cBytes,
-		C.int(len(bytes)),
-		&resultSize,
+	inSize := len(bytes)
+	res, _, _ := f.Call(
+		uintptr(unsafe.Pointer(thread)),
+		uintptr(unsafe.Pointer(C.my_malloc)),
+		uintptr(unsafe.Pointer(cBytes)),
+		uintptr(unsafe.Pointer(&inSize)),
+		uintptr(unsafe.Pointer(C.void_pointer(&resultSize))),
 	)
-	defer C.free(unsafe.Pointer(cResult))
+	cResult := unsafe.Pointer(res)
+	// cResult := C.processPbRequest(
+	// thread,
+	// unsafe.Pointer(C.my_malloc),
+	// unsafe.Pointer(cBytes),
+	// C.int(len(bytes)),
+	// &resultSize,
+	// )
+	defer C.free(cResult)
 
 	goResultBytes := C.GoBytes(cResult, resultSize)
 
