@@ -131,7 +131,7 @@
       {
         instanceId: runtimeInstanceId,
         data: {
-          name: tableName,
+          name: tableName.toLowerCase(),
         },
       },
       {

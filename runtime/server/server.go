@@ -89,6 +89,11 @@ func (s *Server) Serve(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		mux.HandlePath(
+			"POST",
+			"/v1/repos/{repo_id}/objects/file/-/{path=**}",
+			s.PutRepoObjectFromHTTPRequest,
+		)
 		handler := cors(mux)
 		server := &http.Server{Handler: handler}
 		s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))

@@ -53,9 +53,12 @@
   createQueryClient();
 
   onMount(async () => {
-    const instanceId = await fetchWrapper("v1/runtime/instance-id", "GET");
+    const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
 
-    runtimeStore.set({ instanceId });
+    runtimeStore.set({
+      instanceId: instanceResp.instanceId,
+      repoId: instanceResp.repoId,
+    });
 
     return initMetrics();
   });

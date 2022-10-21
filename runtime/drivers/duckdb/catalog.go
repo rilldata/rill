@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -19,7 +20,9 @@ func (c *connection) FindObjects(ctx context.Context, instanceID string) []*driv
 
 func (c *connection) FindObject(ctx context.Context, instanceID string, name string) (*drivers.CatalogObject, bool) {
 	res := &drivers.CatalogObject{}
-	err := c.db.QueryRowxContext(ctx, "SELECT * FROM rill.catalog WHERE name = ?", name).StructScan(res)
+	// Names are stored with case everywhere but the checks should be case-insensitive.
+	// Hence, the translation to lower case here
+	err := c.db.QueryRowxContext(ctx, "SELECT * FROM rill.catalog WHERE LOWER(name) = ?", strings.ToLower(name)).StructScan(res)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, false

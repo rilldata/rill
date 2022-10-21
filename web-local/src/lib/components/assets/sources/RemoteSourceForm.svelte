@@ -1,5 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import {
+    compileCreateSourceSql,
+    waitForSource,
+  } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
   import { createEventDispatcher, getContext } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
@@ -31,7 +35,6 @@
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
-  const numTablesBeforeSubmit = $persistentTableStore.entities.length;
 
   const dispatch = createEventDispatcher();
 
@@ -43,19 +46,6 @@
   let handleSubmit: (event: Event) => any;
 
   let waitingOnSourceImport = false;
-
-  function compileCreateSourceSql(values) {
-    const compiledKeyValues = Object.entries(values)
-      .filter(([key]) => key !== "sourceName")
-      .map(([key, value]) => `'${key}'='${value}'`)
-      .join(", ");
-
-    return (
-      `CREATE SOURCE ${values.sourceName} WITH (connector = '${connector.name}', ` +
-      compiledKeyValues +
-      `)`
-    );
-  }
 
   function onConnectorChange(connector: V1Connector) {
     yupSchema = getYupSchema(connector);
@@ -75,7 +65,7 @@
           ])
         );
 
-        const sql = compileCreateSourceSql(formValues);
+        const sql = compileCreateSourceSql(formValues, connector.name);
         // TODO: call runtime/repo.put() to create source artifact
         $createSource.mutate(
           {
@@ -85,19 +75,12 @@
           {
             onSuccess: async () => {
               waitingOnSourceImport = true;
-              let numTables = numTablesBeforeSubmit;
-              // poll the Node backend until it has picked up the new table in DuckDB
-              while (numTables === numTablesBeforeSubmit) {
-                numTables = $persistentTableStore.entities.length;
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-              }
-
-              const newSource = $persistentTableStore.entities.find(
-                (entity) => entity.name === values.sourceName
+              const newId = await waitForSource(
+                values.sourceName,
+                persistentTableStore
               );
-
               waitingOnSourceImport = false;
-              goto(`/source/${newSource.id}`);
+              goto(`/source/${newId}`);
               dispatch("close");
               overlay.set(null);
             },

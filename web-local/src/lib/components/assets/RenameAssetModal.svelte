@@ -130,12 +130,12 @@
 
 <Dialog
   compact
-  showCancel
-  size="sm"
   disabled={$form["newName"] === ""}
   on:cancel={closeModal}
   on:click-outside={closeModal}
   on:primary-action={handleSubmit}
+  showCancel
+  size="sm"
 >
   <svelte:fragment slot="title">Rename</svelte:fragment>
   <div slot="body">
@@ -145,11 +145,11 @@
     <form autocomplete="off" on:submit|preventDefault={handleSubmit}>
       <div class="py-2">
         <Input
+          bind:value={$form["newName"]}
           claimFocusOnMount
+          error={$errors["newName"]}
           id="{entityLabel}-name"
           label="{entityLabel} name"
-          bind:value={$form["newName"]}
-          error={$errors["newName"]}
         />
       </div>
     </form>
