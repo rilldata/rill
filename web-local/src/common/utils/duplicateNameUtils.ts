@@ -7,9 +7,10 @@ export function getDuplicateNameChecker(
   models: Array<PersistentModelEntity>,
   sources: Array<PersistentTableEntity>
 ) {
+  const lowerName = name.toLowerCase();
   return (
-    models.some((model) => model.name === name) ||
-    sources.some((source) => source.name === name)
+    models.some((model) => model.name.toLowerCase() === lowerName) ||
+    sources.some((source) => source.name.toLowerCase() === lowerName)
   );
 }
 

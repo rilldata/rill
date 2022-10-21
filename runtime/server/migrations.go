@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -65,7 +64,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		}
 
 		// Get the object to rename
-		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.RenameFrom))
+		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, req.RenameFrom)
 		if !renameFound {
 			return nil, status.Errorf(codes.InvalidArgument, "could not find existing object named '%s' to rename", req.RenameFrom)
 		}
@@ -177,7 +176,7 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 	}
 
 	// Get object
-	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
 	if !found {
 		return nil, status.Errorf(codes.InvalidArgument, "object not found")
 	}

@@ -3,6 +3,9 @@ package duckdb
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -19,7 +22,9 @@ func (c *connection) FindObjects(ctx context.Context, instanceID string) []*driv
 
 func (c *connection) FindObject(ctx context.Context, instanceID string, name string) (*drivers.CatalogObject, bool) {
 	res := &drivers.CatalogObject{}
-	err := c.db.QueryRowxContext(ctx, "SELECT * FROM rill.catalog WHERE name = ?", name).StructScan(res)
+	// Names are stored with case everywhere but the checks should be case-insensitive.
+	// Hence, the translation to lower case here
+	err := c.db.QueryRowxContext(ctx, "SELECT * FROM rill.catalog WHERE LOWER(name) = ?", strings.ToLower(name)).StructScan(res)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, false
@@ -30,6 +35,12 @@ func (c *connection) FindObject(ctx context.Context, instanceID string, name str
 }
 
 func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *drivers.CatalogObject) error {
+	// safeguard to make sure duplicates are not created
+	_, found := c.FindObject(ctx, instanceID, obj.Name)
+	if found {
+		return errors.New(fmt.Sprintf("duplicate key : %s", obj.Name))
+	}
+
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
