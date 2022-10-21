@@ -9,7 +9,7 @@ import (
 )
 
 func TestTranspileSelect(t *testing.T) {
-	sql := fmt.Sprintf(`select %d as foo, 'hello' as bar, h1.id, h1."power", h2.name from heroes h1 join heroes h2 on h1.id = h2.id`, 10)
+	sql := fmt.Sprintf(`select %d as foo, 'hello' as bar, h1.id, h1."power", h2.name from main.heroes h1 join main.heroes h2 on h1.id = h2.id`, 10)
 	catalog := map[string]any{
 		"artifacts": []map[string]any{
 			{
@@ -66,5 +66,5 @@ func TestParseSelect(t *testing.T) {
 
 	res, err := Parse(sql, catalog)
 	require.NoError(t, err)
-	require.Equal(t, 5, len(res.GetSqlSelectProto().GetSelectList().List))
+	require.Equal(t, 1, len(res.GetSqlSelectProto().GetSelectList().List))
 }
