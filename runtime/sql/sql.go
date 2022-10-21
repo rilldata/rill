@@ -11,13 +11,13 @@ import (
 )
 
 // Transpile transpiles a Rill SQL statement to a target dialect
-func Transpile(sql string, dialect rpc.Dialect, schema map[string]any) (string, error) {
+func Transpile(sql string, dialect rpc.Dialect, catalog map[string]any) (string, error) {
 	res, err := getIsolate().Request(&rpc.Request{
 		Request: &rpc.Request_TranspileRequest{
 			TranspileRequest: &rpc.TranspileRequest{
 				Sql:     sql,
 				Dialect: dialect,
-				Schema:  marshalSchema(schema),
+				Catalog: marshalCatalog(catalog),
 			},
 		},
 	})
@@ -27,7 +27,7 @@ func Transpile(sql string, dialect rpc.Dialect, schema map[string]any) (string, 
 	}
 
 	if res.Error != nil {
-		return "", errors.New(res.Error.Message)
+		return "", errors.New(res.Error.StackTrace)
 	}
 
 	tr := res.GetTranspileResponse()
@@ -39,12 +39,12 @@ func Transpile(sql string, dialect rpc.Dialect, schema map[string]any) (string, 
 }
 
 // Parse parses and validates a Rill SQL statement
-func Parse(sql string, schema map[string]any) (*ast.SqlNodeProto, error) {
+func Parse(sql string, catalog map[string]any) (*ast.SqlNodeProto, error) {
 	res, err := getIsolate().Request(&rpc.Request{
 		Request: &rpc.Request_ParseRequest{
 			ParseRequest: &rpc.ParseRequest{
-				Sql:    sql,
-				Schema: marshalSchema(schema),
+				Sql:     sql,
+				Catalog: marshalCatalog(catalog),
 			},
 		},
 	})
@@ -79,9 +79,9 @@ func getIsolate() *Isolate {
 	return isolate
 }
 
-// marshalSchema serializes a runtime catalog to the schema format expected by the SQL library
-func marshalSchema(schema map[string]any) string {
-	data, err := json.Marshal(schema)
+// marshalCatalog serializes a runtime catalog to the catalog format expected by the SQL library
+func marshalCatalog(catalog map[string]any) string {
+	data, err := json.Marshal(catalog)
 	if err != nil {
 		panic(err)
 	}
