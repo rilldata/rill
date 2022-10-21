@@ -1,9 +1,14 @@
 import { goto } from "$app/navigation";
-import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+import {
+  EntityType,
+  StateType,
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { waitForSource } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
 import { get } from "svelte/store";
+import type { V1PutRepoObjectResponse } from "web-common/src/runtime-client";
 import {
   config,
-  dataModelerService,
+  dataModelerStateService,
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
@@ -17,7 +22,14 @@ import {
   extractFileExtension,
   getTableNameFromFile,
 } from "./extract-table-name";
-import { fetchWrapper, fetchWrapperDirect } from "./fetchWrapper";
+import { fetchWrapperDirect } from "./fetchWrapper";
+
+export type DuplicateValidator = (name: string) => boolean;
+export type IncrementedNameGetter = (name: string) => string;
+export type UploadCallback = (
+  tableName: string,
+  filePath: string
+) => Promise<void>;
 
 /**
  * uploadTableFiles
@@ -27,8 +39,9 @@ import { fetchWrapper, fetchWrapperDirect } from "./fetchWrapper";
  */
 function uploadTableFiles(
   files,
-  duplicateValidator: (name: string) => boolean,
-  incrementedNameGetter: (name: string) => string
+  duplicateValidator: DuplicateValidator,
+  incrementedNameGetter: IncrementedNameGetter,
+  uploadCallback: UploadCallback
 ) {
   const invalidFiles = [];
   const validFiles = [];
@@ -43,15 +56,21 @@ function uploadTableFiles(
   });
 
   validFiles.forEach((validFile) =>
-    validateFile(validFile, duplicateValidator, incrementedNameGetter)
+    validateFile(
+      validFile,
+      duplicateValidator,
+      incrementedNameGetter,
+      uploadCallback
+    )
   );
   return invalidFiles;
 }
 
 async function validateFile(
   file: File,
-  duplicateValidator: (name: string) => boolean,
-  incrementedNameGetter: (name: string) => string
+  duplicateValidator: DuplicateValidator,
+  incrementedNameGetter: IncrementedNameGetter,
+  uploadCallback: UploadCallback
 ) {
   const tableUploadURL = `${config.database.runtimeUrl}/v1/repos/${
     get(runtimeStore).repoId
@@ -69,20 +88,31 @@ async function validateFile(
         await uploadFile(
           file,
           tableUploadURL,
-          incrementedNameGetter(currentTableName)
+          incrementedNameGetter(currentTableName),
+          uploadCallback
         );
       } else if (userResponse == DuplicateActions.Overwrite) {
-        await uploadFile(file, tableUploadURL, currentTableName);
+        await uploadFile(
+          file,
+          tableUploadURL,
+          currentTableName,
+          uploadCallback
+        );
       }
     } else {
-      await uploadFile(file, tableUploadURL, currentTableName);
+      await uploadFile(file, tableUploadURL, currentTableName, uploadCallback);
     }
   } catch (err) {
     console.error(err);
   }
 }
 
-async function uploadFile(file: File, url: string, tableName?: string) {
+async function uploadFile(
+  file: File,
+  url: string,
+  tableName: string,
+  uploadCallback: UploadCallback
+) {
   importOverlayVisible.set(true);
 
   const formData = new FormData();
@@ -91,16 +121,23 @@ async function uploadFile(file: File, url: string, tableName?: string) {
   formData.append("tableName", tableName);
 
   try {
-    const persistentTable: PersistentTableEntity = await fetchWrapperDirect(
+    // TODO: generate client and use it in component
+    const resp: V1PutRepoObjectResponse = await fetchWrapperDirect(
       `${url}/-/${file.name}`,
       "POST",
       formData,
       {}
     );
-    await sourceUpdated(persistentTable.tableName);
-    goto(`/source/${persistentTable.id}`);
-    // do not await here. it should not block importOverlayVisible being set to false
-    dataModelerService.dispatch("collectTableInfo", [persistentTable.id]);
+    await uploadCallback(tableName, resp.filePath);
+    const newId = await waitForSource(
+      tableName,
+      dataModelerStateService.getEntityStateService(
+        EntityType.Table,
+        StateType.Persistent
+      ).store
+    );
+    await sourceUpdated(tableName);
+    goto(`/source/${newId}`);
   } catch (err) {
     console.error(err);
   }
@@ -124,15 +161,17 @@ function reportFileErrors(invalidFiles: File[]) {
  */
 function handleFileUploads(
   filesArray: File[],
-  duplicateValidator: (name: string) => boolean,
-  incrementedNameGetter: (name: string) => string
+  duplicateValidator: DuplicateValidator,
+  incrementedNameGetter: IncrementedNameGetter,
+  uploadCallback: UploadCallback
 ) {
   let invalidFiles = [];
   if (filesArray) {
     invalidFiles = uploadTableFiles(
       filesArray,
       duplicateValidator,
-      incrementedNameGetter
+      incrementedNameGetter,
+      uploadCallback
     );
   }
   if (invalidFiles.length) {
@@ -144,22 +183,25 @@ function handleFileUploads(
 /** a drag and drop callback to kick off a source table import */
 export function onSourceDrop(
   e: DragEvent,
-  duplicateValidator: (name: string) => boolean,
-  incrementedNameGetter: (name: string) => string
+  duplicateValidator: DuplicateValidator,
+  incrementedNameGetter: IncrementedNameGetter,
+  uploadCallback: UploadCallback
 ) {
   const files = e?.dataTransfer?.files;
   if (files) {
     handleFileUploads(
       Array.from(files),
       duplicateValidator,
-      incrementedNameGetter
+      incrementedNameGetter,
+      uploadCallback
     );
   }
 }
 
 export async function uploadFilesWithDialog(
-  duplicateValidator: (name: string) => boolean,
-  incrementedNameGetter: (name: string) => string
+  duplicateValidator: DuplicateValidator,
+  incrementedNameGetter: IncrementedNameGetter,
+  uploadCallback: UploadCallback
 ) {
   const input = document.createElement("input");
   input.multiple = true;
@@ -171,7 +213,8 @@ export async function uploadFilesWithDialog(
       handleFileUploads(
         Array.from(files),
         duplicateValidator,
-        incrementedNameGetter
+        incrementedNameGetter,
+        uploadCallback
       );
     }
   };

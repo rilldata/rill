@@ -327,7 +327,9 @@ message PutRepoObjectRequest {
 }
 
 // Response message for RuntimeService.PutRepoObjectRequest
-message PutRepoObjectResponse {}
+message PutRepoObjectResponse {
+  string filePath = 1;
+}
 
 // **********
 // Instances

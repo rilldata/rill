@@ -1026,7 +1026,8 @@
             "name": "path",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
           }
         ],
         "tags": [
@@ -1061,7 +1062,8 @@
             "name": "path",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
           },
           {
             "name": "body",
@@ -1628,6 +1630,11 @@
     },
     "v1PutRepoObjectResponse": {
       "type": "object",
+      "properties": {
+        "filePath": {
+          "type": "string"
+        }
+      },
       "title": "Response message for RuntimeService.PutRepoObjectRequest"
     },
     "v1QueryDirectResponse": {

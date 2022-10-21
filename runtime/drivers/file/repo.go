@@ -92,25 +92,25 @@ func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string
 	return nil
 }
 
-func (c *connection) PutReader(ctx context.Context, repoID string, filePath string, reader io.Reader) error {
+func (c *connection) PutReader(ctx context.Context, repoID string, filePath string, reader io.Reader) (string, error) {
 	filePath = path.Join(c.root, filePath)
 
 	err := os.MkdirAll(path.Dir(filePath), os.ModePerm)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	f, err := os.Create(filePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer f.Close()
 	_, err = io.Copy(f, reader)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return filePath, nil
 }
 
 // Delete implements drivers.RepoStore

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -170,31 +169,22 @@ func (s *Server) PutRepoObjectFromHTTPRequest(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	filePath := path.Join("data", pathParams["path"])
+	if pathParams["path"] == "" {
+		http.Error(w, fmt.Sprintf("must have a path to file"), http.StatusBadRequest)
+		return
+	}
+
 	repoStore, _ := conn.RepoStore()
-	err = repoStore.PutReader(ctx, repo.ID, filePath, f)
+	filePath, err := repoStore.PutReader(ctx, repo.ID, pathParams["path"], f)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to write file: %s", err), http.StatusBadRequest)
 		return
 	}
 
-	res, err := s.MigrateSingle(ctx, &api.MigrateSingleRequest{
-		InstanceId: req.PostForm["instanceId"][0],
-		Sql: fmt.Sprintf(
-			"CREATE SOURCE %s with connector = 'file', path = '%s'",
-			req.PostForm["tableName"][0],
-			path.Join(repo.DSN, filePath),
-		),
-		CreateOrReplace: true,
-		DryRun:          false,
-	})
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to migrate source: %s", err), http.StatusBadRequest)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	json.NewEncoder(w).Encode(api.PutRepoObjectResponse{
+		FilePath: filePath,
+	})
 }
 
 func repoToPB(repo *drivers.Repo) *api.Repo {
