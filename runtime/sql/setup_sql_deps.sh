@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+if [[ $SKIP_SQL_DEPS == "true" ]]; then
+  echo "Skipping SQL dependencies installation"
+  exit 0
+fi
+
 # Version of librillsql to download
-RILLSQL_VERSION="0.1.1"
+RILLSQL_VERSION="0.1.3"
 
 # Get platform details
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
