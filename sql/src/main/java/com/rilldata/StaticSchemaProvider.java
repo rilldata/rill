@@ -1,33 +1,36 @@
 package com.rilldata;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rilldata.calcite.JsonSchema;
 import com.rilldata.calcite.StaticSchema;
-import com.rilldata.calcite.StaticSchemaFactory;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.schema.SchemaPlus;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.function.Supplier;
 
-class StaticSchemaProvider implements Supplier<SchemaPlus>
+public class StaticSchemaProvider implements Supplier<SchemaPlus>
 {
-  private String schema;
+  private final List<StaticSchema> staticSchemas;
 
-  public StaticSchemaProvider(String schema)
+  public StaticSchemaProvider(String jsonSchema) throws IOException
   {
-    this.schema = schema;
+    staticSchemas = List.of(new StaticSchema(new ObjectMapper().readValue(jsonSchema, JsonSchema.class)));
+  }
+
+  public StaticSchemaProvider(List<JsonSchema> jsonSchemas)
+  {
+    staticSchemas = List.copyOf(jsonSchemas.stream().map(StaticSchema::new).toList());
   }
 
   @Override
   public SchemaPlus get()
   {
-    try {
-      StaticSchema staticSchema = StaticSchemaFactory.create(schema);
-      SchemaPlus rootSchema = CalciteSchema.createRootSchema(false).plus();
-
-      rootSchema.add("main", staticSchema);
-      return rootSchema;
+    SchemaPlus rootSchema = CalciteSchema.createRootSchema(false).plus();
+    for (StaticSchema staticSchema : staticSchemas) {
+      rootSchema.add(staticSchema.getName(), staticSchema);
     }
-    catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return rootSchema;
   }
 }

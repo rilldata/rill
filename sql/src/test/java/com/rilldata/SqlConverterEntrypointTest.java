@@ -21,9 +21,10 @@ public class SqlConverterEntrypointTest
                                  .newBuilder()
                                  .setSql("select 1")
                                  .setDialect(Requests.Dialect.DUCKDB)
-                                 .setSchema("""
+                                 .setCatalog("""
                                  { 
-                                  "tables": []
+                                  "artifacts": [],
+                                  "schemas": []
                                  }
                                  """)
                                  .build()

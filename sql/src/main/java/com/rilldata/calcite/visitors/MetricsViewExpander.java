@@ -1,9 +1,9 @@
 package com.rilldata.calcite.visitors;
 
 import com.rilldata.calcite.CalciteToolbox;
-import com.rilldata.calcite.models.SqlCreateMetricsView;
 import com.rilldata.calcite.models.Artifact;
-import com.rilldata.calcite.models.ArtifactManager;
+import com.rilldata.calcite.models.ArtifactStore;
+import com.rilldata.calcite.models.SqlCreateMetricsView;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -25,12 +25,12 @@ import java.util.Map;
  * */
 public class MetricsViewExpander extends SqlBasicVisitor<SqlNode>
 {
-  ArtifactManager artifactManager;
+  ArtifactStore artifactStore;
   CalciteToolbox calciteToolbox;
 
-  public MetricsViewExpander(ArtifactManager artifactManager, CalciteToolbox calciteToolbox)
+  public MetricsViewExpander(ArtifactStore artifactStore, CalciteToolbox calciteToolbox)
   {
-    this.artifactManager = artifactManager;
+    this.artifactStore = artifactStore;
     this.calciteToolbox = calciteToolbox;
   }
 
@@ -61,7 +61,7 @@ public class MetricsViewExpander extends SqlBasicVisitor<SqlNode>
         return sqlSelect;
       }
 
-      Artifact artifact = sqlSelect.getFrom().accept(new ExtractArtifact(artifactManager));
+      Artifact artifact = sqlSelect.getFrom().accept(new ExtractArtifact(artifactStore));
       // if the FROM clause refers a saved model, expand it
       if (artifact != null) {
         try {
