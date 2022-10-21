@@ -128,7 +128,7 @@ async function uploadFile(
       formData,
       {}
     );
-    await uploadCallback(tableName, resp.filePath);
+    await uploadCallback(tableName, resp.file_path);
     const newId = await waitForSource(
       tableName,
       dataModelerStateService.getEntityStateService(
