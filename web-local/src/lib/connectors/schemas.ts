@@ -5,7 +5,13 @@ export function getYupSchema(connector: V1Connector) {
   switch (connector.name) {
     case "s3":
       return yup.object().shape({
-        sourceName: yup.string().required("Source name is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
         path: yup
           .string()
           .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
@@ -16,7 +22,13 @@ export function getYupSchema(connector: V1Connector) {
       });
     case "gcs":
       return yup.object().shape({
-        sourceName: yup.string().required("Source name is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
         path: yup
           .string()
           .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")

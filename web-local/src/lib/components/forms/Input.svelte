@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import InfoCircle from "./icons/InfoCircle.svelte";
-  import Tooltip from "./tooltip/Tooltip.svelte";
-  import TooltipContent from "./tooltip/TooltipContent.svelte";
+  import InfoCircle from "../icons/InfoCircle.svelte";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let id = "";
   export let label = "";
@@ -12,7 +12,9 @@
   export let placeholder = "";
   export let hint = "";
   export let claimFocusOnMount = false;
+
   let inputElement;
+
   if (claimFocusOnMount) {
     onMount(() => {
       inputElement.focus();

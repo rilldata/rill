@@ -19,8 +19,8 @@
     toYupFriendlyKey,
   } from "../../../connectors/schemas";
   import { Button } from "../../button";
-  import AlertTriangle from "../../icons/AlertTriangle.svelte";
-  import Input from "../../Input.svelte";
+  import Input from "../../forms/Input.svelte";
+  import SubmissionError from "../../forms/SubmissionError.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
 
   export let connector: V1Connector;
@@ -127,13 +127,8 @@
 </script>
 
 {#if $createSource.isError}
-  <div
-    class="mx-4 my-2 p-2 flex bg-red-100 border-red-300 border-2 rounded text-red-800"
-  >
-    <AlertTriangle size="16px" />
-    <p class="ml-2">
-      {@html humanReadableErrorMessage($createSource.error)}
-    </p>
+  <div class="mx-4">
+    <SubmissionError message={humanReadableErrorMessage($createSource.error)} />
   </div>
 {/if}
 
