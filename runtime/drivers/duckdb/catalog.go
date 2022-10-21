@@ -3,8 +3,6 @@ package duckdb
 import (
 	"context"
 	"database/sql"
-	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -35,12 +33,6 @@ func (c *connection) FindObject(ctx context.Context, instanceID string, name str
 }
 
 func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *drivers.CatalogObject) error {
-	// safeguard to make sure duplicates are not created
-	_, found := c.FindObject(ctx, instanceID, obj.Name)
-	if found {
-		return errors.New(fmt.Sprintf("duplicate key : %s", obj.Name))
-	}
-
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,

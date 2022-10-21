@@ -123,7 +123,7 @@ async function uploadFile(
   try {
     // TODO: generate client and use it in component
     const resp: V1PutRepoObjectResponse = await fetchWrapperDirect(
-      `${url}/-/${file.name}`,
+      `${url}/-/data/${file.name}`,
       "POST",
       formData,
       {}
