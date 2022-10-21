@@ -139,26 +139,26 @@
       case "file":
         return "Local file";
       default:
-        return connectorType;
+        return "";
     }
   }
 
   function getFileExtension(source: V1Source): string {
-    const extension = source.properties.path.split(".").pop();
+    const extension = source?.properties?.path.split(".").pop();
     switch (extension) {
       case "csv":
         return "CSV";
       case "parquet":
         return "Parquet";
       default:
-        return extension;
+        return "";
     }
   }
 
   $: connectorType = formatConnectorType(
-    $getSource.data.object.source.connector
+    $getSource.data?.object?.source?.connector
   );
-  $: fileExtension = getFileExtension($getSource.data.object.source);
+  $: fileExtension = getFileExtension($getSource.data?.object?.source);
 
   /** get the current row count */
   $: {
