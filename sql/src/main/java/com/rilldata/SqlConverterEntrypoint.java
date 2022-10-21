@@ -84,14 +84,17 @@ public class SqlConverterEntrypoint
           .newBuilder()
           .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
           .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+      
+      byte[] b64response = Base64.getEncoder().encode(build.toByteArray());
+      return convertToCCharPointer(allocatorFn, b64response);
     } catch (Exception e) {
       Requests.Response build = Requests.Response
           .newBuilder()
           .setError(
               Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
           .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+      byte[] b64response = Base64.getEncoder().encode(build.toByteArray());
+      return convertToCCharPointer(allocatorFn, b64response);
     }
   }
 
