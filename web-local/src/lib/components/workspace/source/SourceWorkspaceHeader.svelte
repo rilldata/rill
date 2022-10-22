@@ -94,8 +94,8 @@
       {:else}
         <div class="flex items-center">
           {#if $getSource.isSuccess}
-            <div class="text-xs">
-              Last import: {formatRefreshedOn(
+            <div class="ui-copy-muted">
+              Imported on {formatRefreshedOn(
                 $getSource.data?.object?.refreshedOn
               )}
             </div>
