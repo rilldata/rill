@@ -1,5 +1,6 @@
 <script lang="ts">
   export let checked = false;
+  export let id: string = undefined;
 </script>
 
 <input
@@ -11,11 +12,11 @@
 "
   role="switch"
   type="checkbox"
-  id="switch"
+  {id}
 />
 
 <style lang="postcss">
-  input[role="switch"] {
+  input {
     @apply bg-gray-400;
     --width: 22px;
     --height: 12px;
@@ -41,7 +42,7 @@
     user-select: none;
     outline: none;
   }
-  input[role="switch"]::before {
+  input::before {
     content: "";
     display: flex;
     align-content: center;
@@ -57,28 +58,28 @@
     transition: transform var(--transition) ease;
     line-height: 1;
   }
-  input[role="switch"]:active::before {
+  input:active::before {
     background: rgba(255, 255, 255, 0.9);
   }
 
-  input[role="switch"]:checked {
+  input:checked {
     @apply bg-gray-700;
   }
 
-  input[role="switch"]:checked::before {
+  input:checked::before {
     transform: translate(
       calc(var(--width) - var(--height) + var(--margin) / 2),
       calc(var(--margin) / 2)
     );
   }
-  input[role="switch"]:indeterminate::before {
+  input:indeterminate::before {
     transform: translate(
       calc(100% - var(--margin) * 3 / 2),
       calc(var(--margin) / 2)
     );
     content: "-";
   }
-  input[role="switch"]:disabled:before {
+  input:disabled:before {
     opacity: 0.4;
   }
 </style>
