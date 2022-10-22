@@ -118,7 +118,7 @@
 <form
   on:submit|preventDefault={handleSubmit}
   id="remote-source-{connector}-form"
-  class="px-4 flex-grow overflow-y-auto pb-2"
+  class="px-4 pb-2 flex-grow overflow-y-auto"
 >
   <div class="py-2">
     <Input
@@ -135,7 +135,7 @@
       {#if property.type === ConnectorPropertyType.TYPE_STRING}
         <Input
           id={property.key}
-          label={property.displayName}
+          {label}
           placeholder={property.placeholder}
           hint={property.hint}
           error={$errors[toYupFriendlyKey(property.key)]}
