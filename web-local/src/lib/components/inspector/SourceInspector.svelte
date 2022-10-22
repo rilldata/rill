@@ -7,12 +7,25 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getContext } from "svelte";
+  import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "../../application-state-stores/table-stores";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import {
+    autoCreateMetricsDefinitionForSource,
+    createModelForSource,
+  } from "../../redux-store/source/source-apis";
+  import { selectTimestampColumnFromProfileEntity } from "../../redux-store/source/source-selectors";
+  import { TableSourceType } from "../../types";
+  import {
+    formatBigNumberPercentage,
+    formatInteger,
+  } from "../../util/formatters";
   import { Button } from "../button";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
@@ -22,19 +35,6 @@
   import { GridCell, LeftRightGrid } from "../left-right-grid";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    createModelForSource,
-  } from "../../redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "../../redux-store/source/source-selectors";
-  import { TableSourceType } from "../../types";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import {
-    formatBigNumberPercentage,
-    formatInteger,
-  } from "../../util/formatters";
-  import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
 
   import PanelCTA from "../panel/PanelCTA.svelte";
   import ResponsiveButtonText from "../panel/ResponsiveButtonText.svelte";
@@ -76,9 +76,11 @@
     selectTimestampColumnFromProfileEntity(currentDerivedTable);
 
   const handleCreateModelFromSource = async () => {
+    const asynchronous = true;
     createModelForSource(
       $persistentModelStore.entities,
-      currentTable.tableName
+      currentTable.tableName,
+      asynchronous
     ).then((createdModelId) => {
       navigationEvent.fireEvent(
         createdModelId,
@@ -243,16 +245,16 @@
             cardinality={currentDerivedTable?.cardinality ?? 0}
             active={currentTable?.id === activeEntityID}
           >
-            <svelte:fragment slot="summary" let:containerWidth>
-              <ColumnProfileNavEntry
-                entityId={currentTable.id}
-                indentLevel={0}
-                {containerWidth}
-                cardinality={currentDerivedTable?.cardinality ?? 0}
-                profile={currentDerivedTable?.profile ?? []}
-                head={currentDerivedTable?.preview ?? []}
-              />
-            </svelte:fragment>
+            <ColumnProfileNavEntry
+              slot="summary"
+              let:containerWidth
+              entityId={currentTable.id}
+              indentLevel={0}
+              {containerWidth}
+              cardinality={currentDerivedTable?.cardinality ?? 0}
+              profile={currentDerivedTable?.profile ?? []}
+              head={currentDerivedTable?.preview ?? []}
+            />
           </CollapsibleTableSummary>
         </div>
       {/if}

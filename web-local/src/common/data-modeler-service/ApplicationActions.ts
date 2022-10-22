@@ -1,4 +1,3 @@
-import { DataModelerActions } from "./DataModelerActions";
 import type {
   ApplicationState,
   ApplicationStateActionArg,
@@ -9,6 +8,7 @@ import {
   EntityType,
   StateType,
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
+import type { PersistentModelStateActionArg } from "../data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import {
   DatabaseActionQueuePriority,
   DatabaseProfilesFieldPriority,
@@ -16,7 +16,8 @@ import {
   MetadataPriority,
   ProfileMetadataPriorityMap,
 } from "../priority-action-queue/DatabaseActionQueuePriority";
-import type { PersistentModelStateActionArg } from "../data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { getNextEntityId } from "../utils/getNextEntityId";
+import { DataModelerActions } from "./DataModelerActions";
 
 export class ApplicationActions extends DataModelerActions {
   @DataModelerActions.ApplicationAction()
@@ -28,28 +29,34 @@ export class ApplicationActions extends DataModelerActions {
     const currentActiveAsset = (
       stateService.getCurrentState() as ApplicationState
     ).activeEntity;
+
     // mark older model as inactive.
     if (
       currentActiveAsset?.type === EntityType.Model &&
       currentActiveAsset?.id
     ) {
-      const columns = this.getEntityColumns(
-        EntityType.Model,
-        currentActiveAsset.id
-      );
+      let columns;
+      try {
+        columns = this.getEntityColumns(
+          EntityType.Model,
+          currentActiveAsset.id
+        );
 
-      columns.forEach((column) => {
-        Object.values(MetadataPriority).forEach((priority) => {
-          this.databaseActionQueue.updatePriority(
-            currentActiveAsset.id + column + priority,
-            getProfilePriority(
-              DatabaseActionQueuePriority.InactiveModelProfile,
-              DatabaseProfilesFieldPriority.NonFocused,
-              ProfileMetadataPriorityMap[priority]
-            )
-          );
+        columns.forEach((column) => {
+          Object.values(MetadataPriority).forEach((priority) => {
+            this.databaseActionQueue.updatePriority(
+              currentActiveAsset.id + column + priority,
+              getProfilePriority(
+                DatabaseActionQueuePriority.InactiveModelProfile,
+                DatabaseProfilesFieldPriority.NonFocused,
+                ProfileMetadataPriorityMap[priority]
+              )
+            );
+          });
         });
-      });
+      } catch (e) {
+        // swallow error for now
+      }
     }
 
     // upgrade profile priority of newly selected asset
@@ -129,7 +136,7 @@ export class ApplicationActions extends DataModelerActions {
       applicationState.activeEntity?.id === entityId &&
       applicationState.activeEntity?.type === entityType
     ) {
-      const newEntityId = this.getNextEntityId(
+      const newEntityId = getNextEntityId(
         stateService.getCurrentState().entities,
         entityId
       );
@@ -157,19 +164,6 @@ export class ApplicationActions extends DataModelerActions {
       StateType.Derived,
       entityId,
     ]);
-  }
-
-  private getNextEntityId(
-    entities: Array<EntityRecord>,
-    entityId: string
-  ): string {
-    if (entities.length === 1) return undefined;
-    const idx = entities.findIndex((entity) => entity.id === entityId);
-    if (idx === 0) {
-      return entities[idx + 1].id;
-    } else {
-      return entities[idx - 1].id;
-    }
   }
 
   private getEntityColumns(entityType: EntityType, entityId: string) {

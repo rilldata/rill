@@ -2,10 +2,14 @@ package server
 
 import (
 	"context"
+
+	// "encoding/gob"
 	"fmt"
 	"net/http"
 
-	oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware"
+	// oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware"
+
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -13,6 +17,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	"github.com/labstack/echo-contrib/session"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/server-cloud/api"
 	"github.com/rilldata/rill/server-cloud/database"
@@ -21,13 +26,30 @@ import (
 type Server struct {
 	logger *zap.Logger
 	db     database.DB
+	conf   Config
+	auth   *Authenticator
+}
+type Config struct {
+	Port             int
+	AuthDomain       string
+	AuthClientID     string
+	AuthClientSecret string
+	AuthCallbackURL  string
+	SessionsSecret   string
 }
 
-func New(logger *zap.Logger, db database.DB) *Server {
+func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
+	auth, err := newAuthenticator(context.Background(), conf)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
 		logger: logger,
 		db:     db,
-	}
+		conf:   conf,
+		auth:   auth,
+	}, nil
 }
 
 func (s *Server) Serve(ctx context.Context, port int) error {
@@ -91,14 +113,21 @@ func (s *Server) Serve(ctx context.Context, port int) error {
 	p := prometheus.NewPrometheus("echo", nil)
 	p.Use(e)
 
-	// Add other routes here...
+	store := sessions.NewCookieStore([]byte(s.conf.SessionsSecret))
+	e.Use(session.Middleware(store))
+
+	e.GET("/auth/login", s.authLogin)
+	e.GET("/auth/callback", s.callback)
+	e.GET("/auth/logout", s.logout)
+	e.GET("/auth/logout/callback", s.logoutCallback)
+	e.GET("/auth/user", s.user, IsAuthenticated)
 
 	// Register OpenAPI handlers
-	spec, err := api.GetSwagger()
-	if err != nil {
-		return err
-	}
-	e.Use(oapimiddleware.OapiRequestValidator(spec))
+	// spec, err := api.GetSwagger()
+	// if err != nil {
+	// 	return err
+	// }
+	// e.Use(oapimiddleware.OapiRequestValidator(spec))
 	api.RegisterHandlers(e, s)
 
 	// Start serer

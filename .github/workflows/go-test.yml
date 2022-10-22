@@ -1,4 +1,9 @@
-on: [push, pull_request]
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/go-test.yml"
+      - "**.go"
+      - "go.mod"
 name: Test Go code
 jobs:
   test:
@@ -18,7 +23,7 @@ jobs:
           ${{ runner.os }}-go-
     - name: Download librillsql
       shell: bash
-      run: ./runtime/scripts/setup_sql.sh -f
+      run: go generate ./runtime/sql
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test

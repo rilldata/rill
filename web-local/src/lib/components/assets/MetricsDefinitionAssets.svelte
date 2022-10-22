@@ -9,9 +9,21 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+  import { getContext, onMount } from "svelte";
+  import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import type { DerivedModelStore } from "../../application-state-stores/model-stores";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import {
+    createMetricsDefsAndFocusApi,
+    deleteMetricsDefsApi,
+    fetchManyMetricsDefsApi,
+    validateSelectedSources,
+  } from "../../redux-store/metrics-definition/metrics-definition-apis";
+  import { getAllMetricsDefinitionsReadable } from "../../redux-store/metrics-definition/metrics-definition-readables";
+  import { store } from "../../redux-store/store-root";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "../column-profile/ContextButton.svelte";
@@ -24,17 +36,6 @@
   import { Divider, MenuItem } from "../menu";
   import MetricsDefinitionSummary from "../metrics-definition/MetricsDefinitionSummary.svelte";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import {
-    createMetricsDefsAndFocusApi,
-    deleteMetricsDefsApi,
-    fetchManyMetricsDefsApi,
-    validateSelectedSources,
-  } from "../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getAllMetricsDefinitionsReadable } from "../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../redux-store/store-root";
-  import { getContext, onMount } from "svelte";
-  import { slide } from "svelte/transition";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -57,11 +58,11 @@
     renameMetricsDefName = metricsDefName;
   };
 
-  const dispatchAddEmptyMetricsDef = () => {
+  const dispatchAddEmptyMetricsDef = async () => {
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    store.dispatch(createMetricsDefsAndFocusApi());
+    await store.dispatch(createMetricsDefsAndFocusApi());
   };
 
   const editModel = (sourceModelId: string) => {
@@ -103,7 +104,15 @@
     );
   };
 
-  const dispatchDeleteMetricsDef = (id: string) => {
+  const deleteMetricsDef = (id: string) => {
+    const nextMetricsDefId = getNextEntityId($metricsDefinitions, id);
+
+    if (nextMetricsDefId) {
+      goto(`/dashboard/${nextMetricsDefId}`);
+    } else {
+      goto("/");
+    }
+
     store.dispatch(deleteMetricsDefsApi(id));
   };
 
@@ -154,7 +163,6 @@
         active={$appStore?.activeEntity?.id === metricsDef.id}
         showRows={false}
         on:select={() => dispatchSetMetricsDefActive(metricsDef.id)}
-        on:delete={() => dispatchDeleteMetricsDef(metricsDef.id)}
         notExpandable={true}
       >
         <svelte:fragment slot="summary" let:containerWidth>
@@ -171,9 +179,7 @@
             disabled={hasSourceError}
             on:select={() => editModel(metricsDef.sourceModelId)}
           >
-            <svelte:fragment slot="icon">
-              <Model />
-            </svelte:fragment>
+            <Model slot="icon" />
             edit model
             <svelte:fragment slot="description">
               {#if hasSourceError}
@@ -186,9 +192,7 @@
             disabled={hasSourceError}
             on:select={() => editMetrics(metricsDef.id)}
           >
-            <svelte:fragment slot="icon">
-              <MetricsIcon />
-            </svelte:fragment>
+            <MetricsIcon slot="icon" />
             edit metrics
           </MenuItem>
           <Divider />
@@ -200,18 +204,11 @@
                 metricsDef.metricDefLabel
               )}
           >
-            <svelte:fragment slot="icon">
-              <EditIcon />
-            </svelte:fragment>
+            <EditIcon slot="icon" />
             rename...</MenuItem
           >
-          <MenuItem
-            icon
-            on:select={() => dispatchDeleteMetricsDef(metricsDef.id)}
-          >
-            <svelte:fragment slot="icon">
-              <Cancel />
-            </svelte:fragment>
+          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef.id)}>
+            <Cancel slot="icon" />
             delete</MenuItem
           >
         </svelte:fragment>

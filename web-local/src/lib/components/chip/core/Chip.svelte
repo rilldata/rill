@@ -3,19 +3,20 @@
   - center (text) – used primarily for label information
 -->
 <script>
-  import { slideRight } from "../../../transitions/index.ts";
   import { createEventDispatcher } from "svelte";
+  import { slideRight } from "../../../transitions/index";
+  import { defaultChipColors } from "../chip-types";
   import RemoveChipButton from "./RemoveChipButton.svelte";
 
   export let removable = false;
   export let active = false;
 
   /** color elements elements */
-  export let bgBaseColor = "bg-blue-50";
-  export let bgHoverColor = "bg-blue-100";
-  export let textColor = "text-blue-900";
-  export let bgActiveColor = bgHoverColor;
-  export let ringOffsetColor = "ring-offset-blue-500";
+  export let bgBaseClass = defaultChipColors.bgBaseClass;
+  export let bgHoverClass = defaultChipColors.bgHoverClass;
+  export let textClass = defaultChipColors.textClass;
+  export let bgActiveClass = defaultChipColors.bgActiveClass;
+  export let outlineClass = defaultChipColors.outlineClass;
 
   /** if removable is true, these props control the tooltip positioning */
   export let removeButtonTooltipLocation = "bottom";
@@ -32,14 +33,14 @@
     on:click
     class="
     grid gap-x-2 items-center pl-2 pr-4 py-1 rounded-2xl cursor-pointer
-    {textColor}
-    {bgBaseColor}
-    {ringOffsetColor}
-    hover:{bgHoverColor}
-    {active ? bgActiveColor : ''}
-
+    {textClass}
+    {bgBaseClass} 
+    {outlineClass} 
+    {bgHoverClass} 
+    {active ? bgActiveClass : ''}
   "
-    class:ring-2={active}
+    class:outline-2={active}
+    class:outline={active}
     style:grid-template-columns="{$$slots.icon || removable
       ? "max-content"
       : ""}
@@ -48,6 +49,7 @@
     <!-- a cancelable element, e.g. filter buttons -->
     {#if removable}
       <RemoveChipButton
+        {textClass}
         tooltipLocation={removeButtonTooltipLocation}
         tooltipAlignment={removeButtonTooltipAlignment}
         tooltipDistance={removeButtonTooltipDistance}

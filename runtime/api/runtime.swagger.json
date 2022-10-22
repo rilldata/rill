@@ -1,0 +1,1742 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "runtime.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "RuntimeService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/connectors/meta": {
+      "get": {
+        "summary": "ListConnectors returns a description of all the connectors implemented in the runtime,\nincluding their schema and validation rules",
+        "operationId": "RuntimeService_ListConnectors",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListConnectorsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances": {
+      "get": {
+        "summary": "ListInstances lists all the instances currently managed by the runtime",
+        "operationId": "RuntimeService_ListInstances",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListInstancesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      },
+      "post": {
+        "summary": "CreateInstance creates a new instance",
+        "operationId": "RuntimeService_CreateInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateInstanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateInstanceRequest"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}": {
+      "get": {
+        "summary": "GetInstance returns information about a specific instance",
+        "operationId": "RuntimeService_GetInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetInstanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      },
+      "delete": {
+        "summary": "DeleteInstance deletes an instance",
+        "operationId": "RuntimeService_DeleteInstance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteInstanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/catalog": {
+      "get": {
+        "summary": "ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog",
+        "operationId": "RuntimeService_ListCatalogObjects",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListCatalogObjectsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/catalog/{name}": {
+      "get": {
+        "summary": "GetCatalogObject returns information about a specific object in the catalog",
+        "operationId": "RuntimeService_GetCatalogObject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetCatalogObjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/catalog/{name}/refresh": {
+      "post": {
+        "summary": "TriggerRefresh triggers a refresh of a refreshable catalog object.\nIt currently only supports sources (which will be re-ingested), but will also support materialized models in the future.\nIt does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).",
+        "operationId": "RuntimeService_TriggerRefresh",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TriggerRefreshResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/metrics-views/{metricsViewName}/meta": {
+      "post": {
+        "summary": "MetricsViewMeta returns metadata about a metrics view.\nIt's comparable to calling GetCatalogObject and will be deprecated in the future.",
+        "operationId": "RuntimeService_MetricsViewMeta",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MetricsViewMetaResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "metricsViewName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/metrics-views/{metricsViewName}/timeseries": {
+      "post": {
+        "summary": "MetricsViewTimeSeries returns time series for the measures in the metrics view.\nIt's a convenience API for querying a metrics view.",
+        "operationId": "RuntimeService_MetricsViewTimeSeries",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MetricsViewTimeSeriesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "metricsViewName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "measureNames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "timeStart": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "timeEnd": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "timeGranularity": {
+                  "type": "string"
+                },
+                "filter": {
+                  "$ref": "#/definitions/v1MetricsViewFilter"
+                }
+              },
+              "title": "Request message for RuntimeService.MetricsViewTimeSeries"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/metrics-views/{metricsViewName}/toplist/{dimensionName}": {
+      "post": {
+        "summary": "MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.\nIt's a convenience API for querying a metrics view.",
+        "operationId": "RuntimeService_MetricsViewToplist",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MetricsViewToplistResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "metricsViewName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "dimensionName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "measureNames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "timeStart": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "timeEnd": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "limit": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "offset": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "sort": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/v1MetricsViewSort"
+                  }
+                },
+                "filter": {
+                  "$ref": "#/definitions/v1MetricsViewFilter"
+                }
+              },
+              "title": "Request message for RuntimeService.MetricsViewToplist"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/metrics-views/{metricsViewName}/totals": {
+      "post": {
+        "summary": "MetricsViewTotals returns totals over a time period for the measures in a metrics view.\nIt's a convenience API for querying a metrics view.",
+        "operationId": "RuntimeService_MetricsViewTotals",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MetricsViewTotalsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "metricsViewName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "measureNames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "timeStart": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "timeEnd": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "filter": {
+                  "$ref": "#/definitions/v1MetricsViewFilter"
+                }
+              },
+              "title": "Request message for RuntimeService.MetricsViewTotals"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/migrate": {
+      "post": {
+        "summary": "Migrate applies a full set of SQL artifacts (files containing CREATE statements) to the catalog/infra.\nIt attempts to infer a minimal number of migrations to apply to reconcile the current state with\nthe desired state expressed in the artifacts. Any existing objects not described in the submitted\nartifacts will be deleted.",
+        "operationId": "RuntimeService_Migrate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MigrateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "description": "Instance to migrate",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "blobs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Contents of files containing one or more SQL DDL statements"
+                },
+                "dropDeleted": {
+                  "type": "boolean",
+                  "title": "If true, all catalog objects not present in blobs (except for unmanaged tables) will be deleted"
+                },
+                "dryRun": {
+                  "type": "boolean",
+                  "title": "If true, will validate the SQL, but not actually execute the migrations"
+                }
+              },
+              "title": "Request message for RuntimeService.Migrate"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/migrate/single": {
+      "post": {
+        "summary": "MigrateSingle applies a single `CREATE` statement.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
+        "operationId": "RuntimeService_MigrateSingle",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MigrateSingleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "description": "Instance to migrate",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "sql": {
+                  "type": "string",
+                  "title": "A CREATE statement"
+                },
+                "dryRun": {
+                  "type": "boolean",
+                  "title": "If true, will validate the SQL, but not actually execute the migrations"
+                },
+                "createOrReplace": {
+                  "type": "boolean",
+                  "title": "If true, will replace existing definitions with the same name"
+                },
+                "renameFrom": {
+                  "type": "string",
+                  "description": "If provided, will attempt to rename an existing object and only recompute if necessary.\nNOTE: very questionable semantics here."
+                }
+              },
+              "title": "Request message for RuntimeService.MigrateSingle"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/migrate/single/delete": {
+      "post": {
+        "summary": "MigrateDelete deletes a single object.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
+        "operationId": "RuntimeService_MigrateDelete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MigrateDeleteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "description": "Instance to migrate",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "title": "Name of object to drop"
+                }
+              },
+              "title": "Request message for RuntimeService.MigrateDelete"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/query": {
+      "post": {
+        "summary": "Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.",
+        "operationId": "RuntimeService_Query",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "description": "Instance to query",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "sql": {
+                  "type": "string",
+                  "title": "SELECT statement"
+                },
+                "args": {
+                  "type": "array",
+                  "items": {},
+                  "title": "Args to interpolate into the statement"
+                },
+                "priority": {
+                  "type": "string",
+                  "format": "int64",
+                  "title": "Query priority (not supported by all backends)"
+                },
+                "dryRun": {
+                  "type": "boolean",
+                  "title": "If true, will only validate the query, not execute it"
+                }
+              },
+              "title": "Request message for RuntimeService.Query"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/query/direct": {
+      "post": {
+        "summary": "QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.\nIt bypasses Rill SQL and expects the query to use the underlying dialect.",
+        "operationId": "RuntimeService_QueryDirect",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryDirectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "description": "Instance to query",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "sql": {
+                  "type": "string",
+                  "title": "SELECT statement"
+                },
+                "args": {
+                  "type": "array",
+                  "items": {},
+                  "title": "Args to interpolate into the statement"
+                },
+                "priority": {
+                  "type": "string",
+                  "format": "int64",
+                  "title": "Query priority (not supported by all backends)"
+                },
+                "dryRun": {
+                  "type": "boolean",
+                  "title": "If true, will only validate the query, not execute it"
+                }
+              },
+              "title": "Request message for RuntimeService.QueryDirect"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/ping": {
+      "get": {
+        "summary": "Ping returns information about the runtime",
+        "operationId": "RuntimeService_Ping",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PingResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/repos": {
+      "get": {
+        "summary": "ListRepos lists all the repos currently managed by the runtime",
+        "operationId": "RuntimeService_ListRepos",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListReposResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      },
+      "post": {
+        "summary": "CreateRepo creates a new repo. See the Repo message for an explanation of repos.",
+        "operationId": "RuntimeService_CreateRepo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateRepoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateRepoRequest"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/repos/{repoId}": {
+      "get": {
+        "summary": "GetRepo returns info about a specific repo",
+        "operationId": "RuntimeService_GetRepo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetRepoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      },
+      "delete": {
+        "summary": "DeleteRepo deletes a repo",
+        "operationId": "RuntimeService_DeleteRepo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteRepoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/repos/{repoId}/objects": {
+      "get": {
+        "summary": "ListRepoObjects lists all the objects (files) in a repo sorted by full path. \nIt includes objects in nested \"directories\".",
+        "operationId": "RuntimeService_ListRepoObjects",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListRepoObjectsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/repos/{repoId}/objects/-/{path}": {
+      "get": {
+        "summary": "GetRepoObject returns the contents of a specific object (file) in a repo.",
+        "operationId": "RuntimeService_GetRepoObject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetRepoObjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      },
+      "post": {
+        "summary": "PutRepoObject can be used to create, update, or delete an object (file) in a repo",
+        "operationId": "RuntimeService_PutRepoObject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PutRepoObjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "blob": {
+                  "type": "string"
+                },
+                "delete": {
+                  "type": "boolean"
+                }
+              },
+              "title": "Request message for RuntimeService.PutRepoObjectRequest"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ConnectorProperty": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "The property key"
+        },
+        "displayName": {
+          "type": "string",
+          "title": "Pretty name for the property"
+        },
+        "description": {
+          "type": "string",
+          "title": "Human readable description of the field"
+        },
+        "placeholder": {
+          "type": "string",
+          "title": "Placeholder value for use in UIs"
+        },
+        "type": {
+          "$ref": "#/definitions/ConnectorPropertyType",
+          "title": "The type expected for this property"
+        },
+        "nullable": {
+          "type": "boolean",
+          "title": "Nullable is true if the field is optional"
+        }
+      },
+      "title": "Property represents one of the connector's config properties"
+    },
+    "ConnectorPropertyType": {
+      "type": "string",
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "TYPE_STRING",
+        "TYPE_NUMBER",
+        "TYPE_BOOLEAN"
+      ],
+      "default": "TYPE_UNSPECIFIED",
+      "title": "Type represents the field type"
+    },
+    "MetricsViewDimension": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "primaryTime": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "title": "Dimensions are columns to filter and group by"
+    },
+    "MetricsViewFilterCond": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "in": {
+          "type": "array",
+          "items": {}
+        },
+        "like": {
+          "type": "array",
+          "items": {}
+        }
+      }
+    },
+    "MetricsViewMeasure": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "title": "Measures are aggregated computed values"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1CatalogObject": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/definitions/v1Source"
+        },
+        "metricsView": {
+          "$ref": "#/definitions/v1MetricsView"
+        },
+        "unmanagedTable": {
+          "$ref": "#/definitions/v1UnmanagedTable"
+        }
+      },
+      "title": "CatalogObject represents an object stored in the catalog"
+    },
+    "v1Connector": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the connector (e.g. \"CREATE SOURCE foo WITH connector = 'name'\")"
+        },
+        "displayName": {
+          "type": "string",
+          "title": "Pretty display name for use in UIs"
+        },
+        "description": {
+          "type": "string",
+          "title": "Human readable description of the connector"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ConnectorProperty"
+          },
+          "title": "Properties accepted by the connector"
+        }
+      },
+      "description": "Connector represents a connector available in the runtime.\nIt should not be confused with a source."
+    },
+    "v1CreateInstanceRequest": {
+      "type": "object",
+      "properties": {
+        "driver": {
+          "type": "string",
+          "title": "See message Instance for field descriptions"
+        },
+        "dsn": {
+          "type": "string"
+        },
+        "objectPrefix": {
+          "type": "string"
+        },
+        "exposed": {
+          "type": "boolean"
+        },
+        "embedCatalog": {
+          "type": "boolean"
+        }
+      },
+      "title": "Request message for RuntimeService.CreateInstance"
+    },
+    "v1CreateInstanceResponse": {
+      "type": "object",
+      "properties": {
+        "instanceId": {
+          "type": "string"
+        },
+        "instance": {
+          "$ref": "#/definitions/v1Instance"
+        }
+      },
+      "title": "Response message for RuntimeService.CreateInstance"
+    },
+    "v1CreateRepoRequest": {
+      "type": "object",
+      "properties": {
+        "driver": {
+          "type": "string"
+        },
+        "dsn": {
+          "type": "string"
+        }
+      },
+      "title": "Request message for RuntimeService.CreateRepo"
+    },
+    "v1CreateRepoResponse": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "$ref": "#/definitions/v1Repo"
+        }
+      },
+      "title": "Response message for RuntimeService.CreateRepo"
+    },
+    "v1DeleteInstanceResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.DeleteInstance"
+    },
+    "v1DeleteRepoResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.DeleteRepo"
+    },
+    "v1GetCatalogObjectResponse": {
+      "type": "object",
+      "properties": {
+        "object": {
+          "$ref": "#/definitions/v1CatalogObject"
+        }
+      },
+      "title": "Response message for RuntimeService.GetCatalogObject"
+    },
+    "v1GetInstanceResponse": {
+      "type": "object",
+      "properties": {
+        "instance": {
+          "$ref": "#/definitions/v1Instance"
+        }
+      },
+      "title": "Response message for RuntimeService.GetInstance"
+    },
+    "v1GetRepoObjectResponse": {
+      "type": "object",
+      "properties": {
+        "blob": {
+          "type": "string"
+        }
+      },
+      "title": "Reponse message for RuntimeService.GetRepoObjectResponse"
+    },
+    "v1GetRepoResponse": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "$ref": "#/definitions/v1Repo"
+        }
+      },
+      "title": "Response message for RuntimeService.GetRepo"
+    },
+    "v1Instance": {
+      "type": "object",
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "title": "Identifier (UUID)"
+        },
+        "driver": {
+          "type": "string",
+          "title": "Name of OLAP infra driver (\"druid\" or \"duckdb\")"
+        },
+        "dsn": {
+          "type": "string",
+          "title": "DSN for connection to the OLAP infra"
+        },
+        "objectPrefix": {
+          "type": "string",
+          "description": "Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)\nUse it as an alternative to database schemas."
+        },
+        "exposed": {
+          "type": "boolean",
+          "description": "Indicates that the underlying infra may be manipulated directly by users.\nIf true, the runtime will continuously poll the infra's information schema\nto discover tables not created through the runtime. They will be added to the\ncatalog as UnmanagedTables."
+        },
+        "embedCatalog": {
+          "type": "boolean",
+          "description": "If true, the runtime will store the instance's catalog data (such as sources and metrics views)\nin the instance's OLAP datastore instead of in the runtime's metadata store. This is currently\nonly supported for the duckdb driver."
+        }
+      },
+      "description": "Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).\nMigrations and queries are issued against a specific instance. The concept of\ninstances enables multiple data projects to be served by one runtime."
+    },
+    "v1ListCatalogObjectsResponse": {
+      "type": "object",
+      "properties": {
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1CatalogObject"
+          }
+        }
+      },
+      "title": "Response message for RuntimeService.ListCatalogObjects"
+    },
+    "v1ListConnectorsResponse": {
+      "type": "object",
+      "properties": {
+        "connectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Connector"
+          }
+        }
+      },
+      "title": "Response message for RuntimeService.ListConnectors"
+    },
+    "v1ListInstancesResponse": {
+      "type": "object",
+      "properties": {
+        "instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Instance"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      },
+      "title": "Response message for RuntimeService.ListInstances"
+    },
+    "v1ListRepoObjectsResponse": {
+      "type": "object",
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "Response message for RuntimeService.ListRepoObjects"
+    },
+    "v1ListReposResponse": {
+      "type": "object",
+      "properties": {
+        "repos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Repo"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      },
+      "title": "Response message for RuntimeService.ListRepos"
+    },
+    "v1MetricsView": {
+      "type": "object",
+      "properties": {
+        "sql": {
+          "type": "string",
+          "title": "Formatted SQL DDL for the metrics view"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the metrics view"
+        },
+        "fromObject": {
+          "type": "string",
+          "title": "Name of the source or model that the metrics view is based on"
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetricsViewDimension"
+          },
+          "title": "Dimensions in the metrics view"
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetricsViewMeasure"
+          },
+          "title": "Measures in the metrics view"
+        }
+      },
+      "title": "MetricsView represents a catalog object created using CREATE METRICS VIEW"
+    },
+    "v1MetricsViewFilter": {
+      "type": "object",
+      "properties": {
+        "match": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetricsViewFilterCond"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetricsViewFilterCond"
+          }
+        }
+      },
+      "title": "Filter clause for metrics view requests"
+    },
+    "v1MetricsViewMetaResponse": {
+      "type": "object",
+      "properties": {
+        "metricsViewName": {
+          "type": "string"
+        },
+        "fromObject": {
+          "type": "string"
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetricsViewDimension"
+          }
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetricsViewMeasure"
+          }
+        }
+      },
+      "title": "Response message for RuntimeService.MetricsViewMeta"
+    },
+    "v1MetricsViewSort": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ascending": {
+          "type": "boolean"
+        }
+      },
+      "title": "Sort clause for metrics view requests"
+    },
+    "v1MetricsViewTimeSeriesResponse": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaColumn"
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "title": "Response message for RuntimeService.MetricsViewTimeSeries"
+    },
+    "v1MetricsViewToplistResponse": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaColumn"
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "title": "Response message for RuntimeService.MetricsViewToplist"
+    },
+    "v1MetricsViewTotalsResponse": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaColumn"
+          }
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "title": "Response message for RuntimeService.MetricsViewTotals"
+    },
+    "v1MigrateDeleteResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.MigrateDelete"
+    },
+    "v1MigrateResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.Migrate"
+    },
+    "v1MigrateSingleResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.MigrateSingle"
+    },
+    "v1PingResponse": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "title": "Runtime version"
+        },
+        "time": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Runtime server time"
+        }
+      },
+      "title": "Response message for RuntimeService.Ping"
+    },
+    "v1PutRepoObjectResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.PutRepoObjectRequest"
+    },
+    "v1QueryDirectResponse": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaColumn"
+          },
+          "title": "Schema of result data"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "title": "Result data"
+        }
+      },
+      "title": "Response message for RuntimeService.QueryDirect"
+    },
+    "v1QueryResponse": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaColumn"
+          },
+          "title": "Schema of result data"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "title": "Result data"
+        }
+      },
+      "title": "Response message for RuntimeService.Query"
+    },
+    "v1Repo": {
+      "type": "object",
+      "properties": {
+        "repoId": {
+          "type": "string",
+          "title": "UUID identifier"
+        },
+        "driver": {
+          "type": "string",
+          "description": "Driver for persisting artifacts. Supports \"file\" and \"postgres\"."
+        },
+        "dsn": {
+          "type": "string",
+          "description": "DSN for driver. If the driver is \"file\", this should be the path to the root directory."
+        }
+      },
+      "description": "Repo represents a collection of file artifacts containing SQL statements.\nIt will usually by represented as a folder on disk, but may also be backed by a\ndatabase (for modelling in the cloud where no persistant file system is available)."
+    },
+    "v1SchemaColumn": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "nullable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1Source": {
+      "type": "object",
+      "properties": {
+        "sql": {
+          "type": "string",
+          "title": "Formatted SQL DDL for the source"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the source"
+        },
+        "connector": {
+          "type": "string",
+          "title": "Connector used by the source"
+        },
+        "properties": {
+          "type": "object",
+          "title": "Connector properties assigned in the source"
+        }
+      },
+      "title": "Source represents a catalog object created using CREATE SOURCE"
+    },
+    "v1TriggerRefreshResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.TriggerRefresh"
+    },
+    "v1UnmanagedTable": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "view": {
+          "type": "boolean"
+        },
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaColumn"
+          }
+        }
+      },
+      "description": "UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that\nwas NOT created through the runtime's migrations). The runtime periodically looks for\nunmanaged tables in the database's information schema if the instance is created with exposed=true."
+    }
+  }
+}

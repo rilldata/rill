@@ -1,15 +1,15 @@
 <script lang="ts">
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { crossfade, fly } from "svelte/transition";
+  import {
+    humanizeDataType,
+    NicelyFormattedTypes,
+  } from "../../../../util/humanize-numbers";
   import { WithTween } from "../../../data-graphic/functional-components";
   import CrossIcon from "../../../icons/CrossIcon.svelte";
   import Spinner from "../../../Spinner.svelte";
   import Tooltip from "../../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import {
-    humanizeDataType,
-    NicelyFormattedTypes,
-  } from "../../../../util/humanize-numbers";
-  import { crossfade, fly } from "svelte/transition";
 
   export let value: number;
   export let status: EntityStatus;
@@ -30,7 +30,7 @@
       {description}
     </TooltipContent>
   </Tooltip>
-  <div style:font-size="1.5rem" style:font-weight="light" class="text-gray-600">
+  <div style:font-size="1.5rem" style:font-weight="light" class="ui-copy-muted">
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
     override this by filling the slot in the consuming component. -->
     <slot name="value">

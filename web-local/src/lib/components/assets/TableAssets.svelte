@@ -8,12 +8,24 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
+  import { getContext } from "svelte";
+  import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "../../application-state-stores/table-stores";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import {
+    autoCreateMetricsDefinitionForSource,
+    createModelForSource,
+    deleteSourceApi,
+  } from "../../redux-store/source/source-apis";
+  import { derivedProfileEntityHasTimestampColumn } from "../../redux-store/source/source-selectors";
+  import { uploadFilesWithDialog } from "../../util/file-upload";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
@@ -26,17 +38,6 @@
   import Source from "../icons/Source.svelte";
   import { Divider, MenuItem } from "../menu";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    createModelForSource,
-    deleteSourceApi,
-  } from "../../redux-store/source/source-apis";
-  import { derivedProfileEntityHasTimestampColumn } from "../../redux-store/source/source-selectors";
-  import { uploadFilesWithDialog } from "../../util/file-upload";
-  import { getContext } from "svelte";
-  import { flip } from "svelte/animate";
-  import { slide } from "svelte/transition";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
@@ -65,7 +66,12 @@
   };
 
   const queryHandler = async (tableName: string) => {
-    await createModelForSource($persistentModelStore.entities, tableName);
+    const asynchronous = true;
+    await createModelForSource(
+      $persistentModelStore.entities,
+      tableName,
+      asynchronous
+    );
   };
 
   const quickStartMetrics = async (id: string, tableName: string) => {
@@ -101,20 +107,35 @@
     }
   };
 
+  const deleteSource = (tableName: string, id: string) => {
+    const nextSourceId = getNextEntityId($persistentTableStore.entities, id);
+
+    if (nextSourceId) {
+      goto(`/source/${nextSourceId}`);
+    } else {
+      goto("/");
+    }
+
+    deleteSourceApi(tableName);
+  };
+
   const createModel = (tableName: string) => {
     const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+    const asynchronous = true;
 
-    createModelForSource($persistentModelStore.entities, tableName).then(
-      (createdModelId) => {
-        navigationEvent.fireEvent(
-          createdModelId,
-          BehaviourEventMedium.Menu,
-          MetricsEventSpace.LeftPanel,
-          EntityTypeToScreenMap[previousActiveEntity],
-          MetricsEventScreenName.Model
-        );
-      }
-    );
+    createModelForSource(
+      $persistentModelStore.entities,
+      tableName,
+      asynchronous
+    ).then((createdModelId) => {
+      navigationEvent.fireEvent(
+        createdModelId,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[previousActiveEntity],
+        MetricsEventScreenName.Model
+      );
+    });
   };
 
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
@@ -156,23 +177,20 @@
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             active={entityIsActive}
-            on:delete={() => deleteSourceApi(tableName)}
           >
-            <svelte:fragment slot="summary" let:containerWidth>
-              <ColumnProfileNavEntry
-                indentLevel={1}
-                {containerWidth}
-                cardinality={derivedTable?.cardinality ?? 0}
-                profile={derivedTable?.profile ?? []}
-                head={derivedTable?.preview ?? []}
-                entityId={id}
-              />
-            </svelte:fragment>
+            <ColumnProfileNavEntry
+              slot="summary"
+              let:containerWidth
+              indentLevel={1}
+              {containerWidth}
+              cardinality={derivedTable?.cardinality ?? 0}
+              profile={derivedTable?.profile ?? []}
+              head={derivedTable?.preview ?? []}
+              entityId={id}
+            />
             <svelte:fragment slot="menu-items" let:toggleMenu>
               <MenuItem icon on:select={() => createModel(tableName)}>
-                <svelte:fragment slot="icon">
-                  <Model />
-                </svelte:fragment>
+                <Model slot="icon" />
                 create new model
               </MenuItem>
 
@@ -181,7 +199,7 @@
                 icon
                 on:select={() => quickStartMetrics(id, tableName)}
               >
-                <svelte:fragment slot="icon"><Explore /></svelte:fragment>
+                <Explore slot="icon" />
                 autogenerate dashboard
                 <svelte:fragment slot="description">
                   {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
@@ -197,16 +215,13 @@
                   openRenameTableModal(id, tableName);
                 }}
               >
-                <svelte:fragment slot="icon">
-                  <EditIcon />
-                </svelte:fragment>
+                <EditIcon slot="icon" />
+
                 rename...
               </MenuItem>
               <!-- FIXME: this should pop up an "are you sure?" modal -->
-              <MenuItem icon on:select={() => deleteSourceApi(tableName)}>
-                <svelte:fragment slot="icon">
-                  <Cancel />
-                </svelte:fragment>
+              <MenuItem icon on:select={() => deleteSource(tableName, id)}>
+                <Cancel slot="icon" />
                 delete</MenuItem
               >
             </svelte:fragment>

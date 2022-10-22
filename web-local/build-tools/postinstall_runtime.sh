@@ -2,7 +2,7 @@
 set -e
 
 # Hardcoded runtime version to install
-RUNTIME_VERSION="d660dfbf3fcd46ff737280cea83d7f64eac6095a"
+RUNTIME_VERSION="8ecbb53536149002b5f7dacaed4838501f407d20"
 
 # Targets dist/runtime as the output directory
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -30,8 +30,8 @@ else
 fi
 
 # Install runtime
-mkdir -p $OUTPUT_DIR
-cd $OUTPUT_DIR
+mkdir -p "$OUTPUT_DIR"
+cd "$OUTPUT_DIR"
 curl -Lso runtime.zip https://storage.googleapis.com/pkg.rilldata.com/runtime/releases/$RUNTIME_VERSION/runtime-$TARGET.zip
 unzip -q -o runtime.zip
 rm runtime.zip

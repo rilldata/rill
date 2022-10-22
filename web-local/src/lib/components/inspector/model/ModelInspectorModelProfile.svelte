@@ -173,16 +173,16 @@
             cardinality={currentDerivedModel?.cardinality ?? 0}
             active={currentModel?.id === $store?.activeEntity?.id}
           >
-            <svelte:fragment slot="summary" let:containerWidth>
-              <ColumnProfileNavEntry
-                indentLevel={0}
-                {containerWidth}
-                cardinality={currentDerivedModel?.cardinality ?? 0}
-                profile={currentDerivedModel?.profile ?? []}
-                head={currentDerivedModel?.preview ?? []}
-                entityId={activeEntityID}
-              />
-            </svelte:fragment>
+            <ColumnProfileNavEntry
+              slot="summary"
+              let:containerWidth
+              indentLevel={0}
+              {containerWidth}
+              cardinality={currentDerivedModel?.cardinality ?? 0}
+              profile={currentDerivedModel?.profile ?? []}
+              head={currentDerivedModel?.preview ?? []}
+              entityId={activeEntityID}
+            />
           </CollapsibleTableSummary>
         </div>
       {/if}

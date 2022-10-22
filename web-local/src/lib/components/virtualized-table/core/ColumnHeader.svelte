@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
+  import { createShiftClickAction } from "../../../util/shift-click-action";
   import { DataTypeIcon } from "../../data-types";
   import ArrowDown from "../../icons/ArrowDown.svelte";
   import Pin from "../../icons/Pin.svelte";
@@ -11,7 +12,6 @@
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
-  import { createShiftClickAction } from "../../../util/shift-click-action";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -34,6 +34,9 @@
   $: isSortingDesc = true;
 
   $: isDimensionTable = config.table === "DimensionTable";
+  $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
+
+  $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
   $: columnFontWeight = isSelected
     ? "font-bold"
@@ -75,19 +78,18 @@
     }}
     class="
            flex
-           items-center
            justify-stretch
            select-none
            over
-           gap-x-2
+           {isDimensionTable ? '' : 'items-center gap-x-2'}
            "
   >
     <Tooltip location="top" alignment="middle" distance={16}>
       <div
         class="
         grid
-        items-center cursor-pointer
-        {isSelected ? '' : 'w-full gap-x-2'}
+        items-center cursor-pointer w-full
+        {isSelected ? '' : 'gap-x-2'}
         "
         style:grid-template-columns={isDimensionTable
           ? ""
@@ -97,9 +99,11 @@
           <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
         {/if}
         <span
-          in:fly={{ y: 200, duration: 200 }}
-          class="text-ellipsis overflow-hidden whitespace-nowrap
-          {columnFontWeight} {isDimensionTable ? 'text-center' : ''}
+          class="text-ellipsis
+          {columnFontWeight}
+          {isDimensionTable
+            ? `${textAlignment} break-words line-clamp-2`
+            : 'overflow-hidden whitespace-nowrap'}
           "
         >
           {name}
@@ -125,17 +129,27 @@
         </TooltipShortcutContainer>
       </TooltipContent>
     </Tooltip>
-    {#if isSelected}
-      {#if isSortingDesc}
-        <div in:fly={{ duration: 200, y: -8 }}>
-          <ArrowDown size="16px" />
-        </div>
-      {:else}
-        <div in:fly={{ duration: 200, y: 8 }}>
-          <ArrowDown transform="scale(1 -1)" size="16px" />
-        </div>
-      {/if}
+
+    {#if isDimensionTable}
+      <div class="mt-0.5 ui-copy-icon">
+        {#if isSortingDesc}
+          <div
+            in:fly={{ duration: 200, y: -8 }}
+            style:opacity={isSelected ? 1 : 0}
+          >
+            <ArrowDown size="16px" />
+          </div>
+        {:else}
+          <div
+            in:fly={{ duration: 200, y: 8 }}
+            style:opacity={isSelected ? 1 : 0}
+          >
+            <ArrowDown transform="scale(1 -1)" size="16px" />
+          </div>
+        {/if}
+      </div>
     {/if}
+
     {#if !noPin && showMore}
       <Tooltip location="top" alignment="middle" distance={16}>
         <button

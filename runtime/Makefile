@@ -1,16 +1,16 @@
 .PHONY: build
 build:
-	./scripts/setup_sql.sh -f
+	go generate ./sql/...
 	go build -o main ./cmd
 
 .PHONY: run
 run:
-	./scripts/setup_sql.sh
+	go generate ./sql/...
 	go run ./cmd
 
 .PHONY: test
 test:
-	./scripts/setup_sql.sh
+	go generate ./sql/...
 	go test ./...
 
 .PHONY: clean
@@ -19,24 +19,52 @@ clean:
 	rm -f main
 	rm -rf release
 
+generate.proto.api:
+	go install \
+		"google.golang.org/protobuf/cmd/protoc-gen-go" \
+		"google.golang.org/grpc/cmd/protoc-gen-go-grpc" \
+		"github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway" \
+		"github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2"
+	protoc --proto_path=api \
+		--go_out=api --go_opt=paths=source_relative \
+		--go-grpc_out=api --go-grpc_opt=paths=source_relative \
+		--grpc-gateway_out=api --grpc-gateway_opt=logtostderr=true --grpc-gateway_opt=paths=source_relative --grpc-gateway_opt=generate_unbound_methods=true \
+		--openapiv2_out=api --openapiv2_opt=logtostderr=true \
+		runtime.proto
+
+generate.proto.sql.ast:
+	go install "google.golang.org/protobuf/cmd/protoc-gen-go"
+	protoc --proto_path=.. \
+		--go_out=.. --go_opt=module=github.com/rilldata/rill \
+		--go_opt=Msql/src/main/proto/ast.proto=github.com/rilldata/rill/runtime/sql/ast \
+		sql/src/main/proto/ast.proto
+
+generate.proto.sql.rpc:
+	go install "google.golang.org/protobuf/cmd/protoc-gen-go"
+	protoc --proto_path=.. \
+		--go_out=.. --go_opt=module=github.com/rilldata/rill \
+		--go_opt=Msql/src/main/proto/requests.proto=github.com/rilldata/rill/runtime/sql/rpc \
+		--go_opt=Msql/src/main/proto/ast.proto=github.com/rilldata/rill/runtime/sql/ast \
+		sql/src/main/proto/requests.proto
+
 release/darwin-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
 	mkdir -p release
-	GOOS=darwin GOARCH=amd64 ./scripts/setup_sql.sh -f
+	GOOS=darwin GOARCH=amd64 go generate ./sql
 	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
 		go build -trimpath -o release/darwin-amd64 ./cmd
 
 release/darwin-arm64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "darwin" ]; then echo "Error: must run build on darwin"; false; fi
 	mkdir -p release
-	GOOS=darwin GOARCH=arm64 ./scripts/setup_sql.sh -f
+	GOOS=darwin GOARCH=arm64 go generate ./sql
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
 		go build -trimpath -o release/darwin-arm64 ./cmd
 
 release/linux-amd64:
 	if [ "$(shell uname -s | tr '[:upper:]' '[:lower:]')" != "linux" ]; then echo "Error: must run build on linux"; false; fi
 	mkdir -p release
-	GOOS=linux GOARCH=amd64 ./scripts/setup_sql.sh -f
+	GOOS=linux GOARCH=amd64 go generate ./sql
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
 		go build -trimpath -o release/linux-amd64 ./cmd
 

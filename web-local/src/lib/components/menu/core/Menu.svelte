@@ -4,7 +4,6 @@
 </script>
 
 <script lang="ts">
-  import { guidGenerator } from "../../../util/guid";
   import {
     createEventDispatcher,
     getContext,
@@ -13,14 +12,17 @@
   } from "svelte";
   import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
+  import { guidGenerator } from "../../../util/guid";
   import { clickOutside } from "../../actions/click-outside";
 
   export let dark: boolean = undefined;
   export let maxWidth: string = undefined;
   export let minHeight: string = undefined;
+  export let maxHeight: string = undefined;
   export let paddingTop = 2;
   export let paddingBottom = 2;
   export let rounded = true;
+  export let focusOnMount = true;
   export let role = "menu";
   /** used for selector-style menus */
   export let multiselectable = false;
@@ -99,7 +101,7 @@
     $globalActiveMenu = menuID;
   });
 
-  $: if (!mounted) {
+  $: if (focusOnMount && !mounted) {
     $currentItem = $menuItems.find((item) => !item.disabled)?.id;
   }
 
@@ -125,6 +127,7 @@
 <div
   style:max-width={maxWidth}
   style:min-height={minHeight}
+  style:max-height={maxHeight}
   transition:fade|local={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
@@ -144,8 +147,8 @@
         flex-col
         outline-none
         {dark
-    ? 'bg-gray-800 border-none shadow'
-    : 'bg-white border border-gray-300 shadow-md'}
+    ? 'bg-gray-800 dark:bg-gray-700 border-none dark:border-none shadow'
+    : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-none shadow-md dark:shadow-xl'}
         "
   style:outline="none"
   style:min-width={"300px"}

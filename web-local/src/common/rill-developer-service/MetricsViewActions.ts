@@ -18,13 +18,15 @@ import type {
   TimeSeriesTimeRange,
   TimeSeriesValue,
 } from "../database-service/DatabaseTimeSeriesActions";
-import { ExplorerSourceModelDoesntExist } from "../errors/ErrorMessages";
+import {
+  ExplorerMetricsDefinitionDoesntExist,
+  ExplorerSourceModelDoesntExist,
+} from "../errors/ErrorMessages";
 import { DatabaseActionQueuePriority } from "../priority-action-queue/DatabaseActionQueuePriority";
+import { getMapFromArray } from "../utils/arrayUtils";
 import type { MetricsDefinitionContext } from "./MetricsDefinitionActions";
 import { RillDeveloperActions } from "./RillDeveloperActions";
 import { RillRequestContext } from "./RillRequestContext";
-import { getMapFromArray } from "../utils/arrayUtils";
-import type { ActiveValues } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
 
 export interface MetricsViewMetaResponse {
   id?: string;
@@ -44,7 +46,8 @@ export interface MetricsViewRequestTimeRange {
 }
 export interface MetricsViewDimensionValue {
   name: string;
-  values: Array<unknown>;
+  in: Array<unknown>;
+  like?: Array<unknown>;
 }
 export type MetricsViewDimensionValues = Array<MetricsViewDimensionValue>;
 export interface MetricsViewRequestFilter {
@@ -90,23 +93,6 @@ export interface MetricsViewTotalsResponse {
   data: Record<string, number>;
 }
 
-function convertToActiveValues(
-  filters: MetricsViewRequestFilter
-): ActiveValues {
-  if (!filters) return {};
-  const activeValues: ActiveValues = {};
-  filters.include.forEach((value) => {
-    activeValues[value.name] = value.values.map((val) => [val, true]);
-  });
-  filters.exclude.forEach((value) => {
-    activeValues[value.name] ??= [];
-    activeValues[value.name].push(
-      ...(value.values.map((val) => [val, false]) as Array<[unknown, boolean]>)
-    );
-  });
-  return activeValues;
-}
-
 /**
  * Actions that get info for metrics explore.
  * Based on rill runtime specs.
@@ -117,7 +103,21 @@ export class MetricsViewActions extends RillDeveloperActions {
     rillRequestContext: MetricsDefinitionContext,
     _: string
   ) {
-    if (!rillRequestContext.record?.sourceModelId) return;
+    const metricsDef = this.dataModelerStateService
+      .getMetricsDefinitionService()
+      .getById(rillRequestContext.record.id);
+
+    if (!metricsDef) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerMetricsDefinitionDoesntExist
+      );
+    }
+
+    if (!rillRequestContext.record?.sourceModelId) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
 
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
@@ -170,7 +170,7 @@ export class MetricsViewActions extends RillDeveloperActions {
             rillRequestContext.record,
             request.measures
           ),
-          filters: convertToActiveValues(request.filter),
+          filters: request.filter,
           timeRange: {
             ...request.time,
             interval: request.time.granularity,

@@ -4,11 +4,14 @@ import { SourceModelValidationStatus } from "../data-modeler-state-service/entit
 // Unified location for error messages
 // TODO: move all errors here.
 
+export const ExplorerMetricsDefinitionDoesntExist =
+  "Metrics definition doesn't exist";
 export const ExplorerSourceModelDoesntExist =
   "Previously selected source model does not exist.";
 export const ExplorerSourceModelIsInvalid = "Model query has errors.";
 export const ExplorerTimeDimensionDoesntExist =
   "Previously selected timestamp column does not exist.";
+export const ExplorerSourceColumnDoesntExist = "not found in FROM clause!"; // the full DuckDB error message is `Binder Error: Referenced column "COLUMN_NAME" not found in FROM clause!`
 
 export const MetricsSourceSelectionError = (
   metricsDefinition: MetricsDefinitionEntity

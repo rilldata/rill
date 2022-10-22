@@ -1,34 +1,29 @@
 package com.rilldata;
 
 import com.rilldata.calcite.CalciteToolbox;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.tools.ValidationException;
 
-import javax.sql.DataSource;
-import java.sql.SQLException;
+import java.io.IOException;
 
 public class SqlConverter
 {
-  private DataSource datasource;
-  private CalciteToolbox calciteToolbox;
+  private final CalciteToolbox calciteToolbox;
 
-  public SqlConverter(String schema) throws SQLException
+  public SqlConverter(String catalog) throws IOException
   {
-    calciteToolbox = new CalciteToolbox(new StaticSchemaProvider(schema), null);
+    calciteToolbox = CalciteToolbox.buildToolbox(catalog);
   }
 
-  public void initialize(String ddl) throws SQLException
+  public String convert(String sql, SqlDialect sqlDialect) throws ValidationException, SqlParseException
   {
+    return calciteToolbox.getRunnableQuery(sql, sqlDialect);
   }
 
-  public String convert(String sql, SqlDialect sqlDialect)
+  public SqlNodeProto getAST(String sql) throws ValidationException, SqlParseException
   {
-    try {
-      return calciteToolbox.getRunnableQuery(sql, sqlDialect);
-    }
-    catch (Exception e) {
-      e.printStackTrace(); // todo level-logging for native libraries?
-      return null;
-    }
+    return calciteToolbox.getAST(sql, false);
   }
 }

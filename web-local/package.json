@@ -1,6 +1,6 @@
 {
   "name": "@rilldata/rill",
-  "version": "0.10.0",
+  "version": "0.12.1",
   "type": "module",
   "scripts": {
     "dev": "ts-node-dev --quiet --project tsconfig.node.json dev.ts",
@@ -23,7 +23,6 @@
     "test:ui": "jest --detectOpenHandles test/ui",
     "test:watch": "npm run test -- --watch",
     "generate-test-data": "ts-node-dev --project tsconfig.node.json -- test/data/generator/generate-data.ts",
-    "cli": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/data-modeler-cli.ts",
     "bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
     "manual-publish": "./build-tools/npm_publish.sh"
   },

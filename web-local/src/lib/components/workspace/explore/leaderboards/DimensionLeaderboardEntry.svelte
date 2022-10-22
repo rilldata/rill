@@ -1,6 +1,6 @@
 <script lang="ts">
-  import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
   import { fly } from "svelte/transition";
+  import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
 
   import Tooltip from "../../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
@@ -17,6 +17,8 @@
   export let isSummableMeasure;
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
+
+  export let excluded = false;
 
   /** if this is a summable measure and there's a reference value, show measureValue / referenceValue.
    * This value is between 0-1 (in theroy!). If it is > 1, the BarAndLabel component shows teeth expressing
@@ -38,8 +40,11 @@
   <LeaderboardListItem
     value={renderedBarValue}
     isActive={active}
+    {excluded}
     on:click
-    color={active ? "bg-blue-200" : "bg-gray-200"}
+    color={excluded
+      ? "bg-gray-200 dark:bg-gray-600"
+      : "bg-blue-200 dark:bg-blue-700"}
   >
     <!--
       title element
@@ -51,9 +56,9 @@
       The current approach does a decent enough job of maintaining the flow and scan-friendliness.
      -->
     <div
-      class:text-gray-700={!atLeastOneActive && !loading}
-      class:text-gray-500={(atLeastOneActive && !active) || loading}
-      class:italic={atLeastOneActive && !active}
+      class:ui-copy={!atLeastOneActive && !loading}
+      class:ui-copy-disabled={excluded}
+      style:font-weight={excluded ? "normal" : "500"}
       class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
       slot="title"
     >
@@ -63,8 +68,8 @@
     <div class="leaderboard-list-item-right" slot="right">
       <!-- {#if !(atLeastOneActive && !active)} -->
       <div
-        class:text-gray-500={(!active && atLeastOneActive) || loading}
-        class:italic={!active && atLeastOneActive}
+        class:ui-copy-disabled={excluded}
+        style:font-weight={excluded ? "normal" : "500"}
         in:fly={{ duration: 200, y: 4 }}
       >
         <slot name="right" />

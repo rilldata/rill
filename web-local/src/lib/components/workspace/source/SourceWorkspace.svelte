@@ -1,21 +1,15 @@
 <script lang="ts">
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import {
-    ApplicationStore,
-    dataModelerService,
-  } from "../../../application-state-stores/application-store";
-
+  import { getContext } from "svelte";
+  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { dataModelerService } from "../../../application-state-stores/application-store";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
   import PreviewTable from "../../preview-table/PreviewTable.svelte";
-
-  import { getContext } from "svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
-  const store = getContext("rill:app:store") as ApplicationStore;
+  export let sourceId: string;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -24,17 +18,23 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  let currentSource: PersistentTableEntity;
-  $: activeEntityID = $store?.activeEntity?.id;
-  $: currentSource =
-    activeEntityID && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
-  let currentDerivedSource: DerivedTableEntity;
-  $: currentDerivedSource =
-    activeEntityID && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
+  $: currentSource = $persistentTableStore?.entities
+    ? $persistentTableStore.entities.find((q) => q.id === sourceId)
+    : undefined;
+  $: currentDerivedSource = $derivedTableStore?.entities
+    ? $derivedTableStore.entities.find((q) => q.id === sourceId)
+    : undefined;
+
+  const switchToSource = async (sourceId: string) => {
+    if (!sourceId) return;
+
+    await dataModelerService.dispatch("setActiveAsset", [
+      EntityType.Table,
+      sourceId,
+    ]);
+  };
+
+  $: switchToSource(sourceId);
 
   /** check to see if we need to perform a migration.
    * We will deprecate this in a few versions from 0.8.

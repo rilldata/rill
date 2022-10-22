@@ -1,28 +1,27 @@
 package com.rilldata.calcite;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rilldata.StaticSchemaProvider;
 import com.rilldata.calcite.dialects.Dialects;
-import com.rilldata.calcite.extensions.SqlCreateMetric;
 import com.rilldata.calcite.generated.RillSqlParserImpl;
-import com.rilldata.calcite.models.Artifact;
-import com.rilldata.calcite.models.ArtifactManager;
-import com.rilldata.calcite.models.ArtifactType;
-import com.rilldata.calcite.models.InMemoryArtifactManager;
+import com.rilldata.calcite.models.SqlCreateMetricsView;
+import com.rilldata.calcite.models.SqlCreateSource;
+import com.rilldata.calcite.models.ArtifactStore;
 import com.rilldata.calcite.operators.RillOperatorTable;
+import com.rilldata.calcite.validators.CreateMetricsViewValidator;
+import com.rilldata.calcite.validators.CreateSourceValidator;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -31,6 +30,7 @@ import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.ValidationException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.Properties;
@@ -46,17 +46,24 @@ public class CalciteToolbox
       .withParserFactory(RillSqlParserImpl::new);
 
   private final FrameworkConfig frameworkConfig;
-  private final ArtifactManager artifactManager;
+  private final ArtifactStore artifactStore;
 
-  public CalciteToolbox(Supplier<SchemaPlus> rootSchemaSupplier, @Nullable ArtifactManager artifactManager)
+  public static CalciteToolbox buildToolbox(String catalog) throws IOException
   {
-    this.artifactManager = Objects.requireNonNullElseGet(artifactManager, InMemoryArtifactManager::new);
+    JsonCatalog jsonCatalog = new ObjectMapper().readValue(catalog, JsonCatalog.class);
+    return new CalciteToolbox(new StaticSchemaProvider(jsonCatalog.schemas),
+        new ArtifactStore(jsonCatalog.artifacts)
+    );
+  }
 
-    /* Creating CalciteConnectionConfigImpl just like it is done in calcite code but adding LENIENT conformance instead
-     of DEFAULT one which does not allow numbers in group by clause like GROUP BY 1,2 ...
-
-     It is kind of odd that validator conformance level is reset to CalciteConnectionConfig level upon creation of validator
-     in PlannerImpl#createSqlValidator method
+  public CalciteToolbox(Supplier<SchemaPlus> rootSchemaSupplier, @Nullable ArtifactStore artifactStore)
+  {
+    this.artifactStore = Objects.requireNonNullElseGet(artifactStore, ArtifactStore::new);
+    /*
+      Creating CalciteConnectionConfigImpl just like it is done in calcite code but adding LENIENT
+      conformance instead of DEFAULT one which does not allow numbers in group by clause like GROUP BY 1,2 ...
+      It is kind of odd that validator conformance level is reset to CalciteConnectionConfig level upon creation
+      of validator in PlannerImpl#createSqlValidator method
      */
     Properties properties = new Properties();
     properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), String.valueOf(false));
@@ -94,7 +101,7 @@ public class CalciteToolbox
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     // expand query if needed
-    sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
+    sqlNode = sqlNode.accept(new MetricsViewExpander(artifactStore, this));
     // expansion done, now validate query
     SqlNode validated = planner.validate(sqlNode);
     planner.close();
@@ -102,26 +109,46 @@ public class CalciteToolbox
     return sql;
   }
 
-  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
+  public SqlNodeProto getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
-    // expand query if needed
-    sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
+    if (sqlNode instanceof SqlCreateMetricsView sqlCreateMetricsView) {
+      CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView, Dialects.DUCKDB.getSqlDialect(),
+          getPlanner()
+      );
+    } else if (sqlNode instanceof SqlCreateSource sqlCreateSource) {
+      CreateSourceValidator.validateConnector(sqlCreateSource);
+    }
+    return getAST(sqlNode, planner, addTypeInfo);
+  }
+
+  public SqlNodeProto getAST(SqlNode sqlNode)
+  {
+    Planner planner = getPlanner();
+    return getAST(sqlNode, planner, false);
+  }
+
+  /**
+   * If addTypeInfo is true then the same planner passed here should have been used to parse the sql
+   * otherwise the sql validation will fail which is required to get type info
+   * */
+  public SqlNodeProto getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
+  {
     SqlValidator sqlValidator = null;
     if (addTypeInfo) {
       SqlNode toValidate = sqlNode.clone(sqlNode.getParserPosition());
-      planner.validate(toValidate);
       try {
+        planner.validate(toValidate);
         sqlValidator = getValidator((PlannerImpl) planner);
-      } catch (NoSuchFieldException | IllegalAccessException e) {
+      } catch (NoSuchFieldException | IllegalAccessException | ValidationException e) {
         throw new RuntimeException(e);
       }
     }
     SqlNodeProtoBuilder sqlNodeProtoBuilder = new SqlNodeProtoBuilder(sqlNode, sqlValidator);
-    byte[] bytes = sqlNodeProtoBuilder.getProto();
+    SqlNodeProto sqlNodeProto = sqlNodeProtoBuilder.getSqlNodeProto();
     planner.close();
-    return bytes;
+    return sqlNodeProto;
   }
 
   public SqlValidator getValidator(PlannerImpl planner) throws NoSuchFieldException, IllegalAccessException
@@ -131,59 +158,11 @@ public class CalciteToolbox
     return (SqlValidator) validatorField.get(planner);
   }
 
-  public String saveModel(String sql) throws SqlParseException, ValidationException
-  {
-    SqlCreateMetric sqlCreateMetric = parseModelingQuery(sql);
-    String metricViewString = validateModelingQuery(sqlCreateMetric, Dialects.DUCKDB.getSqlDialect());
-    artifactManager.saveArtifact(
-        new Artifact(ArtifactType.METRIC_VIEW, sqlCreateMetric.name.getSimple(), metricViewString));
-    return metricViewString;
-  }
-
-  public SqlCreateMetric parseModelingQuery(String sql) throws SqlParseException
+  public SqlNode parseValidatedSql(String sql) throws SqlParseException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     planner.close();
-    return (SqlCreateMetric) sqlNode;
-  }
-
-  /**
-   * Validates create metrics view query by parsing and validating group by queries
-   * created from the dimensions and measures specified in the modeling query
-   */
-  public String validateModelingQuery(SqlCreateMetric sqlCreateMetric, SqlDialect sqlDialect)
-      throws SqlParseException, ValidationException
-  {
-    SqlNodeList dimensions = sqlCreateMetric.dimensions;
-    SqlNodeList groupByList = new SqlNodeList(SqlParserPos.ZERO);
-    for (int i = 1; i <= dimensions.size(); i++) {
-      groupByList.add(SqlLiteral.createExactNumeric(i + "", SqlParserPos.ZERO));
-    }
-    for (SqlNode measure : sqlCreateMetric.measures.getList()) {
-      Planner planner = getPlanner();
-      SqlNodeList selectList = new SqlNodeList(dimensions, SqlParserPos.ZERO);
-      selectList.add(measure);
-      SqlSelect groupBy = new SqlSelect(
-          SqlParserPos.ZERO,
-          SqlNodeList.EMPTY,
-          selectList,
-          sqlCreateMetric.from,
-          null,
-          groupByList,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null
-      );
-      String sqlString = groupBy.toSqlString(sqlDialect).toString();
-      SqlNode parsed = planner.parse(sqlString);
-      SqlNode validated = planner.validate(parsed);
-      planner.close();
-    }
-    // dimensions, measures and table are validated, return sql string to be stored in db
-    return sqlCreateMetric.toSqlString(sqlDialect).toString();
+    return sqlNode;
   }
 }

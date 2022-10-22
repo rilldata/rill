@@ -16,23 +16,24 @@ import (
 )
 
 type Config struct {
-	Env            string `default:"development"`
-	DatabaseDriver string `default:"postgres"`
-	DatabaseURL    string `split_words:"true"`
-	Port           int    `default:"8080" split_words:"true"`
+	Env              string `default:"development"`
+	DatabaseDriver   string `default:"postgres" split_words:"true"`
+	DatabaseURL      string `split_words:"true"`
+	Port             int    `default:"8080" split_words:"true"`
+	SessionsSecret   string `split_words:"true"`
+	AuthDomain       string `split_words:"true"`
+	AuthClientID     string `split_words:"true"`
+	AuthClientSecret string `split_words:"true"`
+	AuthCallbackURL  string `split_words:"true"`
 }
 
 func main() {
-	// Load .env
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Printf("Failed to load .env: %s", err.Error())
-		os.Exit(1)
-	}
+	// Load .env (note: fails silently if .env has errors)
+	godotenv.Load()
 
 	// Init config
 	var conf Config
-	err = envconfig.Process("rill_cloud", &conf)
+	err := envconfig.Process("rill_cloud", &conf)
 	if err != nil {
 		fmt.Printf("Failed to load config: %s", err.Error())
 		os.Exit(1)
@@ -62,8 +63,20 @@ func main() {
 		logger.Fatal("error migrating database", zap.Error(err))
 	}
 
+	srvConf := server.Config{
+		Port:             conf.Port,
+		AuthDomain:       conf.AuthDomain,
+		AuthClientID:     conf.AuthClientID,
+		AuthClientSecret: conf.AuthClientSecret,
+		AuthCallbackURL:  conf.AuthCallbackURL,
+		SessionsSecret:   conf.SessionsSecret,
+	}
+
 	// Init server
-	server := server.New(logger, db)
+	server, err := server.New(logger, db, srvConf)
+	if err != nil {
+		logger.Fatal("error creating server", zap.Error(err))
+	}
 
 	// Run server
 	logger.Info("serving http", zap.Int("port", conf.Port))

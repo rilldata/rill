@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.rilldata</groupId>
   <artifactId>sql</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.5</version>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
@@ -26,8 +26,9 @@
     <junit.version>5.8.1</junit.version>
     <reflections.version>0.10.2</reflections.version>
     <hsqldb.version>2.3.4</hsqldb.version>
-    <protobuf.version>3.21.5</protobuf.version>
+    <protobuf.version>3.20.3</protobuf.version>
     <druid.sql.version>0.23.0</druid.sql.version>
+    <rill.native-image.threads>32</rill.native-image.threads>
   </properties>
   <dependencies>
     <!--calcite-->
@@ -119,8 +120,10 @@
         <version>${compiler-plugin.version}</version>
         <configuration>
           <compilerArgs>
-            <arg>-parameters</arg>
+            <arg>-parameters --enable-preview</arg>
           </compilerArgs>
+          <source>17</source>
+          <target>17</target>
         </configuration>
       </plugin>
       <plugin>
@@ -283,18 +286,26 @@
             <configuration>
               <sources>
                 <source>src/generated-sources/</source>
+                <source>${project.build.directory}/generated-sources/annotations</source>
+                <source>${project.build.directory}/generated-sources/requests</source>
               </sources>
             </configuration>
+          </execution>
+          <execution>
+            <id>parse-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
       <!-- Custom parser generation done -->
 
-      <!-- Generate protobuf builder java classes using protoc. protoc should be installed
-      on the build machine. see - http://google.github.io/proto-lens/installing-protoc.html -->
+      <!-- Generate protobuf classes. protoc must already be installed. -->
       <plugin>
         <artifactId>exec-maven-plugin</artifactId>
         <groupId>org.codehaus.mojo</groupId>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>Generate protobuf classes</id>
@@ -305,10 +316,7 @@
             <configuration>
               <executable>bash</executable>
               <arguments>
-                <argument>${project.basedir}/scripts/protoc-java.sh</argument>
-                <argument>SqlNodeProto.proto</argument> <!-- proto file name -->
-                <argument>${project.build.sourceDirectory}/com/rilldata/protobuf/</argument> <!-- input dir -->
-                <argument>${project.build.directory}/generated-sources/annotations/</argument> <!-- output dir -->
+                <argument>${project.basedir}/scripts/proto-gen.sh</argument>
               </arguments>
             </configuration>
           </execution>
@@ -333,6 +341,33 @@
     </plugins>
   </build>
   <profiles>
+    <profile>
+      <id>bump-patch</id>
+      <activation>
+        <property>
+          <name>bumpPatch</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>set</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
+                  <newVersion>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.nextIncrementalVersion}</newVersion>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>native-lib</id>
       <build>
@@ -384,6 +419,7 @@
             <configuration>
               <imageName>librillsql</imageName>
               <buildArgs>
+                -H:NumberOfThreads=${rill.native-image.threads}
                 --shared
                 --features=com.rilldata.RegisterAtRuntime
                 -H:ReflectionConfigurationFiles=../graalcfg/reflect-config.json
@@ -600,6 +636,7 @@
               <mainClass>com.rilldata.SqlConverterMain</mainClass>
               <imageName>sql</imageName>
               <buildArgs>
+                -H:NumberOfThreads=${rill.native-image.threads}
                 --features=com.rilldata.RegisterAtRuntime
                 -H:ReflectionConfigurationFiles=../graalcfg/reflect-config.json
                 -H:DynamicProxyConfigurationFiles=../graalcfg/proxy-config.json

@@ -9,6 +9,9 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
+  import { getContext } from "svelte";
+  import { slide } from "svelte/transition";
   import {
     ApplicationStore,
     dataModelerService,
@@ -17,6 +20,13 @@
     DerivedModelStore,
     PersistentModelStore,
   } from "../../application-state-stores/model-stores";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import { deleteModelApi } from "../../redux-store/model/model-apis";
+  import { autoCreateMetricsDefinitionForModel } from "../../redux-store/source/source-apis";
+  import {
+    derivedProfileEntityHasTimestampColumn,
+    selectTimestampColumnFromProfileEntity,
+  } from "../../redux-store/source/source-selectors";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
@@ -28,15 +38,6 @@
   import ModelIcon from "../icons/Model.svelte";
   import { Divider, MenuItem } from "../menu";
   import RenameEntityModal from "../modal/RenameEntityModal.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import { deleteModelApi } from "../../redux-store/model/model-apis";
-  import { autoCreateMetricsDefinitionForModel } from "../../redux-store/source/source-apis";
-  import {
-    derivedProfileEntityHasTimestampColumn,
-    selectTimestampColumnFromProfileEntity,
-  } from "../../redux-store/source/source-selectors";
-  import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -65,6 +66,18 @@
         MetricsEventScreenName.Model
       );
     }
+  };
+
+  const deleteModel = (id: string) => {
+    const nextModelId = getNextEntityId($persistentModelStore.entities, id);
+
+    if (nextModelId) {
+      goto(`/model/${nextModelId}`);
+    } else {
+      goto("/");
+    }
+
+    deleteModelApi(id);
   };
 
   const quickStartMetrics = (derivedModel: DerivedModelEntity) => {
@@ -161,27 +174,27 @@
         entityType={EntityType.Model}
         on:select={() => viewModel(id)}
         cardinality={tableSummaryProps.cardinality}
-        name={tableSummaryProps.name}
+        name={tableSummaryProps.name.split(".")[0]}
         sizeInBytes={tableSummaryProps.sizeInBytes}
         active={tableSummaryProps.active}
       >
-        <svelte:fragment slot="summary" let:containerWidth>
-          <ColumnProfileNavEntry
-            indentLevel={1}
-            {containerWidth}
-            cardinality={tableSummaryProps.cardinality}
-            profile={tableSummaryProps.profile}
-            head={tableSummaryProps.head}
-            entityId={id}
-          />
-        </svelte:fragment>
+        <ColumnProfileNavEntry
+          let:containerWidth
+          slot="summary"
+          indentLevel={1}
+          {containerWidth}
+          cardinality={tableSummaryProps.cardinality}
+          profile={tableSummaryProps.profile}
+          head={tableSummaryProps.head}
+          entityId={id}
+        />
         <svelte:fragment slot="menu-items">
           <MenuItem
             disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
             icon
             on:select={() => quickStartMetrics(derivedModel)}
           >
-            <svelte:fragment slot="icon"><Explore /></svelte:fragment>
+            <Explore slot="icon" />
             autogenerate dashboard
             <svelte:fragment slot="description">
               {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
@@ -191,17 +204,13 @@
           </MenuItem>
           <Divider />
           <MenuItem icon on:select={() => openRenameModelModal(id, modelName)}>
-            <svelte:fragment slot="icon">
-              <EditIcon />
-            </svelte:fragment>
-            rename...</MenuItem
-          >
-          <MenuItem icon on:select={() => deleteModelApi(id)}>
-            <svelte:fragment slot="icon">
-              <Cancel />
-            </svelte:fragment>
-            delete</MenuItem
-          >
+            <EditIcon slot="icon" />
+            rename...
+          </MenuItem>
+          <MenuItem icon on:select={() => deleteModel(id)}>
+            <Cancel slot="icon" />
+            delete
+          </MenuItem>
         </svelte:fragment>
       </CollapsibleTableSummary>
     {/each}

@@ -1,7 +1,7 @@
 package com.rilldata.calcite.visitors;
 
 import com.rilldata.calcite.models.Artifact;
-import com.rilldata.calcite.models.ArtifactManager;
+import com.rilldata.calcite.models.ArtifactStore;
 import com.rilldata.calcite.models.ArtifactType;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -13,11 +13,11 @@ import org.apache.calcite.sql.util.SqlBasicVisitor;
  * */
 public class ExtractArtifact extends SqlBasicVisitor<Artifact>
 {
-  ArtifactManager artifactManager;
+  ArtifactStore artifactStore;
 
-  public ExtractArtifact(ArtifactManager artifactManager)
+  public ExtractArtifact(ArtifactStore artifactStore)
   {
-    this.artifactManager = artifactManager;
+    this.artifactStore = artifactStore;
   }
 
   @Override public Artifact visit(SqlCall call)
@@ -32,6 +32,6 @@ public class ExtractArtifact extends SqlBasicVisitor<Artifact>
 
   @Override public Artifact visit(SqlIdentifier id)
   {
-    return id.isSimple() ? artifactManager.getArtifact(ArtifactType.METRIC_VIEW, id.getSimple()) : null;
+    return id.isSimple() ? artifactStore.getArtifact(ArtifactType.METRICS_VIEW, id.getSimple()) : null;
   }
 }

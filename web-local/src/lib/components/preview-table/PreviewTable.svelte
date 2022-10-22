@@ -9,9 +9,9 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import { setContext } from "svelte";
   import { tweened } from "svelte/motion";
 
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { DATES, TIMESTAMPS } from "../../duckdb-data-types";
   import type { VirtualizedTableColumns } from "../../types";
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
 
   import ColumnHeaders from "../virtualized-table/sections/ColumnHeaders.svelte";
   import PinnedColumns from "../virtualized-table/sections/PinnedColumns.svelte";
@@ -242,7 +242,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
 >
   {#if rowVirtualizer}
     <div
-      class="relative bg-white"
+      class="relative surface"
       on:mouseleave={clearActiveIndex}
       on:blur={clearActiveIndex}
       style:will-change="transform, contents"

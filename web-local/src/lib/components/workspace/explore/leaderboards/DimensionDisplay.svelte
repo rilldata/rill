@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   /**
    * DimensionDisplay.svelte
@@ -27,8 +27,13 @@
   import { humanizeGroupByColumns } from "../../../../util/humanize-numbers";
   import { getContext } from "svelte";
 
+  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+
   export let metricsDefId: string;
   export let dimensionId: string;
+
+  let searchText = "";
+  $: addNull = "null".includes(searchText);
 
   const config = getContext<RootConfig>("config");
 
@@ -48,10 +53,17 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
 
+  let excludeValues: MetricsViewDimensionValues;
+  $: excludeValues = metricsExplorer?.filters.exclude;
+
+  $: excludeMode =
+    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionId) ?? false;
+
   $: mappedFiltersQuery = useMetaMappedFilters(
     config,
     metricsDefId,
-    metricsExplorer?.filters
+    metricsExplorer?.filters,
+    dimensionId
   );
 
   $: selectedMeasureNames = useMetaMeasureNames(
@@ -60,10 +72,13 @@
     metricsExplorer?.selectedMeasureIds
   );
 
-  let activeValues: Array<unknown>;
-  $: activeValues =
-    metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
-      ?.values ?? [];
+  let selectedValues: Array<unknown>;
+  $: selectedValues =
+    (excludeMode
+      ? metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.id)
+          ?.in
+      : metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
+          ?.in) ?? [];
 
   let topListQuery;
 
@@ -80,6 +95,33 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    let filterData = JSON.parse(JSON.stringify($mappedFiltersQuery.data));
+
+    if (searchText !== "") {
+      let foundDimension = false;
+
+      filterData["include"].forEach((filter) => {
+        if (filter.name == dimension?.dimensionColumn) {
+          filter.like = [`%${searchText}%`];
+          foundDimension = true;
+          if (addNull) filter.in.push(null);
+        }
+      });
+
+      if (!foundDimension) {
+        filterData["include"].push({
+          name: dimension?.dimensionColumn,
+          in: addNull ? [null] : [],
+          like: [`%${searchText}%`],
+        });
+      }
+    } else {
+      filterData["include"] = filterData["include"].filter((f) => f.in.length);
+      filterData["include"].forEach((f) => {
+        delete f.like;
+      });
+    }
+
     topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
       measures: $selectedMeasureNames.data,
       limit: 250,
@@ -94,7 +136,7 @@
         start: metricsExplorer?.selectedTimeRange?.start,
         end: metricsExplorer?.selectedTimeRange?.end,
       },
-      filter: $mappedFiltersQuery.data,
+      filter: filterData,
     });
   }
 
@@ -188,7 +230,7 @@
   }
 
   $: if (values) {
-    const measureFormatSpec = allMeasures.map((m) => {
+    const measureFormatSpec = allMeasures?.map((m) => {
       return { columnName: m.sqlName, formatPreset: m.formatPreset };
     });
     values = humanizeGroupByColumns(values, measureFormatSpec);
@@ -197,16 +239,25 @@
 
 {#if topListQuery}
   <DimensionContainer>
-    <DimensionHeader {metricsDefId} isFetching={$topListQuery?.isFetching} />
+    <DimensionHeader
+      {metricsDefId}
+      {dimensionId}
+      {excludeMode}
+      isFetching={$topListQuery?.isFetching}
+      on:search={(event) => {
+        searchText = event.detail;
+      }}
+    />
 
-    {#if values}
+    {#if values && columns.length}
       <DimensionTable
         on:select-item={(event) => onSelectItem(event)}
         on:sort={(event) => onSortByColumn(event)}
         {columns}
-        {activeValues}
+        {selectedValues}
         rows={values}
         {sortByColumn}
+        {excludeMode}
       />
     {/if}
   </DimensionContainer>
