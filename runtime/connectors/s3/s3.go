@@ -22,7 +22,7 @@ func init() {
 
 var spec = connectors.Spec{
 	DisplayName: "Amazon S3",
-	Description: "Connect to CSV or Parquet files in an Amazon S3 bucket. For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>.",
+	Description: "Connect to CSV or Parquet files in an Amazon S3 bucket.<br/><br/>For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>. If you've configured your local environment with <a href=https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html target=_blank>default AWS credentials</a>, Rill will detect them and use them for authentication. One way to set these credentials is by running this CLI command and following the prompts: <code>aws configure</code>",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -39,7 +39,7 @@ var spec = connectors.Spec{
 			Description: "AWS Region for the bucket.",
 			Placeholder: "us-east-1",
 			Type:        connectors.StringPropertyType,
-			Required:    true,
+			Required:    false,
 		},
 		{
 			Key:         "aws.access.key",
