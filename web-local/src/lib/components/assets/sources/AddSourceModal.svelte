@@ -2,14 +2,43 @@
   import Tab from "@rilldata/web-local/lib/components/tab/Tab.svelte";
   import TabGroup from "@rilldata/web-local/lib/components/tab/TabGroup.svelte";
   import { createEventDispatcher } from "svelte";
+  import {
+    useRuntimeServiceListConnectors,
+    V1Connector,
+  } from "web-common/src/runtime-client";
   import { Dialog } from "../../modal";
   import LocalSource from "./LocalSource.svelte";
   import RemoteSource from "./RemoteSource.svelte";
 
   const dispatch = createEventDispatcher();
 
-  let selectedTab = "remote";
+  let selectedConnector: V1Connector;
+
+  const TAB_ORDER = ["gcs", "s3", "file"];
+
+  const connectors = useRuntimeServiceListConnectors({
+    query: {
+      // arrange connectors in the way we would like to display them
+      select: (data) => {
+        data.connectors =
+          data.connectors &&
+          data.connectors.sort(
+            (a, b) => TAB_ORDER.indexOf(a.name) - TAB_ORDER.indexOf(b.name)
+          );
+        return data;
+      },
+    },
+  });
+
   let disabled = false;
+
+  function setDefaultConnector(connectors: V1Connector[]) {
+    if (connectors?.length > 0) {
+      selectedConnector = connectors[0];
+    }
+  }
+
+  $: setDefaultConnector($connectors.data.connectors);
 </script>
 
 <Dialog
@@ -21,25 +50,31 @@
   on:cancel={() => dispatch("close")}
 >
   <div slot="title">
-    <div>
-      <TabGroup
-        on:select={(event) => {
-          selectedTab = event.detail;
-        }}
-      >
-        <Tab value={"remote"}>Remote source</Tab>
-        <Tab value={"local"}>Local source</Tab>
-        <!-- <Tab value={"example"}>Example source</Tab> -->
-      </TabGroup>
-    </div>
+    <TabGroup
+      on:select={(event) => {
+        selectedConnector = event.detail;
+      }}
+    >
+      {#if $connectors.isSuccess && $connectors.data && $connectors.data.connectors?.length > 0}
+        {#each $connectors.data.connectors as connector}
+          <Tab value={connector}>{connector.displayName}</Tab>
+        {/each}
+      {/if}
+    </TabGroup>
   </div>
-  <div class="overflow-y-auto flex-grow">
-    {#if selectedTab === "remote"}
-      <RemoteSource on:cancel={() => dispatch("close")} on:close />
-    {:else if selectedTab === "local"}
+  {#if selectedConnector?.name !== "file"}
+    <div class="p-4">
+      {@html selectedConnector?.description}
+    </div>
+  {/if}
+  <div class="h-full flex flex-col">
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3"}
+      {#key selectedConnector}
+        <RemoteSource connector={selectedConnector} on:close />
+      {/key}
+    {/if}
+    {#if selectedConnector?.name === "file"}
       <LocalSource on:close />
-      <!-- {:else if selectedTab === "example"}
-      <ExampleSource /> -->
     {/if}
   </div>
 </Dialog>

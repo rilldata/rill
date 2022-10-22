@@ -14,8 +14,8 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "File",
-	Description: "Connector for files",
+	DisplayName: "Local file",
+	Description: "Connector for local CSV or Parquet files",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",

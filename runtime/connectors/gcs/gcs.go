@@ -18,7 +18,7 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "GCS",
+	DisplayName: "Google Cloud Storage",
 	Description: "Connect to CSV or Parquet files in a Google Cloud Storage bucket.<br/><br/>For private buckets, first set your <a href=https://cloud.google.com/docs/authentication/application-default-credentials target=_blank>application default credentials</a>, which Rill will detect and use for authentication. One way to set these credentials is by running this CLI command: <code>gcloud auth application-default login</code>.",
 	Properties: []connectors.PropertySchema{
 		{

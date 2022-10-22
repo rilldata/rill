@@ -21,7 +21,7 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "S3",
+	DisplayName: "Amazon S3",
 	Description: "Connect to CSV or Parquet files in an Amazon S3 bucket. For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>.",
 	Properties: []connectors.PropertySchema{
 		{
