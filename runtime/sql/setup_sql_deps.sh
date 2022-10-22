@@ -7,7 +7,7 @@ if [[ $SKIP_SQL_DEPS == "true" ]]; then
 fi
 
 # Version of librillsql to download
-RILLSQL_VERSION="0.1.3"
+RILLSQL_VERSION="0.1.6"
 
 # Get platform details
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
