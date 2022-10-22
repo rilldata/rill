@@ -53,21 +53,12 @@
     top: 0;
     @apply bg-white;
     border-radius: 50%;
-    /** REPLACE */
     transform: translate(calc(var(--margin) / 2), calc(var(--margin) / 2));
     transition: transform var(--transition) ease;
-    /** REPLACE */
     line-height: 1;
   }
   input[role="switch"]:active::before {
     background: rgba(255, 255, 255, 0.9);
-  }
-
-  input[role="switch"]::focus {
-    @apply ring;
-  }
-  input[role="switch"]::active {
-    @apply ring;
   }
 
   input[role="switch"]:checked {
