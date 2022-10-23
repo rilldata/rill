@@ -44,8 +44,8 @@ const sidebars = {
     },
     {
       type: 'doc',
-      id: 'importing-data',
-      label: 'Importing Data',
+      id: 'data-source-connections',
+      label: 'Import Data',
     },
     {
       type: 'category',

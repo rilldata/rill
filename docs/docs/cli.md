@@ -92,22 +92,3 @@ If you have added a source to Rill Developer that you want to drop, you can do s
 ```
 rill drop-source my_source
 ```
----
-## Existing duckDB databases
-
-### Connecting
-You can connect to an existing duckdb database by passing the `--db` option with a path to the db file.
-
-Any updates made directly to the sources in the database will be reflected in Rill Developer.  Similarly, any changes made by Rill Developer will modify the database.
-
-Make sure to have only one connection open to the database, otherwise there will be some unexpected issues.
-```
-rill init --db /path/to/duckdb/database.db
-```
-
-### Copying
-You can also copy over the database so that there are no conflicts and overrides that are propigated to the source by passing the `--db` option with `--copy` to achieve this.
-
-```
-rill init --db /path/to/duckdb/database.db --copy
-```
