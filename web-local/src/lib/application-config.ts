@@ -13,7 +13,7 @@ export const COLUMN_PROFILE_CONFIG = {
   compactBreakpoint: 350,
   hideRight: 325,
   hideNullPercentage: 399,
-  summaryVizWidth: { medium: 84, small: 60 },
+  summaryVizWidth: { medium: 92, small: 64 },
   exampleWidth: { medium: 204, small: 132 },
 };
 
