@@ -7,9 +7,7 @@ package sql
 // #include <stdlib.h>
 // #include <librillsql.h>
 // void*(*my_malloc)(size_t) = malloc;
-// void* processPbRequestT(graal_isolatethread_t* thread, void* request, int requestSize, int* resultSize) {
-//  return processPbRequest(thread, malloc, request, requestSize, resultSize);
-// }
+// typedef void* void_pointer;
 import "C"
 import (
 	b64 "encoding/base64"
@@ -71,6 +69,11 @@ func (i *Isolate) Close() error {
 }
 
 func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response {
+	f, err := i.library.FindFunc("processPbRequest")
+	if err != nil {
+		panic(err)
+	}
+
 	thread := i.attachThread()
 
 	bytes, _ := proto.Marshal(request)
@@ -78,13 +81,23 @@ func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response 
 	defer C.free(cBytes)
 	var resultSize C.int
 
-	cResult := C.processPbRequestT(
-		thread,
-		cBytes,
-		C.int(len(bytes)),
-		&resultSize,
+	inSize := len(bytes)
+	res, _, _ := f.Call(
+		uintptr(unsafe.Pointer(thread)),
+		uintptr(unsafe.Pointer(C.my_malloc)),
+		uintptr(unsafe.Pointer(cBytes)),
+		uintptr(unsafe.Pointer(&inSize)),
+		uintptr(unsafe.Pointer(C.void_pointer(&resultSize))),
 	)
-	defer C.free(unsafe.Pointer(cResult))
+	if res == 0 {
+		return &requests.Response{
+			Error: &requests.Error{
+				Message: "call to shared library processPbRequest failed",
+			},
+		}
+	}
+	cResult := unsafe.Pointer(res)
+	defer C.free(cResult)
 
 	goResultBytes := C.GoBytes(cResult, resultSize)
 

@@ -285,7 +285,7 @@
             </goals>
             <configuration>
               <sources>
-                <source>src/generated-sources/</source>
+                <source>${project.build.directory}/generated-sources/javacc</source>
                 <source>${project.build.directory}/generated-sources/annotations</source>
                 <source>${project.build.directory}/generated-sources/requests</source>
               </sources>

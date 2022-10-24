@@ -2,7 +2,6 @@ package com.rilldata;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
-import org.apache.calcite.sql.SqlDialect;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -13,11 +12,8 @@ import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.nativeimage.c.type.VoidPointer;
 import org.graalvm.word.WordFactory;
 import com.rilldata.protobuf.generated.Requests;
-import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
-import org.hsqldb.types.Charset;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
@@ -95,6 +91,25 @@ public class SqlConverterEntrypoint
     }
   }
 
+  @CEntryPoint(name = "processPbRequest")
+  public static CCharPointer processPbRequest(
+      IsolateThread thread,
+      AllocatorFn allocatorFn,
+      VoidPointer request,
+      CIntPointer inSize,
+      CIntPointer outSize
+  ) {
+    int inSz = inSize.read();
+    System.out.println("inSize " + inSz);
+    ByteBuffer buf = CTypeConversion.asByteBuffer(request, inSz);
+    byte[] arr = new byte[buf.limit()];
+    buf.get(arr);
+    byte[] out = processPbBytes(arr);
+    CCharPointer charPointer = convertToCCharPointerNoZero(allocatorFn, out);
+    outSize.write(out.length);
+    return charPointer;
+  }
+
   @CEntryPoint(name = "request")
   public static CCharPointer processBase64Request(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer request)
   {
@@ -160,6 +175,15 @@ public class SqlConverterEntrypoint
   }
 
   private static CCharPointer convertToCCharPointer2(AllocatorFn allocatorFn, byte[] b)
+  {
+    CCharPointer a = allocatorFn.call(b.length + 1);
+    for (int i = 0; i < b.length; i++) {
+      a.write(i, b[i]);
+    }
+    return a;
+  }
+
+  private static CCharPointer convertToCCharPointerNoZero(AllocatorFn allocatorFn, byte[] b)
   {
     CCharPointer a = allocatorFn.call(b.length + 1);
     for (int i = 0; i < b.length; i++) {

@@ -1,6 +1,8 @@
 package com.rilldata;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.protobuf.generated.Requests;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.ValidationException;
 
@@ -15,16 +17,37 @@ public class SqlConverterMain
 {
   public static void main(String[] args) throws SQLException, IOException, ValidationException, SqlParseException
   {
+    proceessProtobufTranspileRequest();
+    processSchemaDependentSql();
+  }
+
+  private static void processSchemaDependentSql() throws IOException, ValidationException, SqlParseException
+  {
     String s = new String(SqlConverterMain.class.getResourceAsStream("/schema.json").readAllBytes());
     SqlConverter sqlConverter = new SqlConverter(s);
-    if (args.length == 1) {
-      System.out.println(sqlConverter.convert(args[0], Dialects.DUCKDB.getSqlDialect()));
-    } else if (args.length == 2) {
-      Dialects dialectEnum = Dialects.valueOf(args[1].toUpperCase());
-      System.out.println(sqlConverter.convert(args[0], dialectEnum.getSqlDialect()));
-    } else {
-      System.out.println(
-          sqlConverter.convert("select \"name\" from \"main\".\"heroes\"", Dialects.DUCKDB.getSqlDialect()));
-    }
+    System.out.println(
+        sqlConverter.convert("select \"name\" from \"main\".\"heroes\"", Dialects.DUCKDB.getSqlDialect()));
+  }
+
+  private static void proceessProtobufTranspileRequest() throws InvalidProtocolBufferException
+  {
+    Requests.Request request = Requests.Request
+        .newBuilder()
+        .setTranspileRequest(Requests.TranspileRequest
+                                 .newBuilder()
+                                 .setSql("select 1")
+                                 .setDialect(Requests.Dialect.DUCKDB)
+                                 .setSchema("""
+                                 { 
+                                  "tables": []
+                                 }
+                                 """)
+                                 .build()
+
+        )
+        .build();
+    byte[] bytes = SqlConverterEntrypoint.processPbBytes(request.toByteArray());
+    Requests.Response response = Requests.Response.parseFrom(bytes);
+    System.out.println(response.getTranspileResponse().getSql());
   }
 }
