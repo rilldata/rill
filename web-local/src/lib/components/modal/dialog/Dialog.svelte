@@ -22,7 +22,12 @@
 </script>
 
 <ModalContainer on:cancel>
-  <div class="grid place-items-center w-screen h-screen">
+  <div
+    on:click|self={() => {
+      dispatch("cancel");
+    }}
+    class="grid place-items-center w-screen h-screen"
+  >
     <div
       class:min-width={minWidth}
       class="{minWidth ? '' : 'min-w-[400px]'} {containerClasses} rounded"
