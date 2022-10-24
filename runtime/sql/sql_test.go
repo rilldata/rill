@@ -11,10 +11,10 @@ func TestSanity(t *testing.T) {
 	isolate := NewIsolate()
 
 	sql := "select 1 as foo, 'hello' as bar"
-	schema := `{ "tables": [] }`
+	catalog := `{ "schemas": [], "artifacts": [] }`
 	dialect := "duckdb"
 
-	res := isolate.ConvertSQL(sql, schema, dialect)
+	res := isolate.ConvertSQL(sql, catalog, dialect)
 	require.Equal(t, `SELECT 1 AS "FOO", 'hello' AS "BAR"`, res)
 
 	err := isolate.Close()
@@ -31,7 +31,7 @@ func TestTranspile(t *testing.T) {
 			TranspileRequest: &rpc.TranspileRequest{
 				Sql:     sql,
 				Dialect: rpc.Dialect_DUCKDB,
-				Schema:  `{ "tables": [] }`,
+				Catalog: `{ "schemas": [], "artifacts": [] }`,
 			},
 		},
 	}
@@ -54,7 +54,7 @@ func TestTranspileNoBase64(t *testing.T) {
 			TranspileRequest: &rpc.TranspileRequest{
 				Sql:     sql,
 				Dialect: rpc.Dialect_DUCKDB,
-				Schema:  `{ "tables": [] }`,
+				Catalog: `{ "schemas": [], "artifacts": [] }`,
 			},
 		},
 	}
@@ -71,9 +71,9 @@ func TestSanityGetAST(t *testing.T) {
 	isolate := NewIsolate()
 
 	sql := "select 1 as foo, 'hello' as bar"
-	schema := `{ "tables": [] }`
+	catalog := `{ "schemas": [], "artifacts": [] }`
 
-	res := isolate.getAST(sql, schema)
+	res := isolate.getAST(sql, catalog)
 	println(res)
 	println(len(res))
 

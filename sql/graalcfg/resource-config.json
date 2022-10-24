@@ -5,6 +5,9 @@
       "pattern":"\\QMETA-INF/services/jdk.vm.ci.services.JVMCIServiceLocator\\E"
     }, 
     {
+      "pattern":"\\Qcatalog.json\\E"
+    }, 
+    {
       "pattern":"\\Qorg/hsqldb/resources/information-schema.sql\\E"
     }, 
     {

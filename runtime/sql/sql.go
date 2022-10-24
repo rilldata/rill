@@ -68,7 +68,7 @@ func (i *Isolate) Close() error {
 	return i.library.Close()
 }
 
-func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response {
+func (i *Isolate) requestNoBase64(request *rpc.Request) *rpc.Response {
 	f, err := i.library.FindFunc("processPbRequest")
 	if err != nil {
 		panic(err)
@@ -90,8 +90,8 @@ func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response 
 		uintptr(unsafe.Pointer(C.void_pointer(&resultSize))),
 	)
 	if res == 0 {
-		return &requests.Response{
-			Error: &requests.Error{
+		return &rpc.Response{
+			Error: &rpc.Error{
 				Message: "call to shared library processPbRequest failed",
 			},
 		}
@@ -101,7 +101,7 @@ func (i *Isolate) requestNoBase64(request *requests.Request) *requests.Response 
 
 	goResultBytes := C.GoBytes(cResult, resultSize)
 
-	var response requests.Response
+	var response rpc.Response
 	proto.Unmarshal(goResultBytes, &response)
 
 	return &response

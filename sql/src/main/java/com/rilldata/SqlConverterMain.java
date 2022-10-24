@@ -23,7 +23,7 @@ public class SqlConverterMain
 
   private static void processSchemaDependentSql() throws IOException, ValidationException, SqlParseException
   {
-    String s = new String(SqlConverterMain.class.getResourceAsStream("/schema.json").readAllBytes());
+    String s = new String(SqlConverterMain.class.getResourceAsStream("/catalog.json").readAllBytes());
     SqlConverter sqlConverter = new SqlConverter(s);
     System.out.println(
         sqlConverter.convert("select \"name\" from \"main\".\"heroes\"", Dialects.DUCKDB.getSqlDialect()));
@@ -39,7 +39,8 @@ public class SqlConverterMain
                                  .setDialect(Requests.Dialect.DUCKDB)
                                  .setCatalog("""
                                  { 
-                                  "tables": []
+                                  "schemas": [],
+                                  "artifacts": []
                                  }
                                  """)
                                  .build()
