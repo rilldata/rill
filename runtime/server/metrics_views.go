@@ -120,7 +120,7 @@ func (s *Server) runQuery(
 	instanceId string,
 	sql string,
 	args []any,
-) ([]*api.SchemaColumn, []*structpb.Struct, error) {
+) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query: sql,
 		Args:  args,
@@ -130,17 +130,12 @@ func (s *Server) runQuery(
 	}
 	defer rows.Close()
 
-	meta, err := rowsToMeta(rows)
-	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
-	}
-
 	data, err := rowsToData(rows)
 	if err != nil {
 		return nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return meta, data, nil
+	return structTypeToMetricsViewColumn(rows.Schema), data, nil
 }
 
 func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest) (string, []any, error) {
@@ -340,4 +335,16 @@ func protobufValueToAny(val *structpb.Value) (any, error) {
 	default:
 		return nil, fmt.Errorf("value not supported: %v", v)
 	}
+}
+
+func structTypeToMetricsViewColumn(v *api.StructType) []*api.MetricsViewColumn {
+	res := make([]*api.MetricsViewColumn, len(v.Fields))
+	for i, f := range v.Fields {
+		res[i] = &api.MetricsViewColumn{
+			Name:     f.Name,
+			Type:     f.Type.Code.String(),
+			Nullable: f.Type.Nullable,
+		}
+	}
+	return res
 }

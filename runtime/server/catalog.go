@@ -27,7 +27,7 @@ func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObj
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	objs := catalog.FindObjects(ctx, req.InstanceId)
+	objs := catalog.FindObjects(ctx, req.InstanceId, catalogObjectTypeFromPB(req.Type))
 	pbs := make([]*api.CatalogObject, len(objs))
 	for i, obj := range objs {
 		pbs[i], err = catalogObjectToPB(obj)
@@ -84,6 +84,13 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
 
+	// Check that it's a refreshable object
+	switch obj.Type {
+	case drivers.CatalogObjectTypeSource:
+	default:
+		return nil, status.Error(codes.InvalidArgument, "object is not refreshable")
+	}
+
 	// Parse SQL
 	source, err := sqlToSource(obj.SQL)
 	if err != nil {
@@ -104,6 +111,12 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	}
 
 	return &api.TriggerRefreshResponse{}, nil
+}
+
+// TriggerSync implements RuntimeService
+func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (*api.TriggerSyncResponse, error) {
+	// TODO:
+	return nil, nil
 }
 
 func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drivers.CatalogStore, error) {
@@ -128,24 +141,47 @@ func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drive
 	return catalog, nil
 }
 
+func catalogObjectTypeFromPB(t api.CatalogObject_Type) drivers.CatalogObjectType {
+	switch t {
+	case api.CatalogObject_TYPE_UNSPECIFIED:
+		return drivers.CatalogObjectTypeUnspecified
+	case api.CatalogObject_TYPE_TABLE:
+		return drivers.CatalogObjectTypeTable
+	case api.CatalogObject_TYPE_SOURCE:
+		return drivers.CatalogObjectTypeSource
+	case api.CatalogObject_TYPE_METRICS_VIEW:
+		return drivers.CatalogObjectTypeMetricsView
+	default:
+		// NOTE: Consider returning and handling an error instead
+		return drivers.CatalogObjectTypeUnspecified
+	}
+}
+
 func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 	switch obj.Type {
+	case drivers.CatalogObjectTypeTable:
+		return catalogObjectTableToPB(obj)
 	case drivers.CatalogObjectTypeSource:
-		src, err := catalogObjectSourceToPB(obj)
-		if err != nil {
-			return nil, err
-		}
-		return &api.CatalogObject{
-			Type: &api.CatalogObject_Source{
-				Source: src,
-			},
-		}, nil
+		return catalogObjectSourceToPB(obj)
+	case drivers.CatalogObjectTypeMetricsView:
+		return catalogObjectMetricsViewToPB(obj)
 	default:
 		panic(fmt.Errorf("not implemented"))
 	}
 }
 
-func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
+func catalogObjectTableToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
+	return &api.CatalogObject{
+		Type: api.CatalogObject_TYPE_TABLE,
+		Table: &api.Table{
+			Name:    obj.Name,
+			Schema:  obj.Schema,
+			Managed: obj.Managed,
+		},
+	}, nil
+}
+
+func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 	source, err := sqlToSource(obj.SQL)
 	if err != nil {
 		return nil, err
@@ -156,11 +192,26 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
 		panic(err) // TODO: Should never happen, but maybe handle defensively?
 	}
 
-	return &api.Source{
-		Sql:        obj.SQL,
-		Name:       obj.Name,
-		Connector:  source.Connector,
-		Properties: propsPB,
+	return &api.CatalogObject{
+		Type: api.CatalogObject_TYPE_SOURCE,
+		Source: &api.Source{
+			Sql:        obj.SQL,
+			Name:       obj.Name,
+			Connector:  source.Connector,
+			Properties: propsPB,
+		},
+	}, nil
+}
+
+func catalogObjectMetricsViewToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
+	mv, err := sqlToMetricsView(obj.SQL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.CatalogObject{
+		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
+		MetricsView: mv,
 	}, nil
 }
 
@@ -201,6 +252,14 @@ func sqlToSource(sqlStr string) (*connectors.Source, error) {
 	}
 
 	return s, nil
+}
+
+func sqlToMetricsView(sqlStr string) (*api.MetricsView, error) {
+	mv := &api.MetricsView{Sql: sqlStr}
+
+	// TODO
+
+	return mv, nil
 }
 
 func safePtrToStr(s *string) string {

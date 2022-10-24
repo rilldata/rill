@@ -2,67 +2,114 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
+	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/proto"
 )
 
-func (c *connection) FindObjects(ctx context.Context, instanceID string) []*drivers.CatalogObject {
-	var res []*drivers.CatalogObject
-	err := c.db.Select(&res, "SELECT * FROM rill.catalog ORDER BY name")
-	if err != nil {
-		panic(err)
+func (c *connection) FindObjects(ctx context.Context, instanceID string, typ drivers.CatalogObjectType) []*drivers.CatalogObject {
+	if typ == drivers.CatalogObjectTypeUnspecified {
+		return c.findObjects(ctx, "")
+	} else {
+		return c.findObjects(ctx, "WHERE type = ?", typ)
 	}
-	return res
 }
 
 func (c *connection) FindObject(ctx context.Context, instanceID string, name string) (*drivers.CatalogObject, bool) {
-	res := &drivers.CatalogObject{}
-	err := c.db.QueryRowxContext(ctx, "SELECT * FROM rill.catalog WHERE name = ?", name).StructScan(res)
+	objs := c.findObjects(ctx, "WHERE name = ?", name)
+	if len(objs) == 0 {
+		return nil, false
+	}
+	return objs[0], true
+}
+
+func (c *connection) findObjects(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogObject {
+	sql := fmt.Sprintf("SELECT name, type, sql, schema, managed, created_on, updated_on FROM rill.catalog %s ORDER BY name", whereClause)
+
+	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, false
-		}
 		panic(err)
 	}
-	return res, true
+	defer rows.Close()
+
+	var res []*drivers.CatalogObject
+	for rows.Next() {
+		var schemaBlob []byte
+		obj := &drivers.CatalogObject{}
+
+		err := rows.Scan(&obj.Name, &obj.Type, &obj.SQL, &schemaBlob, &obj.Managed, &obj.CreatedOn, &obj.UpdatedOn)
+		if err != nil {
+			panic(err)
+		}
+
+		// Parse schema protobuf
+		if schemaBlob != nil {
+			obj.Schema = &api.StructType{}
+			err = proto.Unmarshal(schemaBlob, obj.Schema)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		res = append(res, obj)
+	}
+
+	return res
 }
 
 func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *drivers.CatalogObject) error {
+	// Serialize schema (note: if schema is nil, proto.Marshal returns nil)
+	schema, err := proto.Marshal(obj.Schema)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
-	_, err := c.db.ExecContext(
+	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, sql, created_on, updated_on) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO rill.catalog(name, type, sql, schema, managed, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		obj.Name,
 		obj.Type,
 		obj.SQL,
+		schema,
+		obj.Managed,
 		now,
 		now,
 	)
 	if err != nil {
 		return err
 	}
-	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
+
 	obj.CreatedOn = now
 	obj.UpdatedOn = now
 	return nil
 }
 
 func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *drivers.CatalogObject) error {
+	// Serialize schema (note: if schema is nil, proto.Marshal returns nil)
+	schema, err := proto.Marshal(obj.Schema)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
-	_, err := c.db.ExecContext(
+	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, sql = ?, updated_on = ? WHERE name = ?",
+		"UPDATE rill.catalog SET type = ?, sql = ?, schema = ?, managed = ?, updated_on = ? WHERE name = ?",
 		obj.Type,
 		obj.SQL,
+		schema,
+		obj.Managed,
 		now,
 		obj.Name,
 	)
 	if err != nil {
 		return err
 	}
-	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
+
 	obj.UpdatedOn = now
 	return nil
 }

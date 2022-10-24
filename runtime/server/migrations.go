@@ -200,7 +200,7 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 		if err = rows.Close(); err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
-	case drivers.CatalogObjectTypeUnmanagedTable:
+	case drivers.CatalogObjectTypeTable:
 		// Don't allow deletion of tables created directly in DB
 		return nil, status.Error(codes.InvalidArgument, "can not delete unmanaged table")
 	case drivers.CatalogObjectTypeMetricsView:
