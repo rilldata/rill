@@ -64,7 +64,11 @@
   </div>
   {#if selectedConnector?.name !== "file"}
     <div class="p-4">
-      {@html selectedConnector?.description}
+      Need help? Refer to our
+      <a
+        href="https://docs.rilldata.com/data-source-connections"
+        target="_blank">docs</a
+      > for more information.
     </div>
   {/if}
   <div class="h-full flex flex-col">
