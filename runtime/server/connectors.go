@@ -24,6 +24,8 @@ func (s *Server) ListConnectors(ctx context.Context, req *api.ListConnectorsRequ
 				t = api.Connector_Property_TYPE_NUMBER
 			case connectors.BooleanPropertyType:
 				t = api.Connector_Property_TYPE_BOOLEAN
+			case connectors.InformationalPropertyType:
+				t = api.Connector_Property_TYPE_INFORMATIONAL
 			default:
 				panic(fmt.Errorf("property type '%v' not handled", propSchema.Type))
 			}
@@ -37,6 +39,7 @@ func (s *Server) ListConnectors(ctx context.Context, req *api.ListConnectorsRequ
 				Type:        t,
 				Nullable:    !propSchema.Required,
 				Hint:        propSchema.Hint,
+				Href:        propSchema.Href,
 			}
 		}
 

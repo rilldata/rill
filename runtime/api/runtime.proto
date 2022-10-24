@@ -702,6 +702,7 @@ message Connector {
       TYPE_STRING = 1;
       TYPE_NUMBER = 2;
       TYPE_BOOLEAN = 3;
+      TYPE_INFORMATIONAL = 4;
     }
     // The property key
     string key = 1;
@@ -717,6 +718,8 @@ message Connector {
     bool nullable = 6;
     // Additional textual explanation for use in UIs
     string hint = 7;
+    // Link to documentation for this property
+    string href = 8;
   }
   // Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
   string name = 1;
