@@ -3,7 +3,7 @@ package sql
 import (
 	"testing"
 
-	"github.com/rilldata/rill/runtime/sql/requests"
+	"github.com/rilldata/rill/runtime/sql/rpc"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,11 +26,11 @@ func TestTranspile(t *testing.T) {
 
 	sql := "select 1 as foo, 'hello' as bar"
 
-	r := requests.Request{
-		Request: &requests.Request_TranspileRequest{
-			TranspileRequest: &requests.TranspileRequest{
+	r := rpc.Request{
+		Request: &rpc.Request_TranspileRequest{
+			TranspileRequest: &rpc.TranspileRequest{
 				Sql:     sql,
-				Dialect: requests.Dialect_DUCKDB,
+				Dialect: rpc.Dialect_DUCKDB,
 				Schema:  `{ "tables": [] }`,
 			},
 		},
@@ -49,11 +49,11 @@ func TestTranspileNoBase64(t *testing.T) {
 
 	sql := "select 1 as foo, 'hello' as bar"
 
-	r := requests.Request{
-		Request: &requests.Request_TranspileRequest{
-			TranspileRequest: &requests.TranspileRequest{
+	r := rpc.Request{
+		Request: &rpc.Request_TranspileRequest{
+			TranspileRequest: &rpc.TranspileRequest{
 				Sql:     sql,
-				Dialect: requests.Dialect_DUCKDB,
+				Dialect: rpc.Dialect_DUCKDB,
 				Schema:  `{ "tables": [] }`,
 			},
 		},

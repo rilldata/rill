@@ -12,16 +12,16 @@ existing elements in the lib as well as changing the type (include, exclude) and
 are details left to the consumer of the component; this component should remain pure-ish (only internal state) if possible.
 -->
 <script lang="ts">
-  import { Chip } from "../index";
+  import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../../floating-element/WithTogglableFloatingElement.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
-  import { createEventDispatcher } from "svelte";
-  import { fly } from "svelte/transition";
+  import { ChipColors, defaultChipColors } from "../chip-types";
+  import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
-  import { ChipColors, defaultChipColors } from "../chip-types";
 
   export let name: string;
   export let selectedValues: string[];

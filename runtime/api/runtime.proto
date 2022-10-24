@@ -524,10 +524,13 @@ message MigrateSingleRequest {
   string instance_id = 1;
   // A CREATE statement
   string sql = 2;
-  // If true, will replace existing definitions with the same name
-  bool create_or_replace = 3;
   // If true, will validate the SQL, but not actually execute the migrations
-  bool dry_run = 4;
+  bool dry_run = 3;
+  // If true, will replace existing definitions with the same name
+  bool create_or_replace = 4;
+  // If provided, will attempt to rename an existing object and only recompute if necessary.
+  // NOTE: very questionable semantics here.
+  string rename_from = 5;
 }
 
 // Response message for RuntimeService.MigrateSingle

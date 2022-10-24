@@ -1,7 +1,7 @@
 <script lang="ts">
-  import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
   import { getContext, hasContext } from "svelte";
   import type { Writable } from "svelte/store";
+  import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
 
   export let block = false;
   export let tailwindClasses: string = undefined;
@@ -29,7 +29,7 @@
     error: `text-red-600 hover:bg-red-200 ${
       active ? "bg-red-200" : "bg-red-100"
     }`,
-    undefined: `text-gray-800 bg-transparent hover:bg-gray-200 ${
+    undefined: `bg-transparent hover:bg-gray-200 hover:dark:bg-gray-600 ${
       active ? "bg-gray-200" : "bg-transparent"
     }`,
   };

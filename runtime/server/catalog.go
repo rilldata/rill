@@ -52,7 +52,7 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
+	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
@@ -79,7 +79,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	}
 
 	// Find object
-	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
+	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
@@ -177,7 +177,7 @@ func sqlToSource(sqlStr string) (*connectors.Source, error) {
 	ast := astStmt.CreateSource
 
 	s := &connectors.Source{
-		Name:       ast.Name,
+		Name:       strings.ToLower(ast.Name),
 		Properties: make(map[string]any),
 	}
 

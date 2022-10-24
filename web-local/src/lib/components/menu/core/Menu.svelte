@@ -4,7 +4,6 @@
 </script>
 
 <script lang="ts">
-  import { guidGenerator } from "../../../util/guid";
   import {
     createEventDispatcher,
     getContext,
@@ -13,6 +12,7 @@
   } from "svelte";
   import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
+  import { guidGenerator } from "../../../util/guid";
   import { clickOutside } from "../../actions/click-outside";
 
   export let dark: boolean = undefined;
@@ -147,8 +147,8 @@
         flex-col
         outline-none
         {dark
-    ? 'bg-gray-800 border-none shadow'
-    : 'bg-white border border-gray-300 shadow-md'}
+    ? 'bg-gray-800 dark:bg-gray-700 border-none dark:border-none shadow'
+    : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-none shadow-md dark:shadow-xl'}
         "
   style:outline="none"
   style:min-width={"300px"}

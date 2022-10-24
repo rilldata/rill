@@ -2,6 +2,7 @@ package com.rilldata;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -12,17 +13,16 @@ import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.nativeimage.c.type.VoidPointer;
 import org.graalvm.word.WordFactory;
 import com.rilldata.protobuf.generated.Requests;
-
-import java.nio.ByteBuffer;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Base64;
+import java.nio.ByteBuffer;
 
 /**
  * This class contains an entry point (a function callable from a native executable, ie C/Go executable).
  */
 public class SqlConverterEntrypoint
 {
-//  private static SqlConverter sqlConverter;
-
   interface AllocatorFn extends CFunctionPointer
   {
     @InvokeCFunctionPointer
@@ -34,36 +34,19 @@ public class SqlConverterEntrypoint
     String sql = transpileRequest.getSql();
     Requests.Dialect dialect = transpileRequest.getDialect();
     try {
-      SqlConverter sqlConverter = new SqlConverter(transpileRequest.getSchema());
+      SqlConverter sqlConverter = new SqlConverter(transpileRequest.getCatalog());
       String transpiledSql = sqlConverter.convert(sql, Dialects.valueOf(dialect.name()).getSqlDialect());
       return Requests.Response
           .newBuilder()
           .setTranspileResponse(Requests.TranspileResponse.newBuilder().setSql(transpiledSql).build())
           .build();
     } catch (Exception e) {
-      e.printStackTrace();
       return Requests.Response
           .newBuilder()
-          .setError(Requests.Error.newBuilder().setMessage(e.toString()).build())
+          .setError(
+            Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
           .build();
     }
-  }
-
-  @CEntryPoint(name = "processPbRequest")
-  public static CCharPointer processPbRequest(
-      IsolateThread thread,
-      AllocatorFn allocatorFn,
-      VoidPointer request,
-      int inSize,
-      CIntPointer outSize
-  ) {
-    ByteBuffer buf = CTypeConversion.asByteBuffer(request, inSize);
-    byte[] arr = new byte[buf.limit()];
-    buf.get(arr);
-    byte[] out = processPbBytes(arr);
-    CCharPointer charPointer = convertToCCharPointer2(allocatorFn, out);
-    outSize.write(out.length);
-    return charPointer;
   }
 
   public static byte[] processPbBytes(byte[] in) {
@@ -72,7 +55,7 @@ public class SqlConverterEntrypoint
       if (r.hasParseRequest()) {
         Requests.ParseRequest parseRequest = r.getParseRequest();
         String sql = parseRequest.getSql();
-        SqlConverter sqlConverter = new SqlConverter(parseRequest.getSchema());
+        SqlConverter sqlConverter = new SqlConverter(parseRequest.getCatalog());
         return sqlConverter.getAST(sql);
       } else if (r.hasTranspileRequest()) {
         return transpile(r).toByteArray();
@@ -83,10 +66,9 @@ public class SqlConverterEntrypoint
           .build().toByteArray();
     }
     catch (InvalidProtocolBufferException e) {
-      e.printStackTrace();
       return Requests.Response
           .newBuilder()
-          .setError(Requests.Error.newBuilder().setMessage("Invalid request" + e.getMessage()).build())
+          .setError(Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
           .build().toByteArray();
     }
   }
@@ -100,7 +82,6 @@ public class SqlConverterEntrypoint
       CIntPointer outSize
   ) {
     int inSz = inSize.read();
-    System.out.println("inSize " + inSz);
     ByteBuffer buf = CTypeConversion.asByteBuffer(request, inSz);
     byte[] arr = new byte[buf.limit()];
     buf.get(arr);
@@ -122,14 +103,14 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "convert_sql")
   public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema, CCharPointer dialect
+      CCharPointer catalog, CCharPointer dialect
   )
   {
     try {
       String dialectString = CTypeConversion.toJavaString(dialect);
       Dialects dialectEnum = Dialects.valueOf(dialectString.toUpperCase());
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String javaSqlString = CTypeConversion.toJavaString(sql);
       String runnableQuery = sqlConverter.convert(javaSqlString, dialectEnum.getSqlDialect());
       if (runnableQuery == null) {
@@ -144,15 +125,15 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "get_ast")
   public static CCharPointer getAST(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema
+      CCharPointer catalog
   )
   {
     try {
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String sqlString = CTypeConversion.toJavaString(sql);
-      byte[] ast = sqlConverter.getAST(sqlString);
-      return convertToCCharPointer(allocatorFn, ast);
+      SqlNodeProto ast = sqlConverter.getAST(sqlString);
+      return convertToCCharPointer(allocatorFn, ast.toByteArray());
     } catch (Exception e) {
       e.printStackTrace();
       return WordFactory.nullPointer();
@@ -174,7 +155,7 @@ public class SqlConverterEntrypoint
     return a;
   }
 
-  private static CCharPointer convertToCCharPointer2(AllocatorFn allocatorFn, byte[] b)
+  private static CCharPointer convertToCCharPointerNoZero(AllocatorFn allocatorFn, byte[] b)
   {
     CCharPointer a = allocatorFn.call(b.length + 1);
     for (int i = 0; i < b.length; i++) {
@@ -183,12 +164,11 @@ public class SqlConverterEntrypoint
     return a;
   }
 
-  private static CCharPointer convertToCCharPointerNoZero(AllocatorFn allocatorFn, byte[] b)
+  private static String stackTraceToString(Exception e)
   {
-    CCharPointer a = allocatorFn.call(b.length + 1);
-    for (int i = 0; i < b.length; i++) {
-      a.write(i, b[i]);
-    }
-    return a;
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    return sw.toString();
   }
 }

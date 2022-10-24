@@ -4,17 +4,17 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import { createEventDispatcher, getContext, tick } from "svelte";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
+  import { onClickOutside } from "../../../../util/on-click-outside";
   import { FloatingElement } from "../../../floating-element";
   import Calendar from "../../../icons/Calendar.svelte";
   import CaretDownIcon from "../../../icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "../../../menu";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { onClickOutside } from "../../../../util/on-click-outside";
-  import { createEventDispatcher, getContext, tick } from "svelte";
   import {
     getSelectableTimeRangeNames,
     makeTimeRanges,
@@ -85,13 +85,13 @@
 
 <button
   bind:this={target}
-  class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 transition-tranform duration-100"
+  class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 transition-tranform duration-100"
   on:click={buttonClickHandler}
 >
   <div class="flex flew-row gap-x-3">
     <div class="font-bold flex flex-row items-center gap-x-3">
       <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-      <span class="text-gray-600"><Calendar size="16px" /></span>
+      <span class="ui-copy-icon"><Calendar size="16px" /></span>
       <span style:transform="translateY(1px)">
         {selectedTimeRangeName ?? "Select a time range"}
       </span>

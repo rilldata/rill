@@ -1,18 +1,18 @@
 package com.rilldata.calcite;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rilldata.StaticSchemaProvider;
 import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.calcite.generated.RillSqlParserImpl;
 import com.rilldata.calcite.models.SqlCreateMetricsView;
 import com.rilldata.calcite.models.SqlCreateSource;
-import com.rilldata.calcite.generated.RillSqlParserImpl;
-import com.rilldata.calcite.models.Artifact;
-import com.rilldata.calcite.models.ArtifactManager;
-import com.rilldata.calcite.models.ArtifactType;
-import com.rilldata.calcite.models.InMemoryArtifactManager;
+import com.rilldata.calcite.models.ArtifactStore;
 import com.rilldata.calcite.operators.RillOperatorTable;
 import com.rilldata.calcite.validators.CreateMetricsViewValidator;
 import com.rilldata.calcite.validators.CreateSourceValidator;
 import com.rilldata.calcite.visitors.MetricsViewExpander;
 import com.rilldata.protobuf.SqlNodeProtoBuilder;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.plan.Context;
@@ -30,6 +30,7 @@ import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.ValidationException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.Properties;
@@ -45,17 +46,24 @@ public class CalciteToolbox
       .withParserFactory(RillSqlParserImpl::new);
 
   private final FrameworkConfig frameworkConfig;
-  private final ArtifactManager artifactManager;
+  private final ArtifactStore artifactStore;
 
-  public CalciteToolbox(Supplier<SchemaPlus> rootSchemaSupplier, @Nullable ArtifactManager artifactManager)
+  public static CalciteToolbox buildToolbox(String catalog) throws IOException
   {
-    this.artifactManager = Objects.requireNonNullElseGet(artifactManager, InMemoryArtifactManager::new);
+    JsonCatalog jsonCatalog = new ObjectMapper().readValue(catalog, JsonCatalog.class);
+    return new CalciteToolbox(new StaticSchemaProvider(jsonCatalog.schemas),
+        new ArtifactStore(jsonCatalog.artifacts)
+    );
+  }
 
-    /* Creating CalciteConnectionConfigImpl just like it is done in calcite code but adding LENIENT conformance instead
-     of DEFAULT one which does not allow numbers in group by clause like GROUP BY 1,2 ...
-
-     It is kind of odd that validator conformance level is reset to CalciteConnectionConfig level upon creation of validator
-     in PlannerImpl#createSqlValidator method
+  public CalciteToolbox(Supplier<SchemaPlus> rootSchemaSupplier, @Nullable ArtifactStore artifactStore)
+  {
+    this.artifactStore = Objects.requireNonNullElseGet(artifactStore, ArtifactStore::new);
+    /*
+      Creating CalciteConnectionConfigImpl just like it is done in calcite code but adding LENIENT
+      conformance instead of DEFAULT one which does not allow numbers in group by clause like GROUP BY 1,2 ...
+      It is kind of odd that validator conformance level is reset to CalciteConnectionConfig level upon creation
+      of validator in PlannerImpl#createSqlValidator method
      */
     Properties properties = new Properties();
     properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), String.valueOf(false));
@@ -93,7 +101,7 @@ public class CalciteToolbox
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     // expand query if needed
-    sqlNode = sqlNode.accept(new MetricsViewExpander(artifactManager, this));
+    sqlNode = sqlNode.accept(new MetricsViewExpander(artifactStore, this));
     // expansion done, now validate query
     SqlNode validated = planner.validate(sqlNode);
     planner.close();
@@ -101,27 +109,21 @@ public class CalciteToolbox
     return sql;
   }
 
-  public byte[] getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
+  public SqlNodeProto getAST(String sql, boolean addTypeInfo) throws SqlParseException, ValidationException
   {
     Planner planner = getPlanner();
     SqlNode sqlNode = planner.parse(sql);
     if (sqlNode instanceof SqlCreateMetricsView sqlCreateMetricsView) {
-      String metricViewString = CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView,
-          Dialects.DUCKDB.getSqlDialect(), getPlanner()
+      CreateMetricsViewValidator.validateModelingQuery(sqlCreateMetricsView, Dialects.DUCKDB.getSqlDialect(),
+          getPlanner()
       );
-      artifactManager.saveArtifact(
-          new Artifact(ArtifactType.METRICS_VIEW, sqlCreateMetricsView.name.getSimple(), metricViewString));
     } else if (sqlNode instanceof SqlCreateSource sqlCreateSource) {
       CreateSourceValidator.validateConnector(sqlCreateSource);
-      String createSourceString = sqlCreateSource.toSqlString(Dialects.DUCKDB.getSqlDialect()).toString();
-      artifactManager.saveArtifact(
-          new Artifact(ArtifactType.SOURCE, sqlCreateSource.name.getSimple(), createSourceString));
-
     }
     return getAST(sqlNode, planner, addTypeInfo);
   }
 
-  public byte[] getAST(SqlNode sqlNode)
+  public SqlNodeProto getAST(SqlNode sqlNode)
   {
     Planner planner = getPlanner();
     return getAST(sqlNode, planner, false);
@@ -131,7 +133,7 @@ public class CalciteToolbox
    * If addTypeInfo is true then the same planner passed here should have been used to parse the sql
    * otherwise the sql validation will fail which is required to get type info
    * */
-  public byte[] getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
+  public SqlNodeProto getAST(SqlNode sqlNode, Planner planner, boolean addTypeInfo)
   {
     SqlValidator sqlValidator = null;
     if (addTypeInfo) {
@@ -144,9 +146,9 @@ public class CalciteToolbox
       }
     }
     SqlNodeProtoBuilder sqlNodeProtoBuilder = new SqlNodeProtoBuilder(sqlNode, sqlValidator);
-    byte[] bytes = sqlNodeProtoBuilder.getProto();
+    SqlNodeProto sqlNodeProto = sqlNodeProtoBuilder.getSqlNodeProto();
     planner.close();
-    return bytes;
+    return sqlNodeProto;
   }
 
   public SqlValidator getValidator(PlannerImpl planner) throws NoSuchFieldException, IllegalAccessException

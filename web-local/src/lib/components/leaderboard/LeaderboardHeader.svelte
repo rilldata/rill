@@ -27,7 +27,7 @@
   </div>
 
   <button
-    on:click|self
+    on:click
     style:height="32px"
     style:flex="1"
     style:grid-template-columns="auto max-content"
@@ -39,8 +39,8 @@
         border-b
         border-gray-200
         rounded-t
-        bg-white
-        text-gray-600
+        surface
+        ui-copy-muted
         font-semibold
         truncate
     "
