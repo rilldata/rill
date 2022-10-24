@@ -61,7 +61,6 @@ public class SqlConverterEntrypoint
       int inSize,
       CIntPointer outSize
   ) {
-    System.out.println("inSize " + inSize);
     ByteBuffer buf = CTypeConversion.asByteBuffer(request, inSize);
     byte[] arr = new byte[buf.limit()];
     buf.get(arr);
