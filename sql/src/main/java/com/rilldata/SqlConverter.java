@@ -6,13 +6,15 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.ValidationException;
 
+import java.io.IOException;
+
 public class SqlConverter
 {
   private final CalciteToolbox calciteToolbox;
 
-  public SqlConverter(String schema)
+  public SqlConverter(String catalog) throws IOException
   {
-    calciteToolbox = new CalciteToolbox(new StaticSchemaProvider(schema), null);
+    calciteToolbox = CalciteToolbox.buildToolbox(catalog);
   }
 
   public String convert(String sql, SqlDialect sqlDialect) throws ValidationException, SqlParseException

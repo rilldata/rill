@@ -3,6 +3,9 @@ package com.rilldata;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.CalciteToolbox;
 import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.calcite.models.Artifact;
+import com.rilldata.calcite.models.ArtifactStore;
+import com.rilldata.calcite.models.ArtifactType;
 import com.rilldata.calcite.models.SqlCreateMetricsView;
 import com.rilldata.calcite.models.SqlCreateSource;
 import com.rilldata.protobuf.generated.SqlNodeProto;
@@ -13,6 +16,7 @@ import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Litmus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -21,6 +25,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -30,10 +35,23 @@ public class CalciteTests
   static CalciteToolbox calciteToolbox;
 
   @BeforeAll
-  static void setUp() throws SQLException, ValidationException, SqlParseException
+  static void setUp() throws SQLException
   {
     HsqlDbSchemaSupplier rootSchemaSupplier = new HsqlDbSchemaSupplier(Map.of("main", "PUBLIC"));
-    calciteToolbox = new CalciteToolbox(rootSchemaSupplier, null);
+    calciteToolbox = new CalciteToolbox(rootSchemaSupplier, new ArtifactStore(
+        List.of(new Artifact(
+            "METRICS_VIEW",
+            ArtifactType.METRICS_VIEW,
+            """
+                CREATE METRICS VIEW METRICS_VIEW
+                DIMENSIONS
+                DIM1, DIM2, ceil("MET1") AS DIM3
+                MEASURES
+                COUNT(DISTINCT DIM1) AS M_DIST,
+                AVG(DISTINCT MET1) AS M_AVG
+                FROM MAIN.TEST"""
+        ))
+    ));
     DataSource dataSource = rootSchemaSupplier.getDataSource();
     try (Connection conn = dataSource.getConnection(); Statement statement = conn.createStatement()) {
       statement.executeUpdate(
@@ -45,17 +63,8 @@ public class CalciteTests
               + "date DATE UNIQUE, "
               + "time TIMESTAMP)"
       );
+      statement.executeUpdate("create table heroes (id smallint, power tinyint, name varchar(255))");
     }
-    String modelingQuery = """
-        CREATE METRICS VIEW METRICS_VIEW
-        DIMENSIONS
-        DIM1, DIM2, ceil("MET1") AS DIM3
-        MEASURES
-        COUNT(DISTINCT DIM1) AS M_DIST,
-        AVG(DISTINCT MET1) AS M_AVG
-        FROM MAIN.TEST""";
-    // this will effectively save the model until we start getting it from schema
-    calciteToolbox.getAST(modelingQuery, false);
   }
 
   @ParameterizedTest
@@ -107,7 +116,6 @@ public class CalciteTests
       Optional<String> validationExceptionMatch
   )
   {
-    SqlCreateSource sqlCreateSource;
     byte[] ast;
     try {
       ast = calciteToolbox.getAST(createSourceQuery, false).toByteArray();
@@ -115,6 +123,8 @@ public class CalciteTests
       Assertions.assertTrue(parseExceptionMatch.isEmpty());
       validationExceptionMatch.ifPresent(s -> System.out.println("Expected following exception : " + s));
       Assertions.assertTrue(validationExceptionMatch.isEmpty());
+      SqlCreateSource sqlCreateSource = (SqlCreateSource) calciteToolbox.parseValidatedSql(createSourceQuery);
+      Assertions.assertNotNull(sqlCreateSource);
     } catch (SqlParseException e) {
       if (parseExceptionMatch.isEmpty() || !e.getMessage().contains(parseExceptionMatch.get())) {
         e.printStackTrace();
@@ -510,6 +520,17 @@ public class CalciteTests
             Optional.empty()
         )
     );
+  }
+
+  @Test
+  public void testSimpleQuery() throws SqlParseException, ValidationException
+  {
+    String query = "select 1 as foo, "
+        + "'hello' as bar, h1.id, h1.\"power\", h2.name "
+        + "from main.heroes h1 join main.heroes h2 on h1.id = h2.id";
+    for (Dialects dialect : Dialects.values()) {
+      calciteToolbox.getRunnableQuery(query, dialect.getSqlDialect());
+    }
   }
 
   @ParameterizedTest

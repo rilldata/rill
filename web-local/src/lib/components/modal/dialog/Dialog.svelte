@@ -40,9 +40,12 @@
       : "");
 </script>
 
-<ModalContainer on:cancel on:click-outside>
+<ModalContainer on:cancel>
   <div
-    class="flex w-screen h-screen justify-center items-center relative pointer-events-none"
+    on:click|self={() => {
+      dispatch("cancel");
+    }}
+    class="grid place-items-center w-screen h-screen"
   >
     <div
       class="{containerClasses} {xDimClasses} {yDimClasses} rounded pointer-events-auto flex flex-col"
