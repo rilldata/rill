@@ -23,6 +23,7 @@
     toYupFriendlyKey,
   } from "../../../connectors/schemas";
   import { Button } from "../../button";
+  import InformationalField from "../../forms/InformationalField.svelte";
   import Input from "../../forms/Input.svelte";
   import SubmissionError from "../../forms/SubmissionError.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
@@ -141,8 +142,7 @@
           error={$errors[toYupFriendlyKey(property.key)]}
           bind:value={$form[toYupFriendlyKey(property.key)]}
         />
-      {/if}
-      {#if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
+      {:else if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
         <label for={property.key} class="flex items-center">
           <input
             id={property.key}
@@ -152,6 +152,15 @@
           />
           <span class="ml-2 text-sm">{label}</span>
         </label>
+      {:else if property.type === ConnectorPropertyType.TYPE_INFORMATIONAL}
+        <InformationalField
+          id={property.key}
+          {label}
+          description={property.description}
+          hint={property.hint}
+          error={$errors[toYupFriendlyKey(property.key)]}
+          href={property.href}
+        />
       {/if}
     </div>
   {/each}
