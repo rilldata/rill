@@ -22,7 +22,7 @@ func init() {
 
 var spec = connectors.Spec{
 	DisplayName: "Amazon S3",
-	Description: "Connect to CSV or Parquet files in an Amazon S3 bucket.<br/><br/>For private buckets, provide an <a href=https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html target='_blank'>access key</a>. If you've configured your local environment with <a href=https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html target=_blank>default AWS credentials</a>, Rill will detect them and use them for authentication. One way to set these credentials is by running this CLI command and following the prompts: <code>aws configure</code>",
+	Description: "Connect to AWS S3 Storage.",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -40,22 +40,15 @@ var spec = connectors.Spec{
 			Placeholder: "us-east-1",
 			Type:        connectors.StringPropertyType,
 			Required:    false,
+			Hint:        "If not provided, Rill will use the default region in your AWS config, if set.",
 		},
 		{
-			Key:         "aws.access.key",
-			DisplayName: "AWS access key",
-			Description: "",
-			Placeholder: "...",
-			Type:        connectors.StringPropertyType,
-			Required:    false,
-		},
-		{
-			Key:         "aws.access.secret",
-			DisplayName: "AWS access secret",
-			Description: "",
-			Placeholder: "...",
-			Type:        connectors.StringPropertyType,
-			Required:    false,
+			Key:         "aws.credentials",
+			DisplayName: "AWS credentials",
+			Description: "AWS credentials inferred from the user's environment.",
+			Type:        connectors.InformationalPropertyType,
+			Hint:        "Set your environment credentials by running the following CLI command and following the prompts: <code>aws configure</code>. Click to go to our docs to learn more.",
+			Href:        "https://docs.rilldata.com/docs/connectors/s3",
 		},
 	},
 }
