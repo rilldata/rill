@@ -56,7 +56,21 @@ public class SqlConverterEntrypoint
         Requests.ParseRequest parseRequest = r.getParseRequest();
         String sql = parseRequest.getSql();
         SqlConverter sqlConverter = new SqlConverter(parseRequest.getCatalog());
-        return sqlConverter.getAST(sql);
+        Requests.Response response;
+        try {
+          SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql);
+          response = Requests.Response
+              .newBuilder()
+              .setParseResponse(Requests.ParseResponse.newBuilder().setAst(sqlNodeProto).build())
+              .build();
+        } catch (Exception e) {
+          response = Requests.Response
+              .newBuilder()
+              .setError(
+                  Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
+              .build();
+        }
+        return response.toByteArray();
       } else if (r.hasTranspileRequest()) {
         return transpile(r).toByteArray();
       }
@@ -65,7 +79,7 @@ public class SqlConverterEntrypoint
           .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
           .build().toByteArray();
     }
-    catch (InvalidProtocolBufferException e) {
+    catch (Exception e) {
       return Requests.Response
           .newBuilder()
           .setError(Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())

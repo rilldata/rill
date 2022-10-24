@@ -37,7 +37,7 @@ public class SqlConverterMain
                                  .newBuilder()
                                  .setSql("select 1")
                                  .setDialect(Requests.Dialect.DUCKDB)
-                                 .setSchema("""
+                                 .setCatalog("""
                                  { 
                                   "tables": []
                                  }
