@@ -2,7 +2,6 @@ import type { PersistentTableEntity } from "@rilldata/web-local/common/data-mode
 import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
 import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
 import { get } from "svelte/store";
-import type { V1Connector } from "web-common/src/runtime-client";
 
 export async function waitForSource(
   newTableName: string,
