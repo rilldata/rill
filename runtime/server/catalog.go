@@ -158,12 +158,11 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 	added := 0
 	updated := 0
 	for _, t := range tables {
-		id := fmt.Sprintf("%s.%s", t.DatabaseSchema, t.Name)
-		obj, ok := objMap[id]
+		obj, ok := objMap[t.Name]
 
 		// Track that the object still exists
 		if ok {
-			objSeen[id] = true
+			objSeen[t.Name] = true
 		}
 
 		// Create or update in catalog if relevant
@@ -180,7 +179,7 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 		} else if !ok {
 			// If we haven't seen this table before, add it
 			err := catalog.CreateObject(ctx, inst.ID, &drivers.CatalogObject{
-				Name:    id,
+				Name:    t.Name,
 				Type:    drivers.CatalogObjectTypeTable,
 				Schema:  t.Schema,
 				Managed: false,
@@ -213,11 +212,6 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 		ObjectsUpdatedCount: uint32(updated),
 		ObjectsRemovedCount: uint32(removed),
 	}, nil
-}
-
-func (s *Server) buildSQLCatalog(ctx context.Context, catalog drivers.CatalogStore) map[string]any {
-	// TODO
-	return nil
 }
 
 func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drivers.CatalogStore, error) {
@@ -300,6 +294,7 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, er
 			Name:       obj.Name,
 			Connector:  source.Connector,
 			Properties: propsPB,
+			Schema:     obj.Schema,
 		},
 	}, nil
 }
