@@ -101,9 +101,40 @@
     // TODO: the error response type does not match the type defined in the API
     switch (error.response.data.code) {
       // gRPC error codes: https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
-      case 3:
-        // InvalidArgument
+      // InvalidArgument
+      case 3: {
+        const serverError = error.response.data.message;
+
+        // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
+        if (serverError.includes("MissingRegion")) {
+          return "Region not detected. Please enter a region.";
+        } else if (serverError.includes("NoCredentialProviders")) {
+          return "No credentials found. Please see the docs for how to configure AWS credentials.";
+        } else if (serverError.includes("InvalidAccessKey")) {
+          return "Invalid AWS access key. Please check your credentials.";
+        } else if (serverError.includes("SignatureDoesNotMatch")) {
+          return "Invalid AWS secret key. Please check your credentials.";
+        }
+
+        // GCP errors (ref: https://cloud.google.com/storage/docs/json_api/v1/status-codes)
+        if (serverError.includes("could not find default credentials")) {
+          return "No credentials found. Please see the docs for how to configure GCP credentials.";
+        } else if (serverError.includes("AccessDenied")) {
+          const details = serverError
+            .split("<Details>")[1]
+            .split("</Details>")[0];
+          return "Access denied: " + details;
+        } else if (serverError.includes("Unauthorized")) {
+          return "Unauthorized. Please check your credentials.";
+        }
+
+        // DuckDB errors
+        if (serverError.match(/expected \d* values per row, but got \d*/)) {
+          return "Malformed CSV file: number of columns does not match header.";
+        }
+
         return error.response.data.message;
+      }
       default:
         return "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";
     }
