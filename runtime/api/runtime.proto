@@ -395,6 +395,7 @@ message GetInstanceResponse {
 // Request message for RuntimeService.CreateInstance
 message CreateInstanceRequest {
   // See message Instance for field descriptions
+  string instance_id = 1;
   string driver = 2;
   string dsn = 3;
   string object_prefix = 4;

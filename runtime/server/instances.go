@@ -38,6 +38,7 @@ func (s *Server) GetInstance(ctx context.Context, req *api.GetInstanceRequest) (
 // CreateInstance implements RuntimeService
 func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequest) (*api.CreateInstanceResponse, error) {
 	inst := &drivers.Instance{
+		ID:           req.InstanceId,
 		Driver:       req.Driver,
 		DSN:          req.Dsn,
 		ObjectPrefix: req.ObjectPrefix,

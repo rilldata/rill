@@ -1382,9 +1382,12 @@
     "v1CreateInstanceRequest": {
       "type": "object",
       "properties": {
-        "driver": {
+        "instanceId": {
           "type": "string",
           "title": "See message Instance for field descriptions"
+        },
+        "driver": {
+          "type": "string"
         },
         "dsn": {
           "type": "string"
