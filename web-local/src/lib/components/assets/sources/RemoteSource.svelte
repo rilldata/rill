@@ -141,69 +141,77 @@
   }
 </script>
 
-{#if $createSource.isError}
-  <div class="mx-4">
-    <SubmissionError message={humanReadableErrorMessage($createSource.error)} />
-  </div>
-{/if}
-
-<form
-  on:submit|preventDefault={handleSubmit}
-  id="remote-source-{connector.name}-form"
-  class="px-4 pb-2 flex-grow overflow-y-auto"
->
-  <div class="py-2">
-    <Input
-      label="Source name"
-      bind:value={$form["sourceName"]}
-      error={$errors["sourceName"]}
-      placeholder="my_new_source"
-    />
-  </div>
-  {#each connector.properties as property}
-    {@const label =
-      property.displayName + (property.nullable ? " (optional)" : "")}
+<div class="h-full flex flex-col">
+  <form
+    on:submit|preventDefault={handleSubmit}
+    id="remote-source-{connector.name}-form"
+    class="px-4 pb-2 flex-grow overflow-y-auto"
+  >
+    <div class="pt-4 pb-2">
+      Need help? Refer to our
+      <a
+        href="https://docs.rilldata.com/data-source-connections"
+        target="_blank">docs</a
+      > for more information.
+    </div>
+    {#if $createSource.isError}
+      <SubmissionError
+        message={humanReadableErrorMessage($createSource.error)}
+      />
+    {/if}
     <div class="py-2">
-      {#if property.type === ConnectorPropertyType.TYPE_STRING}
-        <Input
-          id={property.key}
-          {label}
-          placeholder={property.placeholder}
-          hint={property.hint}
-          error={$errors[toYupFriendlyKey(property.key)]}
-          bind:value={$form[toYupFriendlyKey(property.key)]}
-        />
-      {:else if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
-        <label for={property.key} class="flex items-center">
-          <input
+      <Input
+        label="Source name"
+        bind:value={$form["sourceName"]}
+        error={$errors["sourceName"]}
+        placeholder="my_new_source"
+      />
+    </div>
+    {#each connector.properties as property}
+      {@const label =
+        property.displayName + (property.nullable ? " (optional)" : "")}
+      <div class="py-2">
+        {#if property.type === ConnectorPropertyType.TYPE_STRING}
+          <Input
             id={property.key}
-            type="checkbox"
-            bind:checked={$form[property.key]}
-            class="h-5 w-5"
+            {label}
+            placeholder={property.placeholder}
+            hint={property.hint}
+            error={$errors[toYupFriendlyKey(property.key)]}
+            bind:value={$form[toYupFriendlyKey(property.key)]}
           />
-          <span class="ml-2 text-sm">{label}</span>
-        </label>
-      {:else if property.type === ConnectorPropertyType.TYPE_INFORMATIONAL}
-        <InformationalField
-          description={property.description}
-          hint={property.hint}
-          href={property.href}
-        />
-      {/if}
-    </div>
-  {/each}
-</form>
-<div class="bg-gray-100 border-t border-gray-300">
-  <DialogFooter>
-    <div class="flex items-center space-x-2">
-      <Button
-        type="primary"
-        submitForm
-        form="remote-source-{connector.name}-form"
-        disabled={$createSource.isLoading || waitingOnSourceImport}
-      >
-        Add source
-      </Button>
-    </div>
-  </DialogFooter>
+        {:else if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
+          <label for={property.key} class="flex items-center">
+            <input
+              id={property.key}
+              type="checkbox"
+              bind:checked={$form[property.key]}
+              class="h-5 w-5"
+            />
+            <span class="ml-2 text-sm">{label}</span>
+          </label>
+        {:else if property.type === ConnectorPropertyType.TYPE_INFORMATIONAL}
+          <InformationalField
+            description={property.description}
+            hint={property.hint}
+            href={property.href}
+          />
+        {/if}
+      </div>
+    {/each}
+  </form>
+  <div class="bg-gray-100 border-t border-gray-300">
+    <DialogFooter>
+      <div class="flex items-center space-x-2">
+        <Button
+          type="primary"
+          submitForm
+          form="remote-source-{connector.name}-form"
+          disabled={$createSource.isLoading || waitingOnSourceImport}
+        >
+          Add source
+        </Button>
+      </div>
+    </DialogFooter>
+  </div>
 </div>
