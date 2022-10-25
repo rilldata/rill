@@ -1848,6 +1848,10 @@
         "properties": {
           "type": "object",
           "title": "Connector properties assigned in the source"
+        },
+        "schema": {
+          "$ref": "#/definitions/v1StructType",
+          "title": "Detected schema of the source"
         }
       },
       "title": "Source represents a catalog object created using CREATE SOURCE"

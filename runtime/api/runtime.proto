@@ -459,6 +459,8 @@ message Source {
   string connector = 3;
   // Connector properties assigned in the source
   google.protobuf.Struct properties = 4;
+  // Detected schema of the source
+  StructType schema = 5;
 }
 
 // MetricsView represents a catalog object created using CREATE METRICS VIEW

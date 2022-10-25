@@ -101,6 +101,12 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
+		st, err := olap.InformationSchema().Lookup(ctx, source.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "couldn't detect schema of ingested source: %s", err.Error())
+		}
+		newObj.Schema = st.Schema
+
 		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
 		if err != nil {
 			return nil, status.Errorf(codes.Unknown, "error: could not insert source into catalog: %s (warning: watch out for corruptions)", err.Error())
@@ -111,6 +117,12 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		st, err := olap.InformationSchema().Lookup(ctx, source.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "couldn't detect schema of ingested source: %s", err.Error())
+		}
+		newObj.Schema = st.Schema
 
 		err = catalog.UpdateObject(ctx, req.InstanceId, newObj)
 		if err != nil {
@@ -139,6 +151,12 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		st, err := olap.InformationSchema().Lookup(ctx, source.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "couldn't detect schema of ingested source: %s", err.Error())
+		}
+		newObj.Schema = st.Schema
 
 		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
 		if err != nil {
