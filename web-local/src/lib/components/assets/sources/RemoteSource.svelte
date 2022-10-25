@@ -82,8 +82,7 @@
               dispatch("close");
               overlay.set(null);
             },
-            onError: (error) => {
-              console.error(error);
+            onError: () => {
               overlay.set(null);
             },
           }
@@ -101,6 +100,13 @@
       // InvalidArgument
       case 3: {
         const serverError = error.response.data.message;
+
+        // Rill errors
+        if (
+          serverError.match(/an existing object with name '.*' already exists/)
+        ) {
+          return "A source with this name already exists. Please choose a different name.";
+        }
 
         // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
         if (serverError.includes("MissingRegion")) {
