@@ -1,9 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    compileCreateSourceSql,
-    waitForSource,
-  } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
   import { createEventDispatcher, getContext } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
@@ -27,6 +23,7 @@
   import Input from "../../forms/Input.svelte";
   import SubmissionError from "../../forms/SubmissionError.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
+  import { compileCreateSourceSql, waitForSource } from "./sourceUtils";
 
   export let connector: V1Connector;
 
@@ -152,7 +149,7 @@
 
 <form
   on:submit|preventDefault={handleSubmit}
-  id="remote-source-{connector}-form"
+  id="remote-source-{connector.name}-form"
   class="px-4 pb-2 flex-grow overflow-y-auto"
 >
   <div class="py-2">
@@ -188,11 +185,8 @@
         </label>
       {:else if property.type === ConnectorPropertyType.TYPE_INFORMATIONAL}
         <InformationalField
-          id={property.key}
-          {label}
           description={property.description}
           hint={property.hint}
-          error={$errors[toYupFriendlyKey(property.key)]}
           href={property.href}
         />
       {/if}
@@ -205,7 +199,7 @@
       <Button
         type="primary"
         submitForm
-        form="remote-source-{connector}-form"
+        form="remote-source-{connector.name}-form"
         disabled={$createSource.isLoading || waitingOnSourceImport}
       >
         Add source
