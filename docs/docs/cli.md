@@ -1,9 +1,7 @@
 ---
-title: CLI Documentation
+title: CLI documentation
 description: You can create and augment projects in Rill Developer using the CLI.
 ---
-
-# The Rill CLI
 
 :::tip
 
@@ -24,15 +22,15 @@ rill init-example
 
 :::
 
-## Help Menu
-CLI comands help us initialize and augment projects. If you would like to see information on all the available CLI commands, you can use the ```--help``` option.  There are additional details on each command below.
+## Help menu
+CLI comands help us initialize and augment projects. If you would like to see information on all the available CLI commands, you can use the ```--help``` option. There are additional details on each command below.
 
 ```
 rill --help
 ```
 
 ## Initialize your project
-Initialize your project using the ```init``` command.  
+Initialize your project using the ```init``` command. 
 
 ```
 rill init
@@ -79,7 +77,7 @@ By default source name conflicts will prompt a warning message asking if you wan
 rill import-source /path/to/data_1.parquet --name my_source
 ```
 
-### File Delimiters
+### File delimiters
 If you have a dataset that is delimited by a character other than a comma or tab, you can use the `--delimiter` option. DuckDB can also attempt to automatically detect the delimiter, so it is not strictly necessary.
 
 ```
