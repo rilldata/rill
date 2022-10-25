@@ -20,11 +20,17 @@
   import Close from "../icons/Close.svelte";
   import SearchBar from "../search/Search.svelte";
   import Spinner from "../Spinner.svelte";
+  import Switch from "../button/Switch.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
   export let isFetching: boolean;
   export let excludeMode = false;
+
+  let excludeToggle = excludeMode;
+  $: if (excludeToggle != excludeMode) {
+    toggleFilterMode();
+  }
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
@@ -82,11 +88,14 @@
       <div
         class="flex items-center mr-3 ui-copy-icon"
         style:grid-column-gap=".2rem"
-        on:click={toggleFilterMode}
       >
-        {#if excludeMode}<Check size="20px" /> Include{:else}<Cancel
-            size="20px"
-          /> Exclude{/if}
+        <Switch bind:checked={excludeToggle} />
+
+        {#if !excludeMode}
+          <Check size="20px" /> Include
+        {:else}
+          <Cancel size="20px" /> Exclude
+        {/if}
       </div>
       <TooltipContent slot="tooltip-content">
         <TooltipTitle>

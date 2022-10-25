@@ -10,10 +10,16 @@
   import MenuItem from "@rilldata/web-local/lib/components/menu/core/MenuItem.svelte";
   import { createEventDispatcher } from "svelte";
   import Footer from "./Footer.svelte";
+  import Switch from "@rilldata/web-local/lib/components/button/Switch.svelte";
 
   export let selectedValues: string[];
   export let searchedValues: string[] = [];
   export let excludeMode = false;
+
+  let excludeToggle = excludeMode;
+  $: if (excludeToggle != excludeMode) {
+    onToggleHandler();
+  }
 
   let searchText = "";
 
@@ -99,16 +105,14 @@
     {/if}
   </div>
   <Footer>
-    <Button type="secondary" compact on:click={onToggleHandler}>
-      {#if !excludeMode}
-        <Cancel />
+    <span class="flex gap-x-1 items-center font-semibold ui-copy">
+      <Switch bind:checked={excludeToggle} />
+      {#if excludeMode}
+        <Cancel /> Exclude
       {:else}
-        <Check />
+        <Check /> Include
       {/if}
-      <span class="font-semibold ui-copy">
-        {excludeMode ? "Toggle Include" : "Toggle Exclude"}
-      </span>
-    </Button>
+    </span>
     {#if numSelectedNotInSearch}
       <div class="ui-label italic">
         {numSelectedNotInSearch} other value{numSelectedNotInSearch > 1
