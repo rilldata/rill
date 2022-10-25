@@ -92,6 +92,9 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source,
 	defer client.Close()
 
 	bucket, object, extension, err := getGcsUrlParts(conf.Path)
+	if err != nil {
+		return fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+	}
 
 	f, err := os.CreateTemp(
 		os.TempDir(),
