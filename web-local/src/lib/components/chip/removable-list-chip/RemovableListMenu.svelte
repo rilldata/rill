@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-local/lib/components/button";
   import { Search } from "@rilldata/web-local/lib/components/search";
+  import { Switch } from "@rilldata/web-local/lib/components/button";
 
   import Cancel from "@rilldata/web-local/lib/components/icons/Cancel.svelte";
   import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
@@ -10,7 +10,6 @@
   import MenuItem from "@rilldata/web-local/lib/components/menu/core/MenuItem.svelte";
   import { createEventDispatcher } from "svelte";
   import Footer from "./Footer.svelte";
-  import Switch from "@rilldata/web-local/lib/components/button/Switch.svelte";
 
   export let selectedValues: string[];
   export let searchedValues: string[] = [];

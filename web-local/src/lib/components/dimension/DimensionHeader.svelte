@@ -4,6 +4,7 @@
   import { slideRight } from "../../transitions";
 
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { Switch } from "@rilldata/web-local/lib/components/button";
 
   import Shortcut from "../tooltip/Shortcut.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
@@ -20,7 +21,6 @@
   import Close from "../icons/Close.svelte";
   import SearchBar from "../search/Search.svelte";
   import Spinner from "../Spinner.svelte";
-  import Switch from "../button/Switch.svelte";
 
   export let metricsDefId: string;
   export let dimensionId: string;
