@@ -54,6 +54,10 @@
             `CREATE SOURCE ${currentAssetName}`,
             `CREATE SOURCE ${values.newName}`
           );
+          dataModelerService.dispatch("updateTableName", [
+            entityId,
+            values.newName,
+          ]);
           $renameSource.mutate(
             {
               instanceId: runtimeInstanceId,
@@ -71,6 +75,8 @@
               },
               onError: (err) => {
                 error = err.response.data.message;
+                // reset the new table name
+                dataModelerService.dispatch("updateTableName", [entityId, ""]);
               },
             }
           );

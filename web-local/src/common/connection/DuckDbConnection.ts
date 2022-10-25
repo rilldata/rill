@@ -53,6 +53,21 @@ export class DuckDbConnection extends DataConnection {
       .getCurrentState().entities;
 
     for (const persistentTable of persistentTables) {
+      if (
+        persistentTable.previousTableName &&
+        catalogsMap.has(persistentTable.previousTableName)
+      ) {
+        // hack to process renames.
+        // we set previousTableName when rename is triggered
+        // here we get confirmation that rename finished
+        this.dataModelerStateService.dispatch("updateTableName", [
+          persistentTable.id,
+          persistentTable.previousTableName,
+        ]);
+        catalogsMap.delete(persistentTable.previousTableName);
+        continue;
+      }
+
       if (!catalogsMap.has(persistentTable.tableName)) {
         await this.dataModelerService.dispatch("dropTable", [
           persistentTable.tableName,

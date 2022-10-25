@@ -272,12 +272,8 @@ export class TableActions extends DataModelerActions {
     const table = stateService.getById(tableId);
     const currentName = table.tableName;
 
-    this.dataModelerStateService.dispatch("updateTableName", [
+    this.dataModelerStateService.dispatch("renameTableName", [
       tableId,
-      sanitizedNewName,
-    ]);
-    this.databaseService.dispatch("renameTable", [
-      currentName,
       sanitizedNewName,
     ]);
     return ActionResponseFactory.getSuccessResponse(

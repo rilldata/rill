@@ -63,11 +63,6 @@ type Config struct {
 
 func ParseConfig(props map[string]any) (*Config, error) {
 	conf := &Config{}
-	// will be needed when we leverage duckdb's s3 import
-	//err := envconfig.Process("aws", conf)
-	//if err != nil {
-	//	return nil, err
-	//}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
