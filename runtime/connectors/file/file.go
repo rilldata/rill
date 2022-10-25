@@ -1,6 +1,8 @@
 package file
 
 import (
+	"context"
+	"errors"
 	"path"
 
 	"github.com/mitchellh/mapstructure"
@@ -12,8 +14,8 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "File",
-	Description: "Connector for files",
+	DisplayName: "Local file",
+	Description: "Import Locally Stored File.",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -66,4 +68,8 @@ type connector struct{}
 
 func (c connector) Spec() connectors.Spec {
 	return spec
+}
+
+func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source, callback func(filename string) error) error {
+	return errors.New("not implemented")
 }

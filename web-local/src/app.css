@@ -113,6 +113,14 @@ body {
   overscroll-behavior: none;
 }
 
+a {
+  @apply text-blue-500;
+}
+
+div > code {
+  @apply px-1 py-0.5 bg-gray-200 text-gray-900 rounded break-words;
+}
+
 .stack-list > * + * {
   margin-top: var(--gap, 1rem);
 }

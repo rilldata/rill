@@ -106,11 +106,8 @@ export class CLISpec extends FunctionalTestBase {
     );
     const oldStateObject = { ...adBids };
 
-    const oldStateUpdateTime = oldStateObject.lastUpdated;
-    delete oldStateObject.lastUpdated;
-    // check the newAdBids field minus the lastUpdated time stamp.
+    // check the newAdBids
     expect(newAdBids).toEqual(expect.objectContaining(oldStateObject));
-    expect(newAdBids.lastUpdated > oldStateUpdateTime).toBeTruthy();
   }
 
   @FunctionalTestBase.Test()

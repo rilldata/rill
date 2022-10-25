@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListCatalogObjects implements RuntimeService
@@ -52,7 +54,7 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
@@ -79,7 +81,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	}
 
 	// Find object
-	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
@@ -102,6 +104,10 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
+
+	// Update object
+	obj.RefreshedOn = time.Now()
+	err = catalog.UpdateObject(ctx, req.InstanceId, obj)
 
 	return &api.TriggerRefreshResponse{}, nil
 }
@@ -139,6 +145,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			Type: &api.CatalogObject_Source{
 				Source: src,
 			},
+			RefreshedOn: timestamppb.New(obj.RefreshedOn),
 		}, nil
 	default:
 		panic(fmt.Errorf("not implemented"))
@@ -177,7 +184,7 @@ func sqlToSource(sqlStr string) (*connectors.Source, error) {
 	ast := astStmt.CreateSource
 
 	s := &connectors.Source{
-		Name:       strings.ToLower(ast.Name),
+		Name:       ast.Name,
 		Properties: make(map[string]any),
 	}
 

@@ -106,7 +106,7 @@
   {#if $modelPreviewVisible}
     <Portal target=".body">
       <div
-        class="fixed z-50 drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
+        class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
         style:bottom="{(1 - $modelPreviewVisibilityTween) *
           $layout.modelPreviewHeight}px"
         style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"

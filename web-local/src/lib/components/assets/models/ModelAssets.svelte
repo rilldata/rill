@@ -15,29 +15,29 @@
   import {
     ApplicationStore,
     dataModelerService,
-  } from "../../application-state-stores/application-store";
+  } from "../../../application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
-  } from "../../application-state-stores/model-stores";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import { deleteModelApi } from "../../redux-store/model/model-apis";
-  import { autoCreateMetricsDefinitionForModel } from "../../redux-store/source/source-apis";
+  } from "../../../application-state-stores/model-stores";
+  import { navigationEvent } from "../../../metrics/initMetrics";
+  import { deleteModelApi } from "../../../redux-store/model/model-apis";
+  import { autoCreateMetricsDefinitionForModel } from "../../../redux-store/source/source-apis";
   import {
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
-  } from "../../redux-store/source/source-selectors";
-  import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
-  import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
-  import ContextButton from "../column-profile/ContextButton.svelte";
-  import AddIcon from "../icons/Add.svelte";
-  import Cancel from "../icons/Cancel.svelte";
-  import EditIcon from "../icons/EditIcon.svelte";
-  import Explore from "../icons/Explore.svelte";
-  import ModelIcon from "../icons/Model.svelte";
-  import { Divider, MenuItem } from "../menu";
-  import RenameEntityModal from "../modal/RenameEntityModal.svelte";
+  } from "../../../redux-store/source/source-selectors";
+  import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
+  import CollapsibleTableSummary from "../../column-profile/CollapsibleTableSummary.svelte";
+  import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
+  import ContextButton from "../../column-profile/ContextButton.svelte";
+  import AddIcon from "../../icons/Add.svelte";
+  import Cancel from "../../icons/Cancel.svelte";
+  import EditIcon from "../../icons/EditIcon.svelte";
+  import Explore from "../../icons/Explore.svelte";
+  import ModelIcon from "../../icons/Model.svelte";
+  import { Divider, MenuItem } from "../../menu";
+  import RenameAssetModal from "../RenameAssetModal.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -216,11 +216,11 @@
     {/each}
   </div>
   {#if showRenameModelModal}
-    <RenameEntityModal
+    <RenameAssetModal
       entityType={EntityType.Model}
       closeModal={() => (showRenameModelModal = false)}
       entityId={renameModelID}
-      currentEntityName={renameModelName.replace(".sql", "")}
+      currentAssetName={renameModelName.replace(".sql", "")}
     />
   {/if}
 {/if}

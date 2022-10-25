@@ -17,6 +17,8 @@ export interface PersistentTableEntity extends EntityRecord {
   // we have a separate field to maintain different names in the future.
   // currently, name = tableName
   tableName?: string;
+  // temporary hack to sync states. hopefully it is not needed anymore
+  previousTableName?: string;
 
   sourceType?: TableSourceType;
   csvDelimiter?: string;

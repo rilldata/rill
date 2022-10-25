@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getContext } from "svelte";
   import type { DerivedModelStore } from "../../application-state-stores/model-stores";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import { getDimensionsByMetricsId } from "../../redux-store/dimension-definition/dimension-definition-readables";
   import { getMeasuresByMetricsId } from "../../redux-store/measure-definition/measure-definition-readables";
   import {
@@ -13,8 +13,8 @@
   import { store } from "../../redux-store/store-root";
   import { invalidateMetricsView } from "../../svelte-query/queries/metrics-views/invalidation";
   import type { ProfileColumn } from "../../types";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getContext } from "svelte";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
@@ -134,6 +134,7 @@
 {#if modalIsOpen}
   <QuickMetricsModal
     on:cancel={closeModal}
+    on:click-outside={closeModal}
     on:replace-metrics={handleGenerateClick}
   />
 {/if}

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
@@ -12,32 +11,43 @@
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../application-state-stores/application-store";
-  import type { PersistentModelStore } from "../../application-state-stores/model-stores";
+  import {
+    getRuntimeServiceGetCatalogObjectQueryKey,
+    useRuntimeServiceMigrateDelete,
+    useRuntimeServiceTriggerRefresh,
+  } from "web-common/src/runtime-client";
+  import {
+    ApplicationStore,
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
+  import { overlay } from "../../../application-state-stores/layout-store";
+  import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
-  } from "../../application-state-stores/table-stores";
-  import { navigationEvent } from "../../metrics/initMetrics";
+  } from "../../../application-state-stores/table-stores";
+  import { navigationEvent } from "../../../metrics/initMetrics";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
-    deleteSourceApi,
-  } from "../../redux-store/source/source-apis";
-  import { derivedProfileEntityHasTimestampColumn } from "../../redux-store/source/source-selectors";
-  import { uploadFilesWithDialog } from "../../util/file-upload";
-  import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
-  import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
-  import ContextButton from "../column-profile/ContextButton.svelte";
-  import AddIcon from "../icons/Add.svelte";
-  import Cancel from "../icons/Cancel.svelte";
-  import EditIcon from "../icons/EditIcon.svelte";
-  import Explore from "../icons/Explore.svelte";
-  import Model from "../icons/Model.svelte";
-  import Source from "../icons/Source.svelte";
-  import { Divider, MenuItem } from "../menu";
-  import RenameEntityModal from "../modal/RenameEntityModal.svelte";
+  } from "../../../redux-store/source/source-apis";
+  import { derivedProfileEntityHasTimestampColumn } from "../../../redux-store/source/source-selectors";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
+  import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
+  import CollapsibleTableSummary from "../../column-profile/CollapsibleTableSummary.svelte";
+  import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
+  import ContextButton from "../../column-profile/ContextButton.svelte";
+  import Add from "../../icons/Add.svelte";
+  import Cancel from "../../icons/Cancel.svelte";
+  import EditIcon from "../../icons/EditIcon.svelte";
+  import Explore from "../../icons/Explore.svelte";
+  import Model from "../../icons/Model.svelte";
+  import RefreshIcon from "../../icons/RefreshIcon.svelte";
+  import Source from "../../icons/Source.svelte";
+  import { Divider, MenuItem } from "../../menu";
+  import RenameAssetModal from "../RenameAssetModal.svelte";
+  import AddSourceModal from "./AddSourceModal.svelte";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
@@ -54,6 +64,12 @@
   ) as PersistentModelStore;
 
   let showTables = true;
+
+  let showAddSourceModal = false;
+
+  const openShowAddSourceModal = () => {
+    showAddSourceModal = true;
+  };
 
   let showRenameTableModal = false;
   let renameTableID = null;
@@ -107,16 +123,27 @@
     }
   };
 
-  const deleteSource = (tableName: string, id: string) => {
+  const deleteSource = useRuntimeServiceMigrateDelete();
+
+  const handleDeleteSource = (tableName: string, id: string) => {
     const nextSourceId = getNextEntityId($persistentTableStore.entities, id);
-
-    if (nextSourceId) {
-      goto(`/source/${nextSourceId}`);
-    } else {
-      goto("/");
-    }
-
-    deleteSourceApi(tableName);
+    $deleteSource.mutate(
+      {
+        instanceId: runtimeInstanceId,
+        data: {
+          name: tableName.toLowerCase(),
+        },
+      },
+      {
+        onSuccess: () => {
+          if (nextSourceId) {
+            goto(`/source/${nextSourceId}`);
+          } else {
+            goto("/");
+          }
+        },
+      }
+    );
   };
 
   const createModel = (tableName: string) => {
@@ -138,6 +165,37 @@
     });
   };
 
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+  const refreshSource = useRuntimeServiceTriggerRefresh();
+
+  const onRefreshSource = (id: string, tableName: string) => {
+    overlay.set({ title: `Importing ${tableName}` });
+    $refreshSource.mutate(
+      {
+        instanceId: runtimeInstanceId,
+        name: tableName,
+      },
+      {
+        onError: (error) => {
+          console.error(error);
+          overlay.set(null);
+        },
+        onSuccess: () => {
+          // invalidate the data preview (async)
+          dataModelerService.dispatch("collectTableInfo", [id]);
+
+          // invalidate the "refreshed_on" time
+          const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+            runtimeInstanceId,
+            tableName
+          );
+          queryClient.invalidateQueries(queryKey);
+          overlay.set(null);
+        },
+      }
+    );
+  };
+
   $: activeEntityID = $rillAppStore?.activeEntity?.id;
 </script>
 
@@ -150,13 +208,12 @@
       <Source size="16px" /> Sources
     </h4>
   </CollapsibleSectionTitle>
-
   <ContextButton
     id={"create-table-button"}
     tooltipText="import csv or parquet file as a source"
-    on:click={uploadFilesWithDialog}
+    on:click={openShowAddSourceModal}
   >
-    <AddIcon />
+    <Add />
   </ContextButton>
 </div>
 {#if showTables}
@@ -177,6 +234,7 @@
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             active={entityIsActive}
+            loading={$refreshSource.isLoading}
           >
             <ColumnProfileNavEntry
               slot="summary"
@@ -208,6 +266,13 @@
                 </svelte:fragment>
               </MenuItem>
 
+              <MenuItem icon on:select={() => onRefreshSource(id, tableName)}>
+                <svelte:fragment slot="icon">
+                  <RefreshIcon />
+                </svelte:fragment>
+                refresh source data
+              </MenuItem>
+
               <Divider />
               <MenuItem
                 icon
@@ -220,7 +285,10 @@
                 rename...
               </MenuItem>
               <!-- FIXME: this should pop up an "are you sure?" modal -->
-              <MenuItem icon on:select={() => deleteSource(tableName, id)}>
+              <MenuItem
+                icon
+                on:select={() => handleDeleteSource(tableName, id)}
+              >
                 <Cancel slot="icon" />
                 delete</MenuItem
               >
@@ -230,12 +298,19 @@
       {/each}
     {/if}
   </div>
+  {#if showAddSourceModal}
+    <AddSourceModal
+      on:close={() => {
+        showAddSourceModal = false;
+      }}
+    />
+  {/if}
   {#if showRenameTableModal}
-    <RenameEntityModal
+    <RenameAssetModal
       entityType={EntityType.Table}
       closeModal={() => (showRenameTableModal = false)}
       entityId={renameTableID}
-      currentEntityName={renameTableName}
+      currentAssetName={renameTableName}
     />
   {/if}
 {/if}

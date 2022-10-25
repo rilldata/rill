@@ -16,9 +16,10 @@ export class DropTableCommand extends DataModelerCliCommand {
   }
 
   protected async sendActions(tableName: string): Promise<void> {
-    const response = await this.dataModelerService.dispatch("dropTable", [
-      tableName,
-    ]);
+    const response = await this.dataModelerService.dispatch(
+      "dropTableFromCLI",
+      [tableName]
+    );
     if (response.status === ActionStatus.Failure) {
       response.messages.forEach((message) => console.log(message.message));
       console.log(`Failed to drop source ${tableName}. `);

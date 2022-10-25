@@ -23,9 +23,10 @@ const (
 
 // CatalogObject represents one object in the catalog, such as a source
 type CatalogObject struct {
-	Name      string
-	Type      string
-	SQL       string
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
+	Name        string
+	Type        string
+	SQL         string
+	RefreshedOn time.Time `db:"refreshed_on"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
 }

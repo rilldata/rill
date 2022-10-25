@@ -1,9 +1,9 @@
-import { RillDeveloperController } from "./RillDeveloperController";
-import type { Request, Response, Router } from "express";
 import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
-import path from "path";
+import type { Request, Response, Router } from "express";
 import { existsSync } from "fs";
+import path from "path";
 import { EntityController } from "./EntityController";
+import { RillDeveloperController } from "./RillDeveloperController";
 
 interface FileUploadEntry {
   name: string;

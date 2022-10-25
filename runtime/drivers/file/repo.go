@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -70,8 +71,8 @@ func (c *connection) Get(ctx context.Context, repoID string, filePath string) (s
 	return string(b), nil
 }
 
-// Put implements drivers.RepoStore
-func (c *connection) Put(ctx context.Context, repoID string, filePath string, blob string) error {
+// PutBlob implements drivers.RepoStore
+func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string, blob string) error {
 	if path.Ext(filePath) != ".sql" {
 		return fmt.Errorf("file repo: can only edit .sql files")
 	}
@@ -89,6 +90,27 @@ func (c *connection) Put(ctx context.Context, repoID string, filePath string, bl
 	}
 
 	return nil
+}
+
+func (c *connection) PutReader(ctx context.Context, repoID string, filePath string, reader io.Reader) (string, error) {
+	filePath = path.Join(c.root, filePath)
+
+	err := os.MkdirAll(path.Dir(filePath), os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
+	f, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, reader)
+	if err != nil {
+		return "", err
+	}
+
+	return filePath, nil
 }
 
 // Delete implements drivers.RepoStore

@@ -295,12 +295,12 @@ export class ModelActions extends DataModelerActions {
             "getFirstNOfTable",
             [persistentModel.tableName, MODEL_PREVIEW_COUNT]
           ),
-        ]),
-          this.dataModelerStateService.dispatch("markAsProfiled", [
-            EntityType.Model,
-            modelId,
-            true,
-          ]);
+        ]);
+        this.dataModelerStateService.dispatch("markAsProfiled", [
+          EntityType.Model,
+          modelId,
+          true,
+        ]);
 
         return;
       }

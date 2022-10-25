@@ -7,10 +7,12 @@ COPY package.json package-lock.json tsconfig.json ./
 COPY web-local/package.json web-local/tsconfig.json web-local/tsconfig.node.json \
     web-local/svelte.config.js web-local/vite.config.ts \
     web-local/tailwind.config.cjs web-local/postcss.config.cjs web-local/.babelrc web-local/
+COPY web-common/package.json web-common/orval.config.ts web-common/
 
 COPY build-tools build-tools/
 COPY web-local/build-tools web-local/build-tools/
 COPY web-local/src web-local/src/
+COPY web-common/src web-common/src/
 
 RUN echo "Installing npm dependencies..." && \
     npm install -d

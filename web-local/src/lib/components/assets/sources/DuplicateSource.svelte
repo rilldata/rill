@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import {
     DuplicateActions,
     duplicateSourceAction,
     duplicateSourceName,
-  } from "../../application-state-stores/application-store";
-  import { createEventDispatcher } from "svelte";
-  import { Dialog } from "./index";
+  } from "../../../application-state-stores/application-store";
+  import { Dialog } from "../../modal/index";
 
   const dispatch = createEventDispatcher();
   function onCancel() {
@@ -18,6 +18,7 @@
 <Dialog
   showCancel
   on:cancel={onCancel}
+  on:click-outside={onCancel}
   on:primary-action={() => {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.KeepBoth;
