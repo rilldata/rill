@@ -17,6 +17,7 @@
       <button
         class="text-gray-500"
         style="transform:translateY(-.5px)"
+        type="button"
         on:click|preventDefault={() => {
           window.open(href, "_blank");
         }}
