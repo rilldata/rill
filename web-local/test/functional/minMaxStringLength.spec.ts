@@ -1,8 +1,8 @@
 import type { DataProviderData } from "@adityahegde/typescript-test-utils";
 import { expect } from "@jest/globals";
-import { DATA_FOLDER } from "../../../test/data/generator/data-constants";
-import { TwoTableJoinQuery } from "../../../test/data/ModelQuery.data";
-import { FunctionalTestBase } from "../../../test/functional/FunctionalTestBase";
+import { DATA_FOLDER } from "../data/generator/data-constants";
+import { TwoTableJoinQuery } from "../data/ModelQuery.data";
+import { FunctionalTestBase } from "./FunctionalTestBase";
 
 @FunctionalTestBase.Suite
 export class GetMinAndMaxStringLengthsTest extends FunctionalTestBase {
