@@ -149,10 +149,8 @@
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
-      <a
-        href="https://docs.rilldata.com/data-source-connections"
-        target="_blank">docs</a
-      > for more information.
+      <a href="https://docs.rilldata.com/import-data" target="_blank">docs</a> for
+      more information.
     </div>
     {#if $createSource.isError}
       <SubmissionError
