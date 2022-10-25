@@ -3,10 +3,7 @@
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
-  export let id = "";
-  export let label = "";
   export let description = "";
-  export let error: string;
   export let hint = "";
   export let href = "";
 </script>
