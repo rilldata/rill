@@ -23,7 +23,7 @@ rill init-example
 :::
 
 ## Help menu
-CLI comands help us initialize and augment projects. If you would like to see information on all the available CLI commands, you can use the ```--help``` option. There are additional details on each command below.
+CLI commands help us initialize and augment projects. If you would like to see information on all the available CLI commands, you can use the ```--help``` option. There are additional details on each command below.
 
 ```
 rill --help
@@ -65,14 +65,14 @@ rill import-source /path/to/data_3.tsv
 
 ### Source names
 By default the source name will be a sanitized version of the dataset file name. You can specify a name using the `name` command.
-  
+
 ```
 rill import-source /path/to/data_1.parquet --name my_source
 ```
 
 ### Source overwrite
 By default source name conflicts will prompt a warning message asking if you want to overwrite the existing source data. You can force Rill Developer to overwrite any existing sources without this warning by using the `force` command.
-  
+
 ```
 rill import-source /path/to/data_1.parquet --name my_source
 ```
