@@ -19,7 +19,7 @@ func init() {
 
 var spec = connectors.Spec{
 	DisplayName: "Google Cloud Storage",
-	Description: "Connect to CSV or Parquet files in a Google Cloud Storage bucket.<br/><br/>For private buckets, first set your <a href=https://cloud.google.com/docs/authentication/application-default-credentials target=_blank>application default credentials</a>, which Rill will detect and use for authentication. One way to set these credentials is by running this CLI command: <code>gcloud auth application-default login</code>.",
+	Description: "Connect to Google Cloud Storage.",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -30,38 +30,19 @@ var spec = connectors.Spec{
 			Required:    true,
 			Hint:        "Note that gzipped files & glob patterns aren't yet supported. They're coming in the next release!",
 		},
-		// {
-		// 	Key:         "gcp.region",
-		// 	DisplayName: "GCP region",
-		// 	Description: "GCP Region for the bucket.",
-		// 	Placeholder: "us-east-1",
-		// 	Type:        connectors.StringPropertyType,
-		// 	Required:    true,
-		// },
-		// {
-		// 	Key:         "gcp.access.key",
-		// 	DisplayName: "GCP access Key",
-		// 	Description: "",
-		// 	Placeholder: "...",
-		// 	Type:        connectors.StringPropertyType,
-		// 	Required:    false,
-		// },
-		// {
-		// 	Key:         "gcp.access.secret",
-		// 	DisplayName: "GCP access secret",
-		// 	Description: "",
-		// 	Placeholder: "...",
-		// 	Type:        connectors.StringPropertyType,
-		// 	Required:    false,
-		// },
+		{
+			Key:         "gcp.credentials",
+			DisplayName: "GCP credentials",
+			Description: "GCP credentials inferred from your local environment.",
+			Type:        connectors.InformationalPropertyType,
+			Hint:        "Set your environment credentials by running the following CLI command and following the prompts: <code>gcloud auth application-default login</code>. Click to go to our docs to learn more.",
+			Href:        "https://docs.rilldata.com/docs/connectors/gcs",
+		},
 	},
 }
 
 type Config struct {
 	Path string `key:"path"`
-	// GCPRegion string `key:"gcp.region"`
-	// GCPKey    string `key:"gcp.access.key"`
-	// GCPSecret string `key:"gcp.access.secret"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {

@@ -7,7 +7,10 @@
 
   let element;
 
-  const callback = getContext("rill:app:tabgroup-callback") as Function;
+  const callback = getContext("rill:app:tabgroup-callback") as (
+    element,
+    value
+  ) => void;
   const selectedValue = getContext(
     "rill:app:tabgroup-selected"
   ) as Writable<unknown>;

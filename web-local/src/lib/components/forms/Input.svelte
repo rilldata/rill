@@ -26,9 +26,9 @@
   <label for={id} class="text-gray-600">{label}</label>
   {#if hint}
     <Tooltip location="right" alignment="middle" distance={8}>
-      <button class="text-gray-500" style="transform:translateY(-.5px)">
+      <div class="text-gray-500" style="transform:translateY(-.5px)">
         <InfoCircle size="13px" />
-      </button>
+      </div>
       <TooltipContent slot="tooltip-content">
         {@html hint}
       </TooltipContent>

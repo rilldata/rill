@@ -1,9 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    compileCreateSourceSql,
-    waitForSource,
-  } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
   import { createEventDispatcher, getContext } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
@@ -23,9 +19,11 @@
     toYupFriendlyKey,
   } from "../../../connectors/schemas";
   import { Button } from "../../button";
+  import InformationalField from "../../forms/InformationalField.svelte";
   import Input from "../../forms/Input.svelte";
   import SubmissionError from "../../forms/SubmissionError.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
+  import { compileCreateSourceSql, waitForSource } from "./sourceUtils";
 
   export let connector: V1Connector;
 
@@ -100,73 +98,120 @@
     // TODO: the error response type does not match the type defined in the API
     switch (error.response.data.code) {
       // gRPC error codes: https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
-      case 3:
-        // InvalidArgument
+      // InvalidArgument
+      case 3: {
+        const serverError = error.response.data.message;
+
+        // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
+        if (serverError.includes("MissingRegion")) {
+          return "Region not detected. Please enter a region.";
+        } else if (serverError.includes("NoCredentialProviders")) {
+          return "No credentials found. Please see the docs for how to configure AWS credentials.";
+        } else if (serverError.includes("InvalidAccessKey")) {
+          return "Invalid AWS access key. Please check your credentials.";
+        } else if (serverError.includes("SignatureDoesNotMatch")) {
+          return "Invalid AWS secret key. Please check your credentials.";
+        }
+
+        // GCP errors (ref: https://cloud.google.com/storage/docs/json_api/v1/status-codes)
+        if (serverError.includes("could not find default credentials")) {
+          return "No credentials found. Please see the docs for how to configure GCP credentials.";
+        } else if (serverError.includes("AccessDenied")) {
+          const details = serverError
+            .split("<Details>")[1]
+            .split("</Details>")[0];
+          return "Access denied: " + details;
+        } else if (serverError.includes("Unauthorized")) {
+          return "Unauthorized. Please check your credentials.";
+        }
+
+        // DuckDB errors
+        if (serverError.match(/expected \d* values per row, but got \d*/)) {
+          return "Malformed CSV file: number of columns does not match header.";
+        } else if (
+          serverError.match(/Catalog Error: Table with name .* does not exist/)
+        ) {
+          return "We had trouble ingesting your data. Please see the docs for common issues. If you're still stuck, don't hesitate to reach out on Discord.";
+        }
         return error.response.data.message;
+      }
       default:
         return "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";
     }
   }
 </script>
 
-{#if $createSource.isError}
-  <div class="mx-4">
-    <SubmissionError message={humanReadableErrorMessage($createSource.error)} />
-  </div>
-{/if}
-
-<form
-  on:submit|preventDefault={handleSubmit}
-  id="remote-source-{connector}-form"
-  class="px-4 pb-2 flex-grow overflow-y-auto"
->
-  <div class="py-2">
-    <Input
-      label="Source name"
-      bind:value={$form["sourceName"]}
-      error={$errors["sourceName"]}
-      placeholder="my_new_source"
-    />
-  </div>
-  {#each connector.properties as property}
-    {@const label =
-      property.displayName + (property.nullable ? " (optional)" : "")}
+<div class="h-full flex flex-col">
+  <form
+    on:submit|preventDefault={handleSubmit}
+    id="remote-source-{connector.name}-form"
+    class="px-4 pb-2 flex-grow overflow-y-auto"
+  >
+    <div class="pt-4 pb-2">
+      Need help? Refer to our
+      <a
+        href="https://docs.rilldata.com/data-source-connections"
+        target="_blank">docs</a
+      > for more information.
+    </div>
+    {#if $createSource.isError}
+      <SubmissionError
+        message={humanReadableErrorMessage($createSource.error)}
+      />
+    {/if}
     <div class="py-2">
-      {#if property.type === ConnectorPropertyType.TYPE_STRING}
-        <Input
-          id={property.key}
-          {label}
-          placeholder={property.placeholder}
-          hint={property.hint}
-          error={$errors[toYupFriendlyKey(property.key)]}
-          bind:value={$form[toYupFriendlyKey(property.key)]}
-        />
-      {/if}
-      {#if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
-        <label for={property.key} class="flex items-center">
-          <input
+      <Input
+        label="Source name"
+        bind:value={$form["sourceName"]}
+        error={$errors["sourceName"]}
+        placeholder="my_new_source"
+      />
+    </div>
+    {#each connector.properties as property}
+      {@const label =
+        property.displayName + (property.nullable ? " (optional)" : "")}
+      <div class="py-2">
+        {#if property.type === ConnectorPropertyType.TYPE_STRING}
+          <Input
             id={property.key}
-            type="checkbox"
-            bind:checked={$form[property.key]}
-            class="h-5 w-5"
+            {label}
+            placeholder={property.placeholder}
+            hint={property.hint}
+            error={$errors[toYupFriendlyKey(property.key)]}
+            bind:value={$form[toYupFriendlyKey(property.key)]}
           />
-          <span class="ml-2 text-sm">{label}</span>
-        </label>
-      {/if}
-    </div>
-  {/each}
-</form>
-<div class="bg-gray-100 border-t border-gray-300">
-  <DialogFooter>
-    <div class="flex items-center space-x-2">
-      <Button
-        type="primary"
-        submitForm
-        form="remote-source-{connector}-form"
-        disabled={$createSource.isLoading || waitingOnSourceImport}
-      >
-        Add source
-      </Button>
-    </div>
-  </DialogFooter>
+        {:else if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
+          <label for={property.key} class="flex items-center">
+            <input
+              id={property.key}
+              type="checkbox"
+              bind:checked={$form[property.key]}
+              class="h-5 w-5"
+            />
+            <span class="ml-2 text-sm">{label}</span>
+          </label>
+        {:else if property.type === ConnectorPropertyType.TYPE_INFORMATIONAL}
+          <InformationalField
+            description={property.description}
+            hint={property.hint}
+            href={property.href}
+          />
+        {/if}
+      </div>
+    {/each}
+  </form>
+  <div class="bg-gray-100 border-t border-gray-300">
+    <DialogFooter>
+      <div class="flex items-center space-x-2">
+        <Button
+          type="primary"
+          submitForm
+          form="remote-source-{connector.name}-form"
+          disabled={$createSource.isLoading || waitingOnSourceImport}
+        >
+          Add source
+        </Button>
+      </div>
+    </DialogFooter>
+  </div>
 </div>

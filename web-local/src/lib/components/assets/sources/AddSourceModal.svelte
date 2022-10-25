@@ -43,7 +43,7 @@
 
 <Dialog
   yFixed
-  size="lg"
+  size="md"
   showCancel
   compact
   {disabled}
@@ -62,12 +62,7 @@
       {/if}
     </TabGroup>
   </div>
-  {#if selectedConnector?.name !== "file"}
-    <div class="p-4">
-      {@html selectedConnector?.description}
-    </div>
-  {/if}
-  <div class="h-full flex flex-col">
+  <div class="flex-grow overflow-y-auto">
     {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3"}
       {#key selectedConnector}
         <RemoteSource connector={selectedConnector} on:close />

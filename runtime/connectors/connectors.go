@@ -44,6 +44,7 @@ type PropertySchema struct {
 	Description string
 	Placeholder string
 	Hint        string
+	Href        string
 }
 
 // PropertySchemaType is an enum of types supported for connector properties.
@@ -54,6 +55,7 @@ const (
 	StringPropertyType
 	NumberPropertyType
 	BooleanPropertyType
+	InformationalPropertyType
 )
 
 // ValidateType checks that val has the correct type

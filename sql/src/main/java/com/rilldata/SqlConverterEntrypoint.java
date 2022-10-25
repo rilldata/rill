@@ -33,7 +33,7 @@ public class SqlConverterEntrypoint
     String sql = transpileRequest.getSql();
     Requests.Dialect dialect = transpileRequest.getDialect();
     try {
-      SqlConverter sqlConverter = new SqlConverter(transpileRequest.getSchema());
+      SqlConverter sqlConverter = new SqlConverter(transpileRequest.getCatalog());
       String transpiledSql = sqlConverter.convert(sql, Dialects.valueOf(dialect.name()).getSqlDialect());
       return Requests.Response
           .newBuilder()
@@ -42,7 +42,8 @@ public class SqlConverterEntrypoint
     } catch (Exception e) {
       return Requests.Response
           .newBuilder()
-          .setError(Requests.Error.newBuilder().setMessage(stackTraceToString(e)).build())
+          .setError(
+            Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
           .build();
     }
   }
@@ -57,7 +58,7 @@ public class SqlConverterEntrypoint
       if (r.hasParseRequest()) {
         Requests.ParseRequest parseRequest = r.getParseRequest();
         String sql = parseRequest.getSql();
-        SqlConverter sqlConverter = new SqlConverter(parseRequest.getSchema());
+        SqlConverter sqlConverter = new SqlConverter(parseRequest.getCatalog());
         Requests.Response response;
         try {
           SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql);
@@ -68,7 +69,8 @@ public class SqlConverterEntrypoint
         } catch (Exception e) {
           response = Requests.Response
               .newBuilder()
-              .setError(Requests.Error.newBuilder().setMessage(stackTraceToString(e)).build())
+              .setError(
+                Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
               .build();
         }
         byte[] b64response = Base64.getEncoder().encode(response.toByteArray());
@@ -83,11 +85,11 @@ public class SqlConverterEntrypoint
           .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
           .build();
       return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
-    }
-    catch (InvalidProtocolBufferException e) {
+    } catch (Exception e) {
       Requests.Response build = Requests.Response
           .newBuilder()
-          .setError(Requests.Error.newBuilder().setMessage("Invalid request " + stackTraceToString(e)).build())
+          .setError(
+              Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
           .build();
       return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
     }
@@ -95,14 +97,14 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "convert_sql")
   public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema, CCharPointer dialect
+      CCharPointer catalog, CCharPointer dialect
   )
   {
     try {
       String dialectString = CTypeConversion.toJavaString(dialect);
       Dialects dialectEnum = Dialects.valueOf(dialectString.toUpperCase());
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String javaSqlString = CTypeConversion.toJavaString(sql);
       String runnableQuery = sqlConverter.convert(javaSqlString, dialectEnum.getSqlDialect());
       if (runnableQuery == null) {
@@ -117,12 +119,12 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "get_ast")
   public static CCharPointer getAST(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema
+      CCharPointer catalog
   )
   {
     try {
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String sqlString = CTypeConversion.toJavaString(sql);
       SqlNodeProto ast = sqlConverter.getAST(sqlString);
       return convertToCCharPointer(allocatorFn, ast.toByteArray());

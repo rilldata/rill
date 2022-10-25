@@ -1120,6 +1120,10 @@
         "hint": {
           "type": "string",
           "title": "Additional textual explanation for use in UIs"
+        },
+        "href": {
+          "type": "string",
+          "title": "Link to documentation for this property"
         }
       },
       "title": "Property represents one of the connector's config properties"
@@ -1130,7 +1134,8 @@
         "TYPE_UNSPECIFIED",
         "TYPE_STRING",
         "TYPE_NUMBER",
-        "TYPE_BOOLEAN"
+        "TYPE_BOOLEAN",
+        "TYPE_INFORMATIONAL"
       ],
       "default": "TYPE_UNSPECIFIED",
       "title": "Type represents the field type"

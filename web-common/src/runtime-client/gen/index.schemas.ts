@@ -135,7 +135,7 @@ export interface V1QueryDirectResponse {
 }
 
 export interface V1PutRepoObjectResponse {
-  [key: string]: any;
+  filePath?: string;
 }
 
 export interface V1PingResponse {
@@ -366,6 +366,7 @@ export const ConnectorPropertyType = {
   TYPE_STRING: "TYPE_STRING",
   TYPE_NUMBER: "TYPE_NUMBER",
   TYPE_BOOLEAN: "TYPE_BOOLEAN",
+  TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
 export interface ConnectorProperty {
@@ -376,4 +377,5 @@ export interface ConnectorProperty {
   type?: ConnectorPropertyType;
   nullable?: boolean;
   hint?: string;
+  href?: string;
 }

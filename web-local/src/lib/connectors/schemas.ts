@@ -16,9 +16,7 @@ export function getYupSchema(connector: V1Connector) {
           .string()
           .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
           .required("S3 URI is required"),
-        aws_region: yup.string().required("Region is required"),
-        aws_access_key: yup.string(),
-        aws_access_secret: yup.string(),
+        aws_region: yup.string(),
       });
     case "gcs":
       return yup.object().shape({
