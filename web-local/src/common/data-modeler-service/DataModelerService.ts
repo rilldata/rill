@@ -56,6 +56,7 @@ export type DataModelerActionsDefinition = ExtractActionTypeDefinitions<
  * One caveat to note, type definition and actual instances passed might not match.
  */
 export class DataModelerService {
+  public readonly databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>;
   /**
    * Map of action to {@link DataModelerActions} instance.
    * This might not have an entry for everything in DataModelerActionsDefinition.
@@ -66,8 +67,6 @@ export class DataModelerService {
     [Action in keyof DataModelerActionsDefinition]?: DataModelerActionsClasses;
   } = {};
   private runningCount = 0;
-
-  public readonly databaseActionQueue: ActionQueueOrchestrator<DatabaseActionsDefinition>;
 
   public constructor(
     protected readonly dataModelerStateService: DataModelerStateService,
