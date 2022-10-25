@@ -526,8 +526,10 @@ message TriggerSyncRequest {
 
 // Response message for RuntimeService.TriggerSync
 message TriggerSyncResponse {
-  uint32 objects_added_count = 1;
-  uint32 objects_removed_count = 2;
+  uint32 objects_count = 1;
+  uint32 objects_added_count = 2;
+  uint32 objects_updated_count = 3;
+  uint32 objects_removed_count = 4;
 }
 
 // **********

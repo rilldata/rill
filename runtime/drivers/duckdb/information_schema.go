@@ -30,6 +30,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
+		where t.table_schema != 'rill'
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`
@@ -59,7 +60,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		where t.table_name = ?
+		where t.table_schema != 'rill' and t.table_name = ?
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`
@@ -184,6 +185,12 @@ func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
 		t.Code = api.Type_CODE_UUID
 	case "JSON":
 		t.Code = api.Type_CODE_JSON
+	case "CHAR":
+		t.Code = api.Type_CODE_STRING
+	case "TIMESTAMP WITH TIME ZONE":
+		t.Code = api.Type_CODE_TIMESTAMP
+	case "TIME WITH TIME ZONE":
+		t.Code = api.Type_CODE_TIME
 	default:
 		match = false
 	}
