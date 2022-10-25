@@ -117,8 +117,6 @@ async function uploadFile(
 
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("instanceId", get(runtimeStore).instanceId);
-  formData.append("tableName", tableName);
 
   try {
     // TODO: generate client and use it in component

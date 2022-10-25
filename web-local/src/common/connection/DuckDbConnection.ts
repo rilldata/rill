@@ -71,7 +71,6 @@ export class DuckDbConnection extends DataConnection {
       if (!catalogsMap.has(persistentTable.tableName)) {
         await this.dataModelerService.dispatch("dropTable", [
           persistentTable.tableName,
-          true,
         ]);
         continue;
       }

@@ -88,18 +88,14 @@ export class ImportTableCommand extends DataModelerCliCommand {
 
   private async importTable(
     tableSourceFile: string,
-    { name, delimiter }: ImportTableCommandOptions,
+    { name }: ImportTableCommandOptions,
     existingTable: PersistentTableEntity
   ) {
     await this.waitIfClient();
     const tableName = getTableNameFromFile(tableSourceFile, name);
     const response = await this.dataModelerService.dispatch(
-      "addOrUpdateTableFromFile",
-      [
-        tableSourceFile,
-        name,
-        { csvDelimiter: delimiter, shouldNotProfile: true },
-      ]
+      "importTableFromCLI",
+      [tableSourceFile, tableName]
     );
 
     if (response.status === ActionStatus.Failure) {
