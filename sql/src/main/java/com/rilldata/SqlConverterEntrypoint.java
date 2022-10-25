@@ -61,7 +61,7 @@ public class SqlConverterEntrypoint
         SqlConverter sqlConverter = new SqlConverter(parseRequest.getCatalog());
         Requests.Response response;
         try {
-          SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql);
+          SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql, parseRequest.getAddTypeInfo());
           response = Requests.Response
               .newBuilder()
               .setParseResponse(Requests.ParseResponse.newBuilder().setAst(sqlNodeProto).build())
