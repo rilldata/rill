@@ -1,5 +1,6 @@
 ---
-title: Defining Dashboards with Metrics
+title: Define metrics dashboard
+description: Define your time dimension, measures and dimensions to create a dashboard
 ---
 
 In Rill, your dashboards are defined by _metrics_. Metrics are composed of:
@@ -22,7 +23,7 @@ To get you up and running quickly, Rill can generate a dashboard directly from a
 
 Dashboards can be created and improved using the metrics editor. The metrics editor helps you define a time series, set of measures, and categorical dimensions that are directly tied to your dashboard.
 
-### Time Dimension
+### Time dimension
 
 Your time dimension must be a column from your data model of type [`TIMESTAMP`](https://duckdb.org/docs/sql/data_types/timestamp), [`TIME`](https://duckdb.org/docs/sql/data_types/overview), or [`DATE`](https://duckdb.org/docs/sql/data_types/date).
 
@@ -35,7 +36,7 @@ Strings representing dates are not supported, but you may be able to [`CAST`](ht
 ### Measures
 Measures are numeric aggregates of columns from your data model, and power the line charts that you see in Rill.
 
-A measure must be defined with a [DuckSQL](./sql-dialect.md) aggregation function over columns from your data model, or a mathematical expression built with one or more such aggregates.
+A measure must be defined with a [DuckSQL](./sql-models.md) aggregation function over columns from your data model, or a mathematical expression built with one or more such aggregates.
 
 For example, if you have a table of sales events with columns including a timestamp for the sales date, the sales price, and customer id, you could calculate the following metrics per time period with these expressions:
 * number of sales: `COUNT(*)` (note that this would be equivalent to counting the total number of rows for any column, e.g. `COUNT(sales_date)`)
