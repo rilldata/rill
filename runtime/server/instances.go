@@ -64,6 +64,11 @@ func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequ
 		}
 	}
 
+	err = conn.Migrate(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to migrate instance: %s", err.Error())
+	}
+
 	registry, _ := s.metastore.RegistryStore()
 	err = registry.CreateInstance(ctx, inst)
 	if err != nil {
