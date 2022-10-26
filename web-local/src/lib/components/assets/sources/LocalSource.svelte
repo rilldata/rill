@@ -2,6 +2,7 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
   import { Button } from "@rilldata/web-local/lib/components/button";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import {
     openFileUploadDialog,
     uploadTableFiles,
@@ -9,7 +10,10 @@
   import { createEventDispatcher, getContext } from "svelte";
   import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
   import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores.js";
-  import { useRuntimeServiceMigrateSingle } from "web-common/src/runtime-client";
+  import {
+    getRuntimeServiceListCatalogObjectsQueryKey,
+    useRuntimeServiceMigrateSingle,
+  } from "web-common/src/runtime-client";
 
   const dispatch = createEventDispatcher();
 
@@ -51,6 +55,9 @@
       }
     }
     dispatch("close");
+    return queryClient.invalidateQueries(
+      getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId)
+    );
   }
 </script>
 

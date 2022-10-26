@@ -1,10 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { createEventDispatcher, getContext } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import {
     ConnectorPropertyType,
+    getRuntimeServiceListCatalogObjectsQueryKey,
     RpcStatus,
     useRuntimeServiceMigrateSingle,
     V1Connector,
@@ -81,6 +83,9 @@
               goto(`/source/${newId}`);
               dispatch("close");
               overlay.set(null);
+              return queryClient.invalidateQueries(
+                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId)
+              );
             },
             onError: (error) => {
               console.error(error);

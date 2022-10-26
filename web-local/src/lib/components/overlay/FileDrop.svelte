@@ -3,8 +3,12 @@
   import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
-  import { useRuntimeServiceMigrateSingle } from "web-common/src/runtime-client";
+  import {
+    getRuntimeServiceListCatalogObjectsQueryKey,
+    useRuntimeServiceMigrateSingle,
+  } from "web-common/src/runtime-client";
   import Overlay from "./Overlay.svelte";
   import { uploadTableFiles } from "../../util/file-upload";
 
@@ -45,6 +49,9 @@
         console.error(err);
       }
     }
+    return queryClient.invalidateQueries(
+      getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId)
+    );
   };
 </script>
 
