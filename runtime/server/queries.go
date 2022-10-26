@@ -11,6 +11,8 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/sql"
+	"github.com/rilldata/rill/runtime/sql/rpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -18,7 +20,84 @@ import (
 
 // Query implements RuntimeService
 func (s *Server) Query(ctx context.Context, req *api.QueryRequest) (*api.QueryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
+	args := make([]any, len(req.Args))
+	for i, arg := range req.Args {
+		args[i] = arg.AsInterface()
+	}
+
+	res, err := s.query(ctx, req.InstanceId, &drivers.Statement{
+		Query:    req.Sql,
+		Args:     args,
+		DryRun:   req.DryRun,
+		Priority: int(req.Priority),
+	})
+	if err != nil {
+		// TODO: Parse error to determine error code
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if req.DryRun {
+		// TODO: Return a meta object for dry-run queries
+		// NOTE: Currently, instance.Query return nil rows for succesful dry-run queries
+		return &api.QueryResponse{}, nil
+	}
+
+	defer res.Close()
+
+	data, err := rowsToData(res)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	resp := &api.QueryResponse{
+		Meta: res.Schema,
+		Data: data,
+	}
+
+	return resp, nil
+}
+
+func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
+	// Get instance
+	registry, _ := s.metastore.RegistryStore()
+	inst, found := registry.FindInstance(ctx, instanceID)
+	if !found {
+		return nil, status.Error(codes.NotFound, "instance not found")
+	}
+
+	// Connect to olap
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+	olap, _ := conn.OLAPStore()
+
+	// Open catalog
+	catalog, err := s.openCatalog(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	catalogObjects := s.catalogCache.allObjects(ctx, instanceID, catalog)
+
+	// Get target dialect
+	var dialect rpc.Dialect
+	switch inst.Driver {
+	case "duckdb":
+		dialect = rpc.Dialect_DUCKDB
+	case "druid":
+		dialect = rpc.Dialect_DRUID
+	default:
+		panic(fmt.Errorf("unexpected instance driver: %s", inst.Driver))
+	}
+
+	// Transpile query
+	stmt.Query, err = sql.Transpile(stmt.Query, dialect, catalogObjects)
+	if err != nil {
+		return nil, err
+	}
+
+	// Run
+	return olap.Execute(ctx, stmt)
 }
 
 // QueryDirect implements RuntimeService
@@ -28,7 +107,7 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 		args[i] = arg.AsInterface()
 	}
 
-	res, err := s.query(ctx, req.InstanceId, &drivers.Statement{
+	res, err := s.queryDirect(ctx, req.InstanceId, &drivers.Statement{
 		Query:    req.Sql,
 		Args:     args,
 		DryRun:   req.DryRun,
@@ -60,14 +139,14 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 	return resp, nil
 }
 
-func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
+func (s *Server) queryDirect(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, instanceID)
 	if !found {
 		return nil, status.Error(codes.NotFound, "instance not found")
 	}
 
-	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}

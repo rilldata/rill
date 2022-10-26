@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/sql"
 	sqlpure "github.com/rilldata/rill/runtime/sql/pure"
+	"github.com/rilldata/rill/runtime/sql/rpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -34,7 +35,7 @@ func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObj
 	objs := catalog.FindObjects(ctx, req.InstanceId, catalogObjectTypeFromPB(req.Type))
 	pbs := make([]*api.CatalogObject, len(objs))
 	for i, obj := range objs {
-		pbs[i], err = catalogObjectToPB(obj)
+		pbs[i], err = s.catalogObjectToPB(ctx, obj, catalog, inst)
 		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
@@ -61,7 +62,7 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
 
-	pb, err := catalogObjectToPB(obj)
+	pb, err := s.catalogObjectToPB(ctx, obj, catalog, inst)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -102,7 +103,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	}
 
 	// Get olap
-	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -117,6 +118,12 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	// Update object
 	obj.RefreshedOn = time.Now()
 	err = catalog.UpdateObject(ctx, req.InstanceId, obj)
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	// Reset catalog cache
+	s.catalogCache.reset(req.InstanceId)
 
 	return &api.TriggerRefreshResponse{}, nil
 }
@@ -131,7 +138,7 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 	}
 
 	// Get OLAP
-	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -211,6 +218,9 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 		}
 	}
 
+	// Reset catalog cache
+	s.catalogCache.reset(req.InstanceId)
+
 	// Done
 	return &api.TriggerSyncResponse{
 		ObjectsCount:        uint32(len(tables)),
@@ -229,7 +239,7 @@ func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drive
 		return catalog, nil
 	}
 
-	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -258,14 +268,15 @@ func catalogObjectTypeFromPB(t api.CatalogObject_Type) drivers.CatalogObjectType
 	}
 }
 
-func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
+// TODO: This should not be a stateful function. When we store an object's parsed definition in the catalog, return it to a stateless implementation.
+func (s *Server) catalogObjectToPB(ctx context.Context, obj *drivers.CatalogObject, catalog drivers.CatalogStore, instance *drivers.Instance) (*api.CatalogObject, error) {
 	switch obj.Type {
 	case drivers.CatalogObjectTypeTable:
 		return catalogObjectTableToPB(obj)
 	case drivers.CatalogObjectTypeSource:
 		return catalogObjectSourceToPB(obj)
 	case drivers.CatalogObjectTypeMetricsView:
-		return catalogObjectMetricsViewToPB(obj)
+		return s.catalogObjectMetricsViewToPB(ctx, obj, catalog, instance)
 	default:
 		panic(fmt.Errorf("not implemented"))
 	}
@@ -311,8 +322,8 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, er
 	}, nil
 }
 
-func catalogObjectMetricsViewToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
-	mv, err := sqlToMetricsView(obj.SQL)
+func (s *Server) catalogObjectMetricsViewToPB(ctx context.Context, obj *drivers.CatalogObject, catalog drivers.CatalogStore, instance *drivers.Instance) (*api.CatalogObject, error) {
+	mv, err := s.sqlToMetricsView(ctx, obj.SQL, catalog, instance)
 	if err != nil {
 		return nil, err
 	}
@@ -365,12 +376,23 @@ func sqlToSource(sqlStr string) (*connectors.Source, error) {
 	return s, nil
 }
 
-func sqlToMetricsView(sqlStr string) (*api.MetricsView, error) {
+func (s *Server) sqlToMetricsView(ctx context.Context, sqlStr string, catalog drivers.CatalogStore, instance *drivers.Instance) (*api.MetricsView, error) {
 	// NOTE: This makes so many assumptions about the AST returned from sql.Parse
 	// as to be close to useless for real user input.
-	var catalog map[string]any // TODO
 
-	n1, err := sql.Parse(sqlStr, catalog)
+	var dialect rpc.Dialect
+	switch instance.Driver {
+	case "duckdb":
+		dialect = rpc.Dialect_DUCKDB
+	case "druid":
+		dialect = rpc.Dialect_DRUID
+	default:
+		panic(fmt.Errorf("unexpected instance driver: %s", instance.Driver))
+	}
+
+	allObjs := s.catalogCache.allObjects(ctx, instance.ID, catalog)
+
+	n1, err := sql.Parse(sqlStr, dialect, allObjs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse metrics view: %s", err.Error())
 	}

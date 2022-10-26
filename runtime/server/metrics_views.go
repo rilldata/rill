@@ -121,7 +121,7 @@ func (s *Server) runQuery(
 	sql string,
 	args []any,
 ) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
-	rows, err := s.query(ctx, instanceId, &drivers.Statement{
+	rows, err := s.queryDirect(ctx, instanceId, &drivers.Statement{
 		Query: sql,
 		Args:  args,
 	})
