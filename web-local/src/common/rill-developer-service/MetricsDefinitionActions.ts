@@ -1,17 +1,17 @@
 import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import { RillDeveloperActions } from "./RillDeveloperActions";
-import type { RillRequestContext } from "./RillRequestContext";
+import { CATEGORICALS } from "@rilldata/web-local/lib/duckdb-data-types";
+import type { ProfileColumn } from "@rilldata/web-local/lib/types";
+import { ActionResponseFactory } from "../data-modeler-service/response/ActionResponseFactory";
 import {
   EntityType,
   StateType,
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
-import { getMetricsDefinition } from "../stateInstancesFactory";
 import type { MetricsDefinitionEntity } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import type { ProfileColumn } from "@rilldata/web-local/lib/types";
-import { CATEGORICALS } from "@rilldata/web-local/lib/duckdb-data-types";
-import { ActionResponseFactory } from "../data-modeler-service/response/ActionResponseFactory";
-import { shallowCopy } from "../utils/shallowCopy";
 import { ExplorerSourceModelDoesntExist } from "../errors/ErrorMessages";
+import { getMetricsDefinition } from "../stateInstancesFactory";
+import { shallowCopy } from "../utils/shallowCopy";
+import { RillDeveloperActions } from "./RillDeveloperActions";
+import type { RillRequestContext } from "./RillRequestContext";
 
 export type MetricsDefinitionContext = RillRequestContext<
   EntityType.MetricsDefinition,
@@ -171,10 +171,8 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
     );
     const measure = measureResp.data as MeasureDefinitionEntity;
 
-    measure.label = "Total Events";
-    measure.description =
-      "The number of events recorded during the selected period of time, " +
-      `ordered by ${rillRequestContext.record.timeDimension}`;
+    measure.label = "Number of records";
+    measure.description = "Number of records in current selection";
 
     await this.rillDeveloperService.dispatch(
       rillRequestContext,
