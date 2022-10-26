@@ -23,7 +23,7 @@
       >
         <InfoCircle size="13px" />
       </a>
-      <TooltipContent maxWidth="400px" slot="tooltip-content">
+      <TooltipContent slot="tooltip-content">
         <LongDescription>
           {@html hint}
         </LongDescription>

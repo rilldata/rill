@@ -35,7 +35,7 @@ var spec = connectors.Spec{
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
-			Hint:        "Set your local credentials: <p><code>gcloud auth application-default login</code></p> Click to learn more.",
+			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
 			Href:        "https://docs.rilldata.com/import-data#setting-google-gcs-credentials",
 		},
 	},
