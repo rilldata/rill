@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { refreshRemoteSource } from "@rilldata/web-local/lib/components/assets/sources/refreshRemoteSource";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceMigrateSingle,
     useRuntimeServiceTriggerRefresh,
   } from "web-common/src/runtime-client";
   import {
@@ -11,7 +14,6 @@
   } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import { IconButton } from "../../button";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
@@ -37,38 +39,32 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSource = useRuntimeServiceTriggerRefresh();
+  const createSource = useRuntimeServiceMigrateSingle();
 
   $: getSource = useRuntimeServiceGetCatalogObject(
     runtimeInstanceId,
     currentSource?.tableName
   );
 
-  const onRefreshClick = (tableName: string) => {
+  const onRefreshClick = async (tableName: string) => {
     overlay.set({ title: `Importing ${tableName}` });
-    $refreshSource.mutate(
-      {
-        instanceId: runtimeInstanceId,
-        name: tableName,
-      },
-      {
-        onError: (error) => {
-          console.error(error);
-          overlay.set(null);
-        },
-        onSuccess: async () => {
-          // invalidate the data preview (async)
-          dataModelerService.dispatch("collectTableInfo", [currentSource.id]);
-
-          // invalidate the "refreshed_on" time
-          const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
-            runtimeInstanceId,
-            tableName
-          );
-          queryClient.invalidateQueries(queryKey);
-          overlay.set(null);
-        },
-      }
+    await refreshRemoteSource(
+      $getSource.data?.object.source.connector,
+      tableName,
+      $runtimeStore,
+      $refreshSource,
+      $createSource
     );
+    // invalidate the data preview (async)
+    dataModelerService.dispatch("collectTableInfo", [currentSource.id]);
+
+    // invalidate the "refreshed_on" time
+    const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+      runtimeInstanceId,
+      tableName
+    );
+    await queryClient.invalidateQueries(queryKey);
+    overlay.set(null);
   };
 
   function formatRefreshedOn(refreshedOn: string) {

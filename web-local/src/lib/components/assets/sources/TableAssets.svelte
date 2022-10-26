@@ -8,12 +8,15 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
+  import { refreshRemoteSource } from "@rilldata/web-local/lib/components/assets/sources/refreshRemoteSource";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    useRuntimeServiceListCatalogObjects,
     useRuntimeServiceMigrateDelete,
+    useRuntimeServiceMigrateSingle,
     useRuntimeServiceTriggerRefresh,
   } from "web-common/src/runtime-client";
   import {
@@ -167,33 +170,30 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSource = useRuntimeServiceTriggerRefresh();
+  const createSource = useRuntimeServiceMigrateSingle();
+  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId);
 
-  const onRefreshSource = (id: string, tableName: string) => {
+  const onRefreshSource = async (id: string, tableName: string) => {
     overlay.set({ title: `Importing ${tableName}` });
-    $refreshSource.mutate(
-      {
-        instanceId: runtimeInstanceId,
-        name: tableName,
-      },
-      {
-        onError: (error) => {
-          console.error(error);
-          overlay.set(null);
-        },
-        onSuccess: () => {
-          // invalidate the data preview (async)
-          dataModelerService.dispatch("collectTableInfo", [id]);
-
-          // invalidate the "refreshed_on" time
-          const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
-            runtimeInstanceId,
-            tableName
-          );
-          queryClient.invalidateQueries(queryKey);
-          overlay.set(null);
-        },
-      }
+    await refreshRemoteSource(
+      $getSources.data?.objects.find(
+        (object) => object.source?.name === tableName
+      )?.source.connector,
+      tableName,
+      $runtimeStore,
+      $refreshSource,
+      $createSource
     );
+    // invalidate the data preview (async)
+    dataModelerService.dispatch("collectTableInfo", [id]);
+
+    // invalidate the "refreshed_on" time
+    const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+      runtimeInstanceId,
+      tableName
+    );
+    await queryClient.invalidateQueries(queryKey);
+    overlay.set(null);
   };
 
   $: activeEntityID = $rillAppStore?.activeEntity?.id;

@@ -1,8 +1,4 @@
 <script lang="ts">
-  import {
-    getDuplicateNameChecker,
-    getIncrementedNameGetter,
-  } from "@rilldata/web-local/common/utils/duplicateNameUtils";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
@@ -10,7 +6,7 @@
   import { getContext } from "svelte";
   import { useRuntimeServiceMigrateSingle } from "web-common/src/runtime-client";
   import Overlay from "./Overlay.svelte";
-  import { onSourceDrop } from "../../util/file-upload";
+  import { uploadTableFiles } from "../../util/file-upload";
 
   export let showDropOverlay: boolean;
 
@@ -24,44 +20,31 @@
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const createSource = useRuntimeServiceMigrateSingle();
 
-  const handleSourceDrop = (e: DragEvent) => {
+  const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
-    onSourceDrop(
-      e,
-      (name) =>
-        getDuplicateNameChecker(
-          name,
-          $persistentModelStore.entities,
-          $persistentTableStore.entities
-        ),
-      (name) =>
-        getIncrementedNameGetter(
-          name,
-          $persistentModelStore.entities,
-          $persistentTableStore.entities
-        ),
-      async (tableName, filePath) => {
-        return new Promise((resolve, reject) => {
-          const sql = compileCreateSourceSql(
-            {
-              sourceName: tableName,
-              path: filePath,
-            },
-            "file"
-          );
-          $createSource.mutate(
-            {
-              instanceId: runtimeInstanceId,
-              data: { sql, createOrReplace: true },
-            },
-            {
-              onSuccess: resolve,
-              onError: reject,
-            }
-          );
-        });
-      }
+
+    const uploadedFiles = uploadTableFiles(
+      Array.from(e?.dataTransfer?.files),
+      [$persistentModelStore.entities, $persistentTableStore.entities],
+      $runtimeStore
     );
+    for await (const { tableName, filePath } of uploadedFiles) {
+      try {
+        const sql = compileCreateSourceSql(
+          {
+            sourceName: tableName,
+            path: filePath,
+          },
+          "file"
+        );
+        await $createSource.mutateAsync({
+          instanceId: runtimeInstanceId,
+          data: { sql, createOrReplace: true },
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 </script>
 
