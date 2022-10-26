@@ -4,34 +4,33 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/sql/rpc"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTranspileSelect(t *testing.T) {
 	sql := fmt.Sprintf(`select %d as foo, 'hello' as bar, h1.id, h1."power", h2.name from main.heroes h1 join main.heroes h2 on h1.id = h2.id`, 10)
-	catalog := map[string]any{
-		"artifacts": []map[string]any{
-			{
-				"name":    "MV",
-				"type":    "METRICS_VIEW",
-				"payload": "Create Metrics View MV DIMENSIONS \"power\" Measures count(DISTINCT name) AS names FROM main.heroes",
-			},
-		},
-		"schemas": []map[string]any{
-			{
-				"name": "main",
-				"tables": []map[string]any{
-					{
-						"name": "heroes",
-						"columns": []map[string]any{
-							{"name": "id", "type": "varchar"},
-							{"name": "power", "type": "varchar"},
-							{"name": "name", "type": "varchar"},
-						},
-					},
+
+	catalog := []*drivers.CatalogObject{
+		{
+			Name: "heroes",
+			Type: drivers.CatalogObjectTypeTable,
+			Schema: &api.StructType{
+				Fields: []*api.StructType_Field{
+					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
+					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
 				},
 			},
+		},
+		{
+			Name: "MV",
+			Type: drivers.CatalogObjectTypeMetricsView,
+			SQL:  `Create Metrics View MV DIMENSIONS "power" Measures count(DISTINCT name) AS names FROM main.heroes`,
 		},
 	}
 
@@ -42,26 +41,23 @@ func TestTranspileSelect(t *testing.T) {
 
 func TestParseSelect(t *testing.T) {
 	sql := `select 10 as foo, 'hello' as bar, h1.id, h1."power", h2.name from main.heroes h1 join main.heroes h2 on h1.id = h2.id`
-	catalog := map[string]any{
-		"artifacts": []any{},
-		"schemas": []map[string]any{
-			{
-				"name": "main",
-				"tables": []map[string]any{
-					{
-						"name": "heroes",
-						"columns": []map[string]any{
-							{"name": "id", "type": "varchar"},
-							{"name": "power", "type": "varchar"},
-							{"name": "name", "type": "varchar"},
-						},
-					},
+	catalog := []*drivers.CatalogObject{
+		{
+			Name: "heroes",
+			Type: drivers.CatalogObjectTypeTable,
+			Schema: &api.StructType{
+				Fields: []*api.StructType_Field{
+					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
+					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
 				},
 			},
 		},
 	}
 
-	res, err := Parse(sql, catalog)
+	res, err := Parse(sql, rpc.Dialect_DUCKDB, catalog)
 	require.NoError(t, err)
 	require.Equal(t, 5, len(res.GetSqlSelectProto().GetSelectList().List))
 }
@@ -81,28 +77,24 @@ func TestParseMetricsView(t *testing.T) {
 			SUM(LEVEL) AS LEVES
 		FROM MAIN.HEROES
 	`
-	catalog := map[string]any{
-		"artifacts": []any{},
-		"schemas": []map[string]any{
-			{
-				"name": "main",
-				"tables": []map[string]any{
-					{
-						"name": "heroes",
-						"columns": []map[string]any{
-							{"name": "id", "type": "varchar"},
-							{"name": "birthday", "type": "timestamp"},
-							{"name": "power", "type": "varchar"},
-							{"name": "name", "type": "varchar"},
-							{"name": "level", "type": "integer"},
-						},
-					},
+
+	catalog := []*drivers.CatalogObject{
+		{
+			Name: "heroes",
+			Type: drivers.CatalogObjectTypeTable,
+			Schema: &api.StructType{
+				Fields: []*api.StructType_Field{
+					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
+					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
+					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
 				},
 			},
 		},
 	}
 
-	res, err := Parse(sql, catalog)
+	res, err := Parse(sql, rpc.Dialect_DUCKDB, catalog)
 	require.NoError(t, err)
 	require.Equal(t, "SUM", res.GetSqlCreateMetricsViewProto().Measures.List[3].GetSqlBasicCallProto().OperandList[0].GetSqlBasicCallProto().Operator.Name)
 }
