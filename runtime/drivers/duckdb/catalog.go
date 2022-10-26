@@ -30,7 +30,7 @@ func (c *connection) FindObject(ctx context.Context, instanceID string, name str
 }
 
 func (c *connection) findObjects(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogObject {
-	sql := fmt.Sprintf("SELECT name, type, sql, schema, managed, created_on, updated_on FROM rill.catalog %s ORDER BY name", whereClause)
+	sql := fmt.Sprintf("SELECT name, type, sql, schema, managed, created_on, updated_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
