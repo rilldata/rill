@@ -1,5 +1,6 @@
 <script lang="ts">
   import InfoCircle from "../icons/InfoCircle.svelte";
+  import LongDescription from "../tooltip/LongDescription.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
@@ -23,7 +24,9 @@
         <InfoCircle size="13px" />
       </a>
       <TooltipContent slot="tooltip-content">
-        {@html hint}
+        <LongDescription>
+          {@html hint}
+        </LongDescription>
       </TooltipContent>
     </Tooltip>
   {/if}

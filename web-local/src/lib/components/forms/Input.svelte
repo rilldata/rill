@@ -29,7 +29,7 @@
       <div class="text-gray-500" style="transform:translateY(-.5px)">
         <InfoCircle size="13px" />
       </div>
-      <TooltipContent slot="tooltip-content">
+      <TooltipContent maxWidth="400px" slot="tooltip-content">
         {@html hint}
       </TooltipContent>
     </Tooltip>
