@@ -66,7 +66,7 @@ export class TableActions extends DataModelerActions {
   // because ImportTableCommand can be called without a runtime present.
   @DataModelerActions.PersistentTableAction()
   public async importTableFromCLI(
-    _: PersistentTableStateActionArg,
+    { stateService }: PersistentTableStateActionArg,
     tableSourceFile: string,
     tableName: string
   ) {
@@ -87,6 +87,13 @@ export class TableActions extends DataModelerActions {
         createOrReplace: true,
       }
     );
+
+    const existingTable = stateService.getByField("tableName", tableName);
+    if (existingTable) {
+      await this.dataModelerService.dispatch("collectTableInfo", [
+        existingTable.id,
+      ]);
+    }
   }
 
   @DataModelerActions.PersistentTableAction()

@@ -1,5 +1,6 @@
 <script lang="ts">
   import InfoCircle from "../icons/InfoCircle.svelte";
+  import LongDescription from "../tooltip/LongDescription.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
@@ -14,17 +15,18 @@
   </div>
   {#if hint}
     <Tooltip location="bottom" alignment="middle" distance={8}>
-      <button
-        class="text-gray-500"
+      <a
+        class="text-gray-500 hover:cursor-pointer"
         style="transform:translateY(-.5px)"
-        on:click|preventDefault={() => {
-          window.open(href, "_blank");
-        }}
+        {href}
+        target="_blank"
       >
         <InfoCircle size="13px" />
-      </button>
+      </a>
       <TooltipContent maxWidth="400px" slot="tooltip-content">
-        {@html hint}
+        <LongDescription>
+          {@html hint}
+        </LongDescription>
       </TooltipContent>
     </Tooltip>
   {/if}
