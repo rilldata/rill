@@ -86,5 +86,9 @@ describe("duplicateNameUtils", () => {
         "BAR_2"
       );
     });
+
+    it("gaps", () => {
+      testIncrementedNameGetter("Foo", ["foo"], ["foo_2"], "Foo_1");
+    });
   });
 });
