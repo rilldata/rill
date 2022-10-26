@@ -95,6 +95,7 @@ TableCells – the cell contents.
   let estimateColumnSize;
   let measureColumns = [];
   let dimensionColumn;
+  let horizontalScrolling = false;
 
   $: if (rows && columns) {
     rowVirtualizer = createVirtualizer({
@@ -219,6 +220,7 @@ TableCells – the cell contents.
 >
   <div
     bind:this={container}
+    on:scroll={() => (horizontalScrolling = container?.scrollLeft > 0)}
     style:width="100%"
     style:height="100%"
     class="overflow-auto grid"
@@ -267,6 +269,7 @@ TableCells – the cell contents.
               {activeIndex}
               {selectedIndex}
               {scrolling}
+              {horizontalScrolling}
               on:select-item={(event) => onSelectItem(event)}
               on:inspect={setActiveIndex}
             />

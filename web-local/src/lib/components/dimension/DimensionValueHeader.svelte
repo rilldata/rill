@@ -12,6 +12,7 @@
   export let column: VirtualizedTableColumns;
   export let rows;
   export let width = config.indexWidth;
+  export let horizontalScrolling;
 
   // Cell props
   export let scrolling;
@@ -42,6 +43,7 @@
     header={{ size: width, start: 0 }}
     enableResize={false}
     position="top-left"
+    borderRight={horizontalScrolling}
   >
     <span class="px-1">{column.label || column.name}</span>
   </StickyHeader>
@@ -51,6 +53,7 @@
       enableResize={false}
       position="left"
       header={{ size: width, start: row.start }}
+      borderRight={horizontalScrolling}
     >
       <Cell
         positionStatic

@@ -12,6 +12,7 @@
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
+  export let borderRight = false;
 
   let positionClasses;
   let offsetTop = false;
@@ -26,11 +27,13 @@
     }
   }
 
-  const borderClassesOuterDiv = isDimensionTable
-    ? position === "left"
-      ? ""
-      : "border-b"
-    : "border-b border-b-4 border-r border-r-1";
+  $: borderClassesOuterDiv =
+    (borderRight ? "border-r " : "") +
+    (isDimensionTable
+      ? position === "left"
+        ? ""
+        : "border-b"
+      : "border-b border-b-4 border-r border-r-1");
 
   const borderClassesInnerDiv = isDimensionTable
     ? ""
