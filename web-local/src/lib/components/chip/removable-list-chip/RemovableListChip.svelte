@@ -90,9 +90,9 @@ are details left to the consumer of the component; this component should remain 
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
-    on:close={toggleFloatingElement}
     on:apply
     on:search
+    on:toggle
     {selectedValues}
     {searchedValues}
   />
