@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -16,8 +18,78 @@ func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.Mig
 }
 
 // MigrateSingle implements RuntimeService
-// NOTE: This is an initial migration implementation with several flaws.
+// NOTE: Everything here is an initial implementation with many flaws.
 func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
+	// Horrible multiplexing between the pure and Calcite SQL implementations
+	if strings.Contains(strings.ToLower(req.Sql), "create metrics view") {
+		return s.migrateSingleMetricsView(ctx, req)
+	} else {
+		return s.migrateSingleSource(ctx, req)
+	}
+}
+
+// MigrateDelete implements RuntimeService
+func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteRequest) (*api.MigrateDeleteResponse, error) {
+	// Get instance
+	registry, _ := s.metastore.RegistryStore()
+	inst, found := registry.FindInstance(ctx, req.InstanceId)
+	if !found {
+		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	}
+
+	// Get catalog
+	catalog, err := s.openCatalog(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Get object
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
+	if !found {
+		return nil, status.Errorf(codes.InvalidArgument, "object not found")
+	}
+
+	// Delete from underlying if applicable
+	switch obj.Type {
+	case drivers.CatalogObjectTypeSource:
+		// Get OLAP
+		conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+		olap, _ := conn.OLAPStore()
+
+		// Drop table with source name
+		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE %s", obj.Name)})
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+		if err = rows.Close(); err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+	case drivers.CatalogObjectTypeTable:
+		// Don't allow deletion of tables created directly in DB
+		return nil, status.Error(codes.InvalidArgument, "can not delete unmanaged table")
+	case drivers.CatalogObjectTypeMetricsView:
+		// Nothing to do
+	default:
+		panic(fmt.Errorf("unhandled catalog object type: %v", obj.Type))
+	}
+
+	// Remove from catalog
+	err = catalog.DeleteObject(ctx, req.InstanceId, obj.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
+	}
+
+	// Reset catalog cache
+	s.catalogCache.reset(req.InstanceId)
+
+	return &api.MigrateDeleteResponse{}, nil
+}
+
+// NOTE: This is an initial migration implementation with several flaws.
+func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
 	// Parse SQL
 	source, err := sqlToSource(req.Sql)
 	if err != nil {
@@ -87,9 +159,10 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 
 	// Create the object to save
 	newObj := &drivers.CatalogObject{
-		Name: source.Name,
-		Type: drivers.CatalogObjectTypeSource,
-		SQL:  req.Sql,
+		Name:        source.Name,
+		Type:        drivers.CatalogObjectTypeSource,
+		SQL:         req.Sql,
+		RefreshedOn: time.Now(),
 	}
 
 	// We now have several cases to handle
@@ -181,8 +254,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 	return &api.MigrateSingleResponse{}, nil
 }
 
-// MigrateDelete implements RuntimeService
-func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteRequest) (*api.MigrateDeleteResponse, error) {
+func (s *Server) migrateSingleMetricsView(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
 	// Get instance
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, req.InstanceId)
@@ -196,47 +268,78 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Get object
-	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
-	if !found {
-		return nil, status.Errorf(codes.InvalidArgument, "object not found")
-	}
-
-	// Delete from underlying if applicable
-	switch obj.Type {
-	case drivers.CatalogObjectTypeSource:
-		// Get OLAP
-		conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
-		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
-		olap, _ := conn.OLAPStore()
-
-		// Drop table with source name
-		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE %s", obj.Name)})
-		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
-		if err = rows.Close(); err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
-	case drivers.CatalogObjectTypeTable:
-		// Don't allow deletion of tables created directly in DB
-		return nil, status.Error(codes.InvalidArgument, "can not delete unmanaged table")
-	case drivers.CatalogObjectTypeMetricsView:
-		// Nothing to do
-	default:
-		panic(fmt.Errorf("unhandled catalog object type: %v", obj.Type))
-	}
-
-	// Remove from catalog
-	err = catalog.DeleteObject(ctx, req.InstanceId, obj.Name)
+	// Parse SQL
+	mv, err := s.sqlToMetricsView(ctx, req.Sql, catalog, inst)
 	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Get existing object with name and check it's a metrics view
+	existingObj, existingFound := catalog.FindObject(ctx, req.InstanceId, mv.Name)
+	if existingFound && !req.CreateOrReplace {
+		return nil, status.Errorf(codes.InvalidArgument, "an existing object with name '%s' already exists (consider setting `create_or_replace=true`)", existingObj.Name)
+	}
+	if existingFound && existingObj.Type != drivers.CatalogObjectTypeMetricsView {
+		return nil, status.Errorf(codes.InvalidArgument, "an object of type '%s' already exists with name '%s'", existingObj.Type, existingObj.Name)
+	}
+
+	// Get object to rename and check it's a valid rename op
+	var renameObj *drivers.CatalogObject
+	var renameFound bool
+	if req.RenameFrom != "" {
+		// Check that we're not renaming to a name that's already taken
+		if existingFound {
+			return nil, status.Errorf(codes.InvalidArgument, "cannot rename '%s' to '%s' because a metrics view with that name already exists", req.RenameFrom, mv.Name)
+		}
+
+		// Get the object to rename
+		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, req.RenameFrom)
+		if !renameFound {
+			return nil, status.Errorf(codes.InvalidArgument, "could not find existing object named '%s' to rename", req.RenameFrom)
+		}
+		if renameObj.Type != drivers.CatalogObjectTypeMetricsView {
+			return nil, status.Errorf(codes.InvalidArgument, "cannot rename object '%s' because it is not a metrics view", req.RenameFrom)
+		}
+	}
+
+	// Stop execution now if it's just a dry run
+	if req.DryRun {
+		return &api.MigrateSingleResponse{}, nil
+	}
+
+	// Create the object to save
+	newObj := &drivers.CatalogObject{
+		Name: mv.Name,
+		Type: drivers.CatalogObjectTypeMetricsView,
+		SQL:  req.Sql,
+	}
+
+	// We now have several cases to handle
+	if !existingFound && !renameFound {
+		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "error: could not insert metrics view into catalog: %s (warning: watch out for corruptions)", err.Error())
+		}
+	} else if existingFound && !renameFound {
+		err = catalog.UpdateObject(ctx, req.InstanceId, newObj)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "error: could not update metrics view in catalog: %s (warning: watch out for corruptions)", err.Error())
+		}
+	} else if renameFound { // earlier check ensures !existingFound
+		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "error: could not insert metrics view into catalog: %s (warning: watch out for corruptions)", err.Error())
+		}
+
+		err = catalog.DeleteObject(ctx, req.InstanceId, renameObj.Name)
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
 	}
 
 	// Reset catalog cache
 	s.catalogCache.reset(req.InstanceId)
 
-	return &api.MigrateDeleteResponse{}, nil
+	// Done
+	return &api.MigrateSingleResponse{}, nil
 }

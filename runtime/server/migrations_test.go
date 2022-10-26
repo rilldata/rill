@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -64,7 +65,9 @@ func getTestServer() (*Server, string, error) {
 	}
 
 	server, err := NewServer(&ServerOptions{
-		ConnectionCacheSize: 100,
+		ConnectionCacheSize:  100,
+		CatalogCacheSize:     100,
+		CatalogCacheDuration: 10 * time.Second,
 	}, metastore, nil)
 	if err != nil {
 		return nil, "", err
