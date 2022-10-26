@@ -2,6 +2,7 @@ package drivers_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,7 +51,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 
 	err = catalog.CreateObject(ctx, instanceID, obj1)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "duplicate key")
+	require.True(t, strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "UNIQUE constraint failed"))
 
 	err = catalog.CreateObject(ctx, instanceID, obj2)
 	require.NoError(t, err)
