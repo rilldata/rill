@@ -16,8 +16,6 @@
   import Search from "../icons/Search.svelte";
 
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
-  import Cancel from "../icons/Cancel.svelte";
-  import Check from "../icons/Check.svelte";
   import Close from "../icons/Close.svelte";
   import SearchBar from "../search/Search.svelte";
   import Spinner from "../Spinner.svelte";
@@ -87,15 +85,10 @@
     <Tooltip location="left" distance={16}>
       <div
         class="flex items-center mr-3 ui-copy-icon"
-        style:grid-column-gap=".2rem"
+        style:grid-column-gap=".4rem"
       >
         <Switch bind:checked={excludeToggle} />
-
-        {#if !excludeMode}
-          <Check size="20px" /> Include
-        {:else}
-          <Cancel size="20px" /> Exclude
-        {/if}
+        {excludeMode ? "Exclude" : "Include"}
       </div>
       <TooltipContent slot="tooltip-content">
         <TooltipTitle>

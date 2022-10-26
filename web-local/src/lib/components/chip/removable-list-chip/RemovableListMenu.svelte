@@ -104,13 +104,9 @@
     {/if}
   </div>
   <Footer>
-    <span class="flex gap-x-1 items-center font-semibold ui-copy">
+    <span class="flex gap-x-2 items-center ui-copy">
       <Switch bind:checked={excludeToggle} />
-      {#if excludeMode}
-        <Cancel /> Exclude
-      {:else}
-        <Check /> Include
-      {/if}
+      {excludeMode ? "Exclude" : "Include"}
     </span>
     {#if numSelectedNotInSearch}
       <div class="ui-label italic">
