@@ -43,7 +43,7 @@ export async function* uploadTableFiles(
   ],
   runtimeState: RuntimeState
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
-  if (!files) return;
+  if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
   const tableUploadURL = `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/objects/file`;
@@ -199,9 +199,20 @@ export function openFileUploadDialog(multiple = true) {
       const files = (<HTMLInputElement>e.target)?.files as FileList;
       if (files) {
         resolve(Array.from(files));
+      } else {
+        resolve([]);
       }
     };
+    const focusHandler = () => {
+      window.removeEventListener("focus", focusHandler);
+      setTimeout(() => {
+        console.log("focus timeout");
+        resolve([]);
+      }, 1000);
+    };
+    window.addEventListener("focus", focusHandler);
     input.multiple = multiple;
+    input.accept = ".csv,.tsv,.parquet";
     input.click();
   });
 }

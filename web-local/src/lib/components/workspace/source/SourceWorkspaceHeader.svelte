@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { refreshRemoteSource } from "@rilldata/web-local/lib/components/assets/sources/refreshRemoteSource";
+  import { refreshSource } from "@rilldata/web-local/lib/components/assets/sources/refreshSource";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
   import {
@@ -38,7 +38,7 @@
   $: titleInput = currentSource?.name;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSource = useRuntimeServiceTriggerRefresh();
+  const refreshSourceQuery = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
 
   $: getSource = useRuntimeServiceGetCatalogObject(
@@ -48,22 +48,26 @@
 
   const onRefreshClick = async (tableName: string) => {
     overlay.set({ title: `Importing ${tableName}` });
-    await refreshRemoteSource(
-      $getSource.data?.object.source.connector,
-      tableName,
-      $runtimeStore,
-      $refreshSource,
-      $createSource
-    );
-    // invalidate the data preview (async)
-    dataModelerService.dispatch("collectTableInfo", [currentSource.id]);
+    try {
+      await refreshSource(
+        $getSource.data?.object.source.connector,
+        tableName,
+        $runtimeStore,
+        $refreshSourceQuery,
+        $createSource
+      );
+      // invalidate the data preview (async)
+      dataModelerService.dispatch("collectTableInfo", [currentSource.id]);
 
-    // invalidate the "refreshed_on" time
-    const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
-      runtimeInstanceId,
-      tableName
-    );
-    await queryClient.invalidateQueries(queryKey);
+      // invalidate the "refreshed_on" time
+      const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+        runtimeInstanceId,
+        tableName
+      );
+      await queryClient.invalidateQueries(queryKey);
+    } catch (err) {
+      // no-op
+    }
     overlay.set(null);
   };
 
@@ -85,7 +89,7 @@
       <Source />
     </svelte:fragment>
     <svelte:fragment slot="right">
-      {#if $refreshSource.isLoading}
+      {#if $refreshSourceQuery.isLoading}
         Refreshing...
       {:else}
         <div class="flex items-center">

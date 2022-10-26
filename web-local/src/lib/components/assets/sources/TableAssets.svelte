@@ -8,7 +8,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
-  import { refreshRemoteSource } from "@rilldata/web-local/lib/components/assets/sources/refreshRemoteSource";
+  import { refreshSource } from "@rilldata/web-local/lib/components/assets/sources/refreshSource";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -169,30 +169,34 @@
   };
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSource = useRuntimeServiceTriggerRefresh();
+  const refreshSourceQuery = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
   $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId);
 
   const onRefreshSource = async (id: string, tableName: string) => {
     overlay.set({ title: `Importing ${tableName}` });
-    await refreshRemoteSource(
-      $getSources.data?.objects.find(
-        (object) => object.source?.name === tableName
-      )?.source.connector,
-      tableName,
-      $runtimeStore,
-      $refreshSource,
-      $createSource
-    );
-    // invalidate the data preview (async)
-    dataModelerService.dispatch("collectTableInfo", [id]);
+    try {
+      await refreshSource(
+        $getSources.data?.objects.find(
+          (object) => object.source?.name === tableName
+        )?.source.connector,
+        tableName,
+        $runtimeStore,
+        $refreshSourceQuery,
+        $createSource
+      );
+      // invalidate the data preview (async)
+      dataModelerService.dispatch("collectTableInfo", [id]);
 
-    // invalidate the "refreshed_on" time
-    const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
-      runtimeInstanceId,
-      tableName
-    );
-    await queryClient.invalidateQueries(queryKey);
+      // invalidate the "refreshed_on" time
+      const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+        runtimeInstanceId,
+        tableName
+      );
+      await queryClient.invalidateQueries(queryKey);
+    } catch (err) {
+      // no-op
+    }
     overlay.set(null);
   };
 
@@ -234,7 +238,7 @@
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             active={entityIsActive}
-            loading={$refreshSource.isLoading}
+            loading={$refreshSourceQuery.isLoading}
           >
             <ColumnProfileNavEntry
               slot="summary"
