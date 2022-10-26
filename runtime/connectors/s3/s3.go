@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -54,11 +53,8 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path       string `mapstructure:"path" ignored:"true"`
-	AWSRegion  string `mapstructure:"aws.region" envconfig:"AWS_DEFAULT_REGION"`
-	AWSKey     string `mapstructure:"aws.access.key" envconfig:"AWS_ACCESS_KEY_ID"`
-	AWSSecret  string `mapstructure:"aws.access.secret" envconfig:"AWS_SECRET_ACCESS_KEY"`
-	AWSSession string `mapstructure:"aws.access.session" ignored:"true"`
+	Path      string `mapstructure:"path" ignored:"true"`
+	AWSRegion string `mapstructure:"aws.region"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -83,10 +79,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source,
 	}
 
 	// The session the S3 Downloader will use
-	sess, err := session.NewSession(&aws.Config{
-		Region:      &conf.AWSRegion,
-		Credentials: getAwsCredentials(conf),
-	})
+	sess, err := getAwsSessionConfig(conf)
 	if err != nil {
 		return fmt.Errorf("failed to start session: %v", err)
 	}
@@ -128,18 +121,15 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source,
 	return nil
 }
 
-func getAwsCredentials(conf *Config) *credentials.Credentials {
-	if conf.AWSSession != "" {
-		return credentials.NewStaticCredentialsFromCreds(credentials.Value{
-			SessionToken: conf.AWSSession,
-		})
-	} else if conf.AWSKey != "" && conf.AWSSecret != "" {
-		return credentials.NewStaticCredentialsFromCreds(credentials.Value{
-			AccessKeyID:     conf.AWSKey,
-			SecretAccessKey: conf.AWSSecret,
+func getAwsSessionConfig(conf *Config) (*session.Session, error) {
+	if conf.AWSRegion != "" {
+		return session.NewSession(&aws.Config{
+			Region: aws.String(conf.AWSRegion),
 		})
 	}
-	return nil
+	return session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
 }
 
 func getAwsUrlParts(path string) (string, string, string, error) {

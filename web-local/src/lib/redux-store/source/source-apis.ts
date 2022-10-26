@@ -12,7 +12,7 @@ import {
   createMetricsDefsApi,
   generateMeasuresAndDimensionsApi,
 } from "../metrics-definition/metrics-definition-apis";
-import { selectMetricsDefinitionMatchingName } from "../metrics-definition/metrics-definition-selectors";
+import { selectNextMetricsDefinitionName } from "../metrics-definition/metrics-definition-selectors";
 import { updateModelQueryApi } from "../model/model-apis";
 import {
   selectDerivedModelBySourceName,
@@ -113,19 +113,15 @@ export const autoCreateMetricsDefinitionForModel = async (
   timeDimension: string
 ): Promise<string> => {
   const metricsLabel = `${sourceName}_dashboard`;
-  const existingMetrics = selectMetricsDefinitionMatchingName(
-    store.getState(),
-    metricsLabel
-  );
 
   const { payload: createdMetricsDef } = await store.dispatch(
     createMetricsDefsApi({
       sourceModelId,
       timeDimension,
-      metricDefLabel:
-        existingMetrics.length === 0
-          ? metricsLabel
-          : `${metricsLabel}_${existingMetrics.length}`,
+      metricDefLabel: selectNextMetricsDefinitionName(
+        store.getState(),
+        metricsLabel
+      ),
     })
   );
 
