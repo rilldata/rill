@@ -9,6 +9,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestMetricsView(t *testing.T) {
@@ -73,9 +74,13 @@ func TestMetricsView(t *testing.T) {
 	require.NoError(t, err)
 
 	// Compare the JSON representations of the metrics view query and the direct query
-	j2, err := protojson.Marshal(r2)
-	require.NoError(t, err)
-	j3, err := protojson.Marshal(r3)
-	require.NoError(t, err)
-	require.Equal(t, j3, j2)
+	require.Equal(t, protoToJSON(r3), protoToJSON(r2))
+}
+
+func protoToJSON(m proto.Message) string {
+	j, err := protojson.Marshal(m)
+	if err != nil {
+		panic(err)
+	}
+	return string(j)
 }
