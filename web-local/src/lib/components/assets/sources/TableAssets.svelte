@@ -169,7 +169,7 @@
   };
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSourceQuery = useRuntimeServiceTriggerRefresh();
+  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
   $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId);
 
@@ -182,7 +182,7 @@
         )?.source.connector,
         tableName,
         $runtimeStore,
-        $refreshSourceQuery,
+        $refreshSourceMutation,
         $createSource
       );
       // invalidate the data preview (async)
@@ -238,7 +238,7 @@
             cardinality={derivedTable?.cardinality ?? 0}
             sizeInBytes={derivedTable?.sizeInBytes ?? 0}
             active={entityIsActive}
-            loading={$refreshSourceQuery.isLoading}
+            loading={$refreshSourceMutation.isLoading}
           >
             <ColumnProfileNavEntry
               slot="summary"

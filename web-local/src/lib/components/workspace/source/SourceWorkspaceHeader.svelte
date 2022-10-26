@@ -38,7 +38,7 @@
   $: titleInput = currentSource?.name;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSourceQuery = useRuntimeServiceTriggerRefresh();
+  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
 
   $: getSource = useRuntimeServiceGetCatalogObject(
@@ -53,7 +53,7 @@
         $getSource.data?.object.source.connector,
         tableName,
         $runtimeStore,
-        $refreshSourceQuery,
+        $refreshSourceMutation,
         $createSource
       );
       // invalidate the data preview (async)
@@ -89,7 +89,7 @@
       <Source />
     </svelte:fragment>
     <svelte:fragment slot="right">
-      {#if $refreshSourceQuery.isLoading}
+      {#if $refreshSourceMutation.isLoading}
         Refreshing...
       {:else}
         <div class="flex items-center">
