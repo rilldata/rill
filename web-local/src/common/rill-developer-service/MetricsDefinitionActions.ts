@@ -1,3 +1,4 @@
+import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { RillDeveloperActions } from "./RillDeveloperActions";
 import type { RillRequestContext } from "./RillRequestContext";
 import {
@@ -167,6 +168,18 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
       rillRequestContext,
       "addNewMeasure",
       [metricsDefId, "count(*)"]
+    );
+    const measure = measureResp.data as MeasureDefinitionEntity;
+
+    measure.label = "Total Events";
+    measure.description =
+      "The number of events recorded during the selected period of time, " +
+      `ordered by ${rillRequestContext.record.timeDimension}`;
+
+    await this.rillDeveloperService.dispatch(
+      rillRequestContext,
+      "updateMeasure",
+      [measure.id, measure]
     );
     rillRequestContext.actionsChannel.pushMessage(
       measureResp.data as Record<string, unknown>
