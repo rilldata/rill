@@ -23,7 +23,7 @@
       >
         <InfoCircle size="13px" />
       </button>
-      <TooltipContent slot="tooltip-content">
+      <TooltipContent maxWidth="400px" slot="tooltip-content">
         {@html hint}
       </TooltipContent>
     </Tooltip>
