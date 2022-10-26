@@ -1,11 +1,20 @@
-import { existsSync } from "fs";
 import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import { DuckDbConnection } from "@rilldata/web-local/common/connection/DuckDbConnection";
 import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
+import {
+  EntityType,
+  StateType,
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import type { NotificationService } from "@rilldata/web-local/common/notifications/NotificationService";
+import axios from "axios";
+import { existsSync } from "fs";
+import type {
+  V1CreateRepoRequest,
+  V1CreateRepoResponse,
+} from "web-common/src/runtime-client";
 import { dataModelerServiceFactory } from "./serverFactory";
 
 /**
@@ -28,33 +37,6 @@ export class RillDeveloper {
       this.dataModelerStateService,
       this.dataModelerService.getDatabaseService().getDatabaseClient()
     );
-  }
-
-  public async init(): Promise<void> {
-    const alreadyInitialized = existsSync(this.config.state.stateFolder);
-
-    await this.dataModelerStateSyncService.init();
-    if (alreadyInitialized) {
-      this.config.project.duckDbPath =
-        this.dataModelerStateService.getApplicationState().duckDbPath;
-    }
-    if (this.config.project.duckDbPath) {
-      this.config.database.databaseName = this.config.project.duckDbPath;
-    }
-
-    await this.dataModelerService.init();
-    if (!alreadyInitialized && this.config.project.duckDbPath) {
-      this.dataModelerStateService.dispatch("setDuckDbPath", [
-        this.config.project.duckDbPath,
-      ]);
-    }
-    await this.duckDbConnection.init();
-  }
-
-  public async destroy() {
-    await this.dataModelerStateSyncService.destroy();
-    await this.duckDbConnection.destroy();
-    await this.dataModelerService.destroy();
   }
 
   public static getRillDeveloper(config: RootConfig) {
@@ -80,5 +62,56 @@ export class RillDeveloper {
       metricsService,
       notificationService
     );
+  }
+
+  public async init(): Promise<void> {
+    const alreadyInitialized = existsSync(this.config.state.stateFolder);
+
+    await this.dataModelerStateSyncService.init();
+    if (alreadyInitialized) {
+      this.config.project.duckDbPath =
+        this.dataModelerStateService.getApplicationState().duckDbPath;
+    }
+    if (this.config.project.duckDbPath) {
+      this.config.database.databaseName = this.config.project.duckDbPath;
+    }
+
+    await this.dataModelerService.init();
+    if (!alreadyInitialized && this.config.project.duckDbPath) {
+      this.dataModelerStateService.dispatch("setDuckDbPath", [
+        this.config.project.duckDbPath,
+      ]);
+    }
+    await this.duckDbConnection.init();
+
+    await this.createRepo();
+  }
+
+  public async destroy() {
+    await this.dataModelerStateSyncService.destroy();
+    await this.duckDbConnection.destroy();
+    await this.dataModelerService.destroy();
+  }
+
+  // temporary hack to create a repo for the project folder
+  private async createRepo() {
+    const resp = await axios.post(
+      `${this.config.database.runtimeUrl}/v1/repos`,
+      {
+        driver: "file",
+        dsn: this.config.projectFolder,
+      } as V1CreateRepoRequest
+    );
+    const repoResp: V1CreateRepoResponse = resp.data;
+    this.dataModelerStateService
+      .getEntityStateService(EntityType.Application, StateType.Derived)
+      .updateState(
+        (draft) => {
+          draft.repoId = repoResp.repo.repoId;
+        },
+        () => {
+          // no-op
+        }
+      );
   }
 }

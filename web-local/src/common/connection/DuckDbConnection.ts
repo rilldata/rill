@@ -1,4 +1,6 @@
 import { DATABASE_POLLING_INTERVAL } from "@rilldata/web-local/common/constants";
+import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+import { runtimeServiceListCatalogObjects } from "web-common/src/runtime-client";
 import type { RootConfig } from "../config/RootConfig";
 import type { DataModelerService } from "../data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "../data-modeler-state-service/DataModelerStateService";
@@ -8,7 +10,6 @@ import {
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
 import type { DuckDBClient } from "../database-service/DuckDBClient";
 import { DataConnection } from "./DataConnection";
-import type { PersistentTableEntity } from "../data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 
 /**
  * Connects to an existing duck db.
@@ -40,38 +41,48 @@ export class DuckDbConnection extends DataConnection {
   }
 
   public async sync(): Promise<void> {
-    const tables = await this.duckDbClient.execute<{ table_name: string }>(
-      "SELECT table_name FROM information_schema.tables " +
-        "WHERE table_type NOT ILIKE '%TEMPORARY' AND table_type NOT ILIKE '%VIEW' AND table_schema != 'rill';",
-      false
+    const catalogs = await runtimeServiceListCatalogObjects(
+      this.duckDbClient.getInstanceId()
+    );
+    const catalogsMap = getMapFromArray(
+      catalogs.objects,
+      (object) => object.source?.name
     );
     const persistentTables = this.dataModelerStateService
       .getEntityStateService(EntityType.Table, StateType.Persistent)
       .getCurrentState().entities;
 
-    const existingTables = new Map<string, PersistentTableEntity>();
-    persistentTables.forEach((persistentTable) =>
-      existingTables.set(persistentTable.tableName, persistentTable)
-    );
-
-    for (const table of tables) {
-      const tableName = table.table_name;
-      if (!tableName || tableName.endsWith("___")) continue;
-      if (existingTables.has(tableName)) {
-        await this.dataModelerService.dispatch("syncTable", [
-          existingTables.get(tableName).id,
+    for (const persistentTable of persistentTables) {
+      if (
+        persistentTable.previousTableName &&
+        catalogsMap.has(persistentTable.previousTableName)
+      ) {
+        // hack to process renames.
+        // we set previousTableName when rename is triggered
+        // here we get confirmation that rename finished
+        this.dataModelerStateService.dispatch("updateTableName", [
+          persistentTable.id,
+          persistentTable.previousTableName,
         ]);
-        existingTables.delete(tableName);
-      } else {
-        await this.dataModelerService.dispatch("addOrSyncTableFromDB", [
-          tableName,
-        ]);
+        catalogsMap.delete(persistentTable.previousTableName);
+        continue;
       }
+
+      if (!catalogsMap.has(persistentTable.tableName)) {
+        await this.dataModelerService.dispatch("dropTable", [
+          persistentTable.tableName,
+        ]);
+        continue;
+      }
+
+      catalogsMap.delete(persistentTable.tableName);
+      await this.dataModelerService.dispatch("syncTable", [persistentTable.id]);
     }
-    for (const removedTable of existingTables.values()) {
-      await this.dataModelerService.dispatch("dropTable", [
-        removedTable.tableName,
-        true,
+
+    for (const absentCatalogs of catalogsMap.values()) {
+      if (!absentCatalogs.source) continue;
+      await this.dataModelerService.dispatch("addOrSyncTableFromDB", [
+        absentCatalogs.source.name,
       ]);
     }
   }

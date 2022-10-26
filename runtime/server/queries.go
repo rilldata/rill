@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 	"time"
 	"unicode/utf8"
@@ -130,6 +131,20 @@ func valToPB(v any) (*structpb.Value, error) {
 	case time.Time:
 		s := v.Format(time.RFC3339Nano)
 		return structpb.NewStringValue(s), nil
+	case float32:
+		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
+		// (They don't have a native JSON representation)
+		if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+			return structpb.NewNullValue(), nil
+		}
+		return structpb.NewNumberValue(float64(v)), nil
+	case float64:
+		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
+		// (They don't have a native JSON representation)
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return structpb.NewNullValue(), nil
+		}
+		return structpb.NewNumberValue(float64(v)), nil
 	case *big.Int:
 		// Evil cast to float until frontend can deal with bigs:
 		v2, _ := new(big.Float).SetInt(v).Float64()

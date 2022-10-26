@@ -8,6 +8,7 @@
 <Dialog
   showCancel
   on:cancel
+  on:click-outside
   on:primary-action={() => dispatch("replace-metrics")}
 >
   <svelte:fragment slot="title">Replace current metrics?</svelte:fragment>

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Button from "../button/Button.svelte";
-  import { Dialog } from "./index";
+  import Button from "../../button/Button.svelte";
+  import { Dialog } from "../../modal/index";
 
   export let exportErrorMessage = "";
 </script>

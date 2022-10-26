@@ -60,14 +60,14 @@ service RuntimeService {
   // GetRepoObject returns the contents of a specific object (file) in a repo.
   rpc GetRepoObject(GetRepoObjectRequest) returns (GetRepoObjectResponse) {
     option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/objects/-/{path}"
+      get: "/v1/repos/{repo_id}/objects/-/{path=**}"
     };
   }
 
   // PutRepoObject can be used to create, update, or delete an object (file) in a repo
   rpc PutRepoObject(PutRepoObjectRequest) returns (PutRepoObjectResponse) {
     option (google.api.http) = {
-      post: "/v1/repos/{repo_id}/objects/-/{path}",
+      post: "/v1/repos/{repo_id}/objects/-/{path=**}",
       body: "*"
     };
   }
@@ -335,7 +335,9 @@ message PutRepoObjectRequest {
 }
 
 // Response message for RuntimeService.PutRepoObjectRequest
-message PutRepoObjectResponse {}
+message PutRepoObjectResponse {
+  string file_path = 1;
+}
 
 // **********
 // Instances
@@ -434,6 +436,9 @@ message CatalogObject {
   Table table = 2;
   Source source = 3;
   MetricsView metrics_view = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+  google.protobuf.Timestamp refreshed_on = 7;
 }
 
 // Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
@@ -741,6 +746,7 @@ message Connector {
       TYPE_STRING = 1;
       TYPE_NUMBER = 2;
       TYPE_BOOLEAN = 3;
+      TYPE_INFORMATIONAL = 4;
     }
     // The property key
     string key = 1;
@@ -754,6 +760,10 @@ message Connector {
     Type type = 5;
     // Nullable is true if the field is optional
     bool nullable = 6;
+    // Additional textual explanation for use in UIs
+    string hint = 7;
+    // Link to documentation for this property
+    string href = 8;
   }
   // Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
   string name = 1;

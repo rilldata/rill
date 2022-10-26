@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Portal from "../Portal.svelte";
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import { fly } from "svelte/transition";
+  import Portal from "../Portal.svelte";
   import Overlay from "./Overlay.svelte";
   const dispatch = createEventDispatcher();
   let modal;

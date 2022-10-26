@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListCatalogObjects implements RuntimeService
@@ -54,7 +56,7 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
@@ -81,7 +83,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	}
 
 	// Find object
-	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
@@ -111,6 +113,10 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
+
+	// Update object
+	obj.RefreshedOn = time.Now()
+	err = catalog.UpdateObject(ctx, req.InstanceId, obj)
 
 	return &api.TriggerRefreshResponse{}, nil
 }
@@ -273,6 +279,9 @@ func catalogObjectTableToPB(obj *drivers.CatalogObject) (*api.CatalogObject, err
 			Schema:  obj.Schema,
 			Managed: obj.Managed,
 		},
+		CreatedOn:   timestamppb.New(obj.CreatedOn),
+		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
+		RefreshedOn: timestamppb.New(obj.RefreshedOn),
 	}, nil
 }
 
@@ -296,6 +305,9 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, er
 			Properties: propsPB,
 			Schema:     obj.Schema,
 		},
+		CreatedOn:   timestamppb.New(obj.CreatedOn),
+		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
+		RefreshedOn: timestamppb.New(obj.RefreshedOn),
 	}, nil
 }
 
@@ -308,6 +320,9 @@ func catalogObjectMetricsViewToPB(obj *drivers.CatalogObject) (*api.CatalogObjec
 	return &api.CatalogObject{
 		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
 		MetricsView: mv,
+		CreatedOn:   timestamppb.New(obj.CreatedOn),
+		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
+		RefreshedOn: timestamppb.New(obj.RefreshedOn),
 	}, nil
 }
 
@@ -324,7 +339,7 @@ func sqlToSource(sqlStr string) (*connectors.Source, error) {
 	ast := astStmt.CreateSource
 
 	s := &connectors.Source{
-		Name:       strings.ToLower(ast.Name),
+		Name:       ast.Name,
 		Properties: make(map[string]any),
 	}
 

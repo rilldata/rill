@@ -13,7 +13,7 @@ import { TelemetryController } from "./controllers/TelemetryController";
 import { SocketServer } from "./SocketServer";
 import bodyParser from "body-parser";
 import cors from "cors";
-import express from "express";
+import express, { Request, Response } from "express";
 import fileUpload from "express-fileupload";
 import { existsSync, mkdirSync } from "fs";
 import http from "http";
@@ -109,6 +109,21 @@ export class ExpressServer {
         this.dataModelerService,
         this.rillDeveloperService
       ).setup(this.app, "/api")
+    );
+
+    // TODO: This should be replaced by a better assignment of instance id once nodejs server is replaced completely bu runtime
+    this.app.get("/api/v1/runtime/instance-id", (req: Request, res: Response) =>
+      res.json({
+        data: {
+          instanceId: this.dataModelerService
+            .getDatabaseService()
+            .getDatabaseClient()
+            .getInstanceId(),
+          repoId: this.dataModelerService
+            .getStateService()
+            .getApplicationState().repoId,
+        },
+      })
     );
   }
 }

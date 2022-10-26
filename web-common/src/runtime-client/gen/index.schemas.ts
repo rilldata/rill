@@ -34,8 +34,11 @@ export type RuntimeServiceMigrateDeleteBody = {
 
 export type RuntimeServiceMigrateSingleBody = {
   sql?: string;
-  createOrReplace?: boolean;
   dryRun?: boolean;
+  createOrReplace?: boolean;
+  /** If provided, will attempt to rename an existing object and only recompute if necessary.
+NOTE: very questionable semantics here. */
+  renameFrom?: string;
 };
 
 export type RuntimeServiceMigrateBody = {
@@ -132,7 +135,7 @@ export interface V1QueryDirectResponse {
 }
 
 export interface V1PutRepoObjectResponse {
-  [key: string]: any;
+  file_path?: string;
 }
 
 export interface V1PingResponse {
@@ -305,6 +308,7 @@ export interface V1CatalogObject {
   source?: V1Source;
   metricsView?: V1MetricsView;
   unmanagedTable?: V1UnmanagedTable;
+  refreshedOn?: string;
 }
 
 export interface RpcStatus {
@@ -362,6 +366,7 @@ export const ConnectorPropertyType = {
   TYPE_STRING: "TYPE_STRING",
   TYPE_NUMBER: "TYPE_NUMBER",
   TYPE_BOOLEAN: "TYPE_BOOLEAN",
+  TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
 export interface ConnectorProperty {
@@ -371,4 +376,6 @@ export interface ConnectorProperty {
   placeholder?: string;
   type?: ConnectorPropertyType;
   nullable?: boolean;
+  hint?: string;
+  href?: string;
 }

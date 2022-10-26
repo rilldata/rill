@@ -1746,7 +1746,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path=**}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1770,7 +1770,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/PutRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/PutRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path=**}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2391,7 +2391,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path=**}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2412,7 +2412,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/PutRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/PutRepoObject", runtime.WithHTTPPathPattern("/v1/repos/{repo_id}/objects/-/{path=**}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2822,9 +2822,9 @@ var (
 
 	pattern_RuntimeService_ListRepoObjects_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "repos", "repo_id", "objects"}, ""))
 
-	pattern_RuntimeService_GetRepoObject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "repos", "repo_id", "objects", "-", "path"}, ""))
+	pattern_RuntimeService_GetRepoObject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 3, 0, 4, 1, 5, 5}, []string{"v1", "repos", "repo_id", "objects", "-", "path"}, ""))
 
-	pattern_RuntimeService_PutRepoObject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "repos", "repo_id", "objects", "-", "path"}, ""))
+	pattern_RuntimeService_PutRepoObject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 3, 0, 4, 1, 5, 5}, []string{"v1", "repos", "repo_id", "objects", "-", "path"}, ""))
 
 	pattern_RuntimeService_ListInstances_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "instances"}, ""))
 

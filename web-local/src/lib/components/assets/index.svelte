@@ -11,9 +11,9 @@
   import Portal from "../Portal.svelte";
   import Footer from "./Footer.svelte";
 
-  import MetricsDefinitionAssets from "./MetricsDefinitionAssets.svelte";
-  import ModelAssets from "./ModelAssets.svelte";
-  import TableAssets from "./TableAssets.svelte";
+  import MetricsDefinitionAssets from "./dashboards/MetricsDefinitionAssets.svelte";
+  import ModelAssets from "./models/ModelAssets.svelte";
+  import TableAssets from "./sources/TableAssets.svelte";
 
   let mounted = false;
   onMount(() => {
@@ -41,7 +41,7 @@
   {#if $assetsVisible}
     <Portal>
       <div
-        class="fixed z-50 drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
+        class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
         style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth}px"
         use:drag={{ minSize: 300, maxSize: 500, side: "assetsWidth" }}
       />
@@ -64,7 +64,7 @@
           {:else}
             <Spacer size="16px" />
           {/if}
-          <a href="/" class="font-bold">Rill Developer</a>
+          <a href="/" class="font-bold text-black"> Rill Developer </a>
         </h1>
       </header>
       <TableAssets />

@@ -1070,7 +1070,8 @@
             "name": "path",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
           }
         ],
         "tags": [
@@ -1105,7 +1106,8 @@
             "name": "path",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
           },
           {
             "name": "body",
@@ -1158,6 +1160,14 @@
         "nullable": {
           "type": "boolean",
           "title": "Nullable is true if the field is optional"
+        },
+        "hint": {
+          "type": "string",
+          "title": "Additional textual explanation for use in UIs"
+        },
+        "href": {
+          "type": "string",
+          "title": "Link to documentation for this property"
         }
       },
       "title": "Property represents one of the connector's config properties"
@@ -1168,7 +1178,8 @@
         "TYPE_UNSPECIFIED",
         "TYPE_STRING",
         "TYPE_NUMBER",
-        "TYPE_BOOLEAN"
+        "TYPE_BOOLEAN",
+        "TYPE_INFORMATIONAL"
       ],
       "default": "TYPE_UNSPECIFIED",
       "title": "Type represents the field type"
@@ -1340,6 +1351,18 @@
         },
         "metricsView": {
           "$ref": "#/definitions/v1MetricsView"
+        },
+        "createdOn": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedOn": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "refreshedOn": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "title": "CatalogObject represents an object stored in the catalog"
@@ -1776,6 +1799,11 @@
     },
     "v1PutRepoObjectResponse": {
       "type": "object",
+      "properties": {
+        "filePath": {
+          "type": "string"
+        }
+      },
       "title": "Response message for RuntimeService.PutRepoObjectRequest"
     },
     "v1QueryDirectResponse": {

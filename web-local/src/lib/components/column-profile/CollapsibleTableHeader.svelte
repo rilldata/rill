@@ -32,6 +32,7 @@
   export let show = false;
   export let contextMenuOpen = false;
   export let notExpandable = false;
+  export let loading = false;
 
   const dispatch = createEventDispatcher();
   const { commandClickAction } = createCommandClickAction();
@@ -141,6 +142,9 @@
           {/if}
           {#if selectingColumns}&nbsp;<span class="font-bold"> *</span>{/if}
         </span>
+        {#if loading}
+          <span class="text-gray-500 text-xs italic">loading...</span>
+        {/if}
       </div>
     </button>
     <div style:grid-column="contextual-information" class="justify-self-end">

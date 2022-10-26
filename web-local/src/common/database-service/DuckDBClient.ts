@@ -1,11 +1,11 @@
-import type { RootConfig } from "../config/RootConfig";
-import { getBinaryRuntimePath } from "./getBinaryRuntimePath";
-import { isPortOpen } from "../utils/isPortOpen";
-import { asyncWaitUntil } from "../utils/waitUtils";
 import fetch from "isomorphic-unfetch";
 import type { ChildProcess } from "node:child_process";
 import childProcess from "node:child_process";
 import { URL } from "url";
+import type { RootConfig } from "../config/RootConfig";
+import { isPortOpen } from "../utils/isPortOpen";
+import { asyncWaitUntil } from "../utils/waitUtils";
+import { getBinaryRuntimePath } from "./getBinaryRuntimePath";
 
 /**
  * Spawns or connects to a runtime and uses it to proxy DuckDB queries.
@@ -76,6 +76,10 @@ export class DuckDBClient {
     return this.request(`/v1/instances/${this.instanceID}/${path}`, data);
   }
 
+  public getInstanceId(): string {
+    return this.instanceID;
+  }
+
   protected async spawnRuntime() {
     if (!this.config.database.spawnRuntime) {
       return;
@@ -142,8 +146,10 @@ export class DuckDBClient {
     await this.execute(`
       INSTALL 'json';
       INSTALL 'parquet';
+      INSTALL 'httpfs';
       LOAD 'json';
       LOAD 'parquet';
+      LOAD 'httpfs';
     `);
 
     await this.execute(

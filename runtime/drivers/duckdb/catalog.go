@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -19,7 +20,9 @@ func (c *connection) FindObjects(ctx context.Context, instanceID string, typ dri
 }
 
 func (c *connection) FindObject(ctx context.Context, instanceID string, name string) (*drivers.CatalogObject, bool) {
-	objs := c.findObjects(ctx, "WHERE name = ?", name)
+	// Names are stored with case everywhere, but the checks should be case-insensitive.
+	// Hence, the translation to lower case here.
+	objs := c.findObjects(ctx, "WHERE LOWER(name) = ?", strings.ToLower(name))
 	if len(objs) == 0 {
 		return nil, false
 	}
@@ -70,12 +73,13 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, sql, schema, managed, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO rill.catalog(name, type, sql, schema, managed, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 		obj.Name,
 		obj.Type,
 		obj.SQL,
 		schema,
 		obj.Managed,
+		now,
 		now,
 		now,
 	)
@@ -85,6 +89,7 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 
 	obj.CreatedOn = now
 	obj.UpdatedOn = now
+	obj.RefreshedOn = now
 	return nil
 }
 
@@ -98,12 +103,13 @@ func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, sql = ?, schema = ?, managed = ?, updated_on = ? WHERE name = ?",
+		"UPDATE rill.catalog SET type = ?, sql = ?, schema = ?, managed = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
 		obj.Type,
 		obj.SQL,
 		schema,
 		obj.Managed,
 		now,
+		obj.RefreshedOn,
 		obj.Name,
 	)
 	if err != nil {
