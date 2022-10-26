@@ -119,7 +119,7 @@ export class ImportTableCommand extends DataModelerCliCommand {
     if (
       (existingTable &&
         createdTable &&
-        existingTable.lastUpdated < createdTable.lastUpdated) ||
+        existingTable.lastUpdated <= createdTable.lastUpdated) ||
       (!existingTable && createdTable)
     ) {
       console.log(
