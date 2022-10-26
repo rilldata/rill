@@ -9,14 +9,9 @@
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
 >
+  <path d="M12 5V15" stroke={color} stroke-width="2" stroke-linecap="round" />
   <path
-    d="M12 15.5L12 5.5"
-    stroke={color}
-    stroke-width="2"
-    stroke-linecap="round"
-  />
-  <path
-    d="M8 9.5L10 7.25L12 5L16 9.5"
+    d="M16 11L14 13.25L12 15.5L8 11"
     stroke={color}
     stroke-width="2"
     stroke-linecap="round"
