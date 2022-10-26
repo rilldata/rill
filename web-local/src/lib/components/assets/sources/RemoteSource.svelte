@@ -117,18 +117,20 @@
           return "Invalid AWS access key. Please check your credentials.";
         } else if (serverError.includes("SignatureDoesNotMatch")) {
           return "Invalid AWS secret key. Please check your credentials.";
+        } else if (serverError.includes("BucketRegionError")) {
+          return "Bucket is not in the provided region. Please check your region.";
         }
 
         // GCP errors (ref: https://cloud.google.com/storage/docs/json_api/v1/status-codes)
         if (serverError.includes("could not find default credentials")) {
           return "No credentials found. Please see the docs for how to configure GCP credentials.";
-        } else if (serverError.includes("AccessDenied")) {
-          const details = serverError
-            .split("<Details>")[1]
-            .split("</Details>")[0];
-          return "Access denied: " + details;
         } else if (serverError.includes("Unauthorized")) {
           return "Unauthorized. Please check your credentials.";
+        }
+
+        // AWS & GCP errors
+        if (serverError.includes("AccessDenied")) {
+          return "Access denied. Please ensure you have the correct permissions.";
         }
 
         // DuckDB errors
