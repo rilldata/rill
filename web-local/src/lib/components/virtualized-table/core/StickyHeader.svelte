@@ -22,7 +22,7 @@
       positionClasses = "absolute left-0 top-0 text-center font-semibold";
       offsetTop = true;
     } else if (position === "top-left") {
-      positionClasses = "sticky left-0 top-0 z-40  font-bold";
+      positionClasses = "sticky left-0 top-0 z-40 font-bold";
     }
   }
 
@@ -37,7 +37,7 @@
     : "whitespace-nowrap border border-gray-200 border-t-0 border-l-0 bg-gray-100";
 
   const paddingVerticalTop = config.columnHeaderHeight <= 28 ? "py-1" : "py-2";
-  const paddingVerticalLeft = config.rowHeight <= 28 ? "py-0.5" : "py-2";
+  const paddingVerticalLeft = config.rowHeight <= 28 ? "" : "py-2";
 
   function focus() {
     dispatch("focus");
@@ -66,11 +66,14 @@
     class="
     ui-copy
     text-ellipsis overflow-hidden
-    {isDimensionTable ? 'px-1' : 'px-4'}
+    {isDimensionTable ? (position === 'left' ? '' : 'px-1') : 'px-4'}
     {borderClassesInnerDiv}
     {position === 'top' && `${paddingVerticalTop} text-left`}
     {position === 'left' && paddingVerticalLeft}
-    {position === 'top-left' && `${paddingVerticalTop} text-center`}
+    {position === 'top-left' &&
+      `${paddingVerticalTop} ${
+        isDimensionTable ? 'font-normal' : 'text-center'
+      }`}
     "
   >
     <slot />
