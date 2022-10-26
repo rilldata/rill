@@ -39,6 +39,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tables, err := i.scanTables(rows)
 	if err != nil {
@@ -69,6 +70,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tables, err := i.scanTables(rows)
 	if err != nil {
@@ -126,6 +128,10 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 
 		res = append(res, t)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return res, nil
