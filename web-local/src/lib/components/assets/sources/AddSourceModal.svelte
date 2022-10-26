@@ -57,7 +57,9 @@
     >
       {#if $connectors.isSuccess && $connectors.data && $connectors.data.connectors?.length > 0}
         {#each $connectors.data.connectors as connector}
-          <Tab value={connector}>{connector.displayName}</Tab>
+          <Tab selected={selectedConnector === connector} value={connector}
+            >{connector.displayName}</Tab
+          >
         {/each}
       {/if}
     </TabGroup>
