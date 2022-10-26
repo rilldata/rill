@@ -2,8 +2,8 @@ import { describe, expect } from "@jest/globals";
 import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
-  getDuplicateNameChecker,
-  getIncrementedNameGetter,
+  duplicateNameChecker,
+  incrementedNameGetter,
 } from "@rilldata/web-local/common/utils/duplicateNameUtils";
 
 function testDuplicateNameChecker(
@@ -13,7 +13,7 @@ function testDuplicateNameChecker(
   isDuplicate: boolean
 ) {
   expect(
-    getDuplicateNameChecker(
+    duplicateNameChecker(
       name,
       modelNames.map((modelName) => ({
         name: modelName,
@@ -32,7 +32,7 @@ function testIncrementedNameGetter(
   expectedName: string
 ) {
   expect(
-    getIncrementedNameGetter(
+    incrementedNameGetter(
       name,
       modelNames.map((modelName) => ({
         name: modelName,
