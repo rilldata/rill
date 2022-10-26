@@ -28,7 +28,7 @@ var spec = connectors.Spec{
 			Placeholder: "gs://bucket-name/path/to/file.csv",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
-			Hint:        "Note that gzipped files & glob patterns aren't yet supported.",
+			Hint:        "Note that gzipped files & glob patterns aren't yet supported. They're coming in the next release!",
 		},
 		{
 			Key:         "gcp.credentials",
