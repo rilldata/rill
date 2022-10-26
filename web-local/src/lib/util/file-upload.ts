@@ -46,10 +46,6 @@ export async function* uploadTableFiles(
   if (!files) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  if (invalidFiles.length) {
-    reportFileErrors(invalidFiles);
-  }
-
   const tableUploadURL = `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/objects/file`;
   let lastTableName: string;
 
@@ -85,6 +81,10 @@ export async function* uploadTableFiles(
       ).store
     );
     goto(`/source/${newId}`);
+  }
+
+  if (invalidFiles.length) {
+    reportFileErrors(invalidFiles);
   }
 }
 
