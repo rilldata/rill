@@ -93,7 +93,7 @@
 
   $: onConnectorChange(connector);
 
-  function humanReadableErrorMessage(error: RpcStatus) {
+  function humanReadableErrorMessage(connectorName: string, error: RpcStatus) {
     // TODO: the error response type does not match the type defined in the API
     switch (error.response.data.code) {
       // gRPC error codes: https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
@@ -109,28 +109,37 @@
         }
 
         // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
-        if (serverError.includes("MissingRegion")) {
-          return "Region not detected. Please enter a region.";
-        } else if (serverError.includes("NoCredentialProviders")) {
-          return "No credentials found. Please see the docs for how to configure AWS credentials.";
-        } else if (serverError.includes("InvalidAccessKey")) {
-          return "Invalid AWS access key. Please check your credentials.";
-        } else if (serverError.includes("SignatureDoesNotMatch")) {
-          return "Invalid AWS secret key. Please check your credentials.";
-        } else if (serverError.includes("BucketRegionError")) {
-          return "Bucket is not in the provided region. Please check your region.";
+        if (connectorName === "s3") {
+          if (serverError.includes("MissingRegion")) {
+            return "Region not detected. Please enter a region.";
+          } else if (serverError.includes("NoCredentialProviders")) {
+            return "No credentials found. Please see the docs for how to configure AWS credentials.";
+          } else if (serverError.includes("InvalidAccessKey")) {
+            return "Invalid AWS access key. Please check your credentials.";
+          } else if (serverError.includes("SignatureDoesNotMatch")) {
+            return "Invalid AWS secret key. Please check your credentials.";
+          } else if (serverError.includes("BucketRegionError")) {
+            return "Bucket is not in the provided region. Please check your region.";
+          } else if (serverError.includes("AccessDenied")) {
+            return "Access denied. Please ensure you have the correct permissions.";
+          } else if (serverError.includes("NoSuchKey")) {
+            return "Invalid path. Please check your path.";
+          } else if (serverError.includes("NoSuchBucket")) {
+            return "Invalid bucket. Please check your bucket name.";
+          } else if (serverError.includes("AuthorizationHeaderMalformed")) {
+            return "Invalid authorization header. Please check your credentials.";
+          }
         }
 
         // GCP errors (ref: https://cloud.google.com/storage/docs/json_api/v1/status-codes)
-        if (serverError.includes("could not find default credentials")) {
-          return "No credentials found. Please see the docs for how to configure GCP credentials.";
-        } else if (serverError.includes("Unauthorized")) {
-          return "Unauthorized. Please check your credentials.";
-        }
-
-        // AWS & GCP errors
-        if (serverError.includes("AccessDenied")) {
-          return "Access denied. Please ensure you have the correct permissions.";
+        if (connectorName === "gcs") {
+          if (serverError.includes("could not find default credentials")) {
+            return "No credentials found. Please see the docs for how to configure GCP credentials.";
+          } else if (serverError.includes("Unauthorized")) {
+            return "Unauthorized. Please check your credentials.";
+          } else if (serverError.includes("AccessDenied")) {
+            return "Access denied. Please ensure you have the correct permissions.";
+          }
         }
 
         // DuckDB errors
@@ -162,7 +171,7 @@
     </div>
     {#if $createSource.isError}
       <SubmissionError
-        message={humanReadableErrorMessage($createSource.error)}
+        message={humanReadableErrorMessage(connector.name, $createSource.error)}
       />
     {/if}
     <div class="py-2">
