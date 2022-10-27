@@ -186,7 +186,6 @@
   $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId);
 
   const onRefreshSource = async (id: string, tableName: string) => {
-    overlay.set({ title: `Importing ${tableName}` });
     try {
       await refreshSource(
         $getSources.data?.objects.find(
