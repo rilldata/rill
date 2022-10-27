@@ -828,7 +828,7 @@
       }
     },
     "/v1/instances/{instanceId}/sync": {
-      "get": {
+      "post": {
         "summary": "TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.\nIf the instance has exposed=true, tables found in the information schema will be added to the catalog.",
         "operationId": "RuntimeService_TriggerSync",
         "responses": {

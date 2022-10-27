@@ -132,7 +132,7 @@ service RuntimeService {
   // If the instance has exposed=true, tables found in the information schema will be added to the catalog.
   rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/sync"
+      post: "/v1/instances/{instance_id}/sync"
     };
   }
 
