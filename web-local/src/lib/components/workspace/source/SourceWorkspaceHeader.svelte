@@ -105,11 +105,13 @@
           {/if}
           {#if connector === "file"}
             <Tooltip location="bottom" distance={8}>
-              <IconButton
-                on:click={() => onRefreshClick(currentSource.tableName)}
-              >
-                <Import size="16px" />
-              </IconButton>
+              <div style="transformY(-1px)">
+                <IconButton
+                  on:click={() => onRefreshClick(currentSource.tableName)}
+                >
+                  <Import size="16px" />
+                </IconButton>
+              </div>
               <TooltipContent slot="tooltip-content">
                 Import local file to refresh source
               </TooltipContent>
