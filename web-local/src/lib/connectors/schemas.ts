@@ -1,4 +1,4 @@
-import type { V1Connector } from "web-common/src/runtime-client";
+import type { V1Connector } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
 
 export function getYupSchema(connector: V1Connector) {

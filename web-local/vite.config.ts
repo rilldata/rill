@@ -28,6 +28,7 @@ const config = defineConfig({
       $common: "/src/common",
       $server: "/src/server",
       "@rilldata/web-local": "/src",
+      "@rilldata/web-common": "/../web-common/src",
     },
   },
   server: {

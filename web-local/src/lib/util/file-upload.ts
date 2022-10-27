@@ -10,7 +10,7 @@ import {
   incrementedNameGetter,
 } from "@rilldata/web-local/common/utils/duplicateNameUtils";
 import { waitForSource } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
-import type { V1PutRepoObjectResponse } from "web-common/src/runtime-client";
+import type { V1PutRepoObjectResponse } from "@rilldata/web-common/runtime-client";
 import {
   config,
   dataModelerStateService,

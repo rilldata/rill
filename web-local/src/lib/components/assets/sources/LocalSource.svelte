@@ -13,7 +13,7 @@
   import {
     getRuntimeServiceListCatalogObjectsQueryKey,
     useRuntimeServiceMigrateSingle,
-  } from "web-common/src/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 
