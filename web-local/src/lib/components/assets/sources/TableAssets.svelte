@@ -34,6 +34,7 @@
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
+    sourceUpdated,
   } from "../../../redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "../../../redux-store/source/source-selectors";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
@@ -65,6 +66,8 @@
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
+
+  const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   let showTables = true;
 
@@ -129,7 +132,6 @@
   const deleteSource = useRuntimeServiceMigrateDelete();
 
   const handleDeleteSource = (tableName: string, id: string) => {
-    const nextSourceId = getNextEntityId($persistentTableStore.entities, id);
     $deleteSource.mutate(
       {
         instanceId: runtimeInstanceId,
@@ -139,11 +141,21 @@
       },
       {
         onSuccess: () => {
-          if (nextSourceId) {
-            goto(`/source/${nextSourceId}`);
-          } else {
-            goto("/");
+          if (
+            $applicationStore.activeEntity.type === EntityType.Table &&
+            $applicationStore.activeEntity.id === id
+          ) {
+            const nextSourceId = getNextEntityId(
+              $persistentTableStore.entities,
+              id
+            );
+            if (nextSourceId) {
+              goto(`/source/${nextSourceId}`);
+            } else {
+              goto("/");
+            }
           }
+          sourceUpdated(tableName);
         },
       }
     );

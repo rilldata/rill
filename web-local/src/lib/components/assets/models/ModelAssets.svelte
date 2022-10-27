@@ -46,6 +46,7 @@
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
+  const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   let showModels = true;
 
@@ -69,12 +70,17 @@
   };
 
   const deleteModel = (id: string) => {
-    const nextModelId = getNextEntityId($persistentModelStore.entities, id);
+    if (
+      $applicationStore.activeEntity.type === EntityType.Model &&
+      $applicationStore.activeEntity.id === id
+    ) {
+      const nextModelId = getNextEntityId($persistentModelStore.entities, id);
 
-    if (nextModelId) {
-      goto(`/model/${nextModelId}`);
-    } else {
-      goto("/");
+      if (nextModelId) {
+        goto(`/model/${nextModelId}`);
+      } else {
+        goto("/");
+      }
     }
 
     deleteModelApi(id);
