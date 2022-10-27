@@ -38,6 +38,7 @@ export async function refreshSource(
       });
     }
   } else {
+    overlay.set({ title: `Importing ${tableName}` });
     await refreshSource.mutateAsync({
       instanceId: runtimeState.instanceId,
       name: tableName,
