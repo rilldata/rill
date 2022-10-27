@@ -18,7 +18,7 @@
     useRuntimeServiceMigrateDelete,
     useRuntimeServiceMigrateSingle,
     useRuntimeServiceTriggerRefresh,
-  } from "web-common/src/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
   import {
     ApplicationStore,
     dataModelerService,

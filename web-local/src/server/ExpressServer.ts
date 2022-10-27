@@ -19,7 +19,9 @@ import { existsSync, mkdirSync } from "fs";
 import http from "http";
 import path from "path";
 
-const STATIC_FILES = `${__dirname}/../../build`;
+const STATIC_FILES = existsSync(`${__dirname}/../../build`)
+  ? `${__dirname}/../../build`
+  : `${__dirname}/../../../../build`;
 const SVELTEKIT_FALLBACK_PAGE = "index.html";
 
 export class ExpressServer {

@@ -12,7 +12,7 @@
   import {
     useRuntimeServiceGetCatalogObject,
     V1Source,
-  } from "web-common/src/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";

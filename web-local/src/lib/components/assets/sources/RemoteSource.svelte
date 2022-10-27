@@ -10,7 +10,7 @@
     RpcStatus,
     useRuntimeServiceMigrateSingle,
     V1Connector,
-  } from "web-common/src/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
   import type * as yup from "yup";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/layout-store";

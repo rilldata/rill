@@ -8,7 +8,7 @@
   import {
     getRuntimeServiceListCatalogObjectsQueryKey,
     useRuntimeServiceMigrateSingle,
-  } from "web-common/src/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
   import Overlay from "./Overlay.svelte";
   import { uploadTableFiles } from "../../util/file-upload";
 

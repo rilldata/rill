@@ -5,7 +5,7 @@
   import {
     useRuntimeServiceListConnectors,
     V1Connector,
-  } from "web-common/src/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
   import { Dialog } from "../../modal";
   import LocalSource from "./LocalSource.svelte";
   import RemoteSource from "./RemoteSource.svelte";
@@ -42,12 +42,12 @@
 </script>
 
 <Dialog
-  yFixed
-  size="md"
-  showCancel
   compact
   {disabled}
   on:cancel={() => dispatch("close")}
+  showCancel
+  size="md"
+  yFixed
 >
   <div slot="title">
     <TabGroup

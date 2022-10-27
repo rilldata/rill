@@ -2,7 +2,7 @@ import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/asset
 import {
   runtimeServiceMigrateDelete,
   runtimeServiceMigrateSingle,
-} from "web-common/src/runtime-client";
+} from "@rilldata/web-common/runtime-client";
 import { SOURCE_PREVIEW_COUNT } from "../constants";
 import { ActionResponse, ActionStatus } from "./response/ActionResponse";
 import { ActionResponseFactory } from "./response/ActionResponseFactory";

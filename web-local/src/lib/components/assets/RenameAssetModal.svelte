@@ -4,7 +4,7 @@
   import {
     useRuntimeServiceGetCatalogObject,
     useRuntimeServiceMigrateSingle,
-  } from "web-common/src/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
   import * as yup from "yup";
   import {
     dataModelerService,
