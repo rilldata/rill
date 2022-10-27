@@ -11,6 +11,7 @@ TableCells – the cell contents.
   import ColumnHeaders from "../virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
+  import DimensionValueHeader from "./DimensionValueHeader.svelte";
   import { DimensionTableConfig } from "./DimensionTableConfig";
 
   const dispatch = createEventDispatcher();
@@ -19,6 +20,7 @@ TableCells – the cell contents.
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
   export let sortByColumn: string;
+  export let dimensionName: string;
   export let excludeMode = false;
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
@@ -47,7 +49,6 @@ TableCells – the cell contents.
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = DimensionTableConfig.indexWidth;
 
-  $: dimensionName = columns[0]?.name;
   $: selectedIndex = selectedValues
     .map((label) => {
       return rows.findIndex((row) => row[dimensionName] === label);
@@ -91,6 +92,11 @@ TableCells – the cell contents.
   /* set context for child components */
   setContext("config", config);
 
+  let estimateColumnSize;
+  let measureColumns = [];
+  let dimensionColumn;
+  let horizontalScrolling = false;
+
   $: if (rows && columns) {
     rowVirtualizer = createVirtualizer({
       getScrollElement: () => container,
@@ -101,7 +107,7 @@ TableCells – the cell contents.
       initialOffset: rowScrollOffset,
     });
 
-    const estimateColumnSize = columns.map((column, i) => {
+    estimateColumnSize = columns.map((column, i) => {
       if (i != 0) return config.defaultColumnWidth;
 
       const largestStringLength =
@@ -148,16 +154,20 @@ TableCells – the cell contents.
       estimateColumnSize[0]
     );
 
+    /* Separate out dimension column */
+    dimensionColumn = columns.find((c) => c.name == dimensionName);
+    measureColumns = columns.filter((c) => c.name !== dimensionName);
+
     columnVirtualizer = createVirtualizer({
       getScrollElement: () => container,
       horizontal: true,
-      count: columns.length,
-      getItemKey: (index) => columns[index].name,
+      count: measureColumns.length,
+      getItemKey: (index) => measureColumns[index].name,
       estimateSize: (index) => {
-        return estimateColumnSize[index];
+        return estimateColumnSize[index + 1];
       },
       overscan: columnOverscanAmount,
-      paddingStart: FILTER_COLUMN_WIDTH,
+      paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
       initialOffset: colScrollOffset,
     });
   }
@@ -210,6 +220,9 @@ TableCells – the cell contents.
 >
   <div
     bind:this={container}
+    on:scroll={() => {
+      horizontalScrolling = container?.scrollLeft > 0;
+    }}
     style:width="100%"
     style:height="100%"
     class="overflow-auto grid"
@@ -235,24 +248,41 @@ TableCells – the cell contents.
           virtualColumnItems={virtualColumns}
           noPin={true}
           selectedColumn={sortByColumn}
-          {columns}
+          columns={measureColumns}
           on:click-column={handleColumnHeaderClick}
         />
 
         {#if rows.length}
-          <!-- Gutter for Include Exlude Filter -->
-          <DimensionFilterGutter
-            virtualRowItems={virtualRows}
-            totalHeight={virtualHeight}
-            {selectedIndex}
-            {excludeMode}
-          />
+          <div class="flex">
+            <!-- Gutter for Include Exlude Filter -->
+            <DimensionFilterGutter
+              virtualRowItems={virtualRows}
+              totalHeight={virtualHeight}
+              {selectedIndex}
+              {excludeMode}
+              on:select-item={(event) => onSelectItem(event)}
+            />
+            <DimensionValueHeader
+              virtualRowItems={virtualRows}
+              totalHeight={virtualHeight}
+              width={estimateColumnSize[0]}
+              column={dimensionColumn}
+              {rows}
+              {activeIndex}
+              {selectedIndex}
+              {scrolling}
+              {horizontalScrolling}
+              on:select-item={(event) => onSelectItem(event)}
+              on:inspect={setActiveIndex}
+            />
+          </div>
+
           <!-- VirtualTableBody -->
           <TableCells
             virtualColumnItems={virtualColumns}
             virtualRowItems={virtualRows}
+            columns={measureColumns}
             {rows}
-            {columns}
             {activeIndex}
             {selectedIndex}
             {scrolling}

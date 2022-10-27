@@ -253,6 +253,7 @@
       <DimensionTable
         on:select-item={(event) => onSelectItem(event)}
         on:sort={(event) => onSortByColumn(event)}
+        dimensionName={dimension?.dimensionColumn}
         {columns}
         {selectedValues}
         rows={values}

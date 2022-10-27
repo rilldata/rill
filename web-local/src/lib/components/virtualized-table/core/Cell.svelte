@@ -32,6 +32,7 @@
   export let rowSelected = false;
   export let atLeastOneSelected = false;
   export let excludeMode = false;
+  export let positionStatic = false;
 
   let cellActive = false;
 
@@ -94,7 +95,7 @@
     on:blur={onBlur}
     on:click={onSelectItem}
     class="
-      absolute 
+      {positionStatic ? 'static' : 'absolute'}
       z-9 
       text-ellipsis 
       whitespace-nowrap 
