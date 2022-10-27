@@ -27,7 +27,7 @@
   class:font-bold={element === $selectedValue}
   class="px-4 pb-0 mb-0"
   on:click={() => {
-    callback(element, value);
+    if (!selected) callback(element, value);
   }}
 >
   <slot />

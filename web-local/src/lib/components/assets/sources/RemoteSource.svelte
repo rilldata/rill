@@ -1,10 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { createEventDispatcher, getContext } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import {
     ConnectorPropertyType,
+    getRuntimeServiceListCatalogObjectsQueryKey,
     RpcStatus,
     useRuntimeServiceMigrateSingle,
     V1Connector,
@@ -81,9 +83,11 @@
               goto(`/source/${newId}`);
               dispatch("close");
               overlay.set(null);
+              return queryClient.invalidateQueries(
+                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId)
+              );
             },
-            onError: (error) => {
-              console.error(error);
+            onError: () => {
               overlay.set(null);
             },
           }
@@ -101,6 +105,13 @@
       // InvalidArgument
       case 3: {
         const serverError = error.response.data.message;
+
+        // Rill errors
+        if (
+          serverError.match(/an existing object with name '.*' already exists/)
+        ) {
+          return "A source with this name already exists. Please choose a different name.";
+        }
 
         // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
         if (serverError.includes("MissingRegion")) {

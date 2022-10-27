@@ -2,7 +2,7 @@ import type { PersistentModelEntity } from "@rilldata/web-local/common/data-mode
 import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 
-export function getDuplicateNameChecker(
+export function duplicateNameChecker(
   name: string,
   models: Array<PersistentModelEntity>,
   sources: Array<PersistentTableEntity>
@@ -14,7 +14,7 @@ export function getDuplicateNameChecker(
   );
 }
 
-export function getIncrementedNameGetter(
+export function incrementedNameGetter(
   name: string,
   models: Array<PersistentModelEntity>,
   sources: Array<PersistentTableEntity>
