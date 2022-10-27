@@ -15,6 +15,7 @@
   import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { IconButton } from "../../button";
+  import Import from "../../icons/Import.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
@@ -46,10 +47,12 @@
     currentSource?.tableName
   );
 
+  $: connector = $getSource.data?.object?.source.connector as string;
+
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
-        $getSource.data?.object.source.connector,
+        connector,
         tableName,
         $runtimeStore,
         $refreshSourceMutation,
@@ -99,16 +102,31 @@
               )}
             </div>
           {/if}
-          <Tooltip location="bottom" distance={8}>
-            <IconButton
-              on:click={() => onRefreshClick(currentSource.tableName)}
-            >
-              <RefreshIcon size="16px" />
-            </IconButton>
-            <TooltipContent slot="tooltip-content">
-              Refresh the source data
-            </TooltipContent>
-          </Tooltip>
+          {#if connector === "file"}
+            <Tooltip location="bottom" distance={8}>
+              <div style="transformY(-1px)">
+                <IconButton
+                  on:click={() => onRefreshClick(currentSource.tableName)}
+                >
+                  <Import size="16px" />
+                </IconButton>
+              </div>
+              <TooltipContent slot="tooltip-content">
+                Import local file to refresh source
+              </TooltipContent>
+            </Tooltip>
+          {:else}
+            <Tooltip location="bottom" distance={8}>
+              <IconButton
+                on:click={() => onRefreshClick(currentSource.tableName)}
+              >
+                <RefreshIcon size="16px" />
+              </IconButton>
+              <TooltipContent slot="tooltip-content">
+                Refresh the source data
+              </TooltipContent>
+            </Tooltip>
+          {/if}
         </div>
       {/if}
     </svelte:fragment>

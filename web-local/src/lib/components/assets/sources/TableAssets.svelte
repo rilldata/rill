@@ -46,6 +46,7 @@
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
+  import Import from "../../icons/Import.svelte";
   import Model from "../../icons/Model.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
@@ -240,6 +241,9 @@
           (t) => t["id"] === id
         )}
         {@const entityIsActive = id === activeEntityID}
+        {@const source = $getSources.data?.objects?.find(
+          (object) => object.source?.name === tableName
+        )?.source}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
           <CollapsibleTableSummary
             on:query={() => queryHandler(tableName)}
@@ -281,12 +285,21 @@
                 </svelte:fragment>
               </MenuItem>
 
-              <MenuItem icon on:select={() => onRefreshSource(id, tableName)}>
-                <svelte:fragment slot="icon">
-                  <RefreshIcon />
-                </svelte:fragment>
-                refresh source data
-              </MenuItem>
+              {#if source.connector === "file"}
+                <MenuItem icon on:select={() => onRefreshSource(id, tableName)}>
+                  <svelte:fragment slot="icon">
+                    <Import />
+                  </svelte:fragment>
+                  import local file to refresh source
+                </MenuItem>
+              {:else}
+                <MenuItem icon on:select={() => onRefreshSource(id, tableName)}>
+                  <svelte:fragment slot="icon">
+                    <RefreshIcon />
+                  </svelte:fragment>
+                  refresh source data
+                </MenuItem>
+              {/if}
 
               <Divider />
               <MenuItem
