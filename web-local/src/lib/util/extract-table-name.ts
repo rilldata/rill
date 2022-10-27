@@ -6,9 +6,17 @@ export function getTableNameFromFile(filePath: string, name?: string) {
 }
 
 export function extractTableName(filePath: string): string {
-  const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
+  let fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
   const lastIndexOfDot = fileName.lastIndexOf(".");
-  return lastIndexOfDot >= 0 ? fileName.substring(0, lastIndexOfDot) : fileName;
+  fileName =
+    lastIndexOfDot >= 0 ? fileName.substring(0, lastIndexOfDot) : fileName;
+
+  // preappend underscore in case table name starts with hypen or number
+  if (fileName.match(/^(\d|-)/)) {
+    fileName = "_" + fileName;
+  }
+
+  return fileName;
 }
 
 export function extractFileExtension(filePath: string): string {
