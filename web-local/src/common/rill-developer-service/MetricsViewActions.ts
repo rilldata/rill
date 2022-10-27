@@ -21,6 +21,7 @@ import type {
 import {
   ExplorerMetricsDefinitionDoesntExist,
   ExplorerSourceModelDoesntExist,
+  ExplorerSourceModelIsInvalid,
 } from "../errors/ErrorMessages";
 import { DatabaseActionQueuePriority } from "../priority-action-queue/DatabaseActionQueuePriority";
 import { getMapFromArray } from "../utils/arrayUtils";
@@ -126,6 +127,12 @@ export class MetricsViewActions extends RillDeveloperActions {
       return ActionResponseFactory.getEntityError(
         ExplorerSourceModelDoesntExist
       );
+    }
+    const derivedModel = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(rillRequestContext.record.sourceModelId);
+    if (derivedModel.error) {
+      return ActionResponseFactory.getEntityError(ExplorerSourceModelIsInvalid);
     }
 
     const meta: MetricsViewMetaResponse = {

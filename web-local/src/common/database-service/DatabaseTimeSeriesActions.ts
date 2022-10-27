@@ -188,7 +188,6 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       )`
       );
     } catch (err) {
-      console.error(err);
       await this.databaseClient.execute(`DROP TABLE IF EXISTS _ts_;`);
       return {
         rollup: {

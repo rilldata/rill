@@ -42,6 +42,7 @@
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
+  const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   let showMetricsDefs = true;
 
@@ -105,12 +106,17 @@
   };
 
   const deleteMetricsDef = (id: string) => {
-    const nextMetricsDefId = getNextEntityId($metricsDefinitions, id);
+    if (
+      $applicationStore.activeEntity.type === EntityType.MetricsDefinition &&
+      $applicationStore.activeEntity.id === id
+    ) {
+      const nextMetricsDefId = getNextEntityId($metricsDefinitions, id);
 
-    if (nextMetricsDefId) {
-      goto(`/dashboard/${nextMetricsDefId}`);
-    } else {
-      goto("/");
+      if (nextMetricsDefId) {
+        goto(`/dashboard/${nextMetricsDefId}`);
+      } else {
+        goto("/");
+      }
     }
 
     store.dispatch(deleteMetricsDefsApi(id));

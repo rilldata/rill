@@ -1,6 +1,7 @@
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
+import { sourceUpdated } from "@rilldata/web-local/lib/redux-store/source/source-apis";
 import {
   openFileUploadDialog,
   uploadFile,
@@ -40,4 +41,5 @@ export async function refreshSource(
       name: tableName,
     });
   }
+  return sourceUpdated(tableName);
 }
