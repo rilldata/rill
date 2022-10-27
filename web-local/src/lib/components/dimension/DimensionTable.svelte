@@ -220,7 +220,7 @@ TableCells – the cell contents.
 >
   <div
     bind:this={container}
-    on:scroll={() => (horizontalScrolling = container?.scrollLeft > 0)}
+    on:scroll={() => { horizontalScrolling = container?.scrollLeft > 0 }}
     style:width="100%"
     style:height="100%"
     class="overflow-auto grid"
