@@ -1,5 +1,6 @@
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { overlay } from "@rilldata/web-local/lib/application-state-stores/layout-store";
 import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
 import {
   openFileUploadDialog,
@@ -16,7 +17,9 @@ export async function refreshSource(
 ) {
   if (connector === "file") {
     const files = await openFileUploadDialog(false);
-    if (!files.length) return;
+    if (!files.length) return Promise.reject();
+
+    overlay.set({ title: `Importing ${tableName}` });
     const filePath = await uploadFile(
       `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/objects/file`,
       files[0]

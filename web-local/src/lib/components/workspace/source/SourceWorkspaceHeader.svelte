@@ -47,7 +47,6 @@
   );
 
   const onRefreshClick = async (tableName: string) => {
-    overlay.set({ title: `Importing ${tableName}` });
     try {
       await refreshSource(
         $getSource.data?.object.source.connector,
