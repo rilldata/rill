@@ -279,7 +279,7 @@
                   <svelte:fragment slot="icon">
                     <Import />
                   </svelte:fragment>
-                  reimport local file
+                  import local file to refresh source
                 </MenuItem>
               {:else}
                 <MenuItem icon on:select={() => onRefreshSource(id, tableName)}>
