@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -111,6 +112,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
+		newObj.RefreshedOn = time.Now()
 		err = catalog.UpdateObject(ctx, req.InstanceId, newObj)
 		if err != nil {
 			return nil, status.Errorf(codes.Unknown, "error: could not update source in catalog: %s (warning: watch out for corruptions)", err.Error())
