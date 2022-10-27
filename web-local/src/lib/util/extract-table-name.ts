@@ -13,6 +13,7 @@ export function extractTableName(filePath: string): string {
 
   // preappend underscore in case table name starts with hypen or number
   if (fileName.match(/^(\d|-)/)) {
+    fileName = fileName.replace(/^-/, "");
     fileName = "_" + fileName;
   }
 
