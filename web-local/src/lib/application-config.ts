@@ -17,6 +17,8 @@ export const COLUMN_PROFILE_CONFIG = {
   exampleWidth: { medium: 204, small: 132 },
 };
 
+export const TOOLTIP_STRING_LIMIT = 200;
+
 export function collapseInspectorCTAButton(width) {
   return !(width < 398);
 }
