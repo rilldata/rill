@@ -22,7 +22,6 @@ Alternatively, you can manually download the latest binary that is relevant for 
 - [macos-arm64](https://cdn.rilldata.com/rill/latest/macos-arm64/rill) (~180mb)
 - [macos-x64](https://cdn.rilldata.com/rill/latest/macos-x64/rill) (~180mb) 
 
-## Safely open Rill on your Mac
 If you see a warning when opening the rill macos-arm64 binary you need to change the permissions to make it executable and remove it from Apple Developer identification quarantine.
 ```
 cd ~/Downloads
@@ -38,7 +37,6 @@ Unlike the script-based installation, a manual download will not make Rill Devel
 Rill is temporarily unavailable on Windows. We're working on bringing Rill back to Windows soon.
 :::
 
-## Safely open Rill on Windows 10
 
 If you see a warning "SmartScreen protected an unrecognized app from starting," you can fix by following the [instructions here](https://www.windowscentral.com/how-fix-app-has-been-blocked-your-protection-windows-10#open). In summary:
 - Navigate to the file or program that's being blocked by SmartScreen.
