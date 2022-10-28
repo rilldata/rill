@@ -6,7 +6,7 @@ description: Import local files, remote sources, and existing DuckDB databases
 There are several ways to import data in Rill Developer: local files, remotely stored files, and existing DuckDB databases.
 
 ## Local files
-To import a file using the UI, click "+" by Sources in the left hand navigation pane, select "File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
+To import a file using the UI, click "+" by Sources in the left hand navigation pane, select "Local File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
 
 To import a file with the CLI use the [`rill import-source`](/cli#import-your-data) CLI command from the terminal.
 
