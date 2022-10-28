@@ -28,22 +28,14 @@ Alternatively you can also download the binary manually:
   - [linux-x64](https://cdn.rilldata.com/rill/latest/linux-x64/rill)
   <!-- - [win-x64](https://cdn.rilldata.com/rill/latest/win-x64/rill.exe) -->
 
-You can also install Rill Developer using npm or docker:
-- [npm](https://docs.rilldata.com/install/npm) : run `npm install -g @rilldata/rill`
-- [docker](https://docs.rilldata.com/install/docker) : download our [docker container](https://hub.docker.com/r/rilldata/rill-developer)
-
 ## Quick start a new project
-
-You can create and augment your own projects in Rill Developer using the [CLI](https://docs.rilldata.com/cli). Every project starts by initializing the experience. Once initialized, you can ingest data into the project and start the UI.
+You can create and augment your own projects in Rill Developer using the [CLI](https://docs.rilldata.com/cli). Or simply start the Application and enrich your project from there:
 
 ```
-rill init
-rill import-source /path/to/data_1.parquet
 rill start
-
 ```
 
-or try our example:
+You can also try our example:
 
 ```
 rill init-example
