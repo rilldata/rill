@@ -31,6 +31,11 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "duplicate key")
 
+	obj.Name = "Foo"
+	err = catalog.CreateObject(ctx, instanceID, obj)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "duplicate key")
+
 	obj.Name = "bar"
 	err = catalog.CreateObject(ctx, instanceID, obj)
 	require.NoError(t, err)
@@ -50,6 +55,10 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.True(t, found)
 	require.Equal(t, obj.Name, "foo")
 	require.Equal(t, obj.Type, drivers.CatalogObjectTypeSource)
+
+	obj, found = catalog.FindObject(ctx, instanceID, "Foo")
+	require.True(t, found)
+	require.Equal(t, obj.Name, "foo")
 
 	err = catalog.DeleteObject(ctx, instanceID, "foo")
 	require.NoError(t, err)

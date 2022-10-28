@@ -1,6 +1,8 @@
 package com.rilldata;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -8,13 +10,17 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
+import com.rilldata.protobuf.generated.Requests;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Base64;
 
 /**
  * This class contains an entry point (a function callable from a native executable, ie C/Go executable).
  */
 public class SqlConverterEntrypoint
 {
-  private static SqlConverter sqlConverter;
+//  private static SqlConverter sqlConverter;
 
   interface AllocatorFn extends CFunctionPointer
   {
@@ -22,16 +28,83 @@ public class SqlConverterEntrypoint
     CCharPointer call(long size);
   }
 
+  public static Requests.Response transpile(Requests.Request r) {
+    Requests.TranspileRequest transpileRequest = r.getTranspileRequest();
+    String sql = transpileRequest.getSql();
+    Requests.Dialect dialect = transpileRequest.getDialect();
+    try {
+      SqlConverter sqlConverter = new SqlConverter(transpileRequest.getCatalog());
+      String transpiledSql = sqlConverter.convert(sql, Dialects.valueOf(dialect.name()).getSqlDialect());
+      return Requests.Response
+          .newBuilder()
+          .setTranspileResponse(Requests.TranspileResponse.newBuilder().setSql(transpiledSql).build())
+          .build();
+    } catch (Exception e) {
+      return Requests.Response
+          .newBuilder()
+          .setError(
+            Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
+          .build();
+    }
+  }
+
+  @CEntryPoint(name = "request")
+  public static CCharPointer processRequest(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer request) {
+    String b64String = CTypeConversion.toJavaString(request);
+    byte[] decoded = Base64.getDecoder().decode(b64String);
+
+    try {
+      Requests.Request r = Requests.Request.parseFrom(decoded);
+      if (r.hasParseRequest()) {
+        Requests.ParseRequest parseRequest = r.getParseRequest();
+        String sql = parseRequest.getSql();
+        SqlConverter sqlConverter = new SqlConverter(parseRequest.getCatalog());
+        Requests.Response response;
+        try {
+          SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql);
+          response = Requests.Response
+              .newBuilder()
+              .setParseResponse(Requests.ParseResponse.newBuilder().setAst(sqlNodeProto).build())
+              .build();
+        } catch (Exception e) {
+          response = Requests.Response
+              .newBuilder()
+              .setError(
+                Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
+              .build();
+        }
+        byte[] b64response = Base64.getEncoder().encode(response.toByteArray());
+        return convertToCCharPointer(allocatorFn, b64response);
+      } else if (r.hasTranspileRequest()) {
+          byte[] response = transpile(r).toByteArray();
+          byte[] b64response = Base64.getEncoder().encode(response);
+          return convertToCCharPointer(allocatorFn, b64response);
+      }
+      Requests.Response build = Requests.Response
+          .newBuilder()
+          .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
+          .build();
+      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+    } catch (Exception e) {
+      Requests.Response build = Requests.Response
+          .newBuilder()
+          .setError(
+              Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
+          .build();
+      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+    }
+  }
+
   @CEntryPoint(name = "convert_sql")
   public static CCharPointer convertSql(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema, CCharPointer dialect
+      CCharPointer catalog, CCharPointer dialect
   )
   {
     try {
       String dialectString = CTypeConversion.toJavaString(dialect);
       Dialects dialectEnum = Dialects.valueOf(dialectString.toUpperCase());
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String javaSqlString = CTypeConversion.toJavaString(sql);
       String runnableQuery = sqlConverter.convert(javaSqlString, dialectEnum.getSqlDialect());
       if (runnableQuery == null) {
@@ -46,15 +119,15 @@ public class SqlConverterEntrypoint
 
   @CEntryPoint(name = "get_ast")
   public static CCharPointer getAST(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer sql,
-      CCharPointer schema
+      CCharPointer catalog
   )
   {
     try {
-      String javaSchemaString = CTypeConversion.toJavaString(schema);
-      SqlConverter sqlConverter = new SqlConverter(javaSchemaString);
+      String javaCatalogString = CTypeConversion.toJavaString(catalog);
+      SqlConverter sqlConverter = new SqlConverter(javaCatalogString);
       String sqlString = CTypeConversion.toJavaString(sql);
-      byte[] ast = sqlConverter.getAST(sqlString);
-      return convertToCCharPointer(allocatorFn, ast);
+      SqlNodeProto ast = sqlConverter.getAST(sqlString);
+      return convertToCCharPointer(allocatorFn, ast.toByteArray());
     } catch (Exception e) {
       e.printStackTrace();
       return WordFactory.nullPointer();
@@ -74,5 +147,13 @@ public class SqlConverterEntrypoint
     }
     a.write(b.length, (byte) 0);
     return a;
+  }
+
+  private static String stackTraceToString(Exception e)
+  {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    return sw.toString();
   }
 }

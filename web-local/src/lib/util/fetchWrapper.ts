@@ -1,5 +1,23 @@
 import { config } from "../application-state-stores/application-store";
 
+export async function fetchWrapperDirect(
+  url: string,
+  method: string,
+  body?: BodyInit | Record<string, unknown>,
+  headers: HeadersInit = { "Content-Type": "application/json" }
+) {
+  const resp = await fetch(url, {
+    method,
+    ...(body ? { body: serializeBody(body) } : {}),
+    headers,
+  });
+  if (!resp.ok) {
+    const err = new Error();
+    (err as any).response = await resp.json();
+    return Promise.reject(err);
+  }
+  return resp.json();
+}
 export async function fetchWrapper(
   path: string,
   method: string,

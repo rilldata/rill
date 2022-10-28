@@ -3,15 +3,12 @@
  * It does not contain any of the state for the entities; instead, it contains information
  * about things like the active entity and the application status.
  */
-import type { Socket } from "socket.io";
-import { writable, Writable } from "svelte/store";
 import { clientFactory } from "@rilldata/web-local/common/clientFactory";
 import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import type { DataModelerSocketService } from "@rilldata/web-local/common/socket/DataModelerSocketService";
 import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from "@rilldata/web-local/common/socket/SocketInterfaces";
+  ApplicationEntity,
+  ApplicationState,
+} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type {
   EntityRecord,
   EntityState,
@@ -20,10 +17,13 @@ import {
   EntityType,
   StateType,
 } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { DataModelerSocketService } from "@rilldata/web-local/common/socket/DataModelerSocketService";
 import type {
-  ApplicationEntity,
-  ApplicationState,
-} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from "@rilldata/web-local/common/socket/SocketInterfaces";
+import type { Socket } from "socket.io";
+import { writable, Writable } from "svelte/store";
 
 export interface AppStore<
   Entity extends EntityRecord = EntityRecord,
@@ -66,3 +66,12 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
 );
 
 export const duplicateSourceName: Writable<string> = writable(null);
+
+export type RuntimeState = {
+  repoId?: string;
+  instanceId: string;
+};
+export const runtimeStore = writable<RuntimeState>({
+  repoId: null,
+  instanceId: null,
+});

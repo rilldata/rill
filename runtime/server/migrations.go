@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -37,12 +38,6 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Check if object exists and is not a source
-	obj, found := catalog.FindObject(ctx, req.InstanceId, source.Name)
-	if found && obj.Type != drivers.CatalogObjectTypeSource {
-		return nil, status.Errorf(codes.FailedPrecondition, "an object of type '%s' already exists with name '%s'", obj.Type, obj.Name)
-	}
-
 	// Get olap
 	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
@@ -50,27 +45,120 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 	}
 	olap, _ := conn.OLAPStore()
 
-	// Ingest the source
-	err = olap.Ingest(ctx, source)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+	// Get existing object with name and check it's a source
+	existingObj, existingFound := catalog.FindObject(ctx, req.InstanceId, source.Name)
+	if existingFound && !req.CreateOrReplace {
+		return nil, status.Errorf(codes.InvalidArgument, "an existing object with name '%s' already exists (consider setting `create_or_replace=true`)", existingObj.Name)
+	}
+	if existingFound && existingObj.Type != drivers.CatalogObjectTypeSource {
+		return nil, status.Errorf(codes.InvalidArgument, "an object of type '%s' already exists with name '%s'", existingObj.Type, existingObj.Name)
 	}
 
-	// Save definition
-	obj = &drivers.CatalogObject{
+	// Get object to rename and check it's a valid rename op
+	var renameObj *drivers.CatalogObject
+	var renameFound bool
+	var renameAndReingest bool
+	if req.RenameFrom != "" {
+		// Check that we're not renaming to a name that's already taken
+		if existingFound {
+			return nil, status.Errorf(codes.InvalidArgument, "cannot rename '%s' to '%s' because a source with that name already exists", req.RenameFrom, source.Name)
+		}
+
+		// Get the object to rename
+		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, req.RenameFrom)
+		if !renameFound {
+			return nil, status.Errorf(codes.InvalidArgument, "could not find existing object named '%s' to rename", req.RenameFrom)
+		}
+		if renameObj.Type != drivers.CatalogObjectTypeSource {
+			return nil, status.Errorf(codes.InvalidArgument, "cannot rename object '%s' because it is not a source", req.RenameFrom)
+		}
+
+		// Check whether the properties for the new object are different (i.e. whether to re-ingest or just rename)
+		renameSource, err := sqlToSource(renameObj.SQL)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "could not parse existing sql: %s", err.Error())
+		}
+		renameAndReingest = !source.PropertiesEquals(renameSource)
+	}
+
+	// Stop execution now if it's just a dry run
+	if req.DryRun {
+		return &api.MigrateSingleResponse{}, nil
+	}
+
+	// Create the object to save
+	newObj := &drivers.CatalogObject{
 		Name: source.Name,
 		Type: drivers.CatalogObjectTypeSource,
 		SQL:  req.Sql,
 	}
-	if found {
-		err = catalog.UpdateObject(ctx, req.InstanceId, obj)
-	} else {
-		err = catalog.CreateObject(ctx, req.InstanceId, obj)
-	}
-	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "error: could not insert source into catalog: %s (warning: watch out for corruptions)", err.Error())
+
+	// We now have several cases to handle
+	if !existingFound && !renameFound {
+		// Just ingest and save object
+		err := olap.Ingest(ctx, source)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "error: could not insert source into catalog: %s (warning: watch out for corruptions)", err.Error())
+		}
+	} else if existingFound && !renameFound {
+		// Reingest and then update object
+		err := olap.Ingest(ctx, source)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		newObj.RefreshedOn = time.Now()
+		err = catalog.UpdateObject(ctx, req.InstanceId, newObj)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "error: could not update source in catalog: %s (warning: watch out for corruptions)", err.Error())
+		}
+	} else if renameFound && !renameAndReingest { // earlier check ensures !existingFound
+		// Just create the new object, drop the old one, then rename in OLAP
+		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "error: could not insert source into catalog: %s (warning: watch out for corruptions)", err.Error())
+		}
+
+		err = catalog.DeleteObject(ctx, req.InstanceId, renameObj.Name)
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE %s RENAME TO %s", renameObj.Name, newObj.Name), Priority: 100})
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+		rows.Close()
+	} else if renameFound && renameAndReingest { // earlier check ensures !existingFound
+		// Reingest and save object, then drop old
+		err := olap.Ingest(ctx, source)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "error: could not insert source into catalog: %s (warning: watch out for corruptions)", err.Error())
+		}
+
+		err = catalog.DeleteObject(ctx, req.InstanceId, renameObj.Name)
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", renameObj.Name), Priority: 100})
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+		rows.Close()
 	}
 
+	// Done
 	return &api.MigrateSingleResponse{}, nil
 }
 

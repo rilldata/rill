@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.rilldata</groupId>
   <artifactId>sql</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.5</version>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
@@ -286,6 +286,8 @@
             <configuration>
               <sources>
                 <source>src/generated-sources/</source>
+                <source>${project.build.directory}/generated-sources/annotations</source>
+                <source>${project.build.directory}/generated-sources/requests</source>
               </sources>
             </configuration>
           </execution>
@@ -299,8 +301,7 @@
       </plugin>
       <!-- Custom parser generation done -->
 
-      <!-- Generate protobuf builder java classes using protoc. protoc should be installed
-      on the build machine. see - http://google.github.io/proto-lens/installing-protoc.html -->
+      <!-- Generate protobuf classes. protoc must already be installed. -->
       <plugin>
         <artifactId>exec-maven-plugin</artifactId>
         <groupId>org.codehaus.mojo</groupId>
@@ -315,10 +316,7 @@
             <configuration>
               <executable>bash</executable>
               <arguments>
-                <argument>${project.basedir}/scripts/protoc-java.sh</argument>
-                <argument>SqlNodeProto.proto</argument> <!-- proto file name -->
-                <argument>${project.build.sourceDirectory}/com/rilldata/protobuf/</argument> <!-- input dir -->
-                <argument>${project.build.directory}/generated-sources/annotations/</argument> <!-- output dir -->
+                <argument>${project.basedir}/scripts/proto-gen.sh</argument>
               </arguments>
             </configuration>
           </execution>

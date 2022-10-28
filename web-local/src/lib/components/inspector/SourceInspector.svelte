@@ -9,7 +9,12 @@
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
+  import {
+    useRuntimeServiceGetCatalogObject,
+    V1Source,
+  } from "@rilldata/web-common/runtime-client";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -21,7 +26,6 @@
     createModelForSource,
   } from "../../redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "../../redux-store/source/source-selectors";
-  import { TableSourceType } from "../../types";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -33,12 +37,11 @@
   import Explore from "../icons/Explore.svelte";
   import Model from "../icons/Model.svelte";
   import { GridCell, LeftRightGrid } from "../left-right-grid";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-
   import PanelCTA from "../panel/PanelCTA.svelte";
   import ResponsiveButtonText from "../panel/ResponsiveButtonText.svelte";
   import StickToHeaderDivider from "../panel/StickToHeaderDivider.svelte";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -52,6 +55,13 @@
   ) as DerivedTableStore;
 
   const store = getContext("rill:app:store") as ApplicationStore;
+
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+
+  $: getSource = useRuntimeServiceGetCatalogObject(
+    runtimeInstanceId,
+    currentTable?.tableName
+  );
 
   let showColumns = true;
 
@@ -116,30 +126,39 @@
   };
 
   /** source summary information */
-  let sourceType;
   let rowCount;
   let columnCount;
   let nullPercentage;
-  $: {
-    switch (currentTable?.sourceType) {
-      case TableSourceType.ParquetFile: {
-        sourceType = "Parquet";
-        break;
-      }
-      case TableSourceType.CSVFile: {
-        sourceType = `CSV (${currentTable?.csvDelimiter || "comma"})`;
-        break;
-      }
-      case TableSourceType.DuckDB: {
-        sourceType = "DuckDB";
-        break;
-      }
-      default: {
-        sourceType = "unknown";
-        break;
-      }
+
+  function formatConnectorType(connectorType: string) {
+    switch (connectorType) {
+      case "s3":
+        return "S3";
+      case "gcs":
+        return "GCS";
+      case "file":
+        return "Local file";
+      default:
+        return "";
     }
   }
+
+  function getFileExtension(source: V1Source): string {
+    const extension = source?.properties?.path.split(".").pop();
+    switch (extension) {
+      case "csv":
+        return "CSV";
+      case "parquet":
+        return "Parquet";
+      default:
+        return "";
+    }
+  }
+
+  $: connectorType = formatConnectorType(
+    $getSource.data?.object?.source?.connector
+  );
+  $: fileExtension = getFileExtension($getSource.data?.object?.source);
 
   /** get the current row count */
   $: {
@@ -202,9 +221,7 @@
     <!-- summary info -->
     <div class=" p-4 pt-2">
       <LeftRightGrid>
-        <GridCell side="left">
-          {sourceType}
-        </GridCell>
+        <GridCell side="left">{connectorType} ({fileExtension})</GridCell>
         <GridCell side="right" classes="text-gray-800 font-bold">
           {rowCount}
         </GridCell>

@@ -5,25 +5,26 @@ The main feature-set component for dashboard filters
   import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
   import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import { flip } from "svelte/animate";
   import { getContext } from "svelte";
+  import { flip } from "svelte/animate";
 
   import type {
     MetricsViewDimensionValues,
     MetricsViewRequestFilter,
   } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+  import type { Readable } from "svelte/store";
+  import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import { getDimensionsByMetricsId } from "../../../../redux-store/dimension-definition/dimension-definition-readables";
   import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
   import { Chip, ChipContainer, RemovableListChip } from "../../../chip";
+  import { defaultChipColors } from "../../../chip/chip-types";
   import Filter from "../../../icons/Filter.svelte";
   import FilterRemove from "../../../icons/FilterRemove.svelte";
-  import { getDimensionsByMetricsId } from "../../../../redux-store/dimension-definition/dimension-definition-readables";
-  import type { Readable } from "svelte/store";
-  import { fly } from "svelte/transition";
   import { getDisplayName } from "../utils";
   export let metricsDefId;
 
@@ -111,44 +112,54 @@ The main feature-set component for dashboard filters
   }
 
   /** prune the values and prepare for for templating */
-  let currentDimensionIncludeFilters = [];
-  let currentDimensionExcludeFilters = [];
+  let currentDimensionFilters = [];
   $: if (includeValues && excludeValues) {
     const dimensionIdMap = getMapFromArray(
       $dimensions,
       (dimension) => dimension.id
     );
-    currentDimensionIncludeFilters = includeValues.map((dimensionValues) => ({
-      name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
-      sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
-      dimensionId: dimensionValues.name,
-      selectedValues: dimensionValues.in,
-    }));
-    currentDimensionExcludeFilters = excludeValues.map((dimensionValues) => ({
-      name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
-      sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
-      dimensionId: dimensionValues.name,
-      selectedValues: dimensionValues.in,
-    }));
+    const currentDimensionIncludeFilters = includeValues.map(
+      (dimensionValues) => ({
+        name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
+        sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
+        dimensionId: dimensionValues.name,
+        selectedValues: dimensionValues.in,
+        filterType: "include",
+      })
+    );
+    const currentDimensionExcludeFilters = excludeValues.map(
+      (dimensionValues) => ({
+        name: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
+        sqlName: dimensionIdMap.get(dimensionValues.name)?.dimensionColumn,
+        dimensionId: dimensionValues.name,
+        selectedValues: dimensionValues.in,
+        filterType: "exclude",
+      })
+    );
+    currentDimensionFilters = [
+      ...currentDimensionIncludeFilters,
+      ...currentDimensionExcludeFilters,
+    ];
   }
 
-  function toggleDimensionValue(event, item, include: boolean) {
-    event.detail.forEach((dimensionValue) => {
-      metricsExplorerStore.toggleFilter(
-        metricsDefId,
-        item.dimensionId,
-        dimensionValue,
-        include
-      );
-    });
+  function toggleDimensionValue(event, item) {
+    metricsExplorerStore.toggleFilter(
+      metricsDefId,
+      item.dimensionId,
+      event.detail
+    );
+  }
+
+  function togglerFilterMode(dimensionId) {
+    metricsExplorerStore.toggleFilterExcludeMode(metricsDefId, dimensionId);
   }
 
   const excludeChipColors = {
-    bgBaseColor: "bg-gray-100",
-    bgHoverColor: "bg-gray-200",
-    textColor: "text-gray-900",
-    bgActiveColor: "bg-gray-200",
-    outlineColor: "outline-gray-400",
+    bgBaseClass: "bg-gray-100 dark:bg-gray-700",
+    bgHoverClass: "bg-gray-200 dark:bg-gray-600",
+    textClass: "ui-copy",
+    bgActiveClass: "bg-gray-200 dark:bg-gray-600",
+    outlineClass: "outline-gray-400 dark:outline-gray-500",
   };
 </script>
 
@@ -161,48 +172,30 @@ The main feature-set component for dashboard filters
     style:width="24px"
     style:height="24px"
     class="grid place-items-center"
-    class:text-gray-400={!hasFilters}
-    class:text-gray-600={hasFilters}
+    class:ui-copy-icon-inactive={!hasFilters}
+    class:ui-copy-icon={hasFilters}
   >
     <Filter size="16px" />
   </div>
-  {#if currentDimensionIncludeFilters?.length || currentDimensionExcludeFilters?.length}
+  {#if currentDimensionFilters?.length}
     <ChipContainer>
-      {#each currentDimensionIncludeFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
+      {#each currentDimensionFilters as { name, sqlName, dimensionId, selectedValues, filterType } (dimensionId)}
+        {@const isInclude = filterType === "include"}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
-            on:remove={() => clearFilterForDimension(dimensionId, true)}
-            on:apply={(event) =>
-              toggleDimensionValue(event, { dimensionId }, true)}
+            on:toggle={() => togglerFilterMode(dimensionId)}
+            on:remove={() =>
+              clearFilterForDimension(dimensionId, isInclude ? true : false)}
+            on:apply={(event) => toggleDimensionValue(event, { dimensionId })}
             on:search={(event) => {
               setActiveDimension(sqlName, dimensionId, event.detail);
             }}
             typeLabel="dimension"
-            {name}
+            name={isInclude ? name : `Exclude ${name}`}
+            excludeMode={isInclude ? false : true}
+            colors={isInclude ? defaultChipColors : excludeChipColors}
             {selectedValues}
             {searchedValues}
-          >
-            <svelte:fragment slot="body-tooltip-content">
-              click to edit the the filters in this dimension
-            </svelte:fragment>
-          </RemovableListChip>
-        </div>
-      {/each}
-      {#each currentDimensionExcludeFilters as { name, sqlName, dimensionId, selectedValues } (dimensionId)}
-        <div animate:flip={{ duration: 200 }}>
-          <RemovableListChip
-            on:remove={() => clearFilterForDimension(dimensionId, false)}
-            on:apply={(event) =>
-              toggleDimensionValue(event, { dimensionId }, false)}
-            on:search={(event) => {
-              setActiveDimension(sqlName, dimensionId, event.detail);
-            }}
-            typeLabel="dimension"
-            name={`Exclude ${name}`}
-            {selectedValues}
-            {searchedValues}
-            excludeMode
-            colors={excludeChipColors}
           >
             <svelte:fragment slot="body-tooltip-content">
               click to edit the the filters in this dimension
@@ -215,23 +208,25 @@ The main feature-set component for dashboard filters
       {#if hasFilters}
         <div class="ml-auto">
           <Chip
-            bgBaseColor="bg-white"
-            bgHoverColor="bg-gray-100"
-            textColor="text-gray-500"
-            bgActiveColor="bg-gray-200"
-            outlineColor="outline-gray-400"
+            bgBaseClass="surface"
+            bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
+            textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
+            bgActiveClass="bg-gray-200 dark:bg-gray-600"
+            outlineClass="outline-gray-400"
             on:click={clearAllFilters}
           >
-            <FilterRemove slot="icon" size="16px" />
+            <span slot="icon" class="ui-copy-disabled-faint">
+              <FilterRemove size="16px" />
+            </span>
             <svelte:fragment slot="body">clear filters</svelte:fragment>
           </Chip>
         </div>
       {/if}
     </ChipContainer>
-  {:else if currentDimensionIncludeFilters?.length === 0 && currentDimensionExcludeFilters?.length === 0}
+  {:else if currentDimensionFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
-      class="italic text-gray-400  grid items-center"
+      class="italic ui-copy-disabled grid items-center"
       style:min-height="26px"
     >
       no filters selected

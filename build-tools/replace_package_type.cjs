@@ -16,3 +16,4 @@ function replacePackageJson(packageJsonPath) {
 
 replacePackageJson("package.json");
 replacePackageJson("web-local/package.json");
+replacePackageJson("web-local/dist/web-local/package.json");

@@ -10,14 +10,33 @@ export class TableStateActions extends StateActions {
   }
 
   @StateActions.PersistentTableAction()
-  public updateTableName(
+  public renameTableName(
     { stateService, draftState }: PersistentTableStateActionArg,
     tableId: string,
     name: string
   ): void {
-    // update both "name" and "tableName" while both properties exist in the data model
+    stateService.updateEntityField(
+      draftState,
+      tableId,
+      "previousTableName",
+      name
+    );
+  }
+
+  @StateActions.PersistentTableAction()
+  public updateTableName(
+    { stateService, draftState }: PersistentTableStateActionArg,
+    tableId: string,
+    name: string
+  ) {
     stateService.updateEntityField(draftState, tableId, "name", name);
     stateService.updateEntityField(draftState, tableId, "tableName", name);
+    stateService.updateEntityField(
+      draftState,
+      tableId,
+      "previousTableName",
+      ""
+    );
   }
 
   @StateActions.DerivedTableAction()

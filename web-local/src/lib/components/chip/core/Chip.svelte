@@ -3,20 +3,20 @@
   - center (text) – used primarily for label information
 -->
 <script>
-  import { slideRight } from "../../../transitions/index";
   import { createEventDispatcher } from "svelte";
-  import RemoveChipButton from "./RemoveChipButton.svelte";
+  import { slideRight } from "../../../transitions/index";
   import { defaultChipColors } from "../chip-types";
+  import RemoveChipButton from "./RemoveChipButton.svelte";
 
   export let removable = false;
   export let active = false;
 
   /** color elements elements */
-  export let bgBaseColor = defaultChipColors.bgBaseColor;
-  export let bgHoverColor = defaultChipColors.bgHoverColor;
-  export let textColor = defaultChipColors.textColor;
-  export let bgActiveColor = defaultChipColors.bgActiveColor;
-  export let outlineColor = defaultChipColors.outlineColor;
+  export let bgBaseClass = defaultChipColors.bgBaseClass;
+  export let bgHoverClass = defaultChipColors.bgHoverClass;
+  export let textClass = defaultChipColors.textClass;
+  export let bgActiveClass = defaultChipColors.bgActiveClass;
+  export let outlineClass = defaultChipColors.outlineClass;
 
   /** if removable is true, these props control the tooltip positioning */
   export let removeButtonTooltipLocation = "bottom";
@@ -33,12 +33,11 @@
     on:click
     class="
     grid gap-x-2 items-center pl-2 pr-4 py-1 rounded-2xl cursor-pointer
-    {textColor}
-    {bgBaseColor}
-    {outlineColor}
-    hover:{bgHoverColor}
-    {active ? bgActiveColor : ''}
-
+    {textClass}
+    {bgBaseClass} 
+    {outlineClass} 
+    {bgHoverClass} 
+    {active ? bgActiveClass : ''}
   "
     class:outline-2={active}
     class:outline={active}
@@ -50,6 +49,7 @@
     <!-- a cancelable element, e.g. filter buttons -->
     {#if removable}
       <RemoveChipButton
+        {textClass}
         tooltipLocation={removeButtonTooltipLocation}
         tooltipAlignment={removeButtonTooltipAlignment}
         tooltipDistance={removeButtonTooltipDistance}

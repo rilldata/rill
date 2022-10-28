@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { tweened } from "svelte/motion";
   import { cubicOut as easing } from "svelte/easing";
+  import { tweened } from "svelte/motion";
   import type { BarAndLabelTweenParameterOptions } from "./types";
   export let value = 0;
   export let color;
   export let showBackground = true;
+  export let showHover = false;
   export let customBackgroundColor = undefined;
   export let justify: string | boolean = "end"; // or left
   export let tweenParameters: BarAndLabelTweenParameterOptions<number> = {
@@ -28,12 +29,14 @@
   class="
     text-right grid items-center 
     {justify ? `justify-${justify}` : ''} 
-    {justify ? `justify-items-${justify}` : ''} relative w-full"
-  style:background-color={customBackgroundColor
+    {justify ? `justify-items-${justify}` : ''} relative w-full
+    {showHover ? 'hover:bg-gray-100 hover:dark:bg-gray-600' : undefined}
+    {customBackgroundColor
     ? customBackgroundColor
     : showBackground
-    ? "hsla(217,5%, 90%, .25)"
-    : "hsl(217, 0%, 100%, .25)"}
+    ? 'bg-gray-100 dark:bg-gray-700'
+    : 'bg-transparent'}
+    "
   style:flex="1"
 >
   <div
@@ -43,12 +46,12 @@
     <slot />
   </div>
   <div
-    class="number-bar {color}"
+    class="number-bar {color} mix-blend-multiply dark:mix-blend-screen"
     style="--width: {Math.min(1, $valueTween)};"
   />
 </div>
 
-<style>
+<style lang="postcss">
   .number-bar {
     --width: 0%;
     content: "";
@@ -58,8 +61,6 @@
     left: 0;
     top: 0;
     height: 100%;
-
-    mix-blend-mode: multiply;
     pointer-events: none;
   }
 </style>

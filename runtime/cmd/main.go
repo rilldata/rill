@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -27,7 +29,7 @@ type Config struct {
 	GRPCPort       int           `default:"9090" split_words:"true"`
 	LogLevel       zapcore.Level `default:"info" split_words:"true"`
 	DatabaseDriver string        `default:"sqlite"`
-	DatabaseURL    string        `default:":memory:" split_words:"true"`
+	DatabaseURL    string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 }
 
 func main() {

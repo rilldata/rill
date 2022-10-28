@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
 import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { dataModelerService } from "../../application-state-stores/application-store";
 import {
   resetQuickStartDashboardOverlay,
@@ -12,7 +13,7 @@ import {
   createMetricsDefsApi,
   generateMeasuresAndDimensionsApi,
 } from "../metrics-definition/metrics-definition-apis";
-import { selectMetricsDefinitionMatchingName } from "../metrics-definition/metrics-definition-selectors";
+import { selectNextMetricsDefinitionName } from "../metrics-definition/metrics-definition-selectors";
 import { updateModelQueryApi } from "../model/model-apis";
 import {
   selectDerivedModelBySourceName,
@@ -113,19 +114,15 @@ export const autoCreateMetricsDefinitionForModel = async (
   timeDimension: string
 ): Promise<string> => {
   const metricsLabel = `${sourceName}_dashboard`;
-  const existingMetrics = selectMetricsDefinitionMatchingName(
-    store.getState(),
-    metricsLabel
-  );
 
   const { payload: createdMetricsDef } = await store.dispatch(
     createMetricsDefsApi({
       sourceModelId,
       timeDimension,
-      metricDefLabel:
-        existingMetrics.length === 0
-          ? metricsLabel
-          : `${metricsLabel}_${existingMetrics.length}`,
+      metricDefLabel: selectNextMetricsDefinitionName(
+        store.getState(),
+        metricsLabel
+      ),
     })
   );
 
@@ -144,15 +141,10 @@ const createModelFromSourceAndGetId = async (
   sourceName: string,
   asynchronous: boolean
 ): Promise<string> => {
-  // check existing models to avoid a name conflict
-  const existingNames = models
-    .filter((model) => model.name.includes(`${sourceName}_model`))
-    .map((model) => model.tableName)
-    .sort();
-  const nextName =
-    existingNames.length === 0
-      ? `${sourceName}_model`
-      : `${sourceName}_model_${existingNames.length + 1}`;
+  const nextName = getName(
+    `${sourceName}_model`,
+    models.map((model) => model.tableName)
+  );
 
   const response = await dataModelerService.dispatch("addModel", [
     {

@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { drag } from "../../../drag";
   import {
-    modelPreviewVisibilityTween,
-    layout,
     assetVisibilityTween,
     inspectorVisibilityTween,
+    layout,
+    modelPreviewVisibilityTween,
     SIDE_PAD,
   } from "../../../application-state-stores/layout-store";
+  import { drag } from "../../../drag";
   import Portal from "../../Portal.svelte";
   let innerHeight;
 </script>
 
 <Portal target=".body">
   <div
-    class="fixed z-50 drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
+    class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
     style:bottom="{(1 - $modelPreviewVisibilityTween) *
       $layout.modelPreviewHeight}px"
     style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"

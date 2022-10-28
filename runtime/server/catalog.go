@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListCatalogObjects implements RuntimeService
@@ -103,6 +105,10 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
+	// Update object
+	obj.RefreshedOn = time.Now()
+	err = catalog.UpdateObject(ctx, req.InstanceId, obj)
+
 	return &api.TriggerRefreshResponse{}, nil
 }
 
@@ -139,6 +145,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			Type: &api.CatalogObject_Source{
 				Source: src,
 			},
+			RefreshedOn: timestamppb.New(obj.RefreshedOn),
 		}, nil
 	default:
 		panic(fmt.Errorf("not implemented"))

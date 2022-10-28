@@ -11,11 +11,11 @@ const INCREMENT = new RegExp(/(\d+)$/);
  * @param others The array of existing names.
  */
 export function getName(name: string, others: string[]) {
-  const set = new Set(others);
+  const set = new Set(others.map((other) => other.toLowerCase()));
 
   let result = name;
 
-  while (set.has(result)) {
+  while (set.has(result.toLowerCase())) {
     result = INCREMENT.exec(result)?.[1]
       ? result.replace(INCREMENT, (m) => (+m + 1).toString())
       : `${result}_1`;

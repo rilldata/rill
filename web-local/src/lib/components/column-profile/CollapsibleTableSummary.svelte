@@ -14,6 +14,7 @@
   export let show = false;
   export let showTitle = true;
   export let notExpandable = false;
+  export let loading = false;
 
   let containerWidth = 0;
   let contextMenuOpen;
@@ -44,6 +45,7 @@
         {sizeInBytes}
         {active}
         {notExpandable}
+        {loading}
       >
         <slot name="header-buttons" />
         <svelte:fragment slot="menu-items" let:toggleMenu>

@@ -7,6 +7,7 @@
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
   import PreviewTable from "../../preview-table/PreviewTable.svelte";
+
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
   export let sourceId: string;
@@ -63,7 +64,7 @@
   <div
     style:overflow="auto"
     style:height="100%"
-    class="m-3 border border-gray-300 rounded"
+    class="m-6 mt-0 border border-gray-300 rounded"
   >
     {#if currentDerivedSource}
       {#key currentDerivedSource.id}

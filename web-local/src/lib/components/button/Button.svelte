@@ -5,6 +5,8 @@
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
+  export let submitForm = false;
+  export let form = "";
 
   const dispatch = createEventDispatcher();
 
@@ -55,6 +57,8 @@
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}
+  type={submitForm && "submit"}
+  form={submitForm && form}
 >
   <slot />
 </button>

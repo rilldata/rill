@@ -13,7 +13,7 @@
   export let format = (v: any) => v;
 
   export let line = true;
-  export let lineColor = "rgba(0,0,0,.3)";
+  export let lineColor = "stroke-gray-400 dark:stroke-gray-500";
   export let lineDasharray: string = undefined;
   export let lineThickness: number | "scale" = 1;
 
@@ -53,7 +53,7 @@
           x2={output.x}
           y1={lineStart === "point" ? output.y : $config[lineStart]}
           y2={lineEnd === "point" ? output.y : $config[lineEnd]}
-          stroke={lineColor}
+          class={lineColor}
           stroke-dasharray={lineDasharray}
           stroke-width={lineThickness === "scale"
             ? diameterScale(y)

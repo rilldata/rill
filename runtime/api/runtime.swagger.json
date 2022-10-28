@@ -623,13 +623,17 @@
                   "type": "string",
                   "title": "A CREATE statement"
                 },
+                "dryRun": {
+                  "type": "boolean",
+                  "title": "If true, will validate the SQL, but not actually execute the migrations"
+                },
                 "createOrReplace": {
                   "type": "boolean",
                   "title": "If true, will replace existing definitions with the same name"
                 },
-                "dryRun": {
-                  "type": "boolean",
-                  "title": "If true, will validate the SQL, but not actually execute the migrations"
+                "renameFrom": {
+                  "type": "string",
+                  "description": "If provided, will attempt to rename an existing object and only recompute if necessary.\nNOTE: very questionable semantics here."
                 }
               },
               "title": "Request message for RuntimeService.MigrateSingle"
@@ -1022,7 +1026,8 @@
             "name": "path",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
           }
         ],
         "tags": [
@@ -1057,7 +1062,8 @@
             "name": "path",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
           },
           {
             "name": "body",
@@ -1110,6 +1116,14 @@
         "nullable": {
           "type": "boolean",
           "title": "Nullable is true if the field is optional"
+        },
+        "hint": {
+          "type": "string",
+          "title": "Additional textual explanation for use in UIs"
+        },
+        "href": {
+          "type": "string",
+          "title": "Link to documentation for this property"
         }
       },
       "title": "Property represents one of the connector's config properties"
@@ -1120,7 +1134,8 @@
         "TYPE_UNSPECIFIED",
         "TYPE_STRING",
         "TYPE_NUMBER",
-        "TYPE_BOOLEAN"
+        "TYPE_BOOLEAN",
+        "TYPE_INFORMATIONAL"
       ],
       "default": "TYPE_UNSPECIFIED",
       "title": "Type represents the field type"
@@ -1220,6 +1235,10 @@
         },
         "unmanagedTable": {
           "$ref": "#/definitions/v1UnmanagedTable"
+        },
+        "refreshedOn": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "title": "CatalogObject represents an object stored in the catalog"
@@ -1616,6 +1635,11 @@
     },
     "v1PutRepoObjectResponse": {
       "type": "object",
+      "properties": {
+        "filePath": {
+          "type": "string"
+        }
+      },
       "title": "Response message for RuntimeService.PutRepoObjectRequest"
     },
     "v1QueryDirectResponse": {

@@ -106,13 +106,15 @@
   }
 
   $: textColor = dark
-    ? `${disabled ? "text-gray-400" : "text-white focus:bg-gray-600"}`
-    : `${disabled ? "text-gray-600" : "text-gray-900 focus:bg-gray-200"}`;
+    ? `${disabled ? "italic" : "focus:bg-gray-600 dark:focus:bg-gray-600"}`
+    : `${disabled ? "italic" : "focus:bg-gray-200 dark:focus:bg-gray-600"}`;
 </script>
 
 <button
   bind:this={element}
   {...ariaProperties}
+  class:dark
+  class:surface-focus={hovered}
   style="--tw-ring-color: transparent; --flicker-color:{dark
     ? 'rgb(75, 85, 99)'
     : 'rgb(235, 235, 235)'}"
@@ -127,6 +129,7 @@
         items-start
         gap-x-3
         justify-items-stretch
+        ui-copy
         {textColor}
     "
   style:grid-template-columns="{icon ? "max-content" : ""} auto max-content"
@@ -147,21 +150,29 @@
   {#if icon}
     <div
       style:height="18px"
-      class="grid place-content-center"
+      class="grid place-content-center ui-copy-icon dark:text-white"
       style:opacity=".8"
     >
       <slot name="icon" />
     </div>
   {/if}
-  <div class="text-left">
+  <div
+    class:ui-copy={!disabled}
+    class:ui-copy-disabled={disabled}
+    class="text-left"
+  >
     <div>
       <slot {focused} />
     </div>
-    <div class="text-gray-400 italic" style:font-size="11px">
+    <div
+      class:ui-copy-muted={!disabled}
+      class:ui-copy-disabled={disabled}
+      style:font-size="11px"
+    >
       <slot name="description" />
     </div>
   </div>
-  <div class="text-right text-gray-400">
+  <div class="text-right ui-copy-muted">
     <slot name="right" {focused} />
   </div>
 </button>
