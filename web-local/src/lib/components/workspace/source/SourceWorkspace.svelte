@@ -6,8 +6,10 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
+  import SourceInspector from "../../inspector/SourceInspector.svelte";
   import PreviewTable from "../../preview-table/PreviewTable.svelte";
 
+  import WorkspaceContainer from "../WorkspaceContainer.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
   export let sourceId: string;
@@ -55,24 +57,32 @@
   }
 </script>
 
-<div
-  class="grid pb-6"
-  style:grid-template-rows="max-content auto"
-  style:height="100vh"
->
-  <SourceWorkspaceHeader id={currentSource?.id} />
-  <div
-    style:overflow="auto"
-    style:height="100%"
-    class="m-6 mt-0 border border-gray-300 rounded"
-  >
-    {#if currentDerivedSource}
-      {#key currentDerivedSource.id}
-        <PreviewTable
-          rows={currentDerivedSource?.preview}
-          columnNames={currentDerivedSource?.profile}
-        />
-      {/key}
-    {/if}
-  </div>
-</div>
+<!-- for now, we will key the entire element on the sourceId. -->
+{#key sourceId}
+  <WorkspaceContainer assetID={sourceId}>
+    <div
+      slot="body"
+      class="grid pb-6"
+      style:grid-template-rows="max-content auto"
+      style:height="100vh"
+    >
+      <SourceWorkspaceHeader id={currentSource?.id} />
+      <div
+        style:overflow="auto"
+        style:height="100%"
+        class="m-6 mt-0 border border-gray-300 rounded"
+      >
+        {#if currentDerivedSource}
+          {#key currentDerivedSource.id}
+            <PreviewTable
+              rows={currentDerivedSource?.preview}
+              columnNames={currentDerivedSource?.profile}
+            />
+          {/key}
+        {/if}
+      </div>
+    </div>
+
+    <SourceInspector inspectorID={sourceId} slot="inspector" />
+  </WorkspaceContainer>
+{/key}

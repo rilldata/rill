@@ -16,7 +16,6 @@
     layout,
     overlay,
     quickStartDashboardOverlay,
-    SIDE_PAD,
   } from "@rilldata/web-local/lib/application-state-stores/layout-store";
   import type {
     DerivedModelStore,
@@ -32,7 +31,6 @@
   import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
   import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
   import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
-  import InspectorSidebar from "@rilldata/web-local/lib/components/inspector/index.svelte";
   import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
   import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";
@@ -236,7 +234,7 @@
         </div>
 
         <!-- workspace component -->
-        <div
+        <!-- <div
           class="box-border fixed {views[activeEntityType]?.bg ||
             'bg-gray-100'}"
           style:left="{$layout.assetsWidth * (1 - $assetVisibilityTween)}px"
@@ -249,16 +247,16 @@
             ? $layout.inspectorWidth * (1 - $inspectorVisibilityTween)
             : 0}px"
           style:top="0px"
-        >
-          <slot />
-        </div>
+        > -->
+        <slot />
+        <!-- </div> -->
 
         <!-- inspector sidebar -->
         <!-- Workaround: hide the inspector on MetricsDefinition or 
             on MetricsExplorer for now.
           Once we refactor how layout routing works, we will have a better solution to this.
       -->
-        {#if hasInspector && hasNoError}
+        <!-- {#if hasInspector && hasNoError}
           <div
             class="fixed"
             aria-hidden={!$inspectorVisible}
@@ -267,7 +265,7 @@
           >
             <InspectorSidebar />
           </div>
-        {/if}
+        {/if} -->
       </div>
     </div>
   </ConfigProvider>
