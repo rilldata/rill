@@ -1,15 +1,10 @@
 <script lang="ts">
-  import { setContext } from "svelte";
+  import { getContext, setContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { localStorageStore } from "../stores/local-storage";
 
   import Inspector from "../inspector/Inspector.svelte";
-
-  import {
-    assetVisibilityTween,
-    layout,
-  } from "../../application-state-stores/layout-store";
 
   export let assetID;
   export let inspector = true;
@@ -47,6 +42,9 @@
   setContext("rill:app:inspector-width-tween", inspectorWidth);
   setContext("rill:app:inspector-visibility-tween", visibilityTween);
 
+  const navigationWidth = getContext("rill:app:navigation-width-tween");
+  const navVisibilityTween = getContext("rill:app:navigation-visibility-tween");
+
   const SIDE_PAD = 20;
   let hasNoError = 1;
   let hasInspector = true;
@@ -54,8 +52,8 @@
 
 <div
   class="box-border fixed bg-gray-100"
-  style:left="{($layout.assetsWidth || 0) * (1 - $assetVisibilityTween)}px"
-  style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
+  style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
+  style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
   style:padding-right="{(1 - $visibilityTween) *
     SIDE_PAD *
     hasNoError *

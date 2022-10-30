@@ -3,7 +3,6 @@
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     assetVisibilityTween,
-    layout,
     modelPreviewVisibilityTween,
     modelPreviewVisible,
     SIDE_PAD,
@@ -86,6 +85,8 @@
   const inspectorVisibilityTween = getContext(
     "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
+
+  const navigationWidth = getContext("rill:app:navigation-width-tween");
 </script>
 
 <svelte:window bind:innerHeight />
@@ -118,7 +119,7 @@
       <div
         class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
         style:bottom="{(1 - $modelPreviewVisibilityTween) * $outputPosition}px"
-        style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
+        style:left="{(1 - $assetVisibilityTween) * $navigationWidth + 16}px"
         style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
         style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
         style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"

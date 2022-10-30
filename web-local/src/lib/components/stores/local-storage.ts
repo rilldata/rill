@@ -2,9 +2,10 @@ import { writable } from "svelte/store";
 
 /** Creates a store whose value is stored in localStorage as a string.
  * Only JSON-serializable values can be used.
+
  */
-export function localStorageStore<T>(defaultValue: T, key: string) {
-  const value = JSON.parse(window.localStorage.getItem(key));
+export function localStorageStore<T>(defaultValue: T, itemKey: string) {
+  const value = JSON.parse(window.localStorage.getItem(itemKey));
   const {
     subscribe,
     set: setStore,
@@ -14,17 +15,17 @@ export function localStorageStore<T>(defaultValue: T, key: string) {
     subscribe,
     set(value: T) {
       setStore(value);
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(itemKey, JSON.stringify(value));
     },
     update(f) {
       updateStore((state) => {
         f(state);
-        localStorage.setItem(key, JSON.stringify(state));
+        localStorage.setItem(itemKey, JSON.stringify(state));
         return state;
       });
     },
     reset() {
-      localStorage.setItem(key, JSON.stringify(defaultValue));
+      localStorage.setItem(itemKey, JSON.stringify(defaultValue));
     },
   };
 }
