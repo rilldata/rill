@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { refreshSource } from "@rilldata/web-local/lib/components/assets/sources/refreshSource";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { getContext } from "svelte";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServiceMigrateSingle,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { getContext } from "svelte";
   import {
     dataModelerService,
     runtimeStore,

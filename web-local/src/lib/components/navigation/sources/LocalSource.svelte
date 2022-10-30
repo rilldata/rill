@@ -1,19 +1,19 @@
 <script lang="ts">
+  import {
+    getRuntimeServiceListCatalogObjectsQueryKey,
+    useRuntimeServiceMigrateSingle,
+  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
+  import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
+  import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores.js";
   import { Button } from "@rilldata/web-local/lib/components/button";
+  import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import {
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-local/lib/util/file-upload";
   import { createEventDispatcher, getContext } from "svelte";
-  import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
-  import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores.js";
-  import {
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    useRuntimeServiceMigrateSingle,
-  } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 

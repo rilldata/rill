@@ -20,7 +20,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import DuplicateSource from "@rilldata/web-local/lib/components/assets/sources/DuplicateSource.svelte";
+  import DuplicateSource from "@rilldata/web-local/lib/components/navigation/sources/DuplicateSource.svelte";
   import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
   import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";

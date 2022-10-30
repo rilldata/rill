@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import type { V1PutRepoObjectResponse } from "@rilldata/web-common/runtime-client";
 import {
   EntityType,
   StateType,
@@ -9,8 +10,7 @@ import {
   duplicateNameChecker,
   incrementedNameGetter,
 } from "@rilldata/web-local/common/utils/duplicateNameUtils";
-import { waitForSource } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
-import type { V1PutRepoObjectResponse } from "@rilldata/web-common/runtime-client";
+import { waitForSource } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
   config,
   dataModelerStateService,

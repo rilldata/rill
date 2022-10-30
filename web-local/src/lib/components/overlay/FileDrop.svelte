@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { getContext } from "svelte";
   import {
     getRuntimeServiceListCatalogObjectsQueryKey,
     useRuntimeServiceMigrateSingle,
   } from "@rilldata/web-common/runtime-client";
-  import Overlay from "./Overlay.svelte";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { getContext } from "svelte";
   import { uploadTableFiles } from "../../util/file-upload";
+  import Overlay from "./Overlay.svelte";
 
   export let showDropOverlay: boolean;
 
