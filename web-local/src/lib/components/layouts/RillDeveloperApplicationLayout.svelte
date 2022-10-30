@@ -11,8 +11,6 @@
     assetsVisible,
     assetVisibilityTween,
     importOverlayVisible,
-    inspectorVisibilityTween,
-    inspectorVisible,
     layout,
     overlay,
     quickStartDashboardOverlay,
@@ -28,8 +26,6 @@
   import AssetsSidebar from "@rilldata/web-local/lib/components/assets/index.svelte";
   import DuplicateSource from "@rilldata/web-local/lib/components/assets/sources/DuplicateSource.svelte";
   import HideLeftSidebar from "@rilldata/web-local/lib/components/icons/HideLeftSidebar.svelte";
-  import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
-  import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
   import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
   import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
   import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
@@ -203,7 +199,7 @@
         </SurfaceControlButton>
 
         <!-- inspector pane hide -->
-        {#if hasInspector && hasNoError}
+        <!-- {#if hasInspector && hasNoError}
           <SurfaceControlButton
             show={true}
             right="{($layout.inspectorWidth - 12 - 24) *
@@ -222,7 +218,7 @@
               {#if $assetVisibilityTween === 0} close {:else} show {/if} sidebar
             </svelte:fragment>
           </SurfaceControlButton>
-        {/if}
+        {/if} -->
         <!-- assets sidebar component -->
         <!-- this is where we handle navigation -->
         <div

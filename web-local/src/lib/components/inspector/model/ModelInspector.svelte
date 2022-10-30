@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { getContext } from "svelte";
   import type { ApplicationStore } from "../../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import { createResizeListenerActionFactory } from "../../actions/create-resize-listener-factory";
   import StickToHeaderDivider from "../../panel/StickToHeaderDivider.svelte";
-  import { getContext } from "svelte";
   import ModelInspectorHeader from "./header/ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 

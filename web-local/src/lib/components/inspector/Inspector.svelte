@@ -1,51 +1,48 @@
 <script lang="ts">
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
-  import { tweened } from "svelte/motion";
-  import { Writable, writable } from "svelte/store";
-  import { inspectorVisibilityTween } from "../../application-state-stores/layout-store";
+  import { Writable } from "svelte/store";
   import { drag } from "../../drag";
+  import HideRightSidebar from "../icons/HideRightSidebar.svelte";
+  import MoreHorizontal from "../icons/MoreHorizontal.svelte";
   import Portal from "../Portal.svelte";
+  import SurfaceControlButton from "../surface/SurfaceControlButton.svelte";
 
   export let inspectorID: string;
 
   /** the core inspector width element is stored in localStorage. */
-  //const inspectorBasicWidth = localStorageStore<number>(400, inspectorID);
-  const inspectorBasicWidth = getContext(
-    "rill:app:inspector-width"
+  const inspectorLayout = getContext(
+    "rill:app:inspector-layout"
   ) as Writable<number>;
 
-  //const inspectorWidth = tweened($inspectorBasicWidth, { duration: 50 });
   const inspectorWidth = getContext(
     "rill:app:inspector-width-tween"
   ) as Writable<number>;
-
-  inspectorBasicWidth.subscribe((value) => {
-    inspectorWidth.set(value);
-  });
 
   export const SURFACE_SLIDE_DURATION = 400;
   export const SURFACE_SLIDE_EASING = cubicOut;
 
   export const SURFACE_DRAG_DURATION = 50;
 
-  export const visibilityTween = tweened(0, {
-    duration: SURFACE_SLIDE_DURATION,
-    easing: SURFACE_SLIDE_EASING,
+  const visibilityTween = getContext(
+    "rill:app:inspector-visibility-tween"
+  ) as Writable<number>;
+
+  let inspectorVisible = $inspectorLayout.visible;
+  inspectorLayout.subscribe((state) => {
+    if (state.visible !== inspectorVisible) {
+      visibilityTween.set(state.visible ? 1 : 0);
+      inspectorVisible = state.visible;
+    }
   });
 
-  export const inspectorVisible = writable(true);
-  inspectorVisible.subscribe((tf) => {
-    visibilityTween.set(tf ? 0 : 1);
-  });
-
-  // create local storage elements here
+  let hasNoError = 1;
 </script>
 
 <div
   class="fixed"
-  aria-hidden={!$inspectorVisible}
-  style:right="{$inspectorWidth.value * (1 - $inspectorVisibilityTween)}px"
+  aria-hidden={!$inspectorLayout.visible}
+  style:right="{$inspectorWidth * $visibilityTween}px"
 >
   <div
     class="
@@ -57,21 +54,20 @@
         transition-colors
         h-screen
       "
-    class:hidden={$visibilityTween === 1}
-    class:pointer-events-none={!$inspectorVisible}
+    class:hidden={$visibilityTween === 0}
+    class:pointer-events-none={!$inspectorLayout.visible}
     style:top="0px"
-    style:width="{$inspectorWidth.value}px"
+    style:width="{$inspectorWidth}px"
   >
     <!-- draw handler -->
-    {#if $inspectorVisible}
+    {#if $inspectorLayout.visible}
       <Portal>
         <div
           class="fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen"
-          style:right="{(1 - $inspectorVisibilityTween) *
-            $inspectorWidth.value}px"
-          use:drag={{ minSize: 300, store: inspectorBasicWidth, reverse: true }}
+          style:right="{$visibilityTween * $inspectorWidth}px"
+          use:drag={{ minSize: 300, store: inspectorLayout, reverse: true }}
           on:dblclick={() => {
-            inspectorBasicWidth.update((state) => {
+            inspectorLayout.update((state) => {
               state.value = 400;
               return state;
             });
@@ -85,3 +81,25 @@
     </div>
   </div>
 </div>
+
+<SurfaceControlButton
+  show={true}
+  right="{($inspectorWidth - 12 - 24) * ($visibilityTween * hasNoError) +
+    12 * (1 - $visibilityTween) * hasNoError}px"
+  on:click={() => {
+    //inspectorVisible.set(!$inspecto);
+    inspectorLayout.update((state) => {
+      state.visible = !state.visible;
+      return state;
+    });
+  }}
+>
+  {#if $inspectorLayout.visible}
+    <HideRightSidebar size="20px" />
+  {:else}
+    <MoreHorizontal size="16px" />
+  {/if}
+  <svelte:fragment slot="tooltip-content">
+    {#if $visibilityTween === 1} close {:else} show {/if} sidebar
+  </svelte:fragment>
+</SurfaceControlButton>
