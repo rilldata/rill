@@ -13,7 +13,6 @@
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../application-state-stores/application-store";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
   import type {
@@ -46,7 +45,6 @@
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
-
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
@@ -54,7 +52,8 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  const store = getContext("rill:app:store") as ApplicationStore;
+  /** the source id */
+  export let id: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -65,18 +64,15 @@
 
   let showColumns = true;
 
-  /** Select the explicit ID to prevent unneeded reactive updates in currentTable */
-  $: activeEntityID = $store?.activeEntity?.id;
-
   let currentTable: PersistentTableEntity;
   $: currentTable =
-    activeEntityID && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.id === activeEntityID)
+    id && $persistentTableStore?.entities
+      ? $persistentTableStore.entities.find((q) => q.id === id)
       : undefined;
   let currentDerivedTable: DerivedTableEntity;
   $: currentDerivedTable =
-    activeEntityID && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === activeEntityID)
+    id && $derivedTableStore?.entities
+      ? $derivedTableStore.entities.find((q) => q.id === id)
       : undefined;
   // get source table references.
 
@@ -111,9 +107,7 @@
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       currentTable.id,
-      $persistentTableStore.entities.find(
-        (table) => table.id === activeEntityID
-      ).tableName
+      $persistentTableStore.entities.find((table) => table.id === id).tableName
     ).then((createdMetricsId) => {
       navigationEvent.fireEvent(
         createdMetricsId,
@@ -260,7 +254,7 @@
             show={showColumns}
             name={currentTable.name}
             cardinality={currentDerivedTable?.cardinality ?? 0}
-            active={currentTable?.id === activeEntityID}
+            active={currentTable?.id === id}
           >
             <ColumnProfileNavEntry
               slot="summary"

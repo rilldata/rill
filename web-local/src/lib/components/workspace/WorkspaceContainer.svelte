@@ -12,6 +12,7 @@
   } from "../../application-state-stores/layout-store";
 
   export let assetID;
+  export let inspector = true;
 
   /** the core inspector width element is stored in localStorage. */
   interface InspectorStorageValues {
@@ -19,12 +20,15 @@
     visible: boolean;
   }
   const inspectorLayout = localStorageStore<InspectorStorageValues>(
-    { value: 400, visible: true },
+    { value: inspector ? 400 : 0, visible: true },
     assetID
   );
-  const inspectorWidth = tweened($inspectorLayout?.value || 400, {
-    duration: 50,
-  });
+  const inspectorWidth = tweened(
+    inspector ? $inspectorLayout?.value || 400 : 0,
+    {
+      duration: 50,
+    }
+  );
   inspectorLayout.subscribe((state) => {
     inspectorWidth.set(state.value);
   });
@@ -63,8 +67,8 @@
 >
   <slot name="body" />
 </div>
-{#key assetID}
+{#if inspector}
   <Inspector inspectorID={assetID}>
     <slot name="inspector" />
   </Inspector>
-{/key}
+{/if}

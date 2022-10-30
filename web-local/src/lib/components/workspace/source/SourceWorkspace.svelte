@@ -12,7 +12,7 @@
   import WorkspaceContainer from "../WorkspaceContainer.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
-  export let sourceId: string;
+  export let sourceID: string;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -22,22 +22,22 @@
   ) as DerivedTableStore;
 
   $: currentSource = $persistentTableStore?.entities
-    ? $persistentTableStore.entities.find((q) => q.id === sourceId)
+    ? $persistentTableStore.entities.find((q) => q.id === sourceID)
     : undefined;
   $: currentDerivedSource = $derivedTableStore?.entities
-    ? $derivedTableStore.entities.find((q) => q.id === sourceId)
+    ? $derivedTableStore.entities.find((q) => q.id === sourceID)
     : undefined;
 
-  const switchToSource = async (sourceId: string) => {
-    if (!sourceId) return;
+  const switchToSource = async (sourceID: string) => {
+    if (!sourceID) return;
 
     await dataModelerService.dispatch("setActiveAsset", [
       EntityType.Table,
-      sourceId,
+      sourceID,
     ]);
   };
 
-  $: switchToSource(sourceId);
+  $: switchToSource(sourceID);
 
   /** check to see if we need to perform a migration.
    * We will deprecate this in a few versions from 0.8.
@@ -58,8 +58,8 @@
 </script>
 
 <!-- for now, we will key the entire element on the sourceId. -->
-{#key sourceId}
-  <WorkspaceContainer assetID={sourceId}>
+{#key sourceID}
+  <WorkspaceContainer assetID={sourceID}>
     <div
       slot="body"
       class="grid pb-6"
@@ -82,7 +82,6 @@
         {/if}
       </div>
     </div>
-
-    <SourceInspector inspectorID={sourceId} slot="inspector" />
+    <SourceInspector id={sourceID} slot="inspector" />
   </WorkspaceContainer>
 {/key}

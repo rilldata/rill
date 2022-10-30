@@ -9,4 +9,4 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<SourceWorkspace sourceId={data.sourceId} />
+<SourceWorkspace sourceID={data.sourceID} />

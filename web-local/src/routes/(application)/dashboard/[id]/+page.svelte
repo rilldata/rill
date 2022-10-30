@@ -1,14 +1,7 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { metricsExplorerStore } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
-  import type { MetricsExplorerEntity } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
-  import ExploreContainer from "@rilldata/web-local/lib/components/workspace/explore/ExploreContainer.svelte";
-  import ExploreHeader from "@rilldata/web-local/lib/components/workspace/explore/ExploreHeader.svelte";
-  import DimensionDisplay from "@rilldata/web-local/lib/components/workspace/explore/leaderboards/DimensionDisplay.svelte";
-  import LeaderboardDisplay from "@rilldata/web-local/lib/components/workspace/explore/leaderboards/LeaderboardDisplay.svelte";
-  import MetricsTimeSeriesCharts from "@rilldata/web-local/lib/components/workspace/explore/time-series-charts/MetricsTimeSeriesCharts.svelte";
-
+  import Explore from "@rilldata/web-local/lib/components/workspace/explore/Explore.svelte";
   export let data;
 
   $: metricsDefId = data.metricsDefId;
@@ -17,10 +10,6 @@
     EntityType.MetricsExplorer,
     metricsDefId,
   ]);
-
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
-  $: selectedDimensionId = metricsExplorer?.selectedDimensionId;
 </script>
 
 <svelte:head>
@@ -28,14 +17,4 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<ExploreContainer let:columns>
-  <ExploreHeader slot="header" {metricsDefId} />
-  <MetricsTimeSeriesCharts slot="metrics" {metricsDefId} />
-  <svelte:fragment slot="leaderboards">
-    {#if selectedDimensionId}
-      <DimensionDisplay {metricsDefId} dimensionId={selectedDimensionId} />
-    {:else}
-      <LeaderboardDisplay {metricsDefId} />
-    {/if}
-  </svelte:fragment>
-</ExploreContainer>
+<Explore {metricsDefId} />

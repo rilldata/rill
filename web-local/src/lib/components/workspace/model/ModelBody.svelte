@@ -1,29 +1,29 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
-  import { ActionStatus } from "../../../common/data-modeler-service/response/ActionResponse";
-  import { EntityType } from "../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "../../application-state-stores/application-store";
+  import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+  import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     assetVisibilityTween,
-    inspectorVisibilityTween,
     layout,
     modelPreviewVisibilityTween,
     modelPreviewVisible,
     SIDE_PAD,
-  } from "../../application-state-stores/layout-store";
+  } from "@rilldata/web-local/lib/application-state-stores/layout-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
-  } from "../../application-state-stores/model-stores";
-  import { drag } from "../../drag";
-  import { updateModelQueryApi } from "../../redux-store/model/model-apis";
-  import Editor from "../Editor.svelte";
-  import Portal from "../Portal.svelte";
-  import { PreviewTable } from "../preview-table";
-  import WorkspaceHeader from "./WorkspaceHeader.svelte";
-
-  export let modelId;
+  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
+  import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
+  import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
+  import { drag } from "@rilldata/web-local/lib/drag";
+  import { updateModelQueryApi } from "@rilldata/web-local/lib/redux-store/model/model-apis";
+  import { getContext } from "svelte";
+  import { tweened } from "svelte/motion";
+  import type { Writable } from "svelte/store";
+  import { slide } from "svelte/transition";
+  import { localStorageStore } from "../../stores/local-storage";
+  import WorkspaceHeader from "../WorkspaceHeader.svelte";
+  export let modelID;
 
   const queryHighlight = getContext("rill:app:query-highlight");
   const persistentModelStore = getContext(
@@ -34,23 +34,12 @@
   ) as DerivedModelStore;
 
   $: currentModel = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((q) => q.id === modelId)
+    ? $persistentModelStore.entities.find((q) => q.id === modelID)
     : undefined;
 
   $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find((q) => q.id === modelId)
+    ? $derivedModelStore.entities.find((q) => q.id === modelID)
     : undefined;
-
-  const switchToModel = async (modelId) => {
-    if (!modelId) return;
-
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Model,
-      modelId,
-    ]);
-  };
-
-  $: switchToModel(modelId);
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
@@ -76,6 +65,27 @@
       }
     }
   };
+
+  /** model body layout elements */
+  const outputLayout = localStorageStore(
+    {
+      value: 500,
+      visible: true,
+    },
+    `${modelID}-output`
+  );
+  const outputPosition = tweened($outputLayout.value, { duration: 50 });
+  outputLayout.subscribe((state) => {
+    outputPosition.set(state.value);
+  });
+
+  const inspectorWidth = getContext(
+    "rill:app:inspector-width-tween"
+  ) as Writable<number>;
+
+  const inspectorVisibilityTween = getContext(
+    "rill:app:inspector-visibility-tween"
+  ) as Writable<number>;
 </script>
 
 <svelte:window bind:innerHeight />
@@ -87,7 +97,7 @@
 <div class="editor-pane bg-gray-100">
   <div
     style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) *
-      $layout.modelPreviewHeight}px - var(--header-height))"
+      $outputPosition}px - var(--header-height))"
   >
     {#if $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
       <div class="h-full grid p-5 pt-0 overflow-auto">
@@ -107,17 +117,16 @@
     <Portal target=".body">
       <div
         class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
-        style:bottom="{(1 - $modelPreviewVisibilityTween) *
-          $layout.modelPreviewHeight}px"
+        style:bottom="{(1 - $modelPreviewVisibilityTween) * $outputPosition}px"
         style:left="{(1 - $assetVisibilityTween) * $layout.assetsWidth + 16}px"
-        style:right="{(1 - $inspectorVisibilityTween) * $layout.inspectorWidth +
-          16}px"
+        style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
         style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
-        style:padding-right="{$inspectorVisibilityTween * SIDE_PAD}px"
+        style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
         use:drag={{
           minSize: 200,
           maxSize: innerHeight - 200,
           side: "modelPreviewHeight",
+          store: outputLayout,
           orientation: "vertical",
           reverse: true,
         }}
@@ -134,8 +143,7 @@
 
   {#if currentModel}
     <div
-      style:height="{(1 - $modelPreviewVisibilityTween) *
-        $layout.modelPreviewHeight}px"
+      style:height="{(1 - $modelPreviewVisibilityTween) * $outputPosition}px"
       class="p-6 flex flex-col gap-6"
     >
       <div
@@ -176,9 +184,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .editor-pane {
-    height: calc(100vh - var(--header-height));
-  }
-</style>
