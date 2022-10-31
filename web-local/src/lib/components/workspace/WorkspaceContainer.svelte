@@ -4,10 +4,11 @@
   import { tweened } from "svelte/motion";
   import { localStorageStore } from "../stores/local-storage";
 
-  import Inspector from "../inspector/Inspector.svelte";
+  import Inspector from "./inspector/Inspector.svelte";
 
   export let assetID;
   export let inspector = true;
+  export let bgClass = "bg-gray-100";
 
   /** the core inspector width element is stored in localStorage. */
   interface InspectorStorageValues {
@@ -45,13 +46,13 @@
   const navigationWidth = getContext("rill:app:navigation-width-tween");
   const navVisibilityTween = getContext("rill:app:navigation-visibility-tween");
 
-  const SIDE_PAD = 20;
+  const SIDE_PAD = 28;
   let hasNoError = 1;
   let hasInspector = true;
 </script>
 
 <div
-  class="box-border fixed bg-gray-100"
+  class="box-border fixed {bgClass}"
   style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
   style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
   style:padding-right="{(1 - $visibilityTween) *

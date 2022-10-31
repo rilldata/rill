@@ -2,20 +2,20 @@
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import type { ApplicationStore } from "../../../application-state-stores/application-store";
+  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
-  } from "../../../application-state-stores/model-stores";
+  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
-  } from "../../../application-state-stores/table-stores";
-  import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "../../column-profile/CollapsibleTableSummary.svelte";
-  import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
-  import * as classes from "../../../util/component-classes";
-  import { formatInteger } from "../../../util/formatters";
+  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
+  import CollapsibleTableSummary from "@rilldata/web-local/lib/components/column-profile/CollapsibleTableSummary.svelte";
+  import ColumnProfileNavEntry from "@rilldata/web-local/lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import * as classes from "@rilldata/web-local/lib/util/component-classes";
+  import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";

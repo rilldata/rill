@@ -141,7 +141,7 @@
       {/if}
 
       <div
-        class="index-body absolute w-screen h-screen bg-gray-100"
+        class="index-body absolute w-screen h-screen"
         on:dragenter|preventDefault|stopPropagation
         on:dragleave|preventDefault|stopPropagation
         on:dragover|preventDefault|stopPropagation={(e) => {

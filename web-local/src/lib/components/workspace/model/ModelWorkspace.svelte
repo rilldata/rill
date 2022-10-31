@@ -6,7 +6,7 @@
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import { getContext } from "svelte";
-  import ModelInspector from "../../inspector/model/ModelInspector.svelte";
+  import ModelInspector from "../inspector/model/ModelInspector.svelte";
   import WorkspaceContainer from "../WorkspaceContainer.svelte";
   import ModelBody from "./ModelBody.svelte";
   export let modelId;

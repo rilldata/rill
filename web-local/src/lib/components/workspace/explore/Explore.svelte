@@ -17,7 +17,7 @@
   $: selectedDimensionId = metricsExplorer?.selectedDimensionId;
 </script>
 
-<WorkspaceContainer inspector={false} assetID={metricsDefId}>
+<WorkspaceContainer bgClass="bg-white" inspector={false} assetID={metricsDefId}>
   <ExploreContainer slot="body" let:columns>
     <ExploreHeader slot="header" {metricsDefId} />
     <MetricsTimeSeriesCharts slot="metrics" {metricsDefId} />

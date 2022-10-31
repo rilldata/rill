@@ -1,9 +1,9 @@
 <script lang="ts">
-  import AlertTriangle from "../../icons/AlertTriangle.svelte";
+  import AlertTriangle from "@rilldata/web-local/lib/components/icons/AlertTriangle.svelte";
 
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import TooltipTitle from "@rilldata/web-local/lib/components/tooltip/TooltipTitle.svelte";
 
   export let modelHasError = false;
 </script>

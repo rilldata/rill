@@ -1,12 +1,12 @@
 <script lang="ts">
+  import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
+  import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
+  import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
+  import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
+  import { drag } from "@rilldata/web-local/lib/drag";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
-  import { Writable } from "svelte/store";
-  import { drag } from "../../drag";
-  import HideRightSidebar from "../icons/HideRightSidebar.svelte";
-  import MoreHorizontal from "../icons/MoreHorizontal.svelte";
-  import Portal from "../Portal.svelte";
-  import SurfaceControlButton from "../surface/SurfaceControlButton.svelte";
+  import type { Writable } from "svelte/store";
 
   export let inspectorID: string;
 
