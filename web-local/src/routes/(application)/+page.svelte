@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import Onboarding from "@rilldata/web-local/lib/components/workspace/Onboarding.svelte";
+  import { OnboardingWorkspace } from "@rilldata/web-local/lib/components/workspace";
   // clear any existing active asset
   $: dataModelerService.dispatch("setActiveAsset", [
     EntityType.Table,
@@ -14,4 +14,4 @@
   <meta name="Description" content="DESCRIPTION" />
 </svelte:head>
 
-<Onboarding />
+<OnboardingWorkspace />
