@@ -11,7 +11,6 @@
   import ModelBody from "./ModelBody.svelte";
   export let modelID;
 
-  const queryHighlight = getContext("rill:app:query-highlight");
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
