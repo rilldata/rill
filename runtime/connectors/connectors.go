@@ -3,6 +3,7 @@ package connectors
 import (
 	"context"
 	"fmt"
+	"strings"
 )
 
 // Connectors tracks all registered connector drivers
@@ -118,7 +119,21 @@ func ConsumeAsFile(ctx context.Context, source *Source, callback func(filename s
 		return fmt.Errorf("connector: not found")
 	}
 
-	return connector.ConsumeAsFile(ctx, source, callback)
+	// TODO: connector.ConsumeAsFile should output a list of files to support globs
+	//       this should be output back to drivers that should import each file into the same table
+	return connector.ConsumeAsFile(ctx, source, func(filename string) error {
+		newFilename := filename
+		var err error
+		if strings.HasSuffix(filename, ".tar.gz") {
+			// TODO: This will be done in the PR that supports globs
+		} else if strings.HasSuffix(filename, ".gz") {
+			newFilename, err = extractGzipFile(filename)
+			if err != nil {
+				return err
+			}
+		}
+		return callback(newFilename)
+	})
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {
@@ -134,4 +149,9 @@ func (s *Source) PropertiesEquals(o *Source) bool {
 	}
 
 	return true
+}
+
+func getFileExtension(fileName string) string {
+	p := strings.Split(fileName, ".")
+	return p[len(p)-1]
 }

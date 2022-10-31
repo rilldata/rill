@@ -53,7 +53,7 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path      string `mapstructure:"path" ignored:"true"`
+	Path      string `mapstructure:"path"`
 	AWSRegion string `mapstructure:"aws.region"`
 }
 

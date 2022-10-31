@@ -21,7 +21,6 @@ func (c *connection) Ingest(ctx context.Context, source *connectors.Source) erro
 		return c.ingestFile(ctx, source)
 	}
 
-	// TODO: Use generic connectors.Consume when it's implemented
 	return connectors.ConsumeAsFile(ctx, source, func(filename string) error {
 		return c.ingestFromRawFile(ctx, source, filename)
 	})
