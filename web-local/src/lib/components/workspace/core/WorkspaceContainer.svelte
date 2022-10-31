@@ -10,7 +10,7 @@
 
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import type { Writable } from "svelte/store";
-  import Inspector from "../inspector/Inspector.svelte";
+  import Inspector from "./Inspector.svelte";
 
   export let assetID;
   export let inspector = true;

@@ -7,7 +7,7 @@
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
   import PreviewTable from "../../preview-table/PreviewTable.svelte";
-  import SourceInspector from "../inspector/SourceInspector.svelte";
+  import SourceInspector from "./SourceInspector.svelte";
 
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
