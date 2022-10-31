@@ -6,10 +6,7 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
-  import { cubicOut } from "svelte/easing";
   import type { Writable } from "svelte/store";
-
-  export let inspectorID: string;
 
   /** the core inspector width element is stored in localStorage. */
   const inspectorLayout = getContext(
@@ -19,11 +16,6 @@
   const inspectorWidth = getContext(
     "rill:app:inspector-width-tween"
   ) as Writable<number>;
-
-  export const SURFACE_SLIDE_DURATION = 400;
-  export const SURFACE_SLIDE_EASING = cubicOut;
-
-  export const SURFACE_DRAG_DURATION = 50;
 
   const visibilityTween = getContext(
     "rill:app:inspector-visibility-tween"

@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
+  import {
+    SIDE_PAD,
+    SURFACE_SLIDE_DURATION,
+    SURFACE_SLIDE_EASING,
+  } from "@rilldata/web-local/lib/application-config";
   import { getContext, setContext } from "svelte";
-  import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { localStorageStore } from "../stores/local-storage";
 
@@ -26,11 +29,6 @@
   inspectorLayout.subscribe((state) => {
     inspectorWidth.set(state.value);
   });
-
-  export const SURFACE_SLIDE_DURATION = 400;
-  export const SURFACE_SLIDE_EASING = cubicOut;
-
-  export const SURFACE_DRAG_DURATION = 50;
 
   export const visibilityTween = tweened($inspectorLayout?.visible ? 1 : 0, {
     duration: SURFACE_SLIDE_DURATION,
@@ -68,7 +66,7 @@
   <slot name="body" />
 </div>
 {#if inspector}
-  <Inspector inspectorID={assetID}>
+  <Inspector>
     <slot name="inspector" />
   </Inspector>
 {/if}

@@ -1,12 +1,7 @@
 <script lang="ts">
   import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+  import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    assetVisibilityTween,
-    modelPreviewVisibilityTween,
-    modelPreviewVisible,
-    SIDE_PAD,
-  } from "@rilldata/web-local/lib/application-state-stores/layout-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -89,6 +84,10 @@
   const navigationWidth = getContext(
     "rill:app:navigation-width-tween"
   ) as Writable<number>;
+
+  const navVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Writable<number>;
 </script>
 
 <svelte:window bind:innerHeight />
@@ -99,8 +98,8 @@
 
 <div class="editor-pane bg-gray-100">
   <div
-    style:height="calc({innerHeight}px - {(1 - $modelPreviewVisibilityTween) *
-      $outputPosition}px - var(--header-height))"
+    style:height="calc({innerHeight}px - {$outputPosition}px -
+    var(--header-height))"
   >
     {#if $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
       <div class="h-full grid p-5 pt-0 overflow-auto">
@@ -116,39 +115,34 @@
     {/if}
   </div>
 
-  {#if $modelPreviewVisible}
-    <Portal target=".body">
-      <div
-        class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
-        style:bottom="{(1 - $modelPreviewVisibilityTween) * $outputPosition}px"
-        style:left="{(1 - $assetVisibilityTween) * $navigationWidth + 16}px"
-        style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
-        style:padding-left="{$assetVisibilityTween * SIDE_PAD}px"
-        style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
-        use:drag={{
-          minSize: 200,
-          maxSize: innerHeight - 200,
-          side: "modelPreviewHeight",
-          store: outputLayout,
-          orientation: "vertical",
-          reverse: true,
-        }}
-      >
-        <div class="border-t border-gray-300" />
-        <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
-          <div
-            class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
-          />
-        </div>
+  <Portal target=".body">
+    <div
+      class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
+      style:bottom="{$outputPosition}px"
+      style:left="{(1 - $navVisibilityTween) * $navigationWidth + 16}px"
+      style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
+      style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
+      style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
+      use:drag={{
+        minSize: 200,
+        maxSize: innerHeight - 200,
+        side: "modelPreviewHeight",
+        store: outputLayout,
+        orientation: "vertical",
+        reverse: true,
+      }}
+    >
+      <div class="border-t border-gray-300" />
+      <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
+        <div
+          class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
+        />
       </div>
-    </Portal>
-  {/if}
+    </div>
+  </Portal>
 
   {#if currentModel}
-    <div
-      style:height="{(1 - $modelPreviewVisibilityTween) * $outputPosition}px"
-      class="p-6 flex flex-col gap-6"
-    >
+    <div style:height="{$outputPosition}px" class="p-6 flex flex-col gap-6">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"

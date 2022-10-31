@@ -1,12 +1,12 @@
 <script lang="ts">
-  import Navigation from "@rilldata/web-local/lib/components/navigation/Navigation.svelte";
-  import { setContext } from "svelte";
-  import { tweened } from "svelte/motion";
   import {
     SURFACE_DRAG_DURATION,
     SURFACE_SLIDE_DURATION,
     SURFACE_SLIDE_EASING,
-  } from "../../application-state-stores/layout-store";
+  } from "@rilldata/web-local/lib/application-config";
+  import Navigation from "@rilldata/web-local/lib/components/navigation/Navigation.svelte";
+  import { setContext } from "svelte";
+  import { tweened } from "svelte/motion";
   import { localStorageStore } from "../stores/local-storage";
 
   /** navigation element layout*/
