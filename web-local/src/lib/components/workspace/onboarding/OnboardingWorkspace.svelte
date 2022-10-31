@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Explore from "../icons/Explore.svelte";
-  import Metrics from "../icons/Metrics.svelte";
-  import Model from "../icons/Model.svelte";
-  import Source from "../icons/Source.svelte";
-  import WorkspaceContainer from "./WorkspaceContainer.svelte";
+  import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
+  import Metrics from "@rilldata/web-local/lib/components/icons/Metrics.svelte";
+  import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
+  import Source from "@rilldata/web-local/lib/components/icons/Source.svelte";
+  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
 
   const steps = [
     {
