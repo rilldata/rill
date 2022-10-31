@@ -86,7 +86,9 @@
     "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
 
-  const navigationWidth = getContext("rill:app:navigation-width-tween");
+  const navigationWidth = getContext(
+    "rill:app:navigation-width-tween"
+  ) as Writable<number>;
 </script>
 
 <svelte:window bind:innerHeight />

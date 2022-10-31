@@ -9,7 +9,7 @@
   import ModelInspector from "../inspector/model/ModelInspector.svelte";
   import WorkspaceContainer from "../WorkspaceContainer.svelte";
   import ModelBody from "./ModelBody.svelte";
-  export let modelId;
+  export let modelID;
 
   const queryHighlight = getContext("rill:app:query-highlight");
   const persistentModelStore = getContext(
@@ -20,30 +20,30 @@
   ) as DerivedModelStore;
 
   $: currentModel = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((q) => q.id === modelId)
+    ? $persistentModelStore.entities.find((q) => q.id === modelID)
     : undefined;
 
   $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find((q) => q.id === modelId)
+    ? $derivedModelStore.entities.find((q) => q.id === modelID)
     : undefined;
 
-  const switchToModel = async (modelId) => {
-    if (!modelId) return;
+  const switchToModel = async (modelID) => {
+    if (!modelID) return;
 
     await dataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
-      modelId,
+      modelID,
     ]);
   };
 
-  $: switchToModel(modelId);
+  $: switchToModel(modelID);
 </script>
 
 {#if currentModel?.id}
   {#key currentModel?.id}
-    <WorkspaceContainer assetID={currentModel.id}>
+    <WorkspaceContainer assetID={modelID}>
       <div slot="body">
-        <ModelBody modelID={currentModel.id} />
+        <ModelBody {modelID} />
       </div>
       <ModelInspector slot="inspector" />
     </WorkspaceContainer>

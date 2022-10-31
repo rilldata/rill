@@ -4,6 +4,7 @@
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import type { Writable } from "svelte/store";
@@ -13,7 +14,7 @@
   /** the core inspector width element is stored in localStorage. */
   const inspectorLayout = getContext(
     "rill:app:inspector-layout"
-  ) as Writable<number>;
+  ) as Writable<LayoutElement>;
 
   const inspectorWidth = getContext(
     "rill:app:inspector-width-tween"

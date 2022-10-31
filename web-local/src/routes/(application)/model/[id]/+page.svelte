@@ -9,4 +9,4 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<ModelWorkspace modelId={data.modelId} />
+<ModelWorkspace modelID={data.modelID} />

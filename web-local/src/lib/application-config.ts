@@ -20,3 +20,5 @@ export const COLUMN_PROFILE_CONFIG = {
 export function collapseInspectorCTAButton(width) {
   return !(width < 398);
 }
+
+export const SIDE_PAD = 28;

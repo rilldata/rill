@@ -1,21 +1,19 @@
 <script lang="ts">
+  import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { getContext, setContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { localStorageStore } from "../stores/local-storage";
 
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
+  import type { Writable } from "svelte/store";
   import Inspector from "./inspector/Inspector.svelte";
 
   export let assetID;
   export let inspector = true;
   export let bgClass = "bg-gray-100";
 
-  /** the core inspector width element is stored in localStorage. */
-  interface InspectorStorageValues {
-    value: number;
-    visible: boolean;
-  }
-  const inspectorLayout = localStorageStore<InspectorStorageValues>(
+  const inspectorLayout = localStorageStore<LayoutElement>(
     { value: inspector ? 400 : 0, visible: true },
     assetID
   );
@@ -43,10 +41,13 @@
   setContext("rill:app:inspector-width-tween", inspectorWidth);
   setContext("rill:app:inspector-visibility-tween", visibilityTween);
 
-  const navigationWidth = getContext("rill:app:navigation-width-tween");
-  const navVisibilityTween = getContext("rill:app:navigation-visibility-tween");
+  const navigationWidth = getContext(
+    "rill:app:navigation-width-tween"
+  ) as Writable<number>;
+  const navVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Writable<number>;
 
-  const SIDE_PAD = 28;
   let hasNoError = 1;
   let hasInspector = true;
 </script>
