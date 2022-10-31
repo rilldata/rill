@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     ApplicationStore,
@@ -37,7 +36,7 @@
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
   import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
-  import RillLayout from "./RillLayout.svelte";
+  import BasicLayout from "./BasicLayout.svelte";
   createQueryClient();
 
   onMount(async () => {
@@ -100,11 +99,6 @@
     let types = event.dataTransfer.types;
     return types && types.indexOf("Files") != -1;
   }
-
-  /** workaround for hiding inspector when there's a page error.
-   * We should refactor this inspector to work with a named slot instead of this current approach.
-   */
-  $: hasNoError = $page.status < 400 ? 1 : 0;
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -150,9 +144,9 @@
         on:drag|preventDefault|stopPropagation
         on:drop|preventDefault|stopPropagation
       >
-        <RillLayout>
+        <BasicLayout>
           <slot />
-        </RillLayout>
+        </BasicLayout>
       </div>
     </div>
   </ConfigProvider>

@@ -3,6 +3,7 @@
   import Metrics from "../icons/Metrics.svelte";
   import Model from "../icons/Model.svelte";
   import Source from "../icons/Source.svelte";
+  import WorkspaceContainer from "./WorkspaceContainer.svelte";
 
   const steps = [
     {
@@ -32,24 +33,26 @@
   ];
 </script>
 
-<div class="mt-10 p-2 place-content-center">
-  <div class="text-center">
-    <div class="font-bold">Getting started</div>
-    <p>Building data intuition at every step of analysis</p>
-  </div>
-  <div class="p-5 pt-2">
-    {#each steps as step (step.heading)}
-      <div
-        class="flex items-center p-6 mt-3 bg-gray-50 rounded-lg border border-gray-200"
-      >
-        <div>
-          <svelte:component this={step.icon} color="grey" size="3em" />
+<WorkspaceContainer assetID="onboarding" inspector={false}>
+  <div class="mt-10 p-2 place-content-center h-screen" slot="body">
+    <div class="text-center">
+      <div class="font-bold">Getting started</div>
+      <p>Building data intuition at every step of analysis</p>
+    </div>
+    <div class="p-5 pt-2">
+      {#each steps as step (step.heading)}
+        <div
+          class="flex items-center p-6 mt-3 bg-gray-50 rounded-lg border border-gray-200"
+        >
+          <div>
+            <svelte:component this={step.icon} color="grey" size="3em" />
+          </div>
+          <div class="ml-5">
+            <h5 class="font-bold">{step.heading}</h5>
+            <p class="italic">{step.description}</p>
+          </div>
         </div>
-        <div class="ml-5">
-          <h5 class="font-bold">{step.heading}</h5>
-          <p class="italic">{step.description}</p>
-        </div>
-      </div>
-    {/each}
+      {/each}
+    </div>
   </div>
-</div>
+</WorkspaceContainer>

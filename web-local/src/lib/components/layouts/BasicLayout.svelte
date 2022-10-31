@@ -1,3 +1,7 @@
+<!-- @component
+Combines a Navigation element with a slot for a WorkspaceContainer.
+BasicLayout is the backbone of the Rill application.
+-->
 <script lang="ts">
   import {
     SURFACE_DRAG_DURATION,

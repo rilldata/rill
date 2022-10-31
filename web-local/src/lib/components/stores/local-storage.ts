@@ -1,11 +1,17 @@
+import { browser } from "$app/environment";
 import { writable } from "svelte/store";
 
 /** Creates a store whose value is stored in localStorage as a string.
  * Only JSON-serializable values can be used.
-
  */
 export function localStorageStore<T>(defaultValue: T, itemKey: string) {
-  const value = JSON.parse(window.localStorage.getItem(itemKey));
+  let value;
+  if (browser) {
+    value = JSON.parse(localStorage.getItem(itemKey));
+  } else {
+    value = defaultValue;
+  }
+
   const {
     subscribe,
     set: setStore,
