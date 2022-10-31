@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import MetricsDefWorkspace from "@rilldata/web-local/lib/components/workspace/metrics-def/MetricsDefWorkspace.svelte";
+  import { MetricsDefinitionWorkspace } from "@rilldata/web-local/lib/components/workspace";
 
   export let data;
 
@@ -18,4 +18,4 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<MetricsDefWorkspace metricsDefId={data.metricsDefId} />
+<MetricsDefinitionWorkspace metricsDefId={data.metricsDefId} />

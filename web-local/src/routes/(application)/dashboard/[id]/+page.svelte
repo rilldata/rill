@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import Explore from "@rilldata/web-local/lib/components/workspace/explore/Explore.svelte";
+  import { DashboardWorkspace } from "@rilldata/web-local/lib/components/workspace";
   export let data;
 
   $: metricsDefId = data.metricsDefId;
@@ -25,4 +25,4 @@
   class="bg-white absolute left-0 top-0 right-0 bottom-0 w-screen h-screen"
   style:border="4px solid black"
 /> -->
-<Explore {metricsDefId} />
+<DashboardWorkspace {metricsDefId} />

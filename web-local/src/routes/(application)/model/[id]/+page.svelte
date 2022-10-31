@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ModelWorkspace from "@rilldata/web-local/lib/components/workspace/model/ModelWorkspace.svelte";
+  import { ModelWorkspace } from "@rilldata/web-local/lib/components/workspace";
 
   export let data;
 </script>
