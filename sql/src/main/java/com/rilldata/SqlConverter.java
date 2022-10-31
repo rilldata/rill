@@ -26,4 +26,9 @@ public class SqlConverter
   {
     return calciteToolbox.getAST(sql, false);
   }
+
+  public SqlNodeProto getAST(String sql, boolean addTypeInfo) throws ValidationException, SqlParseException
+  {
+    return calciteToolbox.getAST(sql, addTypeInfo);
+  }
 }
