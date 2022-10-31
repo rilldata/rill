@@ -4,13 +4,13 @@
     SURFACE_SLIDE_DURATION,
     SURFACE_SLIDE_EASING,
   } from "@rilldata/web-local/lib/application-config";
+  import { localStorageStore } from "@rilldata/web-local/lib/components/stores/local-storage";
   import { getContext, setContext } from "svelte";
   import { tweened } from "svelte/motion";
-  import { localStorageStore } from "../stores/local-storage";
 
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import type { Writable } from "svelte/store";
-  import Inspector from "./inspector/Inspector.svelte";
+  import Inspector from "../inspector/Inspector.svelte";
 
   export let assetID;
   export let inspector = true;

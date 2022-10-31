@@ -16,7 +16,7 @@
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { localStorageStore } from "../../stores/local-storage";
-  import WorkspaceHeader from "../WorkspaceHeader.svelte";
+  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
   export let modelID;
 
   const queryHighlight = getContext("rill:app:query-highlight");

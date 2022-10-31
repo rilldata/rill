@@ -3,7 +3,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../application-state-stores/explorer-stores";
-  import WorkspaceContainer from "../WorkspaceContainer.svelte";
+  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";

@@ -20,7 +20,7 @@
   import Source from "../../icons/Source.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import WorkspaceHeader from "../WorkspaceHeader.svelte";
+  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let id;
 

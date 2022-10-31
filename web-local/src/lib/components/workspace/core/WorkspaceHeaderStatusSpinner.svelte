@@ -1,11 +1,11 @@
 <script lang="ts">
+  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getContext } from "svelte";
-  import type { ApplicationStore } from "../../application-state-stores/application-store";
 
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import Spinner from "../Spinner.svelte";
+  import Spinner from "@rilldata/web-local/lib/components/Spinner.svelte";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
 

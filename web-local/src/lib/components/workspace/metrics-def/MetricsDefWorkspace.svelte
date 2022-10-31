@@ -32,7 +32,7 @@
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
 
-  import WorkspaceContainer from "../WorkspaceContainer.svelte";
+  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
   export let metricsDefId;
 

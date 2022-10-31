@@ -9,7 +9,7 @@
   import PreviewTable from "../../preview-table/PreviewTable.svelte";
   import SourceInspector from "../inspector/SourceInspector.svelte";
 
-  import WorkspaceContainer from "../WorkspaceContainer.svelte";
+  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
   export let sourceID: string;
@@ -66,7 +66,7 @@
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader id={currentSource?.id} />
+      <SourceWorkspaceHeader id={sourceID} />
       <div
         style:overflow="auto"
         style:height="100%"
