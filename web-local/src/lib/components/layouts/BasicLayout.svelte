@@ -9,9 +9,9 @@ BasicLayout is the backbone of the Rill application.
     SURFACE_SLIDE_EASING,
   } from "@rilldata/web-local/lib/application-config";
   import Navigation from "@rilldata/web-local/lib/components/navigation/Navigation.svelte";
+  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { setContext } from "svelte";
   import { tweened } from "svelte/motion";
-  import { localStorageStore } from "../stores/local-storage";
 
   /** navigation element layout*/
   const navigationLayout = localStorageStore("navigation-layout", {

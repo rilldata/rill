@@ -4,7 +4,7 @@
     SURFACE_SLIDE_DURATION,
     SURFACE_SLIDE_EASING,
   } from "@rilldata/web-local/lib/application-config";
-  import { localStorageStore } from "@rilldata/web-local/lib/components/stores/local-storage";
+  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { getContext, setContext } from "svelte";
   import { tweened } from "svelte/motion";
 

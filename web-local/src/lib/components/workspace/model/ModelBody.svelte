@@ -11,11 +11,11 @@
   import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { updateModelQueryApi } from "@rilldata/web-local/lib/redux-store/model/model-apis";
+  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { localStorageStore } from "../../stores/local-storage";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
   export let modelID;
 
