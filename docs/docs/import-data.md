@@ -69,34 +69,12 @@ Default output format [None]: <None>
 
 Private S3 files available to this account can now be pulled into Rill.
 
-## Existing DuckDB databases
-
-### Connecting
-You can connect to an existing DuckDB database by running `rill init` and passing the `--db` option with a path to the db file.
-
-Any updates made directly to the sources in the database will be reflected in Rill Developer. Similarly, any changes made by Rill Developer will modify the database.
-
-Make sure to have only one connection open to the database, otherwise there will be some unexpected issues.
-
-```
-rill init --db /path/to/duckdb/database.db
-```
-
-### Copying
-You can also copy over the database so that there are no conflicts and overrides that are propagated to the source by passing the `--db` option with `--copy` to achieve this.
-
-```
-rill init --db /path/to/duckdb/database.db --copy
-```
-
 ## Limitations
 
 Today, a few constraints apply to the data sources you can import:
 - Only Parquet and CSV files are supported.
 - gzipped files are not yet supported.
 - You can only import a single file at a time.
-
-Look out for gzipped file support & glob pattern support in Rill's next release!
 
 ## Request a new connector
 If you don't see your data source listed above, [please let us know](https://discord.gg/eEvSYHdfWK)! We're continually adding new connectors, so your feedback will help us prioritize what data sources to support next.
