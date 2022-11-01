@@ -43,11 +43,8 @@ export function getYupSchema(connector: V1Connector) {
           .required("Source name is required"),
         path: yup
           .string()
-          .matches(
-            /^https?:\/\//,
-            "Must be a http(s) URL (e.g. http(s)://server.tld/path)"
-          )
-          .required("HTTP(s) URL is required"),
+          .matches(/^https?:\/\//, 'Path must start with "http(s)://"')
+          .required("Path is required"),
       });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);
