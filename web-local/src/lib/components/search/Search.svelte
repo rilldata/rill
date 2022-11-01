@@ -9,6 +9,13 @@
   /* Input value being searched */
   export let value;
 
+  function handleKeyDown(event) {
+    if (event.code == "Enter") {
+      event.preventDefault();
+      return false;
+    }
+  }
+
   onMount(() => {
     if (autofocus) window.requestAnimationFrame(() => ref.focus());
   });
@@ -29,6 +36,7 @@
       placeholder="Search"
       bind:value
       on:input
+      on:keydown={handleKeyDown}
     />
   </div>
 </form>
