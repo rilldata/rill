@@ -34,6 +34,7 @@ message Request {
 message ParseRequest {
   string sql = 1;
   string catalog = 2;
+  bool addTypeInfo = 3;
 }
 
 message ParseResponse {
