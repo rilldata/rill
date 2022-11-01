@@ -2,15 +2,11 @@ import { createInterface } from "readline";
 
 const DefaultConfirm = {
   yes: 1,
-  Yes: 1,
   y: 1,
-  Y: 1,
 };
 const DefaultReject = {
   no: 1,
-  No: 1,
   n: 1,
-  N: 1,
 };
 
 export async function cliConfirmation(
@@ -19,9 +15,9 @@ export async function cliConfirmation(
   reject = DefaultReject
 ): Promise<boolean> {
   const response = await getResponse(question);
-  if (response in confirm) {
+  if (response.toLowerCase() in confirm) {
     return true;
-  } else if (response in reject) {
+  } else if (response.toLowerCase() in reject) {
     return false;
   } else {
     throw new Error("Invalid response");
