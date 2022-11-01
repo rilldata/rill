@@ -34,6 +34,12 @@ export async function load({ params }) {
       return {
         metricsDefId: params.id,
       };
+    } else {
+      // Pass non standard error message to be shown in dialog
+      return {
+        metricsDefId: params.id,
+        error: err.message,
+      };
     }
   }
 

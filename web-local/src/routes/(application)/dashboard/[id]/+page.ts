@@ -1,11 +1,6 @@
-import {
-  ExplorerSourceColumnDoesntExist,
-  ExplorerSourceModelDoesntExist,
-  ExplorerSourceModelIsInvalid,
-} from "@rilldata/web-local/common/errors/ErrorMessages";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
-import { error, redirect } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 
 export const ssr = false;
 
@@ -26,21 +21,7 @@ export async function load({ params }) {
       return redirect(307, `/dashboard/${params.id}/edit`);
     }
   } catch (err) {
-    const invalidDashboardErrors = [
-      ExplorerSourceModelDoesntExist,
-      ExplorerSourceModelIsInvalid,
-      ExplorerSourceColumnDoesntExist,
-    ];
-
-    // if dashboard is invalid, redirect to the metrics definition page
-    if (
-      invalidDashboardErrors.some(
-        (errMsg) => errMsg.includes(err.message) || err.message.includes(errMsg)
-      )
-    ) {
-      throw redirect(307, `/dashboard/${params.id}/edit`);
-    }
+    // in case of error redirect to metrics definition page
+    throw redirect(307, `/dashboard/${params.id}/edit`);
   }
-
-  throw error(404, "Dashboard not found");
 }

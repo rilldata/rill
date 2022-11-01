@@ -61,10 +61,12 @@
     initiateOnMount(container);
 
   onDestroy(() => {
-    modal.deactivate();
-    unlockBodyScrolling(container);
-    if (typeof originalTrigger?.focus === "function") {
-      setTimeout(() => originalTrigger.focus());
+    if (modal) {
+      modal.deactivate();
+      unlockBodyScrolling(container);
+      if (typeof originalTrigger?.focus === "function") {
+        setTimeout(() => originalTrigger.focus());
+      }
     }
   });
 
