@@ -2,10 +2,14 @@ import { createInterface } from "readline";
 
 const DefaultConfirm = {
   yes: 1,
+  Yes: 1,
   y: 1,
+  Y: 1,
 };
 const DefaultReject = {
   no: 1,
+  No: 1,
+  n: 1,
   N: 1,
 };
 
