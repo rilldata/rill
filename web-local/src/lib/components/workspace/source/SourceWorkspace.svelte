@@ -82,6 +82,6 @@
         {/if}
       </div>
     </div>
-    <SourceInspector id={sourceID} slot="inspector" />
+    <SourceInspector {sourceID} slot="inspector" />
   </WorkspaceContainer>
 {/key}

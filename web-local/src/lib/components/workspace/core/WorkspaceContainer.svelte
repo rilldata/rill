@@ -16,10 +16,10 @@
   export let inspector = true;
   export let bgClass = "bg-gray-100";
 
-  const inspectorLayout = localStorageStore<LayoutElement>(
-    { value: inspector ? 400 : 0, visible: true },
-    assetID
-  );
+  const inspectorLayout = localStorageStore<LayoutElement>(assetID, {
+    value: inspector ? 400 : 0,
+    visible: true,
+  });
   const inspectorWidth = tweened(
     inspector ? $inspectorLayout?.value || 400 : 0,
     {

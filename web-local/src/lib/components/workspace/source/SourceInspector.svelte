@@ -55,8 +55,7 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  /** the source id */
-  export let id: string;
+  export let sourceID: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -69,13 +68,13 @@
 
   let currentTable: PersistentTableEntity;
   $: currentTable =
-    id && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.id === id)
+    sourceID && $persistentTableStore?.entities
+      ? $persistentTableStore.entities.find((q) => q.id === sourceID)
       : undefined;
   let currentDerivedTable: DerivedTableEntity;
   $: currentDerivedTable =
-    id && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === id)
+    sourceID && $derivedTableStore?.entities
+      ? $derivedTableStore.entities.find((q) => q.id === sourceID)
       : undefined;
   // get source table references.
 
@@ -110,7 +109,8 @@
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       currentTable.id,
-      $persistentTableStore.entities.find((table) => table.id === id).tableName
+      $persistentTableStore.entities.find((table) => table.id === sourceID)
+        .tableName
     ).then((createdMetricsId) => {
       navigationEvent.fireEvent(
         createdMetricsId,
@@ -257,7 +257,7 @@
             show={showColumns}
             name={currentTable.name}
             cardinality={currentDerivedTable?.cardinality ?? 0}
-            active={currentTable?.id === id}
+            active={currentTable?.id === sourceID}
           >
             <ColumnProfileNavEntry
               slot="summary"

@@ -61,13 +61,10 @@
   };
 
   /** model body layout elements */
-  const outputLayout = localStorageStore(
-    {
-      value: 500,
-      visible: true,
-    },
-    `${modelID}-output`
-  );
+  const outputLayout = localStorageStore(`${modelID}-output`, {
+    value: 500,
+    visible: true,
+  });
   const outputPosition = tweened($outputLayout.value, { duration: 50 });
   outputLayout.subscribe((state) => {
     outputPosition.set(state.value);

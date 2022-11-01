@@ -14,10 +14,10 @@ BasicLayout is the backbone of the Rill application.
   import { localStorageStore } from "../stores/local-storage";
 
   /** navigation element layout*/
-  const navigationLayout = localStorageStore(
-    { value: 400, visible: true },
-    "navigation-layout"
-  );
+  const navigationLayout = localStorageStore("navigation-layout", {
+    value: 400,
+    visible: true,
+  });
 
   const navigationWidth = tweened($navigationLayout.value || 400, {
     duration: SURFACE_DRAG_DURATION,
