@@ -18,14 +18,14 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "Http(s)",
+	DisplayName: "http(s)",
 	Description: "Connect to a remote file.",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
-			DisplayName: "Http(s) uri",
+			DisplayName: "Path",
 			Description: "Path to the remote file.",
-			Placeholder: "http(s)://server.tld/path/to/file.csv",
+			Placeholder: "https://example.com/file.csv",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
 		},
