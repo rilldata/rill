@@ -19,7 +19,7 @@ import {
   duplicateSourceName,
   RuntimeState,
 } from "../application-state-stores/application-store";
-import { importOverlayVisible } from "../application-state-stores/layout-store";
+import { importOverlayVisible } from "../application-state-stores/overlay-store";
 import notifications from "../components/notifications";
 import { sourceUpdated } from "../redux-store/source/source-apis";
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "../types";

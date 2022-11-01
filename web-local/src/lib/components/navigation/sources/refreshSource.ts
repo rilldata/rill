@@ -1,6 +1,6 @@
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
-import { overlay } from "@rilldata/web-local/lib/application-state-stores/layout-store";
+import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import { sourceUpdated } from "@rilldata/web-local/lib/redux-store/source/source-apis";
 import {

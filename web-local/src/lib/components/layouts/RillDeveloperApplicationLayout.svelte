@@ -6,15 +6,15 @@
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { config } from "@rilldata/web-local/lib/application-state-stores/application-store.js";
-  import {
-    importOverlayVisible,
-    overlay,
-    quickStartDashboardOverlay,
-  } from "@rilldata/web-local/lib/application-state-stores/layout-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import {
+    importOverlayVisible,
+    overlay,
+    quickStartDashboardOverlay,
+  } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import type {
     DerivedTableStore,
     PersistentTableStore,

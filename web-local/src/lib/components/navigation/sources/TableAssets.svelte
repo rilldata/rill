@@ -24,8 +24,8 @@
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
+  import { overlay } from "../../../application-state-stores/overlay-store";
   import type {
     DerivedTableStore,
     PersistentTableStore,

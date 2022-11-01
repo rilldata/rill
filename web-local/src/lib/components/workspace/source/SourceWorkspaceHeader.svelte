@@ -12,7 +12,7 @@
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/layout-store";
+  import { overlay } from "../../../application-state-stores/overlay-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { IconButton } from "../../button";
   import Import from "../../icons/Import.svelte";
