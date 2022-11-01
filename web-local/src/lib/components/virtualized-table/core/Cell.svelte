@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher, getContext } from "svelte";
   import {
     INTERVALS,
@@ -80,7 +81,6 @@
     ? "bg-gray-200 dark:bg-gray-700"
     : "bg-blue-200 dark:bg-blue-700";
 
-  let TOOLTIP_STRING_LIMIT = 200;
   $: tooltipValue =
     value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
       ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
