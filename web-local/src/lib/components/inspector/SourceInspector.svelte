@@ -1,4 +1,8 @@
 <script lang="ts">
+  import {
+    useRuntimeServiceGetCatalogObject,
+    V1Source,
+  } from "@rilldata/web-common/runtime-client";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
@@ -9,10 +13,6 @@
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
-  import {
-    useRuntimeServiceGetCatalogObject,
-    V1Source,
-  } from "@rilldata/web-common/runtime-client";
   import type { ApplicationStore } from "../../application-state-stores/application-store";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../application-state-stores/model-stores";
@@ -136,6 +136,8 @@
         return "S3";
       case "gcs":
         return "GCS";
+      case "https":
+        return "http(s)";
       case "file":
         return "Local file";
       default:
