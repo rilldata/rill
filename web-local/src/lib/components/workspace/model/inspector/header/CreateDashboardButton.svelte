@@ -1,22 +1,22 @@
 <script lang="ts">
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "../../../../application-state-stores/model-stores";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { navigationEvent } from "../../../../metrics/initMetrics";
-  import { Button } from "../../../button";
-  import Explore from "../../../icons/Explore.svelte";
-  import ResponsiveButtonText from "../../../panel/ResponsiveButtonText.svelte";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import { autoCreateMetricsDefinitionForModel } from "../../../../redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "../../../../redux-store/source/source-selectors";
+  import type {
+    DerivedModelStore,
+    PersistentModelStore,
+  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import { Button } from "@rilldata/web-local/lib/components/button";
+  import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
+  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { autoCreateMetricsDefinitionForModel } from "@rilldata/web-local/lib/redux-store/source/source-apis";
+  import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { getContext } from "svelte";
 
   export let activeEntityID: string;

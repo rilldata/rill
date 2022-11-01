@@ -22,7 +22,7 @@ export async function load({ params }) {
   }
   if (sourceExists) {
     return {
-      sourceId: params.id,
+      sourceID: params.id,
     };
   }
 

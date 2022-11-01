@@ -79,7 +79,7 @@
 }
 
 html {
-  @apply surface-bg ui-copy;
+  @apply ui-copy;
 }
 
 a, button {

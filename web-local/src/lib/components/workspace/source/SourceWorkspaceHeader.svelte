@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { refreshSource } from "@rilldata/web-local/lib/components/assets/sources/refreshSource";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { getContext } from "svelte";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServiceMigrateSingle,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { getContext } from "svelte";
   import {
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/layout-store";
+  import { overlay } from "../../../application-state-stores/overlay-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { IconButton } from "../../button";
   import Import from "../../icons/Import.svelte";
@@ -20,7 +20,7 @@
   import Source from "../../icons/Source.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import WorkspaceHeader from "../WorkspaceHeader.svelte";
+  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let id;
 

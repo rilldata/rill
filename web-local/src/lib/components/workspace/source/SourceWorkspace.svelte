@@ -7,10 +7,12 @@
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
   import PreviewTable from "../../preview-table/PreviewTable.svelte";
+  import SourceInspector from "./SourceInspector.svelte";
 
+  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
-  export let sourceId: string;
+  export let sourceID: string;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -20,22 +22,22 @@
   ) as DerivedTableStore;
 
   $: currentSource = $persistentTableStore?.entities
-    ? $persistentTableStore.entities.find((q) => q.id === sourceId)
+    ? $persistentTableStore.entities.find((q) => q.id === sourceID)
     : undefined;
   $: currentDerivedSource = $derivedTableStore?.entities
-    ? $derivedTableStore.entities.find((q) => q.id === sourceId)
+    ? $derivedTableStore.entities.find((q) => q.id === sourceID)
     : undefined;
 
-  const switchToSource = async (sourceId: string) => {
-    if (!sourceId) return;
+  const switchToSource = async (sourceID: string) => {
+    if (!sourceID) return;
 
     await dataModelerService.dispatch("setActiveAsset", [
       EntityType.Table,
-      sourceId,
+      sourceID,
     ]);
   };
 
-  $: switchToSource(sourceId);
+  $: switchToSource(sourceID);
 
   /** check to see if we need to perform a migration.
    * We will deprecate this in a few versions from 0.8.
@@ -55,24 +57,31 @@
   }
 </script>
 
-<div
-  class="grid pb-6"
-  style:grid-template-rows="max-content auto"
-  style:height="100vh"
->
-  <SourceWorkspaceHeader id={currentSource?.id} />
-  <div
-    style:overflow="auto"
-    style:height="100%"
-    class="m-6 mt-0 border border-gray-300 rounded"
-  >
-    {#if currentDerivedSource}
-      {#key currentDerivedSource.id}
-        <PreviewTable
-          rows={currentDerivedSource?.preview}
-          columnNames={currentDerivedSource?.profile}
-        />
-      {/key}
-    {/if}
-  </div>
-</div>
+<!-- for now, we will key the entire element on the sourceId. -->
+{#key sourceID}
+  <WorkspaceContainer assetID={sourceID}>
+    <div
+      slot="body"
+      class="grid pb-6"
+      style:grid-template-rows="max-content auto"
+      style:height="100vh"
+    >
+      <SourceWorkspaceHeader id={sourceID} />
+      <div
+        style:overflow="auto"
+        style:height="100%"
+        class="m-6 mt-0 border border-gray-300 rounded"
+      >
+        {#if currentDerivedSource}
+          {#key currentDerivedSource.id}
+            <PreviewTable
+              rows={currentDerivedSource?.preview}
+              columnNames={currentDerivedSource?.profile}
+            />
+          {/key}
+        {/if}
+      </div>
+    </div>
+    <SourceInspector {sourceID} slot="inspector" />
+  </WorkspaceContainer>
+{/key}

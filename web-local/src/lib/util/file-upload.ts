@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import type { V1PutRepoObjectResponse } from "@rilldata/web-common/runtime-client";
 import {
   EntityType,
   StateType,
@@ -9,8 +10,7 @@ import {
   duplicateNameChecker,
   incrementedNameGetter,
 } from "@rilldata/web-local/common/utils/duplicateNameUtils";
-import { waitForSource } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
-import type { V1PutRepoObjectResponse } from "@rilldata/web-common/runtime-client";
+import { waitForSource } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
   config,
   dataModelerStateService,
@@ -19,7 +19,7 @@ import {
   duplicateSourceName,
   RuntimeState,
 } from "../application-state-stores/application-store";
-import { importOverlayVisible } from "../application-state-stores/layout-store";
+import { importOverlayVisible } from "../application-state-stores/overlay-store";
 import notifications from "../components/notifications";
 import { sourceUpdated } from "../redux-store/source/source-apis";
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "../types";

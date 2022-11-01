@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Model from "@rilldata/web-local/lib/components/workspace/Model.svelte";
+  import { ModelWorkspace } from "@rilldata/web-local/lib/components/workspace";
 
   export let data;
 </script>
@@ -9,4 +9,4 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<Model modelId={data.modelId} />
+<ModelWorkspace modelID={data.modelID} />

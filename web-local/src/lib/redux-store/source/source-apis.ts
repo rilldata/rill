@@ -6,7 +6,7 @@ import { dataModelerService } from "../../application-state-stores/application-s
 import {
   resetQuickStartDashboardOverlay,
   showQuickStartDashboardOverlay,
-} from "../../application-state-stores/layout-store";
+} from "../../application-state-stores/overlay-store";
 import notificationStore from "../../components/notifications";
 import { TIMESTAMPS } from "../../duckdb-data-types";
 import {

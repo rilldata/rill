@@ -1,8 +1,8 @@
 <script lang="ts">
-  import EditIcon from "../icons/EditIcon.svelte";
-  import ModelIcon from "../icons/Model.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import EditIcon from "@rilldata/web-local/lib/components/icons/EditIcon.svelte";
+  import ModelIcon from "@rilldata/web-local/lib/components/icons/Model.svelte";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
