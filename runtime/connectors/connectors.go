@@ -126,9 +126,6 @@ func ConsumeAsFile(ctx context.Context, source *Source) (string, error) {
 	//       this should be output back to drivers that should import each file into the same table
 	path, err := connector.ConsumeAsFile(ctx, source)
 	if err != nil {
-		if path != "" {
-			os.Remove(path)
-		}
 		return "", err
 	}
 
