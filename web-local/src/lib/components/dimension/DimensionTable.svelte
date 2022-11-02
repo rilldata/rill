@@ -269,6 +269,7 @@ TableCells – the cell contents.
             {rows}
             {activeIndex}
             {selectedIndex}
+            {excludeMode}
             {scrolling}
             {horizontalScrolling}
             on:select-item={(event) => onSelectItem(event)}
@@ -285,6 +286,7 @@ TableCells – the cell contents.
             {activeIndex}
             {selectedIndex}
             {scrolling}
+            {excludeMode}
             on:select-item={(event) => onSelectItem(event)}
             on:inspect={setActiveIndex}
           />

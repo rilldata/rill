@@ -73,7 +73,9 @@
   // we need to set *all* items to be included, because by default if a user has not
   // selected any values, we assume they want all values included in all calculations.
   $: excluded = atLeastOneSelected
-    ? (excludeMode && rowSelected) || (!excludeMode && !rowSelected)
+    ? excludeMode
+      ? rowSelected
+      : !rowSelected
     : false;
 
   $: barColor = excluded
