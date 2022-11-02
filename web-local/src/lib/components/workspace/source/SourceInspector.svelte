@@ -11,42 +11,43 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getContext } from "svelte";
-  import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../application-state-stores/application-store";
-  import { runtimeStore } from "../../application-state-stores/application-store";
-  import type { PersistentModelStore } from "../../application-state-stores/model-stores";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
-  } from "../../application-state-stores/table-stores";
-  import { navigationEvent } from "../../metrics/initMetrics";
+  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import { Button } from "@rilldata/web-local/lib/components/button";
+  import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
+  import CollapsibleTableSummary from "@rilldata/web-local/lib/components/column-profile/CollapsibleTableSummary.svelte";
+  import ColumnProfileNavEntry from "@rilldata/web-local/lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
+  import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
+  import {
+    GridCell,
+    LeftRightGrid,
+  } from "@rilldata/web-local/lib/components/left-right-grid";
+  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
+  import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import {
     autoCreateMetricsDefinitionForSource,
     createModelForSource,
-  } from "../../redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "../../redux-store/source/source-selectors";
+  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
+  import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import {
     formatBigNumberPercentage,
     formatInteger,
-  } from "../../util/formatters";
-  import { Button } from "../button";
-  import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "../column-profile/CollapsibleTableSummary.svelte";
-  import ColumnProfileNavEntry from "../column-profile/ColumnProfileNavEntry.svelte";
-  import Explore from "../icons/Explore.svelte";
-  import Model from "../icons/Model.svelte";
-  import { GridCell, LeftRightGrid } from "../left-right-grid";
-  import PanelCTA from "../panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "../panel/ResponsiveButtonText.svelte";
-  import StickToHeaderDivider from "../panel/StickToHeaderDivider.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  } from "@rilldata/web-local/lib/util/formatters";
+  import { getContext } from "svelte";
+  import { slide } from "svelte/transition";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
-
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
@@ -54,7 +55,7 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  const store = getContext("rill:app:store") as ApplicationStore;
+  export let sourceID: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -65,18 +66,15 @@
 
   let showColumns = true;
 
-  /** Select the explicit ID to prevent unneeded reactive updates in currentTable */
-  $: activeEntityID = $store?.activeEntity?.id;
-
   let currentTable: PersistentTableEntity;
   $: currentTable =
-    activeEntityID && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.id === activeEntityID)
+    sourceID && $persistentTableStore?.entities
+      ? $persistentTableStore.entities.find((q) => q.id === sourceID)
       : undefined;
   let currentDerivedTable: DerivedTableEntity;
   $: currentDerivedTable =
-    activeEntityID && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === activeEntityID)
+    sourceID && $derivedTableStore?.entities
+      ? $derivedTableStore.entities.find((q) => q.id === sourceID)
       : undefined;
   // get source table references.
 
@@ -111,9 +109,8 @@
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       currentTable.id,
-      $persistentTableStore.entities.find(
-        (table) => table.id === activeEntityID
-      ).tableName
+      $persistentTableStore.entities.find((table) => table.id === sourceID)
+        .tableName
     ).then((createdMetricsId) => {
       navigationEvent.fireEvent(
         createdMetricsId,
@@ -262,7 +259,7 @@
             show={showColumns}
             name={currentTable.name}
             cardinality={currentDerivedTable?.cardinality ?? 0}
-            active={currentTable?.id === activeEntityID}
+            active={currentTable?.id === sourceID}
           >
             <ColumnProfileNavEntry
               slot="summary"

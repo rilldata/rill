@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import type { ApplicationStore } from "../../../application-state-stores/application-store";
-  import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
-  import { createResizeListenerActionFactory } from "../../actions/create-resize-listener-factory";
-  import StickToHeaderDivider from "../../panel/StickToHeaderDivider.svelte";
+  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import { createResizeListenerActionFactory } from "@rilldata/web-local/lib/components/actions/create-resize-listener-factory";
+  import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
   import { getContext } from "svelte";
   import ModelInspectorHeader from "./header/ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";

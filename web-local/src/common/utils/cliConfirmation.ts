@@ -6,7 +6,7 @@ const DefaultConfirm = {
 };
 const DefaultReject = {
   no: 1,
-  N: 1,
+  n: 1,
 };
 
 export async function cliConfirmation(
@@ -15,9 +15,9 @@ export async function cliConfirmation(
   reject = DefaultReject
 ): Promise<boolean> {
   const response = await getResponse(question);
-  if (response in confirm) {
+  if (response.toLowerCase() in confirm) {
     return true;
-  } else if (response in reject) {
+  } else if (response.toLowerCase() in reject) {
     return false;
   } else {
     throw new Error("Invalid response");

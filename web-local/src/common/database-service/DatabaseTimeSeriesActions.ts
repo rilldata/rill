@@ -1,3 +1,4 @@
+import { escapeColumn } from "@rilldata/web-local/common/database-service/columnUtils";
 import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import type { BasicMeasureDefinition } from "../data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DatabaseActions } from "./DatabaseActions";
@@ -172,7 +173,9 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
         -- transform the original data, and optionally sample it.
         series AS (
           SELECT 
-            date_trunc('${timeGranularity}', "${timestampColumn}") as ts,
+            date_trunc('${timeGranularity}', ${escapeColumn(
+          timestampColumn
+        )}) as ts,
             ${getExpressionColumnsFromMeasures(measures)}
           FROM "${tableName}" ${filter}
           GROUP BY ts ORDER BY ts
@@ -254,12 +257,13 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
     valueColumn: string,
     pixels: number
   ) {
+    const escapedTimestampColumn = escapeColumn(timestampColumn);
     const [timeSeriesLength] = await this.databaseClient.execute(`
         SELECT count(*) as c FROM "${table}"
     `);
     if (timeSeriesLength.c < pixels * 4) {
       return this.databaseClient.execute(`
-          SELECT "${timestampColumn}" as ts, "${valueColumn}" as count FROM "${table}"
+          SELECT ${escapedTimestampColumn} as ts, "${valueColumn}" as count FROM "${table}"
       `);
     }
 
@@ -267,7 +271,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       .execute<TimeseriesReductionQueryResponse>(`
       -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from "${timestampColumn}") as t, "${valueColumn}" as v FROM "${table}"
+        SELECT extract('epoch' from ${escapedTimestampColumn}) as t, "${valueColumn}" as v FROM "${table}"
       ),
       -- generate bounds
       M as (
@@ -358,15 +362,16 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       };
     }
 
+    const escapedColumnName = escapeColumn(columnName);
     const [timeRange] = await this.databaseClient.execute<{
       r: number;
       max_value: number;
       min_value: number;
       count: number;
     }>(`SELECT 
-        max("${columnName}") - min("${columnName}") as r,
-        max("${columnName}") as max_value,
-        min("${columnName}") as min_value,
+        max(${escapedColumnName}) - min(${escapedColumnName}) as r,
+        max(${escapedColumnName}) as max_value,
+        min(${escapedColumnName}) as min_value,
         count(*) as count
         from 
       ${tableName}`);
@@ -446,11 +451,12 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       rollupInterval = estimatedRollupInterval.rollupInterval;
     }
 
+    const escapedTimestampColumn = escapeColumn(timestampColumn);
     const [actualTimeRange] = await this.databaseClient.execute<{
       min: number;
       max: number;
     }>(`SELECT
-		    min("${timestampColumn}") as min, max("${timestampColumn}") as max 
+		    min(${escapedTimestampColumn}) as min, max(${escapedTimestampColumn}) as max 
 		    FROM ${tableName}`);
 
     let startTime = new Date(timeRange?.start || actualTimeRange.min);

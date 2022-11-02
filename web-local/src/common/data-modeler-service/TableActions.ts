@@ -1,11 +1,22 @@
-import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/assets/sources/sourceUtils";
 import {
   runtimeServiceMigrateDelete,
   runtimeServiceMigrateSingle,
 } from "@rilldata/web-common/runtime-client";
+import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+import {
+  FILE_EXTENSION_TO_TABLE_TYPE,
+  ProfileColumn,
+  TableSourceType,
+} from "@rilldata/web-local/lib/types";
+import {
+  extractFileExtension,
+  extractTableName,
+  getTableNameFromFile,
+  INVALID_CHARS,
+  sanitizeEntityName,
+} from "@rilldata/web-local/lib/util/extract-table-name";
+import { existsSync } from "fs";
 import { SOURCE_PREVIEW_COUNT } from "../constants";
-import { ActionResponse, ActionStatus } from "./response/ActionResponse";
-import { ActionResponseFactory } from "./response/ActionResponseFactory";
 import type {
   DerivedTableEntity,
   DerivedTableStateActionArg,
@@ -22,20 +33,9 @@ import type {
 import { DatabaseActionQueuePriority } from "../priority-action-queue/DatabaseActionQueuePriority";
 import { getNewDerivedTable, getNewTable } from "../stateInstancesFactory";
 import { getName } from "../utils/incrementName";
-import {
-  FILE_EXTENSION_TO_TABLE_TYPE,
-  ProfileColumn,
-  TableSourceType,
-} from "@rilldata/web-local/lib/types";
-import {
-  extractFileExtension,
-  extractTableName,
-  getTableNameFromFile,
-  INVALID_CHARS,
-  sanitizeEntityName,
-} from "@rilldata/web-local/lib/util/extract-table-name";
-import { existsSync } from "fs";
 import { DataModelerActions } from ".//DataModelerActions";
+import { ActionResponse, ActionStatus } from "./response/ActionResponse";
+import { ActionResponseFactory } from "./response/ActionResponseFactory";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;

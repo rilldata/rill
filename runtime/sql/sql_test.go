@@ -38,7 +38,7 @@ func TestTranspile(t *testing.T) {
 
 	res := isolate.request(&r)
 
-	require.Equal(t, `SELECT 1 AS "FOO", 'hello' AS "BAR"`, (*res).GetTranspileResponse().Sql)
+	require.Equal(t, `SELECT 1 AS "FOO", 'hello' AS "BAR"`, res.GetTranspileResponse().Sql)
 
 	err := isolate.Close()
 	require.NoError(t, err)

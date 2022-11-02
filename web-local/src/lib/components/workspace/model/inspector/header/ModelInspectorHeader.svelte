@@ -4,37 +4,37 @@
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import { COLUMN_PROFILE_CONFIG } from "../../../../application-config";
+  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import {
     ApplicationStore,
     config as appConfig,
     dataModelerService,
-  } from "../../../../application-state-stores/application-store";
+  } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
-  } from "../../../../application-state-stores/model-stores";
+  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
-  } from "../../../../application-state-stores/table-stores";
-  import { Button } from "../../../button";
-  import WithTogglableFloatingElement from "../../../floating-element/WithTogglableFloatingElement.svelte";
-  import Export from "../../../icons/Export.svelte";
-  import { Menu, MenuItem } from "../../../menu";
+  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import { Button } from "@rilldata/web-local/lib/components/button";
+  import WithTogglableFloatingElement from "@rilldata/web-local/lib/components/floating-element/WithTogglableFloatingElement.svelte";
+  import Export from "@rilldata/web-local/lib/components/icons/Export.svelte";
+  import { Menu, MenuItem } from "@rilldata/web-local/lib/components/menu";
 
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
+  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
-  } from "../../../../util/formatters";
+  } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
-  import notification from "../../../notifications";
-  import PanelCTA from "../../../panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "../../../panel/ResponsiveButtonText.svelte";
+  import notification from "@rilldata/web-local/lib/components/notifications";
+  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   export let containerWidth = 0;
 

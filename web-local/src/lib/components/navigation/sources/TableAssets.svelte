@@ -1,5 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import {
+    getRuntimeServiceGetCatalogObjectQueryKey,
+    useRuntimeServiceListCatalogObjects,
+    useRuntimeServiceMigrateDelete,
+    useRuntimeServiceMigrateSingle,
+    useRuntimeServiceTriggerRefresh,
+  } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
@@ -8,24 +15,17 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
-  import { refreshSource } from "@rilldata/web-local/lib/components/assets/sources/refreshSource";
+  import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import {
-    getRuntimeServiceGetCatalogObjectQueryKey,
-    useRuntimeServiceListCatalogObjects,
-    useRuntimeServiceMigrateDelete,
-    useRuntimeServiceMigrateSingle,
-    useRuntimeServiceTriggerRefresh,
-  } from "@rilldata/web-common/runtime-client";
   import {
     ApplicationStore,
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/layout-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
+  import { overlay } from "../../../application-state-stores/overlay-store";
   import type {
     DerivedTableStore,
     PersistentTableStore,

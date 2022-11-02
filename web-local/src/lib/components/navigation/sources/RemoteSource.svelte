@@ -1,9 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { createEventDispatcher, getContext } from "svelte";
-  import { createForm } from "svelte-forms-lib";
-  import type { Writable } from "svelte/store";
   import {
     ConnectorPropertyType,
     getRuntimeServiceListCatalogObjectsQueryKey,
@@ -11,9 +7,13 @@
     useRuntimeServiceMigrateSingle,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { createEventDispatcher, getContext } from "svelte";
+  import { createForm } from "svelte-forms-lib";
+  import type { Writable } from "svelte/store";
   import type * as yup from "yup";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/layout-store";
+  import { overlay } from "../../../application-state-stores/overlay-store";
   import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import {
     fromYupFriendlyKey,

@@ -1,11 +1,10 @@
-import { layout } from "./application-state-stores/layout-store";
 export function drag(node, params) {
+  const underlyingStore = params.store;
   const minSize_ = params?.minSize || 300;
   const maxSize_ = params?.maxSize || 800;
   const reverse_ = params?.reverse || false;
   const orientation_ = params?.orientation || "horizontal";
 
-  const side_ = params?.side || "right";
   let moving = false;
   let space = minSize_;
 
@@ -27,11 +26,10 @@ export function drag(node, params) {
       if (size > minSize_ && size < maxSize_) {
         space = size;
       }
-      layout.update((l) => {
-        l[side_] = space;
-        return l;
+      /** update the store passed in as a parameter */
+      underlyingStore.update((state) => {
+        state.value = space;
       });
-      //document.body.style.setProperty(property, `${xSpace}px`)
     }
   }
 

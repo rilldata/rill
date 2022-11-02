@@ -4,9 +4,9 @@
    * the assets drawer and the inspector.
    * It's our only animated stateful icon, and currently supports <, >, and {hamburger}.
    */
-  import { tweened } from "svelte/motion";
+  import { SURFACE_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { cubicOut as easing } from "svelte/easing";
-  import { SURFACE_SLIDE_DURATION } from "../../application-state-stores/layout-store";
+  import { tweened } from "svelte/motion";
   export let size = "1em";
   export let color = "currentColor";
 

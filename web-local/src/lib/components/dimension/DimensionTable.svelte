@@ -252,31 +252,30 @@ TableCells – the cell contents.
           on:click-column={handleColumnHeaderClick}
         />
 
+        <div class="flex">
+          <!-- Gutter for Include Exlude Filter -->
+          <DimensionFilterGutter
+            virtualRowItems={virtualRows}
+            totalHeight={virtualHeight}
+            {selectedIndex}
+            {excludeMode}
+            on:select-item={(event) => onSelectItem(event)}
+          />
+          <DimensionValueHeader
+            virtualRowItems={virtualRows}
+            totalHeight={virtualHeight}
+            width={estimateColumnSize[0]}
+            column={dimensionColumn}
+            {rows}
+            {activeIndex}
+            {selectedIndex}
+            {scrolling}
+            {horizontalScrolling}
+            on:select-item={(event) => onSelectItem(event)}
+            on:inspect={setActiveIndex}
+          />
+        </div>
         {#if rows.length}
-          <div class="flex">
-            <!-- Gutter for Include Exlude Filter -->
-            <DimensionFilterGutter
-              virtualRowItems={virtualRows}
-              totalHeight={virtualHeight}
-              {selectedIndex}
-              {excludeMode}
-              on:select-item={(event) => onSelectItem(event)}
-            />
-            <DimensionValueHeader
-              virtualRowItems={virtualRows}
-              totalHeight={virtualHeight}
-              width={estimateColumnSize[0]}
-              column={dimensionColumn}
-              {rows}
-              {activeIndex}
-              {selectedIndex}
-              {scrolling}
-              {horizontalScrolling}
-              on:select-item={(event) => onSelectItem(event)}
-              on:inspect={setActiveIndex}
-            />
-          </div>
-
           <!-- VirtualTableBody -->
           <TableCells
             virtualColumnItems={virtualColumns}
