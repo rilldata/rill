@@ -5,9 +5,13 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/connectors"
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
+
+const pathPrefix = "../../../web-local/test/data/"
 
 func TestFileConnector(t *testing.T) {
 	ctx := context.Background()
@@ -19,7 +23,7 @@ func TestFileConnector(t *testing.T) {
 		Name:      "foo",
 		Connector: "file",
 		Properties: map[string]any{
-			"path": "../../../web-local/test/data/AdBids.csv",
+			"path": pathPrefix + "AdBids.csv",
 		},
 	}
 
@@ -32,7 +36,7 @@ func TestFileConnector(t *testing.T) {
 		Name:      "foo",
 		Connector: "file",
 		Properties: map[string]any{
-			"path":          "../../../web-local/test/data/AdBids.csv",
+			"path":          pathPrefix + "AdBids.csv",
 			"csv.delimiter": ",",
 		},
 	}
@@ -43,21 +47,45 @@ func TestFileConnector(t *testing.T) {
 	assertAdBidsTable(t, ctx, olap)
 }
 
-func TestFileConnectorWithGzip(t *testing.T) {
+func TestConnectorWithSourceVariations(t *testing.T) {
+	sources := []struct {
+		Connector string
+		Path      string
+	}{
+		{"file", pathPrefix + "AdBids.csv"},
+		{"file", pathPrefix + "AdBids.csv.gz"},
+		{"file", pathPrefix + "AdBids.parquet"},
+		// something wrong with this particular file. duckdb fails to extract
+		//{"file", pathPrefix + "AdBids.parquet.gz"},
+		// only enable to do adhoc tests. needs credentials to work
+		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv"},
+		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv.gz"},
+		//{"s3", "s3://rill-developer.rilldata.io/AdBids.parquet"},
+		//{"s3", "s3://rill-developer.rilldata.io/AdBids.parquet.gz"},
+		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.csv"},
+		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz"},
+		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet"},
+		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet.gz"},
+	}
+
 	ctx := context.Background()
 	conn, err := driver{}.Open("?access_mode=read_write")
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 
-	s := &connectors.Source{
-		Name:      "foo",
-		Connector: "file",
-		Properties: map[string]any{
-			"path": "../../../web-local/test/data/AdBids.csv.gz",
-		},
+	for _, tt := range sources {
+		s := &connectors.Source{
+			Name:      "foo",
+			Connector: tt.Connector,
+			Properties: map[string]any{
+				"path": tt.Path,
+			},
+		}
+		err = olap.Ingest(ctx, s)
+		require.NoError(t, err)
+
+		assertAdBidsTable(t, ctx, olap)
 	}
-	err = olap.Ingest(ctx, s)
-	require.NoError(t, err)
 }
 
 func assertAdBidsTable(t *testing.T, ctx context.Context, olap drivers.OLAPStore) {

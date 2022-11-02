@@ -3,6 +3,9 @@ package connectors
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -26,7 +29,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsFile(ctx context.Context, source *Source, callback func(filename string) error) error
+	ConsumeAsFile(ctx context.Context, source *Source) (string, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -113,27 +116,23 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFile(ctx context.Context, source *Source, callback func(filename string) error) error {
+func ConsumeAsFile(ctx context.Context, source *Source) (string, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
-		return fmt.Errorf("connector: not found")
+		return "", fmt.Errorf("connector: not found")
 	}
 
 	// TODO: connector.ConsumeAsFile should output a list of files to support globs
 	//       this should be output back to drivers that should import each file into the same table
-	return connector.ConsumeAsFile(ctx, source, func(filename string) error {
-		newFilename := filename
-		var err error
-		if strings.HasSuffix(filename, ".tar.gz") {
-			// TODO: This will be done in the PR that supports globs
-		} else if strings.HasSuffix(filename, ".gz") {
-			newFilename, err = extractGzipFile(filename)
-			if err != nil {
-				return err
-			}
+	path, err := connector.ConsumeAsFile(ctx, source)
+	if err != nil {
+		if path != "" {
+			os.Remove(path)
 		}
-		return callback(newFilename)
-	})
+		return "", err
+	}
+
+	return path, nil
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {
@@ -151,7 +150,40 @@ func (s *Source) PropertiesEquals(o *Source) bool {
 	return true
 }
 
-func getFileExtension(fileName string) string {
-	p := strings.Split(fileName, ".")
-	return p[len(p)-1]
+// SplitFileRecursive recursively strips file extension and returns file name and extension
+func SplitFileRecursive(path string) (string, string) {
+	fullExt := filepath.Ext(path)
+	fullName := strings.TrimSuffix(path, fullExt)
+
+	for true {
+		ext := filepath.Ext(fullName)
+		if ext == "" {
+			break
+		}
+		fullExt = ext + fullExt
+		fullName = strings.TrimSuffix(path, fullExt)
+	}
+
+	return fullName, fullExt
+}
+
+func CreateTempAndCopy(name string, ext string, writer io.ReadCloser) (string, error) {
+	defer writer.Close()
+
+	f, err := os.CreateTemp(
+		os.TempDir(),
+		fmt.Sprintf("%s*%s", name, ext),
+	)
+	if err != nil {
+		return "", fmt.Errorf("os.Create: %v", err)
+	}
+
+	_, err = io.Copy(f, writer)
+	if err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return "", err
+	}
+	f.Close()
+	return f.Name(), err
 }

@@ -3,11 +3,8 @@ package https
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -51,42 +48,22 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source, callback func(filename string) error) error {
+func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return fmt.Errorf("failed to parse config: %v", err)
+		return "", fmt.Errorf("failed to parse config: %v", err)
 	}
 
 	extension, err := getUrlExtension(conf.Path)
 	if err != nil {
-		return fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
 	}
 
 	resp, err := http.Get(conf.Path)
 	if err != nil {
-		return fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
+		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
 	}
-	defer resp.Body.Close()
-
-	f, err := os.CreateTemp(
-		os.TempDir(),
-		fmt.Sprintf("%s*.%s", source.Name, extension),
-	)
-	if err != nil {
-		return fmt.Errorf("os.Create: %v", err)
-	}
-	defer func() {
-		f.Close()
-		os.Remove(f.Name())
-	}()
-
-	if err != nil {
-		return err
-	}
-	io.Copy(f, resp.Body)
-	callback(f.Name())
-
-	return nil
+	return connectors.CreateTempAndCopy(source.Name, extension, resp.Body)
 }
 
 func getUrlExtension(path string) (string, error) {
@@ -95,7 +72,7 @@ func getUrlExtension(path string) (string, error) {
 		return "", err
 	}
 
-	p := strings.Split(u.Path, ".")
+	_, extension := connectors.SplitFileRecursive(u.Path)
 
-	return p[len(p)-1], nil
+	return extension, nil
 }

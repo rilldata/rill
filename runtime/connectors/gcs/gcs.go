@@ -3,9 +3,7 @@ package gcs
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/url"
-	"os"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -60,51 +58,30 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source, callback func(filename string) error) error {
+func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return fmt.Errorf("failed to parse config: %v", err)
+		return "", fmt.Errorf("failed to parse config: %v", err)
 	}
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return fmt.Errorf("storage.NewClient: %v", err)
+		return "", fmt.Errorf("storage.NewClient: %v", err)
 	}
 	defer client.Close()
 
 	bucket, object, extension, err := getGcsUrlParts(conf.Path)
 	if err != nil {
-		return fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
 	}
-
-	f, err := os.CreateTemp(
-		os.TempDir(),
-		fmt.Sprintf("%s*.%s", source.Name, extension),
-	)
-	if err != nil {
-		return fmt.Errorf("os.Create: %v", err)
-	}
-	defer func() {
-		f.Close()
-		os.Remove(f.Name())
-	}()
 
 	rc, err := client.Bucket(bucket).Object(object).NewReader(ctx)
 	if err != nil {
-		return fmt.Errorf("Object(%q).NewReader: %v", object, err)
+		return "", fmt.Errorf("Object(%q).NewReader: %v", object, err)
 	}
 	defer rc.Close()
 
-	if _, err := io.Copy(f, rc); err != nil {
-		return fmt.Errorf("io.Copy: %v", err)
-	}
-
-	err = callback(f.Name())
-	if err != nil {
-		return fmt.Errorf("failed to ingest f, %v", err)
-	}
-
-	return nil
+	return connectors.CreateTempAndCopy(source.Name, extension, rc)
 }
 
 func getGcsUrlParts(path string) (string, string, string, error) {
@@ -113,7 +90,7 @@ func getGcsUrlParts(path string) (string, string, string, error) {
 		return "", "", "", err
 	}
 
-	p := strings.Split(u.Path, ".")
+	_, extension := connectors.SplitFileRecursive(u.Path)
 
-	return u.Host, strings.Replace(u.Path, "/", "", 1), p[len(p)-1], nil
+	return u.Host, strings.Replace(u.Path, "/", "", 1), extension, nil
 }
