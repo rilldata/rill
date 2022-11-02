@@ -23,7 +23,7 @@ const DefaultPublisherLeaderboard: [string, Array<string>] = [
   "publisher",
   [null, "Facebook", "Google", "Yahoo", "Microsoft"],
 ];
-const DefaultDomainLeaderboard: [string, Array<string>] = [
+export const DefaultDomainLeaderboard: [string, Array<string>] = [
   "domain",
   [
     "facebook.com",

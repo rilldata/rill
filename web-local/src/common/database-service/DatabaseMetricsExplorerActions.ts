@@ -1,3 +1,4 @@
+import { escapeColumn } from "@rilldata/web-local/common/database-service/columnUtils";
 import type { BasicMeasureDefinition } from "../data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DatabaseActions } from "./DatabaseActions";
 import type { DatabaseMetadata } from "./DatabaseMetadata";
@@ -62,11 +63,12 @@ export class DatabaseMetricsExplorerActions extends DatabaseActions {
           .join(",")
       : "";
 
+    const escapedColumn = escapeColumn(column);
     return this.databaseClient.execute(
       `
-      SELECT ${expressionColumns}, "${column}" from "${table}"
+      SELECT ${expressionColumns}, ${escapedColumn} from "${table}"
       ${whereClause}
-      GROUP BY "${column}"
+      GROUP BY ${escapedColumn}
       ${sortQuery}
       LIMIT ${limit}
     `
