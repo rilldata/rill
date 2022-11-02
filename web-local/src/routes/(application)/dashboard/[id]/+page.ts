@@ -1,6 +1,7 @@
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
-import { redirect } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
+import { ExplorerDashboardDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
 
 export const ssr = false;
 
@@ -21,7 +22,14 @@ export async function load({ params }) {
       return redirect(307, `/dashboard/${params.id}/edit`);
     }
   } catch (err) {
-    // in case of error redirect to metrics definition page
-    throw redirect(307, `/dashboard/${params.id}/edit`);
+    if (
+      ExplorerDashboardDoesntExist.includes(err.message) ||
+      err.message.includes(ExplorerDashboardDoesntExist)
+    ) {
+      throw error(404, "Dashboard not found");
+    } else {
+      throw redirect(307, `/dashboard/${params.id}/edit`);
+    }
   }
+  throw redirect(307, `/dashboard/${params.id}/edit`);
 }
