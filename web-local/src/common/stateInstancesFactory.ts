@@ -45,13 +45,10 @@ export function cleanModelName(name: string): string {
   return name.replace(/\.sql$/, "");
 }
 export function getNewModel(
-  params: NewModelArguments = {},
-  modelNumber
+  params: NewModelArguments = {}
 ): PersistentModelEntity {
   const query = params.query || "";
-  const name = `${
-    params.name ? cleanModelName(params.name) : `model_${modelNumber}`
-  }.sql`;
+  const name = `${cleanModelName(params.name)}.sql`;
   return {
     id: guidGenerator(),
     type: EntityType.Model,
@@ -75,12 +72,12 @@ export function getNewDerivedModel(
   };
 }
 
-export function getMetricsDefinition(counter: number): MetricsDefinitionEntity {
+export function getMetricsDefinition(name: string): MetricsDefinitionEntity {
   return {
     id: guidGenerator(),
     type: EntityType.MetricsDefinition,
     creationTime: Date.now(),
-    metricDefLabel: `dashboard_${counter}`,
+    metricDefLabel: name,
     sourceModelId: undefined,
     timeDimension: undefined,
     measureIds: [],
