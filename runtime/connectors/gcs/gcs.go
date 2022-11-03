@@ -9,6 +9,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/fileutil"
 )
 
 func init() {
@@ -81,7 +82,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source)
 	}
 	defer rc.Close()
 
-	return connectors.CreateTempAndCopy(source.Name, extension, rc)
+	return fileutil.CopyToTempFile(rc, source.Name, extension)
 }
 
 func getGcsUrlParts(path string) (string, string, string, error) {
@@ -89,8 +90,5 @@ func getGcsUrlParts(path string) (string, string, string, error) {
 	if err != nil {
 		return "", "", "", err
 	}
-
-	_, extension := connectors.SplitFileRecursive(u.Path)
-
-	return u.Host, strings.Replace(u.Path, "/", "", 1), extension, nil
+	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
 }

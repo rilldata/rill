@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/fileutil"
 )
 
 func init() {
@@ -106,7 +107,6 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source)
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		f.Close()
 		os.Remove(f.Name())
 		return "", fmt.Errorf("failed to download f, %v", err)
 	}
@@ -130,8 +130,5 @@ func getAwsUrlParts(path string) (string, string, string, error) {
 	if err != nil {
 		return "", "", "", err
 	}
-
-	_, extension := connectors.SplitFileRecursive(u.Path)
-
-	return u.Host, u.Path, extension, nil
+	return u.Host, u.Path, fileutil.FullExt(u.Path), nil
 }

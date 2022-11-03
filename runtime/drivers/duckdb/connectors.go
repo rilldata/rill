@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/file"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/fileutil"
 )
 
 func (c *connection) Ingest(ctx context.Context, source *connectors.Source) error {
@@ -83,14 +84,14 @@ func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.S
 }
 
 func getSourceReader(path string) (string, error) {
-	_, extension := connectors.SplitFileRecursive(path)
-	if extension == "" {
+	ext := fileutil.FullExt(path)
+	if ext == "" {
 		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(extension, ".csv") || strings.Contains(extension, ".tsv") {
+	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") {
 		return fmt.Sprintf("read_csv_auto('%s')", path), nil
-	} else if strings.Contains(extension, ".parquet") {
+	} else if strings.Contains(ext, ".parquet") {
 		return fmt.Sprintf("read_parquet('%s')", path), nil
 	} else {
-		return "", fmt.Errorf("file type not supported : %s", extension)
+		return "", fmt.Errorf("file type not supported : %s", ext)
 	}
 }

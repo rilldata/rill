@@ -3,10 +3,6 @@ package connectors
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // Connectors tracks all registered connector drivers
@@ -145,42 +141,4 @@ func (s *Source) PropertiesEquals(o *Source) bool {
 	}
 
 	return true
-}
-
-// SplitFileRecursive recursively strips file extension and returns file name and extension
-func SplitFileRecursive(path string) (string, string) {
-	fullExt := filepath.Ext(path)
-	fullName := strings.TrimSuffix(path, fullExt)
-
-	for true {
-		ext := filepath.Ext(fullName)
-		if ext == "" {
-			break
-		}
-		fullExt = ext + fullExt
-		fullName = strings.TrimSuffix(path, fullExt)
-	}
-
-	return fullName, fullExt
-}
-
-func CreateTempAndCopy(name string, ext string, writer io.ReadCloser) (string, error) {
-	defer writer.Close()
-
-	f, err := os.CreateTemp(
-		os.TempDir(),
-		fmt.Sprintf("%s*%s", name, ext),
-	)
-	if err != nil {
-		return "", fmt.Errorf("os.Create: %v", err)
-	}
-
-	_, err = io.Copy(f, writer)
-	if err != nil {
-		f.Close()
-		os.Remove(f.Name())
-		return "", err
-	}
-	f.Close()
-	return f.Name(), err
 }

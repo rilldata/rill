@@ -8,6 +8,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/fileutil"
 )
 
 func init() {
@@ -63,7 +64,8 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
 	}
-	return connectors.CreateTempAndCopy(source.Name, extension, resp.Body)
+	defer resp.Body.Close()
+	return fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 }
 
 func getUrlExtension(path string) (string, error) {
@@ -72,7 +74,5 @@ func getUrlExtension(path string) (string, error) {
 		return "", err
 	}
 
-	_, extension := connectors.SplitFileRecursive(u.Path)
-
-	return extension, nil
+	return fileutil.FullExt(u.Path), nil
 }
