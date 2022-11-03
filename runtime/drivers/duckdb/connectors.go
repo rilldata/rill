@@ -43,7 +43,10 @@ func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) 
 	if conf.Format == "csv" && conf.CSVDelimiter != "" {
 		from = fmt.Sprintf("read_csv_auto('%s', delim='%s')", conf.Path, conf.CSVDelimiter)
 	} else {
-		from = getSourceReader(conf.Path)
+		from, err = getSourceReader(conf.Path)
+		if err != nil {
+			return err
+		}
 	}
 
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
@@ -61,8 +64,12 @@ func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) 
 
 func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.Source, path string) error {
 	defer os.Remove(path)
+	from, err := getSourceReader(path)
+	if err != nil {
+		return err
+	}
 	rows, err := c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, getSourceReader(path)),
+		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from),
 		Priority: 1,
 	})
 	if err != nil {
@@ -75,11 +82,15 @@ func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.S
 	return nil
 }
 
-func getSourceReader(path string) string {
+func getSourceReader(path string) (string, error) {
 	_, extension := connectors.SplitFileRecursive(path)
-	if strings.Contains(extension, "parquet") {
-		return fmt.Sprintf("read_parquet('%s')", path)
+	if extension == "" {
+		return "", fmt.Errorf("invalid file")
+	} else if strings.Contains(extension, ".csv") || strings.Contains(extension, ".tsv") {
+		return fmt.Sprintf("read_csv_auto('%s')", path), nil
+	} else if strings.Contains(extension, ".parquet") {
+		return fmt.Sprintf("read_parquet('%s')", path), nil
 	} else {
-		return fmt.Sprintf("'%s'", path)
+		return "", fmt.Errorf("file type not supported : %s", extension)
 	}
 }
