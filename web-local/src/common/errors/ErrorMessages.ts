@@ -12,8 +12,6 @@ export const ExplorerSourceModelIsInvalid = "Model query has errors.";
 export const ExplorerTimeDimensionDoesntExist =
   "Previously selected timestamp column does not exist.";
 export const ExplorerSourceColumnDoesntExist = "not found in FROM clause!"; // the full DuckDB error message is `Binder Error: Referenced column "COLUMN_NAME" not found in FROM clause!`
-export const ExplorerDashboardDoesntExist =
-  "Cannot read properties of undefined (reading 'id')";
 
 export const MetricsSourceSelectionError = (
   metricsDefinition: MetricsDefinitionEntity

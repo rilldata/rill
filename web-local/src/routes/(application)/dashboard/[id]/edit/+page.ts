@@ -3,7 +3,7 @@ import {
   ExplorerSourceModelDoesntExist,
   ExplorerSourceModelIsInvalid,
   ExplorerTimeDimensionDoesntExist,
-  ExplorerDashboardDoesntExist,
+  ExplorerMetricsDefinitionDoesntExist,
 } from "@rilldata/web-local/common/errors/ErrorMessages";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
@@ -39,8 +39,8 @@ export async function load({ params }) {
       };
     } else {
       if (
-        ExplorerDashboardDoesntExist.includes(err.message) ||
-        err.message.includes(ExplorerDashboardDoesntExist)
+        ExplorerMetricsDefinitionDoesntExist.includes(err.message) ||
+        err.message.includes(ExplorerMetricsDefinitionDoesntExist)
       ) {
         throw error(404, "Metrics definition  not found");
       }

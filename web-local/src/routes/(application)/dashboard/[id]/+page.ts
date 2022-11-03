@@ -1,7 +1,7 @@
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
 import { error, redirect } from "@sveltejs/kit";
-import { ExplorerDashboardDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
+import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
 
 export const ssr = false;
 
@@ -23,8 +23,8 @@ export async function load({ params }) {
     }
   } catch (err) {
     if (
-      ExplorerDashboardDoesntExist.includes(err.message) ||
-      err.message.includes(ExplorerDashboardDoesntExist)
+      ExplorerMetricsDefinitionDoesntExist.includes(err.message) ||
+      err.message.includes(ExplorerMetricsDefinitionDoesntExist)
     ) {
       throw error(404, "Dashboard not found");
     } else {

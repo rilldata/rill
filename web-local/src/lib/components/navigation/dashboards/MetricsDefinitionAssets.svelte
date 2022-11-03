@@ -1,15 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import {
+    MetricsDefinitionEntity,
+    SourceModelValidationStatus,
+  } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import notificationStore from "@rilldata/web-local/lib/components/notifications";
+
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
@@ -105,21 +109,18 @@
     );
   };
 
-  const deleteMetricsDef = (id: string) => {
+  const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
     if (
       $applicationStore.activeEntity.type === EntityType.MetricsDefinition &&
-      $applicationStore.activeEntity.id === id
+      $applicationStore.activeEntity.id === metricsDef.id
     ) {
-      const nextMetricsDefId = getNextEntityId($metricsDefinitions, id);
-
-      if (nextMetricsDefId) {
-        goto(`/dashboard/${nextMetricsDefId}`);
-      } else {
-        goto("/");
-      }
+      goto(`/model/${metricsDef.sourceModelId}`);
     }
 
-    store.dispatch(deleteMetricsDefsApi(id));
+    notificationStore.send({
+      message: `Dashboard "${metricsDef.metricDefLabel}" deleted`,
+    });
+    store.dispatch(deleteMetricsDefsApi(metricsDef.id));
   };
 
   onMount(() => {
@@ -213,7 +214,7 @@
             <EditIcon slot="icon" />
             rename...</MenuItem
           >
-          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef.id)}>
+          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef)}>
             <Cancel slot="icon" />
             delete</MenuItem
           >
