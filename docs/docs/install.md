@@ -37,15 +37,6 @@ Unlike the script-based installation, a manual download will not make Rill Devel
 Rill is temporarily unavailable on Windows. We're working on bringing Rill back to Windows soon.
 :::
 
-
-If you see a warning "SmartScreen protected an unrecognized app from starting," you can fix by following the [instructions here](https://www.windowscentral.com/how-fix-app-has-been-blocked-your-protection-windows-10#open). In summary:
-- Navigate to the file or program that's being blocked by SmartScreen.
-- Right-click the file.
-- Click Properties.
-- Click the checkbox next to Unblock so that a checkmark appears.
-- Click Apply.
-
-
   </TabItem>
   <TabItem label="Linux" value="linux">
 
