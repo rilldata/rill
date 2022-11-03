@@ -22,6 +22,7 @@ import {
   ExplorerMetricsDefinitionDoesntExist,
   ExplorerSourceModelDoesntExist,
   ExplorerSourceModelIsInvalid,
+  ExplorerTimeDimensionDoesntExist,
 } from "../errors/ErrorMessages";
 import { DatabaseActionQueuePriority } from "../priority-action-queue/DatabaseActionQueuePriority";
 import { getMapFromArray } from "../utils/arrayUtils";
@@ -120,20 +121,10 @@ export class MetricsViewActions extends RillDeveloperActions {
       );
     }
 
-    const model = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Persistent)
-      .getById(rillRequestContext.record.sourceModelId);
-    if (!model) {
-      return ActionResponseFactory.getEntityError(
-        ExplorerSourceModelDoesntExist
-      );
-    }
-    const derivedModel = this.dataModelerStateService
-      .getEntityStateService(EntityType.Model, StateType.Derived)
-      .getById(rillRequestContext.record.sourceModelId);
-    if (derivedModel.error) {
-      return ActionResponseFactory.getEntityError(ExplorerSourceModelIsInvalid);
-    }
+    const validationResp = this.validateMetricsDefinition(
+      rillRequestContext.record
+    );
+    if (validationResp) return validationResp;
 
     const meta: MetricsViewMetaResponse = {
       name: rillRequestContext.record.metricDefLabel,
@@ -157,11 +148,10 @@ export class MetricsViewActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
-    if (!model) {
-      return ActionResponseFactory.getEntityError(
-        ExplorerSourceModelDoesntExist
-      );
-    }
+    const validationResp = this.validateMetricsDefinition(
+      rillRequestContext.record
+    );
+    if (validationResp) return validationResp;
 
     const timeSeries: TimeSeriesRollup = await this.databaseActionQueue.enqueue(
       {
@@ -203,11 +193,10 @@ export class MetricsViewActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
-    if (!model) {
-      return ActionResponseFactory.getEntityError(
-        ExplorerSourceModelDoesntExist
-      );
-    }
+    const validationResp = this.validateMetricsDefinition(
+      rillRequestContext.record
+    );
+    if (validationResp) return validationResp;
     const dimension = this.dataModelerStateService
       .getDimensionDefinitionService()
       .getById(dimensionId);
@@ -251,11 +240,10 @@ export class MetricsViewActions extends RillDeveloperActions {
     const model = this.dataModelerStateService
       .getEntityStateService(EntityType.Model, StateType.Persistent)
       .getById(rillRequestContext.record.sourceModelId);
-    if (!model) {
-      return ActionResponseFactory.getEntityError(
-        ExplorerSourceModelDoesntExist
-      );
-    }
+    const validationResp = this.validateMetricsDefinition(
+      rillRequestContext.record
+    );
+    if (validationResp) return validationResp;
 
     const bigNumberResponse: BigNumberResponse =
       await this.databaseActionQueue.enqueue(
@@ -359,5 +347,35 @@ export class MetricsViewActions extends RillDeveloperActions {
       (measure) =>
         measureIdsSet.has(measure.id) || measureIdsSet.has(measure.sqlName)
     );
+  }
+
+  private validateMetricsDefinition(metricsDef: MetricsDefinitionEntity) {
+    const model = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Persistent)
+      .getById(metricsDef.sourceModelId);
+    if (!model) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerSourceModelDoesntExist
+      );
+    }
+
+    const derivedModel = this.dataModelerStateService
+      .getEntityStateService(EntityType.Model, StateType.Derived)
+      .getById(metricsDef.sourceModelId);
+    if (derivedModel.error) {
+      return ActionResponseFactory.getEntityError(ExplorerSourceModelIsInvalid);
+    }
+    if (
+      !metricsDef.timeDimension ||
+      derivedModel.profile.findIndex(
+        (column) => column.name === metricsDef.timeDimension
+      ) === -1
+    ) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerTimeDimensionDoesntExist
+      );
+    }
+
+    return undefined;
   }
 }
