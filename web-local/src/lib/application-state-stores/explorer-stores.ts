@@ -161,36 +161,6 @@ const metricViewReducers = {
     });
   },
 
-  /**
-   * Toggle a dimension filter between include/exclude modes
-   */
-  toggleFilterExcludeMode(id: string, dimensionId: string) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
-      const exclude =
-        metricsExplorer.dimensionFilterExcludeMode.get(dimensionId);
-      metricsExplorer.dimensionFilterExcludeMode.set(dimensionId, !exclude);
-
-      const relevantFilterKey = exclude ? "exclude" : "include";
-      const otherFilterKey = exclude ? "include" : "exclude";
-
-      const otherFilterEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionId);
-      // if relevant filter is not present then return
-      if (otherFilterEntryIndex === -1) return;
-
-      // push relevant filters to other filter
-      metricsExplorer.filters[otherFilterKey].push(
-        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex]
-      );
-      // remove entry from relevant filter
-      metricsExplorer.filters[relevantFilterKey].splice(
-        otherFilterEntryIndex,
-        1
-      );
-    });
-  },
-
   clearFilters(id: string) {
     updateMetricsExplorerById(id, (metricsExplorer) => {
       metricsExplorer.filters.include = [];
