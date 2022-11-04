@@ -147,6 +147,14 @@
           }
         }
 
+        if (connectorName === "https") {
+          if (serverError.includes("invalid file")) {
+            return "The provided URL does not appear to have a valid dataset. Please check your path and try again.";
+          } else if (serverError.includes("failed to fetch url")) {
+            return "We could not connect to the provided URL. Please check your path and try again.";
+          }
+        }
+
         // DuckDB errors
         if (serverError.match(/expected \d* values per row, but got \d*/)) {
           return "Malformed CSV file: number of columns does not match header.";
