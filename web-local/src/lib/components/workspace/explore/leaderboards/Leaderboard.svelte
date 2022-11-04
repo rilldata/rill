@@ -101,8 +101,8 @@
     });
   }
 
-  function toggleFilterExcludeMode() {
-    metricsExplorerStore.toggleFilterExcludeMode(metricsDefId, dimensionId);
+  function toggleFilterMode() {
+    metricsExplorerStore.toggleFilterMode(metricsDefId, dimensionId);
   }
 
   function selectDimension(dimensionId) {
@@ -194,7 +194,7 @@
     <LeaderboardHeader
       isFetching={$topListQuery.isFetching}
       {displayName}
-      on:toggle-filter-exclude-mode={toggleFilterExcludeMode}
+      on:toggle-filter-mode={toggleFilterMode}
       {filterExcludeMode}
       {hovered}
       dimensionDescription={dimension?.description}

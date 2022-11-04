@@ -17,6 +17,7 @@
 
   export let dark: boolean = undefined;
   export let maxWidth: string = undefined;
+  export let minWidth = "300px";
   export let minHeight: string = undefined;
   export let maxHeight: string = undefined;
   export let paddingTop = 2;
@@ -128,6 +129,7 @@
   style:max-width={maxWidth}
   style:min-height={minHeight}
   style:max-height={maxHeight}
+  style:min-width={minWidth}
   transition:fade|local={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
@@ -151,7 +153,6 @@
     : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-none shadow-md dark:shadow-xl'}
         "
   style:outline="none"
-  style:min-width={"300px"}
   tabindex="0"
   {...ariaProperties}
 >

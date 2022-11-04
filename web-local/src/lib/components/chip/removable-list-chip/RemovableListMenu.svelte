@@ -15,11 +15,6 @@
   export let searchedValues: string[] = [];
   export let excludeMode = false;
 
-  let excludeToggle = excludeMode;
-  $: if (excludeToggle != excludeMode) {
-    onToggleHandler();
-  }
-
   let searchText = "";
 
   const dispatch = createEventDispatcher();
@@ -104,9 +99,10 @@
     {/if}
   </div>
   <Footer>
-    <span class="flex gap-x-2 items-center ui-copy">
-      <Switch bind:checked={excludeToggle} />
-      {excludeMode ? "Exclude" : "Include"}
+    <span class="ui-copy">
+      <Switch on:click={() => onToggleHandler()} checked={excludeMode}>
+        Exclude
+      </Switch>
     </span>
     {#if numSelectedNotInSearch}
       <div class="ui-label italic">
