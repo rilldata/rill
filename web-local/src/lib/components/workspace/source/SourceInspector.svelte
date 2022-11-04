@@ -143,7 +143,7 @@
   }
 
   function getFileExtension(source: V1Source): string {
-    const path = source?.properties?.path;
+    const path = source?.properties?.path?.toLowerCase();
     if (path?.includes(".csv")) return "CSV";
     if (path?.includes(".parquet")) return "Parquet";
     return "";
