@@ -2,14 +2,10 @@ import { expect } from "@jest/globals";
 import type { DerivedModelState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import type { PersistentModelState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
-import {
-  asyncWait,
-  asyncWaitUntil,
-  waitUntil,
-} from "@rilldata/web-local/common/utils/waitUtils";
+import { asyncWaitUntil } from "@rilldata/web-local/common/utils/waitUtils";
 import treeKill from "tree-kill";
 import { FunctionalTestBase } from "./FunctionalTestBase";
-import { exec, execSync, spawn } from "node:child_process";
+import { exec } from "node:child_process";
 import { promisify } from "util";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import {
@@ -169,6 +165,6 @@ export class CLISpec extends FunctionalTestBase {
     const derivedModel = derivedModelState.entities.find(
       (d) => d.id === model.id
     );
-    expect(derivedModel.error).toBe("");
+    expect(derivedModel.error).toBeUndefined();
   }
 }
