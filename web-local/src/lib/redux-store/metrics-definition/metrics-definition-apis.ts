@@ -6,8 +6,6 @@ import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-mo
 import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
-import { dataModelerService } from "../../application-state-stores/application-store";
-import { selectApplicationActiveEntity } from "../application/application-selectors";
 import { validateDimensionColumnApi } from "../dimension-definition/dimension-definition-apis";
 import { selectDimensionsByMetricsId } from "../dimension-definition/dimension-definition-selectors";
 import {
@@ -35,29 +33,10 @@ import {
 import { selectDerivedModelById } from "../model/model-selector";
 import { createAsyncThunk } from "../redux-toolkit-wrapper";
 import { selectTimestampColumnFromProfileEntity } from "../source/source-selectors";
-import { RillReduxState, store } from "../store-root";
+import type { RillReduxState } from "../store-root";
 import { generateApis } from "../utils/api-utils";
 import { invalidateExplorer } from "../utils/invalidateExplorerThunk";
 import { streamingFetchWrapper } from "../../util/fetchWrapper";
-
-const handleMetricsDefDelete = async (id: string) => {
-  const activeEntity = selectApplicationActiveEntity(store.getState());
-  if (!activeEntity) return;
-
-  if (
-    activeEntity.id === id &&
-    (activeEntity.type === EntityType.MetricsDefinition ||
-      activeEntity.type === EntityType.MetricsExplorer)
-  ) {
-    const nextId = store.getState().metricsDefinition.ids[0];
-    if (!nextId) {
-      // TODO: refactor to use redux store once we move model and tables there.
-      await dataModelerService.dispatch("setModelAsActiveAsset", []);
-    } else {
-      goto(`/dashboard/${nextId}`);
-    }
-  }
-};
 
 export const {
   fetchManyApi: fetchManyMetricsDefsApi,
@@ -71,7 +50,7 @@ export const {
   [EntityType.MetricsDefinition, "metricsDefinition", "metrics"],
   [addManyMetricsDefs, addOneMetricsDef, updateMetricsDef, removeMetricsDef],
   [],
-  [undefined, handleMetricsDefDelete]
+  [undefined, undefined]
 );
 export const createMetricsDefsAndFocusApi = createAsyncThunk(
   `${EntityType.MetricsDefinition}/fetchManyMetricsDefsAndFocusApi`,

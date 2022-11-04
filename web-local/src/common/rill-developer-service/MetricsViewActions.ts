@@ -105,6 +105,11 @@ export class MetricsViewActions extends RillDeveloperActions {
     rillRequestContext: MetricsDefinitionContext,
     _: string
   ) {
+    if (!rillRequestContext.record) {
+      return ActionResponseFactory.getEntityError(
+        ExplorerMetricsDefinitionDoesntExist
+      );
+    }
     const metricsDef = this.dataModelerStateService
       .getMetricsDefinitionService()
       .getById(rillRequestContext.record.id);

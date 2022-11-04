@@ -35,6 +35,7 @@
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
   export let metricsDefId;
+  export let nonStandardError;
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
@@ -113,6 +114,8 @@
 
   $: metricsSourceSelectionError = $selectedMetricsDef
     ? MetricsSourceSelectionError($selectedMetricsDef)
+    : nonStandardError
+    ? nonStandardError
     : "";
 
   onMount(() => {

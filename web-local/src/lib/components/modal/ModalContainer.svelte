@@ -61,6 +61,7 @@
     initiateOnMount(container);
 
   onDestroy(() => {
+    if (!modal) return;
     modal.deactivate();
     unlockBodyScrolling(container);
     if (typeof originalTrigger?.focus === "function") {
