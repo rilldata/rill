@@ -143,15 +143,10 @@
   }
 
   function getFileExtension(source: V1Source): string {
-    const extension = source?.properties?.path.split(".").pop();
-    switch (extension) {
-      case "csv":
-        return "CSV";
-      case "parquet":
-        return "Parquet";
-      default:
-        return "";
-    }
+    const path = source?.properties?.path;
+    if (path?.includes(".csv")) return "CSV";
+    if (path?.includes(".parquet")) return "Parquet";
+    return "";
   }
 
   $: connectorType = formatConnectorType(
@@ -220,7 +215,10 @@
     <!-- summary info -->
     <div class=" p-4 pt-2">
       <LeftRightGrid>
-        <GridCell side="left">{connectorType} ({fileExtension})</GridCell>
+        <GridCell side="left"
+          >{connectorType}
+          {fileExtension !== "" ? `(${fileExtension})` : ""}</GridCell
+        >
         <GridCell side="right" classes="text-gray-800 font-bold">
           {rowCount}
         </GridCell>
