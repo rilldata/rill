@@ -110,17 +110,24 @@
   };
 
   const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
-    if (
-      $applicationStore.activeEntity.type === EntityType.MetricsDefinition &&
-      $applicationStore.activeEntity.id === metricsDef.id
-    ) {
-      goto(`/model/${metricsDef.sourceModelId}`);
-    }
+    const sourceModelId = metricsDef.sourceModelId;
 
     notificationStore.send({
       message: `Dashboard "${metricsDef.metricDefLabel}" deleted`,
     });
     store.dispatch(deleteMetricsDefsApi(metricsDef.id));
+
+    if (
+      ($applicationStore.activeEntity.type === EntityType.MetricsDefinition ||
+        $applicationStore.activeEntity.type === EntityType.MetricsExplorer) &&
+      $applicationStore.activeEntity.id === metricsDef.id
+    ) {
+      if (sourceModelId) {
+        goto(`/model/${sourceModelId}`);
+      } else {
+        goto("/");
+      }
+    }
   };
 
   onMount(() => {
