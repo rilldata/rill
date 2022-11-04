@@ -28,6 +28,7 @@ func (c *connection) Ingest(ctx context.Context, source *connectors.Source) erro
 	if err != nil {
 		return err
 	}
+	defer os.Remove(path)
 	return c.ingestFromRawFile(ctx, source, path)
 }
 
@@ -64,7 +65,6 @@ func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) 
 }
 
 func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.Source, path string) error {
-	defer os.Remove(path)
 	from, err := getSourceReader(path)
 	if err != nil {
 		return err
