@@ -67,6 +67,8 @@ export class RillDeveloper {
   public async init(): Promise<void> {
     const alreadyInitialized = existsSync(this.config.state.stateFolder);
 
+    // this essentially calls DuckdbClient.init. hence moving it to the beginning
+    await this.dataModelerService.init();
     await this.dataModelerStateSyncService.init();
     if (alreadyInitialized) {
       this.config.project.duckDbPath =
@@ -76,7 +78,6 @@ export class RillDeveloper {
       this.config.database.databaseName = this.config.project.duckDbPath;
     }
 
-    await this.dataModelerService.init();
     if (!alreadyInitialized && this.config.project.duckDbPath) {
       this.dataModelerStateService.dispatch("setDuckDbPath", [
         this.config.project.duckDbPath,
