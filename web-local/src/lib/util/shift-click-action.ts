@@ -1,5 +1,5 @@
 import { setContext } from "svelte";
-import { writable, get } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 interface CreateShiftClick {
   stopImmediatePropagation: boolean;
@@ -56,6 +56,7 @@ export function createShiftClickAction(
           if (_stopImmediatePropagation) {
             event.stopImmediatePropagation();
           }
+          event.preventDefault();
         }
         node.addEventListener("mousedown", mouseDown);
       }
