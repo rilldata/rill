@@ -39,7 +39,6 @@
   import { derivedProfileEntityHasTimestampColumn } from "../../../redux-store/source/source-selectors";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
   import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "../../column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
   import Add from "../../icons/Add.svelte";
@@ -53,6 +52,10 @@
   import { Divider, MenuItem } from "../../menu";
   import RenameAssetModal from "../RenameAssetModal.svelte";
   import AddSourceModal from "./AddSourceModal.svelte";
+
+  import { page } from "$app/stores";
+
+  import NavigationEntry from "../NavigationEntry.svelte";
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
@@ -216,7 +219,7 @@
 </script>
 
 <div
-  class="pl-4 pb-3 pr-4 pt-5 grid justify-between"
+  class="pl-4 pb-3 pr-3 pt-5 grid justify-between"
   style="grid-template-columns: auto max-content;"
 >
   <CollapsibleSectionTitle tooltipText={"sources"} bind:active={showTables}>
@@ -226,8 +229,11 @@
   </CollapsibleSectionTitle>
   <ContextButton
     id={"create-table-button"}
-    tooltipText="import csv or parquet file as a source"
+    tooltipText="add a file on your computer or add a remote source"
     on:click={openShowAddSourceModal}
+    width={24}
+    height={24}
+    rounded
   >
     <Add />
   </ContextButton>
@@ -245,21 +251,16 @@
           (object) => object.source?.name === tableName
         )?.source}
         <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
-          <CollapsibleTableSummary
-            on:query={() => queryHandler(tableName)}
+          <NavigationEntry
+            href={`/source/${id}`}
+            open={$page.url.pathname === `/source/${id}`}
+            on:command-click={() => queryHandler(tableName)}
             on:select={() => viewSource(id)}
-            entityType={EntityType.Table}
             name={tableName}
-            cardinality={derivedTable?.cardinality ?? 0}
-            sizeInBytes={derivedTable?.sizeInBytes ?? 0}
-            active={entityIsActive}
-            loading={$refreshSourceMutation.isLoading}
           >
             <ColumnProfileNavEntry
-              slot="summary"
-              let:containerWidth
+              slot="more"
               indentLevel={1}
-              {containerWidth}
               cardinality={derivedTable?.cardinality ?? 0}
               profile={derivedTable?.profile ?? []}
               head={derivedTable?.preview ?? []}
@@ -321,7 +322,7 @@
                 delete</MenuItem
               >
             </svelte:fragment>
-          </CollapsibleTableSummary>
+          </NavigationEntry>
         </div>
       {/each}
     {/if}

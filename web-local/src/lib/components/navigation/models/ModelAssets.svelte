@@ -1,8 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
@@ -10,7 +8,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import {
@@ -22,16 +19,12 @@
     PersistentModelStore,
   } from "../../../application-state-stores/model-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { deleteModelApi } from "../../../redux-store/model/model-apis";
-  import { autoCreateMetricsDefinitionForModel } from "../../../redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "../../../redux-store/source/source-selectors";
   import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
   import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
   import AddIcon from "../../icons/Add.svelte";
   import ModelIcon from "../../icons/Model.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
-  import RenameAssetModal from "../RenameAssetModal.svelte";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
@@ -65,54 +58,12 @@
     }
   };
 
-  const deleteModel = (id: string) => {
-    if (
-      $applicationStore.activeEntity.type === EntityType.Model &&
-      $applicationStore.activeEntity.id === id
-    ) {
-      const nextModelId = getNextEntityId($persistentModelStore.entities, id);
-
-      if (nextModelId) {
-        goto(`/model/${nextModelId}`);
-      } else {
-        goto("/");
-      }
-    }
-
-    deleteModelApi(id);
-  };
-
-  const quickStartMetrics = (derivedModel: DerivedModelEntity) => {
-    const previousActiveEntity = $store?.activeEntity?.type;
-
-    autoCreateMetricsDefinitionForModel(
-      $persistentModelStore.entities.find(
-        (model) => model.id === derivedModel.id
-      ).tableName,
-      derivedModel.id,
-      selectTimestampColumnFromProfileEntity(derivedModel)[0].name
-    ).then((createdMetricsId) => {
-      navigationEvent.fireEvent(
-        createdMetricsId,
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
-        MetricsEventScreenName.Dashboard
-      );
-    });
-  };
-
-  const openRenameModelModal = (modelID: string, modelName: string) => {
-    showRenameModelModal = true;
-    renameModelID = modelID;
-    renameModelName = modelName;
-  };
-
   async function addModel() {
     let response = await dataModelerService.dispatch("addModel", [{}]);
     goto(`/model/${response.id}`);
     // if the models are not visible in the assets list, show them.
     if (!showModels) {
+      x;
       showModels = true;
     }
   }
@@ -145,7 +96,7 @@
 </script>
 
 <div
-  class="pl-4 pb-3 pr-4 grid justify-between"
+  class="pl-4 pb-3 pr-3 grid justify-between"
   style="grid-template-columns: auto max-content;"
   out:slide={{ duration: 200 }}
 >
@@ -158,6 +109,9 @@
     id={"create-model-button"}
     tooltipText="create a new model"
     on:click={addModel}
+    width={24}
+    height={24}
+    rounded
   >
     <AddIcon />
   </ContextButton>
@@ -197,12 +151,4 @@
       </NavigationEntry>
     {/each}
   </div>
-  {#if showRenameModelModal}
-    <RenameAssetModal
-      entityType={EntityType.Model}
-      closeModal={() => (showRenameModelModal = false)}
-      entityId={renameModelID}
-      currentAssetName={renameModelName.replace(".sql", "")}
-    />
-  {/if}
 {/if}
