@@ -73,7 +73,6 @@ Private S3 files available to this account can now be pulled into Rill.
 
 Today, a few constraints apply to the data sources you can import:
 - Only Parquet and CSV files are supported.
-- gzipped files are not yet supported.
 - You can only import a single file at a time.
 
 ## Request a new connector
