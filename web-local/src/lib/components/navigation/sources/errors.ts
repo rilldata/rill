@@ -1,16 +1,14 @@
-import type { RpcStatus } from "@rilldata/web-common/runtime-client";
-
 export function humanReadableErrorMessage(
   connectorName: string,
-  error: RpcStatus
+  code: number,
+  message: string
 ) {
-  // TODO: the error response type does not match the type defined in the API
-  switch (error.response.data.code) {
+  const serverError = message;
+
+  switch (code) {
     // gRPC error codes: https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
     // InvalidArgument
     case 3: {
-      const serverError = error.response.data.message;
-
       // Rill errors
       if (
         serverError.match(/an existing object with name '.*' already exists/)
@@ -68,7 +66,7 @@ export function humanReadableErrorMessage(
       ) {
         return "We had trouble ingesting your data. Please see the docs for common issues. If you're still stuck, don't hesitate to reach out on Discord.";
       }
-      return error.response.data.message;
+      return serverError;
     }
     default:
       return "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";

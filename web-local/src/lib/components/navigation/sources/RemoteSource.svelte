@@ -145,7 +145,11 @@
     </div>
     {#if $createSource.isError}
       <SubmissionError
-        message={humanReadableErrorMessage(connector.name, $createSource.error)}
+        message={humanReadableErrorMessage(
+          connector.name,
+          $createSource.error.response.data.code,
+          $createSource.error.response.data.message
+        )}
       />
     {/if}
 
