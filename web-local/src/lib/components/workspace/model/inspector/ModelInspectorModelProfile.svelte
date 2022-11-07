@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
@@ -89,7 +90,10 @@
 
       <!-- source tables -->
       {#if showSourceTables}
-        <div transition:slide|local={{ duration: 200 }} class="mt-1">
+        <div
+          transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+          class="mt-1"
+        >
           {#each sourceTableReferences as table}
             {@const persistentTableRef = $persistentTableStore.entities.find(
               (t) => table.name === t.tableName
@@ -162,7 +166,7 @@
       </div>
 
       {#if currentDerivedModel?.profile && showColumns}
-        <div transition:slide|local={{ duration: 200 }}>
+        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
           <ColumnProfile
             indentLevel={0}
             cardinality={currentDerivedModel?.cardinality ?? 0}

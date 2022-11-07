@@ -20,6 +20,7 @@
 
   import { page } from "$app/stores";
 
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import NavigationEntry from "../NavigationEntry.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
@@ -87,28 +88,34 @@
   </ContextButton>
 </div>
 {#if showTables}
-  <div class="pb-6" transition:slide|local={{ duration: 200 }}>
+  <div class="pb-6" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
     {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $persistentTableStore.entities as { tableName, id } (id)}
         {@const derivedTable = $derivedTableStore.entities.find(
           (t) => t["id"] === id
         )}
-        <div animate:flip={{ duration: 200 }} out:slide={{ duration: 200 }}>
+        <div
+          animate:flip={{ duration: 200 }}
+          out:slide={{ duration: LIST_SLIDE_DURATION }}
+        >
           <NavigationEntry
             href={`/source/${id}`}
             open={$page.url.pathname === `/source/${id}`}
             on:command-click={() => queryHandler(tableName)}
             name={tableName}
           >
-            <ColumnProfile
-              slot="more"
-              indentLevel={1}
-              cardinality={derivedTable?.cardinality ?? 0}
-              profile={derivedTable?.profile ?? []}
-              head={derivedTable?.preview ?? []}
-              entityId={id}
-            />
+            <svelte:fragment slot="more">
+              <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+                <ColumnProfile
+                  indentLevel={1}
+                  cardinality={derivedTable?.cardinality ?? 0}
+                  profile={derivedTable?.profile ?? []}
+                  head={derivedTable?.preview ?? []}
+                  entityId={id}
+                />
+              </div>
+            </svelte:fragment>
 
             <svelte:fragment slot="tooltip-content">
               <SourceTooltip sourceName={tableName} />

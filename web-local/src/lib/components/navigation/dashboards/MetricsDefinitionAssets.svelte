@@ -40,6 +40,7 @@
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
 
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import NavigationEntry from "../NavigationEntry.svelte";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
@@ -147,7 +148,7 @@
 <div
   class="pl-4 pb-3 pr-3 grid justify-between"
   style="grid-template-columns: auto max-content;"
-  out:slide={{ duration: 200 }}
+  out:slide={{ duration: LIST_SLIDE_DURATION }}
 >
   <CollapsibleSectionTitle
     tooltipText={"dashboards"}
