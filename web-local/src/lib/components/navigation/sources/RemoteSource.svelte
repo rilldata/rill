@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
+    ConnectorProperty,
     ConnectorPropertyType,
     getRuntimeServiceListCatalogObjectsQueryKey,
     useRuntimeServiceMigrateSingle,
@@ -21,11 +22,15 @@
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
   import { humanReadableErrorMessage } from "./errors";
   import {
+    compileCreateSourceSql,
+    inferSourceName,
+    waitForSource,
+  } from "./sourceUtils";
+  import {
     fromYupFriendlyKey,
     getYupSchema,
     toYupFriendlyKey,
   } from "./yupSchemas";
-  import { compileCreateSourceSql, waitForSource } from "./sourceUtils";
 
   export let connector: V1Connector;
 
@@ -38,11 +43,14 @@
 
   const dispatch = createEventDispatcher();
 
+  let connectorProperties: ConnectorProperty[];
   let yupSchema: yup.AnyObjectSchema;
 
   // state from svelte-forms-lib
   let form: Writable<any>;
+  let touched: Writable<Record<any, boolean>>;
   let errors: Writable<Record<never, string>>;
+  let handleChange: (event: Event) => any;
   let handleSubmit: (event: Event) => any;
 
   let waitingOnSourceImport = false;
@@ -50,7 +58,7 @@
   function onConnectorChange(connector: V1Connector) {
     yupSchema = getYupSchema(connector);
 
-    ({ form, errors, handleSubmit } = createForm({
+    ({ form, touched, errors, handleChange, handleSubmit } = createForm({
       // TODO: initialValues should come from SQL asset and be reactive to asset modifications
       initialValues: {
         sourceName: "", // avoids `values.sourceName` warning
@@ -94,9 +102,34 @@
         );
       },
     }));
+
+    // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
+    connectorProperties = [
+      ...connector.properties.slice(0, 1),
+      {
+        key: "sourceName",
+        displayName: "Source name",
+        description: "The name of the source",
+        placeholder: "my_new_source",
+        type: ConnectorPropertyType.TYPE_STRING,
+        nullable: false,
+      },
+      ...connector.properties.slice(1),
+    ];
   }
 
   $: onConnectorChange(connector);
+
+  function onStringInputChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const { name, value } = target;
+
+    if (name === "path") {
+      if ($touched.sourceName) return;
+      const sourceName = inferSourceName(connector, value);
+      $form.sourceName = sourceName ? sourceName : $form.sourceName;
+    }
+  }
 </script>
 
 <div class="h-full flex flex-col">
@@ -115,26 +148,21 @@
         message={humanReadableErrorMessage(connector.name, $createSource.error)}
       />
     {/if}
-    <div class="py-2">
-      <Input
-        label="Source name"
-        bind:value={$form["sourceName"]}
-        error={$errors["sourceName"]}
-        placeholder="my_new_source"
-      />
-    </div>
-    {#each connector.properties as property}
+
+    {#each connectorProperties as property}
       {@const label =
         property.displayName + (property.nullable ? " (optional)" : "")}
       <div class="py-2">
         {#if property.type === ConnectorPropertyType.TYPE_STRING}
           <Input
-            id={property.key}
+            id={toYupFriendlyKey(property.key)}
             {label}
             placeholder={property.placeholder}
             hint={property.hint}
             error={$errors[toYupFriendlyKey(property.key)]}
             bind:value={$form[toYupFriendlyKey(property.key)]}
+            on:input={onStringInputChange}
+            on:change={handleChange}
           />
         {:else if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
           <label for={property.key} class="flex items-center">
