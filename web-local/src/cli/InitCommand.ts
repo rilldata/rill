@@ -10,11 +10,14 @@ export class InitCommand extends DataModelerCliCommand {
       new Command("init"),
       "Initialize a new project. The project location defaults to the current folder or you can use the --project option to specify a path. "
     )
-      .option("--db <duckDbPath>", "Connect to an existing duckDB database. ")
-      .option(
-        "--copy",
-        "Used with --db. Copy the duckDB database instead of directly modifying it. "
-      )
+      // Currently, sources added with --db don't get added to the Rill Catalog, and consequently don't show up in the UI sidebar.
+      // See: https://github.com/rilldata/rill-developer/issues/1149
+      // Hiding these CLI flags for now. 
+      // .option("--db <duckDbPath>", "Connect to an existing duckDB database. ")
+      // .option(
+      //   "--copy",
+      //   "Used with --db. Copy the duckDB database instead of directly modifying it. "
+      // )
       .action((opts, command) => {
         const { project } = command.optsWithGlobals();
         const projectPath = project ?? process.cwd();
