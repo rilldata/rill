@@ -45,7 +45,7 @@ func (c *connection) ListRecursive(ctx context.Context, repoID string) ([]string
 		}
 
 		// Track file if it's a .sql file
-		if path.Ext(p) == ".sql" {
+		if hasSupportForExt(p) {
 			pathFromRoot := strings.TrimPrefix(p, cleanRoot)
 			paths = append(paths, pathFromRoot)
 		}
@@ -73,7 +73,7 @@ func (c *connection) Get(ctx context.Context, repoID string, filePath string) (s
 
 // PutBlob implements drivers.RepoStore
 func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string, blob string) error {
-	if path.Ext(filePath) != ".sql" {
+	if !hasSupportForExt(filePath) {
 		return fmt.Errorf("file repo: can only edit .sql files")
 	}
 
@@ -115,9 +115,14 @@ func (c *connection) PutReader(ctx context.Context, repoID string, filePath stri
 
 // Delete implements drivers.RepoStore
 func (c *connection) Delete(ctx context.Context, repoID string, filePath string) error {
-	if path.Ext(filePath) != ".sql" {
+	if !hasSupportForExt(filePath) {
 		return fmt.Errorf("file repo: can only edit .sql files")
 	}
 	filePath = path.Join(c.root, filePath)
 	return os.Remove(filePath)
+}
+
+func hasSupportForExt(filePath string) bool {
+	ext := path.Ext(filePath)
+	return ext == ".sql" || ext == ".yaml"
 }

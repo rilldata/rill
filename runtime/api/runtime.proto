@@ -418,10 +418,22 @@ message DeleteInstanceResponse {}
 message CatalogObject {
   oneof type {
     Source source = 1;
-    MetricsView metrics_view = 2;
-    UnmanagedTable unmanaged_table = 3;
+    Model model = 2;
+    MetricsView metrics_view = 3;
+    Table table = 4;
   }
-  google.protobuf.Timestamp refreshed_on = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+  google.protobuf.Timestamp refreshed_on = 7;
+
+  // path to the artifact on file
+  string path = 8;
+  // original yaml blob
+  bytes definition = 9;
+
+  // rename from another catalog object
+  string rename_from = 10;
+  bool create_or_replace = 11;
 }
 
 // Source represents a catalog object created using CREATE SOURCE
@@ -434,6 +446,17 @@ message Source {
   string connector = 3;
   // Connector properties assigned in the source
   google.protobuf.Struct properties = 4;
+  string schema = 5;
+}
+
+message Model {
+  enum Dialect {
+    DuckDB = 0;
+  }
+  string name = 1;
+  string sql = 2;
+  Dialect dialect = 3;
+  string schema = 4;
 }
 
 // MetricsView represents a catalog object created using CREATE METRICS VIEW
@@ -442,31 +465,35 @@ message MetricsView {
   message Dimension {
     string name = 1;
     string type = 2;
-    bool primary_time = 3;
+    string label = 3;
     string description = 4;
+    string format = 5;
   }
   // Measures are aggregated computed values
   message Measure {
     string name = 1;
     string type = 2;
-    string description = 3;
+    string label = 3;
+    string expression = 4;
+    string description = 5;
+    string format = 6;
   }
-  // Formatted SQL DDL for the metrics view
-  string sql = 1;
   // Name of the metrics view
-  string name = 2;
+  string name = 1;
   // Name of the source or model that the metrics view is based on
-  string from_object = 3;
+  string from = 2;
+  string time_dimension = 3;
+  repeated string time_grains = 4;
   // Dimensions in the metrics view
-  repeated Dimension dimensions = 4;
+  repeated Dimension dimensions = 5;
   // Measures in the metrics view
-  repeated Measure measures = 5;
+  repeated Measure measures = 6;
 }
 
-// UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that
+// Table represents a pre-existing table in the OLAP database (i.e. a table that
 // was NOT created through the runtime's migrations). The runtime periodically looks for
 // unmanaged tables in the database's information schema if the instance is created with exposed=true.
-message UnmanagedTable {
+message Table {
   string name = 1;
   bool view = 2;
   repeated SchemaColumn schema = 3;

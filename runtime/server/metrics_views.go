@@ -20,7 +20,7 @@ func (s *Server) MetricsViewMeta(
 	// NOTE: Mock implementation
 
 	dimensions := []*api.MetricsView_Dimension{
-		{Name: "time", Type: "TIMESTAMP", PrimaryTime: true},
+		{Name: "time", Type: "TIMESTAMP"},
 		{Name: "foo", Type: "VARCHAR"},
 	}
 

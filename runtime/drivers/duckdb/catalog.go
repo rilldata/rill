@@ -36,10 +36,12 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, sql, refreshed_on, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT INTO rill.catalog(name, type, sql, definition, path, refreshed_on, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 		obj.Name,
 		obj.Type,
 		obj.SQL,
+		obj.Definition,
+		obj.Path,
 		now,
 		now,
 		now,
@@ -58,9 +60,11 @@ func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, sql = ?, refreshed_on = ?, updated_on = ? WHERE name = ?",
+		"UPDATE rill.catalog SET type = ?, sql = ?, definition = ?, path = ?, refreshed_on = ?, updated_on = ? WHERE name = ?",
 		obj.Type,
 		obj.SQL,
+		obj.Definition,
+		obj.Path,
 		obj.RefreshedOn,
 		now,
 		obj.Name,

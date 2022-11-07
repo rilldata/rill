@@ -1149,10 +1149,13 @@
         "type": {
           "type": "string"
         },
-        "primaryTime": {
-          "type": "boolean"
+        "label": {
+          "type": "string"
         },
         "description": {
+          "type": "string"
+        },
+        "format": {
           "type": "string"
         }
       },
@@ -1183,11 +1186,27 @@
         "type": {
           "type": "string"
         },
+        "label": {
+          "type": "string"
+        },
+        "expression": {
+          "type": "string"
+        },
         "description": {
+          "type": "string"
+        },
+        "format": {
           "type": "string"
         }
       },
       "title": "Measures are aggregated computed values"
+    },
+    "ModelDialect": {
+      "type": "string",
+      "enum": [
+        "DuckDB"
+      ],
+      "default": "DuckDB"
     },
     "protobufAny": {
       "type": "object",
@@ -1230,15 +1249,33 @@
         "source": {
           "$ref": "#/definitions/v1Source"
         },
+        "model": {
+          "$ref": "#/definitions/v1Model"
+        },
         "metricsView": {
           "$ref": "#/definitions/v1MetricsView"
         },
-        "unmanagedTable": {
-          "$ref": "#/definitions/v1UnmanagedTable"
+        "table": {
+          "$ref": "#/definitions/v1Table"
+        },
+        "createdOn": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedOn": {
+          "type": "string",
+          "format": "date-time"
         },
         "refreshedOn": {
           "type": "string",
           "format": "date-time"
+        },
+        "path": {
+          "type": "string"
+        },
+        "definition": {
+          "type": "string",
+          "format": "byte"
         }
       },
       "title": "CatalogObject represents an object stored in the catalog"
@@ -1466,17 +1503,22 @@
     "v1MetricsView": {
       "type": "object",
       "properties": {
-        "sql": {
-          "type": "string",
-          "title": "Formatted SQL DDL for the metrics view"
-        },
         "name": {
           "type": "string",
           "title": "Name of the metrics view"
         },
-        "fromObject": {
+        "from": {
           "type": "string",
           "title": "Name of the source or model that the metrics view is based on"
+        },
+        "timeDimension": {
+          "type": "string"
+        },
+        "timeGrains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "dimensions": {
           "type": "array",
@@ -1618,6 +1660,23 @@
       "type": "object",
       "title": "Response message for RuntimeService.MigrateSingle"
     },
+    "v1Model": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "sql": {
+          "type": "string"
+        },
+        "dialect": {
+          "$ref": "#/definitions/ModelDialect"
+        },
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
     "v1PingResponse": {
       "type": "object",
       "properties": {
@@ -1732,15 +1791,14 @@
         "properties": {
           "type": "object",
           "title": "Connector properties assigned in the source"
+        },
+        "schema": {
+          "type": "string"
         }
       },
       "title": "Source represents a catalog object created using CREATE SOURCE"
     },
-    "v1TriggerRefreshResponse": {
-      "type": "object",
-      "title": "Response message for RuntimeService.TriggerRefresh"
-    },
-    "v1UnmanagedTable": {
+    "v1Table": {
       "type": "object",
       "properties": {
         "name": {
@@ -1756,7 +1814,11 @@
           }
         }
       },
-      "description": "UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that\nwas NOT created through the runtime's migrations). The runtime periodically looks for\nunmanaged tables in the database's information schema if the instance is created with exposed=true."
+      "description": "Table represents a pre-existing table in the OLAP database (i.e. a table that\nwas NOT created through the runtime's migrations). The runtime periodically looks for\nunmanaged tables in the database's information schema if the instance is created with exposed=true."
+    },
+    "v1TriggerRefreshResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.TriggerRefresh"
     }
   }
 }

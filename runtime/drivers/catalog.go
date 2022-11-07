@@ -3,6 +3,8 @@ package drivers
 import (
 	"context"
 	"time"
+
+	"github.com/rilldata/rill/runtime/api"
 )
 
 // CatalogStore is implemented by drivers capable of storing catalog info for a specific instance
@@ -16,9 +18,10 @@ type CatalogStore interface {
 
 // Constants representing different kinds of catalog objects
 const (
-	CatalogObjectTypeSource         string = "source"
-	CatalogObjectTypeMetricsView    string = "metrics_view"
-	CatalogObjectTypeUnmanagedTable string = "unmanaged_table"
+	CatalogObjectTypeSource      string = "source"
+	CatalogObjectTypeModel       string = "model"
+	CatalogObjectTypeMetricsView string = "metrics_view"
+	CatalogObjectTypeTable       string = "table"
 )
 
 // CatalogObject represents one object in the catalog, such as a source
@@ -26,7 +29,25 @@ type CatalogObject struct {
 	Name        string
 	Type        string
 	SQL         string
+	Definition  []byte
+	Path        string
 	RefreshedOn time.Time `db:"refreshed_on"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+type CatalogObjectDefinition struct {
+	// source specific fields
+	Connector  string
+	Properties map[string]any
+
+	// model specific fields
+	Dialect string
+
+	// metrics view specific fields
+	From          string
+	TimeDimension string
+	TimeGrains    []string
+	Dimensions    []*api.MetricsView_Dimension
+	Measures      []*api.MetricsView_Measure
 }
