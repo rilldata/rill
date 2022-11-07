@@ -7,6 +7,7 @@ import {
   AdBidsColumnsTestData,
   AdImpressionColumnsTestData,
   TestDataColumns,
+  UserColumnsTestData,
 } from "../data/DataLoader.data";
 import { CLI_COMMAND } from "../utils/getCliCommand";
 import { FunctionalTestBase } from "./FunctionalTestBase";
@@ -25,7 +26,7 @@ const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 const CLI_TEST_DUCKDB_FOLDER = "temp/test-duckdb";
-// const CLI_STATE_DUCKDB_FOLDER = `${CLI_TEST_DUCKDB_FOLDER}/state`;
+const CLI_STATE_DUCKDB_FOLDER = `${CLI_TEST_DUCKDB_FOLDER}/state`;
 const CLI_TEST_DUCKDB_FILE = `${CLI_TEST_DUCKDB_FOLDER}/stage.db`;
 const CLI_TEST_DUCKDB_FOLDER_ARG = `--project ${CLI_TEST_DUCKDB_FOLDER}`;
 
@@ -57,52 +58,52 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     // We can remove this once we enable at least one of the below tests.
   }
 
+  // This is not supported in runtime
   // @FunctionalTestBase.Test()
-  // public async shouldLoadTablesFromDB() {
-  //   await execVerbose(
-  //     `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
-  //       `--db ${CLI_TEST_DUCKDB_FILE}`
-  //   );
-  //   this.assertTables(
-  //     CLI_STATE_FOLDER,
-  //     ["AdBids", "Impressions"],
-  //     [AdBidsColumnsTestData, AdImpressionColumnsTestData]
-  //   );
+  public async shouldLoadTablesFromDB() {
+    await execVerbose(
+      `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
+        `--db ${CLI_TEST_DUCKDB_FILE}`
+    );
+    this.assertTables(
+      CLI_STATE_FOLDER,
+      ["AdBids", "Impressions"],
+      [AdBidsColumnsTestData, AdImpressionColumnsTestData]
+    );
 
-  //   // drop a table and import another in source
-  //   await execVerbose(
-  //     `${CLI_COMMAND} drop-source AdBids ${CLI_TEST_DUCKDB_FOLDER_ARG}`
-  //   );
-  //   await execVerbose(
-  //     `${CLI_COMMAND} import-source test/data/Users.csv ${CLI_TEST_DUCKDB_FOLDER_ARG}`
-  //   );
-  //   // trigger sync
-  //   await execVerbose(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
+    // drop a table and import another in source
+    await execVerbose(
+      `${CLI_COMMAND} drop-source AdBids ${CLI_TEST_DUCKDB_FOLDER_ARG}`
+    );
+    await execVerbose(
+      `${CLI_COMMAND} import-source test/data/Users.csv ${CLI_TEST_DUCKDB_FOLDER_ARG}`
+    );
+    // trigger sync
+    await execVerbose(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
 
-  //   // verify tables are reflected in connected project
-  //   this.assertTables(
-  //     CLI_STATE_FOLDER,
-  //     ["Impressions", "Users"],
-  //     [AdImpressionColumnsTestData, UserColumnsTestData]
-  //   );
+    // verify tables are reflected in connected project
+    this.assertTables(
+      CLI_STATE_FOLDER,
+      ["Impressions", "Users"],
+      [AdImpressionColumnsTestData, UserColumnsTestData]
+    );
 
-  //   // drop a table and import another in connected project
-  //   await execVerbose(
-  //     `${CLI_COMMAND} drop-source Impressions ${CLI_TEST_FOLDER_ARG}`
-  //   );
-  //   await execVerbose(
-  //     `${CLI_COMMAND} import-source test/data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`
-  //   );
-  //   // trigger sync
-  //   await execVerbose(`${CLI_COMMAND} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
+    // drop a table and import another in connected project
+    await execVerbose(
+      `${CLI_COMMAND} drop-source Impressions ${CLI_TEST_FOLDER_ARG}`
+    );
+    await execVerbose(
+      `${CLI_COMMAND} import-source test/data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`
+    );
+    // trigger sync
+    await execVerbose(`${CLI_COMMAND} init ${CLI_TEST_DUCKDB_FOLDER_ARG}`);
 
-  //   // verify tables are reflected in source project
-  //   // this happens without explicitly connecting during init
-  //   this.assertTables(CLI_STATE_DUCKDB_FOLDER, ["AdBids", "Users"]);
-  // }
+    // verify tables are reflected in source project
+    // this happens without explicitly connecting during init
+    this.assertTables(CLI_STATE_DUCKDB_FOLDER, ["AdBids", "Users"]);
+  }
 
-  // This test modifies the DB in a separate file.
-  // This needs a feature in runtime to close the opened instance to work.
+  // This is not supported in runtime
   // @FunctionalTestBase.Test()
   public async shouldUpdateProfilingData() {
     await execVerbose(

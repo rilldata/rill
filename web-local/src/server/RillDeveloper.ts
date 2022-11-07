@@ -10,7 +10,7 @@ import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-mod
 import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import type { NotificationService } from "@rilldata/web-local/common/notifications/NotificationService";
 import axios from "axios";
-import { existsSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import type {
   V1CreateRepoRequest,
   V1CreateRepoResponse,
@@ -65,9 +65,12 @@ export class RillDeveloper {
   }
 
   public async init(): Promise<void> {
+    mkdirSync(this.config.projectFolder, {
+      recursive: true,
+    });
     const alreadyInitialized = existsSync(this.config.state.stateFolder);
 
-    await this.dataModelerStateSyncService.init();
+    // this essentially calls DuckdbClient.init. hence moving it to the beginning
     if (alreadyInitialized) {
       this.config.project.duckDbPath =
         this.dataModelerStateService.getApplicationState().duckDbPath;
@@ -75,8 +78,9 @@ export class RillDeveloper {
     if (this.config.project.duckDbPath) {
       this.config.database.databaseName = this.config.project.duckDbPath;
     }
-
     await this.dataModelerService.init();
+    await this.dataModelerStateSyncService.init();
+
     if (!alreadyInitialized && this.config.project.duckDbPath) {
       this.dataModelerStateService.dispatch("setDuckDbPath", [
         this.config.project.duckDbPath,
