@@ -9,11 +9,9 @@
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
   import { createModelForSource } from "../../../redux-store/source/source-apis";
-  import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
-  import ContextButton from "../../column-profile/ContextButton.svelte";
-  import Add from "../../icons/Add.svelte";
   import Source from "../../icons/Source.svelte";
+  import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
   import AddSourceModal from "./AddSourceModal.svelte";
 
@@ -64,26 +62,14 @@
   };
 </script>
 
-<div
-  class="pl-4 pb-3 pr-3 pt-5 grid justify-between"
-  style="grid-template-columns: auto max-content;"
+<NavigationHeader
+  bind:show={showTables}
+  tooltipText="add a new data source"
+  on:add={openShowAddSourceModal}
 >
-  <CollapsibleSectionTitle tooltipText={"sources"} bind:active={showTables}>
-    <h4 class="flex flex-row items-center gap-x-2">
-      <Source size="16px" /> Sources
-    </h4>
-  </CollapsibleSectionTitle>
-  <ContextButton
-    id={"create-table-button"}
-    tooltipText="add a file on your computer or add a remote source"
-    on:click={openShowAddSourceModal}
-    width={24}
-    height={24}
-    rounded
-  >
-    <Add />
-  </ContextButton>
-</div>
+  <Source size="16px" /> Sources
+</NavigationHeader>
+
 {#if showTables}
   <div class="pb-6" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
     {#if $persistentTableStore?.entities && $derivedTableStore?.entities}

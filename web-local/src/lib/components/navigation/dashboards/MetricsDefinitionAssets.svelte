@@ -14,6 +14,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import notificationStore from "@rilldata/web-local/lib/components/notifications";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
@@ -28,9 +29,6 @@
   } from "../../../redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "../../../redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "../../../redux-store/store-root";
-  import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import ContextButton from "../../column-profile/ContextButton.svelte";
-  import AddIcon from "../../icons/Add.svelte";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import { default as Explore } from "../../icons/Explore.svelte";
@@ -38,10 +36,9 @@
   import Model from "../../icons/Model.svelte";
   import { Divider, MenuItem } from "../../menu";
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
-  import RenameAssetModal from "../RenameAssetModal.svelte";
-
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import NavigationEntry from "../NavigationEntry.svelte";
+  import NavigationHeader from "../NavigationHeader.svelte";
+  import RenameAssetModal from "../RenameAssetModal.svelte";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -132,30 +129,14 @@
   });
 </script>
 
-<div
-  class="pl-4 pb-3 pr-3 grid justify-between"
-  style="grid-template-columns: auto max-content;"
-  out:slide={{ duration: LIST_SLIDE_DURATION }}
+<NavigationHeader
+  bind:show={showMetricsDefs}
+  tooltipText="create a new dashboard"
+  on:add={dispatchAddEmptyMetricsDef}
 >
-  <CollapsibleSectionTitle
-    tooltipText={"dashboards"}
-    bind:active={showMetricsDefs}
-  >
-    <h4 class="flex flex-row items-center gap-x-2">
-      <Explore size="16px" /> Dashboards
-    </h4>
-  </CollapsibleSectionTitle>
-  <ContextButton
-    id={"create-dashboard-button"}
-    tooltipText="create a new dashboard"
-    width={24}
-    height={24}
-    rounded
-    on:click={dispatchAddEmptyMetricsDef}
-  >
-    <AddIcon />
-  </ContextButton>
-</div>
+  <Explore size="16px" /> Dashboards
+</NavigationHeader>
+
 {#if showMetricsDefs && $metricsDefinitions}
   <div
     class="pb-6 justify-self-end"
@@ -167,7 +148,8 @@
         notExpandable={true}
         name={metricsDef.metricDefLabel}
         href={`/dashboard/${metricsDef.id}`}
-        open={$page.url.pathname === `/dashboard/${metricsDef.id}`}
+        open={$page.url.pathname === `/dashboard/${metricsDef.id}` ||
+          $page.url.pathname === `/dashboard/${metricsDef.id}/edit`}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />

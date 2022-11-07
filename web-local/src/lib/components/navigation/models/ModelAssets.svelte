@@ -13,11 +13,9 @@
     DerivedModelStore,
     PersistentModelStore,
   } from "../../../application-state-stores/model-stores";
-  import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import ContextButton from "../../column-profile/ContextButton.svelte";
-  import AddIcon from "../../icons/Add.svelte";
   import ModelIcon from "../../icons/Model.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
+  import NavigationHeader from "../NavigationHeader.svelte";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
@@ -83,27 +81,14 @@
   };
 </script>
 
-<div
-  class="pl-4 pb-3 pr-3 grid justify-between"
-  style="grid-template-columns: auto max-content;"
-  out:slide={{ duration: LIST_SLIDE_DURATION }}
+<NavigationHeader
+  bind:show={showModels}
+  tooltipText="create a new model"
+  on:add={addModel}
 >
-  <CollapsibleSectionTitle tooltipText={"models"} bind:active={showModels}>
-    <h4 class="flex flex-row items-center gap-x-2">
-      <ModelIcon size="16px" /> Models
-    </h4>
-  </CollapsibleSectionTitle>
-  <ContextButton
-    id={"create-model-button"}
-    tooltipText="create a new model"
-    on:click={addModel}
-    width={24}
-    height={24}
-    rounded
-  >
-    <AddIcon />
-  </ContextButton>
-</div>
+  <ModelIcon size="16px" /> Models
+</NavigationHeader>
+
 {#if showModels}
   <div
     class="pb-6 justify-self-end"
