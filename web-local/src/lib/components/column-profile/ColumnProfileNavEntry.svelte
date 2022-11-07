@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
+  import { NATIVE_SELECT } from "../../util/component-classes";
   import ColumnProfile from "./ColumnProfile.svelte";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
-  import { NATIVE_SELECT } from "../../util/component-classes";
-  import Spacer from "../icons/Spacer.svelte";
 
   export let containerWidth = 0;
 
@@ -25,10 +25,21 @@
   }
 
   let previewView = "summaries";
+
+  let container;
+
+  onMount(() => {
+    const observer = new ResizeObserver(() => {
+      containerWidth = container?.clientWidth ?? 0;
+    });
+    observer.observe(container);
+    return () => observer.unobserve(container);
+  });
 </script>
 
 <!-- pl-16 -->
 <div
+  bind:this={container}
   class="pl-{indentLevel === 1
     ? '10'
     : '4'} pr-5 pb-2 flex justify-between text-gray-500"
@@ -74,11 +85,7 @@
         summary={column.summary}
         totalRows={cardinality}
         nullCount={column.nullCount}
-      >
-        <button slot="context-button" class:hidden={!showContextButton}>
-          <Spacer size="16px" />
-        </button>
-      </ColumnProfile>
+      />
     {/each}
   {/if}
 </div>
