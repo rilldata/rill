@@ -3,7 +3,6 @@
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import { ApplicationStore } from "../../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -24,8 +23,6 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
-
-  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"

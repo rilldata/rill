@@ -98,19 +98,6 @@
     );
   };
 
-  const dispatchSetMetricsDefActive = (id: string) => {
-    goto(`/dashboard/${id}`);
-
-    const previousActiveEntity = $appStore?.activeEntity?.type;
-    navigationEvent.fireEvent(
-      id,
-      BehaviourEventMedium.AssetName,
-      MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
-      MetricsEventScreenName.Dashboard
-    );
-  };
-
   const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
     const sourceModelId = metricsDef.sourceModelId;
 
@@ -172,7 +159,7 @@
 {#if showMetricsDefs && $metricsDefinitions}
   <div
     class="pb-6 justify-self-end"
-    transition:slide={{ duration: 200 }}
+    transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
     {#each $metricsDefinitions as metricsDef (metricsDef.id)}

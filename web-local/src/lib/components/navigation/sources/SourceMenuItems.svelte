@@ -97,7 +97,7 @@
           ) {
             const nextSourceId = getNextEntityId(
               $persistentTableStore.entities,
-              id
+              sourceID
             );
             if (nextSourceId) {
               goto(`/source/${nextSourceId}`);
