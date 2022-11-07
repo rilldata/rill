@@ -7,7 +7,6 @@ import {
   AdBidsColumnsTestData,
   AdImpressionColumnsTestData,
   TestDataColumns,
-  UserColumnsTestData,
 } from "../data/DataLoader.data";
 import { CLI_COMMAND } from "../utils/getCliCommand";
 import { FunctionalTestBase } from "./FunctionalTestBase";
@@ -26,7 +25,7 @@ const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 const CLI_TEST_DUCKDB_FOLDER = "temp/test-duckdb";
-const CLI_STATE_DUCKDB_FOLDER = `${CLI_TEST_DUCKDB_FOLDER}/state`;
+// const CLI_STATE_DUCKDB_FOLDER = `${CLI_TEST_DUCKDB_FOLDER}/state`;
 const CLI_TEST_DUCKDB_FILE = `${CLI_TEST_DUCKDB_FOLDER}/stage.db`;
 const CLI_TEST_DUCKDB_FOLDER_ARG = `--project ${CLI_TEST_DUCKDB_FOLDER}`;
 
