@@ -11,7 +11,7 @@
   } from "../../../application-state-stores/table-stores";
   import { createModelForSource } from "../../../redux-store/source/source-apis";
   import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
+  import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
   import Add from "../../icons/Add.svelte";
   import Source from "../../icons/Source.svelte";
@@ -101,7 +101,7 @@
             on:command-click={() => queryHandler(tableName)}
             name={tableName}
           >
-            <ColumnProfileNavEntry
+            <ColumnProfile
               slot="more"
               indentLevel={1}
               cardinality={derivedTable?.cardinality ?? 0}

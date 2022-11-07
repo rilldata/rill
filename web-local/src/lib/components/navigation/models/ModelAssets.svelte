@@ -14,7 +14,6 @@
     PersistentModelStore,
   } from "../../../application-state-stores/model-stores";
   import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
   import AddIcon from "../../icons/Add.svelte";
   import ModelIcon from "../../icons/Model.svelte";
@@ -22,6 +21,7 @@
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
+  import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
@@ -119,7 +119,7 @@
         open={$page.url.pathname === `/model/${id}`}
       >
         <svelte:fragment slot="more">
-          <ColumnProfileNavEntry
+          <ColumnProfile
             indentLevel={1}
             cardinality={tableSummaryProps.cardinality}
             profile={tableSummaryProps.profile}

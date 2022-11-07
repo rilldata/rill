@@ -11,7 +11,7 @@
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
-  import ColumnProfileNavEntry from "@rilldata/web-local/lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
@@ -163,7 +163,7 @@
 
       {#if currentDerivedModel?.profile && showColumns}
         <div transition:slide|local={{ duration: 200 }}>
-          <ColumnProfileNavEntry
+          <ColumnProfile
             indentLevel={0}
             cardinality={currentDerivedModel?.cardinality ?? 0}
             profile={currentDerivedModel?.profile ?? []}

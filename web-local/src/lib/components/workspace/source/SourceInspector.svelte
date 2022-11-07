@@ -18,7 +18,7 @@
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
-  import ColumnProfileNavEntry from "@rilldata/web-local/lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import {
@@ -249,7 +249,7 @@
 
       {#if currentDerivedTable?.profile && showColumns}
         <div transition:slide|local={{ duration: 200 }}>
-          <ColumnProfileNavEntry
+          <ColumnProfile
             entityId={currentTable.id}
             indentLevel={0}
             cardinality={currentDerivedTable?.cardinality ?? 0}
