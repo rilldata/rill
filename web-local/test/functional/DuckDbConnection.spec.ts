@@ -52,7 +52,8 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     );
   }
 
-  @FunctionalTestBase.Test()
+  // This is not supported in runtime
+  // @FunctionalTestBase.Test()
   public async shouldLoadTablesFromDB() {
     await execVerbose(
       `${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG} ` +
@@ -96,8 +97,7 @@ export class DuckDbConnectionSpec extends FunctionalTestBase {
     this.assertTables(CLI_STATE_DUCKDB_FOLDER, ["AdBids", "Users"]);
   }
 
-  // This test modifies the DB in a separate file.
-  // This needs a feature in runtime to close the opened instance to work.
+  // This is not supported in runtime
   // @FunctionalTestBase.Test()
   public async shouldUpdateProfilingData() {
     await execVerbose(
