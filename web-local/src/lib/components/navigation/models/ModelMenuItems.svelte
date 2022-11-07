@@ -13,7 +13,7 @@
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { getContext } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -28,9 +28,10 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { Divider, MenuItem } from "../../menu";
-  import RenameAssetModal from "../RenameAssetModal.svelte";
 
   export let modelID;
+
+  const dispatch = createEventDispatcher();
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -67,13 +68,6 @@
     });
   };
 
-  /** rename the model */
-  const openRenameModelModal = (modelID: string, modelName: string) => {
-    showRenameModelModal = true;
-    renameModelID = modelID;
-    renameModelName = modelName;
-  };
-
   /** delete model */
   const deleteModel = (id: string) => {
     if (
@@ -91,10 +85,6 @@
 
     deleteModelApi(id);
   };
-
-  let showRenameModelModal = false;
-  let renameModelID = null;
-  let renameModelName = null;
 </script>
 
 <MenuItem
@@ -113,8 +103,9 @@
 <Divider />
 <MenuItem
   icon
-  on:select={() =>
-    openRenameModelModal(persistentModel.id, persistentModel.tableName)}
+  on:select={() => {
+    dispatch("rename-asset");
+  }}
 >
   <EditIcon slot="icon" />
   rename...
@@ -123,12 +114,3 @@
   <Cancel slot="icon" />
   delete
 </MenuItem>
-
-{#if showRenameModelModal}
-  <RenameAssetModal
-    entityType={EntityType.Model}
-    closeModal={() => (showRenameModelModal = false)}
-    entityId={renameModelID}
-    currentAssetName={renameModelName.replace(".sql", "")}
-  />
-{/if}

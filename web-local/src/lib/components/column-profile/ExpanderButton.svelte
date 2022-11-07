@@ -23,8 +23,8 @@
   <button
     on:click
     use:captureHoverState
-    style:width="16px"
-    style:height="16px"
+    style:width="20px"
+    style:height="20px"
     style:grid-column="left-control"
     class="
     hover:bg-gray-300

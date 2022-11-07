@@ -1,13 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import {
@@ -18,7 +13,6 @@
     DerivedModelStore,
     PersistentModelStore,
   } from "../../../application-state-stores/model-stores";
-  import { navigationEvent } from "../../../metrics/initMetrics";
   import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
   import ColumnProfileNavEntry from "../../column-profile/ColumnProfileNavEntry.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
@@ -27,6 +21,8 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
+
+  import RenameAssetModal from "../RenameAssetModal.svelte";
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -38,35 +34,6 @@
   const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   let showModels = true;
-
-  let showRenameModelModal = false;
-  let renameModelID = null;
-  let renameModelName = null;
-
-  const viewModel = (id: string) => {
-    goto(`/model/${id}`);
-
-    if (id != activeEntityID) {
-      const previousActiveEntity = $store?.activeEntity?.type;
-      navigationEvent.fireEvent(
-        id,
-        BehaviourEventMedium.AssetName,
-        MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
-        MetricsEventScreenName.Model
-      );
-    }
-  };
-
-  async function addModel() {
-    let response = await dataModelerService.dispatch("addModel", [{}]);
-    goto(`/model/${response.id}`);
-    // if the models are not visible in the assets list, show them.
-    if (!showModels) {
-      x;
-      showModels = true;
-    }
-  }
 
   // type Coll
 
@@ -93,6 +60,26 @@
       },
     };
   });
+
+  async function addModel() {
+    let response = await dataModelerService.dispatch("addModel", [{}]);
+    goto(`/model/${response.id}`);
+    // if the models are not visible in the assets list, show them.
+    if (!showModels) {
+      x;
+      showModels = true;
+    }
+  }
+
+  /** rename the model */
+  let showRenameModelModal = false;
+  let renameModelID = null;
+  let renameModelName = null;
+  const openRenameModelModal = (modelID: string, modelName: string) => {
+    showRenameModelModal = true;
+    renameModelID = modelID;
+    renameModelName = modelName;
+  };
 </script>
 
 <div
@@ -127,7 +114,7 @@
         (t) => t["id"] === id
       )}
       <NavigationEntry
-        name={modelName}
+        name={modelName.split(".sql")[0]}
         href={`/model/${id}`}
         open={$page.url.pathname === `/model/${id}`}
       >
@@ -146,9 +133,23 @@
         </svelte:fragment>
 
         <svelte:fragment slot="menu-items">
-          <ModelMenuItems modelID={derivedModel.id} />
+          <ModelMenuItems
+            modelID={derivedModel.id}
+            on:rename-asset={() => {
+              openRenameModelModal(id, modelName);
+            }}
+          />
         </svelte:fragment>
       </NavigationEntry>
     {/each}
   </div>
+{/if}
+
+{#if showRenameModelModal}
+  <RenameAssetModal
+    entityType={EntityType.Model}
+    closeModal={() => (showRenameModelModal = false)}
+    entityId={renameModelID}
+    currentAssetName={renameModelName.replace(".sql", "")}
+  />
 {/if}

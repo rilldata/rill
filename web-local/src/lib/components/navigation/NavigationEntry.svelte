@@ -57,7 +57,7 @@
     style:height="24px"
     class:font-bold={open}
     class:bg-gray-200={open}
-    class="grid gap-x-2 items-center pl-4 pr-3 {!open
+    class="grid gap-x-1 items-center pl-4 pr-3 {!open
       ? 'hover:bg-gray-100'
       : ''}"
     style:grid-template-columns="max-content auto max-content"
@@ -68,7 +68,7 @@
   >
     <!-- slot for navigation click -->
 
-    <div>
+    <div class="mr-1">
       {#if !notExpandable}
         <ExpanderButton
           bind:isHovered={seeMoreHovered}
@@ -82,7 +82,7 @@
       {/if}
     </div>
 
-    <a class="ui-copy " {href}>
+    <a class="ui-copy" {href}>
       {name}
     </a>
 

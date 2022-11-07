@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { createForm } from "svelte-forms-lib";
   import {
     useRuntimeServiceGetCatalogObject,
     useRuntimeServiceMigrateSingle,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import {
     dataModelerService,
