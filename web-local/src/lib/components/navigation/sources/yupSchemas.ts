@@ -5,7 +5,7 @@ export function getYupSchema(connector: V1Connector) {
   switch (connector.name) {
     case "s3":
       return yup.object().shape({
-        sourceName: yup
+        name: yup
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
@@ -20,7 +20,7 @@ export function getYupSchema(connector: V1Connector) {
       });
     case "gcs":
       return yup.object().shape({
-        sourceName: yup
+        name: yup
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
@@ -34,7 +34,7 @@ export function getYupSchema(connector: V1Connector) {
       });
     case "https":
       return yup.object().shape({
-        sourceName: yup
+        name: yup
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
