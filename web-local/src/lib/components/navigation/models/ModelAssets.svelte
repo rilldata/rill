@@ -30,7 +30,6 @@
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
-  const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   let showModels = true;
 
@@ -65,7 +64,6 @@
     goto(`/model/${response.id}`);
     // if the models are not visible in the assets list, show them.
     if (!showModels) {
-      x;
       showModels = true;
     }
   }
