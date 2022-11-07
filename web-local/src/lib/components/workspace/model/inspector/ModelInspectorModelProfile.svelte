@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
@@ -12,7 +11,6 @@
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "@rilldata/web-local/lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "@rilldata/web-local/lib/components/column-profile/ColumnProfileNavEntry.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
@@ -165,25 +163,13 @@
 
       {#if currentDerivedModel?.profile && showColumns}
         <div transition:slide|local={{ duration: 200 }}>
-          <CollapsibleTableSummary
-            entityType={EntityType.Model}
-            showTitle={false}
-            show={showColumns}
-            name={currentModel.name}
+          <ColumnProfileNavEntry
+            indentLevel={0}
             cardinality={currentDerivedModel?.cardinality ?? 0}
-            active={currentModel?.id === $store?.activeEntity?.id}
-          >
-            <ColumnProfileNavEntry
-              slot="summary"
-              let:containerWidth
-              indentLevel={0}
-              {containerWidth}
-              cardinality={currentDerivedModel?.cardinality ?? 0}
-              profile={currentDerivedModel?.profile ?? []}
-              head={currentDerivedModel?.preview ?? []}
-              entityId={activeEntityID}
-            />
-          </CollapsibleTableSummary>
+            profile={currentDerivedModel?.profile ?? []}
+            head={currentDerivedModel?.preview ?? []}
+            entityId={activeEntityID}
+          />
         </div>
       {/if}
     </div>

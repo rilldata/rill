@@ -49,12 +49,6 @@
       <SlidingWords {active}>
         {tooltipText}
       </SlidingWords>
-      <!-- <div class="relative">
-            <span class="invisible">{active ? "hide" : "show"}</span>
-                {#key active}
-                    <span class="absolute" style:left="0" style:top="0px" transition:fly={{duration, y: 7.5 * (!active ? 1 : -1)}}>{active ? "hide" : "show"}</span>
-                {/key}
-        </div> -->
     </TooltipContent>
   </Tooltip>
   <div class="contextual-information justify-self-stretch text-right">

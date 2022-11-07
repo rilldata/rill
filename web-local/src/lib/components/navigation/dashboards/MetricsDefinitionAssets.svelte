@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     MetricsDefinitionEntity,
@@ -7,14 +8,13 @@
   } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-  import notificationStore from "@rilldata/web-local/lib/components/notifications";
-
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+  import notificationStore from "@rilldata/web-local/lib/components/notifications";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../../application-state-stores/application-store";
@@ -29,7 +29,6 @@
   import { getAllMetricsDefinitionsReadable } from "../../../redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "../../../redux-store/store-root";
   import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "../../column-profile/CollapsibleTableSummary.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
   import AddIcon from "../../icons/Add.svelte";
   import Cancel from "../../icons/Cancel.svelte";
@@ -40,6 +39,8 @@
   import { Divider, MenuItem } from "../../menu";
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
+
+  import NavigationEntry from "../NavigationEntry.svelte";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -144,7 +145,7 @@
 </script>
 
 <div
-  class="pl-4 pb-3 pr-4 grid justify-between"
+  class="pl-4 pb-3 pr-3 grid justify-between"
   style="grid-template-columns: auto max-content;"
   out:slide={{ duration: 200 }}
 >
@@ -159,6 +160,9 @@
   <ContextButton
     id={"create-dashboard-button"}
     tooltipText="create a new dashboard"
+    width={24}
+    height={24}
+    rounded
     on:click={dispatchAddEmptyMetricsDef}
   >
     <AddIcon />
@@ -171,13 +175,11 @@
     id="assets-metrics-list"
   >
     {#each $metricsDefinitions as metricsDef (metricsDef.id)}
-      <CollapsibleTableSummary
-        entityType={EntityType.MetricsDefinition}
-        name={metricsDef.metricDefLabel ?? ""}
-        active={$appStore?.activeEntity?.id === metricsDef.id}
-        showRows={false}
-        on:select={() => dispatchSetMetricsDefActive(metricsDef.id)}
+      <NavigationEntry
         notExpandable={true}
+        name={metricsDef.metricDefLabel}
+        href={`/dashboard/${metricsDef.id}`}
+        open={$page.url.pathname === `/dashboard/${metricsDef.id}`}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
@@ -226,7 +228,7 @@
             delete</MenuItem
           >
         </svelte:fragment>
-      </CollapsibleTableSummary>
+      </NavigationEntry>
     {/each}
   </div>
   {#if showRenameMetricsDefinitionModal}
