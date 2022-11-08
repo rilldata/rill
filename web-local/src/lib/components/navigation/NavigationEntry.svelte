@@ -82,7 +82,13 @@
       {/if}
     </div>
 
-    <a class="ui-copy" {href}>
+    <a
+      class="ui-copy"
+      {href}
+      on:click={() => {
+        if (open) onShowDetails();
+      }}
+    >
       {name}
     </a>
 
