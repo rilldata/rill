@@ -13,6 +13,7 @@
   export let yFixed = false;
   export let showCancel = true;
   export let disabled = false;
+  export let useContentForMinSize = false;
 
   const dispatch = createEventDispatcher();
 
@@ -24,7 +25,7 @@
     size === "sm"
       ? "w-1/2 md:w-1/3 xl:w-1/4 2xl:w-1/5"
       : size === "md"
-      ? "min-w-max w-2/3 md:w-2/3 xl:w-1/3 2xl:w-1/3 max-w-2xl"
+      ? "w-2/3 md:w-2/3 xl:w-1/3 2xl:w-1/3 max-w-2xl"
       : size === "lg"
       ? "w-4/5 md:w-3/5 xl:w-1/2 2xl:w-1/3"
       : "";
@@ -50,6 +51,7 @@
     <div
       class="{containerClasses} {xDimClasses} {yDimClasses} rounded pointer-events-auto flex flex-col"
       style:transform={"translateY(-120px)"}
+      class:min-w-max={useContentForMinSize}
     >
       <DialogHeader {compact}>
         <svelte:fragment slot="title"><slot name="title" /></svelte:fragment>
