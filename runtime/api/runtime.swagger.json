@@ -1087,6 +1087,43 @@
           "RuntimeService"
         ]
       }
+    },
+    "/v1/table/cardinality": {
+      "get": {
+        "summary": "table api",
+        "operationId": "RuntimeService_Cardinality",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CardinalityResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -1221,6 +1258,15 @@
           "items": {
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "v1CardinalityResponse": {
+      "type": "object",
+      "properties": {
+        "cardinality": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

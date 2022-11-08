@@ -37,6 +37,7 @@ type Server struct {
 	metastore drivers.Connection
 	logger    *zap.Logger
 	cache     *connectionCache
+	os        drivers.OLAPStore // todo should be a pool, see current usage
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
@@ -55,8 +56,7 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 	}, nil
 }
 
-// Serve starts a gRPC server and a gRPC REST gateway server
-func (s *Server) Serve(ctx context.Context) error {
+func (s *Server) ServeNoWait(ctx context.Context) (*errgroup.Group, error) {
 	group, cctx := errgroup.WithContext(ctx)
 
 	// Start the gRPC server
@@ -99,8 +99,37 @@ func (s *Server) Serve(ctx context.Context) error {
 		s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))
 		return graceful.ServeHTTP(cctx, server, s.opts.HTTPPort)
 	})
+	return group, nil
+}
 
+// Serve starts a gRPC server and a gRPC REST gateway server
+func (s *Server) Serve(ctx context.Context) error {
+	group, _ := s.ServeNoWait(ctx)
 	return group.Wait()
+}
+
+func (s *Server) Cardinality(ctx context.Context, req *api.CardinalityRequest) (*api.CardinalityResponse, error) {
+	bb := s.os == nil
+	s.logger.Info("nil " + fmt.Sprintf("%v", bb))
+
+	rows, err := s.os.Execute(ctx, &drivers.Statement{
+		Query: "select count(*) from " + req.TableName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var count int64
+	for rows.Next() {
+		// note that city can be NULL, so we use the NullString type
+		err := rows.Scan(&count)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &api.CardinalityResponse{
+		Cardinality: count,
+	}, nil
 }
 
 // Ping implements RuntimeService

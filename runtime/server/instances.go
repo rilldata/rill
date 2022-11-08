@@ -50,7 +50,8 @@ func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequ
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	_, ok := conn.OLAPStore()
+	os, ok := conn.OLAPStore() // todo create a pool of OLAP stores, add or get from the pool instead
+	s.os = os
 	if !ok {
 		return nil, status.Error(codes.InvalidArgument, "not a valid OLAP driver")
 	}

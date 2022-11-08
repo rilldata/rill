@@ -11,6 +11,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 const AdBidsPath = "../../web-local/test/data/AdBids.csv"
@@ -64,9 +65,12 @@ func getTestServer() (*Server, string, error) {
 		return nil, "", err
 	}
 
+	l, _ := zap.NewDevelopment(zap.IncreaseLevel(zap.InfoLevel))
 	server, err := NewServer(&ServerOptions{
 		ConnectionCacheSize: 100,
-	}, metastore, nil)
+		GRPCPort:            9090,
+		HTTPPort:            8080,
+	}, metastore, l)
 	if err != nil {
 		return nil, "", err
 	}

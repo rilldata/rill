@@ -11,6 +11,13 @@ option go_package = "github.com/rilldata/rill/runtime/api;api";
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
 // It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
 service RuntimeService {
+  // table api
+  rpc Cardinality(CardinalityRequest) returns (CardinalityResponse) {
+    option (google.api.http) = {
+      get: "/v1/table/cardinality"
+    };
+  }
+
   // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
@@ -226,6 +233,14 @@ service RuntimeService {
       get: "/v1/connectors/meta"
     };
   }
+}
+// table requests
+message CardinalityRequest {
+  string instance_id = 1;
+  string table_name = 2;
+}
+message CardinalityResponse {
+  int64 cardinality = 1;
 }
 
 // Request message for RuntimeService.Ping
