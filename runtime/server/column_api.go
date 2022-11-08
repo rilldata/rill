@@ -9,12 +9,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const DefaultK = 50
-const DefaultAgg = "count(*)"
+const defaultK = 50
+const defaultAgg = "count(*)"
 
 func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*api.TopKResponse, error) {
-	agg := DefaultAgg
-	k := int32(DefaultK)
+	agg := defaultAgg
+	k := int32(defaultK)
 	if topKRequest.Agg != nil {
 		agg = *topKRequest.Agg
 	}
@@ -22,10 +22,10 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*ap
 		k = *topKRequest.K
 	}
 	topKSql := fmt.Sprintf("SELECT %s as value, %s AS count from %s GROUP BY %s ORDER BY count desc LIMIT %d",
-		QuoteName(topKRequest.ColumnName),
+		quoteName(topKRequest.ColumnName),
 		agg,
 		topKRequest.TableName,
-		QuoteName(topKRequest.ColumnName),
+		quoteName(topKRequest.ColumnName),
 		k,
 	)
 	rows, err := s.query(ctx, topKRequest.InstanceId, &drivers.Statement{
@@ -53,6 +53,6 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*ap
 	return resp, nil
 }
 
-func QuoteName(columnName string) string {
+func quoteName(columnName string) string {
 	return fmt.Sprintf("\"%s\"", columnName)
 }
