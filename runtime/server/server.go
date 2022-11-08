@@ -37,7 +37,6 @@ type Server struct {
 	metastore drivers.Connection
 	logger    *zap.Logger
 	cache     *connectionCache
-	os        drivers.OLAPStore // todo should be a pool, see current usage
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
@@ -108,11 +107,10 @@ func (s *Server) Serve(ctx context.Context) error {
 	return group.Wait()
 }
 
+// Table level profiling API
 func (s *Server) Cardinality(ctx context.Context, req *api.CardinalityRequest) (*api.CardinalityResponse, error) {
-	bb := s.os == nil
-	s.logger.Info("nil " + fmt.Sprintf("%v", bb))
 
-	rows, err := s.os.Execute(ctx, &drivers.Statement{
+	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: "select count(*) from " + req.TableName,
 	})
 	if err != nil {
@@ -121,7 +119,6 @@ func (s *Server) Cardinality(ctx context.Context, req *api.CardinalityRequest) (
 	defer rows.Close()
 	var count int64
 	for rows.Next() {
-		// note that city can be NULL, so we use the NullString type
 		err := rows.Scan(&count)
 		if err != nil {
 			return nil, err
