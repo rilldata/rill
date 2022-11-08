@@ -9,6 +9,8 @@
 
   export let show = true;
   export let tooltipText: string;
+  /** The CSS ID used for tests for the context button */
+  export let contextButtonID: string = undefined;
 </script>
 
 <div
@@ -22,7 +24,7 @@
     </h4>
   </CollapsibleSectionTitle>
   <ContextButton
-    id={"create-model-button"}
+    id={contextButtonID}
     {tooltipText}
     on:click={() => {
       dispatch("add");

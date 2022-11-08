@@ -83,6 +83,7 @@
   bind:show={showModels}
   tooltipText="create a new model"
   on:add={addModel}
+  contextButtonID={"create-new-model"}
 >
   <ModelIcon size="16px" /> Models
 </NavigationHeader>

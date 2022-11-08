@@ -66,6 +66,7 @@
   bind:show={showTables}
   tooltipText="add a new data source"
   on:add={openShowAddSourceModal}
+  contextButtonID={"add-table"}
 >
   <Source size="16px" /> Sources
 </NavigationHeader>
