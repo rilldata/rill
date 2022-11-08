@@ -814,6 +814,67 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/topk/{tableName}/{columnName}": {
+      "post": {
+        "summary": "Get TopK elements from a table for a column given an agg function\nagg function and k are optional, defaults are count(*) and 50 respectively",
+        "operationId": "RuntimeService_GetTopK",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TopKResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "agg": {
+                  "type": "string"
+                },
+                "k": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "description": "Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name."
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/ping": {
       "get": {
         "summary": "Ping returns information about the runtime",
@@ -1735,6 +1796,24 @@
         }
       },
       "title": "Source represents a catalog object created using CREATE SOURCE"
+    },
+    "v1TopKResponse": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SchemaColumn"
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "Response for RuntimeService.GetTopK."
     },
     "v1TriggerRefreshResponse": {
       "type": "object",
