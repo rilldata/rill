@@ -14,7 +14,7 @@
   export let nullCount;
   export let example;
   export let entityId;
-  export let view = "summaries"; // summaries, example
+  export let view: "summaries" | "example" = "summaries"; // summaries, example
   export let containerWidth: number;
 
   export let indentLevel = 1;
@@ -24,12 +24,6 @@
   export let compactBreakpoint = 350;
 
   let active = false;
-
-  // FIXME: `close` does not appear to be used in live code, just routes/dev.
-  // Can we remove it? Even there it could be replaced by setting the `active` prop.
-  export function close() {
-    active = false;
-  }
 </script>
 
 <!-- pl-10 -->
