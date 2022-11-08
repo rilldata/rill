@@ -103,7 +103,7 @@ export class DataModelerTest extends TestBase<TestServerSetupParameter> {
     await page.goto(URL);
     await this.delay(500);
     const defaultActiveModel = page.locator(
-      "#assets-model-list .collapsible-table-summary-title"
+      "#assets-model-list .navigation-entry-title"
     );
     const count = await defaultActiveModel.count();
 

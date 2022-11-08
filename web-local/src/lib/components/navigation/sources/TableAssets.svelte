@@ -118,19 +118,20 @@
       {/each}
     {/if}
   </div>
-  {#if showAddSourceModal}
-    <AddSourceModal
-      on:close={() => {
-        showAddSourceModal = false;
-      }}
-    />
-  {/if}
-  {#if showRenameTableModal}
-    <RenameAssetModal
-      entityType={EntityType.Table}
-      closeModal={() => (showRenameTableModal = false)}
-      entityId={renameTableID}
-      currentAssetName={renameTableName}
-    />
-  {/if}
+{/if}
+
+{#if showAddSourceModal}
+  <AddSourceModal
+    on:close={() => {
+      showAddSourceModal = false;
+    }}
+  />
+{/if}
+{#if showRenameTableModal}
+  <RenameAssetModal
+    entityType={EntityType.Table}
+    closeModal={() => (showRenameTableModal = false)}
+    entityId={renameTableID}
+    currentAssetName={renameTableName}
+  />
 {/if}
