@@ -17,7 +17,7 @@ rill import-source /path/to/data_3.tsv
 ```
 
 ## Remote sources
-To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the location where your files are stored ("Google Cloud Storage" or "Amazon S3"). Enter your file's URI and source name before clicking "Add Source".
+To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the location where your files are stored ("Google Cloud Storage", "Amazon S3", or "Local File"). Enter your file's URI and source name before clicking "Add Source".
 
 To access private data, you'll need to configure your local machine with credentials to the relevant cloud provider (see instructions below). Rill uses official cloud SDKs to automatically detect your local credentials and pass them on to the cloud platform. Your credentials are never stored in Rill.
 
