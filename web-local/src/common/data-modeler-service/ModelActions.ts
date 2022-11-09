@@ -446,6 +446,14 @@ export class ModelActions extends DataModelerActions {
     const currentName = model.tableName;
     const sanitizedModelName = cleanModelName(name);
 
+    await this.databaseActionQueue.enqueue(
+      {
+        id: modelId,
+        priority: DatabaseActionQueuePriority.ActiveModelProfile,
+      },
+      "renameView",
+      [currentName, sanitizedModelName]
+    );
     this.dataModelerStateService.dispatch("updateModelName", [
       modelId,
       sanitizedModelName,
