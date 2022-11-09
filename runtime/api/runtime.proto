@@ -724,7 +724,7 @@ message MetricsViewFilter {
   repeated Cond exclude = 3;
 }
 
-// SchemaColumn represents a column in a metrics view
+// MetricsViewColumn represents a column in a metrics view
 message MetricsViewColumn {
   string name = 1;
   string type = 2;
