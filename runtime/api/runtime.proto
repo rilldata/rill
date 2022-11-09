@@ -11,25 +11,6 @@ option go_package = "github.com/rilldata/rill/runtime/api;api";
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
 // It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
 service RuntimeService {
-  // table api
-  rpc TableCardinality(CardinalityRequest) returns (CardinalityResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/tables/{table_name}/cardinality"
-    };
-  }
-
-  rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
-    };
-  }
-
-  rpc TableRows(RowsRequest) returns (RowsResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
-    };
-  }
-
   // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
@@ -236,6 +217,25 @@ service RuntimeService {
     };
   }
 
+  // Tablewide profiling API
+  rpc TableCardinality(CardinalityRequest) returns (CardinalityResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/cardinality"
+    };
+  }
+
+  rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
+    };
+  }
+
+  rpc TableRows(RowsRequest) returns (RowsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
+    };
+  }
+
   // Connectors
 
   // ListConnectors returns a description of all the connectors implemented in the runtime,
@@ -246,41 +246,6 @@ service RuntimeService {
     };
   }
 }
-
-message CardinalityRequest {
-  string instance_id = 1;
-  string table_name = 2;
-}
-
-message CardinalityResponse {
-  int64 cardinality = 1;
-}
-
-message ProfileColumnsRequest {
-  string instance_id = 1;
-  string table_name = 2;
-}
-
-message ProfileColumnsResponse {
-  repeated ProfileColumn profile_column = 1;
-}
-
-message ProfileColumn {
-  string name = 1;
-  string type = 2;
-  int32 largestStringLength = 3;
-}
-
-message RowsRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  int32 limit = 3;
-}
-
-message RowsResponse {
-  repeated google.protobuf.Struct data = 1;
-}
-
 
 // Request message for RuntimeService.Ping
 message PingRequest {}
@@ -740,6 +705,45 @@ message MetricsViewFilter {
   repeated Cond include = 2;
   repeated Cond exclude = 3;
 }
+
+// **********
+// Tablewide profiling API
+// **********
+
+message CardinalityRequest {
+  string instance_id = 1;
+  string table_name = 2;
+}
+
+message CardinalityResponse {
+  int64 cardinality = 1;
+}
+
+message ProfileColumnsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+}
+
+message ProfileColumnsResponse {
+  repeated ProfileColumn profile_column = 1;
+}
+
+message ProfileColumn {
+  string name = 1;
+  string type = 2;
+  int32 largest_string_length = 3;
+}
+
+message RowsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  int32 limit = 3;
+}
+
+message RowsResponse {
+  repeated google.protobuf.Struct data = 1;
+}
+
 
 // **********
 // Connectors
