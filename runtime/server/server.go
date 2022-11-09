@@ -56,7 +56,7 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 	}, nil
 }
 
-func (s *Server) ServeNoWait(ctx context.Context) (*errgroup.Group, error) {
+func (s *Server) Serve(ctx context.Context) error {
 	group, cctx := errgroup.WithContext(ctx)
 
 	// Start the gRPC server
@@ -99,12 +99,6 @@ func (s *Server) ServeNoWait(ctx context.Context) (*errgroup.Group, error) {
 		s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))
 		return graceful.ServeHTTP(cctx, server, s.opts.HTTPPort)
 	})
-	return group, nil
-}
-
-// Serve starts a gRPC server and a gRPC REST gateway server
-func (s *Server) Serve(ctx context.Context) error {
-	group, _ := s.ServeNoWait(ctx)
 	return group.Wait()
 }
 
