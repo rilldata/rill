@@ -10,7 +10,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"

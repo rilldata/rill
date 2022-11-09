@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
@@ -36,18 +37,13 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*ap
 	}
 	defer rows.Close()
 
-	meta, err := rowsToMeta(rows)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	data, err := rowsToData(rows)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	resp := &api.TopKResponse{
-		Meta: meta,
+		Meta: rows.Schema,
 		Data: data,
 	}
 	return resp, nil

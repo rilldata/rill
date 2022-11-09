@@ -7,7 +7,7 @@ if [[ $SKIP_SQL_DEPS == "true" ]]; then
 fi
 
 # Version of librillsql to download
-RILLSQL_VERSION="0.1.3"
+RILLSQL_VERSION="0.1.6"
 
 # Get platform details
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -45,5 +45,5 @@ fi
 mkdir -p $OUTPUT_DIR
 cd $OUTPUT_DIR
 curl -Lo librillsql.zip https://storage.googleapis.com/pkg.rilldata.com/rillsql/releases/v$RILLSQL_VERSION/librillsql-$TARGET.zip
-unzip -u librillsql.zip
+unzip -o librillsql.zip
 rm librillsql.zip

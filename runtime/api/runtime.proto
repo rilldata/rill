@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package runtime.v1;
+package rill.runtime.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
@@ -128,6 +128,14 @@ service RuntimeService {
     };
   }
 
+  // TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
+  // If the instance has exposed=true, tables found in the information schema will be added to the catalog.
+  rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/sync"
+    };
+  }
+
   // Migrations
 
   // Migrate applies a full set of SQL artifacts (files containing CREATE statements) to the catalog/infra.
@@ -217,7 +225,7 @@ service RuntimeService {
     };
   }
 
-  // Column level APIs
+  // Profiling APIs
 
   // Get TopK elements from a table for a column given an agg function
   // agg function and k are optional, defaults are count(*) and 50 respectively
@@ -400,6 +408,7 @@ message GetInstanceResponse {
 // Request message for RuntimeService.CreateInstance
 message CreateInstanceRequest {
   // See message Instance for field descriptions
+  string instance_id = 1;
   string driver = 2;
   string dsn = 3;
   string object_prefix = 4;
@@ -425,14 +434,35 @@ message DeleteInstanceResponse {}
 // Catalog
 // **********
 
+
 // CatalogObject represents an object stored in the catalog
 message CatalogObject {
-  oneof type {
-    Source source = 1;
-    MetricsView metrics_view = 2;
-    UnmanagedTable unmanaged_table = 3;
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_TABLE = 1;
+    TYPE_SOURCE = 2;
+    TYPE_METRICS_VIEW = 3;
   }
-  google.protobuf.Timestamp refreshed_on = 4;
+  Type type = 1;
+  Table table = 2;
+  Source source = 3;
+  MetricsView metrics_view = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+  google.protobuf.Timestamp refreshed_on = 7;
+}
+
+// Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
+// scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
+// have managed = false.
+message Table {
+  // Table name
+  string name = 1;
+  // Table schema
+  StructType schema = 2;
+  // Managed is true if the table was created through a runtime migration, false if it was discovered in by
+  // scanning the database's information schema.
+  bool managed = 3;
 }
 
 // Source represents a catalog object created using CREATE SOURCE
@@ -445,6 +475,8 @@ message Source {
   string connector = 3;
   // Connector properties assigned in the source
   google.protobuf.Struct properties = 4;
+  // Detected schema of the source
+  StructType schema = 5;
 }
 
 // MetricsView represents a catalog object created using CREATE METRICS VIEW
@@ -474,18 +506,10 @@ message MetricsView {
   repeated Measure measures = 5;
 }
 
-// UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that
-// was NOT created through the runtime's migrations). The runtime periodically looks for
-// unmanaged tables in the database's information schema if the instance is created with exposed=true.
-message UnmanagedTable {
-  string name = 1;
-  bool view = 2;
-  repeated SchemaColumn schema = 3;
-}
-
 // Request message for RuntimeService.ListCatalogObjects
 message ListCatalogObjectsRequest {
   string instance_id = 1;
+  CatalogObject.Type type = 2;
 }
 
 // Response message for RuntimeService.ListCatalogObjects
@@ -512,6 +536,19 @@ message TriggerRefreshRequest {
 
 // Response message for RuntimeService.TriggerRefresh
 message TriggerRefreshResponse {}
+
+// Request message for RuntimeService.TriggerSync
+message TriggerSyncRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.TriggerSync
+message TriggerSyncResponse {
+  uint32 objects_count = 1;
+  uint32 objects_added_count = 2;
+  uint32 objects_updated_count = 3;
+  uint32 objects_removed_count = 4;
+}
 
 // **********
 // Migrations
@@ -582,7 +619,7 @@ message QueryRequest {
 // Response message for RuntimeService.Query
 message QueryResponse {
   // Schema of result data
-  repeated SchemaColumn meta = 1;
+  StructType meta = 1;
   // Result data
   repeated google.protobuf.Struct data = 2;
 }
@@ -604,7 +641,7 @@ message QueryDirectRequest {
 // Response message for RuntimeService.QueryDirect
 message QueryDirectResponse {
   // Schema of result data
-  repeated SchemaColumn meta = 1;
+  StructType meta = 1;
   // Result data
   repeated google.protobuf.Struct data = 2;
 }
@@ -643,7 +680,7 @@ message MetricsViewToplistRequest {
 
 // Response message for RuntimeService.MetricsViewToplist
 message MetricsViewToplistResponse {
-  repeated SchemaColumn meta = 1;
+  repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -660,7 +697,7 @@ message MetricsViewTimeSeriesRequest {
 
 // Response message for RuntimeService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesResponse {
-  repeated SchemaColumn meta = 1;
+  repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -676,7 +713,7 @@ message MetricsViewTotalsRequest {
 
 // Response message for RuntimeService.MetricsViewTotals
 message MetricsViewTotalsResponse {
-  repeated SchemaColumn meta = 1;
+  repeated MetricsViewColumn meta = 1;
   google.protobuf.Struct data = 2;
 }
 
@@ -698,6 +735,17 @@ message MetricsViewFilter {
   repeated Cond exclude = 3;
 }
 
+// MetricsViewColumn represents a column in a metrics view
+message MetricsViewColumn {
+  string name = 1;
+  string type = 2;
+  bool nullable = 3;
+}
+
+// **********
+// Profiling APIs
+// **********
+
 // Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
 message TopKRequest {
   string instance_id = 1;
@@ -709,7 +757,7 @@ message TopKRequest {
 
 // Response for RuntimeService.GetTopK.
 message TopKResponse {
-  repeated SchemaColumn meta = 1;
+  StructType meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -769,8 +817,59 @@ message ListConnectorsResponse {
 // Common messages
 // **********
 
-message SchemaColumn {
-  string name = 1;
-  string type = 2;
-  bool nullable = 3;
+// Type represents a data type in a schema
+message Type {
+  // Code enumerates all the types that can be represented in a schema
+  enum Code {
+    CODE_UNSPECIFIED = 0;
+    CODE_BOOL = 1;
+    CODE_INT8 = 2;
+    CODE_INT16 = 3;
+    CODE_INT32 = 4;
+    CODE_INT64 = 5;
+    CODE_INT128 = 6;
+    CODE_UINT8 = 7;
+    CODE_UINT16 = 8;
+    CODE_UINT32 = 9;
+    CODE_UINT64 = 10;
+    CODE_UINT128 = 11;
+    CODE_FLOAT32 = 12;
+    CODE_FLOAT64 = 13;
+    CODE_TIMESTAMP = 14;
+    CODE_DATE = 15;
+    CODE_TIME = 16;
+    CODE_STRING = 17;
+    CODE_BYTES = 18;
+    CODE_ARRAY = 19;
+    CODE_STRUCT = 20;
+    CODE_MAP = 21;
+    CODE_DECIMAL = 22;
+    CODE_JSON = 23;
+    CODE_UUID = 24;
+  }
+  // Code designates the type
+  Code code = 1;
+  // Nullable indicates whether null values are possible
+  bool nullable = 2;
+  // If code is CODE_ARRAY, array_element_type specifies the type of the array elements
+  Type array_element_type = 3;
+  // If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
+  StructType struct_type = 4;
+  // If code is CODE_MAP, map_type specifies the map's key and value types
+  MapType map_type = 5;
+}
+
+// StructType is a type composed of ordered, named and typed sub-fields
+message StructType {
+  message Field {
+    string name = 1;
+    Type type = 2;
+  }
+  repeated Field fields = 1;
+}
+
+// MapType is a complex type for mapping keys to values
+message MapType {
+  Type key_type = 1;
+  Type value_type = 2;
 }

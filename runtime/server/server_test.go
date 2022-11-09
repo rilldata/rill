@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func getTestServer(t *testing.T) (*Server, string, error) {
@@ -16,10 +18,11 @@ func getTestServer(t *testing.T) (*Server, string, error) {
 	require.NoError(t, err)
 
 	server, err := NewServer(&ServerOptions{
-		ConnectionCacheSize: 100,
+		ConnectionCacheSize:  100,
+		CatalogCacheSize:     100,
+		CatalogCacheDuration: 10 * time.Second,
 	}, metastore, nil)
 	require.NoError(t, err)
-	require.NotNil(t, server)
 
 	resp, err := server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
 		Driver:       "duckdb",
@@ -28,7 +31,6 @@ func getTestServer(t *testing.T) (*Server, string, error) {
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
-	require.NotNil(t, resp)
 	require.NotEmpty(t, resp.InstanceId)
 
 	return server, resp.InstanceId, nil
