@@ -4,6 +4,7 @@
     ConnectorPropertyType,
     getRuntimeServiceListCatalogObjectsQueryKey,
     RpcStatus,
+    RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceMigrateSingle,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
@@ -84,7 +85,7 @@
               dispatch("close");
               overlay.set(null);
               return queryClient.invalidateQueries(
-                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId)
+                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, { type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE })
               );
             },
             onError: () => {

@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceListCatalogObjects,
     useRuntimeServiceMigrateDelete,
     useRuntimeServiceMigrateSingle,
@@ -184,7 +185,7 @@
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
-  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId);
+  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, { type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE });
 
   const onRefreshSource = async (id: string, tableName: string) => {
     try {
