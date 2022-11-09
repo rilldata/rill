@@ -15,7 +15,7 @@ import (
 const AdBidsPath = "../../web-local/test/data/AdBids.csv"
 
 func TestServer_MigrateSingleSources(t *testing.T) {
-	server, instanceId, err := GetTestServer()
+	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
 
 	_, err = server.MigrateSingle(context.Background(), &api.MigrateSingleRequest{

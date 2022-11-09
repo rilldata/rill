@@ -8,23 +8,14 @@ import (
 )
 
 func TestServer_GetTopK(t *testing.T) {
-	server, instanceId, err := GetTestServer()
+	server, instanceId, err := getTestServer(t)
 
-	server.QueryDirect(context.Background(), &api.QueryDirectRequest{
+	_, err = server.QueryDirect(context.Background(), &api.QueryDirectRequest{
 		InstanceId: instanceId,
 		Sql:        "CREATE TABLE test AS (SELECT 'abc' AS col, 1 AS val UNION ALL SELECT 'def' AS col, 5 AS val UNION ALL SELECT 'abc' AS col, 3 AS val)",
 		Args:       nil,
 	})
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	if server == nil {
-		t.Fatal("server is nil")
-	}
-	if instanceId == "" {
-		t.Fatal("instanceId is empty")
-	}
+	require.NoError(t, err)
 
 	res, err := server.GetTopK(context.Background(), &api.TopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	if err != nil {
