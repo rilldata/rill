@@ -182,7 +182,6 @@ func (i *Isolate) eventLoop() {
 	if status != 0 || err != nil {
 		panic(fmt.Errorf("failed to teardown isolate"))
 	}
-
 }
 
 // See getLibSQL
