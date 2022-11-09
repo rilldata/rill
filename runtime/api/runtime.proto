@@ -24,6 +24,12 @@ service RuntimeService {
     };
   }
 
+  rpc TableRows(RowsRequest) returns (RowsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
+    };
+  }
+
   // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
@@ -262,8 +268,19 @@ message ProfileColumnsResponse {
 message ProfileColumn {
   string name = 1;
   string type = 2;
-  int64 largestStringLength = 3;
+  int32 largestStringLength = 3;
 }
+
+message RowsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  int32 limit = 3;
+}
+
+message RowsResponse {
+  repeated google.protobuf.Struct data = 1;
+}
+
 
 // Request message for RuntimeService.Ping
 message PingRequest {}

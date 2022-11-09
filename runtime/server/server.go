@@ -17,6 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/rilldata/rill/runtime"
@@ -131,6 +132,14 @@ func (s *Server) TableCardinality(ctx context.Context, req *api.CardinalityReque
 func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequest) (*api.ProfileColumnsResponse, error) {
 	return &api.ProfileColumnsResponse{
 		ProfileColumn: []*api.ProfileColumn{},
+	}, nil
+}
+
+func (s *Server) TableRows(ctx context.Context, req *api.RowsRequest) (*api.RowsResponse, error) {
+	rows := make([]*structpb.Struct, 1)
+	rows[0] = &structpb.Struct{}
+	return &api.RowsResponse{
+		Data: rows,
 	}, nil
 }
 

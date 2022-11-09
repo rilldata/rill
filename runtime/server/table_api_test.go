@@ -59,7 +59,7 @@ func createTestTable(server *Server, instanceId string, t *testing.T) *sqlx.Rows
 	return rows
 }
 
-func TestServer_Cardinality(t *testing.T) {
+func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId, err := getTestServer()
 	if err != nil {
 		t.Fatal(err)
@@ -91,4 +91,21 @@ func TestServer_ProfileColumns(t *testing.T) {
 		t.Fatal(err)
 	}
 	require.Equal(t, 0, len(cr.ProfileColumn))
+}
+
+func TestServer_TableRows(t *testing.T) {
+	server, instanceId, err := getTestServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := createTestTable(server, instanceId, t)
+	rows.Close()
+	cr, err := server.TableRows(context.Background(), &api.RowsRequest{
+		InstanceId: instanceId,
+		TableName:  "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.Equal(t, 1, len(cr.Data))
 }
