@@ -12,9 +12,15 @@ option go_package = "github.com/rilldata/rill/runtime/api;api";
 // It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
 service RuntimeService {
   // table api
-  rpc Cardinality(CardinalityRequest) returns (CardinalityResponse) {
+  rpc TableCardinality(CardinalityRequest) returns (CardinalityResponse) {
     option (google.api.http) = {
-      get: "/v1/table/cardinality"
+      get: "/v1/instances/{instance_id}/tables/{table_name}/cardinality"
+    };
+  }
+
+  rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
     };
   }
 
@@ -234,13 +240,29 @@ service RuntimeService {
     };
   }
 }
-// table requests
+
 message CardinalityRequest {
   string instance_id = 1;
   string table_name = 2;
 }
+
 message CardinalityResponse {
   int64 cardinality = 1;
+}
+
+message ProfileColumnsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+}
+
+message ProfileColumnsResponse {
+  repeated ProfileColumn profile_column = 1;
+}
+
+message ProfileColumn {
+  string name = 1;
+  string type = 2;
+  int64 largestStringLength = 3;
 }
 
 // Request message for RuntimeService.Ping

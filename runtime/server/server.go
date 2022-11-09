@@ -108,8 +108,7 @@ func (s *Server) Serve(ctx context.Context) error {
 }
 
 // Table level profiling API
-func (s *Server) Cardinality(ctx context.Context, req *api.CardinalityRequest) (*api.CardinalityResponse, error) {
-
+func (s *Server) TableCardinality(ctx context.Context, req *api.CardinalityRequest) (*api.CardinalityResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: "select count(*) from " + req.TableName,
 	})
@@ -126,6 +125,12 @@ func (s *Server) Cardinality(ctx context.Context, req *api.CardinalityRequest) (
 	}
 	return &api.CardinalityResponse{
 		Cardinality: count,
+	}, nil
+}
+
+func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequest) (*api.ProfileColumnsResponse, error) {
+	return &api.ProfileColumnsResponse{
+		ProfileColumn: []*api.ProfileColumn{},
 	}, nil
 }
 
