@@ -22,8 +22,6 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RuntimeServiceClient interface {
-	// table api
-	Cardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error)
 	// Ping returns information about the runtime
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// ListRepos lists all the repos currently managed by the runtime
@@ -87,6 +85,10 @@ type RuntimeServiceClient interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
+	// Tablewide profiling API
+	TableCardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error)
+	ProfileColumns(ctx context.Context, in *ProfileColumnsRequest, opts ...grpc.CallOption) (*ProfileColumnsResponse, error)
+	TableRows(ctx context.Context, in *RowsRequest, opts ...grpc.CallOption) (*RowsResponse, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
@@ -98,15 +100,6 @@ type runtimeServiceClient struct {
 
 func NewRuntimeServiceClient(cc grpc.ClientConnInterface) RuntimeServiceClient {
 	return &runtimeServiceClient{cc}
-}
-
-func (c *runtimeServiceClient) Cardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error) {
-	out := new(CardinalityResponse)
-	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/Cardinality", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *runtimeServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
@@ -325,6 +318,33 @@ func (c *runtimeServiceClient) MetricsViewTotals(ctx context.Context, in *Metric
 	return out, nil
 }
 
+func (c *runtimeServiceClient) TableCardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error) {
+	out := new(CardinalityResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/TableCardinality", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ProfileColumns(ctx context.Context, in *ProfileColumnsRequest, opts ...grpc.CallOption) (*ProfileColumnsResponse, error) {
+	out := new(ProfileColumnsResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/ProfileColumns", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) TableRows(ctx context.Context, in *RowsRequest, opts ...grpc.CallOption) (*RowsResponse, error) {
+	out := new(RowsResponse)
+	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/TableRows", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error) {
 	out := new(ListConnectorsResponse)
 	err := c.cc.Invoke(ctx, "/runtime.v1.RuntimeService/ListConnectors", in, out, opts...)
@@ -338,8 +358,6 @@ func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConne
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
 type RuntimeServiceServer interface {
-	// table api
-	Cardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error)
 	// Ping returns information about the runtime
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// ListRepos lists all the repos currently managed by the runtime
@@ -403,6 +421,10 @@ type RuntimeServiceServer interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
+	// Tablewide profiling API
+	TableCardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error)
+	ProfileColumns(context.Context, *ProfileColumnsRequest) (*ProfileColumnsResponse, error)
+	TableRows(context.Context, *RowsRequest) (*RowsResponse, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
@@ -413,9 +435,6 @@ type RuntimeServiceServer interface {
 type UnimplementedRuntimeServiceServer struct {
 }
 
-func (UnimplementedRuntimeServiceServer) Cardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Cardinality not implemented")
-}
 func (UnimplementedRuntimeServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
@@ -488,6 +507,15 @@ func (UnimplementedRuntimeServiceServer) MetricsViewTimeSeries(context.Context, 
 func (UnimplementedRuntimeServiceServer) MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTotals not implemented")
 }
+func (UnimplementedRuntimeServiceServer) TableCardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TableCardinality not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ProfileColumns(context.Context, *ProfileColumnsRequest) (*ProfileColumnsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProfileColumns not implemented")
+}
+func (UnimplementedRuntimeServiceServer) TableRows(context.Context, *RowsRequest) (*RowsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
 }
@@ -502,24 +530,6 @@ type UnsafeRuntimeServiceServer interface {
 
 func RegisterRuntimeServiceServer(s grpc.ServiceRegistrar, srv RuntimeServiceServer) {
 	s.RegisterService(&RuntimeService_ServiceDesc, srv)
-}
-
-func _RuntimeService_Cardinality_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CardinalityRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).Cardinality(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/runtime.v1.RuntimeService/Cardinality",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).Cardinality(ctx, req.(*CardinalityRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _RuntimeService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -954,6 +964,60 @@ func _RuntimeService_MetricsViewTotals_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_TableCardinality_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CardinalityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).TableCardinality(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/TableCardinality",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).TableCardinality(ctx, req.(*CardinalityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ProfileColumns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProfileColumnsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ProfileColumns(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/ProfileColumns",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ProfileColumns(ctx, req.(*ProfileColumnsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_TableRows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RowsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).TableRows(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/runtime.v1.RuntimeService/TableRows",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).TableRows(ctx, req.(*RowsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListConnectorsRequest)
 	if err := dec(in); err != nil {
@@ -979,10 +1043,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "runtime.v1.RuntimeService",
 	HandlerType: (*RuntimeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Cardinality",
-			Handler:    _RuntimeService_Cardinality_Handler,
-		},
 		{
 			MethodName: "Ping",
 			Handler:    _RuntimeService_Ping_Handler,
@@ -1078,6 +1138,18 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewTotals",
 			Handler:    _RuntimeService_MetricsViewTotals_Handler,
+		},
+		{
+			MethodName: "TableCardinality",
+			Handler:    _RuntimeService_TableCardinality_Handler,
+		},
+		{
+			MethodName: "ProfileColumns",
+			Handler:    _RuntimeService_ProfileColumns_Handler,
+		},
+		{
+			MethodName: "TableRows",
+			Handler:    _RuntimeService_TableRows_Handler,
 		},
 		{
 			MethodName: "ListConnectors",
