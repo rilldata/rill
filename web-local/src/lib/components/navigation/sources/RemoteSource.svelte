@@ -85,7 +85,9 @@
               dispatch("close");
               overlay.set(null);
               return queryClient.invalidateQueries(
-                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, { type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE })
+                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, {
+                  type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
+                })
               );
             },
             onError: () => {

@@ -185,7 +185,9 @@
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
-  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, { type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE });
+  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
+    type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
+  });
 
   const onRefreshSource = async (id: string, tableName: string) => {
     try {
