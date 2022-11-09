@@ -88,6 +88,9 @@ type RuntimeServiceClient interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
+	// Get TopK elements from a table for a column given an agg function
+	// agg function and k are optional, defaults are count(*) and 50 respectively
+	GetTopK(ctx context.Context, in *TopKRequest, opts ...grpc.CallOption) (*TopKResponse, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
@@ -326,6 +329,15 @@ func (c *runtimeServiceClient) MetricsViewTotals(ctx context.Context, in *Metric
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GetTopK(ctx context.Context, in *TopKRequest, opts ...grpc.CallOption) (*TopKResponse, error) {
+	out := new(TopKResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetTopK", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error) {
 	out := new(ListConnectorsResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/ListConnectors", in, out, opts...)
@@ -405,6 +417,9 @@ type RuntimeServiceServer interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
+	// Get TopK elements from a table for a column given an agg function
+	// agg function and k are optional, defaults are count(*) and 50 respectively
+	GetTopK(context.Context, *TopKRequest) (*TopKResponse, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
@@ -489,6 +504,9 @@ func (UnimplementedRuntimeServiceServer) MetricsViewTimeSeries(context.Context, 
 }
 func (UnimplementedRuntimeServiceServer) MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTotals not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetTopK(context.Context, *TopKRequest) (*TopKResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopK not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
@@ -956,6 +974,24 @@ func _RuntimeService_MetricsViewTotals_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GetTopK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TopKRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetTopK(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/GetTopK",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetTopK(ctx, req.(*TopKRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListConnectorsRequest)
 	if err := dec(in); err != nil {
@@ -1080,6 +1116,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewTotals",
 			Handler:    _RuntimeService_MetricsViewTotals_Handler,
+		},
+		{
+			MethodName: "GetTopK",
+			Handler:    _RuntimeService_GetTopK_Handler,
 		},
 		{
 			MethodName: "ListConnectors",

@@ -17,6 +17,16 @@ export class DatabaseTableActions extends DatabaseActions {
             CREATE OR REPLACE TEMPORARY VIEW "${tableName}" AS (${query});`);
   }
 
+  public async renameView(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    newTableName: string
+  ): Promise<void> {
+    await this.databaseClient.execute(
+      `ALTER VIEW ${tableName} RENAME TO ${newTableName};`
+    );
+  }
+
   public async getFirstNOfTable(
     metadata: DatabaseMetadata,
     tableName: string,

@@ -1,3 +1,4 @@
+import { expect } from "@jest/globals";
 import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
 import { ActionErrorType } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponseMessage";
 import {
@@ -10,6 +11,7 @@ import {
   ModelQueryTestData,
   ModelQueryTestDataProvider,
   SingleTableQuery,
+  TwoTableJoinQuery,
 } from "../data/ModelQuery.data";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 
@@ -194,5 +196,27 @@ export class ModelQuerySpec extends FunctionalTestBase {
     expect(renameResp.messages[0].errorType).toBe(
       ActionErrorType.ExistingEntityError
     );
+  }
+
+  @FunctionalTestBase.Test()
+  public async shouldRenameUnderlyingView() {
+    await this.clientDataModelerService.dispatch("addModel", [
+      { name: "RenameModel", query: TwoTableJoinQuery },
+    ]);
+    await this.waitForModels();
+
+    const [model] = this.getModels("tableName", "RenameModel");
+    await this.clientDataModelerService.dispatch("updateModelName", [
+      model.id,
+      "RenameModel_Renamed",
+    ]);
+
+    const queryResp = await this.serverDataModelerService
+      .getDatabaseService()
+      .getDatabaseClient()
+      .requestToInstance("query/direct", {
+        sql: "select * from RenameModel_Renamed limit 5",
+      });
+    expect(queryResp.data.length).toBe(5);
   }
 }

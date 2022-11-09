@@ -137,7 +137,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTota
 }
 
 func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
-	rows, err := s.queryDirect(ctx, instanceId, &drivers.Statement{
+	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
 		Priority: 1,

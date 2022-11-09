@@ -28,7 +28,7 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 		args[i] = arg.AsInterface()
 	}
 
-	res, err := s.queryDirect(ctx, req.InstanceId, &drivers.Statement{
+	res, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query:    req.Sql,
 		Args:     args,
 		DryRun:   req.DryRun,
@@ -60,7 +60,7 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 	return resp, nil
 }
 
-func (s *Server) queryDirect(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
+func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, instanceID)
 	if !found {

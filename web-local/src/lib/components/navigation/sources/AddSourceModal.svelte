@@ -43,6 +43,7 @@
 
 <Dialog
   compact
+  useContentForMinSize
   {disabled}
   on:cancel={() => dispatch("close")}
   showCancel
