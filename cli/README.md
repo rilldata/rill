@@ -4,12 +4,10 @@
 
 ## Example usage:
 
-```sh
-rill --help
-rill version
-rill init [name]
-rill start [path]
-rill import-source [path]
-rill drop-source [path]
-rill init-example
+1. In a terminal, Run following commands to use rill cli:
 ```
+make cli
+./rill --help 
+```
+
+*NOTE: Few of the CLI commands are work in progress, it will just print the message eg. `command Name is called`
