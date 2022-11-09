@@ -9,9 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/sql"
 	sqlpure "github.com/rilldata/rill/runtime/sql/pure"
-	"github.com/rilldata/rill/runtime/sql/rpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -35,7 +33,7 @@ func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObj
 	objs := catalog.FindObjects(ctx, req.InstanceId, catalogObjectTypeFromPB(req.Type))
 	pbs := make([]*api.CatalogObject, len(objs))
 	for i, obj := range objs {
-		pbs[i], err = s.catalogObjectToPB(ctx, obj, catalog, inst)
+		pbs[i], err = catalogObjectToPB(obj)
 		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
@@ -62,7 +60,7 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
 
-	pb, err := s.catalogObjectToPB(ctx, obj, catalog, inst)
+	pb, err := catalogObjectToPB(obj)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -268,17 +266,14 @@ func catalogObjectTypeFromPB(t api.CatalogObject_Type) drivers.CatalogObjectType
 	}
 }
 
-// TODO: This should not be a stateful function. When we store an object's parsed definition in the catalog, return it to a stateless implementation.
-func (s *Server) catalogObjectToPB(ctx context.Context, obj *drivers.CatalogObject, catalog drivers.CatalogStore, instance *drivers.Instance) (*api.CatalogObject, error) {
+func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 	switch obj.Type {
 	case drivers.CatalogObjectTypeTable:
 		return catalogObjectTableToPB(obj)
 	case drivers.CatalogObjectTypeSource:
 		return catalogObjectSourceToPB(obj)
-	case drivers.CatalogObjectTypeMetricsView:
-		return s.catalogObjectMetricsViewToPB(ctx, obj, catalog, instance)
 	default:
-		panic(fmt.Errorf("not implemented"))
+		panic(fmt.Errorf("not implemented for type %v", obj.Type))
 	}
 }
 
@@ -322,21 +317,6 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, er
 	}, nil
 }
 
-func (s *Server) catalogObjectMetricsViewToPB(ctx context.Context, obj *drivers.CatalogObject, catalog drivers.CatalogStore, instance *drivers.Instance) (*api.CatalogObject, error) {
-	mv, err := s.sqlToMetricsView(ctx, obj.SQL, catalog, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.CatalogObject{
-		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
-		MetricsView: mv,
-		CreatedOn:   timestamppb.New(obj.CreatedOn),
-		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-		RefreshedOn: timestamppb.New(obj.RefreshedOn),
-	}, nil
-}
-
 func sqlToSource(sqlStr string) (*connectors.Source, error) {
 	astStmt, err := sqlpure.Parse(sqlStr)
 	if err != nil {
@@ -374,78 +354,6 @@ func sqlToSource(sqlStr string) (*connectors.Source, error) {
 	}
 
 	return s, nil
-}
-
-func (s *Server) sqlToMetricsView(ctx context.Context, sqlStr string, catalog drivers.CatalogStore, instance *drivers.Instance) (*api.MetricsView, error) {
-	// NOTE: This makes so many assumptions about the AST returned from sql.Parse
-	// as to be close to useless for real user input.
-
-	var dialect rpc.Dialect
-	switch instance.Driver {
-	case "duckdb":
-		dialect = rpc.Dialect_DUCKDB
-	case "druid":
-		dialect = rpc.Dialect_DRUID
-	default:
-		panic(fmt.Errorf("unexpected instance driver: %s", instance.Driver))
-	}
-
-	allObjs := s.catalogCache.allObjects(ctx, instance.ID, catalog)
-
-	n1, err := sql.Parse(sqlStr, dialect, allObjs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse metrics view: %s", err.Error())
-	}
-
-	base := n1.GetSqlCreateMetricsViewProto()
-	if base == nil {
-		return nil, fmt.Errorf("not a metrics view: %s", sqlStr)
-	}
-
-	from := base.From.GetSqlIdentifierProto()
-	if from == nil {
-		return nil, fmt.Errorf("expected identifier in from clause, got: %s", from.String())
-	}
-
-	mv := &api.MetricsView{
-		Sql:        sqlStr,
-		Name:       strings.Join(base.Name.Names, "."),
-		FromObject: strings.Join(from.Names, "."),
-	}
-
-	mv.Dimensions = make([]*api.MetricsView_Dimension, len(base.Dimensions.List))
-	for i, dim := range base.Dimensions.List {
-		dimIdent := dim.GetSqlIdentifierProto()
-		if dimIdent == nil {
-			return nil, fmt.Errorf("expected identifer for dimension: %s", dim.String())
-		}
-
-		mv.Dimensions[i] = &api.MetricsView_Dimension{
-			Name: strings.Join(dimIdent.Names, "."),
-			// Type:
-			// PrimaryTime:
-		}
-	}
-
-	mv.Measures = make([]*api.MetricsView_Measure, len(base.Measures.List))
-	for i, msr := range base.Measures.List {
-		as := msr.GetSqlBasicCallProto()
-		if as == nil {
-			return nil, fmt.Errorf("expected AS clause for measure, got: %s", msr.String())
-		}
-
-		nameIdent := as.OperandList[len(as.OperandList)-1].GetSqlIdentifierProto()
-		if nameIdent == nil {
-			return nil, fmt.Errorf("expected name for measure, got: %s", msr.String())
-		}
-
-		mv.Measures[i] = &api.MetricsView_Measure{
-			Name: strings.Join(nameIdent.Names, "."),
-			// Type: ,
-		}
-	}
-
-	return mv, nil
 }
 
 func safePtrToStr(s *string) string {

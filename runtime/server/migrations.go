@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -20,12 +19,8 @@ func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.Mig
 // MigrateSingle implements RuntimeService
 // NOTE: Everything here is an initial implementation with many flaws.
 func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
-	// Horrible multiplexing between the pure and Calcite SQL implementations
-	if strings.Contains(strings.ToLower(req.Sql), "create metrics view") {
-		return s.migrateSingleMetricsView(ctx, req)
-	} else {
-		return s.migrateSingleSource(ctx, req)
-	}
+	// TODO: Handle all kinds of objects, not just sources
+	return s.migrateSingleSource(ctx, req)
 }
 
 // MigrateDelete implements RuntimeService
@@ -245,96 +240,6 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 		rows.Close()
-	}
-
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
-
-	// Done
-	return &api.MigrateSingleResponse{}, nil
-}
-
-func (s *Server) migrateSingleMetricsView(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
-	// Get instance
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	// Get catalog
-	catalog, err := s.openCatalog(ctx, inst)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// Parse SQL
-	mv, err := s.sqlToMetricsView(ctx, req.Sql, catalog, inst)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// Get existing object with name and check it's a metrics view
-	existingObj, existingFound := catalog.FindObject(ctx, req.InstanceId, mv.Name)
-	if existingFound && !req.CreateOrReplace {
-		return nil, status.Errorf(codes.InvalidArgument, "an existing object with name '%s' already exists (consider setting `create_or_replace=true`)", existingObj.Name)
-	}
-	if existingFound && existingObj.Type != drivers.CatalogObjectTypeMetricsView {
-		return nil, status.Errorf(codes.InvalidArgument, "an object of type '%s' already exists with name '%s'", existingObj.Type, existingObj.Name)
-	}
-
-	// Get object to rename and check it's a valid rename op
-	var renameObj *drivers.CatalogObject
-	var renameFound bool
-	if req.RenameFrom != "" {
-		// Check that we're not renaming to a name that's already taken
-		if existingFound {
-			return nil, status.Errorf(codes.InvalidArgument, "cannot rename '%s' to '%s' because a metrics view with that name already exists", req.RenameFrom, mv.Name)
-		}
-
-		// Get the object to rename
-		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, req.RenameFrom)
-		if !renameFound {
-			return nil, status.Errorf(codes.InvalidArgument, "could not find existing object named '%s' to rename", req.RenameFrom)
-		}
-		if renameObj.Type != drivers.CatalogObjectTypeMetricsView {
-			return nil, status.Errorf(codes.InvalidArgument, "cannot rename object '%s' because it is not a metrics view", req.RenameFrom)
-		}
-	}
-
-	// Stop execution now if it's just a dry run
-	if req.DryRun {
-		return &api.MigrateSingleResponse{}, nil
-	}
-
-	// Create the object to save
-	newObj := &drivers.CatalogObject{
-		Name: mv.Name,
-		Type: drivers.CatalogObjectTypeMetricsView,
-		SQL:  req.Sql,
-	}
-
-	// We now have several cases to handle
-	if !existingFound && !renameFound {
-		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
-		if err != nil {
-			return nil, status.Errorf(codes.Unknown, "error: could not insert metrics view into catalog: %s (warning: watch out for corruptions)", err.Error())
-		}
-	} else if existingFound && !renameFound {
-		err = catalog.UpdateObject(ctx, req.InstanceId, newObj)
-		if err != nil {
-			return nil, status.Errorf(codes.Unknown, "error: could not update metrics view in catalog: %s (warning: watch out for corruptions)", err.Error())
-		}
-	} else if renameFound { // earlier check ensures !existingFound
-		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
-		if err != nil {
-			return nil, status.Errorf(codes.Unknown, "error: could not insert metrics view into catalog: %s (warning: watch out for corruptions)", err.Error())
-		}
-
-		err = catalog.DeleteObject(ctx, req.InstanceId, renameObj.Name)
-		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
 	}
 
 	// Reset catalog cache

@@ -8,9 +8,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -22,7 +19,8 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server"
-	_ "github.com/rilldata/rill/runtime/sql"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
