@@ -159,7 +159,7 @@ jobs:
         - npm prune --production
 
         - echo "Building vercel/pkg binary"
-        - node build-tools/replace_package_type.cjs module commonjs && npm run build-vercel-pkg
+        - npm run to-commonjs && npm run build-vercel-pkg
         - ./scripts/upload.sh
 
       deploy: &deploy-vercel-pkg

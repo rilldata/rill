@@ -43,6 +43,9 @@ export class ExtractTableNameSpec extends TestBase {
 
     return {
       subData: [
+        getVariations("22-02-10.parquet", "_22_02_10"),
+        getVariations("-22-02-11.parquet", "_22_02_11"),
+        getVariations("_22-02-12.parquet", "_22_02_12"),
         getVariations("table.parquet", "table"),
         getVariations("table.v1.parquet", "table_v1"),
         getVariations("table", "table", ""),

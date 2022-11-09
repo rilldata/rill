@@ -23,9 +23,9 @@ const sidebars = {
       label: 'Get started',
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'install',
       label: 'Install Rill',
-      items: ['install/binary', 'install/docker', 'install/npm'],
     },
     {
       type: 'doc',

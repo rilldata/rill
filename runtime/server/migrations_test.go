@@ -25,7 +25,7 @@ func TestServer_MigrateSingleSources(t *testing.T) {
 		DryRun:     false,
 	})
 	require.NoError(t, err)
-	assertTableCount(t, server, instanceId, "AdBids", 100000)
+	assertTablePresence(t, server, instanceId, "AdBids", 100000)
 
 	_, err = server.MigrateSingle(context.Background(), &api.MigrateSingleRequest{
 		InstanceId: instanceId,
@@ -41,7 +41,7 @@ func TestServer_MigrateSingleSources(t *testing.T) {
 		CreateOrReplace: true,
 	})
 	require.NoError(t, err)
-	assertTableCount(t, server, instanceId, "adbids", 100000)
+	assertTablePresence(t, server, instanceId, "adbids", 100000)
 
 	_, err = server.MigrateSingle(context.Background(), &api.MigrateSingleRequest{
 		InstanceId:      instanceId,
@@ -51,7 +51,7 @@ func TestServer_MigrateSingleSources(t *testing.T) {
 		RenameFrom:      "AdBids",
 	})
 	require.NoError(t, err)
-	assertTableCount(t, server, instanceId, "AdBids_New", 100000)
+	assertTablePresence(t, server, instanceId, "AdBids_New", 100000)
 }
 
 func getTestServer() (*Server, string, error) {
@@ -86,7 +86,7 @@ func getTestServer() (*Server, string, error) {
 	return server, resp.InstanceId, nil
 }
 
-func assertTableCount(t *testing.T, server *Server, instanceId string, tableName string, count int) {
+func assertTablePresence(t *testing.T, server *Server, instanceId string, tableName string, count int) {
 	resp, err := server.QueryDirect(context.Background(), &api.QueryDirectRequest{
 		InstanceId: instanceId,
 		Sql:        fmt.Sprintf("select count(*) as count from %s", tableName),
@@ -97,4 +97,10 @@ func assertTableCount(t *testing.T, server *Server, instanceId string, tableName
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.Data)
 	require.Equal(t, int(resp.Data[0].Fields["count"].GetNumberValue()), count)
+
+	catalog, _ := server.GetCatalogObject(context.Background(), &api.GetCatalogObjectRequest{
+		InstanceId: instanceId,
+		Name:       tableName,
+	})
+	require.WithinDuration(t, time.Now(), catalog.GetObject().RefreshedOn.AsTime(), time.Second)
 }

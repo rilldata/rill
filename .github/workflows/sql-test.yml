@@ -16,9 +16,6 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-          - os: windows
-            arch: amd64
-            runner: windows-latest
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v3

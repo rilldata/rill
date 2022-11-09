@@ -1,19 +1,11 @@
-import type { DatabaseMetadata } from "./DatabaseMetadata";
+import {
+  escapeColumn,
+  escapeColumnAlias,
+} from "@rilldata/web-local/common/database-service/columnUtils";
 import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { DatabaseActions } from "./DatabaseActions";
-
-const SingleQuoteRegex = /'/g;
-const DoubleQuoteRegex = /"/g;
-function escapeColumn(columnName: string): string {
-  return `'${columnName.replace(SingleQuoteRegex, '"')}'`;
-}
-
-function escapeColumnAlias(columnName: string): string {
-  return columnName
-    .replace(SingleQuoteRegex, "__")
-    .replace(DoubleQuoteRegex, "__");
-}
+import type { DatabaseMetadata } from "./DatabaseMetadata";
 
 export class DatabaseTableActions extends DatabaseActions {
   public async createViewOfQuery(

@@ -151,7 +151,7 @@ The main feature-set component for dashboard filters
   }
 
   function togglerFilterMode(dimensionId) {
-    metricsExplorerStore.toggleFilterExcludeMode(metricsDefId, dimensionId);
+    metricsExplorerStore.toggleFilterMode(metricsDefId, dimensionId);
   }
 
   const excludeChipColors = {

@@ -80,13 +80,13 @@ export function generateApis<
           changes,
           validations
         );
-        thunkAPI.dispatch(updateAction(id, validationChanges));
         thunkAPI.dispatch(
           updateAction(
             id,
             await fetchWrapper(`${endpoint}/${id}`, "POST", changes)
           )
         );
+        thunkAPI.dispatch(updateAction(id, validationChanges));
       }
     ),
     deleteApi: createAsyncThunk(

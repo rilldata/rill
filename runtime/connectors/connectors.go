@@ -25,7 +25,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsFile(ctx context.Context, source *Source, callback func(filename string) error) error
+	ConsumeAsFile(ctx context.Context, source *Source) (string, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -112,13 +112,20 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFile(ctx context.Context, source *Source, callback func(filename string) error) error {
+func ConsumeAsFile(ctx context.Context, source *Source) (string, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
-		return fmt.Errorf("connector: not found")
+		return "", fmt.Errorf("connector: not found")
 	}
 
-	return connector.ConsumeAsFile(ctx, source, callback)
+	// TODO: connector.ConsumeAsFile should output a list of files to support globs
+	//       this should be output back to drivers that should import each file into the same table
+	path, err := connector.ConsumeAsFile(ctx, source)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

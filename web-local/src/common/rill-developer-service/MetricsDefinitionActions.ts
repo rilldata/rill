@@ -1,4 +1,5 @@
 import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { CATEGORICALS } from "@rilldata/web-local/lib/duckdb-data-types";
 import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 import { ActionResponseFactory } from "../data-modeler-service/response/ActionResponseFactory";
@@ -25,7 +26,13 @@ export class MetricsDefinitionActions extends RillDeveloperActions {
     initialFields?: Partial<MetricsDefinitionEntity>
   ) {
     const metricsDefinition = getMetricsDefinition(
-      rillRequestContext.entityStateService.getCurrentState().counter
+      getName(
+        "dashboard_0",
+        this.dataModelerStateService
+          .getMetricsDefinitionService()
+          .getCurrentState()
+          .entities.map((metricsDef) => metricsDef.metricDefLabel)
+      )
     );
     if (initialFields) {
       delete initialFields.id;

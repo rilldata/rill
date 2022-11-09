@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher, getContext } from "svelte";
   import {
     INTERVALS,
@@ -32,6 +33,7 @@
   export let rowSelected = false;
   export let atLeastOneSelected = false;
   export let excludeMode = false;
+  export let positionStatic = false;
 
   let cellActive = false;
 
@@ -72,14 +74,15 @@
   // we need to set *all* items to be included, because by default if a user has not
   // selected any values, we assume they want all values included in all calculations.
   $: excluded = atLeastOneSelected
-    ? (excludeMode && rowSelected) || (!excludeMode && !rowSelected)
+    ? excludeMode
+      ? rowSelected
+      : !rowSelected
     : false;
 
   $: barColor = excluded
     ? "bg-gray-200 dark:bg-gray-700"
     : "bg-blue-200 dark:bg-blue-700";
 
-  let TOOLTIP_STRING_LIMIT = 200;
   $: tooltipValue =
     value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
       ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
@@ -94,7 +97,7 @@
     on:blur={onBlur}
     on:click={onSelectItem}
     class="
-      absolute 
+      {positionStatic ? 'static' : 'absolute'}
       z-9 
       text-ellipsis 
       whitespace-nowrap 

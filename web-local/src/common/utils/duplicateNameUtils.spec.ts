@@ -90,5 +90,9 @@ describe("duplicateNameUtils", () => {
     it("gaps", () => {
       testIncrementedNameGetter("Foo", ["foo"], ["foo_2"], "Foo_1");
     });
+
+    it("start with number", () => {
+      testIncrementedNameGetter("Foo_0", ["foo"], ["foo_2"], "Foo_0");
+    });
   });
 });

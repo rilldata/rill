@@ -16,6 +16,13 @@ export function getBinaryRuntimePath(version: string) {
   if (!existsSync(runtimeBinaryPath)) {
     runtimeBinaryPath = path.join(__dirname, "/../../../dist/runtime/runtime");
   }
+  // this is a hack for folder structure when run from build files
+  if (!existsSync(runtimeBinaryPath)) {
+    runtimeBinaryPath = path.join(
+      __dirname,
+      "/../../../../../dist/runtime/runtime"
+    );
+  }
 
   // fix for vercel treating the runtime executable as an asset
   if (runtimeBinaryPath.startsWith("/snapshot")) {

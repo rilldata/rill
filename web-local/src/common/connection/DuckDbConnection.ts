@@ -1,6 +1,6 @@
 import { DATABASE_POLLING_INTERVAL } from "@rilldata/web-local/common/constants";
 import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
-import { runtimeServiceListCatalogObjects } from "web-common/src/runtime-client";
+import { runtimeServiceListCatalogObjects } from "@rilldata/web-common/runtime-client";
 import type { RootConfig } from "../config/RootConfig";
 import type { DataModelerService } from "../data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "../data-modeler-state-service/DataModelerStateService";

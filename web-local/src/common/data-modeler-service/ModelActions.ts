@@ -1,3 +1,4 @@
+import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import {
   extractTableName,
   sanitizeEntityName,
@@ -70,10 +71,11 @@ export class ModelActions extends DataModelerActions {
     { stateService }: PersistentModelStateActionArg,
     params: NewModelParams
   ) {
-    const persistentModel = getNewModel(
-      params,
-      stateService.getCurrentState().modelNumber + 1
+    params.name ??= getName(
+      "model_0",
+      stateService.getCurrentState().entities.map((model) => model.tableName)
     );
+    const persistentModel = getNewModel(params);
     const duplicateResp = this.checkDuplicateModel(
       stateService,
       persistentModel.name,

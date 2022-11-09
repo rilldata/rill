@@ -14,7 +14,7 @@ import { existsSync } from "fs";
 import type {
   V1CreateRepoRequest,
   V1CreateRepoResponse,
-} from "web-common/src/runtime-client";
+} from "@rilldata/web-common/runtime-client";
 import { dataModelerServiceFactory } from "./serverFactory";
 
 /**

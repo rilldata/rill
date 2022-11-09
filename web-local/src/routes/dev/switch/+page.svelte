@@ -7,5 +7,8 @@
 <h1>Switch Component</h1>
 
 <div class="flex items-center gap-x-2">
-  <Switch bind:checked={leftPane} /> left pane {leftPane}
+  <Switch on:click={() => (leftPane = !leftPane)} checked={leftPane}>
+    Left Pane
+  </Switch>
+  {leftPane}
 </div>
