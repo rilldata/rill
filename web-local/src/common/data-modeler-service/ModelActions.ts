@@ -139,8 +139,10 @@ export class ModelActions extends DataModelerActions {
     let sanitizedQuery;
     try {
       sanitizedQuery = preprocessQuery(query);
-    } catch(error) {
-      const modelError = ActionResponseFactory.getModelQueryError(error.message)
+    } catch (error) {
+      const modelError = ActionResponseFactory.getModelQueryError(
+        error.message
+      );
       return this.setModelError(modelId, modelError);
     }
 
@@ -165,7 +167,10 @@ export class ModelActions extends DataModelerActions {
     ]);
 
     // validate query with the original query first.
-    const validationResponse = await this.validateModelQuery(model, sanitizedQuery);
+    const validationResponse = await this.validateModelQuery(
+      model,
+      sanitizedQuery
+    );
     if (validationResponse) {
       return this.setModelError(modelId, validationResponse);
     }
