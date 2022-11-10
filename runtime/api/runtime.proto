@@ -381,7 +381,7 @@ message GetRepoObjectRequest {
   string path = 2;
 }
 
-// Reponse message for RuntimeService.GetRepoObjectResponse
+// Response message for RuntimeService.GetRepoObjectResponse
 message GetRepoObjectResponse {
   string blob = 1;
 }
@@ -847,7 +847,7 @@ message TopKRequest {
 // Response for RuntimeService.GetTopK.
 message TopKResponse {
   message TopKEntry {
-    // values is optional so that null values from the database can be represented.
+    // value is optional so that null values from the database can be represented.
     optional string value = 1;
     double count = 2;
   }

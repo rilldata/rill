@@ -1692,7 +1692,7 @@
       "properties": {
         "value": {
           "type": "string",
-          "description": "values is optional so that null values from the database can be represented."
+          "description": "value is optional so that null values from the database can be represented."
         },
         "count": {
           "type": "number",
@@ -1969,7 +1969,7 @@
           "type": "string"
         }
       },
-      "title": "Reponse message for RuntimeService.GetRepoObjectResponse"
+      "title": "Response message for RuntimeService.GetRepoObjectResponse"
     },
     "v1GetRepoResponse": {
       "type": "object",

@@ -1028,7 +1028,7 @@ func (x *GetRepoObjectRequest) GetPath() string {
 	return ""
 }
 
-// Reponse message for RuntimeService.GetRepoObjectResponse
+// Response message for RuntimeService.GetRepoObjectResponse
 type GetRepoObjectResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5744,7 +5744,7 @@ type TopKResponse_TopKEntry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// values is optional so that null values from the database can be represented.
+	// value is optional so that null values from the database can be represented.
 	Value *string `protobuf:"bytes,1,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	Count float64 `protobuf:"fixed64,2,opt,name=count,proto3" json:"count,omitempty"`
 }
