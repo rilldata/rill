@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
@@ -16,7 +15,7 @@ import (
 const AdBidsPath = "../../web-local/test/data/AdBids.csv"
 
 func TestServer_MigrateSingleSources(t *testing.T) {
-	server, instanceId, err := getTestServer()
+	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
 
 	_, err = server.MigrateSingle(context.Background(), &api.MigrateSingleRequest{
@@ -52,36 +51,6 @@ func TestServer_MigrateSingleSources(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assertTablePresence(t, server, instanceId, "AdBids_New", 100000)
-}
-
-func getTestServer() (*Server, string, error) {
-	metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
-	if err != nil {
-		return nil, "", err
-	}
-	err = metastore.Migrate(context.Background())
-	if err != nil {
-		return nil, "", err
-	}
-
-	server, err := NewServer(&ServerOptions{
-		ConnectionCacheSize: 100,
-	}, metastore, nil)
-	if err != nil {
-		return nil, "", err
-	}
-
-	resp, err := server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
-		Driver:       "duckdb",
-		Dsn:          "",
-		Exposed:      true,
-		EmbedCatalog: true,
-	})
-	if err != nil {
-		return nil, "", err
-	}
-
-	return server, resp.InstanceId, nil
 }
 
 func assertTablePresence(t *testing.T, server *Server, instanceId string, tableName string, count int) {

@@ -26,17 +26,20 @@ import (
 )
 
 type ServerOptions struct {
-	HTTPPort            int
-	GRPCPort            int
-	ConnectionCacheSize int
+	HTTPPort             int
+	GRPCPort             int
+	ConnectionCacheSize  int
+	CatalogCacheSize     int
+	CatalogCacheDuration time.Duration
 }
 
 type Server struct {
 	api.UnsafeRuntimeServiceServer
-	opts      *ServerOptions
-	metastore drivers.Connection
-	logger    *zap.Logger
-	cache     *connectionCache
+	opts         *ServerOptions
+	metastore    drivers.Connection
+	logger       *zap.Logger
+	connCache    *connectionCache
+	catalogCache *catalogCache
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
@@ -48,10 +51,11 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 	}
 
 	return &Server{
-		opts:      opts,
-		metastore: metastore,
-		logger:    logger,
-		cache:     newConnectionCache(opts.ConnectionCacheSize),
+		opts:         opts,
+		metastore:    metastore,
+		logger:       logger,
+		connCache:    newConnectionCache(opts.ConnectionCacheSize),
+		catalogCache: newCatalogCache(opts.CatalogCacheSize, opts.CatalogCacheDuration),
 	}, nil
 }
 

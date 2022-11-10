@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -12,70 +13,91 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
+// once the metrics view artifact representation is ready.
+
 // MetricsViewMeta implements RuntimeService
-func (s *Server) MetricsViewMeta(
-	ctx context.Context,
-	req *api.MetricsViewMetaRequest,
-) (*api.MetricsViewMetaResponse, error) {
-	// NOTE: Mock implementation
-
-	dimensions := []*api.MetricsView_Dimension{
-		{Name: "time", Type: "TIMESTAMP", PrimaryTime: true},
-		{Name: "foo", Type: "VARCHAR"},
+func (s *Server) MetricsViewMeta(ctx context.Context, req *api.MetricsViewMetaRequest) (*api.MetricsViewMetaResponse, error) {
+	// Get instance
+	registry, _ := s.metastore.RegistryStore()
+	inst, found := registry.FindInstance(ctx, req.InstanceId)
+	if !found {
+		return nil, status.Error(codes.InvalidArgument, "instance not found")
 	}
 
-	measures := []*api.MetricsView_Measure{
-		{Name: "bar", Type: "DOUBLE"},
-		{Name: "baz", Type: "INTEGER"},
+	// Get catalog
+	catalog, err := s.openCatalog(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	resp := &api.MetricsViewMetaResponse{
-		MetricsViewName: req.MetricsViewName,
-		Dimensions:      dimensions,
-		Measures:        measures,
+	// Find metrics view
+	obj, ok := catalog.FindObject(ctx, inst.ID, req.MetricsViewName)
+	if !ok {
+		return nil, status.Error(codes.NotFound, "metrics view not found")
+	}
+	if obj.Type != drivers.CatalogObjectTypeMetricsView {
+		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", req.MetricsViewName)
 	}
 
-	return resp, nil
+	// TODO: not implemented
+
+	return &api.MetricsViewMetaResponse{}, nil
 }
 
 // MetricsViewToplist implements RuntimeService
-func (s *Server) MetricsViewToplist(
-	ctx context.Context,
-	req *api.MetricsViewToplistRequest,
-) (*api.MetricsViewToplistResponse, error) {
-	// NOTE: Mock implementation
+func (s *Server) MetricsViewToplist(ctx context.Context, req *api.MetricsViewToplistRequest) (*api.MetricsViewToplistResponse, error) {
+	// Get instance
+	registry, _ := s.metastore.RegistryStore()
+	inst, found := registry.FindInstance(ctx, req.InstanceId)
+	if !found {
+		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	}
 
-	sql, args, err := buildMetricsTopListSql(req)
+	// Get catalog
+	catalog, err := s.openCatalog(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Find metrics view
+	obj, ok := catalog.FindObject(ctx, inst.ID, req.MetricsViewName)
+	if !ok {
+		return nil, status.Error(codes.NotFound, "metrics view not found")
+	}
+	if obj.Type != drivers.CatalogObjectTypeMetricsView {
+		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", req.MetricsViewName)
+	}
+
+	// Build query
+	timeCol := "" // TODO: not implemented
+	sql, args, err := buildMetricsTopListSql(req, timeCol)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.runQuery(ctx, req.InstanceId, sql, args)
+	// Execute
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &api.MetricsViewToplistResponse{
+	return &api.MetricsViewToplistResponse{
 		Meta: meta,
 		Data: data,
-	}
-
-	return resp, nil
+	}, nil
 }
 
 // MetricsViewTimeSeries implements RuntimeService
-func (s *Server) MetricsViewTimeSeries(
-	ctx context.Context,
-	req *api.MetricsViewTimeSeriesRequest,
-) (*api.MetricsViewTimeSeriesResponse, error) {
-	// NOTE: Partially mocked - timestamp column is hardcoded
+func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsViewTimeSeriesRequest) (*api.MetricsViewTimeSeriesResponse, error) {
+	// TODO: not implemented
 
 	sql, args, err := buildMetricsTimeSeriesSQL(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.runQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -89,16 +111,15 @@ func (s *Server) MetricsViewTimeSeries(
 }
 
 // MetricsViewTotals implements RuntimeService
-func (s *Server) MetricsViewTotals(
-	ctx context.Context,
-	req *api.MetricsViewTotalsRequest,
-) (*api.MetricsViewTotalsResponse, error) {
+func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTotalsRequest) (*api.MetricsViewTotalsResponse, error) {
+	// TODO: not implemented
+
 	sql, args, err := buildMetricsTotalsSql(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.runQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -115,32 +136,76 @@ func (s *Server) MetricsViewTotals(
 	return resp, nil
 }
 
-func (s *Server) runQuery(
-	ctx context.Context,
-	instanceId string,
-	sql string,
-	args []any,
-) ([]*api.SchemaColumn, []*structpb.Struct, error) {
+func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
-		Query: sql,
-		Args:  args,
+		Query:    sql,
+		Args:     args,
+		Priority: 1,
 	})
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer rows.Close()
 
-	meta, err := rowsToMeta(rows)
-	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
-	}
-
 	data, err := rowsToData(rows)
 	if err != nil {
 		return nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return meta, data, nil
+	return structTypeToMetricsViewColumn(rows.Schema), data, nil
+}
+
+func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, timeCol string) (string, []any, error) {
+	selectCols := append([]string{req.DimensionName}, req.MeasureNames...)
+
+	args := []any{}
+	whereClause := "WHERE 1=1"
+	if timeCol != "" {
+		if req.TimeStart != 0 {
+			whereClause += fmt.Sprintf(" AND %s >= ?", timeCol)
+			args = append(args, time.UnixMilli(req.TimeStart))
+		}
+		if req.TimeEnd != 0 {
+			whereClause += fmt.Sprintf(" AND %s < ?", timeCol)
+			args = append(args, time.UnixMilli(req.TimeEnd))
+		}
+	}
+
+	if req.Filter != nil {
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(req.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		whereClause += " " + clause
+		args = append(args, clauseArgs...)
+	}
+
+	orderClause := ""
+	for i, s := range req.Sort {
+		if i == 0 {
+			orderClause += "ORDER BY "
+		} else {
+			orderClause += ", "
+		}
+		orderClause += s.Name
+		if !s.Ascending {
+			orderClause += " DESC"
+		}
+	}
+
+	if req.Limit == 0 {
+		req.Limit = 100
+	}
+
+	sql := fmt.Sprintf("SELECT %s FROM %s %s %s LIMIT %d",
+		strings.Join(selectCols, ", "),
+		req.MetricsViewName,
+		whereClause,
+		orderClause,
+		req.Limit,
+	)
+
+	return sql, args, nil
 }
 
 func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest) (string, []any, error) {
@@ -168,32 +233,6 @@ func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest) (string, [
 		whereClause,
 		timeField,
 	)
-	return sql, args, nil
-}
-
-func buildMetricsTopListSql(req *api.MetricsViewToplistRequest) (string, []any, error) {
-	// TODO: get from Catalog
-	timeField := "timestamp"
-	selectCols := append([]string{req.DimensionName}, req.MeasureNames...)
-	whereClause := fmt.Sprintf("%s >= epoch_ms(?) AND %s < epoch_ms(?) ", timeField, timeField)
-	args := []any{req.TimeStart, req.TimeEnd}
-
-	if req.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(req.Filter)
-		if err != nil {
-			return "", nil, err
-		}
-		whereClause += clause
-		args = append(args, clauseArgs...)
-	}
-
-	if req.Sort != nil {
-		// TODO
-	}
-
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s GROUP BY %s LIMIT %d",
-		strings.Join(selectCols, ", "),
-		req.MetricsViewName, whereClause, req.DimensionName, req.Limit)
 	return sql, args, nil
 }
 
@@ -340,4 +379,16 @@ func protobufValueToAny(val *structpb.Value) (any, error) {
 	default:
 		return nil, fmt.Errorf("value not supported: %v", v)
 	}
+}
+
+func structTypeToMetricsViewColumn(v *api.StructType) []*api.MetricsViewColumn {
+	res := make([]*api.MetricsViewColumn, len(v.Fields))
+	for i, f := range v.Fields {
+		res[i] = &api.MetricsViewColumn{
+			Name:     f.Name,
+			Type:     f.Type.Code.String(),
+			Nullable: f.Type.Nullable,
+		}
+	}
+	return res
 }

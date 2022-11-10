@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceListCatalogObjects,
     useRuntimeServiceMigrateDelete,
     useRuntimeServiceMigrateSingle,
@@ -68,7 +69,9 @@
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
-  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId);
+  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
+    type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
+  });
 
   $: persistentTable = $persistentTableStore?.entities?.find(
     (source) => source.id === sourceID
@@ -157,6 +160,7 @@
         $refreshSourceMutation,
         $createSource
       );
+
       // invalidate the data preview (async)
       dataModelerService.dispatch("collectTableInfo", [id]);
 
