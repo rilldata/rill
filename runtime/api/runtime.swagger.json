@@ -1773,19 +1773,11 @@
           "type": "string",
           "format": "int64"
         },
-        "minInteger": {
-          "type": "string",
-          "format": "int64"
+        "min": {
+          "$ref": "#/definitions/v1Scalar"
         },
-        "minString": {
-          "type": "string"
-        },
-        "maxInteger": {
-          "type": "string",
-          "format": "int64"
-        },
-        "maxString": {
-          "type": "string"
+        "max": {
+          "$ref": "#/definitions/v1Scalar"
         }
       }
     },
@@ -2216,6 +2208,23 @@
           "items": {
             "type": "object"
           }
+        }
+      }
+    },
+    "v1Scalar": {
+      "type": "object",
+      "properties": {
+        "int64": {
+          "type": "string",
+          "format": "int64"
+        },
+        "double": {
+          "type": "number",
+          "format": "double"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
