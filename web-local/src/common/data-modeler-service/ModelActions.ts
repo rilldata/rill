@@ -3,7 +3,7 @@ import {
   extractTableName,
   sanitizeEntityName,
 } from "@rilldata/web-local/lib/util/extract-table-name";
-import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
+import { preprocessQuery } from "../database-service/preprocess";
 import { MODEL_PREVIEW_COUNT } from "../constants";
 import type { DerivedModelStateActionArg } from "../data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import {
@@ -60,7 +60,7 @@ export class ModelActions extends DataModelerActions {
         this.databaseActionQueue.enqueue(
           { id: model.id, priority: DatabaseActionQueuePriority.ActiveModel },
           "createViewOfQuery",
-          [model.tableName, sanitizeQuery(model.query, false)]
+          [model.tableName, preprocessQuery(model.query)]
         )
       )
     );
@@ -136,7 +136,14 @@ export class ModelActions extends DataModelerActions {
       );
     }
 
-    const sanitizedQuery = sanitizeQuery(query);
+    let sanitizedQuery;
+    try {
+      sanitizedQuery = preprocessQuery(query);
+    } catch(error) {
+      const modelError = ActionResponseFactory.getModelQueryError(error.message)
+      return this.setModelError(modelId, modelError);
+    }
+
     if (!force && sanitizedQuery === derivedModel.sanitizedQuery) {
       if (derivedModel.error) {
         return ActionResponseFactory.getModelQueryError(derivedModel.error);
@@ -158,7 +165,7 @@ export class ModelActions extends DataModelerActions {
     ]);
 
     // validate query with the original query first.
-    const validationResponse = await this.validateModelQuery(model, query);
+    const validationResponse = await this.validateModelQuery(model, sanitizedQuery);
     if (validationResponse) {
       return this.setModelError(modelId, validationResponse);
     }
@@ -210,7 +217,7 @@ export class ModelActions extends DataModelerActions {
       await this.databaseActionQueue.enqueue(
         { id: modelId, priority: DatabaseActionQueuePriority.ActiveModel },
         "createViewOfQuery",
-        [persistentModel.tableName, sanitizeQuery(persistentModel.query, false)]
+        [persistentModel.tableName, preprocessQuery(persistentModel.query)]
       );
     } catch (error) {
       return this.setModelError(
@@ -547,7 +554,7 @@ export class ModelActions extends DataModelerActions {
     const model = stateService.getById(modelId);
     await this.setModelStatus(modelId, EntityStatus.Exporting);
     const exportPath = (await this.databaseService.dispatch(exportType, [
-      sanitizeQuery(model.query, false),
+      preprocessQuery(model.query),
       exportFile,
     ])) as string;
     await this.dataModelerStateService.dispatch("updateModelDestinationSize", [

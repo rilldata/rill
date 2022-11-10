@@ -120,6 +120,7 @@
     "isomorphic-unfetch": "^3.1.0",
     "module-alias": "^2.2.2",
     "pgsql-ast-parser": "^10.3.1",
+    "prql-js": "^0.2.9",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1",
     "svelte": "^3.48.0",
