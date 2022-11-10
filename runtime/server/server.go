@@ -17,7 +17,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/rilldata/rill/runtime"
@@ -109,45 +108,6 @@ func (s *Server) Serve(ctx context.Context) error {
 // Metrics APIs
 func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
 	return &api.EstimateRollupIntervalResponse{}, nil
-}
-
-// Table level profiling APIs
-func (s *Server) RenameDatabaseObject(ctx context.Context, req *api.RenameDatabaseObjectRequest) (*api.RenameDatabaseObjectResponse, error) {
-	return &api.RenameDatabaseObjectResponse{}, nil
-}
-
-func (s *Server) TableCardinality(ctx context.Context, req *api.CardinalityRequest) (*api.CardinalityResponse, error) {
-	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query: "select count(*) from " + req.TableName,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var count int64
-	for rows.Next() {
-		err := rows.Scan(&count)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &api.CardinalityResponse{
-		Cardinality: count,
-	}, nil
-}
-
-func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequest) (*api.ProfileColumnsResponse, error) {
-	return &api.ProfileColumnsResponse{
-		ProfileColumn: []*api.ProfileColumn{},
-	}, nil
-}
-
-func (s *Server) TableRows(ctx context.Context, req *api.RowsRequest) (*api.RowsResponse, error) {
-	rows := make([]*structpb.Struct, 1)
-	rows[0] = &structpb.Struct{}
-	return &api.RowsResponse{
-		Data: rows,
-	}, nil
 }
 
 // Ping implements RuntimeService

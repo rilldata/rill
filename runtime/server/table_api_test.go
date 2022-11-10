@@ -34,17 +34,21 @@ func TestServer_Database(t *testing.T) {
 }
 
 func createTestTable(server *Server, instanceId string, t *testing.T) *drivers.Result {
+	return createTable(server, instanceId, t, "test")
+}
+
+func createTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
 	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "create table test (a int)",
+		Query: "create table " + tableName + " (a int)",
 	})
 	require.NoError(t, err)
 	result.Close()
 	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "insert into test values (1)",
+		Query: "insert into " + tableName + " values (1)",
 	})
 	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from test",
+		Query: "select count(*) from " + tableName,
 	})
 	require.NoError(t, err)
 	return result
