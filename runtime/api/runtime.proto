@@ -225,6 +225,15 @@ service RuntimeService {
     };
   }
 
+  // Metrics APIs
+
+  rpc EstimateRollupInterval(EstimateRollupIntervalRequest) returns (EstimateRollupIntervalResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/estimate-rollup-interval/{table_name}",
+      body: "*"
+    };
+  }
+
   // Profiling APIs
 
   // Get TopK elements from a table for a column given an agg function
@@ -236,7 +245,7 @@ service RuntimeService {
     };
   }
 
-  // Tablewide profiling API
+  // Tablewide profiling APIs
   rpc RenameDatabaseObject(RenameDatabaseObjectRequest) returns (RenameDatabaseObjectResponse) { // todo it's not a profiling endpoint - move smw else
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/rename-object"
@@ -765,6 +774,28 @@ message MetricsViewColumn {
   string name = 1;
   string type = 2;
   bool nullable = 3;
+}
+
+// **********
+// Metrics APIs
+// **********
+
+message EstimateRollupIntervalRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+message EstimateRollupIntervalResponse {
+  int64 interval = 1;
+  oneof min {
+    int64 min_integer = 2;
+    string min_string = 3;
+  }
+  oneof max {
+    int64 max_integer = 4;
+    string max_string = 5;
+  }
 }
 
 // **********

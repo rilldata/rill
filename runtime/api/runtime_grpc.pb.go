@@ -88,10 +88,11 @@ type RuntimeServiceClient interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
+	EstimateRollupInterval(ctx context.Context, in *EstimateRollupIntervalRequest, opts ...grpc.CallOption) (*EstimateRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
 	// agg function and k are optional, defaults are count(*) and 50 respectively
 	GetTopK(ctx context.Context, in *TopKRequest, opts ...grpc.CallOption) (*TopKResponse, error)
-	// Tablewide profiling API
+	// Tablewide profiling APIs
 	RenameDatabaseObject(ctx context.Context, in *RenameDatabaseObjectRequest, opts ...grpc.CallOption) (*RenameDatabaseObjectResponse, error)
 	TableCardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error)
 	ProfileColumns(ctx context.Context, in *ProfileColumnsRequest, opts ...grpc.CallOption) (*ProfileColumnsResponse, error)
@@ -334,6 +335,15 @@ func (c *runtimeServiceClient) MetricsViewTotals(ctx context.Context, in *Metric
 	return out, nil
 }
 
+func (c *runtimeServiceClient) EstimateRollupInterval(ctx context.Context, in *EstimateRollupIntervalRequest, opts ...grpc.CallOption) (*EstimateRollupIntervalResponse, error) {
+	out := new(EstimateRollupIntervalResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/EstimateRollupInterval", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) GetTopK(ctx context.Context, in *TopKRequest, opts ...grpc.CallOption) (*TopKResponse, error) {
 	out := new(TopKResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetTopK", in, out, opts...)
@@ -458,10 +468,11 @@ type RuntimeServiceServer interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
+	EstimateRollupInterval(context.Context, *EstimateRollupIntervalRequest) (*EstimateRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
 	// agg function and k are optional, defaults are count(*) and 50 respectively
 	GetTopK(context.Context, *TopKRequest) (*TopKResponse, error)
-	// Tablewide profiling API
+	// Tablewide profiling APIs
 	RenameDatabaseObject(context.Context, *RenameDatabaseObjectRequest) (*RenameDatabaseObjectResponse, error)
 	TableCardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error)
 	ProfileColumns(context.Context, *ProfileColumnsRequest) (*ProfileColumnsResponse, error)
@@ -550,6 +561,9 @@ func (UnimplementedRuntimeServiceServer) MetricsViewTimeSeries(context.Context, 
 }
 func (UnimplementedRuntimeServiceServer) MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTotals not implemented")
+}
+func (UnimplementedRuntimeServiceServer) EstimateRollupInterval(context.Context, *EstimateRollupIntervalRequest) (*EstimateRollupIntervalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EstimateRollupInterval not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetTopK(context.Context, *TopKRequest) (*TopKResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopK not implemented")
@@ -1032,6 +1046,24 @@ func _RuntimeService_MetricsViewTotals_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_EstimateRollupInterval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EstimateRollupIntervalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).EstimateRollupInterval(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/EstimateRollupInterval",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).EstimateRollupInterval(ctx, req.(*EstimateRollupIntervalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_GetTopK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TopKRequest)
 	if err := dec(in); err != nil {
@@ -1246,6 +1278,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewTotals",
 			Handler:    _RuntimeService_MetricsViewTotals_Handler,
+		},
+		{
+			MethodName: "EstimateRollupInterval",
+			Handler:    _RuntimeService_EstimateRollupInterval_Handler,
 		},
 		{
 			MethodName: "GetTopK",

@@ -106,7 +106,12 @@ func (s *Server) Serve(ctx context.Context) error {
 	return group.Wait()
 }
 
-// Table level profiling API
+// Metrics APIs
+func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
+	return &api.EstimateRollupIntervalResponse{}, nil
+}
+
+// Table level profiling APIs
 func (s *Server) RenameDatabaseObject(ctx context.Context, req *api.RenameDatabaseObjectRequest) (*api.RenameDatabaseObjectResponse, error) {
 	return &api.RenameDatabaseObjectResponse{}, nil
 }

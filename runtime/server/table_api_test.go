@@ -102,3 +102,18 @@ func TestServer_RenameObject(t *testing.T) {
 	})
 	require.NoError(t, err)
 }
+
+func TestServer_EstimateRollupInterval(t *testing.T) {
+	server, instanceId, err := getTestServer(t)
+	require.NoError(t, err)
+	rows := createTestTable(server, instanceId, t)
+	rows.Close()
+	var resp *api.EstimateRollupIntervalResponse
+	resp, err = server.EstimateRollupInterval(context.Background(), &api.EstimateRollupIntervalRequest{
+		InstanceId: instanceId,
+		TableName:  "test",
+		ColumnName: "a",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}

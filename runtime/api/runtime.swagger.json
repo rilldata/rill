@@ -286,6 +286,55 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/estimate-rollup-interval/{tableName}": {
+      "post": {
+        "operationId": "RuntimeService_EstimateRollupInterval",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1EstimateRollupIntervalResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "columnName": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/metrics-views/{metricsViewName}/meta": {
       "post": {
         "summary": "MetricsViewMeta returns metadata about a metrics view.\nIt's comparable to calling GetCatalogObject and will be deprecated in the future.",
@@ -829,7 +878,7 @@
     },
     "/v1/instances/{instanceId}/rename-object": {
       "post": {
-        "summary": "Tablewide profiling API",
+        "summary": "Tablewide profiling APIs",
         "operationId": "RuntimeService_RenameDatabaseObject",
         "responses": {
           "200": {
@@ -1716,6 +1765,29 @@
     "v1DeleteRepoResponse": {
       "type": "object",
       "title": "Response message for RuntimeService.DeleteRepo"
+    },
+    "v1EstimateRollupIntervalResponse": {
+      "type": "object",
+      "properties": {
+        "interval": {
+          "type": "string",
+          "format": "int64"
+        },
+        "minInteger": {
+          "type": "string",
+          "format": "int64"
+        },
+        "minString": {
+          "type": "string"
+        },
+        "maxInteger": {
+          "type": "string",
+          "format": "int64"
+        },
+        "maxString": {
+          "type": "string"
+        }
+      }
     },
     "v1GetCatalogObjectResponse": {
       "type": "object",
