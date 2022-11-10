@@ -1,15 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import {
+    MetricsDefinitionEntity,
+    SourceModelValidationStatus,
+  } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import notificationStore from "@rilldata/web-local/lib/components/notifications";
+
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
@@ -105,21 +109,25 @@
     );
   };
 
-  const deleteMetricsDef = (id: string) => {
-    if (
-      $applicationStore.activeEntity.type === EntityType.MetricsDefinition &&
-      $applicationStore.activeEntity.id === id
-    ) {
-      const nextMetricsDefId = getNextEntityId($metricsDefinitions, id);
+  const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
+    const sourceModelId = metricsDef.sourceModelId;
 
-      if (nextMetricsDefId) {
-        goto(`/dashboard/${nextMetricsDefId}`);
+    notificationStore.send({
+      message: `Dashboard "${metricsDef.metricDefLabel}" deleted`,
+    });
+    store.dispatch(deleteMetricsDefsApi(metricsDef.id));
+
+    if (
+      ($applicationStore.activeEntity.type === EntityType.MetricsDefinition ||
+        $applicationStore.activeEntity.type === EntityType.MetricsExplorer) &&
+      $applicationStore.activeEntity.id === metricsDef.id
+    ) {
+      if (sourceModelId) {
+        goto(`/model/${sourceModelId}`);
       } else {
         goto("/");
       }
     }
-
-    store.dispatch(deleteMetricsDefsApi(id));
   };
 
   onMount(() => {
@@ -213,7 +221,7 @@
             <EditIcon slot="icon" />
             rename...</MenuItem
           >
-          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef.id)}>
+          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef)}>
             <Cancel slot="icon" />
             delete</MenuItem
           >

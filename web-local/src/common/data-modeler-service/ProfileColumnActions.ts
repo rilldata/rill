@@ -106,7 +106,9 @@ export class ProfileColumnActions extends DataModelerActions {
             undefined
           )
         );
-      } else {
+      } else if (!column.type.startsWith("DECIMAL")) {
+        // DECIMALs wont always work with the descriptive stats query
+        // TODO: find a better solution that ignoring this
         promises.push(
           this.collectDescriptiveStatistics(
             entityType,

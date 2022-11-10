@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Tab from "@rilldata/web-local/lib/components/tab/Tab.svelte";
-  import TabGroup from "@rilldata/web-local/lib/components/tab/TabGroup.svelte";
-  import { createEventDispatcher } from "svelte";
   import {
     useRuntimeServiceListConnectors,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
+  import Tab from "@rilldata/web-local/lib/components/tab/Tab.svelte";
+  import TabGroup from "@rilldata/web-local/lib/components/tab/TabGroup.svelte";
+  import { createEventDispatcher } from "svelte";
   import { Dialog } from "../../modal";
   import LocalSource from "./LocalSource.svelte";
   import RemoteSource from "./RemoteSource.svelte";
@@ -14,7 +14,7 @@
 
   let selectedConnector: V1Connector;
 
-  const TAB_ORDER = ["gcs", "s3", "file"];
+  const TAB_ORDER = ["gcs", "s3", "https", "file"];
 
   const connectors = useRuntimeServiceListConnectors({
     query: {
@@ -43,6 +43,7 @@
 
 <Dialog
   compact
+  useContentForMinSize
   {disabled}
   on:cancel={() => dispatch("close")}
   showCancel
@@ -65,7 +66,7 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3"}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https"}
       {#key selectedConnector}
         <RemoteSource connector={selectedConnector} on:close />
       {/key}

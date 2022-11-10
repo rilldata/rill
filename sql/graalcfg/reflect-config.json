@@ -44,6 +44,13 @@
   ]
 },
 {
+  "name":"com.rilldata.calcite.JsonCatalog",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"com.rilldata.calcite.JsonColumn",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
@@ -65,8 +72,28 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"com.rilldata.calcite.models.Artifact",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String","com.rilldata.calcite.models.ArtifactType","java.lang.String"] }]
+},
+{
+  "name":"com.rilldata.calcite.models.ArtifactType",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.io.Serializable",
+  "queryAllDeclaredMethods":true
+},
+{
   "name":"java.lang.Comparable",
   "queriedMethods":[{"name":"compareTo","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"java.lang.Enum",
+  "queryAllDeclaredMethods":true
 },
 {
   "name":"java.lang.Iterable",
@@ -654,6 +681,10 @@
     {"name":"enumerable","parameterTypes":["org.apache.calcite.schema.ScannableTable","org.apache.calcite.DataContext"] }, 
     {"name":"queryable","parameterTypes":["org.apache.calcite.DataContext","org.apache.calcite.schema.SchemaPlus","java.lang.Class","java.lang.String"] }
   ]
+},
+{
+  "name":"org.apache.calcite.sql.fun.SqlLibraryOperators",
+  "allPublicFields":true
 },
 {
   "name":"org.apache.calcite.sql.fun.SqlStdOperatorTable",

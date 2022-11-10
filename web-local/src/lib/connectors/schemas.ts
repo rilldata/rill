@@ -32,6 +32,20 @@ export function getYupSchema(connector: V1Connector) {
           .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
           .required("GS URI is required"),
       });
+    case "https":
+      return yup.object().shape({
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
+        path: yup
+          .string()
+          .matches(/^https?:\/\//, 'Path must start with "http(s)://"')
+          .required("Path is required"),
+      });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);
   }

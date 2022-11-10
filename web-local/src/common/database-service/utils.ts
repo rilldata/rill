@@ -119,10 +119,16 @@ export function getWhereClauseFromFilters(
     metricViewFilters?.include?.length ||
     metricViewFilters?.exclude?.length
   ) {
-    whereClauses.push(getFilterFromMetricsViewFilters(metricViewFilters));
+    const filter = getFilterFromMetricsViewFilters(metricViewFilters);
+    if (filter !== "") {
+      whereClauses.push(filter);
+    }
   }
   if (timeRange?.start || timeRange?.end) {
-    whereClauses.push(getFilterFromTimeRange(timestampColumn, timeRange));
+    const tsFilter = getFilterFromTimeRange(timestampColumn, timeRange);
+    if (tsFilter !== "") {
+      whereClauses.push(tsFilter);
+    }
   }
   return whereClauses.length ? `${prefix} ${whereClauses.join(" AND ")}` : "";
 }

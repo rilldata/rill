@@ -1,19 +1,29 @@
 <script lang="ts">
   export let checked = false;
   export let id: string = undefined;
+  export let showBgOnHover = true;
 </script>
 
-<input
-  bind:checked
-  class="
-  m-0
-  dark:transparent
-  checked:bg-gray-700 dark:checked:bg-gray-400
+<div
+  class="py-1 px-2 rounded flex gap-x-2 cursor-pointer select-none
+  {showBgOnHover ? 'hover:bg-gray-200' : ''}
 "
-  role="switch"
-  type="checkbox"
-  {id}
-/>
+  on:click
+>
+  <slot name="left" />
+  <input
+    {checked}
+    class="
+      m-0
+      dark:transparent
+      checked:bg-gray-700 dark:checked:bg-gray-400
+    "
+    role="switch"
+    type="checkbox"
+    {id}
+  />
+  <slot />
+</div>
 
 <style lang="postcss">
   input {

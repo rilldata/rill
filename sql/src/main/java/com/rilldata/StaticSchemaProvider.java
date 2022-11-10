@@ -21,7 +21,8 @@ public class StaticSchemaProvider implements Supplier<SchemaPlus>
 
   public StaticSchemaProvider(List<JsonSchema> jsonSchemas)
   {
-    staticSchemas = List.copyOf(jsonSchemas.stream().map(StaticSchema::new).toList());
+    staticSchemas = jsonSchemas == null || jsonSchemas.isEmpty() ? List.of()
+        : List.copyOf(jsonSchemas.stream().map(StaticSchema::new).toList());
   }
 
   @Override

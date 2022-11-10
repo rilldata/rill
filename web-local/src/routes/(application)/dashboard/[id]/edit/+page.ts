@@ -2,6 +2,8 @@ import {
   ExplorerSourceColumnDoesntExist,
   ExplorerSourceModelDoesntExist,
   ExplorerSourceModelIsInvalid,
+  ExplorerTimeDimensionDoesntExist,
+  ExplorerMetricsDefinitionDoesntExist,
 } from "@rilldata/web-local/common/errors/ErrorMessages";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
@@ -23,6 +25,7 @@ export async function load({ params }) {
       ExplorerSourceModelDoesntExist,
       ExplorerSourceModelIsInvalid,
       ExplorerSourceColumnDoesntExist,
+      ExplorerTimeDimensionDoesntExist,
     ];
 
     // any invalid dashboard error will be displayed by the component
@@ -33,6 +36,18 @@ export async function load({ params }) {
     ) {
       return {
         metricsDefId: params.id,
+      };
+    } else {
+      if (
+        ExplorerMetricsDefinitionDoesntExist.includes(err.message) ||
+        err.message.includes(ExplorerMetricsDefinitionDoesntExist)
+      ) {
+        throw error(404, "Metrics definition  not found");
+      }
+      // Pass non standard error message to be shown in dialog
+      return {
+        metricsDefId: params.id,
+        error: err.message,
       };
     }
   }

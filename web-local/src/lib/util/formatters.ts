@@ -110,7 +110,7 @@ export function formatCompactInteger(n: number) {
 }
 
 export function formatDataType(value: any, type: string) {
-  if (INTEGERS.has(type)) {
+  if (INTEGERS.has(type) || type.startsWith("DECIMAL")) {
     return value;
   } else if (FLOATS.has(type)) {
     return value;

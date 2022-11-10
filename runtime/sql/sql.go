@@ -1,190 +1,195 @@
 package sql
 
-// #cgo darwin amd64 CFLAGS: -I${SRCDIR}/deps/darwin_amd64
-// #cgo darwin arm64 CFLAGS: -I${SRCDIR}/deps/darwin_arm64
-// #cgo linux amd64 CFLAGS: -I${SRCDIR}/deps/linux_amd64
-// #cgo windows amd64 CFLAGS: -I${SRCDIR}/deps/windows_amd64
-// #include <stdlib.h>
-// #include <librillsql.h>
-// void*(*my_malloc)(size_t) = malloc;
-import "C"
 import (
-	b64 "encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"unsafe"
+	"sync"
 
-	"github.com/rilldata/rill/runtime/pkg/sharedlibrary"
+	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/sql/ast"
 	"github.com/rilldata/rill/runtime/sql/rpc"
-	"google.golang.org/protobuf/proto"
 )
 
-type Isolate struct {
-	isolate *C.graal_isolate_t
-	library sharedlibrary.Library
+// Transpile transpiles a Rill SQL statement to a target dialect
+func Transpile(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject) (string, error) {
+	res, err := getIsolate().Request(&rpc.Request{
+		Request: &rpc.Request_TranspileRequest{
+			TranspileRequest: &rpc.TranspileRequest{
+				Sql:     sql,
+				Dialect: dialect,
+				Catalog: marshalCatalog(dialect, catalog),
+			},
+		},
+	})
+	if err != nil {
+		// not a user error
+		panic(err)
+	}
+
+	if res.Error != nil {
+		return "", errors.New(res.Error.StackTrace)
+	}
+
+	tr := res.GetTranspileResponse()
+	if tr == nil {
+		panic(fmt.Errorf("expected TranspileRequest to return TranspileResponse"))
+	}
+
+	return tr.Sql, nil
 }
 
-func NewIsolate() *Isolate {
-	lib, err := sharedlibrary.OpenEmbed(libraryFS, libraryPath)
+// Parse parses and validates a Rill SQL statement
+func Parse(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject) (*ast.SqlNodeProto, error) {
+	res, err := getIsolate().Request(&rpc.Request{
+		Request: &rpc.Request_ParseRequest{
+			ParseRequest: &rpc.ParseRequest{
+				Sql:     sql,
+				Catalog: marshalCatalog(dialect, catalog),
+			},
+		},
+	})
 	if err != nil {
+		// not a user error
 		panic(err)
 	}
 
-	graalCreateIsolate, err := lib.FindFunc("graal_create_isolate")
-	if err != nil {
-		panic(err)
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
 	}
 
-	var isolate *C.graal_isolate_t
-	var thread *C.graal_isolatethread_t
-	params := &C.graal_create_isolate_params_t{
-		reserved_address_space_size: 1024 * 1024 * 500,
+	pr := res.GetParseResponse()
+	if pr == nil {
+		panic(fmt.Errorf("expected ParseRequest to return ParseResponse"))
 	}
 
-	status, _, _ := graalCreateIsolate.Call(uintptr(unsafe.Pointer(params)), uintptr(unsafe.Pointer(&isolate)), uintptr(unsafe.Pointer(&thread)))
-	if status != 0 {
-		panic(fmt.Errorf("failed to create isolate"))
-	}
-
-	return &Isolate{
-		library: lib,
-		isolate: isolate,
-	}
+	return pr.Ast, nil
 }
 
-func (i *Isolate) Close() error {
-	graalDetachAllThreadsAndTearDownIsolate, err := i.library.FindFunc("graal_detach_all_threads_and_tear_down_isolate")
-	if err != nil {
-		panic(err)
-	}
+// See getIsolate
+var isolate *Isolate
+var isolateOnce sync.Once
 
-	thread := i.attachThread()
-
-	status, _, _ := graalDetachAllThreadsAndTearDownIsolate.Call(uintptr(unsafe.Pointer(thread)))
-	if status != 0 {
-		return fmt.Errorf("isolate teardown failed")
-	}
-
-	return i.library.Close()
+// getIsolate returns a lazily-loaded Isolate, which will never be closed.
+// If the performance of using a single thread-bound isolate suffers, we should
+// consider instead using a pool of isolates.
+func getIsolate() *Isolate {
+	isolateOnce.Do(func() {
+		isolate = OpenIsolate()
+	})
+	return isolate
 }
 
-func (i *Isolate) request(request *rpc.Request) *rpc.Response {
-	f, err := i.library.FindFunc("request")
+// marshalCatalog serializes runtime catalog objects to the catalog format expected by the SQL library.
+// See sql/src/test/resources for schema example.
+func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogObject) string {
+	var artifacts []map[string]any
+	var tables []map[string]any
+	for _, obj := range objs {
+		switch obj.Type {
+		case drivers.CatalogObjectTypeMetricsView:
+			artifacts = append(artifacts, map[string]any{
+				"name":    obj.Name,
+				"type":    "METRICS_VIEW",
+				"payload": obj.SQL,
+			})
+		case drivers.CatalogObjectTypeTable, drivers.CatalogObjectTypeSource:
+			columns := make([]map[string]any, len(obj.Schema.Fields))
+			for i, f := range obj.Schema.Fields {
+				columns[i] = map[string]any{
+					"name": f.Name,
+					"type": typeCodeToSQLType(f.Type.Code),
+				}
+			}
+			tables = append(tables, map[string]any{
+				"name":    obj.Name,
+				"columns": columns,
+			})
+		default:
+			panic(fmt.Errorf("unhandled catalog type '%s'", obj.Type))
+		}
+	}
+
+	var schema string
+	switch dialect {
+	case rpc.Dialect_DRUID:
+		schema = "druid"
+	case rpc.Dialect_DUCKDB:
+		schema = "main"
+	default:
+		panic(fmt.Errorf("unhandled dialect: %s", dialect.String()))
+	}
+
+	catalog := map[string]any{
+		"artifacts": artifacts,
+		"schemas": []map[string]any{
+			{
+				"name":   schema,
+				"tables": tables,
+			},
+		},
+	}
+
+	data, err := json.Marshal(catalog)
 	if err != nil {
 		panic(err)
 	}
 
-	thread := i.attachThread()
-
-	bytes, _ := proto.Marshal(request)
-	b64request := b64.StdEncoding.EncodeToString(bytes)
-
-	cBytes := C.CString(b64request)
-	defer C.free(unsafe.Pointer(cBytes))
-	res, _, _ := f.Call(
-		uintptr(unsafe.Pointer(thread)),
-		uintptr(unsafe.Pointer(C.my_malloc)),
-		uintptr(unsafe.Pointer(cBytes)),
-	)
-	if res == 0 {
-		panic(fmt.Errorf("call to request failed"))
-	}
-
-	b64response := C.GoString((*C.char)(unsafe.Pointer(res)))
-	C.free(unsafe.Pointer(res))
-
-	var response rpc.Response
-	decodedResponse, _ := b64.StdEncoding.DecodeString(b64response)
-	proto.Unmarshal(decodedResponse, &response)
-
-	return &response
+	return string(data)
 }
 
-func (i *Isolate) ConvertSQL(sql string, schema string, dialect string) string {
-	convertSql, err := i.library.FindFunc("convert_sql")
-	if err != nil {
-		panic(err)
+func typeCodeToSQLType(t api.Type_Code) string {
+	switch t {
+	case api.Type_CODE_BOOL:
+		return "BOOLEAN"
+	case api.Type_CODE_INT8:
+		return "TINYINT"
+	case api.Type_CODE_INT16:
+		return "SMALLINT"
+	case api.Type_CODE_INT32:
+		return "INTEGER"
+	case api.Type_CODE_INT64:
+		return "BIGINT"
+	case api.Type_CODE_INT128:
+		return "HUGEINT"
+	case api.Type_CODE_UINT8:
+		return "UTINYINT"
+	case api.Type_CODE_UINT16:
+		return "USMALLINT"
+	case api.Type_CODE_UINT32:
+		return "UINTEGER"
+	case api.Type_CODE_UINT64:
+		return "UBIGINT"
+	case api.Type_CODE_UINT128:
+		return "HUGEINT"
+	case api.Type_CODE_FLOAT32:
+		return "FLOAT"
+	case api.Type_CODE_FLOAT64:
+		return "DOUBLE"
+	case api.Type_CODE_TIMESTAMP:
+		return "TIMESTAMP"
+	case api.Type_CODE_DATE:
+		return "DATE"
+	case api.Type_CODE_TIME:
+		return "TIME"
+	case api.Type_CODE_STRING:
+		return "VARCHAR"
+	case api.Type_CODE_BYTES:
+		return "BLOB"
+	case api.Type_CODE_ARRAY:
+		return "LIST"
+	case api.Type_CODE_STRUCT:
+		return "STRUCT"
+	case api.Type_CODE_MAP:
+		return "MAP"
+	case api.Type_CODE_DECIMAL:
+		return "DECIMAL"
+	case api.Type_CODE_JSON:
+		return "VARCHAR"
+	case api.Type_CODE_UUID:
+		return "VARCHAR"
+	default:
+		return "ANY" // TODO: verify
 	}
-
-	thread := i.attachThread()
-
-	cSql := C.CString(sql)
-	defer C.free(unsafe.Pointer(cSql))
-
-	cSchema := C.CString(schema)
-	defer C.free(unsafe.Pointer(cSchema))
-
-	cDialect := C.CString(dialect)
-	defer C.free(unsafe.Pointer(cDialect))
-
-	res, _, _ := convertSql.Call(
-		uintptr(unsafe.Pointer(thread)),
-		uintptr(unsafe.Pointer(C.my_malloc)),
-		uintptr(unsafe.Pointer(cSql)),
-		uintptr(unsafe.Pointer(cSchema)),
-		uintptr(unsafe.Pointer(cDialect)),
-	)
-	if res == 0 {
-		panic(fmt.Errorf("call to convert_sql failed"))
-	}
-
-	goRes := C.GoString((*C.char)(unsafe.Pointer(res)))
-	C.free(unsafe.Pointer(res))
-
-	return goRes
-}
-
-func (i *Isolate) getAST(sql string, schema string) []byte {
-	getAST, err := i.library.FindFunc("get_ast")
-	if err != nil {
-		panic(err)
-	}
-
-	thread := i.attachThread()
-
-	cSql := C.CString(sql)
-	defer C.free(unsafe.Pointer(cSql))
-
-	cSchema := C.CString(schema)
-	defer C.free(unsafe.Pointer(cSchema))
-
-	res, _, _ := getAST.Call(
-		uintptr(unsafe.Pointer(thread)),
-		uintptr(unsafe.Pointer(C.my_malloc)),
-		uintptr(unsafe.Pointer(cSql)),
-		uintptr(unsafe.Pointer(cSchema)),
-	)
-	if res == 0 {
-		panic(fmt.Errorf("call to get_ast failed"))
-	}
-
-	goResString := C.GoString((*C.char)(unsafe.Pointer(res)))
-	goRes := []byte(goResString)
-	C.free(unsafe.Pointer(res))
-
-	return goRes
-}
-
-func (i *Isolate) attachThread() *C.graal_isolatethread_t {
-	graalGetCurrentThread, err := i.library.FindFunc("graal_get_current_thread")
-	if err != nil {
-		panic(err)
-	}
-
-	threadPtr, _, _ := graalGetCurrentThread.Call(uintptr(unsafe.Pointer(i.isolate)))
-	if threadPtr != 0 {
-		return (*C.graal_isolatethread_t)(unsafe.Pointer(threadPtr))
-	}
-
-	graalAttachThread, err := i.library.FindFunc("graal_attach_thread")
-	if err != nil {
-		panic(err)
-	}
-
-	var thread *C.graal_isolatethread_t
-	status, _, _ := graalAttachThread.Call(uintptr(unsafe.Pointer(i.isolate)), uintptr(unsafe.Pointer(&thread)))
-	if status != 0 {
-		panic(fmt.Errorf("failed to attach thread"))
-	}
-
-	return thread
 }

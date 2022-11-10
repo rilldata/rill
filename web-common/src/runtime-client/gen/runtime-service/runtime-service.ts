@@ -23,6 +23,7 @@ import type {
   V1GetInstanceResponse,
   V1DeleteInstanceResponse,
   V1ListCatalogObjectsResponse,
+  RuntimeServiceListCatalogObjectsParams,
   V1GetCatalogObjectResponse,
   V1TriggerRefreshResponse,
   V1MetricsViewMetaResponse,
@@ -42,6 +43,9 @@ import type {
   RuntimeServiceQueryBody,
   V1QueryDirectResponse,
   RuntimeServiceQueryDirectBody,
+  V1TriggerSyncResponse,
+  V1TopKResponse,
+  RuntimeServiceGetTopKBody,
   V1PingResponse,
   V1ListReposResponse,
   RuntimeServiceListReposParams,
@@ -352,18 +356,21 @@ export const useRuntimeServiceDeleteInstance = <
  */
 export const runtimeServiceListCatalogObjects = (
   instanceId: string,
+  params?: RuntimeServiceListCatalogObjectsParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1ListCatalogObjectsResponse>({
     url: `/v1/instances/${instanceId}/catalog`,
     method: "get",
+    params,
     signal,
   });
 };
 
 export const getRuntimeServiceListCatalogObjectsQueryKey = (
-  instanceId: string
-) => [`/v1/instances/${instanceId}/catalog`];
+  instanceId: string,
+  params?: RuntimeServiceListCatalogObjectsParams
+) => [`/v1/instances/${instanceId}/catalog`, ...(params ? [params] : [])];
 
 export type RuntimeServiceListCatalogObjectsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>
@@ -375,6 +382,7 @@ export const useRuntimeServiceListCatalogObjects = <
   TError = RpcStatus
 >(
   instanceId: string,
+  params?: RuntimeServiceListCatalogObjectsParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
@@ -392,11 +400,12 @@ export const useRuntimeServiceListCatalogObjects = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceListCatalogObjectsQueryKey(instanceId);
+    getRuntimeServiceListCatalogObjectsQueryKey(instanceId, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>
-  > = ({ signal }) => runtimeServiceListCatalogObjects(instanceId, signal);
+  > = ({ signal }) =>
+    runtimeServiceListCatalogObjects(instanceId, params, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
@@ -1055,6 +1064,120 @@ export const useRuntimeServiceQueryDirect = <
     Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
     TError,
     { instanceId: string; data: RuntimeServiceQueryDirectBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
+If the instance has exposed=true, tables found in the information schema will be added to the catalog.
+ */
+export const runtimeServiceTriggerSync = (instanceId: string) => {
+  return httpClient<V1TriggerSyncResponse>({
+    url: `/v1/instances/${instanceId}/sync`,
+    method: "post",
+  });
+};
+
+export type RuntimeServiceTriggerSyncMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceTriggerSync>>
+>;
+
+export type RuntimeServiceTriggerSyncMutationError = RpcStatus;
+
+export const useRuntimeServiceTriggerSync = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
+    TError,
+    { instanceId: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
+    { instanceId: string }
+  > = (props) => {
+    const { instanceId } = props ?? {};
+
+    return runtimeServiceTriggerSync(instanceId);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
+    TError,
+    { instanceId: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary Get TopK elements from a table for a column given an agg function
+agg function and k are optional, defaults are count(*) and 50 respectively
+ */
+export const runtimeServiceGetTopK = (
+  instanceId: string,
+  tableName: string,
+  columnName: string,
+  runtimeServiceGetTopKBody: RuntimeServiceGetTopKBody
+) => {
+  return httpClient<V1TopKResponse>({
+    url: `/v1/instances/${instanceId}/topk/${tableName}/${columnName}`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGetTopKBody,
+  });
+};
+
+export type RuntimeServiceGetTopKMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetTopK>>
+>;
+export type RuntimeServiceGetTopKMutationBody = RuntimeServiceGetTopKBody;
+export type RuntimeServiceGetTopKMutationError = RpcStatus;
+
+export const useRuntimeServiceGetTopK = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
+    TError,
+    {
+      instanceId: string;
+      tableName: string;
+      columnName: string;
+      data: RuntimeServiceGetTopKBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
+    {
+      instanceId: string;
+      tableName: string;
+      columnName: string;
+      data: RuntimeServiceGetTopKBody;
+    }
+  > = (props) => {
+    const { instanceId, tableName, columnName, data } = props ?? {};
+
+    return runtimeServiceGetTopK(instanceId, tableName, columnName, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
+    TError,
+    {
+      instanceId: string;
+      tableName: string;
+      columnName: string;
+      data: RuntimeServiceGetTopKBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };

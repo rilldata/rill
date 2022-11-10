@@ -4,6 +4,7 @@
     ConnectorPropertyType,
     getRuntimeServiceListCatalogObjectsQueryKey,
     RpcStatus,
+    RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceMigrateSingle,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
@@ -84,7 +85,9 @@
               dispatch("close");
               overlay.set(null);
               return queryClient.invalidateQueries(
-                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId)
+                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, {
+                  type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
+                })
               );
             },
             onError: () => {
@@ -144,6 +147,14 @@
             return "Unauthorized. Please check your credentials.";
           } else if (serverError.includes("AccessDenied")) {
             return "Access denied. Please ensure you have the correct permissions.";
+          }
+        }
+
+        if (connectorName === "https") {
+          if (serverError.includes("invalid file")) {
+            return "The provided URL does not appear to have a valid dataset. Please check your path and try again.";
+          } else if (serverError.includes("failed to fetch url")) {
+            return "We could not connect to the provided URL. Please check your path and try again.";
           }
         }
 

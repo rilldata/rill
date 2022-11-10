@@ -15,7 +15,7 @@ public class SqlConverterMain
 {
   public static void main(String[] args) throws SQLException, IOException, ValidationException, SqlParseException
   {
-    String s = new String(SqlConverterMain.class.getResourceAsStream("/schema.json").readAllBytes());
+    String s = new String(SqlConverterMain.class.getResourceAsStream("/catalog.json").readAllBytes());
     SqlConverter sqlConverter = new SqlConverter(s);
     if (args.length == 1) {
       System.out.println(sqlConverter.convert(args[0], Dialects.DUCKDB.getSqlDialect()));

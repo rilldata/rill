@@ -25,11 +25,6 @@
   export let isFetching: boolean;
   export let excludeMode = false;
 
-  let excludeToggle = excludeMode;
-  $: if (excludeToggle != excludeMode) {
-    toggleFilterMode();
-  }
-
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
 
@@ -83,12 +78,10 @@
     style:cursor="pointer"
   >
     <Tooltip location="left" distance={16}>
-      <div
-        class="flex items-center mr-3 ui-copy-icon"
-        style:grid-column-gap=".4rem"
-      >
-        <Switch bind:checked={excludeToggle} />
-        {excludeMode ? "Exclude" : "Include"}
+      <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+        <Switch on:click={() => toggleFilterMode()} checked={excludeMode}>
+          Exclude
+        </Switch>
       </div>
       <TooltipContent slot="tooltip-content">
         <TooltipTitle>

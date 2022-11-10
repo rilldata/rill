@@ -6,6 +6,7 @@
   export let data;
 
   $: metricsDefId = data.metricsDefId;
+  $: nonStandardError = data.error;
 
   $: dataModelerService.dispatch("setActiveAsset", [
     EntityType.MetricsDefinition,
@@ -18,4 +19,7 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<MetricsDefinitionWorkspace metricsDefId={data.metricsDefId} />
+<MetricsDefinitionWorkspace
+  metricsDefId={data.metricsDefId}
+  {nonStandardError}
+/>

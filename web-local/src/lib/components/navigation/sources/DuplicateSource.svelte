@@ -17,6 +17,7 @@
 
 <Dialog
   showCancel
+  size="md"
   on:cancel={onCancel}
   on:click-outside={onCancel}
   on:primary-action={() => {

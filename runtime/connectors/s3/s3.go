@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/fileutil"
 )
 
 func init() {
@@ -30,7 +30,7 @@ var spec = connectors.Spec{
 			Placeholder: "s3://bucket-name/path/to/file.csv",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
-			Hint:        "Note that gzipped files & glob patterns aren't yet supported",
+			Hint:        "Note that glob patterns aren't yet supported",
 		},
 		{
 			Key:         "aws.region",
@@ -53,7 +53,7 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path      string `mapstructure:"path" ignored:"true"`
+	Path      string `mapstructure:"path"`
 	AWSRegion string `mapstructure:"aws.region"`
 }
 
@@ -72,16 +72,16 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source, callback func(filename string) error) error {
+func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return fmt.Errorf("failed to parse config: %v", err)
+		return "", fmt.Errorf("failed to parse config: %v", err)
 	}
 
 	// The session the S3 Downloader will use
 	sess, err := getAwsSessionConfig(conf)
 	if err != nil {
-		return fmt.Errorf("failed to start session: %v", err)
+		return "", fmt.Errorf("failed to start session: %v", err)
 	}
 
 	// Create a downloader with the session and default options
@@ -89,20 +89,17 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source,
 
 	bucket, key, extension, err := getAwsUrlParts(conf.Path)
 	if err != nil {
-		return fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
 	}
 
 	f, err := os.CreateTemp(
 		os.TempDir(),
-		fmt.Sprintf("%s*.%s", source.Name, extension),
+		fmt.Sprintf("%s*%s", source.Name, extension),
 	)
 	if err != nil {
-		return fmt.Errorf("os.Create: %v", err)
+		return "", fmt.Errorf("os.Create: %v", err)
 	}
-	defer func() {
-		f.Close()
-		os.Remove(f.Name())
-	}()
+	defer f.Close()
 
 	// Write the contents of S3 Object to the f
 	_, err = downloader.Download(f, &s3.GetObjectInput{
@@ -110,15 +107,11 @@ func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source,
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to download f, %v", err)
+		os.Remove(f.Name())
+		return "", fmt.Errorf("failed to download f, %v", err)
 	}
 
-	err = callback(f.Name())
-	if err != nil {
-		return fmt.Errorf("failed to ingest f, %v", err)
-	}
-
-	return nil
+	return f.Name(), nil
 }
 
 func getAwsSessionConfig(conf *Config) (*session.Session, error) {
@@ -137,8 +130,5 @@ func getAwsUrlParts(path string) (string, string, string, error) {
 	if err != nil {
 		return "", "", "", err
 	}
-
-	p := strings.Split(u.Path, ".")
-
-	return u.Host, u.Path, p[len(p)-1], nil
+	return u.Host, u.Path, fileutil.FullExt(u.Path), nil
 }
