@@ -107,6 +107,10 @@ func (s *Server) Serve(ctx context.Context) error {
 }
 
 // Table level profiling API
+func (s *Server) RenameDatabaseObject(ctx context.Context, req *api.RenameDatabaseObjectRequest) (*api.RenameDatabaseObjectResponse, error) {
+	return &api.RenameDatabaseObjectResponse{}, nil
+}
+
 func (s *Server) TableCardinality(ctx context.Context, req *api.CardinalityRequest) (*api.CardinalityResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: "select count(*) from " + req.TableName,

@@ -237,6 +237,12 @@ service RuntimeService {
   }
 
   // Tablewide profiling API
+  rpc RenameDatabaseObject(RenameDatabaseObjectRequest) returns (RenameDatabaseObjectResponse) { // todo it's not a profiling endpoint - move smw else
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/rename-object"
+    };
+  }
+
   rpc TableCardinality(CardinalityRequest) returns (CardinalityResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/tables/{table_name}/cardinality"
@@ -783,6 +789,22 @@ message TopKResponse {
 // **********
 // Tablewide profiling API
 // **********
+
+enum DatabaseObjectType {
+  TABLE = 0;
+  VIEW = 1;
+  FUNCTION = 2;
+}
+
+message RenameDatabaseObjectRequest {
+  string instance_id = 1;
+  string name = 2;
+  string newname = 3;
+  optional DatabaseObjectType type = 4;
+}
+
+message RenameDatabaseObjectResponse {
+}
 
 message CardinalityRequest {
   string instance_id = 1;

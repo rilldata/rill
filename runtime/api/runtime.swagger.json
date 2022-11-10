@@ -827,6 +827,61 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/rename-object": {
+      "post": {
+        "summary": "Tablewide profiling API",
+        "operationId": "RuntimeService_RenameDatabaseObject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RenameDatabaseObjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "newname",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "TABLE",
+              "VIEW",
+              "FUNCTION"
+            ],
+            "default": "TABLE"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/sync": {
       "post": {
         "summary": "TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.\nIf the instance has exposed=true, tables found in the information schema will be added to the catalog.",
@@ -860,7 +915,6 @@
     },
     "/v1/instances/{instanceId}/tables/{tableName}/cardinality": {
       "get": {
-        "summary": "Tablewide profiling API",
         "operationId": "RuntimeService_TableCardinality",
         "responses": {
           "200": {
@@ -1646,6 +1700,15 @@
       },
       "title": "Response message for RuntimeService.CreateRepo"
     },
+    "v1DatabaseObjectType": {
+      "type": "string",
+      "enum": [
+        "TABLE",
+        "VIEW",
+        "FUNCTION"
+      ],
+      "default": "TABLE"
+    },
     "v1DeleteInstanceResponse": {
       "type": "object",
       "title": "Response message for RuntimeService.DeleteInstance"
@@ -2051,6 +2114,9 @@
         }
       },
       "title": "Response message for RuntimeService.Query"
+    },
+    "v1RenameDatabaseObjectResponse": {
+      "type": "object"
     },
     "v1Repo": {
       "type": "object",

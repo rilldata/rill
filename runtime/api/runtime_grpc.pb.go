@@ -92,6 +92,7 @@ type RuntimeServiceClient interface {
 	// agg function and k are optional, defaults are count(*) and 50 respectively
 	GetTopK(ctx context.Context, in *TopKRequest, opts ...grpc.CallOption) (*TopKResponse, error)
 	// Tablewide profiling API
+	RenameDatabaseObject(ctx context.Context, in *RenameDatabaseObjectRequest, opts ...grpc.CallOption) (*RenameDatabaseObjectResponse, error)
 	TableCardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error)
 	ProfileColumns(ctx context.Context, in *ProfileColumnsRequest, opts ...grpc.CallOption) (*ProfileColumnsResponse, error)
 	TableRows(ctx context.Context, in *RowsRequest, opts ...grpc.CallOption) (*RowsResponse, error)
@@ -342,6 +343,15 @@ func (c *runtimeServiceClient) GetTopK(ctx context.Context, in *TopKRequest, opt
 	return out, nil
 }
 
+func (c *runtimeServiceClient) RenameDatabaseObject(ctx context.Context, in *RenameDatabaseObjectRequest, opts ...grpc.CallOption) (*RenameDatabaseObjectResponse, error) {
+	out := new(RenameDatabaseObjectResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/RenameDatabaseObject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) TableCardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error) {
 	out := new(CardinalityResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/TableCardinality", in, out, opts...)
@@ -452,6 +462,7 @@ type RuntimeServiceServer interface {
 	// agg function and k are optional, defaults are count(*) and 50 respectively
 	GetTopK(context.Context, *TopKRequest) (*TopKResponse, error)
 	// Tablewide profiling API
+	RenameDatabaseObject(context.Context, *RenameDatabaseObjectRequest) (*RenameDatabaseObjectResponse, error)
 	TableCardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error)
 	ProfileColumns(context.Context, *ProfileColumnsRequest) (*ProfileColumnsResponse, error)
 	TableRows(context.Context, *RowsRequest) (*RowsResponse, error)
@@ -542,6 +553,9 @@ func (UnimplementedRuntimeServiceServer) MetricsViewTotals(context.Context, *Met
 }
 func (UnimplementedRuntimeServiceServer) GetTopK(context.Context, *TopKRequest) (*TopKResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopK not implemented")
+}
+func (UnimplementedRuntimeServiceServer) RenameDatabaseObject(context.Context, *RenameDatabaseObjectRequest) (*RenameDatabaseObjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RenameDatabaseObject not implemented")
 }
 func (UnimplementedRuntimeServiceServer) TableCardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableCardinality not implemented")
@@ -1036,6 +1050,24 @@ func _RuntimeService_GetTopK_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_RenameDatabaseObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameDatabaseObjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).RenameDatabaseObject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/RenameDatabaseObject",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).RenameDatabaseObject(ctx, req.(*RenameDatabaseObjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_TableCardinality_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CardinalityRequest)
 	if err := dec(in); err != nil {
@@ -1218,6 +1250,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTopK",
 			Handler:    _RuntimeService_GetTopK_Handler,
+		},
+		{
+			MethodName: "RenameDatabaseObject",
+			Handler:    _RuntimeService_RenameDatabaseObject_Handler,
 		},
 		{
 			MethodName: "TableCardinality",

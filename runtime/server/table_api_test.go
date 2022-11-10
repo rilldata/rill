@@ -88,3 +88,17 @@ func TestServer_TableRows(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cr.Data))
 }
+
+func TestServer_RenameObject(t *testing.T) {
+	server, instanceId, err := getTestServer(t)
+	require.NoError(t, err)
+	rows := createTestTable(server, instanceId, t)
+	rows.Close()
+	_, err = server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
+		InstanceId: instanceId,
+		Name:       "test",
+		Newname:    "test2",
+		Type:       api.DatabaseObjectType_TABLE.Enum(),
+	})
+	require.NoError(t, err)
+}
