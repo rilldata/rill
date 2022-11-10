@@ -9,6 +9,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 var excludes = []string{"__pycache__", "build", "dist", "node_modules", "venv"}
@@ -71,6 +73,18 @@ func (c *connection) Get(ctx context.Context, repoID string, filePath string) (s
 	return string(b), nil
 }
 
+// Stat implements drivers.RepoStore by returning the file's stat
+func (c *connection) Stat(ctx context.Context, repoID string, filePath string) (*drivers.RepoObjectStat, error) {
+	filePath = path.Join(c.root, filePath)
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return &drivers.RepoObjectStat{
+		LastUpdated: info.ModTime(),
+	}, nil
+}
+
 // PutBlob implements drivers.RepoStore
 func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string, blob string) error {
 	if !hasSupportForExt(filePath) {
@@ -111,6 +125,12 @@ func (c *connection) PutReader(ctx context.Context, repoID string, filePath stri
 	}
 
 	return filePath, nil
+}
+
+func (c *connection) Rename(ctx context.Context, repoID string, from string, filePath string) error {
+	filePath = path.Join(c.root, filePath)
+	from = path.Join(c.root, from)
+	return os.Rename(from, filePath)
 }
 
 // Delete implements drivers.RepoStore

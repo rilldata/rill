@@ -19,18 +19,18 @@ func Register(name string, artifact Artifact) {
 }
 
 type Artifact interface {
-	DeSerialise(ctx context.Context, blob string) (*drivers.CatalogObject, error)
-	Serialise(ctx context.Context, catalogObject *drivers.CatalogObject) (string, error)
+	DeSerialise(ctx context.Context, blob string) (*api.CatalogObject, error)
+	Serialise(ctx context.Context, catalogObject *api.CatalogObject) (string, error)
 }
 
-func Read(ctx context.Context, repoStore drivers.RepoStore, repo *api.Repo, filePath string) (*drivers.CatalogObject, error) {
+func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, filePath string) (*api.CatalogObject, error) {
 	extension := filepath.Ext(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
 		return nil, fmt.Errorf("no artifact found for %s", extension)
 	}
 
-	blob, err := repoStore.Get(ctx, repo.RepoId, filePath)
+	blob, err := repoStore.Get(ctx, repoId, filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, repo *api.Repo, file
 	return catalog, nil
 }
 
-func Write(ctx context.Context, repoStore drivers.RepoStore, repo *api.Repo, catalog *drivers.CatalogObject) error {
+func Write(ctx context.Context, repoStore drivers.RepoStore, repoId string, catalog *api.CatalogObject) error {
 	extension := filepath.Ext(catalog.Path)
 	artifact, ok := Artifacts[extension]
 	if !ok {
@@ -56,5 +56,5 @@ func Write(ctx context.Context, repoStore drivers.RepoStore, repo *api.Repo, cat
 		return err
 	}
 
-	return repoStore.PutBlob(ctx, repo.RepoId, catalog.Path, blob)
+	return repoStore.PutBlob(ctx, repoId, catalog.Path, blob)
 }

@@ -422,18 +422,11 @@ message CatalogObject {
     MetricsView metrics_view = 3;
     Table table = 4;
   }
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp updated_on = 6;
-  google.protobuf.Timestamp refreshed_on = 7;
-
-  // path to the artifact on file
-  string path = 8;
-  // original yaml blob
-  bytes definition = 9;
-
-  // rename from another catalog object
-  string rename_from = 10;
-  bool create_or_replace = 11;
+  string name = 5;
+  string path = 6;
+  google.protobuf.Timestamp created_on = 7;
+  google.protobuf.Timestamp updated_on = 8;
+  google.protobuf.Timestamp refreshed_on = 9;
 }
 
 // Source represents a catalog object created using CREATE SOURCE
@@ -464,19 +457,16 @@ message MetricsView {
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;
-    string type = 2;
-    string label = 3;
-    string description = 4;
-    string format = 5;
+    string label = 2;
+    string description = 3;
   }
   // Measures are aggregated computed values
   message Measure {
     string name = 1;
-    string type = 2;
-    string label = 3;
-    string expression = 4;
-    string description = 5;
-    string format = 6;
+    string label = 2;
+    string expression = 3;
+    string description = 4;
+    string format = 5;
   }
   // Name of the metrics view
   string name = 1;

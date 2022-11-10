@@ -57,7 +57,6 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 }
 
 func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *drivers.CatalogObject) error {
-	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
 		"UPDATE rill.catalog SET type = ?, sql = ?, definition = ?, path = ?, refreshed_on = ?, updated_on = ? WHERE name = ?",
@@ -66,14 +65,12 @@ func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *d
 		obj.Definition,
 		obj.Path,
 		obj.RefreshedOn,
-		now,
+		obj.UpdatedOn,
 		obj.Name,
 	)
 	if err != nil {
 		return err
 	}
-	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
-	obj.UpdatedOn = now
 	return nil
 }
 

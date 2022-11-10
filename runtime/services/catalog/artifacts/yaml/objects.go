@@ -1,11 +1,12 @@
 package yaml
 
 import (
+	"fmt"
+
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -13,7 +14,7 @@ import (
  * This file contains the mapping from CatalogObject to Yaml files
  */
 
-const Version = "1.0.0"
+const Version = "0.0.1"
 
 type Artifact struct {
 	Version    string
@@ -47,8 +48,6 @@ type MetricsView struct {
 }
 
 type Measure struct {
-	Name        string
-	Type        string
 	Label       string
 	Expression  string
 	Description string
@@ -56,27 +55,27 @@ type Measure struct {
 }
 
 type Dimension struct {
-	Name        string
-	Type        string
 	Label       string
+	Property    string `copier:"Name"`
 	Description string
-	Format      string
 }
 
-func toArtifact(catalog *drivers.CatalogObject) (*Artifact, error) {
+func toArtifact(catalog *api.CatalogObject) (*Artifact, error) {
 	artifact := Artifact{
 		Version: Version,
-		Type:    catalog.Type,
 	}
 
 	var err error
-	switch catalog.Type {
-	case drivers.CatalogObjectTypeSource:
+	switch catalog.Type.(type) {
+	case *api.CatalogObject_Source:
 		artifact.Definition, err = toSourceArtifact(catalog)
-	case drivers.CatalogObjectTypeModel:
+		artifact.Type = drivers.CatalogObjectTypeSource
+	case *api.CatalogObject_Model:
 		artifact.Definition, err = toModelArtifact(catalog)
-	case drivers.CatalogObjectTypeMetricsView:
+		artifact.Type = drivers.CatalogObjectTypeModel
+	case *api.CatalogObject_MetricsView:
 		artifact.Definition, err = toMetricsViewArtifact(catalog)
+		artifact.Type = drivers.CatalogObjectTypeMetricsView
 	}
 	if err != nil {
 		return nil, err
@@ -85,33 +84,31 @@ func toArtifact(catalog *drivers.CatalogObject) (*Artifact, error) {
 	return &artifact, nil
 }
 
-func toSourceArtifact(catalog *drivers.CatalogObject) (*Source, error) {
-	var source api.Source
-	err := proto.Unmarshal(catalog.Definition, &source)
-	if err != nil {
-		return nil, err
+func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
+	source, ok := catalog.Type.(*api.CatalogObject_Source)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse source")
 	}
 
 	return &Source{
-		Name:       source.Name,
-		Connector:  source.Connector,
-		Properties: source.Properties.AsMap(),
+		Name:       source.Source.Name,
+		Connector:  source.Source.Connector,
+		Properties: source.Source.Properties.AsMap(),
 	}, nil
 }
 
-func toModelArtifact(catalog *drivers.CatalogObject) (*Model, error) {
-	var model api.Model
-	err := proto.Unmarshal(catalog.Definition, &model)
-	if err != nil {
-		return nil, err
+func toModelArtifact(catalog *api.CatalogObject) (*Model, error) {
+	model, ok := catalog.Type.(*api.CatalogObject_Model)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse model")
 	}
 
 	modelArtifact := &Model{
-		Name: model.Name,
-		Sql:  model.Sql,
+		Name: model.Model.Name,
+		Sql:  model.Model.Sql,
 	}
 
-	switch model.Dialect {
+	switch model.Model.Dialect {
 	case api.Model_DuckDB:
 		modelArtifact.Dialect = ModelDialectDuckDB
 	}
@@ -119,15 +116,14 @@ func toModelArtifact(catalog *drivers.CatalogObject) (*Model, error) {
 	return modelArtifact, nil
 }
 
-func toMetricsViewArtifact(catalog *drivers.CatalogObject) (*MetricsView, error) {
-	var metricsView api.MetricsView
-	err := proto.Unmarshal(catalog.Definition, &metricsView)
-	if err != nil {
-		return nil, err
+func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
+	metricsView, ok := catalog.Type.(*api.CatalogObject_MetricsView)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse metrics view")
 	}
 
 	metricsArtifact := &MetricsView{}
-	err = copier.Copy(metricsArtifact, &metricsView)
+	err := copier.Copy(metricsArtifact, &metricsView.MetricsView)
 	if err != nil {
 		return nil, err
 	}
@@ -135,10 +131,8 @@ func toMetricsViewArtifact(catalog *drivers.CatalogObject) (*MetricsView, error)
 	return metricsArtifact, nil
 }
 
-func fromArtifact(artifact *Artifact) (*drivers.CatalogObject, error) {
-	catalog := &drivers.CatalogObject{
-		Type: artifact.Type,
-	}
+func fromArtifact(artifact *Artifact) (*api.CatalogObject, error) {
+	catalog := &api.CatalogObject{}
 
 	var err error
 	switch artifact.Type {
@@ -156,34 +150,31 @@ func fromArtifact(artifact *Artifact) (*drivers.CatalogObject, error) {
 	return catalog, nil
 }
 
-func fromSourceArtifact(artifact *Artifact, catalog *drivers.CatalogObject) error {
+func fromSourceArtifact(artifact *Artifact, catalog *api.CatalogObject) error {
 	var sourceArtifact Source
 	err := mapstructure.Decode(artifact.Definition, &sourceArtifact)
 	if err != nil {
 		return err
 	}
 
-	catalog.Name = sourceArtifact.Name
-
 	propsPB, err := structpb.NewStruct(sourceArtifact.Properties)
 	if err != nil {
 		return err
 	}
-	source := api.Source{
-		Name:       catalog.Name,
-		Connector:  sourceArtifact.Connector,
-		Properties: propsPB,
-	}
 
-	catalog.Definition, err = proto.Marshal(&source)
-	if err != nil {
-		return err
+	catalog.Name = sourceArtifact.Name
+	catalog.Type = &api.CatalogObject_Source{
+		Source: &api.Source{
+			Name:       catalog.Name,
+			Connector:  sourceArtifact.Connector,
+			Properties: propsPB,
+		},
 	}
 
 	return nil
 }
 
-func fromModelArtifact(artifact *Artifact, catalog *drivers.CatalogObject) error {
+func fromModelArtifact(artifact *Artifact, catalog *api.CatalogObject) error {
 	var modelArtifact Model
 	err := mapstructure.Decode(artifact.Definition, &modelArtifact)
 	if err != nil {
@@ -191,40 +182,43 @@ func fromModelArtifact(artifact *Artifact, catalog *drivers.CatalogObject) error
 	}
 
 	catalog.Name = modelArtifact.Name
-
-	model := api.Model{
+	model := &api.Model{
 		Name: modelArtifact.Name,
 		Sql:  modelArtifact.Sql,
+	}
+	catalog.Type = &api.CatalogObject_Model{
+		Model: model,
 	}
 	switch modelArtifact.Dialect {
 	case ModelDialectDuckDB:
 		model.Dialect = api.Model_DuckDB
 	}
 
-	catalog.Definition, err = proto.Marshal(&model)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func fromMetricsViewArtifact(artifact *Artifact, catalog *drivers.CatalogObject) error {
+func fromMetricsViewArtifact(artifact *Artifact, catalog *api.CatalogObject) error {
 	var metricsViewArtifact MetricsView
 	err := mapstructure.Decode(artifact.Definition, &metricsViewArtifact)
 	if err != nil {
 		return err
 	}
 
-	catalog.Name = metricsViewArtifact.Name
-
-	metricsView := api.MetricsView{}
-	err = copier.Copy(&metricsView, &metricsViewArtifact)
+	metricsView := &api.MetricsView{}
+	err = copier.Copy(metricsView, &metricsViewArtifact)
 	if err != nil {
 		return err
 	}
+	// this is needed since measure names are not given by the user
+	for i, measure := range metricsView.Measures {
+		measure.Name = fmt.Sprintf("measure_%d", i)
+	}
 
-	catalog.Definition, err = proto.Marshal(&metricsView)
+	catalog.Name = metricsViewArtifact.Name
+	catalog.Type = &api.CatalogObject_MetricsView{
+		MetricsView: metricsView,
+	}
+
 	if err != nil {
 		return err
 	}
