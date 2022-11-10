@@ -803,11 +803,14 @@ message ProfileColumnSummary {
   }
 }
 
+// Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
 message CategoricalSummary {
   optional TopKResponse topKResponse = 1;
   optional int64 cardinality = 2;
 }
 
+// Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
+// Message will have either numericHistogram, numericStatistics or numericOutliers set.
 message NumericSummary {
   optional NumericHistogram numericHistogram = 1;
   optional NumericStatistics numericStatistics = 2;
@@ -891,6 +894,7 @@ message EstimateSmallestTimeGrainRequest {
   string column_name = 3;
 }
 
+// Response for RuntimeService.EstimateSmallestTimeGrain
 message EstimateSmallestTimeGrainResponse {
   enum TimeGrain {
     MILLISECONDS = 0;
@@ -905,6 +909,7 @@ message EstimateSmallestTimeGrainResponse {
   TimeGrain time_grain = 1;
 }
 
+// Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name
 message NumericHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
@@ -912,6 +917,7 @@ message NumericHistogramRequest {
   string column_type = 4;
 }
 
+// Response for RuntimeService.GetNumericHistogram
 message NumericHistogram {
   message Bucket {
     double min = 1;
@@ -921,6 +927,7 @@ message NumericHistogram {
   repeated Bucket buckets = 1;
 }
 
+// Request for RuntimeService.GetRugHistogram
 message RugHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
@@ -928,12 +935,14 @@ message RugHistogramRequest {
   string column_type = 4;
 }
 
+// Request for RuntimeService.GetTimeRangeSummary
 message TimeRangeSummaryRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
 }
 
+// Request for RuntimeService.GetCardinalityOfColumn. Returns the cardinality for a given column for table table_name
 message CardinalityOfColumnRequest {
   string instance_id = 1;
   string table_name = 2;

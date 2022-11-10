@@ -3999,6 +3999,7 @@ func (*ProfileColumnSummary_NumericSummary) isProfileColumnSummary_Case() {}
 
 func (*ProfileColumnSummary_TimeRangeSummary) isProfileColumnSummary_Case() {}
 
+// Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
 type CategoricalSummary struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4054,6 +4055,8 @@ func (x *CategoricalSummary) GetCardinality() int64 {
 	return 0
 }
 
+// Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
+// Message will have either numericHistogram, numericStatistics or numericOutliers set.
 type NumericSummary struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4691,6 +4694,7 @@ func (x *EstimateSmallestTimeGrainRequest) GetColumnName() string {
 	return ""
 }
 
+// Response for RuntimeService.EstimateSmallestTimeGrain
 type EstimateSmallestTimeGrainResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4738,6 +4742,7 @@ func (x *EstimateSmallestTimeGrainResponse) GetTimeGrain() EstimateSmallestTimeG
 	return EstimateSmallestTimeGrainResponse_MILLISECONDS
 }
 
+// Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name
 type NumericHistogramRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4809,6 +4814,7 @@ func (x *NumericHistogramRequest) GetColumnType() string {
 	return ""
 }
 
+// Response for RuntimeService.GetNumericHistogram
 type NumericHistogram struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4856,6 +4862,7 @@ func (x *NumericHistogram) GetBuckets() []*NumericHistogram_Bucket {
 	return nil
 }
 
+// Request for RuntimeService.GetRugHistogram
 type RugHistogramRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4927,6 +4934,7 @@ func (x *RugHistogramRequest) GetColumnType() string {
 	return ""
 }
 
+// Request for RuntimeService.GetTimeRangeSummary
 type TimeRangeSummaryRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4990,6 +4998,7 @@ func (x *TimeRangeSummaryRequest) GetColumnName() string {
 	return ""
 }
 
+// Request for RuntimeService.GetCardinalityOfColumn. Returns the cardinality for a given column for table table_name
 type CardinalityOfColumnRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

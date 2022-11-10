@@ -1843,7 +1843,8 @@
           "type": "string",
           "format": "int64"
         }
-      }
+      },
+      "description": "Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set."
     },
     "v1Connector": {
       "type": "object",
@@ -1942,7 +1943,8 @@
         "timeGrain": {
           "$ref": "#/definitions/EstimateSmallestTimeGrainResponseTimeGrain"
         }
-      }
+      },
+      "title": "Response for RuntimeService.EstimateSmallestTimeGrain"
     },
     "v1GetCatalogObjectResponse": {
       "type": "object",
@@ -2277,7 +2279,8 @@
             "$ref": "#/definitions/NumericHistogramBucket"
           }
         }
-      }
+      },
+      "title": "Response for RuntimeService.GetNumericHistogram"
     },
     "v1NumericOutliers": {
       "type": "object",
@@ -2336,7 +2339,8 @@
         "numericOutliers": {
           "$ref": "#/definitions/v1NumericOutliers"
         }
-      }
+      },
+      "description": "Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.\nMessage will have either numericHistogram, numericStatistics or numericOutliers set."
     },
     "v1PingResponse": {
       "type": "object",
