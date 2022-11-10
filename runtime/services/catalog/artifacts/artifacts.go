@@ -32,7 +32,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, fileP
 
 	blob, err := repoStore.Get(ctx, repoId, filePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read artifact %s", err)
 	}
 
 	catalog, err := artifact.DeSerialise(ctx, blob)

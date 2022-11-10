@@ -51,7 +51,7 @@ export function sortByCTEDependency(a: CTE, b: CTE) {
   return 0;
 }
 
-function firstCharacterAt(string) {
+function firstCharacterAt(string: string) {
   const output = string
     .split("")
     .findIndex((char) => !["\t", "\n", "\r", " ", ";"].includes(char));

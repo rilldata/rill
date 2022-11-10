@@ -187,6 +187,7 @@ func fromMetricsViewArtifact(artifact *Artifact, catalog *api.CatalogObject) err
 		return err
 	}
 
+	catalog.MetricsView = &api.MetricsView{}
 	err = copier.Copy(catalog.MetricsView, &metricsViewArtifact)
 	if err != nil {
 		return err

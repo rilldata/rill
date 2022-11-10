@@ -8,6 +8,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 )
 
 type MigrationItem struct {
@@ -58,15 +60,36 @@ func (s *Service) Migrate(
 		ArtifactErrors: make([]ArtifactError, 0),
 	}
 
+	migrationMap, err := s.collectRepos(ctx, conf)
+	if err != nil {
+		return result, err
+	}
+	migrations := s.collectMigrationItems(ctx, conf, migrationMap)
+
+	if conf.DryRun {
+		return result, nil
+	}
+
+	err = s.runMigrationItems(ctx, conf, migrations, &result)
+	if err != nil {
+		return result, err
+	}
+
+	// TODO: changes to the file will not be picked up if done while running migration
+	s.LastMigration = time.Now()
+
+	return result, nil
+}
+
+func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig) (map[string]*MigrationItem, error) {
 	// TODO: if the repo folder is source controlled we should leverage it to find changes
 	// TODO: ListRecursive needs some kind of cache or optimisation
 	repoPaths, err := s.Repo.ListRecursive(ctx, s.RepoId)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	migrationMap := make(map[string]*MigrationItem)
-	var migrations []*MigrationItem
-	now := time.Now()
+
 	for _, repoPath := range repoPaths {
 		catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
 		if err != nil {
@@ -96,9 +119,16 @@ func (s *Service) Migrate(
 
 		migrationMap[catalog.Name] = item
 	}
-	// There could be changes to repo between last migration and while the repos are being read
-	// hence we log LastMigration as the time before we start reading the repos and assign here
-	s.LastMigration = now
+
+	return migrationMap, nil
+}
+
+func (s *Service) collectMigrationItems(
+	ctx context.Context,
+	conf MigrationConfig,
+	migrationMap map[string]*MigrationItem,
+) []*MigrationItem {
+	var migrations []*MigrationItem
 
 	catalogObjs := s.Catalog.FindObjects(ctx, s.InstId, drivers.CatalogObjectTypeUnspecified)
 	for _, catalogObj := range catalogObjs {
@@ -127,18 +157,26 @@ func (s *Service) Migrate(
 			delete(migrationMap, apiCatalog.Name)
 		}
 
-		migrations = append(migrations, item)
+		if item != nil {
+			migrations = append(migrations, item)
+		}
 	}
 
 	for _, migration := range migrationMap {
 		migrations = append(migrations, migration)
 	}
 
-	if conf.DryRun {
-		return result, nil
-	}
+	return migrations
+}
 
+func (s *Service) runMigrationItems(
+	ctx context.Context,
+	conf MigrationConfig,
+	migrations []*MigrationItem,
+	result *MigrationResult,
+) error {
 	for _, migration := range migrations {
+		var err error
 		switch migration.Type {
 		case MigrationCreate:
 			err = s.createInStore(ctx, migration)
@@ -159,12 +197,12 @@ func (s *Service) Migrate(
 				Path:  migration.Path,
 			})
 			if !conf.BestEffort {
-				return result, err
+				return err
 			}
 		}
 	}
 
-	return result, nil
+	return nil
 }
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {

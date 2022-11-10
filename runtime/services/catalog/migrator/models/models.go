@@ -10,14 +10,14 @@ import (
 )
 
 func init() {
-	migrator.Register(string(drivers.CatalogObjectTypeSource), &modelMigrator{})
+	migrator.Register(string(drivers.CatalogObjectTypeModel), &modelMigrator{})
 }
 
 type modelMigrator struct{}
 
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TEMPORARY VIEW %s AS (%s)", catalogObj.Name, "TODO"),
+		Query:    fmt.Sprintf("CREATE OR REPLACE TEMPORARY VIEW %s AS (%s)", catalogObj.Name, catalogObj.Model.Sql),
 		Priority: 100,
 	})
 	if err != nil {

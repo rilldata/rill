@@ -19,7 +19,7 @@ import (
 
 const testDataPath = "../../../web-local/test/data/"
 
-func TestService_Migrate(t *testing.T) {
+func TestService_MigrateSerial(t *testing.T) {
 	s := getService(t)
 
 	source := &api.Source{
@@ -29,16 +29,56 @@ func TestService_Migrate(t *testing.T) {
 			"path": testDataPath + "AdBids.csv",
 		}),
 	}
-	path := "/sources/AdBids.yaml"
-
-	createSource(t, s, source, path)
-
+	sourcePath := "/sources/AdBids.yaml"
+	createSource(t, s, source, sourcePath)
 	result, err := s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
-	require.Len(t, result.ArtifactErrors, 0)
-	require.Len(t, result.AddedObjects, 1)
+	assertMigration(t, result, 0, 1, 0, 0)
+	assertTable(t, s, source.Name, sourcePath)
 
-	assertSourceInCatalogObject(t, s, source, path)
+	model := &api.Model{
+		Name:    "AdBids_model",
+		Sql:     "select * from AdBids",
+		Dialect: api.Model_DuckDB,
+	}
+	// TODO: sql
+	modelPath := "/models/AdBids_model.yaml"
+	createModel(t, s, model, modelPath)
+	result, err = s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	assertMigration(t, result, 0, 1, 0, 0)
+	assertTable(t, s, model.Name, modelPath)
+
+	metricsView := &api.MetricsView{
+		Name:          "AdBids_dashboard",
+		From:          "AdBids_model",
+		TimeDimension: "timestamp",
+		TimeGrains:    []string{"1 day", "1 month"},
+		Dimensions: []*api.MetricsView_Dimension{
+			{
+				Name:  "publisher",
+				Label: "Publisher",
+			},
+			{
+				Name:  "domain",
+				Label: "Domain",
+			},
+		},
+		Measures: []*api.MetricsView_Measure{
+			{
+				Expression: "count(*)",
+			},
+			{
+				Expression: "avg(bid_price)",
+			},
+		},
+	}
+	metricsViewPath := "/dashboards/AdBids_dashboard.yaml"
+	createMetricsView(t, s, metricsView, metricsViewPath)
+	result, err = s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	assertMigration(t, result, 0, 1, 0, 0)
+	assertInCatalogStore(t, s, metricsView.Name, metricsViewPath)
 }
 
 func createSource(t *testing.T, s *Service, source *api.Source, path string) {
@@ -111,14 +151,18 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 	return s
 }
 
-func assertSourceInCatalogObject(t *testing.T, s *Service, source *api.Source, path string) {
-	catalog, ok := s.Catalog.FindObject(context.Background(), s.InstId, source.Name)
-	require.True(t, ok)
-	require.Equal(t, catalog.Name, source.Name)
-	require.Equal(t, catalog.Path, path)
+func assertMigration(t *testing.T, result MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
+	require.Len(t, result.ArtifactErrors, errCount)
+	require.Len(t, result.AddedObjects, addCount)
+	require.Len(t, result.UpdatedObjects, updateCount)
+	require.Len(t, result.DroppedObjects, dropCount)
+}
+
+func assertTable(t *testing.T, s *Service, name string, path string) {
+	assertInCatalogStore(t, s, name, path)
 
 	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{
-		Query:    fmt.Sprintf("select count(*) as count from %s", source.Name),
+		Query:    fmt.Sprintf("select count(*) as count from %s", name),
 		Args:     nil,
 		DryRun:   false,
 		Priority: 0,
@@ -129,4 +173,11 @@ func assertSourceInCatalogObject(t *testing.T, s *Service, source *api.Source, p
 	require.NoError(t, rows.Scan(&count))
 	require.Greater(t, count, 1)
 	require.NoError(t, rows.Close())
+}
+
+func assertInCatalogStore(t *testing.T, s *Service, name string, path string) {
+	catalog, ok := s.Catalog.FindObject(context.Background(), s.InstId, name)
+	require.True(t, ok)
+	require.Equal(t, catalog.Name, name)
+	require.Equal(t, catalog.Path, path)
 }
