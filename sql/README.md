@@ -1,8 +1,13 @@
+# sql
+
+This folder contains a SQL parser and transpiler based on Apache Calcite.
+
 ## SQL parser and protobuf builder generation
 Please run `mvn package` in the module to generate the custom SQL parser and protobuf builder classes.
 You need to have proto compiler installed on the system, here are some resources for installation instructions - 
 1. http://google.github.io/proto-lens/installing-protoc.html
 2. https://github.com/protocolbuffers/protobuf#protocol-compiler-installation
+
 ### Code generation paths -
 * Custom parser will be generated in `target/generated-sources/javacc` folder
 * Protobuf classes will be generated in `target/generated-sources/annotations` folder

@@ -2,9 +2,9 @@ package duckdb
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"
 )
@@ -14,7 +14,7 @@ type job struct {
 	result *sqlx.Rows
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*sqlx.Rows, error) {
+func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	j := &job{
 		stmt: stmt,
 	}
@@ -27,7 +27,12 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*sql
 		return nil, err
 	}
 
-	return j.result, nil
+	schema, err := rowsToSchema(j.result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &drivers.Result{Rows: j.result, Schema: schema}, nil
 }
 
 func (c *connection) executeQuery(ctx context.Context, j *job) error {
@@ -46,116 +51,33 @@ func (c *connection) executeQuery(ctx context.Context, j *job) error {
 	return err
 }
 
-type informationSchema struct {
-	c *connection
-}
+func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
+	if r == nil {
+		return nil, nil
+	}
 
-func (c *connection) InformationSchema() drivers.InformationSchema {
-	return &informationSchema{c: c}
-}
-
-func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
-	q := `
-		select
-			coalesce(t.table_catalog, '') as "database",
-			t.table_schema as "schema",
-			t.table_name as "name",
-			t.table_type as "type", 
-			array_agg(c.column_name order by c.ordinal_position) as "column_names",
-			array_agg(c.data_type order by c.ordinal_position) as "column_types",
-			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
-		from information_schema.tables t
-		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		group by 1, 2, 3, 4
-		order by 1, 2, 3, 4
-	`
-
-	rows, err := i.c.db.QueryxContext(ctx, q)
+	cts, err := r.ColumnTypes()
 	if err != nil {
 		return nil, err
 	}
 
-	tables, err := i.scanTables(rows)
-	if err != nil {
-		return nil, err
-	}
+	fields := make([]*api.StructType_Field, len(cts))
+	for i, ct := range cts {
+		nullable, ok := ct.Nullable()
+		if !ok {
+			nullable = true
+		}
 
-	return tables, nil
-}
-
-func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
-	q := `
-		select
-			coalesce(t.table_catalog, '') as "database",
-			t.table_schema as "schema",
-			t.table_name as "name",
-			t.table_type as "type", 
-			array_agg(c.column_name order by c.ordinal_position) as "column_names",
-			array_agg(c.data_type order by c.ordinal_position) as "column_types",
-			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
-		from information_schema.tables t
-		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		where t.table_name = ?
-		group by 1, 2, 3, 4
-		order by 1, 2, 3, 4
-	`
-
-	rows, err := i.c.db.QueryxContext(ctx, q, name)
-	if err != nil {
-		return nil, err
-	}
-
-	tables, err := i.scanTables(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tables) == 0 {
-		return nil, drivers.ErrNotFound
-	}
-
-	return tables[0], nil
-}
-
-func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
-	var res []*drivers.Table
-
-	for rows.Next() {
-		var database string
-		var schema string
-		var name string
-		var tableType string
-		var columnNames []any
-		var columnTypes []any
-		var columnNullable []any
-
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnNames, &columnTypes, &columnNullable)
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
 		if err != nil {
 			return nil, err
 		}
 
-		t := &drivers.Table{
-			Database: database,
-			Schema:   schema,
-			Name:     name,
-			Type:     tableType,
+		fields[i] = &api.StructType_Field{
+			Name: ct.Name(),
+			Type: t,
 		}
-
-		// should NEVER happen, but just to be safe
-		if len(columnNames) != len(columnTypes) {
-			panic(fmt.Errorf("duckdb: column slices have different length"))
-		}
-
-		for idx, colName := range columnNames {
-			t.Columns = append(t.Columns, drivers.Column{
-				Name:     colName.(string),
-				Type:     columnTypes[idx].(string),
-				Nullable: columnNullable[idx].(bool),
-			})
-		}
-
-		res = append(res, t)
 	}
 
-	return res, nil
+	return &api.StructType{Fields: fields}, nil
 }

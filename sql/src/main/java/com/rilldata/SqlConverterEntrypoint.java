@@ -1,7 +1,7 @@
 package com.rilldata;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.protobuf.generated.Requests;
 import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
@@ -10,7 +10,7 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
-import com.rilldata.protobuf.generated.Requests;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Base64;
@@ -88,14 +88,17 @@ public class SqlConverterEntrypoint
           .newBuilder()
           .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
           .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+      
+      byte[] b64response = Base64.getEncoder().encode(build.toByteArray());
+      return convertToCCharPointer(allocatorFn, b64response);
     } catch (Exception e) {
       Requests.Response build = Requests.Response
           .newBuilder()
           .setError(
               Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
           .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+      byte[] b64response = Base64.getEncoder().encode(build.toByteArray());
+      return convertToCCharPointer(allocatorFn, b64response);
     }
   }
 

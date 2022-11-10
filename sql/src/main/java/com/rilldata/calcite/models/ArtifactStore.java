@@ -15,21 +15,17 @@ public class ArtifactStore
 
   public ArtifactStore(List<Artifact> artifacts)
   {
-    for (Artifact artifact : artifacts) {
-      saveArtifact(artifact);
+    if (artifacts != null) {
+      for (Artifact artifact : artifacts) {
+        saveArtifact(artifact);
+      }
     }
   }
 
   public void saveArtifact(Artifact artifact)
   {
     artifacts.computeIfAbsent(artifact.getType(), type -> new HashMap<>());
-    Artifact existing = artifacts.get(artifact.getType()).putIfAbsent(artifact.getName().toLowerCase(), artifact);
-    if (existing != null) {
-      System.out.printf("Artifact with name %s of type %s already exists, overwriting!\n",
-          artifact.getName().toLowerCase(),
-          artifact.getType()
-      );
-    }
+    artifacts.get(artifact.getType()).put(artifact.getName().toLowerCase(), artifact);
   }
 
   public Artifact getArtifact(ArtifactType artifactType, String name)

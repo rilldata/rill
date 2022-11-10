@@ -2,10 +2,9 @@ package com.rilldata.calcite.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public class Artifact implements Serializable
+public class Artifact
 {
   private final ArtifactType type;
   private final String name;

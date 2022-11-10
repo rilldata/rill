@@ -34,13 +34,16 @@ func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Inst
 
 // CreateInstance implements drivers.RegistryStore
 func (c *connection) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
-	id := uuid.NewString()
+	if inst.ID == "" {
+		inst.ID = uuid.NewString()
+	}
+
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
 		"INSERT INTO instances(id, driver, dsn, object_prefix, exposed, embed_catalog, created_on, updated_on) "+
 			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7)",
-		id,
+		inst.ID,
 		inst.Driver,
 		inst.DSN,
 		inst.ObjectPrefix,
@@ -52,7 +55,6 @@ func (c *connection) CreateInstance(ctx context.Context, inst *drivers.Instance)
 		return err
 	}
 	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
-	inst.ID = id
 	inst.CreatedOn = now
 	inst.UpdatedOn = now
 	return nil

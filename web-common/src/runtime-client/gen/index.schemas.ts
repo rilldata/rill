@@ -14,6 +14,14 @@ export type RuntimeServiceListReposParams = {
   pageToken?: string;
 };
 
+/**
+ * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
+ */
+export type RuntimeServiceGetTopKBody = {
+  agg?: string;
+  k?: number;
+};
+
 export type RuntimeServiceQueryDirectBody = {
   sql?: string;
   args?: unknown[];
@@ -72,13 +80,62 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
 };
 
+export type RuntimeServiceListCatalogObjectsType =
+  typeof RuntimeServiceListCatalogObjectsType[keyof typeof RuntimeServiceListCatalogObjectsType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RuntimeServiceListCatalogObjectsType = {
+  TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
+  TYPE_TABLE: "TYPE_TABLE",
+  TYPE_SOURCE: "TYPE_SOURCE",
+  TYPE_METRICS_VIEW: "TYPE_METRICS_VIEW",
+} as const;
+
+export type RuntimeServiceListCatalogObjectsParams = {
+  type?: RuntimeServiceListCatalogObjectsType;
+};
+
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
   pageToken?: string;
 };
 
+export interface V1TriggerSyncResponse {
+  objectsCount?: number;
+  objectsAddedCount?: number;
+  objectsUpdatedCount?: number;
+  objectsRemovedCount?: number;
+}
+
 export interface V1TriggerRefreshResponse {
   [key: string]: any;
+}
+
+export type V1TopKResponseDataItem = { [key: string]: any };
+
+export interface V1StructType {
+  fields?: StructTypeField[];
+}
+
+/**
+ * Response for RuntimeService.GetTopK.
+ */
+export interface V1TopKResponse {
+  meta?: V1StructType;
+  data?: V1TopKResponseDataItem[];
+}
+
+/**
+ * Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
+scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
+have managed = false.
+ */
+export interface V1Table {
+  name?: string;
+  schema?: V1StructType;
+  /** Managed is true if the table was created through a runtime migration, false if it was discovered in by
+scanning the database's information schema. */
+  managed?: boolean;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -88,23 +145,7 @@ export interface V1Source {
   name?: string;
   connector?: string;
   properties?: V1SourceProperties;
-}
-
-export interface V1SchemaColumn {
-  name?: string;
-  type?: string;
-  nullable?: boolean;
-}
-
-/**
- * UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that
-was NOT created through the runtime's migrations). The runtime periodically looks for
-unmanaged tables in the database's information schema if the instance is created with exposed=true.
- */
-export interface V1UnmanagedTable {
-  name?: string;
-  view?: boolean;
-  schema?: V1SchemaColumn[];
+  schema?: V1StructType;
 }
 
 /**
@@ -123,19 +164,19 @@ export interface V1Repo {
 export type V1QueryResponseDataItem = { [key: string]: any };
 
 export interface V1QueryResponse {
-  meta?: V1SchemaColumn[];
+  meta?: V1StructType;
   data?: V1QueryResponseDataItem[];
 }
 
 export type V1QueryDirectResponseDataItem = { [key: string]: any };
 
 export interface V1QueryDirectResponse {
-  meta?: V1SchemaColumn[];
+  meta?: V1StructType;
   data?: V1QueryDirectResponseDataItem[];
 }
 
 export interface V1PutRepoObjectResponse {
-  file_path?: string;
+  filePath?: string;
 }
 
 export interface V1PingResponse {
@@ -158,21 +199,21 @@ export interface V1MigrateDeleteResponse {
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
-  meta?: V1SchemaColumn[];
+  meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewTotalsResponseData;
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewToplistResponse {
-  meta?: V1SchemaColumn[];
+  meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
 export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1SchemaColumn[];
+  meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewTimeSeriesResponseDataItem[];
 }
 
@@ -194,12 +235,23 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
+export interface V1MetricsViewColumn {
+  name?: string;
+  type?: string;
+  nullable?: boolean;
+}
+
 export interface V1MetricsView {
   sql?: string;
   name?: string;
   fromObject?: string;
   dimensions?: MetricsViewDimension[];
   measures?: MetricsViewMeasure[];
+}
+
+export interface V1MapType {
+  keyType?: Runtimev1Type;
+  valueType?: Runtimev1Type;
 }
 
 export interface V1ListReposResponse {
@@ -286,6 +338,7 @@ export interface V1CreateInstanceResponse {
 }
 
 export interface V1CreateInstanceRequest {
+  instanceId?: string;
   driver?: string;
   dsn?: string;
   objectPrefix?: string;
@@ -304,11 +357,33 @@ export interface V1Connector {
   properties?: ConnectorProperty[];
 }
 
+export type V1CatalogObjectType =
+  typeof V1CatalogObjectType[keyof typeof V1CatalogObjectType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1CatalogObjectType = {
+  TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
+  TYPE_TABLE: "TYPE_TABLE",
+  TYPE_SOURCE: "TYPE_SOURCE",
+  TYPE_METRICS_VIEW: "TYPE_METRICS_VIEW",
+} as const;
+
 export interface V1CatalogObject {
+  type?: V1CatalogObjectType;
+  table?: V1Table;
   source?: V1Source;
   metricsView?: V1MetricsView;
-  unmanagedTable?: V1UnmanagedTable;
+  createdOn?: string;
+  updatedOn?: string;
   refreshedOn?: string;
+}
+
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
 }
 
 export interface RpcStatus {
@@ -336,6 +411,42 @@ export const ProtobufNullValue = {
 export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
+}
+
+export type TypeCode = typeof TypeCode[keyof typeof TypeCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TypeCode = {
+  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
+  CODE_BOOL: "CODE_BOOL",
+  CODE_INT8: "CODE_INT8",
+  CODE_INT16: "CODE_INT16",
+  CODE_INT32: "CODE_INT32",
+  CODE_INT64: "CODE_INT64",
+  CODE_INT128: "CODE_INT128",
+  CODE_UINT8: "CODE_UINT8",
+  CODE_UINT16: "CODE_UINT16",
+  CODE_UINT32: "CODE_UINT32",
+  CODE_UINT64: "CODE_UINT64",
+  CODE_UINT128: "CODE_UINT128",
+  CODE_FLOAT32: "CODE_FLOAT32",
+  CODE_FLOAT64: "CODE_FLOAT64",
+  CODE_TIMESTAMP: "CODE_TIMESTAMP",
+  CODE_DATE: "CODE_DATE",
+  CODE_TIME: "CODE_TIME",
+  CODE_STRING: "CODE_STRING",
+  CODE_BYTES: "CODE_BYTES",
+  CODE_ARRAY: "CODE_ARRAY",
+  CODE_STRUCT: "CODE_STRUCT",
+  CODE_MAP: "CODE_MAP",
+  CODE_DECIMAL: "CODE_DECIMAL",
+  CODE_JSON: "CODE_JSON",
+  CODE_UUID: "CODE_UUID",
+} as const;
+
+export interface StructTypeField {
+  name?: string;
+  type?: Runtimev1Type;
 }
 
 export interface MetricsViewMeasure {

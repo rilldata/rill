@@ -4,7 +4,6 @@
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
@@ -19,8 +18,7 @@
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "@rilldata/web-local/lib/components/column-profile/CollapsibleTableSummary.svelte";
-  import ColumnProfileNavEntry from "@rilldata/web-local/lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import {
@@ -251,25 +249,13 @@
 
       {#if currentDerivedTable?.profile && showColumns}
         <div transition:slide|local={{ duration: 200 }}>
-          <CollapsibleTableSummary
-            entityType={EntityType.Table}
-            showTitle={false}
-            show={showColumns}
-            name={currentTable.name}
+          <ColumnProfile
+            entityId={currentTable.id}
+            indentLevel={0}
             cardinality={currentDerivedTable?.cardinality ?? 0}
-            active={currentTable?.id === sourceID}
-          >
-            <ColumnProfileNavEntry
-              slot="summary"
-              let:containerWidth
-              entityId={currentTable.id}
-              indentLevel={0}
-              {containerWidth}
-              cardinality={currentDerivedTable?.cardinality ?? 0}
-              profile={currentDerivedTable?.profile ?? []}
-              head={currentDerivedTable?.preview ?? []}
-            />
-          </CollapsibleTableSummary>
+            profile={currentDerivedTable?.profile ?? []}
+            head={currentDerivedTable?.preview ?? []}
+          />
         </div>
       {/if}
     </div>

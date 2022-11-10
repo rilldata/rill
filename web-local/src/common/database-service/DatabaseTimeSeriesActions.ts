@@ -140,6 +140,9 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
       : "";
     const filter = filterCondition ? ` WHERE ${filterCondition}` : "";
 
+    // avoid having clashes with timestampColumn and the alias we use for generated series for timestamp
+    const tsAlias = timestampColumn === "ts" ? "_ts" : "ts";
+
     /**
      * Generate the rolled up time series as a temporary table and
      * then compute the result set + any M4-like reduction on it.
@@ -157,7 +160,7 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
         -- generate a time series column that has the intended range
         WITH template as (
           SELECT 
-            generate_series as ts 
+            generate_series as ${tsAlias} 
           FROM 
             generate_series(
               date_trunc(
@@ -175,19 +178,19 @@ export class DatabaseTimeSeriesActions extends DatabaseActions {
           SELECT 
             date_trunc('${timeGranularity}', ${escapeColumn(
           timestampColumn
-        )}) as ts,
+        )}) as ${tsAlias},
             ${getExpressionColumnsFromMeasures(measures)}
           FROM "${tableName}" ${filter}
-          GROUP BY ts ORDER BY ts
+          GROUP BY ${tsAlias} ORDER BY ${tsAlias}
         )
         -- join the transformed data with the generated time series column,
         -- coalescing the first value to get the 0-default when the rolled up data
         -- does not have that value.
         SELECT 
           ${getCoalesceStatementsMeasures(measures)},
-          template.ts from template
-        LEFT OUTER JOIN series ON template.ts = series.ts
-        ORDER BY template.ts
+          template.${tsAlias} as ts from template
+        LEFT OUTER JOIN series ON template.${tsAlias} = series.${tsAlias}
+        ORDER BY template.${tsAlias}
       )`
       );
     } catch (err) {
