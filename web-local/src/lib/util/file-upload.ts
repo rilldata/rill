@@ -153,7 +153,7 @@ export async function uploadFile(url: string, file: File): Promise<string> {
       formData,
       {}
     );
-    return resp.file_path;
+    return resp.filePath;
   } catch (err) {
     console.error(err);
   }

@@ -176,7 +176,7 @@ export interface V1QueryDirectResponse {
 }
 
 export interface V1PutRepoObjectResponse {
-  file_path?: string;
+  filePath?: string;
 }
 
 export interface V1PingResponse {
