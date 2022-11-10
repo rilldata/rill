@@ -1,6 +1,9 @@
 import { DATABASE_POLLING_INTERVAL } from "@rilldata/web-local/common/constants";
 import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
-import { runtimeServiceListCatalogObjects } from "@rilldata/web-common/runtime-client";
+import {
+  runtimeServiceListCatalogObjects,
+  RuntimeServiceListCatalogObjectsType,
+} from "@rilldata/web-common/runtime-client";
 import type { RootConfig } from "../config/RootConfig";
 import type { DataModelerService } from "../data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "../data-modeler-state-service/DataModelerStateService";
@@ -42,7 +45,8 @@ export class DuckDbConnection extends DataConnection {
 
   public async sync(): Promise<void> {
     const catalogs = await runtimeServiceListCatalogObjects(
-      this.duckDbClient.getInstanceId()
+      this.duckDbClient.getInstanceId(),
+      { type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE }
     );
     const catalogsMap = getMapFromArray(
       catalogs.objects,

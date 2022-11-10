@@ -22,6 +22,11 @@ func OpenEmbed(fs embed.FS, fsPath string) (Library, error) {
 		return nil, err
 	}
 
+	err = os.RemoveAll(dstPath)
+	if err != nil {
+		return nil, err
+	}
+
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return nil, err

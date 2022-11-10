@@ -19,9 +19,8 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			return nil, err
 		}
 		return &api.CatalogObject{
-			Type: &api.CatalogObject_Source{
-				Source: src,
-			},
+			Type:        api.CatalogObject_TYPE_SOURCE,
+			Source:      src,
 			CreatedOn:   timestamppb.New(obj.CreatedOn),
 			UpdatedOn:   timestamppb.New(obj.UpdatedOn),
 			RefreshedOn: timestamppb.New(obj.RefreshedOn),
@@ -33,9 +32,8 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			return nil, err
 		}
 		return &api.CatalogObject{
-			Type: &api.CatalogObject_Model{
-				Model: model,
-			},
+			Type:        api.CatalogObject_TYPE_MODEL,
+			Model:       model,
 			CreatedOn:   timestamppb.New(obj.CreatedOn),
 			UpdatedOn:   timestamppb.New(obj.UpdatedOn),
 			RefreshedOn: timestamppb.New(obj.RefreshedOn),
@@ -47,9 +45,8 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			return nil, err
 		}
 		return &api.CatalogObject{
-			Type: &api.CatalogObject_MetricsView{
-				MetricsView: metricsView,
-			},
+			Type:        api.CatalogObject_TYPE_METRICS_VIEW,
+			MetricsView: metricsView,
 			CreatedOn:   timestamppb.New(obj.CreatedOn),
 			UpdatedOn:   timestamppb.New(obj.UpdatedOn),
 			RefreshedOn: timestamppb.New(obj.RefreshedOn),

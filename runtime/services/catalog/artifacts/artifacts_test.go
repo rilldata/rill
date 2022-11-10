@@ -24,14 +24,13 @@ func TestSourceReadWrite(t *testing.T) {
 			&api.CatalogObject{
 				Name: "Source",
 				Path: "path/Source.yaml",
-				Type: &api.CatalogObject_Source{
-					Source: &api.Source{
-						Name:      "Source",
-						Connector: "file",
-						Properties: toProtoStruct(map[string]any{
-							"path": "data/source.csv",
-						}),
-					},
+				Type: api.CatalogObject_TYPE_SOURCE,
+				Source: &api.Source{
+					Name:      "Source",
+					Connector: "file",
+					Properties: toProtoStruct(map[string]any{
+						"path": "data/source.csv",
+					}),
 				},
 			},
 		},
@@ -40,12 +39,11 @@ func TestSourceReadWrite(t *testing.T) {
 			&api.CatalogObject{
 				Name: "Model",
 				Path: "path/Model.yaml",
-				Type: &api.CatalogObject_Model{
-					Model: &api.Model{
-						Name:    "Model",
-						Sql:     "select * from A",
-						Dialect: 0,
-					},
+				Type: api.CatalogObject_TYPE_MODEL,
+				Model: &api.Model{
+					Name:    "Model",
+					Sql:     "select * from A",
+					Dialect: 0,
 				},
 			},
 		},
@@ -54,39 +52,38 @@ func TestSourceReadWrite(t *testing.T) {
 			&api.CatalogObject{
 				Name: "MetricsView",
 				Path: "path/MetricsView.yaml",
-				Type: &api.CatalogObject_MetricsView{
-					MetricsView: &api.MetricsView{
-						Name:          "MetricsView",
-						From:          "Model",
-						TimeDimension: "time",
-						TimeGrains:    []string{"1 day", "1 month"},
-						Dimensions: []*api.MetricsView_Dimension{
-							{
-								Name:        "dim0",
-								Label:       "Dim0_L",
-								Description: "Dim0_D",
-							},
-							{
-								Name:        "dim1",
-								Label:       "Dim1_L",
-								Description: "Dim1_D",
-							},
+				Type: api.CatalogObject_TYPE_METRICS_VIEW,
+				MetricsView: &api.MetricsView{
+					Name:          "MetricsView",
+					From:          "Model",
+					TimeDimension: "time",
+					TimeGrains:    []string{"1 day", "1 month"},
+					Dimensions: []*api.MetricsView_Dimension{
+						{
+							Name:        "dim0",
+							Label:       "Dim0_L",
+							Description: "Dim0_D",
 						},
-						Measures: []*api.MetricsView_Measure{
-							{
-								Name:        "measure_0",
-								Label:       "Mea0_L",
-								Expression:  "count(c0)",
-								Description: "Mea0_D",
-								Format:      "humanise",
-							},
-							{
-								Name:        "measure_1",
-								Label:       "Mea1_L",
-								Expression:  "avg(c1)",
-								Description: "Mea1_D",
-								Format:      "humanise",
-							},
+						{
+							Name:        "dim1",
+							Label:       "Dim1_L",
+							Description: "Dim1_D",
+						},
+					},
+					Measures: []*api.MetricsView_Measure{
+						{
+							Name:        "measure_0",
+							Label:       "Mea0_L",
+							Expression:  "count(c0)",
+							Description: "Mea0_D",
+							Format:      "humanise",
+						},
+						{
+							Name:        "measure_1",
+							Label:       "Mea1_L",
+							Expression:  "avg(c1)",
+							Description: "Mea1_D",
+							Format:      "humanise",
 						},
 					},
 				},

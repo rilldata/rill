@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // ListRepos implements RuntimeService
@@ -170,7 +170,7 @@ func (s *Server) PutRepoObjectFromHTTPRequest(w http.ResponseWriter, req *http.R
 	}
 
 	if pathParams["path"] == "" {
-		http.Error(w, fmt.Sprintf("must have a path to file"), http.StatusBadRequest)
+		http.Error(w, "must have a path to file", http.StatusBadRequest)
 		return
 	}
 
@@ -181,10 +181,16 @@ func (s *Server) PutRepoObjectFromHTTPRequest(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(api.PutRepoObjectResponse{
+	res, err := protojson.Marshal(&api.PutRepoObjectResponse{
 		FilePath: filePath,
 	})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to serialize response: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(res)
 }
 
 func repoToPB(repo *drivers.Repo) *api.Repo {

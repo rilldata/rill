@@ -26,7 +26,7 @@ type Service struct {
 func (s *Service) ListObjects(
 	ctx context.Context,
 ) ([]*api.CatalogObject, error) {
-	objs := s.Catalog.FindObjects(ctx, s.InstId)
+	objs := s.Catalog.FindObjects(ctx, s.InstId, drivers.CatalogObjectTypeUnspecified)
 	pbs := make([]*api.CatalogObject, len(objs))
 	var err error
 	for i, obj := range objs {

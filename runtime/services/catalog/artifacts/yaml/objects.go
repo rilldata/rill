@@ -18,7 +18,7 @@ const Version = "0.0.1"
 
 type Artifact struct {
 	Version    string
-	Type       string
+	Type       drivers.CatalogObjectType
 	Definition any
 }
 
@@ -66,14 +66,14 @@ func toArtifact(catalog *api.CatalogObject) (*Artifact, error) {
 	}
 
 	var err error
-	switch catalog.Type.(type) {
-	case *api.CatalogObject_Source:
+	switch catalog.Type {
+	case api.CatalogObject_TYPE_SOURCE:
 		artifact.Definition, err = toSourceArtifact(catalog)
 		artifact.Type = drivers.CatalogObjectTypeSource
-	case *api.CatalogObject_Model:
+	case api.CatalogObject_TYPE_MODEL:
 		artifact.Definition, err = toModelArtifact(catalog)
 		artifact.Type = drivers.CatalogObjectTypeModel
-	case *api.CatalogObject_MetricsView:
+	case api.CatalogObject_TYPE_METRICS_VIEW:
 		artifact.Definition, err = toMetricsViewArtifact(catalog)
 		artifact.Type = drivers.CatalogObjectTypeMetricsView
 	}
@@ -85,30 +85,20 @@ func toArtifact(catalog *api.CatalogObject) (*Artifact, error) {
 }
 
 func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
-	source, ok := catalog.Type.(*api.CatalogObject_Source)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse source")
-	}
-
 	return &Source{
-		Name:       source.Source.Name,
-		Connector:  source.Source.Connector,
-		Properties: source.Source.Properties.AsMap(),
+		Name:       catalog.Source.Name,
+		Connector:  catalog.Source.Connector,
+		Properties: catalog.Source.Properties.AsMap(),
 	}, nil
 }
 
 func toModelArtifact(catalog *api.CatalogObject) (*Model, error) {
-	model, ok := catalog.Type.(*api.CatalogObject_Model)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse model")
-	}
-
 	modelArtifact := &Model{
-		Name: model.Model.Name,
-		Sql:  model.Model.Sql,
+		Name: catalog.Model.Name,
+		Sql:  catalog.Model.Sql,
 	}
 
-	switch model.Model.Dialect {
+	switch catalog.Model.Dialect {
 	case api.Model_DuckDB:
 		modelArtifact.Dialect = ModelDialectDuckDB
 	}
@@ -117,13 +107,8 @@ func toModelArtifact(catalog *api.CatalogObject) (*Model, error) {
 }
 
 func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
-	metricsView, ok := catalog.Type.(*api.CatalogObject_MetricsView)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse metrics view")
-	}
-
 	metricsArtifact := &MetricsView{}
-	err := copier.Copy(metricsArtifact, &metricsView.MetricsView)
+	err := copier.Copy(metricsArtifact, catalog.MetricsView)
 	if err != nil {
 		return nil, err
 	}
@@ -163,12 +148,12 @@ func fromSourceArtifact(artifact *Artifact, catalog *api.CatalogObject) error {
 	}
 
 	catalog.Name = sourceArtifact.Name
-	catalog.Type = &api.CatalogObject_Source{
-		Source: &api.Source{
-			Name:       catalog.Name,
-			Connector:  sourceArtifact.Connector,
-			Properties: propsPB,
-		},
+	catalog.Type = api.CatalogObject_TYPE_SOURCE
+
+	catalog.Source = &api.Source{
+		Name:       catalog.Name,
+		Connector:  sourceArtifact.Connector,
+		Properties: propsPB,
 	}
 
 	return nil
@@ -182,16 +167,14 @@ func fromModelArtifact(artifact *Artifact, catalog *api.CatalogObject) error {
 	}
 
 	catalog.Name = modelArtifact.Name
-	model := &api.Model{
+	catalog.Type = api.CatalogObject_TYPE_MODEL
+	catalog.Model = &api.Model{
 		Name: modelArtifact.Name,
 		Sql:  modelArtifact.Sql,
 	}
-	catalog.Type = &api.CatalogObject_Model{
-		Model: model,
-	}
 	switch modelArtifact.Dialect {
 	case ModelDialectDuckDB:
-		model.Dialect = api.Model_DuckDB
+		catalog.Model.Dialect = api.Model_DuckDB
 	}
 
 	return nil
@@ -204,20 +187,17 @@ func fromMetricsViewArtifact(artifact *Artifact, catalog *api.CatalogObject) err
 		return err
 	}
 
-	metricsView := &api.MetricsView{}
-	err = copier.Copy(metricsView, &metricsViewArtifact)
+	err = copier.Copy(catalog.MetricsView, &metricsViewArtifact)
 	if err != nil {
 		return err
 	}
 	// this is needed since measure names are not given by the user
-	for i, measure := range metricsView.Measures {
+	for i, measure := range catalog.MetricsView.Measures {
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
 	catalog.Name = metricsViewArtifact.Name
-	catalog.Type = &api.CatalogObject_MetricsView{
-		MetricsView: metricsView,
-	}
+	catalog.Type = api.CatalogObject_TYPE_METRICS_VIEW
 
 	if err != nil {
 		return err

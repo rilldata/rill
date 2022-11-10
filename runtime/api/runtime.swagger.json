@@ -192,6 +192,20 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "TYPE_UNSPECIFIED",
+              "TYPE_TABLE",
+              "TYPE_SOURCE",
+              "TYPE_MODEL",
+              "TYPE_METRICS_VIEW"
+            ],
+            "default": "TYPE_UNSPECIFIED"
           }
         ],
         "tags": [
@@ -814,6 +828,98 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/sync": {
+      "post": {
+        "summary": "TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.\nIf the instance has exposed=true, tables found in the information schema will be added to the catalog.",
+        "operationId": "RuntimeService_TriggerSync",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TriggerSyncResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/topk/{tableName}/{columnName}": {
+      "post": {
+        "summary": "Get TopK elements from a table for a column given an agg function\nagg function and k are optional, defaults are count(*) and 50 respectively",
+        "operationId": "RuntimeService_GetTopK",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TopKResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "agg": {
+                  "type": "string"
+                },
+                "k": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "description": "Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name."
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/ping": {
       "get": {
         "summary": "Ping returns information about the runtime",
@@ -1199,6 +1305,49 @@
       ],
       "default": "DuckDB"
     },
+    "StructTypeField": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/runtimev1Type"
+        }
+      }
+    },
+    "TypeCode": {
+      "type": "string",
+      "enum": [
+        "CODE_UNSPECIFIED",
+        "CODE_BOOL",
+        "CODE_INT8",
+        "CODE_INT16",
+        "CODE_INT32",
+        "CODE_INT64",
+        "CODE_INT128",
+        "CODE_UINT8",
+        "CODE_UINT16",
+        "CODE_UINT32",
+        "CODE_UINT64",
+        "CODE_UINT128",
+        "CODE_FLOAT32",
+        "CODE_FLOAT64",
+        "CODE_TIMESTAMP",
+        "CODE_DATE",
+        "CODE_TIME",
+        "CODE_STRING",
+        "CODE_BYTES",
+        "CODE_ARRAY",
+        "CODE_STRUCT",
+        "CODE_MAP",
+        "CODE_DECIMAL",
+        "CODE_JSON",
+        "CODE_UUID"
+      ],
+      "default": "CODE_UNSPECIFIED",
+      "title": "Code enumerates all the types that can be represented in a schema"
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -1234,9 +1383,41 @@
         }
       }
     },
+    "runtimev1Type": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/definitions/TypeCode",
+          "title": "Code designates the type"
+        },
+        "nullable": {
+          "type": "boolean",
+          "title": "Nullable indicates whether null values are possible"
+        },
+        "arrayElementType": {
+          "$ref": "#/definitions/runtimev1Type",
+          "title": "If code is CODE_ARRAY, array_element_type specifies the type of the array elements"
+        },
+        "structType": {
+          "$ref": "#/definitions/v1StructType",
+          "title": "If code is CODE_STRUCT, struct_type specifies the type of the struct's fields"
+        },
+        "mapType": {
+          "$ref": "#/definitions/v1MapType",
+          "title": "If code is CODE_MAP, map_type specifies the map's key and value types"
+        }
+      },
+      "title": "Type represents a data type in a schema"
+    },
     "v1CatalogObject": {
       "type": "object",
       "properties": {
+        "type": {
+          "$ref": "#/definitions/v1CatalogObjectType"
+        },
+        "table": {
+          "$ref": "#/definitions/v1Table"
+        },
         "source": {
           "$ref": "#/definitions/v1Source"
         },
@@ -1245,9 +1426,6 @@
         },
         "metricsView": {
           "$ref": "#/definitions/v1MetricsView"
-        },
-        "table": {
-          "$ref": "#/definitions/v1Table"
         },
         "name": {
           "type": "string"
@@ -1269,6 +1447,17 @@
         }
       },
       "title": "CatalogObject represents an object stored in the catalog"
+    },
+    "v1CatalogObjectType": {
+      "type": "string",
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "TYPE_TABLE",
+        "TYPE_SOURCE",
+        "TYPE_MODEL",
+        "TYPE_METRICS_VIEW"
+      ],
+      "default": "TYPE_UNSPECIFIED"
     },
     "v1Connector": {
       "type": "object",
@@ -1298,9 +1487,12 @@
     "v1CreateInstanceRequest": {
       "type": "object",
       "properties": {
-        "driver": {
+        "instanceId": {
           "type": "string",
           "title": "See message Instance for field descriptions"
+        },
+        "driver": {
+          "type": "string"
         },
         "dsn": {
           "type": "string"
@@ -1490,6 +1682,18 @@
       },
       "title": "Response message for RuntimeService.ListRepos"
     },
+    "v1MapType": {
+      "type": "object",
+      "properties": {
+        "keyType": {
+          "$ref": "#/definitions/runtimev1Type"
+        },
+        "valueType": {
+          "$ref": "#/definitions/runtimev1Type"
+        }
+      },
+      "title": "MapType is a complex type for mapping keys to values"
+    },
     "v1MetricsView": {
       "type": "object",
       "properties": {
@@ -1526,6 +1730,21 @@
         }
       },
       "title": "MetricsView represents a catalog object created using CREATE METRICS VIEW"
+    },
+    "v1MetricsViewColumn": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "nullable": {
+          "type": "boolean"
+        }
+      },
+      "title": "MetricsViewColumn represents a column in a metrics view"
     },
     "v1MetricsViewFilter": {
       "type": "object",
@@ -1593,7 +1812,7 @@
         "meta": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1SchemaColumn"
+            "$ref": "#/definitions/v1MetricsViewColumn"
           }
         },
         "data": {
@@ -1611,7 +1830,7 @@
         "meta": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1SchemaColumn"
+            "$ref": "#/definitions/v1MetricsViewColumn"
           }
         },
         "data": {
@@ -1629,7 +1848,7 @@
         "meta": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1SchemaColumn"
+            "$ref": "#/definitions/v1MetricsViewColumn"
           }
         },
         "data": {
@@ -1663,7 +1882,7 @@
           "$ref": "#/definitions/ModelDialect"
         },
         "schema": {
-          "type": "string"
+          "$ref": "#/definitions/v1StructType"
         }
       }
     },
@@ -1695,10 +1914,7 @@
       "type": "object",
       "properties": {
         "meta": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1SchemaColumn"
-          },
+          "$ref": "#/definitions/v1StructType",
           "title": "Schema of result data"
         },
         "data": {
@@ -1715,10 +1931,7 @@
       "type": "object",
       "properties": {
         "meta": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1SchemaColumn"
-          },
+          "$ref": "#/definitions/v1StructType",
           "title": "Schema of result data"
         },
         "data": {
@@ -1749,20 +1962,6 @@
       },
       "description": "Repo represents a collection of file artifacts containing SQL statements.\nIt will usually by represented as a folder on disk, but may also be backed by a\ndatabase (for modelling in the cloud where no persistant file system is available)."
     },
-    "v1SchemaColumn": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string"
-        },
-        "nullable": {
-          "type": "boolean"
-        }
-      }
-    },
     "v1Source": {
       "type": "object",
       "properties": {
@@ -1783,32 +1982,81 @@
           "title": "Connector properties assigned in the source"
         },
         "schema": {
-          "type": "string"
+          "$ref": "#/definitions/v1StructType"
         }
       },
       "title": "Source represents a catalog object created using CREATE SOURCE"
+    },
+    "v1StructType": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StructTypeField"
+          }
+        }
+      },
+      "title": "StructType is a type composed of ordered, named and typed sub-fields"
     },
     "v1Table": {
       "type": "object",
       "properties": {
         "name": {
-          "type": "string"
-        },
-        "view": {
-          "type": "boolean"
+          "type": "string",
+          "title": "Table name"
         },
         "schema": {
+          "$ref": "#/definitions/v1StructType",
+          "title": "Table schema"
+        },
+        "managed": {
+          "type": "boolean",
+          "description": "Managed is true if the table was created through a runtime migration, false if it was discovered in by\nscanning the database's information schema."
+        }
+      },
+      "description": "Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically\nscanning the database's information schema when the instance is created with exposed=true. Pre-existing tables\nhave managed = false."
+    },
+    "v1TopKResponse": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "$ref": "#/definitions/v1StructType"
+        },
+        "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1SchemaColumn"
+            "type": "object"
           }
         }
       },
-      "description": "Table represents a pre-existing table in the OLAP database (i.e. a table that\nwas NOT created through the runtime's migrations). The runtime periodically looks for\nunmanaged tables in the database's information schema if the instance is created with exposed=true."
+      "description": "Response for RuntimeService.GetTopK."
     },
     "v1TriggerRefreshResponse": {
       "type": "object",
       "title": "Response message for RuntimeService.TriggerRefresh"
+    },
+    "v1TriggerSyncResponse": {
+      "type": "object",
+      "properties": {
+        "objectsCount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "objectsAddedCount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "objectsUpdatedCount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "objectsRemovedCount": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "Response message for RuntimeService.TriggerSync"
     }
   }
 }

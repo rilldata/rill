@@ -100,7 +100,7 @@ func (s *Service) Migrate(
 	// hence we log LastMigration as the time before we start reading the repos and assign here
 	s.LastMigration = now
 
-	catalogObjs := s.Catalog.FindObjects(ctx, s.InstId)
+	catalogObjs := s.Catalog.FindObjects(ctx, s.InstId, drivers.CatalogObjectTypeUnspecified)
 	for _, catalogObj := range catalogObjs {
 		apiCatalog, err := catalogObjectToPB(catalogObj)
 		if err != nil {

@@ -67,14 +67,15 @@ func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObj
 }
 
 func getMigrator(catalog *api.CatalogObject) (EntityMigrator, bool) {
-	var objType string
-	switch catalog.Type.(type) {
-	case *api.CatalogObject_Source:
+	var objType drivers.CatalogObjectType
+	// TODO: temporary for the merge with main
+	switch catalog.Type {
+	case api.CatalogObject_TYPE_SOURCE:
 		objType = drivers.CatalogObjectTypeSource
-	case *api.CatalogObject_Model:
+	case api.CatalogObject_TYPE_MODEL:
 		objType = drivers.CatalogObjectTypeModel
 	}
 
-	migrator, ok := Migrators[objType]
+	migrator, ok := Migrators[string(objType)]
 	return migrator, ok
 }

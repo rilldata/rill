@@ -38,6 +38,7 @@ func (s *Server) GetInstance(ctx context.Context, req *api.GetInstanceRequest) (
 // CreateInstance implements RuntimeService
 func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequest) (*api.CreateInstanceResponse, error) {
 	inst := &drivers.Instance{
+		ID:           req.InstanceId,
 		Driver:       req.Driver,
 		DSN:          req.Dsn,
 		ObjectPrefix: req.ObjectPrefix,
@@ -61,6 +62,11 @@ func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequ
 		if !ok {
 			return nil, status.Error(codes.InvalidArgument, "driver does not support embedded catalogs")
 		}
+	}
+
+	err = conn.Migrate(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to migrate instance: %s", err.Error())
 	}
 
 	registry, _ := s.metastore.RegistryStore()

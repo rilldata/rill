@@ -2,7 +2,7 @@
 set -e
 
 # Hardcoded runtime version to install
-RUNTIME_VERSION="33dd6ca55e0131ceb35806db53176d910c1e0bf9"
+RUNTIME_VERSION="cbb725d728739ee60e36df4ee8f34d3768b81e9c"
 
 # Targets dist/runtime as the output directory
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )

@@ -43,27 +43,30 @@ func TestService_Migrate(t *testing.T) {
 
 func createSource(t *testing.T, s *Service, source *api.Source, path string) {
 	err := artifacts.Write(context.Background(), s.Repo, s.RepoId, &api.CatalogObject{
-		Name: source.Name,
-		Type: &api.CatalogObject_Source{Source: source},
-		Path: path,
+		Name:   source.Name,
+		Type:   api.CatalogObject_TYPE_SOURCE,
+		Source: source,
+		Path:   path,
 	})
 	require.NoError(t, err)
 }
 
 func createModel(t *testing.T, s *Service, model *api.Model, path string) {
 	err := artifacts.Write(context.Background(), s.Repo, s.RepoId, &api.CatalogObject{
-		Name: model.Name,
-		Type: &api.CatalogObject_Model{Model: model},
-		Path: path,
+		Name:  model.Name,
+		Type:  api.CatalogObject_TYPE_MODEL,
+		Model: model,
+		Path:  path,
 	})
 	require.NoError(t, err)
 }
 
 func createMetricsView(t *testing.T, s *Service, metricsView *api.MetricsView, path string) {
 	err := artifacts.Write(context.Background(), s.Repo, s.RepoId, &api.CatalogObject{
-		Name: metricsView.Name,
-		Type: &api.CatalogObject_MetricsView{MetricsView: metricsView},
-		Path: path,
+		Name:        metricsView.Name,
+		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
+		MetricsView: metricsView,
+		Path:        path,
 	})
 	require.NoError(t, err)
 }

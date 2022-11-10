@@ -13,13 +13,13 @@ import (
 )
 
 func init() {
-	migrator.Register(drivers.CatalogObjectTypeSource, &sourceMigrator{})
+	migrator.Register(string(drivers.CatalogObjectTypeSource), &sourceMigrator{})
 }
 
 type sourceMigrator struct{}
 
 func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
-	apiSource := catalogObj.Type.(*api.CatalogObject_Source).Source
+	apiSource := catalogObj.Source
 	var source *connectors.Source
 	var err error
 	if apiSource.Sql != "" {

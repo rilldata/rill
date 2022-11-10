@@ -1,9 +1,8 @@
-package duckdb
+package sqlite
 
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -13,16 +12,15 @@ import (
 
 func (c *connection) FindObjects(ctx context.Context, instanceID string, typ drivers.CatalogObjectType) []*drivers.CatalogObject {
 	if typ == drivers.CatalogObjectTypeUnspecified {
-		return c.findObjects(ctx, "")
+		return c.findObjects(ctx, "WHERE instance_id = ?", instanceID)
 	} else {
-		return c.findObjects(ctx, "WHERE type = ?", typ)
+		return c.findObjects(ctx, "WHERE instance_id = ? AND type = ?", instanceID, typ)
 	}
 }
 
 func (c *connection) FindObject(ctx context.Context, instanceID string, name string) (*drivers.CatalogObject, bool) {
-	// Names are stored with case everywhere, but the checks should be case-insensitive.
-	// Hence, the translation to lower case here.
-	objs := c.findObjects(ctx, "WHERE LOWER(name) = ?", strings.ToLower(name))
+	// Names are stored with case everywhere, but the checks should be case-insensitive. Hence, the translation to lower case here.
+	objs := c.findObjects(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
 	if len(objs) == 0 {
 		return nil, false
 	}
@@ -30,7 +28,7 @@ func (c *connection) FindObject(ctx context.Context, instanceID string, name str
 }
 
 func (c *connection) findObjects(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogObject {
-	sql := fmt.Sprintf("SELECT name, type, sql, schema, managed, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
+	sql := fmt.Sprintf("SELECT name, type, sql, schema, managed, created_on, updated_on, refreshed_on FROM catalog %s ORDER BY lower(name)", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -73,14 +71,13 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, sql, schema, managed, definition, path, refreshed_on, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO catalog(instance_id, name, type, sql, schema, managed, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		instanceID,
 		obj.Name,
 		obj.Type,
 		obj.SQL,
 		schema,
 		obj.Managed,
-		obj.Definition,
-		obj.Path,
 		now,
 		now,
 		now,
@@ -102,26 +99,28 @@ func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *d
 		return err
 	}
 
+	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, sql = ?, schema = ?, managed = ?, definition = ?, path = ?, refreshed_on = ?, updated_on = ? WHERE name = ?",
+		"UPDATE catalog SET type = ?, sql = ?, schema = ?, managed = ?, updated_on = ?, refreshed_on = ? WHERE instance_id = ? AND name = ?",
 		obj.Type,
 		obj.SQL,
 		schema,
 		obj.Managed,
-		obj.Definition,
-		obj.Path,
+		now,
 		obj.RefreshedOn,
-		obj.UpdatedOn,
+		instanceID,
 		obj.Name,
 	)
 	if err != nil {
 		return err
 	}
+
+	obj.UpdatedOn = now
 	return nil
 }
 
 func (c *connection) DeleteObject(ctx context.Context, instanceID string, name string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE name = ?", name)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND name = ?", instanceID, name)
 	return err
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	migrator.Register(drivers.CatalogObjectTypeSource, &modelMigrator{})
+	migrator.Register(string(drivers.CatalogObjectTypeSource), &modelMigrator{})
 }
 
 type modelMigrator struct{}
