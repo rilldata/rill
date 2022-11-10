@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     MetricsDefinitionEntity,
@@ -7,14 +8,14 @@
   } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-  import notificationStore from "@rilldata/web-local/lib/components/notifications";
-
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import notificationStore from "@rilldata/web-local/lib/components/notifications";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../../application-state-stores/application-store";
@@ -28,10 +29,6 @@
   } from "../../../redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "../../../redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "../../../redux-store/store-root";
-  import CollapsibleSectionTitle from "../../CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "../../column-profile/CollapsibleTableSummary.svelte";
-  import ContextButton from "../../column-profile/ContextButton.svelte";
-  import AddIcon from "../../icons/Add.svelte";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import { default as Explore } from "../../icons/Explore.svelte";
@@ -39,6 +36,8 @@
   import Model from "../../icons/Model.svelte";
   import { Divider, MenuItem } from "../../menu";
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
+  import NavigationEntry from "../NavigationEntry.svelte";
+  import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
@@ -96,19 +95,6 @@
     );
   };
 
-  const dispatchSetMetricsDefActive = (id: string) => {
-    goto(`/dashboard/${id}`);
-
-    const previousActiveEntity = $appStore?.activeEntity?.type;
-    navigationEvent.fireEvent(
-      id,
-      BehaviourEventMedium.AssetName,
-      MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
-      MetricsEventScreenName.Dashboard
-    );
-  };
-
   const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
     const sourceModelId = metricsDef.sourceModelId;
 
@@ -143,41 +129,27 @@
   });
 </script>
 
-<div
-  class="pl-4 pb-3 pr-4 grid justify-between"
-  style="grid-template-columns: auto max-content;"
-  out:slide={{ duration: 200 }}
+<NavigationHeader
+  bind:show={showMetricsDefs}
+  tooltipText="create a new dashboard"
+  on:add={dispatchAddEmptyMetricsDef}
 >
-  <CollapsibleSectionTitle
-    tooltipText={"dashboards"}
-    bind:active={showMetricsDefs}
-  >
-    <h4 class="flex flex-row items-center gap-x-2">
-      <Explore size="16px" /> Dashboards
-    </h4>
-  </CollapsibleSectionTitle>
-  <ContextButton
-    id={"create-dashboard-button"}
-    tooltipText="create a new dashboard"
-    on:click={dispatchAddEmptyMetricsDef}
-  >
-    <AddIcon />
-  </ContextButton>
-</div>
+  <Explore size="16px" /> Dashboards
+</NavigationHeader>
+
 {#if showMetricsDefs && $metricsDefinitions}
   <div
     class="pb-6 justify-self-end"
-    transition:slide={{ duration: 200 }}
+    transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
     {#each $metricsDefinitions as metricsDef (metricsDef.id)}
-      <CollapsibleTableSummary
-        entityType={EntityType.MetricsDefinition}
-        name={metricsDef.metricDefLabel ?? ""}
-        active={$appStore?.activeEntity?.id === metricsDef.id}
-        showRows={false}
-        on:select={() => dispatchSetMetricsDefActive(metricsDef.id)}
+      <NavigationEntry
         notExpandable={true}
+        name={metricsDef.metricDefLabel}
+        href={`/dashboard/${metricsDef.id}`}
+        open={$page.url.pathname === `/dashboard/${metricsDef.id}` ||
+          $page.url.pathname === `/dashboard/${metricsDef.id}/edit`}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
@@ -226,7 +198,7 @@
             delete</MenuItem
           >
         </svelte:fragment>
-      </CollapsibleTableSummary>
+      </NavigationEntry>
     {/each}
   </div>
   {#if showRenameMetricsDefinitionModal}
