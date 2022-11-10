@@ -10,7 +10,6 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 const AdBidsPath = "../../web-local/test/data/AdBids.csv"

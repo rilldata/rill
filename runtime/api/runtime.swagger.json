@@ -858,6 +858,122 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/tables/{tableName}/cardinality": {
+      "get": {
+        "summary": "Tablewide profiling API",
+        "operationId": "RuntimeService_TableCardinality",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CardinalityResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/tables/{tableName}/profile-columns": {
+      "get": {
+        "operationId": "RuntimeService_ProfileColumns",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ProfileColumnsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/tables/{tableName}/rows": {
+      "get": {
+        "operationId": "RuntimeService_TableRows",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RowsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/topk/{tableName}/{columnName}": {
       "post": {
         "summary": "Get TopK elements from a table for a column given an agg function\nagg function and k are optional, defaults are count(*) and 50 respectively",
@@ -1398,6 +1514,15 @@
       },
       "title": "Type represents a data type in a schema"
     },
+    "v1CardinalityResponse": {
+      "type": "object",
+      "properties": {
+        "cardinality": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "v1CatalogObject": {
       "type": "object",
       "properties": {
@@ -1858,6 +1983,32 @@
       },
       "title": "Response message for RuntimeService.Ping"
     },
+    "v1ProfileColumn": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "largestStringLength": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1ProfileColumnsResponse": {
+      "type": "object",
+      "properties": {
+        "profileColumn": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ProfileColumn"
+          }
+        }
+      }
+    },
     "v1PutRepoObjectResponse": {
       "type": "object",
       "properties": {
@@ -1918,6 +2069,17 @@
         }
       },
       "description": "Repo represents a collection of file artifacts containing SQL statements.\nIt will usually by represented as a folder on disk, but may also be backed by a\ndatabase (for modelling in the cloud where no persistant file system is available)."
+    },
+    "v1RowsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
     },
     "v1Source": {
       "type": "object",

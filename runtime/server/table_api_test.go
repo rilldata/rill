@@ -22,36 +22,36 @@ func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
 }
 
 func TestServer_Database(t *testing.T) {
-	server, instanceId, err := getTestServer()
+	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
-	rows := createTestTable(server, instanceId, t)
-	require.Equal(t, 1, getSingleValue(t, rows))
-	rows, err = server.query(context.Background(), instanceId, &drivers.Statement{
+	result := createTestTable(server, instanceId, t)
+	require.Equal(t, 1, getSingleValue(t, result.Rows))
+	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from test",
 	})
 	require.NoError(t, err)
-	require.Equal(t, 1, getSingleValue(t, rows))
+	require.Equal(t, 1, getSingleValue(t, result.Rows))
 }
 
-func createTestTable(server *Server, instanceId string, t *testing.T) *sqlx.Rows {
-	rows, err := server.query(context.Background(), instanceId, &drivers.Statement{
+func createTestTable(server *Server, instanceId string, t *testing.T) *drivers.Result {
+	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "create table test (a int)",
 	})
 	require.NoError(t, err)
-	rows.Close()
-	rows, _ = server.query(context.Background(), instanceId, &drivers.Statement{
+	result.Close()
+	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "insert into test values (1)",
 	})
-	rows.Close()
-	rows, err = server.query(context.Background(), instanceId, &drivers.Statement{
+	result.Close()
+	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from test",
 	})
 	require.NoError(t, err)
-	return rows
+	return result
 }
 
 func TestServer_TableCardinality(t *testing.T) {
-	server, instanceId, err := getTestServer()
+	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
@@ -64,7 +64,7 @@ func TestServer_TableCardinality(t *testing.T) {
 }
 
 func TestServer_ProfileColumns(t *testing.T) {
-	server, instanceId, err := getTestServer()
+	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
@@ -77,7 +77,7 @@ func TestServer_ProfileColumns(t *testing.T) {
 }
 
 func TestServer_TableRows(t *testing.T) {
-	server, instanceId, err := getTestServer()
+	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
