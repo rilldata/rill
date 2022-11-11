@@ -18,38 +18,97 @@ import (
 )
 
 const testDataPath = "../../../web-local/test/data/"
+const AdBidsRepoPath = "/sources/AdBids.yaml"
 
-func TestService_MigrateSerial(t *testing.T) {
-	s := getService(t)
+func TestService_MigrateAll(t *testing.T) {
+	s := initBasicService(t)
 
-	source := &api.Source{
+	createSource(t, s, &api.Source{
+		Name:      "AdBids",
+		Connector: "file",
+		Properties: toProtoStruct(map[string]any{
+			"path": testDataPath + "AdImpressions.tsv",
+		}),
+	}, AdBidsRepoPath)
+	result, err := s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	assertMigration(t, result, 1, 0, 2, 0)
+	assertTable(t, s, "AdBids", AdBidsRepoPath)
+	assertAbsenceInSchema(t, s, "AdBids_model")
+
+	createSource(t, s, &api.Source{
 		Name:      "AdBids",
 		Connector: "file",
 		Properties: toProtoStruct(map[string]any{
 			"path": testDataPath + "AdBids.csv",
 		}),
-	}
-	sourcePath := "/sources/AdBids.yaml"
-	createSource(t, s, source, sourcePath)
+	}, AdBidsRepoPath)
+	result, err = s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	assertMigration(t, result, 0, 0, 2, 0)
+	assertTable(t, s, "AdBids", AdBidsRepoPath)
+	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
+}
+
+func TestService_MigrateSelected(t *testing.T) {
+	s := initBasicService(t)
+
+	createSource(t, s, &api.Source{
+		Name:      "AdBids",
+		Connector: "file",
+		Properties: toProtoStruct(map[string]any{
+			"path": testDataPath + "AdImpressions.tsv",
+		}),
+	}, AdBidsRepoPath)
+	result, err := s.Migrate(context.Background(), MigrationConfig{
+		ChangedPaths: []string{AdBidsRepoPath},
+	})
+	require.NoError(t, err)
+	assertMigration(t, result, 1, 0, 2, 0)
+	assertTable(t, s, "AdBids", AdBidsRepoPath)
+	assertAbsenceInSchema(t, s, "AdBids_model")
+
+	createSource(t, s, &api.Source{
+		Name:      "AdBids",
+		Connector: "file",
+		Properties: toProtoStruct(map[string]any{
+			"path": testDataPath + "AdBids.csv",
+		}),
+	}, AdBidsRepoPath)
+	result, err = s.Migrate(context.Background(), MigrationConfig{
+		ChangedPaths: []string{AdBidsRepoPath},
+	})
+	require.NoError(t, err)
+	assertMigration(t, result, 0, 0, 2, 0)
+	assertTable(t, s, "AdBids", AdBidsRepoPath)
+	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
+}
+
+func initBasicService(t *testing.T) *Service {
+	s := getService(t)
+	createSource(t, s, &api.Source{
+		Name:      "AdBids",
+		Connector: "file",
+		Properties: toProtoStruct(map[string]any{
+			"path": testDataPath + "AdBids.csv",
+		}),
+	}, AdBidsRepoPath)
 	result, err := s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	assertMigration(t, result, 0, 1, 0, 0)
-	assertTable(t, s, source.Name, sourcePath)
+	assertTable(t, s, "AdBids", AdBidsRepoPath)
 
-	model := &api.Model{
+	createModel(t, s, &api.Model{
 		Name:    "AdBids_model",
-		Sql:     "select * from AdBids",
+		Sql:     "select id, timestamp, publisher, domain, bid_price from AdBids",
 		Dialect: api.Model_DuckDB,
-	}
-	// TODO: sql
-	modelPath := "/models/AdBids_model.yaml"
-	createModel(t, s, model, modelPath)
+	}, "/models/AdBids_model.yaml")
 	result, err = s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	assertMigration(t, result, 0, 1, 0, 0)
-	assertTable(t, s, model.Name, modelPath)
+	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
 
-	metricsView := &api.MetricsView{
+	createMetricsView(t, s, &api.MetricsView{
 		Name:          "AdBids_dashboard",
 		From:          "AdBids_model",
 		TimeDimension: "timestamp",
@@ -72,13 +131,13 @@ func TestService_MigrateSerial(t *testing.T) {
 				Expression: "avg(bid_price)",
 			},
 		},
-	}
-	metricsViewPath := "/dashboards/AdBids_dashboard.yaml"
-	createMetricsView(t, s, metricsView, metricsViewPath)
+	}, "/dashboards/AdBids_dashboard.yaml")
 	result, err = s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	assertMigration(t, result, 0, 1, 0, 0)
-	assertInCatalogStore(t, s, metricsView.Name, metricsViewPath)
+	assertInCatalogStore(t, s, "AdBids_dashboard", "/dashboards/AdBids_dashboard.yaml")
+
+	return s
 }
 
 func createSource(t *testing.T, s *Service, source *api.Source, path string) {
@@ -126,13 +185,7 @@ func getService(t *testing.T) *Service {
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
 
-	return &Service{
-		Catalog: catalog,
-		RepoId:  "test",
-		Repo:    repo,
-		InstId:  "test",
-		Olap:    olap,
-	}
+	return NewService(catalog, repo, olap, "test", "test")
 }
 
 func toProto(message proto.Message) []byte {
@@ -180,4 +233,9 @@ func assertInCatalogStore(t *testing.T, s *Service, name string, path string) {
 	require.True(t, ok)
 	require.Equal(t, catalog.Name, name)
 	require.Equal(t, catalog.Path, path)
+}
+
+func assertAbsenceInSchema(t *testing.T, s *Service, name string) {
+	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
+	require.ErrorIs(t, err, drivers.ErrNotFound)
 }

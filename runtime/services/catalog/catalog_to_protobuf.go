@@ -19,6 +19,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			return nil, err
 		}
 		return &api.CatalogObject{
+			Name:        src.Name,
 			Type:        api.CatalogObject_TYPE_SOURCE,
 			Source:      src,
 			CreatedOn:   timestamppb.New(obj.CreatedOn),
@@ -32,6 +33,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			return nil, err
 		}
 		return &api.CatalogObject{
+			Name:        model.Name,
 			Type:        api.CatalogObject_TYPE_MODEL,
 			Model:       model,
 			CreatedOn:   timestamppb.New(obj.CreatedOn),
@@ -45,6 +47,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 			return nil, err
 		}
 		return &api.CatalogObject{
+			Name:        metricsView.Name,
 			Type:        api.CatalogObject_TYPE_METRICS_VIEW,
 			MetricsView: metricsView,
 			CreatedOn:   timestamppb.New(obj.CreatedOn),
@@ -58,6 +61,15 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 }
 
 func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
+	if obj.SQL == "" {
+		source := &api.Source{}
+		err := proto.Unmarshal(obj.Definition, source)
+		if err != nil {
+			return nil, err
+		}
+		return source, nil
+	}
+
 	source, err := sources.SqlToSource(obj.SQL)
 	if err != nil {
 		return nil, err

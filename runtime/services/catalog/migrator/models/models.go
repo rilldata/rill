@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -50,4 +51,23 @@ func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cata
 		return err
 	}
 	return rows.Close()
+}
+
+func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string {
+	return ExtractTableNames(catalog.Model.Sql)
+}
+
+func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+	_, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    catalog.Model.Sql,
+		Priority: 100,
+		DryRun:   true,
+	})
+	return err
+}
+
+func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool {
+	return cat1.Model.Dialect == cat2.Model.Dialect &&
+		// TODO: handle same queries but different text
+		strings.TrimSpace(cat1.Model.Sql) == strings.TrimSpace(cat2.Model.Sql)
 }

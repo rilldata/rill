@@ -1,4 +1,4 @@
-package pure
+package models
 
 import (
 	"regexp"

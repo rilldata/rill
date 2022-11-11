@@ -63,6 +63,28 @@ func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cat
 	return rows.Close()
 }
 
+func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string {
+	return []string{}
+}
+
+func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+	// TODO
+	return nil
+}
+
+func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool {
+	if cat1.Source.Connector != cat2.Source.Connector {
+		return false
+	}
+	s1 := &connectors.Source{
+		Properties: cat1.Source.Properties.AsMap(),
+	}
+	s2 := &connectors.Source{
+		Properties: cat2.Source.Properties.AsMap(),
+	}
+	return s1.PropertiesEquals(s2)
+}
+
 func SqlToSource(sqlStr string) (*connectors.Source, error) {
 	astStmt, err := sql.Parse(sqlStr)
 	if err != nil {
