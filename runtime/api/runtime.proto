@@ -499,6 +499,8 @@ message MetricsView {
     string name = 1;
     string label = 2;
     string description = 3;
+    string enabled = 4;
+    string error = 5;
   }
   // Measures are aggregated computed values
   message Measure {
@@ -507,6 +509,8 @@ message MetricsView {
     string expression = 3;
     string description = 4;
     string format = 5;
+    string enabled = 6;
+    string error = 7;
   }
   // Name of the metrics view
   string name = 1;

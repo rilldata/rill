@@ -30,7 +30,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		where t.table_schema = 'main'
+		where t.table_schema = 'main' or t.table_schema = 'temp'
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`
@@ -61,7 +61,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		where t.table_schema = 'main' and t.table_name = ?
+		where (t.table_schema = 'main' or t.table_schema = 'temp') and t.table_name = ?
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`

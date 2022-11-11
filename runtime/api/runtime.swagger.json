@@ -1257,6 +1257,12 @@
         },
         "description": {
           "type": "string"
+        },
+        "enabled": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
         }
       },
       "title": "Dimensions are columns to filter and group by"
@@ -1293,6 +1299,12 @@
           "type": "string"
         },
         "format": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "string"
+        },
+        "error": {
           "type": "string"
         }
       },

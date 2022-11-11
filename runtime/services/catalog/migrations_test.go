@@ -12,8 +12,8 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -32,9 +32,10 @@ func TestService_MigrateAll(t *testing.T) {
 	}, AdBidsRepoPath)
 	result, err := s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
-	assertMigration(t, result, 1, 0, 2, 0)
+	assertMigration(t, result, 2, 0, 2, 0)
+	require.ErrorIs(t, result.ArtifactErrors[1].Error, metrics_views.SourceNotFound)
 	assertTable(t, s, "AdBids", AdBidsRepoPath)
-	assertAbsenceInSchema(t, s, "AdBids_model")
+	assertTableAbsence(t, s, "AdBids_model")
 
 	createSource(t, s, &api.Source{
 		Name:      "AdBids",
@@ -45,7 +46,8 @@ func TestService_MigrateAll(t *testing.T) {
 	}, AdBidsRepoPath)
 	result, err = s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
-	assertMigration(t, result, 0, 0, 2, 0)
+	// TODO: should the model/dashboard be counted as updated or added
+	assertMigration(t, result, 0, 2, 1, 0)
 	assertTable(t, s, "AdBids", AdBidsRepoPath)
 	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
 }
@@ -64,9 +66,10 @@ func TestService_MigrateSelected(t *testing.T) {
 		ChangedPaths: []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
-	assertMigration(t, result, 1, 0, 2, 0)
+	assertMigration(t, result, 2, 0, 2, 0)
+	require.ErrorIs(t, result.ArtifactErrors[1].Error, metrics_views.SourceNotFound)
 	assertTable(t, s, "AdBids", AdBidsRepoPath)
-	assertAbsenceInSchema(t, s, "AdBids_model")
+	assertTableAbsence(t, s, "AdBids_model")
 
 	createSource(t, s, &api.Source{
 		Name:      "AdBids",
@@ -79,9 +82,39 @@ func TestService_MigrateSelected(t *testing.T) {
 		ChangedPaths: []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
-	assertMigration(t, result, 0, 0, 2, 0)
+	// TODO: should the model/dashboard be counted as updated or added
+	assertMigration(t, result, 0, 2, 1, 0)
 	assertTable(t, s, "AdBids", AdBidsRepoPath)
 	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
+}
+
+func TestService_MigrateMetricsView(t *testing.T) {
+	s := initBasicService(t)
+
+	createModel(t, s, &api.Model{
+		Name:    "AdBids_model",
+		Sql:     "select id, publisher, domain, bid_price from AdBids",
+		Dialect: api.Model_DuckDB,
+	}, "/models/AdBids_model.yaml")
+	result, err := s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	assertMigration(t, result, 1, 0, 1, 0)
+	// dropping the timestamp column gives a different error
+	require.ErrorIs(t, result.ArtifactErrors[0].Error, metrics_views.TimestampNotFound)
+
+	createModel(t, s, &api.Model{
+		Name:    "AdBids_model",
+		Sql:     "select id, timestamp, publisher from AdBids",
+		Dialect: api.Model_DuckDB,
+	}, "/models/AdBids_model.yaml")
+	result, err = s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	// invalid measure/dimension doesnt return error for the object
+	assertMigration(t, result, 0, 1, 1, 0)
+	require.Empty(t, result.AddedObjects[0].MetricsView.Measures[0].Error)
+	require.Contains(t, result.AddedObjects[0].MetricsView.Measures[1].Error, `Binder Error: Referenced column "bid_price" not found`)
+	require.Empty(t, "", result.AddedObjects[0].MetricsView.Dimensions[0].Error)
+	require.Equal(t, result.AddedObjects[0].MetricsView.Dimensions[1].Error, `dimension not found: domain`)
 }
 
 func initBasicService(t *testing.T) *Service {
@@ -188,14 +221,6 @@ func getService(t *testing.T) *Service {
 	return NewService(catalog, repo, olap, "test", "test")
 }
 
-func toProto(message proto.Message) []byte {
-	bytes, err := proto.Marshal(message)
-	if err != nil {
-		panic(err)
-	}
-	return bytes
-}
-
 func toProtoStruct(obj map[string]any) *structpb.Struct {
 	s, err := structpb.NewStruct(obj)
 	if err != nil {
@@ -226,16 +251,23 @@ func assertTable(t *testing.T, s *Service, name string, path string) {
 	require.NoError(t, rows.Scan(&count))
 	require.Greater(t, count, 1)
 	require.NoError(t, rows.Close())
+
+	table, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
+	require.NoError(t, err)
+	require.Equal(t, name, table.Name)
 }
 
 func assertInCatalogStore(t *testing.T, s *Service, name string, path string) {
 	catalog, ok := s.Catalog.FindObject(context.Background(), s.InstId, name)
 	require.True(t, ok)
-	require.Equal(t, catalog.Name, name)
-	require.Equal(t, catalog.Path, path)
+	require.Equal(t, name, catalog.Name)
+	require.Equal(t, path, catalog.Path)
 }
 
-func assertAbsenceInSchema(t *testing.T, s *Service, name string) {
+func assertTableAbsence(t *testing.T, s *Service, name string) {
+	_, ok := s.Catalog.FindObject(context.Background(), s.InstId, name)
+	require.False(t, ok)
+
 	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
 	require.ErrorIs(t, err, drivers.ErrNotFound)
 }

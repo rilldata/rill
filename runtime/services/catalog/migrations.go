@@ -277,9 +277,13 @@ func (s *Service) collectMigrationItems(
 	for name, migration := range migrationMap {
 		if migration.Type == MigrationNoChange {
 			if update[name] {
-				// items identified as to updated because a parent changed
+				// items identified as to created/updated because a parent changed
 				// but was initially marked no change
-				migration.Type = MigrationUpdate
+				if migration.CatalogInStore == nil {
+					migration.Type = MigrationCreate
+				} else {
+					migration.Type = MigrationUpdate
+				}
 			} else {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
@@ -310,9 +314,13 @@ func (s *Service) collectMigrationItems(
 				childItem = migrationMap[child]
 			}
 			migrationItems = append(migrationItems, childItem)
-			if childItem.Type == MigrationNoChange || childItem.Error != nil {
-				// if the child was no change or was an error then mark it as update
-				childItem.Type = MigrationUpdate
+			if childItem.Type == MigrationNoChange {
+				// if the child has no change then mark it as update or create based on presence of catalog in store
+				if childItem.CatalogInStore == nil {
+					childItem.Type = MigrationCreate
+				} else {
+					childItem.Type = MigrationUpdate
+				}
 			}
 		}
 	}
@@ -336,27 +344,53 @@ func (s *Service) runMigrationItems(
 	migrations []*MigrationItem,
 	result *MigrationResult,
 ) error {
-	for _, migration := range migrations {
+	for _, item := range migrations {
 		var err error
-		switch migration.Type {
-		case MigrationCreate:
-			err = s.createInStore(ctx, migration)
-			result.AddedObjects = append(result.AddedObjects, migration.CatalogInFile)
-		case MigrationRename:
-			err = s.renameInStore(ctx, migration)
-			result.UpdatedObjects = append(result.UpdatedObjects, migration.CatalogInFile)
-		case MigrationUpdate:
-			err = s.updateInStore(ctx, migration)
-			result.UpdatedObjects = append(result.UpdatedObjects, migration.CatalogInFile)
-		case MigrationDelete:
-			err = s.deleteInStore(ctx, migration)
-			result.DroppedObjects = append(result.DroppedObjects, migration.CatalogInFile)
+
+		if item.CatalogInFile != nil && item.CatalogInFile.Type == api.CatalogObject_TYPE_METRICS_VIEW {
+			err = migrator.Validate(ctx, s.Olap, item.CatalogInFile)
 		}
+
+		if err == nil {
+			switch item.Type {
+			case MigrationCreate:
+				err = s.createInStore(ctx, item)
+				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)
+			case MigrationRename:
+				err = s.renameInStore(ctx, item)
+				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
+			case MigrationUpdate:
+				err = s.updateInStore(ctx, item)
+				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
+			case MigrationDelete:
+				err = s.deleteInStore(ctx, item)
+				result.DroppedObjects = append(result.DroppedObjects, item.CatalogInFile)
+			}
+		}
+
 		if err != nil {
 			result.ArtifactErrors = append(result.ArtifactErrors, ArtifactError{
 				Error: err,
-				Path:  migration.Path,
+				Path:  item.Path,
 			})
+			err := s.Catalog.DeleteObject(ctx, s.InstId, item.Name)
+			if err != nil {
+				// shouldn't ideally happen
+				result.ArtifactErrors = append(result.ArtifactErrors, ArtifactError{
+					Error: err,
+					Path:  item.Path,
+				})
+			}
+			if item.CatalogInFile != nil {
+				err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
+				if err != nil {
+					// shouldn't ideally happen
+					result.ArtifactErrors = append(result.ArtifactErrors, ArtifactError{
+						Error: err,
+						Path:  item.Path,
+					})
+				}
+			}
 			if conf.Strict {
 				return err
 			}
@@ -441,7 +475,13 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 	// delete item from dag
 	s.dag.Delete(item.Name)
 	// delete item from olap
-	return migrator.Delete(ctx, s.Olap, item.CatalogInFile)
+	err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
+	if err != nil {
+		return err
+	}
+
+	// delete from catalog store
+	return s.Catalog.DeleteObject(ctx, s.InstId, item.Name)
 }
 
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogObject, error) {

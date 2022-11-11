@@ -111,6 +111,8 @@ func getMigrator(catalog *api.CatalogObject) (EntityMigrator, bool) {
 		objType = drivers.CatalogObjectTypeSource
 	case api.CatalogObject_TYPE_MODEL:
 		objType = drivers.CatalogObjectTypeModel
+	case api.CatalogObject_TYPE_METRICS_VIEW:
+		objType = drivers.CatalogObjectTypeMetricsView
 	}
 
 	migrator, ok := Migrators[string(objType)]
