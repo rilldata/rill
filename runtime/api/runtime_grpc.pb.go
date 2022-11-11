@@ -105,6 +105,8 @@ type RuntimeServiceClient interface {
 	GetTimeRangeSummary(ctx context.Context, in *TimeRangeSummaryRequest, opts ...grpc.CallOption) (*TimeRangeSummary, error)
 	// Get cardinality for a column
 	GetCardinalityOfColumn(ctx context.Context, in *CardinalityOfColumnRequest, opts ...grpc.CallOption) (*CategoricalSummary, error)
+	// Generate time series
+	GenerateTimeSeries(ctx context.Context, in *GenerateTimeSeriesRequest, opts ...grpc.CallOption) (*TimeSeriesRollup, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
@@ -415,6 +417,15 @@ func (c *runtimeServiceClient) GetCardinalityOfColumn(ctx context.Context, in *C
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GenerateTimeSeries(ctx context.Context, in *GenerateTimeSeriesRequest, opts ...grpc.CallOption) (*TimeSeriesRollup, error) {
+	out := new(TimeSeriesRollup)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error) {
 	out := new(ListConnectorsResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/ListConnectors", in, out, opts...)
@@ -511,6 +522,8 @@ type RuntimeServiceServer interface {
 	GetTimeRangeSummary(context.Context, *TimeRangeSummaryRequest) (*TimeRangeSummary, error)
 	// Get cardinality for a column
 	GetCardinalityOfColumn(context.Context, *CardinalityOfColumnRequest) (*CategoricalSummary, error)
+	// Generate time series
+	GenerateTimeSeries(context.Context, *GenerateTimeSeriesRequest) (*TimeSeriesRollup, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
@@ -619,6 +632,9 @@ func (UnimplementedRuntimeServiceServer) GetTimeRangeSummary(context.Context, *T
 }
 func (UnimplementedRuntimeServiceServer) GetCardinalityOfColumn(context.Context, *CardinalityOfColumnRequest) (*CategoricalSummary, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCardinalityOfColumn not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GenerateTimeSeries(context.Context, *GenerateTimeSeriesRequest) (*TimeSeriesRollup, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateTimeSeries not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
@@ -1230,6 +1246,24 @@ func _RuntimeService_GetCardinalityOfColumn_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GenerateTimeSeries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateTimeSeriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GenerateTimeSeries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/GenerateTimeSeries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GenerateTimeSeries(ctx, req.(*GenerateTimeSeriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListConnectorsRequest)
 	if err := dec(in); err != nil {
@@ -1386,6 +1420,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCardinalityOfColumn",
 			Handler:    _RuntimeService_GetCardinalityOfColumn_Handler,
+		},
+		{
+			MethodName: "GenerateTimeSeries",
+			Handler:    _RuntimeService_GenerateTimeSeries_Handler,
 		},
 		{
 			MethodName: "ListConnectors",

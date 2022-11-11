@@ -285,6 +285,14 @@ service RuntimeService {
     };
   }
 
+  // Generate time series
+  rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (TimeSeriesRollup) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/generate-timeseries",
+      body: "*"
+    };
+  }
+
   // Connectors
 
   // ListConnectors returns a description of all the connectors implemented in the runtime,
@@ -947,6 +955,87 @@ message CardinalityOfColumnRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+}
+
+message GenerateTimeSeriesRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  optional BasicMeasures measures = 3;
+  string timestamp_column_name = 4;
+  optional TimeSeriesTimeRange time_range = 5;
+  optional string filters = 6;
+  optional int64 pixels = 7;
+  optional int32 sample_size = 8;
+  message BasicMeasures {
+    repeated BasicMeasureDefinition basicMeasures = 1;
+  }
+}
+
+message BasicMeasureDefinition {
+  string id = 1;
+  // mandatory user defined metadata
+  string expression = 2;
+  // optional user defined metadata
+  optional string sql_name = 3;
+}
+
+message TimeSeriesTimeRange {
+  TimeRangeName name = 1;
+  string start = 2;
+  string end = 3;
+  string interval = 4; // TODO: switch this to TimeGrain
+}
+
+enum TimeRangeName {
+  LastHour = 0;
+  Last6Hours = 1;
+  LastDay = 2;
+  Last2Days = 3;
+  Last5Days = 4;
+  LastWeek = 5;
+  Last2Weeks = 6;
+  Last30Days = 7;
+  Last60Days = 8;
+  AllTime = 9;
+  // Today
+  // MonthToDate
+  // CustomRange
+}
+
+message MetricsViewDimensionValue {
+  string name = 1;
+  repeated google.protobuf.Value in = 2;
+  optional Values like = 3;
+  message Values {
+    repeated google.protobuf.Value values = 1;
+  }
+}
+
+message MetricsViewRequestFilter {
+  repeated MetricsViewDimensionValue include = 1;
+  repeated MetricsViewDimensionValue exclude = 2;
+}
+
+message TimeSeriesResponse {
+  optional string id = 1;
+  repeated TimeSeriesValue results = 2;
+  optional TimeSeriesValues spark = 3;
+  optional TimeSeriesTimeRange time_range = 4;
+  int32 sample_size = 5;
+  optional string error = 6;
+  message TimeSeriesValues {
+    repeated TimeSeriesValue values = 1;
+  }
+}
+
+message TimeSeriesRollup {
+  TimeSeriesResponse rollup = 1;
+}
+
+message TimeSeriesValue {
+  string ts = 1;
+  optional double bin = 2;
+  map<string, double> records = 3;
 }
 
 // **********

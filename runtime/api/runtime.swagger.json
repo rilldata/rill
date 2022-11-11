@@ -415,6 +415,70 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/generate-timeseries": {
+      "post": {
+        "summary": "Generate time series",
+        "operationId": "RuntimeService_GenerateTimeSeries",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TimeSeriesRollup"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "tableName": {
+                  "type": "string"
+                },
+                "measures": {
+                  "$ref": "#/definitions/GenerateTimeSeriesRequestBasicMeasures"
+                },
+                "timestampColumnName": {
+                  "type": "string"
+                },
+                "timeRange": {
+                  "$ref": "#/definitions/v1TimeSeriesTimeRange"
+                },
+                "filters": {
+                  "type": "string"
+                },
+                "pixels": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "sampleSize": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/metrics-views/{metricsViewName}/meta": {
       "post": {
         "summary": "MetricsViewMeta returns metadata about a metrics view.\nIt's comparable to calling GetCatalogObject and will be deprecated in the future.",
@@ -1572,6 +1636,17 @@
       ],
       "default": "MILLISECONDS"
     },
+    "GenerateTimeSeriesRequestBasicMeasures": {
+      "type": "object",
+      "properties": {
+        "basicMeasures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1BasicMeasureDefinition"
+          }
+        }
+      }
+    },
     "MetricsViewDimension": {
       "type": "object",
       "properties": {
@@ -1687,6 +1762,17 @@
         }
       }
     },
+    "TimeSeriesResponseTimeSeriesValues": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TimeSeriesValue"
+          }
+        }
+      }
+    },
     "TopKResponseTopKEntry": {
       "type": "object",
       "properties": {
@@ -1792,6 +1878,22 @@
         }
       },
       "title": "Type represents a data type in a schema"
+    },
+    "v1BasicMeasureDefinition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "expression": {
+          "type": "string",
+          "title": "mandatory user defined metadata"
+        },
+        "sqlName": {
+          "type": "string",
+          "title": "optional user defined metadata"
+        }
+      }
     },
     "v1CatalogObject": {
       "type": "object",
@@ -2474,6 +2576,22 @@
       },
       "description": "Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically\nscanning the database's information schema when the instance is created with exposed=true. Pre-existing tables\nhave managed = false."
     },
+    "v1TimeRangeName": {
+      "type": "string",
+      "enum": [
+        "LastHour",
+        "Last6Hours",
+        "LastDay",
+        "Last2Days",
+        "Last5Days",
+        "LastWeek",
+        "Last2Weeks",
+        "Last30Days",
+        "Last60Days",
+        "AllTime"
+      ],
+      "default": "LastHour"
+    },
     "v1TimeRangeSummary": {
       "type": "object",
       "properties": {
@@ -2485,6 +2603,77 @@
         },
         "interval": {
           "$ref": "#/definitions/TimeRangeSummaryInterval"
+        }
+      }
+    },
+    "v1TimeSeriesResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TimeSeriesValue"
+          }
+        },
+        "spark": {
+          "$ref": "#/definitions/TimeSeriesResponseTimeSeriesValues"
+        },
+        "timeRange": {
+          "$ref": "#/definitions/v1TimeSeriesTimeRange"
+        },
+        "sampleSize": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "v1TimeSeriesRollup": {
+      "type": "object",
+      "properties": {
+        "rollup": {
+          "$ref": "#/definitions/v1TimeSeriesResponse"
+        }
+      }
+    },
+    "v1TimeSeriesTimeRange": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/v1TimeRangeName"
+        },
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "interval": {
+          "type": "string"
+        }
+      }
+    },
+    "v1TimeSeriesValue": {
+      "type": "object",
+      "properties": {
+        "ts": {
+          "type": "string"
+        },
+        "bin": {
+          "type": "number",
+          "format": "double"
+        },
+        "records": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "format": "double"
+          }
         }
       }
     },
