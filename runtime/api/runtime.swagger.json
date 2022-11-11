@@ -460,7 +460,7 @@
                   "$ref": "#/definitions/v1TimeSeriesTimeRange"
                 },
                 "filters": {
-                  "type": "string"
+                  "$ref": "#/definitions/v1MetricsViewRequestFilter"
                 },
                 "pixels": {
                   "type": "string",
@@ -1665,6 +1665,15 @@
       },
       "title": "Dimensions are columns to filter and group by"
     },
+    "MetricsViewDimensionValueValues": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {}
+        }
+      }
+    },
     "MetricsViewFilterCond": {
       "type": "object",
       "properties": {
@@ -2239,6 +2248,21 @@
       },
       "title": "MetricsViewColumn represents a column in a metrics view"
     },
+    "v1MetricsViewDimensionValue": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "in": {
+          "type": "array",
+          "items": {}
+        },
+        "like": {
+          "$ref": "#/definitions/MetricsViewDimensionValueValues"
+        }
+      }
+    },
     "v1MetricsViewFilter": {
       "type": "object",
       "properties": {
@@ -2286,6 +2310,23 @@
         }
       },
       "title": "Response message for RuntimeService.MetricsViewMeta"
+    },
+    "v1MetricsViewRequestFilter": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MetricsViewDimensionValue"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MetricsViewDimensionValue"
+          }
+        }
+      }
     },
     "v1MetricsViewSort": {
       "type": "object",

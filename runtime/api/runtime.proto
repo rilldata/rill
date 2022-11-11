@@ -963,7 +963,7 @@ message GenerateTimeSeriesRequest {
   optional BasicMeasures measures = 3;
   string timestamp_column_name = 4;
   optional TimeSeriesTimeRange time_range = 5;
-  optional string filters = 6;
+  optional MetricsViewRequestFilter filters = 6;
   optional int64 pixels = 7;
   optional int32 sample_size = 8;
   message BasicMeasures {
