@@ -39,16 +39,16 @@ func createTestTable(server *Server, instanceId string, t *testing.T) *drivers.R
 
 func createTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
 	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "create table " + tableName + " (a int)",
+		Query: "create table " + quoteName(tableName) + " (a int)",
 	})
 	require.NoError(t, err)
 	result.Close()
 	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "insert into " + tableName + " values (1)",
+		Query: "insert into " + quoteName(tableName) + " values (1)",
 	})
 	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from " + tableName,
+		Query: "select count(*) from " + quoteName(tableName),
 	})
 	require.NoError(t, err)
 	return result
@@ -62,6 +62,15 @@ func TestServer_TableCardinality(t *testing.T) {
 	cr, err := server.TableCardinality(context.Background(), &api.CardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), cr.Cardinality)
+
+	rows = createTable(server, instanceId, t, "select")
+	rows.Close()
+	cr, err = server.TableCardinality(context.Background(), &api.CardinalityRequest{
+		InstanceId: instanceId,
+		TableName:  "select",
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(1), cr.Cardinality)
