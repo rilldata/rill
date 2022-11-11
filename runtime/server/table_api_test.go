@@ -86,7 +86,10 @@ func TestServer_ProfileColumns(t *testing.T) {
 		TableName:  "test",
 	})
 	require.NoError(t, err)
-	require.Equal(t, 0, len(cr.ProfileColumn))
+	require.Equal(t, 1, len(cr.GetProfileColumns()))
+	require.Equal(t, "a", cr.GetProfileColumns()[0].Name)
+	require.Equal(t, "INTEGER", cr.GetProfileColumns()[0].Type)
+	require.Equal(t, int32(1), cr.GetProfileColumns()[0].LargestStringLength)
 }
 
 func TestServer_TableRows(t *testing.T) {

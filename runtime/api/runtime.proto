@@ -854,7 +854,7 @@ message ProfileColumnsRequest {
 }
 
 message ProfileColumnsResponse {
-  repeated ProfileColumn profile_column = 1;
+  repeated ProfileColumn profile_columns = 1;
 }
 
 message ProfileColumn {

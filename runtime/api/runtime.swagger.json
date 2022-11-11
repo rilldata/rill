@@ -2128,7 +2128,7 @@
     "v1ProfileColumnsResponse": {
       "type": "object",
       "properties": {
-        "profileColumn": {
+        "profileColumns": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1ProfileColumn"

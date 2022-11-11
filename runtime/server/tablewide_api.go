@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -33,9 +34,48 @@ func (s *Server) TableCardinality(ctx context.Context, req *api.CardinalityReque
 	}, nil
 }
 
+type ColumnInfo struct {
+	Name    string
+	Type    string
+	Unknown int
+}
+
 func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequest) (*api.ProfileColumnsResponse, error) {
+	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
+		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
+		where table_name = '%s' and table_schema = current_schema()`, req.TableName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pcs := make([]*api.ProfileColumn, 2)
+	i := 0
+	for rows.Next() {
+		pc := api.ProfileColumn{}
+		if err := rows.StructScan(&pc); err != nil {
+			return nil, err
+		}
+		pcs[i] = &pc
+		i++
+	}
+	for _, pc := range pcs[0:i] {
+		rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
+			Query: fmt.Sprintf(`select max(length("%s")) as max from %s`, pc.Name, req.TableName),
+		})
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			if err := rows.Scan(&pc.LargestStringLength); err != nil {
+				return nil, err
+			}
+		}
+		rows.Close()
+	}
+
 	return &api.ProfileColumnsResponse{
-		ProfileColumn: []*api.ProfileColumn{},
+		ProfileColumns: pcs[0:i],
 	}, nil
 }
 
