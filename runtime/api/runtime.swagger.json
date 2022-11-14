@@ -1705,14 +1705,18 @@
       },
       "title": "Measures are aggregated computed values"
     },
-    "NumericHistogramBucket": {
+    "NumericHistogramBinsBin": {
       "type": "object",
       "properties": {
-        "min": {
+        "bucket": {
           "type": "number",
           "format": "double"
         },
-        "max": {
+        "low": {
+          "type": "number",
+          "format": "double"
+        },
+        "high": {
           "type": "number",
           "format": "double"
         },
@@ -1751,23 +1755,6 @@
         },
         "type": {
           "$ref": "#/definitions/runtimev1Type"
-        }
-      }
-    },
-    "TimeRangeSummaryInterval": {
-      "type": "object",
-      "properties": {
-        "months": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "days": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "micros": {
-          "type": "string",
-          "format": "int64"
         }
       }
     },
@@ -2413,13 +2400,13 @@
       },
       "title": "Response for RuntimeService.GetNullCount"
     },
-    "v1NumericHistogram": {
+    "v1NumericHistogramBins": {
       "type": "object",
       "properties": {
-        "buckets": {
+        "bins": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/NumericHistogramBucket"
+            "$ref": "#/definitions/NumericHistogramBinsBin"
           }
         }
       },
@@ -2473,8 +2460,8 @@
     "v1NumericSummary": {
       "type": "object",
       "properties": {
-        "numericHistogram": {
-          "$ref": "#/definitions/v1NumericHistogram"
+        "numericHistogramBins": {
+          "$ref": "#/definitions/v1NumericHistogramBins"
         },
         "numericStatistics": {
           "$ref": "#/definitions/v1NumericStatistics"
@@ -2483,7 +2470,7 @@
           "$ref": "#/definitions/v1NumericOutliers"
         }
       },
-      "description": "Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.\nMessage will have either numericHistogram, numericStatistics or numericOutliers set."
+      "description": "Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.\nMessage will have either numericHistogramBins, numericStatistics or numericOutliers set."
     },
     "v1PingResponse": {
       "type": "object",
@@ -2643,7 +2630,7 @@
           "type": "string"
         },
         "interval": {
-          "$ref": "#/definitions/TimeRangeSummaryInterval"
+          "type": "string"
         }
       }
     },

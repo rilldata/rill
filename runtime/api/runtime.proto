@@ -818,9 +818,9 @@ message CategoricalSummary {
 }
 
 // Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
-// Message will have either numericHistogram, numericStatistics or numericOutliers set.
+// Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
 message NumericSummary {
-  optional NumericHistogram numericHistogram = 1;
+  optional NumericHistogramBins numericHistogramBins = 1;
   optional NumericStatistics numericStatistics = 2;
   optional NumericOutliers numericOutliers = 3;
 }
@@ -828,12 +828,7 @@ message NumericSummary {
 message TimeRangeSummary {
     string min = 1;
     string max = 2;
-    message Interval {
-      int32 months = 1;
-      int32 days = 2;
-      int64 micros = 3;
-    };
-    Interval interval = 3;
+    string interval = 3;
 }
 
 message NumericOutliers {
@@ -926,13 +921,14 @@ message NumericHistogramRequest {
 }
 
 // Response for RuntimeService.GetNumericHistogram
-message NumericHistogram {
-  message Bucket {
-    double min = 1;
-    double max = 2;
-    int64 count = 3;
+message NumericHistogramBins {
+  message Bin {
+    double bucket = 1;
+    double low = 2;
+    double high = 3;
+    int64 count = 4;
   }
-  repeated Bucket buckets = 1;
+  repeated Bin bins = 1;
 }
 
 // Request for RuntimeService.GetRugHistogram
