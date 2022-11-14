@@ -1,90 +1,91 @@
 <script lang="ts">
-  import { DataTypeIcon } from "../data-types";
-  import ColumnEntry from "./ColumnEntry.svelte";
+  import { onMount } from "svelte";
+  import { COLUMN_PROFILE_CONFIG } from "../../application-config";
+  import { NATIVE_SELECT } from "../../util/component-classes";
+  import ColumnProfileEntry from "./ColumnProfileEntry.svelte";
+  import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
-  import notificationStore from "./ColumnProfile.svelte";
-  import ColumnProfileDetails from "./ColumnProfileDetails.svelte";
-  import ColumnProfileTitle from "./ColumnProfileTitle.svelte";
-  import ColumnSummaryMiniPlots from "./ColumnSummaryMiniPlots.svelte";
+  export let containerWidth = 0;
 
-  export let name;
-  export let type;
-  export let summary;
-  export let totalRows;
-  export let nullCount;
-  export let example;
-  export let entityId;
-  export let view = "summaries"; // summaries, example
-  export let containerWidth: number;
+  export let cardinality: number;
+  export let profile: any;
+  export let head: any; // FIXME
+  export let entityId: string;
+  export let showContextButton = true;
+  export let indentLevel = 0;
 
-  export let indentLevel = 1;
+  let sortedProfile;
+  const sortByOriginalOrder = null;
 
-  export let hideRight = false;
-  export let hideNullPercentage = false;
-  export let compactBreakpoint = 350;
-
-  let active = false;
-
-  // FIXME: `close` does not appear to be used in live code, just routes/dev.
-  // Can we remove it? Even there it could be replaced by setting the `active` prop.
-  export function close() {
-    active = false;
+  let sortMethod = defaultSort;
+  $: if (sortMethod !== sortByOriginalOrder) {
+    sortedProfile = [...profile].sort(sortMethod);
+  } else {
+    sortedProfile = profile;
   }
+
+  let previewView = "summaries";
+
+  let container;
+
+  onMount(() => {
+    const observer = new ResizeObserver(() => {
+      containerWidth = container?.clientWidth ?? 0;
+    });
+    observer.observe(container);
+    return () => observer.unobserve(container);
+  });
 </script>
 
-<!-- pl-10 -->
-<ColumnEntry
-  left={indentLevel === 1 ? 10 : 4}
-  {hideRight}
-  {active}
-  emphasize={active}
-  on:shift-click={async () => {
-    await navigator.clipboard.writeText(name);
-    notificationStore.send({
-      message: `copied column name "${name}" to clipboard`,
-    });
-  }}
-  on:select={async () => {
-    // we should only allow activation when there are rows present.
-    if (totalRows) {
-      active = !active;
-    }
-  }}
+<!-- pl-16 -->
+<div
+  bind:this={container}
+  class="pl-{indentLevel === 1
+    ? '10'
+    : '4'} pr-5 pb-2 flex justify-between text-gray-500"
+  class:flex-col={containerWidth < 325}
 >
-  <DataTypeIcon slot="icon" {type} />
+  <select
+    style:transform="translateX(-4px)"
+    bind:value={sortMethod}
+    class={NATIVE_SELECT}
+  >
+    <option value={sortByOriginalOrder}>show original order</option>
+    <option value={defaultSort}>sort by type</option>
+    <option value={sortByNullity}>sort by null %</option>
+    <option value={sortByName}>sort by name</option>
+  </select>
+  <select
+    style:transform="translateX(4px)"
+    bind:value={previewView}
+    class={NATIVE_SELECT}
+    class:hidden={containerWidth < 325}
+  >
+    <option value="summaries">show summary&nbsp;</option>
+    <option value="example">show example</option>
+    <option value="hide">hide reference</option>
+  </select>
+</div>
 
-  <ColumnProfileTitle slot="left" {...{ name, type, totalRows, active }} />
-
-  <ColumnSummaryMiniPlots
-    slot="right"
-    {...{
-      type,
-      summary,
-      totalRows,
-      nullCount,
-      example,
-      view,
-      containerWidth,
-      hideNullPercentage,
-      compactBreakpoint,
-    }}
-  />
-
-  <svelte:fragment slot="context-button">
-    <slot name="context-button" />
-  </svelte:fragment>
-
-  <ColumnProfileDetails
-    slot="details"
-    {...{
-      active,
-      type,
-      summary,
-      totalRows,
-      containerWidth,
-      indentLevel,
-      name,
-      entityId,
-    }}
-  />
-</ColumnEntry>
+<div>
+  {#if sortedProfile && head.length}
+    {#each sortedProfile as column (column.name)}
+      <ColumnProfileEntry
+        {indentLevel}
+        {entityId}
+        example={head[0][column.name] || ""}
+        {containerWidth}
+        hideNullPercentage={containerWidth <
+          COLUMN_PROFILE_CONFIG.hideNullPercentage}
+        hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
+        compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
+        view={previewView}
+        name={column.name}
+        type={column.type}
+        summary={column.summary}
+        totalRows={cardinality}
+        nullCount={column.nullCount}
+      />
+    {/each}
+  {/if}
+</div>

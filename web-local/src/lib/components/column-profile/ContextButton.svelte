@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { createHoverStateActionFactory } from "../actions/hover-state-action-factory";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import { createHoverStateActionFactory } from "../actions/hover-state-action-factory";
   export let rotated = false;
   export let suppressTooltip = false;
   export let tooltipText: string;
@@ -11,6 +11,8 @@
   export let width = 16;
   export let height = 16;
   export let isHovered = false;
+  export let rounded = false;
+  export let border = false;
 
   const { hovered, captureHoverState } = createHoverStateActionFactory();
   hovered.subscribe((trueOrFalse) => {
@@ -31,6 +33,7 @@
     style:width={`${width}px`}
     style:height={`${height}px`}
     style:grid-column="left-control"
+    class:rounded
     class="
         hover:bg-gray-300
         transition-tranform 
@@ -40,7 +43,7 @@
         p-0
         items-center
         justify-center
-        border
+        {border ? 'border' : ''}
         border-transparent
         hover:border-gray-400
         {rotated ? '-rotate-90' : ''}"

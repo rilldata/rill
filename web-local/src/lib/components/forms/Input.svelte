@@ -38,7 +38,10 @@
 <input
   bind:this={inputElement}
   bind:value
+  on:input
+  on:change
   {id}
+  name={id}
   type="text"
   {placeholder}
   autocomplete="off"

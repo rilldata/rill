@@ -1,7 +1,9 @@
+import type { V1Connector } from "@rilldata/web-common/runtime-client";
 import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
 import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
 import { get } from "svelte/store";
+import { sanitizeEntityName } from "../../../util/extract-table-name";
 
 export async function waitForSource(
   newTableName: string,
@@ -31,4 +33,32 @@ export function compileCreateSourceSql(
     compiledKeyValues +
     `)`
   );
+}
+
+export function inferSourceName(connector: V1Connector, path: string) {
+  if (
+    !path ||
+    path.endsWith("/") ||
+    (connector.name === "gcs" && !path.startsWith("gs://")) ||
+    (connector.name === "s3" && !path.startsWith("s3://")) ||
+    (connector.name === "https" &&
+      !path.startsWith("https://") &&
+      !path.startsWith("http://"))
+  )
+    return;
+
+  const slug = path
+    .split("/")
+    .filter((s: string) => s.length > 0)
+    .pop();
+
+  if (!slug) return;
+
+  const fileName = slug.split(".").shift();
+
+  if (!fileName) return;
+
+  const sanitizedFileName = sanitizeEntityName(fileName);
+
+  return sanitizedFileName;
 }
