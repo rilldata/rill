@@ -51,7 +51,7 @@ service RuntimeService {
 
   // ListFiles lists all the files matching a glob in a repo.
   // The files are sorted by their full path.
-  rpc ListFiles(ListFilesRequest) returns (ListFilesRequest) {
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
     option (google.api.http) = {
       get: "/v1/repos/{repo_id}/files"
     };
@@ -332,7 +332,7 @@ message ListFilesRequest {
 }
 
 // Response message for RuntimeService.ListFiles
-message ListFilesRequest {
+message ListFilesResponse {
   repeated string paths = 1;
 }
 
