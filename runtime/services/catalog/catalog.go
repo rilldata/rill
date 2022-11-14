@@ -23,6 +23,7 @@ type Service struct {
 	LastMigration time.Time
 	dag           *dag2.DAG
 	NameToPath    map[string]string
+	PathToName    map[string]string
 }
 
 func NewService(
@@ -41,6 +42,7 @@ func NewService(
 
 		dag:        dag2.NewDAG(),
 		NameToPath: make(map[string]string),
+		PathToName: make(map[string]string),
 	}
 }
 

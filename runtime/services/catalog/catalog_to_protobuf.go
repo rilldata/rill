@@ -12,52 +12,44 @@ import (
 )
 
 func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
+	catalog := &api.CatalogObject{
+		Name:        obj.Name,
+		Path:        obj.Path,
+		CreatedOn:   timestamppb.New(obj.CreatedOn),
+		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
+		RefreshedOn: timestamppb.New(obj.RefreshedOn),
+	}
+
 	switch obj.Type {
 	case drivers.CatalogObjectTypeSource:
 		src, err := catalogObjectSourceToPB(obj)
 		if err != nil {
 			return nil, err
 		}
-		return &api.CatalogObject{
-			Name:        src.Name,
-			Type:        api.CatalogObject_TYPE_SOURCE,
-			Source:      src,
-			CreatedOn:   timestamppb.New(obj.CreatedOn),
-			UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-			RefreshedOn: timestamppb.New(obj.RefreshedOn),
-		}, nil
+		catalog.Type = api.CatalogObject_TYPE_SOURCE
+		catalog.Source = src
 
 	case drivers.CatalogObjectTypeModel:
 		model, err := catalogObjectModelToPB(obj)
 		if err != nil {
 			return nil, err
 		}
-		return &api.CatalogObject{
-			Name:        model.Name,
-			Type:        api.CatalogObject_TYPE_MODEL,
-			Model:       model,
-			CreatedOn:   timestamppb.New(obj.CreatedOn),
-			UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-			RefreshedOn: timestamppb.New(obj.RefreshedOn),
-		}, nil
+		catalog.Type = api.CatalogObject_TYPE_MODEL
+		catalog.Model = model
 
 	case drivers.CatalogObjectTypeMetricsView:
 		metricsView, err := catalogObjectMetricsViewToPB(obj)
 		if err != nil {
 			return nil, err
 		}
-		return &api.CatalogObject{
-			Name:        metricsView.Name,
-			Type:        api.CatalogObject_TYPE_METRICS_VIEW,
-			MetricsView: metricsView,
-			CreatedOn:   timestamppb.New(obj.CreatedOn),
-			UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-			RefreshedOn: timestamppb.New(obj.RefreshedOn),
-		}, nil
+		catalog.Type = api.CatalogObject_TYPE_METRICS_VIEW
+		catalog.MetricsView = metricsView
 
 	default:
 		panic(fmt.Errorf("not implemented"))
 	}
+
+	return catalog, nil
 }
 
 func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {

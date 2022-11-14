@@ -61,11 +61,13 @@ func (d *DAG) GetChildren(name string) []string {
 		return []string{}
 	}
 
+	// we need the immediate children to be loaded 1st.
 	for _, child := range n.Children {
 		children = append(children, child.Name)
 		childMap[child.Name] = true
 	}
 
+	// then we load deeper children
 	for _, child := range n.Children {
 		deepChildren := d.GetChildren(child.Name)
 		for _, deepChild := range deepChildren {

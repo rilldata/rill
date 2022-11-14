@@ -43,7 +43,7 @@ func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, cat
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *api.CatalogObject) error {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", catalogObj.Name, from),
+		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, catalogObj.Name),
 		Priority: 100,
 	})
 	if err != nil {

@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -10,6 +11,8 @@ import (
 )
 
 var Artifacts = make(map[string]Artifact)
+
+var FileReadError = errors.New("failed to read artifact")
 
 func Register(name string, artifact Artifact) {
 	if Artifacts[name] != nil {
@@ -32,7 +35,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, fileP
 
 	blob, err := repoStore.Get(ctx, repoId, filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read artifact %s", err)
+		return nil, FileReadError
 	}
 
 	catalog, err := artifact.DeSerialise(ctx, blob)

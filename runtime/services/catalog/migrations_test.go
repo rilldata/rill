@@ -3,6 +3,8 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -18,84 +20,114 @@ import (
 )
 
 const testDataPath = "../../../web-local/test/data/"
+
 const AdBidsRepoPath = "/sources/AdBids.yaml"
+const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
+const AdBidsModelRepoPath = "/models/AdBids_model.yaml"
 
-func TestService_MigrateAll(t *testing.T) {
-	s := initBasicService(t)
+func TestMigrate(t *testing.T) {
+	configs := []struct {
+		title  string
+		config MigrationConfig
+	}{
+		{"MigrateAll", MigrationConfig{}},
+		{"MigrateSelected", MigrationConfig{
+			ChangedPaths: []string{AdBidsRepoPath},
+		}},
+	}
 
-	createSource(t, s, &api.Source{
-		Name:      "AdBids",
-		Connector: "file",
-		Properties: toProtoStruct(map[string]any{
-			"path": testDataPath + "AdImpressions.tsv",
-		}),
-	}, AdBidsRepoPath)
-	result, err := s.Migrate(context.Background(), MigrationConfig{})
-	require.NoError(t, err)
-	assertMigration(t, result, 2, 0, 2, 0)
-	require.ErrorIs(t, result.ArtifactErrors[1].Error, metrics_views.SourceNotFound)
-	assertTable(t, s, "AdBids", AdBidsRepoPath)
-	assertTableAbsence(t, s, "AdBids_model")
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
 
-	createSource(t, s, &api.Source{
-		Name:      "AdBids",
-		Connector: "file",
-		Properties: toProtoStruct(map[string]any{
-			"path": testDataPath + "AdBids.csv",
-		}),
-	}, AdBidsRepoPath)
-	result, err = s.Migrate(context.Background(), MigrationConfig{})
-	require.NoError(t, err)
-	// TODO: should the model/dashboard be counted as updated or added
-	assertMigration(t, result, 0, 2, 1, 0)
-	assertTable(t, s, "AdBids", AdBidsRepoPath)
-	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
+			// same name different content
+			createSource(t, s, "AdBids", "AdImpressions.tsv", AdBidsRepoPath)
+			result, err := s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 2, 0, 2, 0)
+			require.ErrorIs(t, result.ArtifactErrors[1].Error, metrics_views.SourceNotFound)
+			assertTable(t, s, "AdBids", AdBidsRepoPath)
+			assertTableAbsence(t, s, "AdBids_model")
+
+			// revert to stable state
+			createSource(t, s, "AdBids", "AdBids.csv", AdBidsRepoPath)
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			// TODO: should the model/dashboard be counted as updated or added
+			assertMigration(t, result, 0, 2, 1, 0)
+			assertTable(t, s, "AdBids", AdBidsRepoPath)
+			assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			// update with same content
+			createSource(t, s, "AdBids", "AdBids.csv", AdBidsRepoPath)
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 0, 0, 0, 0)
+
+			// delete file
+			err = os.Remove(path.Join(dir, AdBidsRepoPath))
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 2, 0, 1, 1)
+			assertTableAbsence(t, s, "AdBids")
+			assertTableAbsence(t, s, "AdBids_model")
+		})
+	}
 }
 
-func TestService_MigrateSelected(t *testing.T) {
-	s := initBasicService(t)
+func TestMigrateRenames(t *testing.T) {
+	configs := []struct {
+		title  string
+		config MigrationConfig
+	}{
+		{"MigrateAll", MigrationConfig{}},
+		{"MigrateSelected", MigrationConfig{
+			ChangedPaths: []string{AdBidsRepoPath, AdBidsNewRepoPath},
+		}},
+		{"MigrateSelectedReverseOrder", MigrationConfig{
+			ChangedPaths: []string{AdBidsNewRepoPath, AdBidsRepoPath},
+		}},
+	}
 
-	createSource(t, s, &api.Source{
-		Name:      "AdBids",
-		Connector: "file",
-		Properties: toProtoStruct(map[string]any{
-			"path": testDataPath + "AdImpressions.tsv",
-		}),
-	}, AdBidsRepoPath)
-	result, err := s.Migrate(context.Background(), MigrationConfig{
-		ChangedPaths: []string{AdBidsRepoPath},
-	})
-	require.NoError(t, err)
-	assertMigration(t, result, 2, 0, 2, 0)
-	require.ErrorIs(t, result.ArtifactErrors[1].Error, metrics_views.SourceNotFound)
-	assertTable(t, s, "AdBids", AdBidsRepoPath)
-	assertTableAbsence(t, s, "AdBids_model")
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
 
-	createSource(t, s, &api.Source{
-		Name:      "AdBids",
-		Connector: "file",
-		Properties: toProtoStruct(map[string]any{
-			"path": testDataPath + "AdBids.csv",
-		}),
-	}, AdBidsRepoPath)
-	result, err = s.Migrate(context.Background(), MigrationConfig{
-		ChangedPaths: []string{AdBidsRepoPath},
-	})
-	require.NoError(t, err)
-	// TODO: should the model/dashboard be counted as updated or added
-	assertMigration(t, result, 0, 2, 1, 0)
-	assertTable(t, s, "AdBids", AdBidsRepoPath)
-	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
+			// write to a new file (should rename)
+			err := os.Remove(path.Join(dir, AdBidsRepoPath))
+			require.NoError(t, err)
+			createSource(t, s, "AdBidsNew", "AdBids.csv", AdBidsNewRepoPath)
+			createModel(t, s, &api.Model{
+				Name:    "AdBids_model",
+				Sql:     "select * from AdBidsNew",
+				Dialect: api.Model_DuckDB,
+			}, AdBidsModelRepoPath)
+			result, err := s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 0, 0, 3, 0)
+			assertTableAbsence(t, s, "AdBids")
+			assertTable(t, s, "AdBidsNew", AdBidsNewRepoPath)
+			assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			// write a new file with same name
+			createSource(t, s, "AdBidsNew", "AdImpressions.csv", AdBidsRepoPath)
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 1, 0, 0, 0)
+			assertTable(t, s, "AdBidsNew", AdBidsNewRepoPath)
+			assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+		})
+	}
 }
 
-func TestService_MigrateMetricsView(t *testing.T) {
-	s := initBasicService(t)
+func TestMigrateMetricsView(t *testing.T) {
+	s, _ := initBasicService(t)
 
 	createModel(t, s, &api.Model{
 		Name:    "AdBids_model",
 		Sql:     "select id, publisher, domain, bid_price from AdBids",
 		Dialect: api.Model_DuckDB,
-	}, "/models/AdBids_model.yaml")
+	}, AdBidsModelRepoPath)
 	result, err := s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	assertMigration(t, result, 1, 0, 1, 0)
@@ -106,7 +138,7 @@ func TestService_MigrateMetricsView(t *testing.T) {
 		Name:    "AdBids_model",
 		Sql:     "select id, timestamp, publisher from AdBids",
 		Dialect: api.Model_DuckDB,
-	}, "/models/AdBids_model.yaml")
+	}, AdBidsModelRepoPath)
 	result, err = s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	// invalid measure/dimension doesnt return error for the object
@@ -117,15 +149,62 @@ func TestService_MigrateMetricsView(t *testing.T) {
 	require.Equal(t, result.AddedObjects[0].MetricsView.Dimensions[1].Error, `dimension not found: domain`)
 }
 
-func initBasicService(t *testing.T) *Service {
-	s := getService(t)
-	createSource(t, s, &api.Source{
-		Name:      "AdBids",
-		Connector: "file",
-		Properties: toProtoStruct(map[string]any{
-			"path": testDataPath + "AdBids.csv",
-		}),
-	}, AdBidsRepoPath)
+func TestInterdependentModel(t *testing.T) {
+	configs := []struct {
+		title  string
+		config MigrationConfig
+	}{
+		{"MigrateAll", MigrationConfig{}},
+		{"MigrateSelected", MigrationConfig{
+			ChangedPaths: []string{AdBidsRepoPath},
+		}},
+	}
+
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, _ := initBasicService(t)
+
+			AdBidsSourceModelRepoPath := "/models/AdBids_source_model.yaml"
+
+			createModel(t, s, &api.Model{
+				Name:    "AdBids_source_model",
+				Sql:     "select id, timestamp, publisher, domain, bid_price from AdBids",
+				Dialect: api.Model_DuckDB,
+			}, AdBidsSourceModelRepoPath)
+			createModel(t, s, &api.Model{
+				Name:    "AdBids_model",
+				Sql:     "select id, timestamp, publisher, domain, bid_price from AdBids_source_model",
+				Dialect: api.Model_DuckDB,
+			}, AdBidsModelRepoPath)
+			result, err := s.Migrate(context.Background(), MigrationConfig{})
+			require.NoError(t, err)
+			assertMigration(t, result, 0, 1, 2, 0)
+			assertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
+			assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			// trigger error in source
+			createSource(t, s, "AdBids", "AdImpressions.tsv", AdBidsRepoPath)
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 3, 0, 3, 0)
+			require.ErrorIs(t, result.ArtifactErrors[2].Error, metrics_views.SourceNotFound)
+			assertTableAbsence(t, s, "AdBids_source_model")
+			assertTableAbsence(t, s, "AdBids_model")
+
+			// reset the source
+			createSource(t, s, "AdBids", "AdBids.csv", AdBidsRepoPath)
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 0, 3, 1, 0)
+			assertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
+			assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+		})
+	}
+}
+
+func initBasicService(t *testing.T) (*Service, string) {
+	s, dir := getService(t)
+	createSource(t, s, "AdBids", "AdBids.csv", AdBidsRepoPath)
 	result, err := s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	assertMigration(t, result, 0, 1, 0, 0)
@@ -135,11 +214,11 @@ func initBasicService(t *testing.T) *Service {
 		Name:    "AdBids_model",
 		Sql:     "select id, timestamp, publisher, domain, bid_price from AdBids",
 		Dialect: api.Model_DuckDB,
-	}, "/models/AdBids_model.yaml")
+	}, AdBidsModelRepoPath)
 	result, err = s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	assertMigration(t, result, 0, 1, 0, 0)
-	assertTable(t, s, "AdBids_model", "/models/AdBids_model.yaml")
+	assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
 	createMetricsView(t, s, &api.MetricsView{
 		Name:          "AdBids_dashboard",
@@ -170,15 +249,21 @@ func initBasicService(t *testing.T) *Service {
 	assertMigration(t, result, 0, 1, 0, 0)
 	assertInCatalogStore(t, s, "AdBids_dashboard", "/dashboards/AdBids_dashboard.yaml")
 
-	return s
+	return s, dir
 }
 
-func createSource(t *testing.T, s *Service, source *api.Source, path string) {
+func createSource(t *testing.T, s *Service, name string, file string, path string) {
 	err := artifacts.Write(context.Background(), s.Repo, s.RepoId, &api.CatalogObject{
-		Name:   source.Name,
-		Type:   api.CatalogObject_TYPE_SOURCE,
-		Source: source,
-		Path:   path,
+		Name: name,
+		Type: api.CatalogObject_TYPE_SOURCE,
+		Source: &api.Source{
+			Name:      name,
+			Connector: "file",
+			Properties: toProtoStruct(map[string]any{
+				"path": testDataPath + file,
+			}),
+		},
+		Path: path,
 	})
 	require.NoError(t, err)
 }
@@ -203,7 +288,7 @@ func createMetricsView(t *testing.T, s *Service, metricsView *api.MetricsView, p
 	require.NoError(t, err)
 }
 
-func getService(t *testing.T) *Service {
+func getService(t *testing.T) (*Service, string) {
 	duckdbStore, err := drivers.Open("duckdb", "")
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
@@ -213,12 +298,13 @@ func getService(t *testing.T) *Service {
 	catalog, ok := duckdbStore.CatalogStore()
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", t.TempDir())
+	dir := t.TempDir()
+	fileStore, err := drivers.Open("file", dir)
 	require.NoError(t, err)
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
 
-	return NewService(catalog, repo, olap, "test", "test")
+	return NewService(catalog, repo, olap, "test", "test"), dir
 }
 
 func toProtoStruct(obj map[string]any) *structpb.Struct {

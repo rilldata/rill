@@ -2,16 +2,19 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MigrationItem struct {
@@ -21,6 +24,7 @@ type MigrationItem struct {
 	CatalogInStore *api.CatalogObject
 	Type           int
 	FromName       string
+	FromPath       string
 	Dependencies   []string
 	Error          *ArtifactError
 }
@@ -62,20 +66,12 @@ func (s *Service) Migrate(
 		ArtifactErrors: make([]ArtifactError, 0),
 	}
 
-	// get the initial name to migration item map
-	migrationMap := make(map[string]*MigrationItem)
-	var err error
-	if len(conf.ChangedPaths) > 0 {
-		migrationMap, err = s.collectSelectedRepos(ctx, conf.ChangedPaths)
-	} else {
-		migrationMap, err = s.collectAllRepos(ctx)
-	}
+	// collect repos and create migration items
+	migrationMap, err := s.collectRepos(ctx, conf, &result)
 	if err != nil {
 		return result, err
 	}
 
-	// map the items to catalog objects
-	s.collectCatalogObjects(ctx, conf, migrationMap)
 	// order the items to have parents before children
 	migrations := s.collectMigrationItems(migrationMap)
 
@@ -96,165 +92,224 @@ func (s *Service) Migrate(
 
 // convert repo paths to MigrationItem
 
-func (s *Service) collectAllRepos(ctx context.Context) (map[string]*MigrationItem, error) {
+func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result *MigrationResult) (map[string]*MigrationItem, error) {
 	// TODO: if the repo folder is source controlled we should leverage it to find changes
 	// TODO: ListRecursive needs some kind of cache or optimisation
-	repoPaths, err := s.Repo.ListRecursive(ctx, s.RepoId)
-	if err != nil {
-		return nil, err
+	repoPaths := conf.ChangedPaths
+	forcedPaths := len(conf.ChangedPaths) > 0
+	forcedPathsMap := make(map[string]bool)
+	if forcedPaths {
+		for _, forcedPath := range conf.ChangedPaths {
+			forcedPathsMap[forcedPath] = true
+		}
+	} else {
+		var err error
+		repoPaths, err = s.Repo.ListRecursive(ctx, s.RepoId)
+		if err != nil {
+			return nil, err
+		}
 	}
 	migrationMap := make(map[string]*MigrationItem)
+	deletions := make(map[string]*MigrationItem)
+	additions := make(map[string]*MigrationItem)
+
+	storeObjectsMap := make(map[string]*drivers.CatalogObject)
+	storeObjectsConsumed := make(map[string]bool)
+	storeObjects := s.Catalog.FindObjects(ctx, s.InstId, drivers.CatalogObjectTypeUnspecified)
+	for _, storeObject := range storeObjects {
+		storeObjectsMap[storeObject.Name] = storeObject
+	}
 
 	for _, repoPath := range repoPaths {
-		item := s.getMigrationItem(ctx, repoPath)
+		item := s.getMigrationItem(ctx, repoPath, storeObjectsMap)
 		if item == nil {
 			continue
 		}
-		migrationMap[item.Name] = item
-	}
 
-	return migrationMap, nil
-}
-
-func (s *Service) collectSelectedRepos(ctx context.Context, changedPaths []string) (map[string]*MigrationItem, error) {
-	migrationMap := make(map[string]*MigrationItem)
-	childRepos := make(map[string]bool)
-
-	for _, repoPath := range changedPaths {
-		// delete from childRepos if exists. this might be added by a parent processed before
-		if _, ok := childRepos[repoPath]; ok {
-			delete(childRepos, repoPath)
-		}
-		item := s.getMigrationItem(ctx, repoPath)
-		if item == nil {
+		existing, ok := migrationMap[item.Name]
+		if ok {
+			// if existing item was deleted
+			if existing.Type == MigrationDelete ||
+				// or if the existing has error whereas new one doest
+				(item.Error != nil && existing.Error != nil) ||
+				// or if the existing file was updated after new (this makes it so that the old one will be retained)
+				(item.Error == nil && item.CatalogInFile.UpdatedOn != nil && existing.CatalogInFile.UpdatedOn != nil &&
+					existing.CatalogInFile.UpdatedOn.AsTime().After(item.CatalogInFile.UpdatedOn.AsTime())) {
+				// replace the existing with new
+				migrationMap[item.Name] = item
+				result.ArtifactErrors = append(result.ArtifactErrors, ArtifactError{
+					Error: fmt.Errorf("item with same name exists"),
+					Path:  existing.Path,
+				})
+			} else {
+				result.ArtifactErrors = append(result.ArtifactErrors, ArtifactError{
+					Error: fmt.Errorf("item with same name exists"),
+					Path:  item.Path,
+				})
+			}
 			continue
 		}
-		migrationMap[item.Name] = item
 
-		// check children since the ChangedPaths might not have all the paths
+		add := true
+		if item.Type == MigrationDelete {
+			found := false
+			// if item is deleted compare with additions to look for renames
+			for _, addition := range additions {
+				if migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
+					addition.Type = MigrationRename
+					addition.FromName = item.Name
+					addition.FromPath = item.Path
+					delete(additions, addition.Name)
+					add = false
+					found = true
+					break
+				}
+			}
+			if !found {
+				deletions[item.Name] = item
+			}
+		} else if item.Type == MigrationCreate {
+			// if item is created compare with deletions to look for renames
+			found := false
+			for _, deletion := range deletions {
+				if migrator.IsEqual(ctx, item.CatalogInFile, deletion.CatalogInStore) {
+					item.Type = MigrationRename
+					item.FromName = deletion.Name
+					item.FromPath = deletion.Path
+					delete(deletions, deletion.Name)
+					delete(migrationMap, deletion.Name)
+					found = true
+					break
+				}
+			}
+			if !found {
+				additions[item.Name] = item
+			}
+		}
+		if add {
+			migrationMap[item.Name] = item
+		}
+		storeObjectsConsumed[item.Name] = true
+
+		if !forcedPaths {
+			continue
+		}
+		// go through the children only of forced paths is false
 		children := s.dag.GetChildren(item.Name)
 		for _, child := range children {
-			// if it was already visited then we dont need to add
-			if _, ok := migrationMap[child]; ok {
-				// force update if marked as NoChange
-				if migrationMap[child].Type == MigrationNoChange {
-					migrationMap[child].Type = MigrationUpdate
-				}
+			childPath, ok := s.NameToPath[child]
+			if !ok || (forcedPaths && forcedPathsMap[childPath]) {
+				// if there is no entry for name to path or already in forced path then ignore the child
 				continue
 			}
-			childRepos[child] = true
+
+			childItem := s.getMigrationItem(ctx, childPath, storeObjectsMap)
+			if childItem == nil {
+				continue
+			}
+			migrationMap[childItem.Name] = childItem
 		}
 	}
 
-	// go through all child repos and read them
-	for child := range childRepos {
-		path, ok := s.NameToPath[child]
-		if !ok {
-			// TODO: handle unknown child
+	for _, storeObject := range storeObjectsMap {
+		if storeObjectsConsumed[storeObject.Name] {
 			continue
 		}
-
-		item := s.getMigrationItem(ctx, path)
-		if item == nil {
-			continue
-		}
-		migrationMap[item.Name] = item
-	}
-
-	return migrationMap, nil
-}
-
-func (s *Service) getMigrationItem(ctx context.Context, repoPath string) *MigrationItem {
-	catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
-	if err != nil {
-		// TODO: how do we get the name of the item?
-		return nil
-	}
-	item := &MigrationItem{
-		Name:          catalog.Name,
-		Type:          MigrationNoChange,
-		CatalogInFile: catalog,
-		Path:          repoPath,
-	}
-
-	item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
-	err = migrator.Validate(ctx, s.Olap, catalog)
-	if err != nil {
-		item.Error = &ArtifactError{
-			Error: err,
-			Path:  repoPath,
-		}
-		return item
-	}
-
-	repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
-	if repoStat.LastUpdated.After(s.LastMigration) {
-		// assume creation until we see a catalog object
-		item.Type = MigrationCreate
-	}
-
-	return item
-}
-
-// collectCatalogObjects maps catalog objects to existing MigrationItem
-func (s *Service) collectCatalogObjects(
-	ctx context.Context,
-	conf MigrationConfig,
-	migrationMap map[string]*MigrationItem,
-) {
-	catalogObjs := s.Catalog.FindObjects(ctx, s.InstId, drivers.CatalogObjectTypeUnspecified)
-	deletions := make([]*MigrationItem, 0)
-
-	for _, catalogObj := range catalogObjs {
-		apiCatalog, err := catalogObjectToPB(catalogObj)
+		apiCatalog, err := catalogObjectToPB(storeObject)
 		if err != nil {
-			// TODO
 			continue
 		}
-
-		item, ok := migrationMap[apiCatalog.Name]
-		if !ok {
-			if len(conf.ChangedPaths) > 0 {
-				// we wont have a match when specific paths are chosen
-				continue
-			}
-			deletions = append(deletions, &MigrationItem{
-				Name:          apiCatalog.Name,
-				CatalogInFile: apiCatalog,
-				Type:          MigrationDelete,
-			})
-		} else {
-			// update store catalog
-			item.CatalogInStore = apiCatalog
-			if item.Type == MigrationCreate {
-				item.Type = MigrationUpdate
-				// if the actual content is same mark as no change
-				if migrator.IsEqual(ctx, item.CatalogInFile, item.CatalogInStore) {
-					item.Type = MigrationNoChange
-				}
-			} else if item.Error != nil {
-				item.Type = MigrationDelete
-			}
+		// if repo paths were forced and the catalog was not in the paths then ignore
+		if _, ok := forcedPathsMap[apiCatalog.Path]; forcedPaths && !ok {
+			continue
 		}
-	}
-
-	for _, deletion := range deletions {
-		renamed := false
-		for _, item := range migrationMap {
-			// only consider items that are equal and are marked as create
-			if migrator.IsEqual(ctx, deletion.CatalogInFile, item.CatalogInFile) && item.Type == MigrationCreate {
-				item.CatalogInStore.Type = MigrationRename
-				item.FromName = deletion.CatalogInFile.Name
-				renamed = true
+		found := false
+		// find any additions that match and mark it as a MigrationRename
+		for _, addition := range additions {
+			if migrator.IsEqual(ctx, addition.CatalogInFile, apiCatalog) {
+				addition.Type = MigrationRename
+				addition.FromName = apiCatalog.Name
+				addition.FromPath = apiCatalog.Path
+				delete(additions, addition.Name)
+				found = true
 				break
 			}
 		}
-
-		// if not renamed then add as a deletion
-		if !renamed {
-			migrationMap[deletion.Name] = deletion
+		// if no matching item is found, add as a MigrationDelete
+		if !found {
+			migrationMap[apiCatalog.Name] = &MigrationItem{
+				Name:           apiCatalog.Name,
+				Type:           MigrationDelete,
+				Path:           apiCatalog.Path,
+				CatalogInStore: apiCatalog,
+			}
 		}
 	}
+
+	return migrationMap, nil
+}
+
+func (s *Service) getMigrationItem(
+	ctx context.Context,
+	repoPath string,
+	storeObjectsMap map[string]*drivers.CatalogObject,
+) *MigrationItem {
+	item := &MigrationItem{
+		Type: MigrationNoChange,
+		Path: repoPath,
+	}
+
+	catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
+	if err != nil {
+		if err != artifacts.FileReadError {
+			return nil
+		}
+		if _, ok := s.PathToName[repoPath]; !ok {
+			return nil
+		}
+
+		item.Name = s.PathToName[repoPath]
+		item.Type = MigrationDelete
+	} else {
+		item.Name = catalog.Name
+		item.CatalogInFile = catalog
+
+		item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
+		err = migrator.Validate(ctx, s.Olap, catalog)
+		if err != nil {
+			item.Error = &ArtifactError{
+				Error: err,
+				Path:  repoPath,
+			}
+		} else {
+			repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
+			item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
+			if repoStat.LastUpdated.After(s.LastMigration) {
+				// assume creation until we see a catalog object
+				item.Type = MigrationCreate
+			}
+		}
+	}
+
+	catalogInStore, ok := storeObjectsMap[item.Name]
+	if !ok {
+		return item
+	}
+	apiCatalog, err := catalogObjectToPB(catalogInStore)
+	if err != nil {
+		return item
+	}
+
+	item.CatalogInStore = apiCatalog
+	if item.Type == MigrationCreate {
+		item.Type = MigrationUpdate
+		// if the actual content is same mark as no change
+		if migrator.IsEqual(ctx, item.CatalogInFile, item.CatalogInStore) {
+			item.Type = MigrationNoChange
+		}
+	}
+
+	return item
 }
 
 // collectMigrationItems collects all valid MigrationItem
@@ -294,8 +349,11 @@ func (s *Service) collectMigrationItems(
 		visited[name] = len(migrationItems)
 		migrationItems = append(migrationItems, migration)
 
-		// get all the children and make sure they are not before the parent in the order
-		children := tempDag.GetChildren(name)
+		// get all the children and make sure they are not present before the parent in the order
+		children := arrayutil.Dedupe(append(
+			tempDag.GetChildren(name),
+			s.dag.GetChildren(name)...,
+		))
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {
@@ -303,9 +361,10 @@ func (s *Service) collectMigrationItems(
 				update[child] = true
 				continue
 			}
+
+			var childItem *MigrationItem
 			// if a child was already visited push to the end
 			visited[child] = len(migrationItems)
-			var childItem *MigrationItem
 			if i != -1 {
 				childItem = migrationItems[i]
 				// mark the original position as nil. this is cleaned up later
@@ -313,8 +372,9 @@ func (s *Service) collectMigrationItems(
 			} else {
 				childItem = migrationMap[child]
 			}
+
 			migrationItems = append(migrationItems, childItem)
-			if childItem.Type == MigrationNoChange {
+			if childItem.Type == MigrationNoChange || childItem.Error != nil {
 				// if the child has no change then mark it as update or create based on presence of catalog in store
 				if childItem.CatalogInStore == nil {
 					childItem.Type = MigrationCreate
@@ -405,6 +465,7 @@ func (s *Service) runMigrationItems(
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.Name] = item.Path
+	s.PathToName[item.Path] = item.Name
 	// add the item to DAG
 	s.dag.Add(item.Name, item.Dependencies)
 
@@ -427,6 +488,10 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 		delete(s.NameToPath, item.FromName)
 	}
 	s.NameToPath[item.Name] = item.Path
+	if _, ok := s.PathToName[item.FromPath]; ok {
+		delete(s.PathToName, item.FromPath)
+	}
+	s.PathToName[item.Path] = item.Name
 
 	// delete old item and add new item to dag
 	s.dag.Delete(item.FromName)
@@ -451,6 +516,7 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.Name] = item.Path
+	s.PathToName[item.Path] = item.Name
 	// add the item to DAG with new dependencies
 	s.dag.Add(item.Name, item.Dependencies)
 
@@ -471,11 +537,14 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 	if _, ok := s.NameToPath[item.Name]; ok {
 		delete(s.NameToPath, item.Name)
 	}
+	if _, ok := s.PathToName[item.FromPath]; ok {
+		delete(s.PathToName, item.FromPath)
+	}
 
 	// delete item from dag
 	s.dag.Delete(item.Name)
 	// delete item from olap
-	err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
+	err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 	if err != nil {
 		return err
 	}
