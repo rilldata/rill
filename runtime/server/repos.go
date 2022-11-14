@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListRepos implements RuntimeService
@@ -77,8 +78,8 @@ func (s *Server) DeleteRepo(ctx context.Context, req *api.DeleteRepoRequest) (*a
 	return &api.DeleteRepoResponse{}, nil
 }
 
-// ListRepoObjects implements RuntimeService
-func (s *Server) ListRepoObjects(ctx context.Context, req *api.ListRepoObjectsRequest) (*api.ListRepoObjectsResponse, error) {
+// ListFiles implements RuntimeService
+func (s *Server) ListFiles(ctx context.Context, req *api.ListFilesRequest) (*api.ListFilesResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -91,16 +92,16 @@ func (s *Server) ListRepoObjects(ctx context.Context, req *api.ListRepoObjectsRe
 	}
 
 	repoStore, _ := conn.RepoStore()
-	paths, err := repoStore.ListRecursive(ctx, repo.ID)
+	paths, err := repoStore.ListRecursive(ctx, repo.ID) // TODO: use req.Glob
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	return &api.ListRepoObjectsResponse{Paths: paths}, nil
+	return &api.ListFilesResponse{Paths: paths}, nil
 }
 
-// GetRepoObject implements RuntimeService
-func (s *Server) GetRepoObject(ctx context.Context, req *api.GetRepoObjectRequest) (*api.GetRepoObjectResponse, error) {
+// GetFile implements RuntimeService
+func (s *Server) GetFile(ctx context.Context, req *api.GetFileRequest) (*api.GetFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -118,11 +119,17 @@ func (s *Server) GetRepoObject(ctx context.Context, req *api.GetRepoObjectReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.GetRepoObjectResponse{Blob: blob}, nil
+	// TODO: Could we return Stat as part of Get?
+	stat, err := repoStore.Stat(ctx, repo.ID, req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &api.GetFileResponse{Blob: blob, UpdatedOn: timestamppb.New(stat.LastUpdated)}, nil
 }
 
-// PutRepoObject implements RuntimeService
-func (s *Server) PutRepoObject(ctx context.Context, req *api.PutRepoObjectRequest) (*api.PutRepoObjectResponse, error) {
+// PutFile implements RuntimeService
+func (s *Server) PutFile(ctx context.Context, req *api.PutFileRequest) (*api.PutFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -134,16 +141,19 @@ func (s *Server) PutRepoObject(ctx context.Context, req *api.PutRepoObjectReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// TODO: Handle req.Create, req.CreateOnly, req.Delete
 	repoStore, _ := conn.RepoStore()
 	err = repoStore.PutBlob(ctx, repo.ID, req.Path, req.Blob)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.PutRepoObjectResponse{}, nil
+	return &api.PutFileResponse{}, nil
 }
 
-func (s *Server) PutRepoObjectFromHTTPRequest(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+// UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.
+// It's mounted only on as a REST API and enables upload of large files (such as data files).
+func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 	ctx := context.Background()
 	if err := req.ParseForm(); err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
@@ -181,7 +191,7 @@ func (s *Server) PutRepoObjectFromHTTPRequest(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	res, err := protojson.Marshal(&api.PutRepoObjectResponse{
+	res, err := protojson.Marshal(&api.PutFileResponse{
 		FilePath: filePath,
 	})
 	if err != nil {

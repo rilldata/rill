@@ -67,7 +67,7 @@ service RuntimeService {
   // PutFile creates or updates a file in a repo
   rpc PutFile(PutFileRequest) returns (PutFileResponse) {
     option (google.api.http) = {
-      post: "/v1/repos/{repo_id}/objects/-/{path=**}",
+      post: "/v1/repos/{repo_id}/files/-/{path=**}",
       body: "*"
     };
   }

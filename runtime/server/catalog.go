@@ -360,7 +360,7 @@ func catalogObjectModelToPB(obj *drivers.CatalogObject) (*api.Model, error) {
 	return &api.Model{
 		Name:    obj.Name,
 		Sql:     obj.SQL,
-		Dialect: api.Model_DuckDB,
+		Dialect: api.Model_DIALECT_DUCKDB,
 	}, nil
 }
 

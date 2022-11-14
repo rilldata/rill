@@ -16,6 +16,11 @@ func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.Mig
 	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
 }
 
+// PutFileAndMigrate implements RuntimeService
+func (s *Server) PutFileAndMigrate(context.Context, *api.PutFileAndMigrateRequest) (*api.PutFileAndMigrateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
+}
+
 // MigrateSingle implements RuntimeService
 // NOTE: Everything here is an initial implementation with many flaws.
 func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {

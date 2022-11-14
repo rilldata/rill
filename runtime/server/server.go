@@ -95,8 +95,8 @@ func (s *Server) Serve(ctx context.Context) error {
 		}
 		mux.HandlePath(
 			"POST",
-			"/v1/repos/{repo_id}/objects/file/-/{path=**}",
-			s.PutRepoObjectFromHTTPRequest,
+			"/v1/repos/{repo_id}/files/upload/-/{path=**}",
+			s.UploadMultipartFile,
 		)
 		handler := cors(mux)
 		server := &http.Server{Handler: handler}

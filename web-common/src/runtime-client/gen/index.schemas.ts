@@ -4,10 +4,17 @@
  * runtime.proto
  * OpenAPI spec version: version not set
  */
-export type RuntimeServicePutRepoObjectBody = {
+export type RuntimeServicePutFileBody = {
   blob?: string;
+  create?: boolean;
+  /** Will cause the operation to fail if the file already exists.
+It should only be set when create = true. */
+  createOnly?: boolean;
+  /** Delete will remove the file. If true, the passed blob must be empty. */
   delete?: boolean;
 };
+
+export type RuntimeServiceListFilesParams = { glob?: string };
 
 export type RuntimeServiceListReposParams = {
   pageSize?: number;
@@ -36,10 +43,18 @@ export type RuntimeServiceQueryBody = {
   dryRun?: boolean;
 };
 
+/**
+ * Request message for RuntimeService.MigrateDelete
+TODO: Remove once Migrate has been adopted.
+ */
 export type RuntimeServiceMigrateDeleteBody = {
   name?: string;
 };
 
+/**
+ * Request message for RuntimeService.MigrateSingle.
+TODO: Remove once Migrate has been adopted.
+ */
 export type RuntimeServiceMigrateSingleBody = {
   sql?: string;
   dryRun?: boolean;
@@ -50,9 +65,12 @@ NOTE: very questionable semantics here. */
 };
 
 export type RuntimeServiceMigrateBody = {
-  blobs?: string[];
-  dropDeleted?: boolean;
-  dryRun?: boolean;
+  repoId?: string;
+  /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
+migrations to execute faster by not scanning all code artifacts for changes. */
+  changedPaths?: string[];
+  dry?: boolean;
+  strict?: boolean;
 };
 
 export type RuntimeServiceMetricsViewTotalsBody = {
@@ -88,6 +106,7 @@ export const RuntimeServiceListCatalogObjectsType = {
   TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
   TYPE_TABLE: "TYPE_TABLE",
   TYPE_SOURCE: "TYPE_SOURCE",
+  TYPE_MODEL: "TYPE_MODEL",
   TYPE_METRICS_VIEW: "TYPE_METRICS_VIEW",
 } as const;
 
@@ -99,6 +118,37 @@ export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
   pageToken?: string;
 };
+
+export type V1TypeCode = typeof V1TypeCode[keyof typeof V1TypeCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1TypeCode = {
+  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
+  CODE_BOOL: "CODE_BOOL",
+  CODE_INT8: "CODE_INT8",
+  CODE_INT16: "CODE_INT16",
+  CODE_INT32: "CODE_INT32",
+  CODE_INT64: "CODE_INT64",
+  CODE_INT128: "CODE_INT128",
+  CODE_UINT8: "CODE_UINT8",
+  CODE_UINT16: "CODE_UINT16",
+  CODE_UINT32: "CODE_UINT32",
+  CODE_UINT64: "CODE_UINT64",
+  CODE_UINT128: "CODE_UINT128",
+  CODE_FLOAT32: "CODE_FLOAT32",
+  CODE_FLOAT64: "CODE_FLOAT64",
+  CODE_TIMESTAMP: "CODE_TIMESTAMP",
+  CODE_DATE: "CODE_DATE",
+  CODE_TIME: "CODE_TIME",
+  CODE_STRING: "CODE_STRING",
+  CODE_BYTES: "CODE_BYTES",
+  CODE_ARRAY: "CODE_ARRAY",
+  CODE_STRUCT: "CODE_STRUCT",
+  CODE_MAP: "CODE_MAP",
+  CODE_DECIMAL: "CODE_DECIMAL",
+  CODE_JSON: "CODE_JSON",
+  CODE_UUID: "CODE_UUID",
+} as const;
 
 export interface V1TriggerSyncResponse {
   objectsCount?: number;
@@ -141,11 +191,11 @@ scanning the database's information schema. */
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
-  sql?: string;
   name?: string;
   connector?: string;
   properties?: V1SourceProperties;
   schema?: V1StructType;
+  sql?: string;
 }
 
 /**
@@ -175,8 +225,34 @@ export interface V1QueryDirectResponse {
   data?: V1QueryDirectResponseDataItem[];
 }
 
-export interface V1PutRepoObjectResponse {
+export interface V1PutFileResponse {
   filePath?: string;
+}
+
+export interface V1PutFileAndMigrateResponse {
+  /** Errors encountered during the migration. If strict = false, any path in
+affected_paths without an error can be assumed to have been migrated succesfully. */
+  errors?: V1MigrationError[];
+  /** affected_paths lists all the file paths that were considered while
+executing the migration. For a PutFileAndMigrate, this includes the put file
+as well as any file artifacts that rely on objects declared in it. */
+  affectedPaths?: string[];
+}
+
+export interface V1PutFileAndMigrateRequest {
+  repoId?: string;
+  instanceId?: string;
+  path?: string;
+  blob?: string;
+  create?: boolean;
+  /** create_only will cause the operation to fail if a file already exists at path.
+It should only be set when create = true. */
+  createOnly?: boolean;
+  /** Delete will remove the file. If true, the passed blob must be empty. */
+  delete?: boolean;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
 }
 
 export interface V1PingResponse {
@@ -184,12 +260,62 @@ export interface V1PingResponse {
   time?: string;
 }
 
+export interface V1Model {
+  name?: string;
+  sql?: string;
+  dialect?: ModelDialect;
+  schema?: V1StructType;
+}
+
+/**
+ * - CODE_UNSPECIFIED: Unspecified error
+ - CODE_SYNTAX: Code artifact failed to parse
+ - CODE_VALIDATION: Code artifact has internal validation errors
+ - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
+ - CODE_OLAP: Error returned from the OLAP database
+ - CODE_SOURCE: Error encountered during source inspection or ingestion
+ */
+export type V1MigrationErrorCode =
+  typeof V1MigrationErrorCode[keyof typeof V1MigrationErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1MigrationErrorCode = {
+  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
+  CODE_SYNTAX: "CODE_SYNTAX",
+  CODE_VALIDATION: "CODE_VALIDATION",
+  CODE_DEPENDENCY: "CODE_DEPENDENCY",
+  CODE_OLAP: "CODE_OLAP",
+  CODE_SOURCE: "CODE_SOURCE",
+} as const;
+
+/**
+ * MigrationError represents an error encountered while running Migrate.
+ */
+export interface V1MigrationError {
+  code?: V1MigrationErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string;
+  startLocation?: MigrationErrorCharLocation;
+  endLocation?: MigrationErrorCharLocation;
+}
+
 export interface V1MigrateSingleResponse {
   [key: string]: any;
 }
 
 export interface V1MigrateResponse {
-  [key: string]: any;
+  /** Errors encountered during the migration. If strict = false, any path in
+affected_paths without an error can be assumed to have been migrated succesfully. */
+  errors?: V1MigrationError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the migration. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1MigrateDeleteResponse {
@@ -205,17 +331,7 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
-
 export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewTimeSeriesResponseDataItem[];
-}
 
 export interface V1MetricsViewSort {
   name?: string;
@@ -241,10 +357,23 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewTimeSeriesResponseDataItem[];
+}
+
 export interface V1MetricsView {
-  sql?: string;
   name?: string;
-  fromObject?: string;
+  from?: string;
+  timeDimension?: string;
+  /** Recommended granularities for rolling up the time dimension.
+Should be a valid SQL INTERVAL value. */
+  timeGrains?: string[];
   dimensions?: MetricsViewDimension[];
   measures?: MetricsViewMeasure[];
 }
@@ -259,13 +388,13 @@ export interface V1ListReposResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListRepoObjectsResponse {
-  paths?: string[];
-}
-
 export interface V1ListInstancesResponse {
   instances?: V1Instance[];
   nextPageToken?: string;
+}
+
+export interface V1ListFilesResponse {
+  paths?: string[];
 }
 
 export interface V1ListConnectorsResponse {
@@ -303,12 +432,13 @@ export interface V1GetRepoResponse {
   repo?: V1Repo;
 }
 
-export interface V1GetRepoObjectResponse {
-  blob?: string;
-}
-
 export interface V1GetInstanceResponse {
   instance?: V1Instance;
+}
+
+export interface V1GetFileResponse {
+  blob?: string;
+  updatedOn?: string;
 }
 
 export interface V1GetCatalogObjectResponse {
@@ -365,6 +495,7 @@ export const V1CatalogObjectType = {
   TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
   TYPE_TABLE: "TYPE_TABLE",
   TYPE_SOURCE: "TYPE_SOURCE",
+  TYPE_MODEL: "TYPE_MODEL",
   TYPE_METRICS_VIEW: "TYPE_METRICS_VIEW",
 } as const;
 
@@ -372,14 +503,17 @@ export interface V1CatalogObject {
   type?: V1CatalogObjectType;
   table?: V1Table;
   source?: V1Source;
+  model?: V1Model;
   metricsView?: V1MetricsView;
+  name?: string;
+  path?: string;
   createdOn?: string;
   updatedOn?: string;
   refreshedOn?: string;
 }
 
 export interface Runtimev1Type {
-  code?: TypeCode;
+  code?: V1TypeCode;
   nullable?: boolean;
   arrayElementType?: Runtimev1Type;
   structType?: V1StructType;
@@ -413,46 +547,32 @@ export interface ProtobufAny {
   [key: string]: unknown;
 }
 
-export type TypeCode = typeof TypeCode[keyof typeof TypeCode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const TypeCode = {
-  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
-  CODE_BOOL: "CODE_BOOL",
-  CODE_INT8: "CODE_INT8",
-  CODE_INT16: "CODE_INT16",
-  CODE_INT32: "CODE_INT32",
-  CODE_INT64: "CODE_INT64",
-  CODE_INT128: "CODE_INT128",
-  CODE_UINT8: "CODE_UINT8",
-  CODE_UINT16: "CODE_UINT16",
-  CODE_UINT32: "CODE_UINT32",
-  CODE_UINT64: "CODE_UINT64",
-  CODE_UINT128: "CODE_UINT128",
-  CODE_FLOAT32: "CODE_FLOAT32",
-  CODE_FLOAT64: "CODE_FLOAT64",
-  CODE_TIMESTAMP: "CODE_TIMESTAMP",
-  CODE_DATE: "CODE_DATE",
-  CODE_TIME: "CODE_TIME",
-  CODE_STRING: "CODE_STRING",
-  CODE_BYTES: "CODE_BYTES",
-  CODE_ARRAY: "CODE_ARRAY",
-  CODE_STRUCT: "CODE_STRUCT",
-  CODE_MAP: "CODE_MAP",
-  CODE_DECIMAL: "CODE_DECIMAL",
-  CODE_JSON: "CODE_JSON",
-  CODE_UUID: "CODE_UUID",
-} as const;
-
 export interface StructTypeField {
   name?: string;
   type?: Runtimev1Type;
 }
 
+export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ModelDialect = {
+  DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
+  DIALECT_DUCKDB: "DIALECT_DUCKDB",
+} as const;
+
+export interface MigrationErrorCharLocation {
+  line?: number;
+  column?: number;
+}
+
 export interface MetricsViewMeasure {
   name?: string;
-  type?: string;
+  label?: string;
+  expression?: string;
   description?: string;
+  format?: string;
+  enabled?: string;
+  error?: string;
 }
 
 export interface MetricsViewFilterCond {
@@ -463,9 +583,10 @@ export interface MetricsViewFilterCond {
 
 export interface MetricsViewDimension {
   name?: string;
-  type?: string;
-  primaryTime?: boolean;
+  label?: string;
   description?: string;
+  enabled?: string;
+  error?: string;
 }
 
 export type ConnectorPropertyType =
