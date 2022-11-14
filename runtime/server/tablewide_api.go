@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -59,9 +60,12 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 		pcs[i] = &pc
 		i++
 	}
+
+	r := regexp.MustCompile("\"")
 	for _, pc := range pcs[0:i] {
+		columnName := r.ReplaceAllString(pc.Name, "\"\"")
 		rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
-			Query: fmt.Sprintf(`select max(length("%s")) as max from %s`, pc.Name, req.TableName),
+			Query: fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
 		})
 		if err != nil {
 			return nil, err
