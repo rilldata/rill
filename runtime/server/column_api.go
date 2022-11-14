@@ -3,12 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
-	"math"
-
+	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"math"
+	"time"
 )
 
 const defaultK = 50
@@ -467,7 +468,19 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRange
 	defer rows.Close()
 	for rows.Next() {
 		summary := &api.TimeRangeSummary{}
-		rows.Scan(&summary.Min, &summary.Max, &summary.Interval)
+		rowMap := make(map[string]any)
+		err := rows.MapScan(rowMap)
+		if err != nil {
+			return nil, err
+		}
+		summary.Min = rowMap["min"].(time.Time).String()
+		summary.Max = rowMap["max"].(time.Time).String()
+		interval := rowMap["interval"].(duckdb.Interval)
+		summary.Interval = new(api.TimeRangeSummary_Interval)
+		summary.Interval.Days = interval.Days
+		summary.Interval.Months = interval.Months
+		summary.Interval.Micros = interval.Micros
+
 		return summary, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")

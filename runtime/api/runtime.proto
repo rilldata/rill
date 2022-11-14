@@ -828,7 +828,12 @@ message NumericSummary {
 message TimeRangeSummary {
     string min = 1;
     string max = 2;
-    string interval = 3;
+    message Interval {
+      int32 months = 1;
+      int32 days = 2;
+      int64 micros = 3;
+    }
+    Interval interval = 3;
 }
 
 message NumericOutliers {

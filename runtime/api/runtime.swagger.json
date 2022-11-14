@@ -1758,6 +1758,23 @@
         }
       }
     },
+    "TimeRangeSummaryInterval": {
+      "type": "object",
+      "properties": {
+        "months": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "days": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "micros": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "TimeSeriesResponseTimeSeriesValues": {
       "type": "object",
       "properties": {
@@ -2630,7 +2647,7 @@
           "type": "string"
         },
         "interval": {
-          "type": "string"
+          "$ref": "#/definitions/TimeRangeSummaryInterval"
         }
       }
     },
