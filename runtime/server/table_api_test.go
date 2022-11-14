@@ -100,6 +100,7 @@ func TestServer_TableRows(t *testing.T) {
 	cr, err := server.TableRows(context.Background(), &api.RowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
+		Limit:      1,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cr.Data))

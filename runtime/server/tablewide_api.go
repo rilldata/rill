@@ -80,9 +80,18 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 }
 
 func (s *Server) TableRows(ctx context.Context, req *api.RowsRequest) (*api.RowsResponse, error) {
-	rows := make([]*structpb.Struct, 1)
-	rows[0] = &structpb.Struct{}
+	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
+		Query: fmt.Sprintf("select * from %s limit %d", req.TableName, req.Limit),
+	})
+	if err != nil {
+		return nil, err
+	}
+	var data []*structpb.Struct
+	if data, err = rowsToData(rows); err != nil {
+		return nil, err
+	}
+
 	return &api.RowsResponse{
-		Data: rows,
+		Data: data,
 	}, nil
 }
