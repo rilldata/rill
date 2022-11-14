@@ -93,6 +93,12 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 		if err != nil {
 			return err
 		}
+
+		// Force DuckDB to merge WAL into .db file
+		_, err = c.db.ExecContext(ctx, "CHECKPOINT;")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
