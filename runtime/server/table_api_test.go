@@ -123,6 +123,14 @@ func TestServer_RenameObject(t *testing.T) {
 		Type:       api.DatabaseObjectType_TABLE.Enum(),
 	})
 	require.NoError(t, err)
+
+	_, err = server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
+		InstanceId: instanceId,
+		Name:       "test",
+		Newname:    "test2",
+		Type:       api.DatabaseObjectType_TABLE.Enum(),
+	})
+	require.Error(t, err)
 }
 
 func TestServer_EstimateRollupInterval(t *testing.T) {

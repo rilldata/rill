@@ -12,6 +12,13 @@ import (
 
 // Table level profiling APIs
 func (s *Server) RenameDatabaseObject(ctx context.Context, req *api.RenameDatabaseObjectRequest) (*api.RenameDatabaseObjectResponse, error) {
+	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
+		Query: fmt.Sprintf("alter %s \"%s\" rename to \"%s\"", req.Type.String(), req.Name, req.Newname),
+	})
+	if err != nil {
+		return nil, err
+	}
+	rows.Close()
 	return &api.RenameDatabaseObjectResponse{}, nil
 }
 
