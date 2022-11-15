@@ -48,6 +48,12 @@ type ColumnInfo struct {
 	Unknown int
 }
 
+var DoubleQuotesRegexp *regexp.Regexp = regexp.MustCompile("\"")
+
+func EscapeColumn(column string) string {
+	return r.ReplaceAllString(pc.Name, "\"\"")
+}
+
 func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequest) (*api.ProfileColumnsResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
@@ -70,7 +76,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 
 	r := regexp.MustCompile("\"")
 	for _, pc := range pcs[0:i] {
-		columnName := r.ReplaceAllString(pc.Name, "\"\"")
+		columnName := EscapeColumn(pc.Name)
 		rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
 			Query: fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
 		})
