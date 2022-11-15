@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
@@ -12,8 +12,7 @@
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
-  import CollapsibleTableSummary from "@rilldata/web-local/lib/components/column-profile/CollapsibleTableSummary.svelte";
-  import ColumnProfileNavEntry from "@rilldata/web-local/lib/components/column-profile/ColumnProfileNavEntry.svelte";
+  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
@@ -91,7 +90,10 @@
 
       <!-- source tables -->
       {#if showSourceTables}
-        <div transition:slide|local={{ duration: 200 }} class="mt-1">
+        <div
+          transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+          class="mt-1"
+        >
           {#each sourceTableReferences as table}
             {@const persistentTableRef = $persistentTableStore.entities.find(
               (t) => table.name === t.tableName
@@ -164,26 +166,14 @@
       </div>
 
       {#if currentDerivedModel?.profile && showColumns}
-        <div transition:slide|local={{ duration: 200 }}>
-          <CollapsibleTableSummary
-            entityType={EntityType.Model}
-            showTitle={false}
-            show={showColumns}
-            name={currentModel.name}
+        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <ColumnProfile
+            indentLevel={0}
             cardinality={currentDerivedModel?.cardinality ?? 0}
-            active={currentModel?.id === $store?.activeEntity?.id}
-          >
-            <ColumnProfileNavEntry
-              slot="summary"
-              let:containerWidth
-              indentLevel={0}
-              {containerWidth}
-              cardinality={currentDerivedModel?.cardinality ?? 0}
-              profile={currentDerivedModel?.profile ?? []}
-              head={currentDerivedModel?.preview ?? []}
-              entityId={activeEntityID}
-            />
-          </CollapsibleTableSummary>
+            profile={currentDerivedModel?.profile ?? []}
+            head={currentDerivedModel?.preview ?? []}
+            entityId={activeEntityID}
+          />
         </div>
       {/if}
     </div>

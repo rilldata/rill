@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/storage v1.27.0
+	github.com/NYTimes/gziphandler v1.1.1
 	github.com/apache/calcite-avatica-go/v5 v5.1.0
 	github.com/aws/aws-sdk-go v1.44.118
 	github.com/coreos/go-oidc/v3 v3.4.0

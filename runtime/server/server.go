@@ -59,7 +59,6 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 	}, nil
 }
 
-// Serve starts a gRPC server and a gRPC REST gateway server
 func (s *Server) Serve(ctx context.Context) error {
 	group, cctx := errgroup.WithContext(ctx)
 
@@ -103,8 +102,12 @@ func (s *Server) Serve(ctx context.Context) error {
 		s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))
 		return graceful.ServeHTTP(cctx, server, s.opts.HTTPPort)
 	})
-
 	return group.Wait()
+}
+
+// Metrics APIs
+func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
+	return &api.EstimateRollupIntervalResponse{}, nil
 }
 
 // Ping implements RuntimeService

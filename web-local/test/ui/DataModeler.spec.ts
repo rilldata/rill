@@ -103,7 +103,7 @@ export class DataModelerTest extends TestBase<TestServerSetupParameter> {
     await page.goto(URL);
     await this.delay(500);
     const defaultActiveModel = page.locator(
-      "#assets-model-list .collapsible-table-summary-title"
+      "#assets-model-list .navigation-entry-title"
     );
     const count = await defaultActiveModel.count();
 
@@ -119,12 +119,12 @@ export class DataModelerTest extends TestBase<TestServerSetupParameter> {
   ) {
     await page.goto(URL);
     await page.click("button#create-model-button");
-
     const error = page.locator(".error").first();
 
     await this.execute(page, query);
 
     const actualError = await error.textContent();
+
     expect(actualError).toContain(result);
   }
 

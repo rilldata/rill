@@ -5,8 +5,8 @@
     useRuntimeServiceMigrateSingle,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
-  import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores.js";
+  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
+  import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores.js";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
