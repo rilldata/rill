@@ -80,8 +80,8 @@
     : false;
 
   $: barColor = excluded
-    ? "ui-measure-bar-excluded"
-    : "ui-measure-bar-included";
+    ? "bg-gray-200 dark:bg-gray-700"
+    : "bg-blue-200 dark:bg-blue-700";
 
   $: tooltipValue =
     value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
@@ -138,7 +138,9 @@
         <FormattedDataType
           value={formattedValue || value}
           {type}
-          customStyle={excluded ? "ui-copy-disabled-faint" : "ui-copy"}
+          customStyle={excluded
+            ? "font-normal ui-copy-disabled-faint"
+            : "font-normal ui-copy"}
           inTable
         />
       </button>
