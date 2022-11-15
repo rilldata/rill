@@ -29,6 +29,10 @@ const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.yaml"
 
 func TestMigrate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -89,6 +93,10 @@ func TestMigrate(t *testing.T) {
 }
 
 func TestMigrateRenames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -130,6 +138,10 @@ func TestMigrateRenames(t *testing.T) {
 }
 
 func TestRefreshSource(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -158,6 +170,10 @@ func TestRefreshSource(t *testing.T) {
 }
 
 func TestInterdependentModel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -203,6 +219,10 @@ func TestInterdependentModel(t *testing.T) {
 }
 
 func TestMigrateMetricsView(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	s, _ := initBasicService(t)
 
 	createModel(t, s, "AdBids_model", "select id, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
@@ -337,7 +357,6 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 }
 
 func assertMigration(t *testing.T, result MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
-	fmt.Println(result)
 	require.Len(t, result.Errors, errCount)
 	require.Len(t, result.AddedObjects, addCount)
 	require.Len(t, result.UpdatedObjects, updateCount)
