@@ -131,6 +131,27 @@ func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigra
 	}, nil
 }
 
+func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAndMigrateRequest) (*api.RenameFileAndMigrateResponse, error) {
+	err := s.RenameFile(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.FromPath, req.Path},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.RenameFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
 // NOTE: This is an initial migration implementation with several flaws.
 func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
 	// Parse SQL

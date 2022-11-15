@@ -74,6 +74,9 @@ type RuntimeServiceClient interface {
 	// PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
 	// It is equivalent to calling the two RPCs sequentially.
 	PutFileAndMigrate(ctx context.Context, in *PutFileAndMigrateRequest, opts ...grpc.CallOption) (*PutFileAndMigrateResponse, error)
+	// RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+	// NOTE: there is no dedicated API for RenameFile
+	RenameFileAndMigrate(ctx context.Context, in *RenameFileAndMigrateRequest, opts ...grpc.CallOption) (*RenameFileAndMigrateResponse, error)
 	// Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	// QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
@@ -303,6 +306,15 @@ func (c *runtimeServiceClient) MigrateDelete(ctx context.Context, in *MigrateDel
 func (c *runtimeServiceClient) PutFileAndMigrate(ctx context.Context, in *PutFileAndMigrateRequest, opts ...grpc.CallOption) (*PutFileAndMigrateResponse, error) {
 	out := new(PutFileAndMigrateResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/PutFileAndMigrate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) RenameFileAndMigrate(ctx context.Context, in *RenameFileAndMigrateRequest, opts ...grpc.CallOption) (*RenameFileAndMigrateResponse, error) {
+	out := new(RenameFileAndMigrateResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/RenameFileAndMigrate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -554,6 +566,9 @@ type RuntimeServiceServer interface {
 	// PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
 	// It is equivalent to calling the two RPCs sequentially.
 	PutFileAndMigrate(context.Context, *PutFileAndMigrateRequest) (*PutFileAndMigrateResponse, error)
+	// RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+	// NOTE: there is no dedicated API for RenameFile
+	RenameFileAndMigrate(context.Context, *RenameFileAndMigrateRequest) (*RenameFileAndMigrateResponse, error)
 	// Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	// QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
@@ -665,6 +680,9 @@ func (UnimplementedRuntimeServiceServer) MigrateDelete(context.Context, *Migrate
 }
 func (UnimplementedRuntimeServiceServer) PutFileAndMigrate(context.Context, *PutFileAndMigrateRequest) (*PutFileAndMigrateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PutFileAndMigrate not implemented")
+}
+func (UnimplementedRuntimeServiceServer) RenameFileAndMigrate(context.Context, *RenameFileAndMigrateRequest) (*RenameFileAndMigrateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RenameFileAndMigrate not implemented")
 }
 func (UnimplementedRuntimeServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
@@ -1098,6 +1116,24 @@ func _RuntimeService_PutFileAndMigrate_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).PutFileAndMigrate(ctx, req.(*PutFileAndMigrateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_RenameFileAndMigrate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameFileAndMigrateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).RenameFileAndMigrate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/RenameFileAndMigrate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).RenameFileAndMigrate(ctx, req.(*RenameFileAndMigrateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1566,6 +1602,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PutFileAndMigrate",
 			Handler:    _RuntimeService_PutFileAndMigrate_Handler,
+		},
+		{
+			MethodName: "RenameFileAndMigrate",
+			Handler:    _RuntimeService_RenameFileAndMigrate_Handler,
 		},
 		{
 			MethodName: "Query",

@@ -155,6 +155,28 @@ func (s *Server) PutFile(ctx context.Context, req *api.PutFileRequest) (*api.Put
 	return &api.PutFileResponse{}, nil
 }
 
+func (s *Server) RenameFile(ctx context.Context, req *api.RenameFileAndMigrateRequest) error {
+	registry, _ := s.metastore.RegistryStore()
+	repo, found := registry.FindRepo(ctx, req.RepoId)
+	if !found {
+		return status.Error(codes.NotFound, "repo not found")
+	}
+
+	conn, err := drivers.Open(repo.Driver, repo.DSN)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// TODO: Handle req.Create, req.CreateOnly
+	repoStore, _ := conn.RepoStore()
+	err = repoStore.Rename(ctx, req.RepoId, req.FromPath, req.Path)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return nil
+}
+
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.
 // It's mounted only on as a REST API and enables upload of large files (such as data files).
 func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

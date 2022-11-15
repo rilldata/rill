@@ -1576,6 +1576,39 @@
         ]
       }
     },
+    "/v1/rename-and-migrate": {
+      "post": {
+        "summary": "RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.\nNOTE: there is no dedicated API for RenameFile",
+        "operationId": "RuntimeService_RenameFileAndMigrate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RenameFileAndMigrateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1RenameFileAndMigrateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/repos": {
       "get": {
         "summary": "ListRepos lists all the repos currently managed by the runtime",
@@ -3049,6 +3082,54 @@
     },
     "v1RenameDatabaseObjectResponse": {
       "type": "object"
+    },
+    "v1RenameFileAndMigrateRequest": {
+      "type": "object",
+      "properties": {
+        "repoId": {
+          "type": "string",
+          "title": "Repo to store the file in"
+        },
+        "instanceId": {
+          "type": "string",
+          "title": "Instance to apply the migrations to"
+        },
+        "path": {
+          "type": "string",
+          "title": "Path to store the file at"
+        },
+        "fromPath": {
+          "type": "string",
+          "title": "original path of the artifact"
+        },
+        "dry": {
+          "type": "boolean",
+          "description": "If true, will save the file and validate it and related file artifacts, but not actually execute any migrations."
+        },
+        "strict": {
+          "type": "boolean",
+          "title": "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort migration (including dropping objects with artifacts\nthat fail to validate.)"
+        }
+      }
+    },
+    "v1RenameFileAndMigrateResponse": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MigrationError"
+          },
+          "description": "Errors encountered during the migration. If strict = false, any path in\naffected_paths without an error can be assumed to have been migrated succesfully."
+        },
+        "affectedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "affected_paths lists all the file paths that were considered while\nexecuting the migration. For a PutFileAndMigrate, this includes the put file\nas well as any file artifacts that rely on objects declared in it."
+        }
+      }
     },
     "v1Repo": {
       "type": "object",
