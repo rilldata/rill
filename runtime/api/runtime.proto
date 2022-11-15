@@ -149,6 +149,26 @@ service RuntimeService {
     };
   }
 
+  // MigrateSingle applies a single `CREATE` statement.
+  // It bypasses the reconciling migrations described in Migrate.
+  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+  rpc MigrateSingle(MigrateSingleRequest) returns (MigrateSingleResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/migrate/single",
+      body: "*"
+    };
+  }
+
+  // MigrateDelete deletes a single object.
+  // It bypasses the reconciling migrations described in Migrate.
+  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+  rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/migrate/single/delete",
+      body: "*"
+    };
+  }
+
   // PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
   // It is equivalent to calling the two RPCs sequentially.
   rpc PutFileAndMigrate(PutFileAndMigrateRequest) returns (PutFileAndMigrateResponse) {
@@ -649,6 +669,35 @@ message MigrationError {
   // Only applicable if file_path and start_location is set.
   CharLocation end_location = 6;
 }
+
+// Request message for RuntimeService.MigrateSingle
+message MigrateSingleRequest {
+  // Instance to migrate
+  string instance_id = 1;
+  // A CREATE statement
+  string sql = 2;
+  // If true, will validate the SQL, but not actually execute the migrations
+  bool dry_run = 3;
+  // If true, will replace existing definitions with the same name
+  bool create_or_replace = 4;
+  // If provided, will attempt to rename an existing object and only recompute if necessary.
+  // NOTE: very questionable semantics here.
+  string rename_from = 5;
+}
+
+// Response message for RuntimeService.MigrateSingle
+message MigrateSingleResponse {}
+
+// Request message for RuntimeService.MigrateDelete
+message MigrateDeleteRequest {
+  // Instance to migrate
+  string instance_id = 1;
+  // Name of object to drop
+  string name = 2;
+}
+
+// Response message for RuntimeService.MigrateDelete
+message MigrateDeleteResponse {}
 
 message PutFileAndMigrateRequest {
   // Repo to store the file in

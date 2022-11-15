@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/rilldata/rill/runtime/api"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/rilldata/rill/runtime/api"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/stretchr/testify/require"
 )
 
 func TestServer_GetTopK(t *testing.T) {

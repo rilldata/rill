@@ -15,6 +15,8 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
